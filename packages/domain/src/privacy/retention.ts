@@ -20,6 +20,8 @@ export const retentionRules = [
   "email_links",
   /** Google and Apple sign-ins, an hour after they expired (spec 19, 7). */
   "provider_sign_ins",
+  /** Email sign-ins waiting for the phone step, an hour after they expired (spec 26, 4). */
+  "email_sign_ins",
   "trip_drafts",
   "conversations",
   "trips_and_bookings",

@@ -2,7 +2,12 @@
 // and the development SMS sender. Never import this from application code.
 import { Writable } from "node:stream";
 import { createApiClient, type ApiClient } from "@shareride/api-client";
-import { startPhoneSignInRoute, verifyPhoneCodeRoute } from "@shareride/contracts";
+import {
+  startEmailSignInRoute,
+  startPhoneSignInRoute,
+  verifyEmailCodeRoute,
+  verifyPhoneCodeRoute,
+} from "@shareride/contracts";
 import { pingDatabase, schema, type DatabaseConnection } from "@shareride/db";
 import { seedDraftLegalDocuments } from "@shareride/db/seed";
 import { freshTestDatabase } from "@shareride/db/testing";
@@ -46,9 +51,25 @@ export interface TestApi {
   ip: string;
   /** The last code sent to this number. */
   lastCode(e164: string): string;
+  /** The last code emailed to this address. */
+  lastEmailCode(address: string): string;
+  /**
+   * Proves an email no account has with its code, from an IP address of
+   * its own, and gives the waiting sign-in for the phone step (spec 26,
+   * 3.3). The code email stays in `email.sent`.
+   */
+  waitingEmailSignIn(address?: string): Promise<string>;
   /** A new, unused Icelandic mobile number. */
   newPhoneNumber(): string;
-  /** Sends a code and signs in with it, from a new IP address, 31 seconds later. */
+  /**
+   * Signs in as the number's account from a new IP address, 31 seconds
+   * later, the way the app does (spec 26): with the account's verified
+   * email and its code, or else through the phone step with an email made
+   * from the number, which the account then does not keep. So an account
+   * made here has no email, as before spec 26, and the code emails are
+   * taken out of `email.sent` again; the phone step's text stays in
+   * `sms.outbox`.
+   */
   signIn(
     e164: string,
     platform?: "ios" | "android" | "web",
@@ -183,6 +204,33 @@ export async function startTestApi(): Promise<TestApi> {
       if (code === undefined) throw new Error("No code was sent to this number.");
       return code;
     },
+    lastEmailCode(address) {
+      const message = email.sent.findLast((candidate) => candidate.to === address);
+      const code = message?.subject.match(/^\d{6}/)?.[0];
+      if (code === undefined) throw new Error("No code was emailed to this address.");
+      return code;
+    },
+    async waitingEmailSignIn(address) {
+      addresses += 1;
+      // From an address of its own, so the test's own address counts only what the test sends.
+      const ip = api.ip;
+      api.ip = `198.51.${String(101 + Math.floor(addresses / 250))}.${String(addresses % 250)}`;
+      const to = address ?? `waiting-${String(addresses)}@example.test`;
+      try {
+        const started = await api.client.call(startEmailSignInRoute, {
+          body: { email: to, locale: "en" },
+        });
+        if (!started.ok) throw new Error(`email start failed: ${started.error.code}`);
+        const verified = await api.client.call(verifyEmailCodeRoute, {
+          body: { email: to, code: api.lastEmailCode(to), device: { platform: "ios" } },
+        });
+        if (!verified.ok) throw new Error(`email verify failed: ${verified.error.code}`);
+        if (verified.data.status !== "phoneNeeded") throw new Error("This email has an account.");
+        return verified.data.pendingSignIn;
+      } finally {
+        api.ip = ip;
+      }
+    },
     newPhoneNumber() {
       numbers += 1;
       return `+35469${String(numbers).padStart(5, "0")}`;
@@ -191,20 +239,44 @@ export async function startTestApi(): Promise<TestApi> {
       api.advance(31);
       addresses += 1;
       api.ip = `198.51.100.${String(addresses % 250)}`;
-      const started = await api.client.call(startPhoneSignInRoute, {
-        body: { phoneNumber: e164, locale: "en" },
+      const device = { platform, name: "Test phone", appVersion: "1.0.0" };
+      const [account] = await connection.db
+        .select({ email: schema.users.email, emailVerifiedAt: schema.users.emailVerifiedAt })
+        .from(schema.users)
+        .where(eq(schema.users.phoneE164, e164));
+      const known =
+        account === undefined || account.emailVerifiedAt === null ? null : account.email;
+      const address = known ?? `sign-in-${e164.slice(1)}@example.test`;
+      const sentBefore = email.sent.length;
+      const started = await api.client.call(startEmailSignInRoute, {
+        body: { email: address, locale: "en" },
       });
-      if (!started.ok) throw new Error(`start failed: ${started.error.code}`);
+      if (!started.ok) throw new Error(`email start failed: ${started.error.code}`);
+      const byEmail = await api.client.call(verifyEmailCodeRoute, {
+        body: { email: address, code: api.lastEmailCode(address), device },
+      });
+      // The helper's own code email: other tests count what their code sends.
+      email.sent.splice(sentBefore, 1);
+      if (!byEmail.ok) throw new Error(`email verify failed: ${byEmail.error.code}`);
+      if (byEmail.data.status === "signedIn") {
+        const { accessToken, refreshToken, user } = byEmail.data;
+        return { accessToken, refreshToken: refreshToken ?? "", userId: user.id, isNewUser: false };
+      }
+      const { pendingSignIn } = byEmail.data;
+      const texted = await api.client.call(startPhoneSignInRoute, {
+        body: { phoneNumber: e164, locale: "en", pendingSignIn },
+      });
+      if (!texted.ok) throw new Error(`start failed: ${texted.error.code}`);
       const verified = await api.client.call(verifyPhoneCodeRoute, {
-        body: {
-          phoneNumber: e164,
-          code: api.lastCode(e164),
-          locale: "en",
-          device: { platform, name: "Test phone", appVersion: "1.0.0" },
-        },
+        body: { phoneNumber: e164, code: api.lastCode(e164), locale: "en", device, pendingSignIn },
       });
       if (!verified.ok) throw new Error(`verify failed: ${verified.error.code}`);
       const { accessToken, refreshToken, user, isNewUser } = verified.data;
+      // The account keeps the email it had: none for one made here.
+      await connection.db
+        .update(schema.users)
+        .set({ email: account?.email ?? null, emailVerifiedAt: account?.emailVerifiedAt ?? null })
+        .where(eq(schema.users.id, user.id));
       return { accessToken, refreshToken: refreshToken ?? "", userId: user.id, isNewUser };
     },
     async signInOperator() {

@@ -32,6 +32,12 @@ export const authErrorCodes = [
   "provider_in_use",
   /** The account already has a Google (or Apple) account: remove it first (R19.1). */
   "provider_already_linked",
+  /** Not an email address (spec 26, 3.2). */
+  "email_invalid",
+  /** The code email could not be sent: try again. */
+  "email_failed",
+  /** This server sends no email, so email sign-in is off (spec 26, 3.1). */
+  "email_unavailable",
 ] as const;
 
 export type AuthErrorCode = (typeof authErrorCodes)[number];
@@ -41,14 +47,20 @@ const phoneNumberSchema = z.string().trim().min(1).max(32);
 /** `google` or `apple` (spec 19). */
 export const signInProviderSchema = z.enum(signInProviders);
 
-/** A waiting Google or Apple sign-in, from `POST /v1/auth/oauth/finish` (`sr_ps_…`). */
-export const pendingSignInSchema = z.string().regex(/^sr_ps_[A-Za-z0-9_-]{43}$/);
+/**
+ * A waiting sign-in for the phone step: Google's or Apple's from
+ * `POST /v1/auth/oauth/finish` (`sr_ps_…`), or an email's from
+ * `POST /v1/auth/email/verify` (`sr_pe_…`).
+ */
+export const pendingSignInSchema = z.string().regex(/^sr_p[se]_[A-Za-z0-9_-]{43}$/);
 
 export const startPhoneSignInBodySchema = z.object({
   /** As typed, with or without the country code; Iceland if none. */
   phoneNumber: phoneNumberSchema,
   /** The language of the SMS. */
   locale: localeSchema,
+  /** The waiting sign-in: no text is sent without one (spec 26, R26.2). */
+  pendingSignIn: pendingSignInSchema,
 });
 
 export const startPhoneSignInResponseSchema = z.object({
@@ -74,10 +86,11 @@ export const verifyPhoneCodeBodySchema = z.object({
    */
   inviteCode: inviteCodeInputSchema.optional(),
   /**
-   * A Google or Apple sign-in waiting for this phone step: the account the
-   * number has, or the new one, is linked to it (spec 19, 3.3).
+   * The email, Google or Apple sign-in waiting for this phone step: the
+   * account the number has, or the new one, gets it (spec 19, 3.3; spec 26,
+   * 3.3). A number alone never signs in (R26.1).
    */
-  pendingSignIn: pendingSignInSchema.optional(),
+  pendingSignIn: pendingSignInSchema,
 });
 
 /**
@@ -107,12 +120,28 @@ export const providerLinkSchema = z.object({
 
 export type ProviderLink = z.infer<typeof providerLinkSchema>;
 
+/** What the phone step did with a waiting email sign-in's address (spec 26, 3.3). */
+export const emailLinkSchema = z.object({
+  /**
+   * `created`: the new account has it; `added`: the number's account had
+   * none; `replaced`: it took the place of the account's email, whose old
+   * address is told; `already`; `in_use`: another account has it, so
+   * nothing changed, and the person is signed in all the same.
+   */
+  outcome: z.enum(["created", "added", "replaced", "already", "in_use"]),
+  email: z.string(),
+});
+
+export type EmailLink = z.infer<typeof emailLinkSchema>;
+
 export const signedInSchema = tokensSchema.extend({
   user: meSchema,
   /** True when this sign-in created the account. */
   isNewUser: z.boolean(),
   /** Only with a waiting Google or Apple sign-in. */
   providerLink: providerLinkSchema.optional(),
+  /** Only with a waiting email sign-in. */
+  emailLink: emailLinkSchema.optional(),
   /**
    * For a new account made with Google or Apple: the first name the
    * provider gave, to fill in step 3's field (R19.5). Not stored.
@@ -135,7 +164,7 @@ const errors = { schema: errorResponseSchema } as const;
 export const startPhoneSignInRoute = defineRoute({
   method: "post",
   path: "/v1/auth/phone/start",
-  summary: "Send a sign-in code by SMS",
+  summary: "Text the phone step's code, for a waiting email, Google or Apple sign-in",
   tags: ["auth"],
   request: { body: startPhoneSignInBodySchema },
   responses: {
@@ -143,7 +172,11 @@ export const startPhoneSignInRoute = defineRoute({
       description: "A code was sent. The reply is the same for new and existing accounts.",
       schema: startPhoneSignInResponseSchema,
     },
-    400: { description: "phone_invalid, phone_country_unsupported, validation_failed", ...errors },
+    400: {
+      description:
+        "phone_invalid, phone_country_unsupported, validation_failed; provider_expired: the waiting sign-in is gone, and no text was sent",
+      ...errors,
+    },
     429: { description: "rate_limited, with retryAfterSeconds", ...errors },
     502: { description: "sms_failed", ...errors },
     503: { description: "sms_paused: text messages are paused for a short while", ...errors },
@@ -160,7 +193,7 @@ export const verifyPhoneCodeRoute = defineRoute({
     200: { description: "Signed in", schema: signedInSchema },
     400: {
       description:
-        "code_invalid (with attemptsLeft), code_expired, phone_invalid; invite_invalid: the invite code does not work, and counts as a wrong code; provider_expired: the Google or Apple sign-in waited more than 30 minutes, and the code is kept",
+        "code_invalid (with attemptsLeft), code_expired, phone_invalid; invite_invalid: the invite code does not work, and counts as a wrong code; provider_expired: the email, Google or Apple sign-in waited more than 30 minutes, and the code is kept",
       ...errors,
     },
     403: {
@@ -285,7 +318,8 @@ export const phoneNeededSchema = z.object({
   status: z.literal("phoneNeeded"),
   /** Send it with the phone step's code, within 30 minutes. */
   pendingSignIn: z.string(),
-  provider: signInProviderSchema,
+  /** How the person signed in so far: Google, Apple, or a code by email (spec 26). */
+  provider: z.enum([...signInProviders, "email"]),
   /** The verified email, for the line on top of the phone step; null when hidden or unverified. */
   email: z.string().nullable(),
   firstName: z.string().nullable(),
@@ -313,5 +347,64 @@ export const finishProviderSignInRoute = defineRoute({
     },
     400: { description: "ticket_invalid, validation_failed", ...errors },
     403: { description: "account_unavailable", ...errors },
+  },
+});
+
+const emailSchema = z.string().trim().min(1).max(320);
+
+export const startEmailSignInBodySchema = z.object({
+  email: emailSchema,
+  /** The language of the email. */
+  locale: localeSchema,
+});
+
+export const verifyEmailCodeBodySchema = z.object({
+  email: emailSchema,
+  code: z.string().regex(/^\d{6}$/),
+  device: deviceSchema,
+});
+
+export const verifyEmailCodeResponseSchema = z.discriminatedUnion("status", [
+  signedInSchema.extend({ status: z.literal("signedIn") }),
+  phoneNeededSchema,
+]);
+
+export const startEmailSignInRoute = defineRoute({
+  method: "post",
+  path: "/v1/auth/email/start",
+  summary: "Email a sign-in code (spec 26)",
+  tags: ["auth"],
+  request: { body: startEmailSignInBodySchema },
+  responses: {
+    202: {
+      description:
+        "A code was sent. The reply is the same whether or not an account has the email.",
+      schema: startPhoneSignInResponseSchema,
+    },
+    400: { description: "email_invalid, validation_failed", ...errors },
+    429: { description: "rate_limited, with retryAfterSeconds", ...errors },
+    502: { description: "email_failed: it was not sent; try again", ...errors },
+    503: { description: "email_unavailable: this server sends no email", ...errors },
+  },
+});
+
+export const verifyEmailCodeRoute = defineRoute({
+  method: "post",
+  path: "/v1/auth/email/verify",
+  summary: "Check an email code; sign in, or go on to the phone step",
+  tags: ["auth"],
+  request: { body: verifyEmailCodeBodySchema },
+  responses: {
+    200: {
+      description:
+        "signedIn: the email's account, signed in; phoneNeeded: no account has the email, so the phone number comes next",
+      schema: verifyEmailCodeResponseSchema,
+    },
+    400: {
+      description: "code_invalid (with attemptsLeft), code_expired, email_invalid",
+      ...errors,
+    },
+    403: { description: "account_unavailable", ...errors },
+    429: { description: "code_attempts_exceeded, with retryAfterSeconds", ...errors },
   },
 });

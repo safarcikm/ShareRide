@@ -1569,6 +1569,20 @@ export const en = {
   "email.verifyOpen": "Confirm my email",
   "email.verifyFooter":
     "You get this email because this address was entered in PuffinRide. If that was not you, ignore it: the address is not added.",
+  /** The sign-in code by email (spec 26, 3.2): the code in the subject, for a phone's notification. */
+  "email.signInCodeSubject": "{code} is your PuffinRide code",
+  "email.signInCodeBody":
+    "Your code is {code}. It works for 10 minutes. If you didn't ask for it, you can ignore this email.",
+  /** A confirm code by email (spec 26, 3.6). */
+  "email.confirmCodeSubject": "{code} is your PuffinRide code to confirm",
+  "email.confirmCodeBody":
+    "Enter {code} in PuffinRide to confirm the change you asked for. It works for 10 minutes. Never share it. If you didn't ask for it, sign in and check your account.",
+  "email.codeFooter":
+    "You get this email because this address was entered in PuffinRide. Nobody from PuffinRide will ever ask you for this code.",
+  /** To the old address when an account's email changes (R26.6). */
+  "email.emailChangedSubject": "Your PuffinRide sign-in email changed",
+  "email.emailChangedBody":
+    "Your PuffinRide account now signs in with {email}. If this wasn't you, reply to this email and we will help.",
   "oauth.page.title": "PuffinRide sign-in",
   "oauth.page.off":
     "This way of signing in isn't available. Close this window and use your phone number.",

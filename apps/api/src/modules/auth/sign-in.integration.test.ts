@@ -1,5 +1,6 @@
 import { getMeRoute, startPhoneSignInRoute, verifyPhoneCodeRoute } from "@shareride/contracts";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { schema } from "@shareride/db";
 import { SmsSendError } from "../../platform/sms.ts";
 import { startTestApi, type TestApi } from "../../testing.ts";
 
@@ -15,13 +16,27 @@ afterAll(async () => {
 
 const device = { platform: "ios", name: "Test phone", appVersion: "1.0.0" } as const;
 
-function start(phoneNumber: string, locale: "is" | "en" = "en") {
-  return api.client.call(startPhoneSignInRoute, { body: { phoneNumber, locale } });
+/** The phone step's text, for a new waiting email sign-in each time (spec 26, 3.3). */
+async function start(phoneNumber: string, locale: "is" | "en" = "en") {
+  const pendingSignIn = await api.waitingEmailSignIn();
+  return api.client.call(startPhoneSignInRoute, { body: { phoneNumber, locale, pendingSignIn } });
 }
 
-function verify(phoneNumber: string, code: string) {
+/** The phone step's code, with a new waiting email sign-in. */
+async function verify(phoneNumber: string, code: string) {
+  const pendingSignIn = await api.waitingEmailSignIn();
   return api.client.call(verifyPhoneCodeRoute, {
-    body: { phoneNumber, code, locale: "is", device },
+    body: { phoneNumber, code, locale: "is", device, pendingSignIn },
+  });
+}
+
+/** `POST /v1/auth/phone/start` as the app sends it, for its headers and exact body. */
+async function startRaw(phoneNumber: string) {
+  const pendingSignIn = await api.waitingEmailSignIn();
+  return api.request("/v1/auth/phone/start", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ phoneNumber, locale: "en", pendingSignIn }),
   });
 }
 
@@ -30,7 +45,7 @@ function wrong(code: string): string {
   return code === "000000" ? "111111" : "000000";
 }
 
-describe("sign up and sign in with a phone number", () => {
+describe("the phone step of a waiting sign-in", () => {
   it("creates an account on the first sign-in and asks for terms and profile", async () => {
     const phone = api.newPhoneNumber();
     api.ip = "192.0.2.10";
@@ -71,16 +86,8 @@ describe("sign up and sign in with a phone number", () => {
     await api.signIn(known);
     api.advance(31);
     api.ip = "192.0.2.11";
-    const forKnown = await api.request("/v1/auth/phone/start", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ phoneNumber: known, locale: "en" }),
-    });
-    const forUnknown = await api.request("/v1/auth/phone/start", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ phoneNumber: api.newPhoneNumber(), locale: "en" }),
-    });
+    const forKnown = await startRaw(known);
+    const forUnknown = await startRaw(api.newPhoneNumber());
     expect(forKnown.status).toBe(forUnknown.status);
     expect(await forKnown.text()).toBe(await forUnknown.text());
   });
@@ -183,11 +190,7 @@ describe("sending limits (rule R1.3)", () => {
     api.ip = "192.0.2.30";
     expect((await start(phone)).ok).toBe(true);
     api.advance(10);
-    const response = await api.request("/v1/auth/phone/start", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ phoneNumber: phone, locale: "en" }),
-    });
+    const response = await startRaw(phone);
     expect(response.status).toBe(429);
     expect(response.headers.get("retry-after")).toBe("20");
     expect(await response.json()).toMatchObject({
@@ -284,6 +287,78 @@ describe("sending limits (rule R1.3)", () => {
       expect((await start(phone)).ok).toBe(false);
     }
     api.advance(6);
+    expect((await start(phone)).ok).toBe(true);
+  });
+});
+
+describe("texts only for a waiting sign-in (spec 26, R26.1 to R26.3)", () => {
+  it("sends no text for a number alone", async () => {
+    const phone = api.newPhoneNumber();
+    api.ip = "192.0.2.70";
+    const response = await api.request("/v1/auth/phone/start", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ phoneNumber: phone, locale: "en" }),
+    });
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({ error: { code: "validation_failed" } });
+    expect(api.sms.outbox.filter((message) => message.to === phone)).toEqual([]);
+  });
+
+  it("sends none for a waiting sign-in that is gone, and the code cannot sign in without one", async () => {
+    const phone = api.newPhoneNumber();
+    api.ip = "192.0.2.71";
+    const pendingSignIn = await api.waitingEmailSignIn();
+    api.advance(30 * 60);
+    expect(
+      await api.client.call(startPhoneSignInRoute, {
+        body: { phoneNumber: phone, locale: "en", pendingSignIn },
+      }),
+    ).toMatchObject({ status: 400, error: { code: "provider_expired" } });
+    const made = `sr_pe_${"A".repeat(43)}`;
+    expect(
+      await api.client.call(startPhoneSignInRoute, {
+        body: { phoneNumber: phone, locale: "en", pendingSignIn: made },
+      }),
+    ).toMatchObject({ status: 400, error: { code: "provider_expired" } });
+    expect(api.sms.outbox.filter((message) => message.to === phone)).toEqual([]);
+  });
+
+  it("sends at most 3 texts for one waiting sign-in, whatever the numbers", async () => {
+    const pendingSignIn = await api.waitingEmailSignIn();
+    for (let i = 0; i < 3; i++) {
+      api.ip = `192.0.2.${String(72 + i)}`;
+      const sent = await api.client.call(startPhoneSignInRoute, {
+        body: { phoneNumber: api.newPhoneNumber(), locale: "en", pendingSignIn },
+      });
+      expect(sent.ok).toBe(true);
+    }
+    api.ip = "192.0.2.75";
+    expect(
+      await api.client.call(startPhoneSignInRoute, {
+        body: { phoneNumber: api.newPhoneNumber(), locale: "en", pendingSignIn },
+      }),
+    ).toMatchObject({ status: 429, error: { code: "rate_limited" } });
+  });
+
+  it("stop at the ceiling on all texts, and log it as an error", async () => {
+    // 300 texts this hour, as stored by earlier sends.
+    const now = api.now();
+    await api.connection.db.insert(schema.rateLimitEvents).values(
+      Array.from({ length: 300 }, () => ({
+        scope: "texts",
+        keyHash: api.features.hasher("texts", "all"),
+        createdAt: now,
+        updatedAt: now,
+      })),
+    );
+    api.ip = "192.0.2.76";
+    const phone = api.newPhoneNumber();
+    expect(await start(phone)).toMatchObject({ status: 429, error: { code: "rate_limited" } });
+    expect(api.sms.outbox.filter((message) => message.to === phone)).toEqual([]);
+    const logged = api.logLines.find((line) => line.includes("ceiling on all sign-in texts"));
+    expect(logged).toContain('"level":"error"');
+    api.advance(3600);
     expect((await start(phone)).ok).toBe(true);
   });
 });

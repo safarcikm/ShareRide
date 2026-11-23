@@ -18,12 +18,14 @@ const tokenPrefixes = {
   providerState: "sr_st",
   providerTicket: "sr_pt",
   pendingSignIn: "sr_ps",
+  /** An email proven by its code, waiting for the phone step (spec 26). */
+  pendingEmailSignIn: "sr_pe",
 } as const;
 
 /**
  * A new opaque token: 256 random bits (ADR 0016). The prefix tells access and
  * refresh tokens, email links, console sessions, setup links, data export
- * links and the steps of a Google or Apple sign-in apart, and lets secret
+ * links and the steps of a Google, Apple or email sign-in apart, and lets secret
  * scanners recognise leaked tokens.
  */
 export function newToken(kind: keyof typeof tokenPrefixes): string {

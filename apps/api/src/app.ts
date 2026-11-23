@@ -511,7 +511,12 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       account,
       requireAuth,
     );
-    registerEmailRoutes(app, createEmailService({ ...features, logger }), account, requireAuth);
+    registerEmailRoutes(app, {
+      email: createEmailService({ ...features, logger }),
+      account,
+      auth,
+      requireAuth,
+    });
     const driving = createDrivingService({ ...features, account });
     registerDrivingRoutes(app, driving, requireAuth);
     registerLegalRoutes(app, legal);
@@ -630,6 +635,7 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       operatorSettings,
       providerSignIn.names,
       dependencies.analytics ?? null,
+      features.email !== undefined,
     );
     registerSettingsAdminRoutes(app, { ...features, settings: operatorSettings, requireOperator });
     registerInviteRoutes(app, {

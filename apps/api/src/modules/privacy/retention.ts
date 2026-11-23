@@ -127,6 +127,7 @@ export function retentionSteps({
         "ended_sessions",
         "email_links",
         "provider_sign_ins",
+        "email_sign_ins",
       ],
       async run(now) {
         const counts = await cleanUpSignInRecords(db, now);
@@ -140,6 +141,7 @@ export function retentionSteps({
             ended_sessions: counts.sessionsDeleted,
             email_links: counts.emailLinks,
             provider_sign_ins: counts.providerSignIns,
+            email_sign_ins: counts.emailSignIns,
           },
         };
       },

@@ -12,6 +12,8 @@ export const retention = {
   endedSessionsSeconds: 30 * 24 * 3600,
   /** A Google or Apple sign-in stays an hour after it ended (spec 19, 7). */
   providerSignInsSeconds: 3600,
+  /** An email sign-in waiting for its phone step stays an hour after it expired (spec 26, 4). */
+  emailSignInsSeconds: 3600,
 } as const;
 
 export interface RetentionCutoffs {
@@ -31,6 +33,8 @@ export interface RetentionCutoffs {
   readonly emailLinksSentBefore: Date;
   /** Google and Apple sign-ins that ended before this time are deleted. */
   readonly providerSignInsExpiredBefore: Date;
+  /** Email sign-ins that stopped waiting before this time are deleted. */
+  readonly emailSignInsExpiredBefore: Date;
 }
 
 export function retentionCutoffs(now: Date): RetentionCutoffs {
@@ -43,5 +47,6 @@ export function retentionCutoffs(now: Date): RetentionCutoffs {
     sessionsEndedBefore: ago(retention.endedSessionsSeconds),
     emailLinksSentBefore: ago(emailLinkRules.validForSeconds),
     providerSignInsExpiredBefore: ago(retention.providerSignInsSeconds),
+    emailSignInsExpiredBefore: ago(retention.emailSignInsSeconds),
   };
 }

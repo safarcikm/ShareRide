@@ -59,12 +59,47 @@ describe("confirm with a fresh code (spec 11; R11.1)", () => {
     api.advance(31);
 
     const sent = await send(me.accessToken);
-    expect(sent).toEqual({ ok: true, status: 202, data: { resendAfterSeconds: 30 } });
+    expect(sent).toEqual({
+      ok: true,
+      status: 202,
+      data: { resendAfterSeconds: 30, channel: "sms", sentTo: phone.slice(-2) },
+    });
     const message = api.sms.outbox.at(-1);
     expect(message?.to).toBe(phone);
     expect(message?.text).toMatch(/^\d{6} is your PuffinRide code to confirm/);
 
     expect(await confirm(me.userId, api.lastCode(phone))).toEqual({ ok: true, value: "done" });
+  });
+
+  it("emails the code instead to an account's verified email, and sends no text (R26.7)", async () => {
+    const phone = api.newPhoneNumber();
+    const me = await api.signIn(phone);
+    await api.connection.db
+      .update(schema.users)
+      .set({ email: "confirm-by-email@example.test", emailVerifiedAt: api.now(), locale: "is" })
+      .where(eq(schema.users.id, me.userId));
+    api.advance(31);
+    const texts = api.sms.outbox.length;
+
+    expect(await send(me.accessToken)).toEqual({
+      ok: true,
+      status: 202,
+      data: { resendAfterSeconds: 30, channel: "email", sentTo: "co•••@example.test" },
+    });
+    expect(api.sms.outbox).toHaveLength(texts);
+    const message = api.email.sent.at(-1);
+    expect(message?.to).toBe("confirm-by-email@example.test");
+    expect(message?.subject).toMatch(/^\d{6} er PuffinRide-kóðinn til að staðfesta$/);
+
+    // Kept under the number, as a texted code is: the same check confirms it.
+    const code = api.lastEmailCode("confirm-by-email@example.test");
+    expect(await confirm(me.userId, code)).toEqual({ ok: true, value: "done" });
+    // One code per number in 30 seconds, by email too.
+    expect(await send(me.accessToken)).toMatchObject({
+      ok: false,
+      status: 429,
+      error: { code: "rate_limited" },
+    });
   });
 
   it("works once", async () => {
@@ -84,13 +119,20 @@ describe("confirm with a fresh code (spec 11; R11.1)", () => {
     await send(me.accessToken);
     const confirmCode = api.lastCode(phone);
 
+    const pendingSignIn = await api.waitingEmailSignIn();
     const signedIn = await api.client.call(verifyPhoneCodeRoute, {
-      body: { phoneNumber: phone, code: confirmCode, locale: "en", device: { platform: "ios" } },
+      body: {
+        phoneNumber: phone,
+        code: confirmCode,
+        locale: "en",
+        device: { platform: "ios" },
+        pendingSignIn,
+      },
     });
     expect(signedIn).toMatchObject({ ok: false, error: { code: "code_expired" } });
 
     api.advance(31);
-    await auth.start({ phoneNumber: phone, locale: "en", ipAddress: "203.0.113.5" });
+    await auth.start({ phoneNumber: phone, locale: "en", ipAddress: "203.0.113.5", pendingSignIn });
     const signInCode = api.lastCode(phone);
     expect(await confirm(me.userId, signInCode)).toMatchObject({ ok: false });
     // The confirm code still works: a sign-in code does not replace it.

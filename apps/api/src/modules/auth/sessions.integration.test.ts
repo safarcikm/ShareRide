@@ -217,12 +217,13 @@ describe("sign out and devices", () => {
 describe("on the web", () => {
   async function webSignIn() {
     const phone = api.newPhoneNumber();
+    const pendingSignIn = await api.waitingEmailSignIn();
     api.advance(31);
     api.ip = "192.0.2.90";
     await api.request("/v1/auth/phone/start", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ phoneNumber: phone, locale: "en" }),
+      body: JSON.stringify({ phoneNumber: phone, locale: "en", pendingSignIn }),
     });
     return api.request("/v1/auth/phone/verify", {
       method: "POST",
@@ -232,6 +233,7 @@ describe("on the web", () => {
         code: api.lastCode(phone),
         locale: "en",
         device: { platform: "web" },
+        pendingSignIn,
       }),
     });
   }

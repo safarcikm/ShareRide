@@ -51,6 +51,10 @@ describe("the retention rules this feature adds (spec 11, 3.7)", () => {
     );
   });
 
+  it("names the email sign-ins waiting for the phone step (spec 26)", () => {
+    expect(retentionRules).toContain("email_sign_ins");
+  });
+
   it("names the beta's feedback, deleted 12 months after the beta ended", () => {
     expect(retentionRules).toContain("feedback");
   });

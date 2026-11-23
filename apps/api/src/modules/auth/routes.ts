@@ -5,7 +5,9 @@ import {
   refreshRoute,
   sendConfirmCodeRoute,
   signOutRoute,
+  startEmailSignInRoute,
   startPhoneSignInRoute,
+  verifyEmailCodeRoute,
   verifyPhoneCodeRoute,
 } from "@shareride/contracts";
 import { sessionRules } from "@shareride/domain";
@@ -17,7 +19,15 @@ import { toOpenApiRoute, validated } from "../../openapi.ts";
 import type { AccountService } from "../account/index.ts";
 import { inviteProblemMessages } from "../beta/routes.ts";
 import { pausedMessages } from "../settings/paused.ts";
-import type { ConfirmError, IssuedTokens, Platform, StartError, VerifyError } from "./service.ts";
+import type {
+  ConfirmError,
+  EmailStartError,
+  EmailVerifyError,
+  IssuedTokens,
+  Platform,
+  StartError,
+  VerifyError,
+} from "./service.ts";
 import type { AuthService } from "./service.ts";
 
 /** The web's refresh token cookie, sent only to the sign-in endpoints (ADR 0016). */
@@ -32,7 +42,9 @@ export interface AuthRoutesDependencies {
   readonly secureCookies: boolean;
 }
 
-const messages: Record<StartError["code"] | VerifyError["code"], string> = {
+type SignInError = StartError | VerifyError | EmailStartError | EmailVerifyError;
+
+const messages: Record<SignInError["code"], string> = {
   phone_invalid: "The phone number is not a valid mobile number.",
   phone_country_unsupported: "Phone numbers from this country are not supported yet.",
   rate_limited: "Too many codes were asked for. Try again later.",
@@ -41,15 +53,18 @@ const messages: Record<StartError["code"] | VerifyError["code"], string> = {
   code_expired: "The code has expired or was used. Ask for a new one.",
   code_attempts_exceeded: "Too many wrong codes. Ask for a new one.",
   account_unavailable: "This account cannot sign in.",
-  provider_expired: "The Google or Apple sign-in took too long. Continue with it again.",
+  provider_expired: "The sign-in took too long. Start again with your email, Google or Apple.",
   provider_in_use: "This Google or Apple account is used by another PuffinRide account.",
   invite_required: "PuffinRide is in a closed beta. Send your invite code with the code.",
   ...inviteProblemMessages,
   signups_paused: pausedMessages.signups_paused,
   sms_paused: pausedMessages.sms_paused,
+  email_invalid: "This is not an email address.",
+  email_failed: "The email could not be sent. Try again.",
+  email_unavailable: "This server sends no email.",
 };
 
-function signInError(c: Context, error: StartError | VerifyError) {
+function signInError(c: Context, error: SignInError) {
   const message = messages[error.code];
   switch (error.code) {
     case "rate_limited":
@@ -60,6 +75,7 @@ function signInError(c: Context, error: StartError | VerifyError) {
     case "code_invalid":
       return errorResponse(c, 400, error.code, message, { attemptsLeft: error.attemptsLeft });
     case "sms_failed":
+    case "email_failed":
       return errorResponse(c, 502, error.code, message);
     case "account_unavailable":
     case "invite_required":
@@ -69,6 +85,7 @@ function signInError(c: Context, error: StartError | VerifyError) {
       return errorResponse(c, 409, error.code, message);
     case "signups_paused":
     case "sms_paused":
+    case "email_unavailable":
       return errorResponse(c, 503, error.code, message);
     default:
       return errorResponse(c, 400, error.code, message);
@@ -135,7 +152,8 @@ export function registerAuthRoutes(
     const body = validated(c, "json", verifyPhoneCodeRoute.request.body);
     const result = await auth.verify(body);
     if (!result.ok) return signInError(c, result.error);
-    const { userId, tokens, platform, isNewUser, providerLink, suggestedFirstName } = result.value;
+    const { userId, tokens, platform, isNewUser, providerLink, suggestedFirstName, emailLink } =
+      result.value;
     const user = await account.me(userId);
     return c.json(
       {
@@ -143,7 +161,34 @@ export function registerAuthRoutes(
         user,
         isNewUser,
         ...(providerLink === undefined ? {} : { providerLink }),
+        ...(emailLink === undefined ? {} : { emailLink }),
         ...(suggestedFirstName === undefined ? {} : { suggestedFirstName }),
+      },
+      200,
+    );
+  });
+
+  app.openapi(toOpenApiRoute(startEmailSignInRoute), async (c) => {
+    const body = validated(c, "json", startEmailSignInRoute.request.body);
+    const result = await auth.startEmail({ ...body, ipAddress: clientAddress(c) });
+    if (!result.ok) return signInError(c, result.error);
+    return c.json(result.value, 202);
+  });
+
+  app.openapi(toOpenApiRoute(verifyEmailCodeRoute), async (c) => {
+    const body = validated(c, "json", verifyEmailCodeRoute.request.body);
+    const result = await auth.verifyEmail(body);
+    if (!result.ok) return signInError(c, result.error);
+    if (result.value.status === "phoneNeeded") {
+      return c.json({ ...result.value, expiresAt: result.value.expiresAt.toISOString() }, 200);
+    }
+    const { userId, tokens, platform } = result.value;
+    return c.json(
+      {
+        status: "signedIn" as const,
+        ...tokensBody(c, tokens, platform),
+        user: await account.me(userId),
+        isNewUser: false,
       },
       200,
     );

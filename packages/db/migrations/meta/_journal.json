@@ -435,6 +435,13 @@
       "when": 1795396645542,
       "tag": "0061_new_member_emails",
       "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "7",
+      "when": 1795435949171,
+      "tag": "0062_email_sign_in",
+      "breakpoints": true
     }
   ]
 }

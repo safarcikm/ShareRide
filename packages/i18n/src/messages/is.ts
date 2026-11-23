@@ -1593,6 +1593,17 @@ export const is = {
   "email.verifyOpen": "Staðfesta netfangið",
   "email.verifyFooter":
     "Þú færð þennan póst því þetta netfang var slegið inn í PuffinRide. Ef það varst ekki þú skaltu hunsa hann: netfanginu er ekki bætt við.",
+  "email.signInCodeSubject": "{code} er PuffinRide-kóðinn þinn",
+  "email.signInCodeBody":
+    "Kóðinn þinn er {code}. Hann gildir í 10 mínútur. Ef þú baðst ekki um hann geturðu hunsað þennan póst.",
+  "email.confirmCodeSubject": "{code} er PuffinRide-kóðinn til að staðfesta",
+  "email.confirmCodeBody":
+    "Sláðu {code} inn í PuffinRide til að staðfesta breytinguna sem þú baðst um. Hann gildir í 10 mínútur. Ekki deila honum. Ef þú baðst ekki um hann skaltu skrá þig inn og skoða aðganginn þinn.",
+  "email.codeFooter":
+    "Þú færð þennan póst því þetta netfang var slegið inn í PuffinRide. Enginn frá PuffinRide mun nokkurn tíma biðja þig um þennan kóða.",
+  "email.emailChangedSubject": "Innskráningarnetfangið þitt hjá PuffinRide breyttist",
+  "email.emailChangedBody":
+    "Nú skráir þú þig inn í PuffinRide með {email}. Ef þetta varst ekki þú skaltu svara þessum pósti og við hjálpum þér.",
   "oauth.page.title": "Innskráning í PuffinRide",
   "oauth.page.off":
     "Þessi innskráningarleið er ekki í boði. Lokaðu glugganum og notaðu símanúmerið þitt.",
