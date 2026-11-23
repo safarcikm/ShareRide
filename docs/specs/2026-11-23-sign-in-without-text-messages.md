@@ -154,7 +154,7 @@ address (10 an hour) and per country calling code (Iceland 500 an hour and
    Apple (spec 19, 3.4) and changing the email (3.7) ask for a confirm code
    as today. It goes by email to the account's verified email; only an
    account without one gets it by text.
-2. The form says where it went: "We emailed a code to an•••@gmail.com." or,
+2. The form says where it went: "We emailed a code to `an•••@gmail.com`." or,
    as today, "We sent a code by text message to your number ending in 34."
    Adding Google or Apple says "To add Google, enter the code we send you."
 3. The rules do not change: 10 minutes, 5 attempts, the account's own
