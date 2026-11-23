@@ -49,7 +49,7 @@ export function emailContent(
   const { title } = notification;
   const link = `${webAppUrl}${notification.path}`;
   const open = words?.open ?? notification.open ?? t("email.open");
-  const footer = words?.footer ?? t("email.footer");
+  const footer = words?.footer ?? notification.footer ?? t("email.footer");
   const name = t("app.name");
   const paragraphs = paragraphsOf(notification.emailBody ?? notification.body, title);
   const text = [

@@ -98,6 +98,17 @@ const previews: Readonly<Record<string, (locale: Locale) => EmailContent>> = {
       locale,
       webAppUrl,
     ),
+  // To the operator who turned it on (spec 25): how many, never who.
+  "7-new-members": (locale) =>
+    emailContent(
+      notificationText(
+        { kind: "new_members", count: 3, since: new Date("2026-11-14T14:02:00Z"), total: 41 },
+        locale,
+        settings,
+      ),
+      locale,
+      webAppUrl,
+    ),
 };
 
 /** The HTML as a browser can show it: the pictures as data addresses. */

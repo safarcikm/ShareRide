@@ -1474,6 +1474,14 @@ export const en = {
   "notify.switchStillOff": "A switch is still off",
   "notify.switchStillOffBody":
     "Off now: {names}. Turn it back on in the console's Settings once the trouble is over.",
+  /** To an operator who asked for it (spec 25): how many, never who. */
+  "notify.newMembers":
+    "{count, plural, one {A new member on PuffinRide} other {# new members on PuffinRide}}",
+  "notify.newMembersBody":
+    "Since {when}, {count, plural, one {# person has} other {# people have}} finished signing up. PuffinRide has {total, plural, one {# member} other {# members}} now.",
+  "notify.newMembersOpen": "Open the console",
+  "notify.newMembersFooter":
+    "You get this email because you turned on emails about new members in the PuffinRide console. Turn them off there, under Emails to you.",
   "notify.privacyRequestAnswered": "The answer to your question about your data",
   "notify.privacyRequestAnsweredBody":
     "You asked us about your data on {date}. Here is our answer:",
@@ -1744,6 +1752,7 @@ export const en = {
   "export.field.message": "Message",
   "export.field.messages": "Messages",
   "export.field.model": "Model",
+  "export.field.newMemberEmailsSince": "Emails about new members, on since",
   "export.field.note": "Note",
   "export.field.ourAnswer": "Our answer",
   "export.field.ourReply": "Our reply",
@@ -1901,6 +1910,7 @@ export const en = {
   "export.value.kind.announcement": "Beta news",
   "export.value.kind.announcement_test": "Test of an announcement",
   "export.value.kind.switch_still_off": "A switch is still off",
+  "export.value.kind.new_members": "New members joined",
   "export.value.kind.warning": "Warning",
   "export.value.kind.content_hidden": "Content removed",
   "export.value.kind.suspension": "Suspension",

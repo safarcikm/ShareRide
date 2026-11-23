@@ -1437,6 +1437,11 @@ releases follow [Semantic Versioning](https://semver.org/).
   their round yellow car over the logo and the name in both languages, and
   Facebook and Messenger get the preview in Icelandic when they ask for it
   (`X-Facebook-Locale` or `fb_locale`).
+- An email to the operator when new members join (spec 25), PR 1: the
+  `new_members` notice, by email only, saying how many finished signing up
+  since when and how many members there are, never who; its own footer;
+  migration 0061 (`notification_preferences.new_members_since`); the choice
+  in Download my data; an email preview.
 
 ### Fixed
 

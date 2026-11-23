@@ -81,6 +81,7 @@ import { isHidden, shown } from "../privacy/hidden.ts";
 import { cancellationSettingsIn } from "../settings/rule-settings.ts";
 import { answerByOf, disputesOf } from "../trip-day/disputes.ts";
 import { emailContent } from "./email-content.ts";
+import { newMembersFactsOf } from "./new-members.ts";
 import { preferencesOf } from "./preferences.ts";
 import {
   isOperatorFacts,
@@ -834,6 +835,22 @@ async function operatorFactsOf(
       ...common,
       facts,
       current: off.length > 0 && canUseConsole(row),
+      email: row.emailVerifiedAt === null ? null : row.email,
+    } as const;
+  }
+  if (kind === "new_members") {
+    // Only while the operator still wants it and may use the console (spec 25).
+    const counted = await newMembersFactsOf(q, notification);
+    const facts: OperatorNoticeFacts = {
+      kind,
+      count: counted?.count ?? 0,
+      since: counted?.since ?? notification.createdAt,
+      total: counted?.total ?? 0,
+    };
+    return {
+      ...common,
+      facts,
+      current: counted !== null && counted.count > 0 && canUseConsole(row),
       email: row.emailVerifiedAt === null ? null : row.email,
     } as const;
   }

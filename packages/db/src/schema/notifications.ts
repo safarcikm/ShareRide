@@ -244,7 +244,8 @@ export const pushTickets = pgTable(
 
 /**
  * What a person turned off (spec 7, 3.6, item 1; R7.8): trip reminders, and
- * later beta news (spec 10). No row means both on.
+ * later beta news (spec 10). No row means both on, and for an operator no
+ * email about new members (spec 25).
  */
 export const notificationPreferences = pgTable("notification_preferences", {
   userId: uuid()
@@ -252,5 +253,10 @@ export const notificationPreferences = pgTable("notification_preferences", {
     .references(() => users.id, { onDelete: "cascade" }),
   reminders: boolean().notNull().default(true),
   betaNews: boolean().notNull().default(true),
+  /**
+   * An operator's email about new members (spec 25, R25.1): when they turned
+   * it on, which is where its first count starts; empty for off.
+   */
+  newMembersSince: at(),
   ...timestamps,
 });

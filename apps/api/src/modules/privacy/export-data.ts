@@ -173,6 +173,7 @@ export async function collectExport(
     .select({
       reminders: notificationPreferences.reminders,
       betaNews: notificationPreferences.betaNews,
+      newMembersSince: notificationPreferences.newMembersSince,
     })
     .from(notificationPreferences)
     .where(eq(notificationPreferences.userId, userId));
@@ -764,6 +765,10 @@ export async function collectExport(
       settings: {
         tripReminders: preferences?.reminders ?? true,
         betaNews: preferences?.betaNews ?? true,
+        // An operator's email about new members, only while on (spec 25).
+        ...(preferences === undefined || preferences.newMembersSince === null
+          ? {}
+          : { newMemberEmailsSince: when(preferences.newMembersSince) }),
       },
       devices: devices.map(({ id, ...device }) => ({
         ...device,
