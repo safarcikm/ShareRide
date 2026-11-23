@@ -37,9 +37,30 @@ const indexablePaths: readonly RegExp[] = [
 export const isIndexablePath = (path: string): boolean =>
   indexablePaths.some((pattern) => pattern.test(path));
 
+/**
+ * The site's icons and link preview picture. Google shows a site's icon in
+ * its results only when it may read the icon file, so on production these
+ * carry no noindex either (spec 23, 3.6).
+ */
+const siteFiles: ReadonlySet<string> = new Set([
+  "/favicon.ico",
+  "/icon-192.png",
+  "/apple-touch-icon.png",
+  "/share.png",
+]);
+
 /** Whether an answer for this path may be indexed here. */
 export const mayIndex = (engines: SearchEngines, path: string): boolean =>
-  engines.indexable && isIndexablePath(path);
+  engines.indexable && (isIndexablePath(path) || siteFiles.has(path));
+
+/**
+ * The icons besides Expo's /favicon.ico (16 to 48 pixels): one of 192, a
+ * multiple of 48 as Google asks for in its results, and the one a phone puts
+ * on its home screen. Not marked for the app's head, which so leaves them.
+ */
+const iconLinks =
+  '<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">' +
+  '<link rel="apple-touch-icon" href="/apple-touch-icon.png">';
 
 /**
  * robots.txt (3.7). Off production crawling stays allowed, so a crawler sees
@@ -225,12 +246,12 @@ export function pageHead(request: PageRequest, engines: SearchEngines): PageHead
   return { locale, fromBrowser: named === null, title, tags: tags.join("") };
 }
 
-/** The exported page with the head's language, title and tags. */
+/** The exported page with the head's language, title, icons and tags. */
 export function fillPage(html: string, head: PageHead): string {
   const withLanguage = /<html[^>]*>/.test(html)
     ? html.replace(/<html[^>]*>/, () => `<html lang="${head.locale}">`)
     : html;
-  const title = `<title>${escapeHtml(head.title)}</title>${head.tags}`;
+  const title = `<title>${escapeHtml(head.title)}</title>${iconLinks}${head.tags}`;
   return /<title>[^<]*<\/title>/.test(withLanguage)
     ? withLanguage.replace(/<title>[^<]*<\/title>/, () => title)
     : withLanguage.replace("</head>", () => `${title}</head>`);

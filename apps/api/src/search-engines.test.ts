@@ -28,7 +28,9 @@ function webApp(): string {
   writeFileSync(join(dir, "index.html"), exportedPage);
   mkdirSync(join(dir, "_expo", "static", "js", "web"), { recursive: true });
   writeFileSync(join(dir, "_expo", "static", "js", "web", "entry-abc123.js"), "console.log(1);");
-  writeFileSync(join(dir, "share.png"), "picture");
+  for (const file of ["share.png", "favicon.ico", "icon-192.png", "apple-touch-icon.png"]) {
+    writeFileSync(join(dir, file), "picture");
+  }
   return dir;
 }
 
@@ -288,10 +290,32 @@ describe("the web app for search engines", () => {
     }
   });
 
+  it("on production, lets Google read the site's icons and preview picture, to show our icon", async () => {
+    const app = setup(production);
+    for (const path of ["/favicon.ico", "/icon-192.png", "/apple-touch-icon.png", "/share.png"]) {
+      expect((await app.request(path)).headers.get("x-robots-tag"), path).toBeNull();
+    }
+  });
+
+  it("links a sharp icon for Google and the phones' home screens, which the app keeps", async () => {
+    const page = await (await setup(production).request("/")).text();
+    expect(page).toContain(
+      '<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">',
+    );
+    expect(page).toContain('<link rel="apple-touch-icon" href="/apple-touch-icon.png">');
+  });
+
   it("off production, keeps every answer out of the index, the front page too", async () => {
     for (const engines of [staging, undefined]) {
       const app = setup(engines);
-      for (const path of ["/", "/meeting-points", "/robots.txt", "/v1/health", "/share.png"]) {
+      for (const path of [
+        "/",
+        "/meeting-points",
+        "/robots.txt",
+        "/v1/health",
+        "/share.png",
+        "/favicon.ico",
+      ]) {
         expect((await app.request(path)).headers.get("x-robots-tag"), path).toBe(
           "noindex, nofollow",
         );

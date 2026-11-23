@@ -1451,6 +1451,10 @@ releases follow [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Google may show our icon beside puffinride.is in its results (spec 23,
+  3.4 and 3.6): on production the icons and the link preview picture no
+  longer answer with noindex, and every page links a 192-pixel icon
+  (`/icon-192.png`) and a home screen icon (`/apple-touch-icon.png`).
 - Offering a ride, **Choose date and time** shows as busy while the stops
   on the way load. A press then did nothing, without saying so.
 - Staging deploys again. Since 2026-11-22 every Render build stopped

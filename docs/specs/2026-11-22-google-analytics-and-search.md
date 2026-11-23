@@ -134,7 +134,11 @@ Only production's public pages that hold no person's data (R23.6):
 Every other address of the web app answers with `X-Robots-Tag: noindex,
 nofollow`: trip pages (R4.6, as now), search results and All rides (they
 show drivers' first names), people, sign-in and everything behind it. The
-console and the API already do or are not pages.
+console and the API already do or are not pages. The site's icons and the
+link preview picture (`/favicon.ico`, `/icon-192.png`,
+`/apple-touch-icon.png`, `/share.png`) carry no noindex on production
+either (added 2026-11-23): Google shows a site's icon in its results only
+when it may read the icon file (3.6, item 5).
 
 Find lists the rides leaving soon with drivers' first names. Its list is
 marked `data-nosnippet`, so Google does not quote it in results
@@ -175,6 +179,12 @@ lists both (decision 7).
    the reader's language (`X-Facebook-Locale` or `fb_locale`), so an
    Icelandic reader sees it in Icelandic. A trip's link shows no name or
    photo (R23.7).
+5. **Icons** (added 2026-11-23): besides Expo's `/favicon.ico` (16, 32 and
+   48 pixels), every page links `/icon-192.png`, 192 pixels, a multiple of
+   48 as Google asks for to show the icon beside a result, and
+   `/apple-touch-icon.png` for a phone's home screen. The server writes
+   these links into the page without the app's head mark, so the app keeps
+   them. `node scripts/export-icons.ts` makes both from the logo drawings.
 
 ### 3.7 robots.txt and the sitemap
 
