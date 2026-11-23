@@ -856,6 +856,22 @@ test("the operator runs the closed beta: a group code, a price value, a pause an
   await expect(entries).toHaveCount(2);
 });
 
+// Emails to you (spec 25): the operator turns on the email about new
+// members for themselves, and it stays on.
+test("the operator turns on the email about new members", async () => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto("/admin");
+  const menu = page.getByRole("navigation", { name: "Console menu" });
+  await menu.getByRole("link", { name: "Emails to you" }).click();
+  await expect(page.getByRole("heading", { name: "Emails to you" })).toBeVisible();
+  const choice = page.getByRole("checkbox", { name: "Email me when new members join" });
+  await expect(choice).not.toBeChecked();
+  await choice.click();
+  await expect(page.getByRole("status")).toHaveText("Saved.");
+  await page.reload();
+  await expect(choice).toBeChecked();
+});
+
 // Lost every passkey (spec 22): a code by text to the operator's own number
 // opens the setup step on another device, saving a passkey signs in, and
 // the audit log keeps it.

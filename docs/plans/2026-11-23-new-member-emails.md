@@ -49,73 +49,73 @@ Drizzle (API), React with Vite and Testing Library (console).
 
 ### Task 1: the domain rule
 
-- [ ] `packages/domain/src/notifications/new-members.ts`:
+- [x] `packages/domain/src/notifications/new-members.ts`:
   `newMembersEmailGapMinutes = 60` and
   `newMembersPeriod({ onSince, lastEmailAt, now })`, which gives
   `{ from }` (the later of `onSince` and `lastEmailAt`) or null while within
   the hour after `lastEmailAt`. Tests first.
-- [ ] The catalogue: `new_members` with `{ push: false, email: "always",
+- [x] The catalogue: `new_members` with `{ push: false, email: "always",
   sms: false }`, in `operatorNoticeKinds`. A catalogue test that it goes by
   email only.
 
 ### Task 2: the migration
 
-- [ ] `notificationPreferences.newMembersSince`, nullable `timestamptz`.
-- [ ] `pnpm --filter @shareride/db generate`: migration 0061 with the column
+- [x] `notificationPreferences.newMembersSince`, nullable `timestamptz`.
+- [x] `pnpm --filter @shareride/db generate`: migration 0061 with the column
   and the new kind in the three kind checks; Prettier on `meta/*.json`.
 
 ### Task 3: the words, and sending one
 
-- [ ] `OperatorNoticeFacts` gets `{ kind: "new_members", count, since, total }`;
+- [x] `OperatorNoticeFacts` gets `{ kind: "new_members", count, since, total }`;
   `operatorText` turns it into the subject, body, button and its own footer
   (`NotificationText.footer`, which `emailContent` uses when given).
-- [ ] The worker's `operatorFactsOf`: for `new_members`, the period from the
+- [x] The worker's `operatorFactsOf`: for `new_members`, the period from the
   later of `new_members_since` and the operator's previous `new_members`
   notification to this one's creation; the count of new members in it and
   the members in all. `current` only while the choice is still on (since no
   later than the notification), the account may use the console and the
   count is above zero. The operator's confirmed email.
-- [ ] Download my data: `settings.newMemberEmailsSince` when set.
-- [ ] `email-previews`: one email about new members in each language.
-- [ ] Integration tests: a `new_members` notification made by hand is sent
+- [x] Download my data: `settings.newMemberEmailsSince` when set.
+- [x] `email-previews`: one email about new members in each language.
+- [x] Integration tests: a `new_members` notification made by hand is sent
   with the right count, time and total; skipped once the choice is off or the
   role is gone; `no_email` without a confirmed address.
 
 ### Task 4: the docs
 
-- [ ] Spec 25 and this plan, their index rows, the privacy register's
+- [x] Spec 25 and this plan, their index rows, the privacy register's
   notification settings row, the CHANGELOG.
 
 ## PR 2: the choice and the step (writing half)
 
 ### Task 5: the step in the worker
 
-- [ ] `tellOfNewMembers` in `runOnce`, after the switch reminders: the
+- [x] `tellOfNewMembers` in `runOnce`, after the switch reminders: the
   operators (active, operator role) with the choice on; for each, the last
   `new_members` notification, `newMembersPeriod`, the count since `from`;
   when above zero, `add` with the key `new_members:<now>`.
-- [ ] Integration tests: nothing while off; the first member gives an email
+- [x] Integration tests: nothing while off; the first member gives an email
   within a run; someone who has not finished is not counted; a second member
   within the hour waits and comes with the third after it; nobody new, no
   email; members only count once.
 
 ### Task 6: the console's routes
 
-- [ ] Contracts: `adminOwnEmailsRoute` (`GET /admin/v1/me/emails`) and
+- [x] Contracts: `adminOwnEmailsRoute` (`GET /admin/v1/me/emails`) and
   `adminSetOwnEmailsRoute` (`PUT /admin/v1/me/emails`, `{ newMembers }`),
   both answering `{ newMembers, address }`.
-- [ ] `preferences.ts`: `newMembersSinceOf` and `setNewMembersEmail`, which
+- [x] `preferences.ts`: `newMembersSinceOf` and `setNewMembersEmail`, which
   keeps the first time when turned on twice and clears it when turned off.
-- [ ] Integration tests: an operator turns it on and off; a member without
+- [x] Integration tests: an operator turns it on and off; a member without
   the role gets 401 or 403 as other console routes do.
 
 ### Task 7: the console page
 
-- [ ] `apps/admin/src/pages/emails.tsx`, a section above Passkeys: the
+- [x] `apps/admin/src/pages/emails.tsx`, a section above Passkeys: the
   checkbox that saves at once, "Saved.", the address or the warning without
   one, and a failed save that says so and shows what is stored. Tests first.
 
 ### Task 8: the docs
 
-- [ ] This plan's status, the operator console guide's list of pages if it
+- [x] This plan's status, the operator console guide's list of pages if it
   has one, and the production runbook: how to turn it on.

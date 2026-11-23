@@ -8,6 +8,7 @@ import { createFakePushSender } from "../../platform/push.ts";
 import { startTestApi, type TestApi } from "../../testing.ts";
 import { bookingHelpers, seedForBookings, type Member } from "../bookings/testing.ts";
 import { collectExport } from "../privacy/export-data.ts";
+import { newMembersEmailDue } from "./new-members.ts";
 import { createNotificationWorker } from "./worker.ts";
 
 // The operator's email about new members (spec 25). The test clock starts on
@@ -290,5 +291,161 @@ describe("the choice in Download my data (spec 25, section 7)", () => {
     });
     await turnOff(olga);
     expect(await settings()).toEqual({ tripReminders: true, betaNews: true });
+  });
+});
+
+describe("the step that makes the email (spec 25, R25.3)", () => {
+  it("makes nothing while it is off", async () => {
+    const olga = await operator();
+    later(1);
+    await newMember("Anna");
+    await worker().runOnce();
+    expect(await deliveries(olga)).toEqual([]);
+  });
+
+  it("emails within a run of the first new member, then at most once an hour", async () => {
+    const olga = await operator();
+    await turnOn(olga);
+    later(1);
+    await newMember("Anna");
+    await worker().runOnce();
+    expect(sentTo(olga).map((message) => message.subject)).toEqual(["A new member on PuffinRide"]);
+
+    later(10);
+    await newMember("Bo");
+    await worker().runOnce();
+    later(30);
+    await newMember("Cara");
+    await worker().runOnce();
+    // Still within the hour of the first email.
+    expect(sentTo(olga)).toHaveLength(1);
+
+    later(21);
+    await worker().runOnce();
+    await worker().runOnce();
+    expect(sentTo(olga).map((message) => message.subject)).toEqual([
+      "A new member on PuffinRide",
+      "2 new members on PuffinRide",
+    ]);
+
+    // Nobody new since: nothing, however long it waits.
+    later(120);
+    await worker().runOnce();
+    expect(sentTo(olga)).toHaveLength(2);
+  });
+
+  it("counts someone once they finish signing up (R25.2)", async () => {
+    const olga = await operator();
+    await turnOn(olga);
+    later(1);
+    const unfinished = await newMember("Unfinished", { complete: false });
+    await worker().runOnce();
+    expect(await deliveries(olga)).toEqual([]);
+    later(5);
+    await api.connection.db
+      .update(users)
+      .set({ ageConfirmedAt: api.now() })
+      .where(eq(users.id, unfinished.userId));
+    await worker().runOnce();
+    expect(sentTo(olga).map((message) => message.subject)).toEqual(["A new member on PuffinRide"]);
+  });
+
+  it("makes nothing for someone without the operator role", async () => {
+    const olga = await operator();
+    await turnOn(olga);
+    await api.connection.db.update(users).set({ roles: [] }).where(eq(users.id, olga.userId));
+    later(1);
+    await newMember("Anna");
+    await worker().runOnce();
+    expect(await deliveries(olga)).toEqual([]);
+  });
+
+  it("holds the operator's settings row, so two workers at once make one email", async () => {
+    const olga = await operator();
+    await turnOn(olga);
+    later(1);
+    await newMember("Anna");
+    const { db } = api.connection;
+    let other: Promise<boolean> | undefined;
+    let otherAnswered = false;
+    await db.transaction(async (tx) => {
+      expect(await newMembersEmailDue(tx, olga.userId, api.now())).toBe(true);
+      await tx.insert(notifications).values({
+        recipientId: olga.userId,
+        kind: "new_members",
+        uniqueKey: `held:${olga.userId}`,
+        createdAt: api.now(),
+        updatedAt: api.now(),
+      });
+      // Another server asks a moment later, while this one holds the row.
+      other = db.transaction((second) =>
+        newMembersEmailDue(second, olga.userId, new Date(api.now().getTime() + 5)),
+      );
+      void other.then(() => (otherAnswered = true));
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      expect(otherAnswered).toBe(false);
+    });
+    // Once the first committed, the second sees its email and waits the hour.
+    expect(await other).toBe(false);
+  });
+});
+
+describe("Emails to you in the console (spec 25, 3.1)", () => {
+  async function send(cookie: string, method: "GET" | "PUT", body?: unknown) {
+    const response = await api.request("/admin/v1/me/emails", {
+      method,
+      headers: { cookie, "content-type": "application/json" },
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+    });
+    return { status: response.status, body: (await response.json()) as unknown };
+  }
+  const sinceOf = async (userId: string) => {
+    const [row] = await api.connection.db
+      .select({ since: notificationPreferences.newMembersSince })
+      .from(notificationPreferences)
+      .where(eq(notificationPreferences.userId, userId));
+    return row?.since ?? null;
+  };
+
+  it("turns the email on and off for the operator alone, and says where it goes", async () => {
+    const { userId, cookie } = await api.signInOperator();
+    expect(await send(cookie, "GET")).toEqual({
+      status: 200,
+      body: { newMembers: false, address: null },
+    });
+    await api.connection.db
+      .update(users)
+      .set({ email: `${userId}@example.com`, emailVerifiedAt: api.now() })
+      .where(eq(users.id, userId));
+
+    const on = await send(cookie, "PUT", { newMembers: true });
+    expect(on).toEqual({
+      status: 200,
+      body: { newMembers: true, address: `${userId}@example.com` },
+    });
+    const first = await sinceOf(userId);
+    expect(first).toEqual(api.now());
+
+    // On again later: it keeps counting from the first time.
+    later(5);
+    await send(cookie, "PUT", { newMembers: true });
+    expect(await sinceOf(userId)).toEqual(first);
+
+    expect((await send(cookie, "PUT", { newMembers: false })).body).toEqual({
+      newMembers: false,
+      address: `${userId}@example.com`,
+    });
+    expect(await sinceOf(userId)).toBeNull();
+    expect((await send(cookie, "GET")).body).toMatchObject({ newMembers: false });
+  });
+
+  it("needs the console's sign-in", async () => {
+    expect((await send("", "GET")).status).toBe(401);
+    expect((await send("", "PUT", { newMembers: true })).status).toBe(401);
+  });
+
+  it("refuses a body that is not a yes or no", async () => {
+    const { cookie } = await api.signInOperator();
+    expect((await send(cookie, "PUT", { newMembers: "yes" })).status).toBe(400);
   });
 });

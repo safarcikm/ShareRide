@@ -5,6 +5,7 @@ import { AppealsPage } from "./pages/appeals/page.tsx";
 import { AuditLogPage } from "./pages/audit-log.tsx";
 import { CorridorsPage } from "./pages/corridors/page.tsx";
 import { DisputesPage } from "./pages/disputes/page.tsx";
+import { EmailsPage } from "./pages/emails.tsx";
 import { FeedbackPage } from "./pages/feedback/page.tsx";
 import { HomePage } from "./pages/home.tsx";
 import { InviteCodesPage } from "./pages/invite-codes/page.tsx";
@@ -51,6 +52,7 @@ export const sections: readonly Section[] = [
   },
   { path: "/admin/settings", title: "admin.settings.title", Page: SettingsPage },
   { path: "/admin/audit-log", title: "admin.auditLog.title", Page: AuditLogPage },
+  { path: "/admin/emails", title: "admin.emails.title", Page: EmailsPage },
   { path: "/admin/passkeys", title: "admin.passkeys.title", Page: PasskeysPage },
 ];
 

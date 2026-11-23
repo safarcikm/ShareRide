@@ -132,6 +132,7 @@ import {
 import {
   failedDeliveriesSince,
   registerNotificationRoutes,
+  registerOwnEmailAdminRoutes,
 } from "./modules/notifications/index.ts";
 import { createPaymentService, registerPaymentRoutes } from "./modules/payments/index.ts";
 import {
@@ -663,6 +664,7 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       requireAuth,
     );
     registerNotificationRoutes(app, { ...features, requireAuth });
+    registerOwnEmailAdminRoutes(app, { ...features, requireOperator });
     registerSafetyRoutes(
       app,
       {

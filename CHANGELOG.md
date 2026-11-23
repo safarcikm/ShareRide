@@ -1442,6 +1442,12 @@ releases follow [Semantic Versioning](https://semver.org/).
   since when and how many members there are, never who; its own footer;
   migration 0061 (`notification_preferences.new_members_since`); the choice
   in Download my data; an email preview.
+- An email to the operator when new members join (spec 25), PR 2: the
+  worker's step that makes it, as soon as someone new finished signing up
+  and at most one an hour (R25.3), holding the operator's settings row so
+  two workers make one; `GET` and `PUT /admin/v1/me/emails`; the console's
+  page Emails to you, above Passkeys, with one checkbox that saves at once;
+  a console journey; the production runbook says how to turn it on.
 
 ### Fixed
 

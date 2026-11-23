@@ -1,5 +1,6 @@
 export * from "./admin.ts";
 export * from "./admin-disputes.ts";
+export * from "./admin-emails.ts";
 export * from "./admin-home.ts";
 export * from "./admin-meeting-points.ts";
 export * from "./admin-reliability.ts";

@@ -2073,6 +2073,17 @@ export const is = {
     "{count, plural, one {Slökkt er á rofa: {names}} other {Slökkt er á rofum: {names}}}",
   "admin.home.meetingPointProblems":
     "{count, plural, =0 {Engar opnar tilkynningar um mótsstaði} one {# opin tilkynning um mótsstaði} other {# opnar tilkynningar um mótsstaði}}",
+  "admin.emails.title": "Tölvupóstur til þín",
+  "admin.emails.intro": "Aðeins fyrir þig: hver stjórnandi velur fyrir sig.",
+  "admin.emails.newMembers": "Sendu mér póst þegar nýir notendur bætast við",
+  "admin.emails.newMembersHelp":
+    "Skömmu eftir að einhver lýkur skráningu. Þeir sem bætast við á klukkustundinni eftir það koma í næsta pósti, svo í mesta lagi einn á klukkustund. Hve margir, aldrei hverjir.",
+  "admin.emails.address": "Pósturinn fer á {address}.",
+  "admin.emails.noAddress":
+    "Ekkert staðfest netfang er á aðganginum þínum, svo ekkert er hægt að senda. Bættu því við í PuffinRide undir Stillingar.",
+  "admin.emails.saved": "Vistað.",
+  "admin.emails.saveFailed": "Þetta vistaðist ekki. Reyndu aftur.",
+  "admin.emails.loadFailed": "Ekki tókst að sækja póstvalið þitt.",
   "admin.passkeys.title": "Aðgangslyklar",
   "admin.passkeys.intro":
     "Aðgangslyklarnir sem þú skráir þig inn með. Hafðu að minnsta kosti tvo, í ólíkum tækjum, svo þú lokist ekki úti ef einn tapast.",

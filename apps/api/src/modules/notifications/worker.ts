@@ -81,7 +81,11 @@ import { isHidden, shown } from "../privacy/hidden.ts";
 import { cancellationSettingsIn } from "../settings/rule-settings.ts";
 import { answerByOf, disputesOf } from "../trip-day/disputes.ts";
 import { emailContent } from "./email-content.ts";
-import { newMembersFactsOf } from "./new-members.ts";
+import {
+  newMembersEmailDue,
+  newMembersFactsOf,
+  operatorsWantingNewMembers,
+} from "./new-members.ts";
 import { preferencesOf } from "./preferences.ts";
 import {
   isOperatorFacts,
@@ -2510,6 +2514,23 @@ export function createNotificationWorker(dependencies: {
   }
 
   /**
+   * The email about new members (spec 25): to each operator who turned it
+   * on, as soon as someone new finished signing up, but at most one an hour
+   * (R25.3). One small query a run while nobody has it on.
+   */
+  async function tellOfNewMembers(): Promise<void> {
+    const operators = await operatorsWantingNewMembers(db);
+    for (const { userId } of operators) {
+      await db.transaction(async (tx) => {
+        const now = clock();
+        if (!(await newMembersEmailDue(tx, userId, now))) return;
+        const notification = { kind: "new_members", to: null, recipientId: userId } as const;
+        await add(tx, notification, `new_members:${now.toISOString()}`, now);
+      });
+    }
+  }
+
+  /**
    * Step 4: asks about pushes sent 15 minutes ago or more. A token the
    * phone's push service no longer knows is removed; a receipt not ready
    * yet is asked for again, until the push service no longer keeps it
@@ -2576,6 +2597,7 @@ export function createNotificationWorker(dependencies: {
       const events = await step(takeEvents, 0);
       const scheduled = await step(takeSchedules, 0);
       await step(remindOfSwitches, undefined);
+      await step(tellOfNewMembers, undefined);
       const { sent, failed } = await step(sendDue, { sent: 0, failed: 0 });
       const receipts = await step(checkReceipts, 0);
       if (failures.length > 0) throw failures[0];
