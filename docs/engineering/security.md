@@ -65,7 +65,27 @@ How [ADR 0016](../decisions/0016-own-sign-in-module.md) is built, in
   Google or Apple sign-in (`pendingSignIn`, required by
   `POST /v1/auth/phone/start` and `/verify`), and adds the number, or, for
   a number's account, the proven email. A replaced verified email is told
-  of the change, with the new address partly hidden.
+  of the change, with the new address partly hidden. A member may also set
+  a password ([spec 27](../specs/2026-11-23-passwords-and-passkeys.md)),
+  which signs in with the verified email.
+- **Passwords** ([ADR 0047](../decisions/0047-member-passwords-hashed-with-scrypt.md)):
+  optional, 10 to 128 characters after Unicode NFC, not on the NCSC list
+  of common passwords (`apps/api/assets/common-passwords.txt`, the entries
+  of 10 characters or more, in any case) and not the account's email.
+  Stored only as a scrypt hash from `node:crypto` (N = 2^15, r = 8, p = 3,
+  a 16-byte salt, a 32-byte result, compared in constant time) in
+  `member_passwords`, with its settings (`scrypt$15$8$3$…`), so a hash
+  made with older settings is made again at the next sign-in. A wrong
+  password, an email no account has and an account without a password get
+  one answer (`credentials_invalid`), after checking a dummy hash so they
+  take as long; only after the right password does the API say an account
+  cannot sign in. Wrong tries: 10 an hour per email and 30 an hour per IP
+  address (its /64 for IPv6), counted under the same ordered advisory locks
+  as code sends, so tries made at once cannot pass a limit together; the
+  email code is not limited by them. Adding or changing a password needs
+  the request's session to have signed in within 10 minutes, or a confirm
+  code (R27.5); removing one needs neither. The verified email is told of
+  each change. No password, hash or email appears in a log line.
 - **Codes:** 6 digits from `crypto.randomInt`, valid 10 minutes, 5 attempts.
   Stored as HMAC-SHA-256 keyed with `AUTH_SECRET`, bound to the number or
   the email, and compared in constant time. Only the newest code for a
@@ -115,8 +135,9 @@ How [ADR 0016](../decisions/0016-own-sign-in-module.md) is built, in
   must reach the API, so those show the failure and the person stays signed
   in to try again. The phone number never appears in a web address.
 - **Confirming a sensitive action:** downloading my data, deleting my
-  account, adding Google or Apple and changing the email (after the
-  account's first 30 minutes) need a fresh code, emailed to the account's
+  account, adding Google or Apple, changing the email (after the
+  account's first 30 minutes) and, past 10 minutes after signing in,
+  adding or changing a password need a fresh code, emailed to the account's
   verified email, or texted to its own number when it has none
   (`POST /v1/me/confirm-code`, spec 11, spec 26 3.6). It is a code of its own purpose: it
   never signs in, a sign-in code never confirms, and neither replaces the
