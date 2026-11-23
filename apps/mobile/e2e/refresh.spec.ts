@@ -37,7 +37,7 @@ test.describe("Pull to refresh and the logo (spec 16, 3.9)", () => {
   test("pulling Find down loads its rides again and says Updated", async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== "phone", "Only a touch screen pulls.");
     await page.goto("/");
-    const title = page.getByRole("heading", { name: "Where are you going?" });
+    const title = page.getByRole("heading", { name: "Share your ride" });
     await expect(title).toBeVisible();
     await expect(page.getByTestId("trip-result").first()).toBeVisible();
     const soonest = countSoonest(page);
@@ -59,7 +59,7 @@ test.describe("Pull to refresh and the logo (spec 16, 3.9)", () => {
 
   test("the logo loads Find again", async ({ page }, testInfo) => {
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: "Where are you going?" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Share your ride" })).toBeVisible();
     await expect(page.getByTestId("trip-result").first()).toBeVisible();
     const soonest = countSoonest(page);
     if (testInfo.project.name === "phone") {

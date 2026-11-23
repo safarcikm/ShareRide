@@ -198,7 +198,7 @@ describe("My profile (spec 16, 3.4)", () => {
 
   it("keeps My cars and the preview to accounts that are set up", async () => {
     await renderApp("/profile/preview");
-    expect(await screen.findByRole("header", { name: "Where are you going?" })).toBeVisible();
+    expect(await screen.findByRole("header", { name: "Share your ride" })).toBeVisible();
     expect(screen).toHavePathname("/");
   });
 

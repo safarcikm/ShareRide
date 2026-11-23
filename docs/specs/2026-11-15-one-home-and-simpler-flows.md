@@ -97,7 +97,12 @@ Find replaces both the front page and My profile as the place the app opens.
 1. **Top:** the logo and "ShareRide", and the language switch. On a wide
    screen these are in the top bar instead. Since 2026-11-22 they stand on
    an Iceland scene with the puffins' car on its road, and the title under
-   it (spec 15, 5.3, decision 15).
+   it (spec 15, 5.3, decision 15). Since 2026-11-23 the title is "Share
+   your ride" (Icelandic "Verum samferða"), with one line under it that
+   tells someone new what PuffinRide is: "Carpool across Iceland: find a
+   seat in someone else's car, or offer the empty seats in yours." On a
+   wide page both stand on the scene, clear of the car, within the title's
+   line.
 2. **Your next ride** (signed in, when one is coming up): the soonest
    confirmed, requested or unpaid booking, or the soonest published trip you
    drive, a ride under way included. It is the same row as in My rides
@@ -107,7 +112,7 @@ Find replaces both the front page and My profile as the place the app opens.
    a trip. A ride that needs you adds its line and button ("Pay by 20:46 to
    keep your seat", with Pay). Pressing it opens the booking or the trip. If
    it can't be loaded, one notice says so, with Try again.
-3. **Search:** "Where are you going?", From, To, date ("Any day") and seats
+3. **Search:** the title (item 1), From, To, date ("Any day") and seats
    (1 to 4, as on the results today), then **Find a ride** as the main, filled
    button. Seats move from the results into this form. On a phone the whole
    search is one card (amended 2026-11-22): From and To, then the date and
@@ -459,7 +464,8 @@ The main new or changed ones ("Find a ride" keeps `welcome.findRide`):
 | `nav.offer` | Offer | Bjóða far |
 | `nav.profile` | Profile | Prófíll |
 | `home.nextRide` | Your next ride | Næsta ferðin þín |
-| `home.title` | Where are you going? | Hvert ertu að fara? |
+| `home.title` | Share your ride | Verum samferða |
+| `home.intro` | Carpool across Iceland: find a seat in someone else's car, or offer the empty seats in yours. | Samakstur um allt Ísland: finndu far með öðrum eða bjóddu laus sæti í bílnum þínum. |
 | `myRides.needsYou` | Needs you | Bíður eftir þér |
 | `myRides.comingUp` | Coming up | Framundan |
 | `myRides.past` | Past | Liðnar |

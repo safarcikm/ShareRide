@@ -32,7 +32,7 @@ export interface Texts {
 
 export const english: Texts = {
   signIn: "Sign in",
-  findTitle: "Where are you going?",
+  findTitle: "Share your ride",
   findTab: "Find",
   profileTab: "Profile",
   phoneLabel: "Mobile number",
@@ -51,7 +51,7 @@ export const english: Texts = {
 
 export const icelandic: Texts = {
   signIn: "Skrá inn",
-  findTitle: "Hvert ertu að fara?",
+  findTitle: "Verum samferða",
   findTab: "Leita",
   profileTab: "Prófíll",
   phoneLabel: "Farsímanúmer",

@@ -169,7 +169,7 @@ function languagesOf(header: string | null): string[] {
 /**
  * What a crawler that does not run the app reads (3.6, item 2): the
  * language the address names, otherwise the one Facebook asks a link's
- * preview in, otherwise the browser's, as the app picks it; Find's title and description; on production, for a public page, its
+ * preview in, otherwise the browser's, as the app picks it; Find's title and description, and the words people search with; on production, for a public page, its
  * canonical address and alternates; and the same link preview everywhere,
  * which names nobody (R23.7). The app's screens set their own once it runs.
  */
@@ -187,6 +187,7 @@ export function pageHead(request: PageRequest, engines: SearchEngines): PageHead
   const link = (attributes: string) => `<link data-rh="true" ${attributes}>`;
   const tags = [
     meta("name", "description", description),
+    meta("name", "keywords", t("seo.keywords")),
     meta("property", "og:type", "website"),
     meta("property", "og:site_name", t("app.name")),
     meta("property", "og:title", title),

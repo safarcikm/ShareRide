@@ -1488,6 +1488,14 @@ releases follow [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- The front page says what PuffinRide is (spec 16, 3.2, amended
+  2026-11-23): the title is "Share your ride" ("Verum samferða"), with
+  "Carpool across Iceland: find a seat in someone else's car, or offer the
+  empty seats in yours." under it, instead of "Where are you going?".
+- Search engines read the words people look for a shared ride with (spec
+  23, 3.6): carpool, ride share and lift; samferða, far, samakstur and
+  deila bíl. They are in Find's title and description, the meeting point
+  and place pages' texts, and a new `keywords` tag on every page.
 - Offering a ride asks for the seats before the price (spec 3, amended
   2026-11-22): step 3 is seats and preferences, step 4 the price, which
   then shows the highest price level for the seats chosen instead of a

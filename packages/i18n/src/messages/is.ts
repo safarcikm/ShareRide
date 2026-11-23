@@ -7,16 +7,18 @@ import type { MessageKey } from "./en.ts";
 export const is = {
   "app.name": "PuffinRide",
   "seo.title": "{page} · PuffinRide",
-  "seo.findTitle": "PuffinRide · Samferða um Ísland",
+  "seo.findTitle": "PuffinRide · Samferða um Ísland: far og samakstur",
   "seo.findDescription":
-    "Finndu far, eða bjóddu laus sæti í bílnum þínum, milli bæja á Íslandi og deildu kostnaðinum við ferðina.",
+    "Verum samferða milli bæja á Íslandi: finndu far eða bjóddu laus sæti í bílnum þínum. Samakstur þar sem við deilum bíl og kostnaðinum við ferðina.",
+  "seo.keywords":
+    "samferða, far, fá far, bjóða far, samakstur, deila bíl, ferðir milli bæja, Ísland, Reykjavík, Akureyri",
   "seo.meetingPointsDescription":
-    "Mótsstaðirnir þar sem bílstjórar og farþegar PuffinRide hittast, um allt Ísland, á korti og eftir landshlutum.",
+    "Mótsstaðirnir þar sem bílstjórar og farþegar PuffinRide hittast til samaksturs, um allt Ísland, á korti og eftir landshlutum.",
   "seo.meetingPointDescription":
-    "{name}: mótsstaður PuffinRide, þar sem bílstjórar og farþegar hittast til að verða samferða.",
-  "seo.placeTitle": "{place}: næstu mótsstaðir",
+    "{name}: mótsstaður PuffinRide fyrir samakstur, þar sem bílstjórar og farþegar hittast til að verða samferða.",
+  "seo.placeTitle": "{place}: næstu mótsstaðir fyrir samakstur",
   "seo.placeDescription":
-    "Næstu mótsstaðir PuffinRide við {place}, til að finna far eða bjóða far.",
+    "Næstu mótsstaðir PuffinRide við {place}, til að finna far eða bjóða far í samakstri.",
   "seo.legalDescription": "Notendaskilmálar, samfélagsreglur og persónuverndarstefna PuffinRide.",
   "seo.shareImage": "Tveir lundar PuffinRide á ferð í litlum bíl",
   "seo.cookiesDescription":
@@ -55,7 +57,9 @@ export const is = {
   "nav.offerSignedOut": "Ertu að keyra eitthvert? Deildu lausu sætunum í bílnum þínum.",
   "nav.offerSignIn": "Skráðu þig inn til að bjóða far",
   "nav.messagesSignedOut": "Skráðu þig inn til að sjá skilaboðin þín",
-  "home.title": "Hvert ertu að fara?",
+  "home.title": "Verum samferða",
+  "home.intro":
+    "Samakstur um allt Ísland: finndu far með öðrum eða bjóddu laus sæti í bílnum þínum.",
   "home.nextRide": "Næsta ferðin þín",
   "home.nextRideFailed": "Ekki tókst að sækja næstu ferðina þína.",
   "home.map": "Kort af Íslandi með {count, plural, one {# mótsstað} other {# mótsstöðum}}.",

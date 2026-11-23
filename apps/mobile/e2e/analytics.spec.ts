@@ -75,7 +75,7 @@ test.describe("Google Analytics on the website", () => {
     await question(page).getByRole("button", { name: "Decline" }).click();
     await expect(question(page)).toBeHidden();
     await page.reload();
-    await expect(page.getByRole("heading", { name: "Where are you going?" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Share your ride" })).toBeVisible();
     await expect(question(page)).toBeHidden();
     expect(asked).toEqual([]);
   });

@@ -68,19 +68,19 @@ describe("Find, the home (spec 16, 3.2)", () => {
   it("opens in English on an English device", async () => {
     deviceLanguage("en-GB");
     await renderApp("/");
-    expect(await screen.findByText("Where are you going?")).toBeVisible();
+    expect(await screen.findByText("Share your ride")).toBeVisible();
   });
 
   it("opens in Icelandic on an Icelandic device", async () => {
     deviceLanguage("is-IS");
     await renderApp("/");
-    expect(await screen.findByText("Hvert ertu að fara?")).toBeVisible();
+    expect(await screen.findByText("Verum samferða")).toBeVisible();
   });
 
   it("opens in English on a device in another language", async () => {
     deviceLanguage("pl-PL");
     await renderApp("/");
-    expect(await screen.findByText("Where are you going?")).toBeVisible();
+    expect(await screen.findByText("Share your ride")).toBeVisible();
   });
 
   it("switches to Icelandic and back with the language button", async () => {
@@ -89,15 +89,35 @@ describe("Find, the home (spec 16, 3.2)", () => {
     await fireEvent.press(
       await screen.findByRole("button", { name: "Change the language to Icelandic" }),
     );
-    expect(await screen.findByText("Hvert ertu að fara?")).toBeVisible();
+    expect(await screen.findByText("Verum samferða")).toBeVisible();
     await fireEvent.press(screen.getByRole("button", { name: "Skipta yfir í ensku" }));
-    expect(await screen.findByText("Where are you going?")).toBeVisible();
+    expect(await screen.findByText("Share your ride")).toBeVisible();
   });
 
   it("labels the title as a heading for screen readers", async () => {
     deviceLanguage("en-GB");
     await renderApp("/");
-    expect(await screen.findByRole("header", { name: "Where are you going?" })).toBeVisible();
+    expect(await screen.findByRole("header", { name: "Share your ride" })).toBeVisible();
+  });
+
+  it("says under the title what PuffinRide is, for someone new", async () => {
+    deviceLanguage("en-GB");
+    await renderApp("/");
+    expect(
+      await screen.findByText(
+        "Carpool across Iceland: find a seat in someone else's car, or offer the empty seats in yours.",
+      ),
+    ).toBeVisible();
+  });
+
+  it("says what PuffinRide is in Icelandic too", async () => {
+    deviceLanguage("is-IS");
+    await renderApp("/");
+    expect(
+      await screen.findByText(
+        "Samakstur um allt Ísland: finndu far með öðrum eða bjóddu laus sæti í bílnum þínum.",
+      ),
+    ).toBeVisible();
   });
 });
 
@@ -162,7 +182,7 @@ describe("Find: search, rides and offering (spec 16, 3.2; spec 4, 3.8)", () => {
   it("leaves the rides out when there are none", async () => {
     const { client } = await openFrontPage();
     expect(await screen.findByRole("button", { name: "Offer a ride" })).toBeVisible();
-    await screen.findByText("Where are you going?");
+    await screen.findByText("Share your ride");
     expect(searchesOf(client, "/v1/trips/soonest")).toHaveLength(1);
     expect(screen.queryByRole("header", { name: "Leaving soon" })).toBeNull();
     expect(screen.queryByRole("button", { name: "See all rides" })).toBeNull();
@@ -190,7 +210,7 @@ describe("Find: search, rides and offering (spec 16, 3.2; spec 4, 3.8)", () => {
     ).toBeVisible();
     await choose("From", "borg", "Borgarnes");
     await choose("To", "blön", "Blönduós");
-    expect(screen.getByRole("header", { name: "Where are you going?" })).toBeVisible();
+    expect(screen.getByRole("header", { name: "Share your ride" })).toBeVisible();
     await fireEvent.press(screen.getByRole("button", { name: "Find a ride" }));
 
     expect(
@@ -220,7 +240,7 @@ describe("Find: search, rides and offering (spec 16, 3.2; spec 4, 3.8)", () => {
     await fireEvent.press(await screen.findByRole("button", { name: /^From: / }));
     const field = await screen.findByLabelText("From");
     // No new screen: the page and the To field stay where they are.
-    expect(screen.getByRole("header", { name: "Where are you going?" })).toBeVisible();
+    expect(screen.getByRole("header", { name: "Share your ride" })).toBeVisible();
     expect(screen.getByRole("button", { name: /^To: / })).toBeVisible();
     expect(screen.getByRole("button", { name: "Offer a ride" })).toBeVisible();
     // Nothing to swap while a place is being typed.
@@ -333,7 +353,7 @@ describe("Find: search, rides and offering (spec 16, 3.2; spec 4, 3.8)", () => {
 
   it("shows the logo and the name on top, then the search with Find a ride as the main button", async () => {
     await openFrontPage();
-    expect(await screen.findByRole("header", { name: "Where are you going?" })).toBeVisible();
+    expect(await screen.findByRole("header", { name: "Share your ride" })).toBeVisible();
     expect(screen.getByTestId("logo", { includeHiddenElements: true })).toBeTruthy();
     expect(screen.getByText("PuffinRide")).toBeVisible();
     const find = screen.getByRole("button", { name: "Find a ride" });
@@ -346,14 +366,14 @@ describe("Find: search, rides and offering (spec 16, 3.2; spec 4, 3.8)", () => {
 
   it("draws two puffins in a little car over the title, which screen readers skip (spec 15, 5.3)", async () => {
     await openFrontPage();
-    await screen.findByRole("header", { name: "Where are you going?" });
+    await screen.findByRole("header", { name: "Share your ride" });
     expect(screen.getByTestId("puffins-in-car", { includeHiddenElements: true })).toBeTruthy();
     expect(screen.queryByTestId("puffins-in-car")).toBeNull();
   });
 
   it("puts the name, the language and the car on an Iceland scene, the title under it (spec 15, 5.3)", async () => {
     await openFrontPage();
-    await screen.findByRole("header", { name: "Where are you going?" });
+    await screen.findByRole("header", { name: "Share your ride" });
     // Behind the top of the page: a picture, which takes no presses.
     const backdrop = screen.getByTestId("screen-backdrop", { includeHiddenElements: true });
     expect(backdrop).toHaveProp("pointerEvents", "none");
@@ -364,7 +384,7 @@ describe("Find: search, rides and offering (spec 16, 3.2; spec 4, 3.8)", () => {
     expect(within(top).getByText("PuffinRide")).toBeVisible();
     expect(within(top).getByText("Íslenska")).toBeVisible();
     expect(within(top).getByTestId("puffins-in-car", { includeHiddenElements: true })).toBeTruthy();
-    expect(within(top).queryByRole("header", { name: "Where are you going?" })).toBeNull();
+    expect(within(top).queryByRole("header", { name: "Share your ride" })).toBeNull();
     // From the top of the screen to just under the car, its wheels on the road.
     await fireEvent(top, "layout", {
       nativeEvent: { layout: { x: 0, y: 0, width: 343, height: 180 } },
@@ -393,7 +413,7 @@ describe("Find: search, rides and offering (spec 16, 3.2; spec 4, 3.8)", () => {
 
   it("is the same page for someone signed in", async () => {
     await renderApp("/", { me: completeMe });
-    expect(await screen.findByRole("header", { name: "Where are you going?" })).toBeVisible();
+    expect(await screen.findByRole("header", { name: "Share your ride" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Find a ride" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Offer a ride" })).toBeVisible();
   });
@@ -644,7 +664,7 @@ describe("Your next ride (spec 16, 3.2 item 2)", () => {
 
   it("is left out signed out", async () => {
     const { client } = await openFrontPage();
-    expect(await screen.findByRole("header", { name: "Where are you going?" })).toBeVisible();
+    expect(await screen.findByRole("header", { name: "Share your ride" })).toBeVisible();
     expect(screen.queryByRole("header", { name: "Your next ride" })).toBeNull();
     expect(client.calls.map((call) => call.path)).not.toContain("/v1/me/bookings");
   });
@@ -657,7 +677,7 @@ describe("Your next ride (spec 16, 3.2 item 2)", () => {
         comingUp(fake, []);
       },
     });
-    expect(await screen.findByRole("header", { name: "Where are you going?" })).toBeVisible();
+    expect(await screen.findByRole("header", { name: "Share your ride" })).toBeVisible();
     await waitFor(() => {
       expect(client.calls.map((call) => call.path)).toContain("/v1/me/trips");
     });
@@ -757,7 +777,7 @@ describe("Find on a laptop (spec 18, 3.5)", () => {
 
   it("draws the puffins' car on the title's line on a wide page, so the page under it stays put (spec 15, 5.3)", async () => {
     await openFrontPage();
-    await screen.findByRole("header", { name: "Where are you going?" });
+    await screen.findByRole("header", { name: "Share your ride" });
     const line = screen.getByTestId("title-line");
     const car = within(line).getByTestId("puffins-in-car", { includeHiddenElements: true });
     expect(within(car).getByTestId("puffin-driver", { includeHiddenElements: true })).toBeTruthy();
@@ -767,7 +787,7 @@ describe("Find on a laptop (spec 18, 3.5)", () => {
 
   it("draws the Iceland scene in a rounded panel as wide as the page, under the title's line and the search's top (spec 15, 5.3)", async () => {
     await openFrontPage();
-    await screen.findByRole("header", { name: "Where are you going?" });
+    await screen.findByRole("header", { name: "Share your ride" });
     const backdrop = screen.getByTestId("screen-backdrop", { includeHiddenElements: true });
     const panel = within(backdrop).getByTestId("scene-panel", { includeHiddenElements: true });
     // The panel stands in the page: no sky behind the window's edges.

@@ -1,9 +1,11 @@
 import Head from "expo-router/head";
 import { usePathname } from "expo-router";
+import { useLanguage } from "@/i18n/language";
 import { localeFromQuery, pageLinks } from "@/seo/address";
 
 /**
- * A public page's title, description and addresses for search engines
+ * A public page's title, description, the words people search for a
+ * shared ride with, and addresses for search engines
  * (spec 23, 3.5 and 3.6), in the language shown (LanguageProvider sets the
  * page's language). They replace what the
  * server put in the page, which is marked the same way. Only on the pages
@@ -16,6 +18,7 @@ export function PageHead({
   readonly title: string;
   readonly description: string;
 }) {
+  const { t } = useLanguage();
   const pathname = usePathname();
   const links = pageLinks(
     globalThis.location.origin,
@@ -26,6 +29,7 @@ export function PageHead({
     <Head>
       <title>{title}</title>
       <meta name="description" content={description} />
+      <meta name="keywords" content={t("seo.keywords")} />
       <link rel="canonical" href={links.canonical} />
       {links.alternates.map(({ hreflang, href }) => (
         <link key={hreflang} rel="alternate" hrefLang={hreflang} href={href} />
