@@ -111,6 +111,33 @@ export const puffinCar = {
   strap: "#D9707F",
 } as const;
 
+/**
+ * The Iceland scene behind the front page's top (spec 15, section 5.3,
+ * decision 15): a sky, grey mountains with white glaciers, green hills and
+ * a grey road with a white line, where the puffins' car drives; at night
+ * the same land in the dark. The name and the language switch stand on the
+ * sky, so `text` and `primary` keep 4.5:1 on it (the tests check it). Like
+ * the people colours, only for drawings.
+ */
+export const icelandScene = {
+  light: {
+    sky: "#D7E9F0",
+    mountain: "#B9CBD3",
+    glacier: "#FFFFFF",
+    hill: "#B7DDB9",
+    road: "#C6CED2",
+    roadLine: "#FFFFFF",
+  },
+  dark: {
+    sky: "#142630",
+    mountain: "#24323A",
+    glacier: "#3A4C55",
+    hill: "#203A2D",
+    road: "#3E525C",
+    roadLine: "#6E7D85",
+  },
+} as const;
+
 /** The five people colours a driver's shape person and initial can have, in a fixed order. */
 export const peopleColours = [
   people.glacier,
@@ -290,6 +317,14 @@ export const sizes = {
   sceneCar: 170,
   sceneCarSmall: 88,
   sceneCarBooked: 200,
+  /**
+   * The Iceland scene (spec 15, section 5.3): its road on a phone; on a
+   * wide page the line of the title over it, taller than the title alone,
+   * and the car on its hills.
+   */
+  sceneRoad: 22,
+  sceneLine: 96,
+  sceneCarWide: 116,
   scenePuffin: 120,
 } as const;
 

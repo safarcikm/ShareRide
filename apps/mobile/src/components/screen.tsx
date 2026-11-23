@@ -51,6 +51,11 @@ import { useRefresh, type Refresh } from "./refresh";
  * spinner and then "Updated" at the top (spec 16, 3.9); a new
  * `refreshAsked` count, such as from pressing the logo, does the same from
  * the top of the screen.
+ * A `backdrop`, such as the front page's Iceland scene, is drawn behind the
+ * top of the content, from the screen's edges, and scrolls with it; it
+ * takes no presses. With `topColour`, the room the screen leaves at its top
+ * for the status bar or a notch has that colour, such as the backdrop's sky,
+ * rather than the screen's.
  */
 export function Screen({
   children,
@@ -61,6 +66,8 @@ export function Screen({
   endKey,
   refresh,
   refreshAsked,
+  backdrop,
+  topColour,
 }: {
   readonly children: ReactNode;
   readonly footer?: ReactNode;
@@ -70,6 +77,8 @@ export function Screen({
   readonly endKey?: string | undefined;
   readonly refresh?: Refresh | undefined;
   readonly refreshAsked?: number | undefined;
+  readonly backdrop?: ReactNode;
+  readonly topColour?: string;
 }) {
   const palette = usePalette();
   const wide = useWideScreen();
@@ -81,11 +90,15 @@ export function Screen({
   const refreshing = useRefresh({ refresh, asked: refreshAsked, scrollRef });
   return (
     <SafeAreaView
+      testID="screen-safe-area"
       edges={safeEdges}
-      style={[styles.safeArea, { backgroundColor: palette.background }]}
+      style={[styles.safeArea, { backgroundColor: topColour ?? palette.background }]}
     >
       {/* The scroll and, over its top, what a refresh shows. */}
-      <View style={styles.scrollArea}>
+      <View
+        testID="screen-scroll-area"
+        style={[styles.scrollArea, { backgroundColor: palette.background }]}
+      >
         {/* "handled": with the keyboard open, a tap on a button acts at once. */}
         <ScrollView
           ref={scrollRef}
@@ -105,6 +118,11 @@ export function Screen({
           keyboardShouldPersistTaps="handled"
           {...sticking}
         >
+          {backdrop === undefined ? null : (
+            <View testID="screen-backdrop" pointerEvents="none" style={styles.backdrop}>
+              {backdrop}
+            </View>
+          )}
           <ScreenScrollContext.Provider value={scroll}>
             <ScreenViewHeightContext.Provider value={viewHeight}>
               {aside !== undefined && wide ? (
@@ -315,6 +333,7 @@ export function stickyOnWeb(viewHeight: number | null): object {
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   scrollArea: { flex: 1 },
+  backdrop: { position: "absolute", top: 0, left: 0, right: 0, overflow: "hidden" },
   scroll: { flexGrow: 1, alignItems: "center", padding: spacing.md },
   column: { flex: 1, width: "100%", maxWidth: maxContentWidth, gap: spacing.md },
   page: { flex: 1, width: "100%", maxWidth: pageMaxWidth, gap: spacing.md },

@@ -3,6 +3,7 @@ import { contrastRatio } from "./contrast.ts";
 import {
   asideMaxWidth,
   colors,
+  icelandScene,
   maxContentWidth,
   carDrawing,
   pageMaxWidth,
@@ -80,6 +81,23 @@ describe("the puffin (spec 15, sections 4.2 and 4.9)", () => {
     );
   });
 });
+
+describe.each(["light", "dark"] as const)(
+  "the Iceland scene, %s (spec 15, section 5.3)",
+  (scheme) => {
+    const scene = icelandScene[scheme];
+    const page = colors[scheme];
+
+    // The front page's name and its language switch stand on the sky.
+    it.each(["text", "primary"] as const)("keeps %s readable on its sky", (ink) => {
+      expect(contrastRatio(page[ink], scene.sky)).toBeGreaterThanOrEqual(4.5);
+    });
+
+    it("has the same parts as the other scheme", () => {
+      expect(Object.keys(scene)).toEqual(Object.keys(icelandScene.light));
+    });
+  },
+);
 
 describe.each(["light", "dark"] as const)("%s sign-in buttons", (scheme) => {
   const brand = signInBrands[scheme];

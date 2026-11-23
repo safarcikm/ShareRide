@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react-native";
-import { people, puffin, puffinCar } from "@/theme/tokens";
-import { PuffinByPin, PuffinsInCar } from "./puffin-scenes";
+import { icelandScene, people, puffin, puffinCar } from "@/theme/tokens";
+import { IcelandScene, PuffinByPin, PuffinsInCar } from "./puffin-scenes";
 
 // Spec 15, section 5.3, "Puffin scenes": drawings around the screens, hidden
 // from screen readers, so these tests look at what they draw.
@@ -126,3 +126,55 @@ describe("in dark mode", () => {
     expect(fills).not.toContainEqual(drawn(puffin.nightBlack));
   });
 });
+
+describe("IcelandScene (spec 15, section 5.3, decision 15)", () => {
+  const light = icelandScene.light;
+
+  it("draws a sky, mountains with glaciers on the two highest, hills and a road with its line", async () => {
+    await render(<IcelandScene width={390} height={200} />);
+    // A picture: screen readers skip it.
+    expect(screen.queryByTestId("iceland-scene")).toBeNull();
+    const scene = part("iceland-scene");
+    const fills = fillsIn(scene);
+    for (const colour of [light.sky, light.mountain, light.hill, light.road]) {
+      expect(fills).toContainEqual(drawn(colour));
+    }
+    expect(fills.filter((fill) => isEqual(fill, drawn(light.glacier)))).toHaveLength(2);
+    expect(valuesIn(scene, "stroke")).toContainEqual(drawn(light.roadLine));
+    expect(valuesIn(scene, "strokeDasharray")).toHaveLength(1);
+    expect(valuesIn(scene, "width")).toContain(390);
+    expect(valuesIn(scene, "height")).toContain(200);
+  });
+
+  it("puts the road along the bottom, where the car drives", async () => {
+    await render(<IcelandScene width={390} height={200} />);
+    const road = part("scene-road");
+    expect(road.props).toMatchObject({ y: 200 - 22, height: 22, fill: drawn(light.road) });
+  });
+
+  it("draws hills down to the bottom without a road, from the ground asked for", async () => {
+    await render(<IcelandScene width={1144} height={170} ground={108} road={false} />);
+    const scene = part("iceland-scene");
+    expect(fillsIn(scene)).not.toContainEqual(drawn(light.road));
+    // No dashed line: the glaciers' white edge is the only white line.
+    expect(valuesIn(scene, "strokeDasharray")).toEqual([]);
+    expect(part("scene-ground").props).toMatchObject({
+      y: 108,
+      height: 170 - 108,
+      fill: drawn(light.hill),
+    });
+  });
+
+  it("draws Iceland at night in dark mode", async () => {
+    mockScheme = "dark";
+    await render(<IcelandScene width={390} height={200} />);
+    const fills = fillsIn(part("iceland-scene"));
+    expect(fills).toContainEqual(drawn(icelandScene.dark.sky));
+    expect(fills).not.toContainEqual(drawn(light.sky));
+  });
+});
+
+/** Whether two drawn colours are the same. */
+function isEqual(a: unknown, b: unknown) {
+  return JSON.stringify(a) === JSON.stringify(b);
+}

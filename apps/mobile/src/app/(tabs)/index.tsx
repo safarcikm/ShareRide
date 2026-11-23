@@ -1,7 +1,15 @@
 import { soonestTripsRoute, type TripSearchResult } from "@shareride/contracts";
 import { router } from "expo-router";
 import { useCallback, useState, type ReactNode } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  Text,
+  useColorScheme,
+  useWindowDimensions,
+  View,
+} from "react-native";
 import { useMe, useSession } from "@/auth/session";
 import { Button } from "@/components/button";
 import { BetaLabel } from "@/beta/config";
@@ -13,7 +21,7 @@ import { Notice } from "@/components/notice";
 import { PageHead } from "@/components/page-head";
 import { LanguageSwitch } from "@/components/language-switch";
 import { Logo } from "@/components/logo";
-import { PuffinsInCar } from "@/components/puffin-scenes";
+import { carHeight, IcelandPanel, IcelandScene, PuffinsInCar } from "@/components/puffin-scenes";
 import { Screen, useWideScreen } from "@/components/screen";
 import { Body, Heading, Title } from "@/components/text";
 import { offerRide } from "@/drive/offer-ride";
@@ -28,7 +36,7 @@ import { useRides } from "@/my-rides/use-rides";
 import { FindMap } from "@/search/find-map";
 import { ResultCard } from "@/search/result-card";
 import { openSearch, useRouteSearch } from "@/search/route-search";
-import { minTouchTarget, sizes, spacing, typography } from "@/theme/tokens";
+import { icelandScene, minTouchTarget, sizes, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
 /**
@@ -38,6 +46,16 @@ import { usePalette } from "@/theme/use-palette";
  */
 const shownRides = 5;
 const shownRidesWide = 6;
+
+/**
+ * Until it is measured, the bottom of a phone's name line and car: the line
+ * as high as a touch target, the gap and the car.
+ */
+const sceneBand = minTouchTarget + spacing.lg + carHeight(sizes.sceneCar);
+
+/** The search row's card down to the middle of its fields: the panel ends there. */
+const searchRowTop =
+  spacing.md + (typography.caption.lineHeight + spacing.xs + sizes.buttonHeight) / 2;
 
 /**
  * Find, the home of the app for everyone, signed in or not (spec 16, 3.2):
@@ -114,9 +132,31 @@ function FrontPage() {
       }}
     />
   );
+  // The Iceland scene behind the top (spec 15, 5.3): on a phone from the
+  // screen's top to the road under the car; on a wide page a panel behind
+  // the title's line and the top of the search row, the car on its hills.
+  // Each grows with what it is measured to hold.
+  const { width: windowWidth } = useWindowDimensions();
+  const scheme = useColorScheme() === "dark" ? "dark" : "light";
+  const [band, setBand] = useState(sceneBand);
+  const [line, setLine] = useState<number>(sizes.sceneLine);
   const title = (
-    <View testID="title-line" style={wide ? styles.introWide : styles.intro}>
-      <PuffinsInCar width={wide ? sizes.sceneCarSmall : sizes.sceneCar} />
+    <View
+      testID="title-line"
+      onLayout={
+        wide
+          ? (event) => {
+              setLine(event.nativeEvent.layout.height);
+            }
+          : undefined
+      }
+      style={wide ? styles.introScene : styles.sceneTitle}
+    >
+      {wide ? (
+        <View testID="car-on-hills" style={styles.carOnHills}>
+          <PuffinsInCar width={sizes.sceneCarWide} />
+        </View>
+      ) : null}
       <Title>{t("home.title")}</Title>
     </View>
   );
@@ -147,7 +187,16 @@ function FrontPage() {
     // heading, the map starts with the offer card.
     const level = headed ? <View testID="map-level" style={styles.head} /> : null;
     return (
-      <Screen width="page" refresh={refresh} refreshAsked={refreshAsked}>
+      <Screen
+        width="page"
+        refresh={refresh}
+        refreshAsked={refreshAsked}
+        backdrop={
+          <View style={styles.panelRoom}>
+            <IcelandPanel height={line + spacing.md + searchRowTop} ground={line + spacing.sm} />
+          </View>
+        }
+      >
         {title}
         {route.row(findRide(false))}
         <Columns
@@ -195,21 +244,36 @@ function FrontPage() {
     );
   }
   return (
-    <Screen refresh={refresh} refreshAsked={refreshAsked}>
-      <View style={styles.top}>
-        <View style={styles.brand}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t("nav.refreshHome")}
-            onPress={refreshFrontPage}
-            style={styles.logo}
-          >
-            <Logo size={sizes.logoSmall} />
-            <Text style={[typography.heading, { color: palette.text }]}>{t("app.name")}</Text>
-          </Pressable>
-          <BetaLabel />
+    <Screen
+      refresh={refresh}
+      refreshAsked={refreshAsked}
+      backdrop={<IcelandScene width={windowWidth} height={spacing.md + band + spacing.sm} />}
+      topColour={icelandScene[scheme].sky}
+    >
+      <View
+        testID="scene-top"
+        onLayout={(event) => {
+          const { y, height } = event.nativeEvent.layout;
+          setBand(y + height);
+        }}
+        style={styles.sceneTop}
+      >
+        <View style={styles.top}>
+          <View style={styles.brand}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t("nav.refreshHome")}
+              onPress={refreshFrontPage}
+              style={styles.logo}
+            >
+              <Logo size={sizes.logoSmall} />
+              <Text style={[typography.heading, { color: palette.text }]}>{t("app.name")}</Text>
+            </Pressable>
+            <BetaLabel />
+          </View>
+          <LanguageSwitch onSwitch={saveLanguage} />
         </View>
-        <LanguageSwitch onSwitch={saveLanguage} />
+        <PuffinsInCar width={sizes.sceneCar} />
       </View>
       {me === null ? null : <NextRide rides={mine} />}
       {title}
@@ -368,17 +432,23 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: spacing.sm,
   },
-  intro: { gap: spacing.md, paddingVertical: spacing.lg },
-  // On a wide page the car is on the title's line, taking the room over and
-  // under the title: the line is no higher than the title alone was, so the
-  // map beside the rides stays whole in a window 720 high (spec 18).
-  introWide: {
+  // On a phone the name, the language and the car stand on the scene, and
+  // the title on the screen under it.
+  sceneTop: { gap: spacing.lg },
+  sceneTitle: { paddingVertical: spacing.sm },
+  // On a wide page the title's line is taller than the title alone, for the
+  // mountains to show, and still leaves the map beside the rides whole in a
+  // window 720 high (spec 18). The car drives on the hills at its start,
+  // its wheels a little under the line, where the land is.
+  introScene: {
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    gap: spacing.md,
-    paddingVertical: spacing.ms,
+    minHeight: sizes.sceneLine,
   },
+  carOnHills: { position: "absolute", left: spacing.xl, bottom: -(spacing.sm + spacing.xs) },
+  // Where the page's own room is, so the panel lines up with the page.
+  panelRoom: { paddingTop: spacing.md, paddingHorizontal: spacing.md, alignItems: "center" },
   next: { gap: spacing.sm, paddingTop: spacing.md },
   nextBeside: { gap: spacing.md },
   rides: { gap: spacing.md },
