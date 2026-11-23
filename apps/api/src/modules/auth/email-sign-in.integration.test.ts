@@ -1,9 +1,11 @@
 import { createApiClient } from "@shareride/api-client";
 import {
   configRoute,
+  putEmailRoute,
   startEmailSignInRoute,
   startPhoneSignInRoute,
   verifyEmailCodeRoute,
+  verifyEmailRoute,
   verifyPhoneCodeRoute,
 } from "@shareride/contracts";
 import { pingDatabase, schema } from "@shareride/db";
@@ -374,6 +376,27 @@ describe("the phone step after an email (spec 26, 3.3)", () => {
     expect(await accountOf(userId)).toMatchObject({ email: address });
   });
 
+  it("stops a link sent earlier for another address, so it cannot take the email's place", async () => {
+    const phone = api.newPhoneNumber();
+    const { accessToken, userId } = await api.signIn(phone);
+    const asked = await api.client.call(putEmailRoute, {
+      accessToken,
+      body: { email: newEmail("asked-before") },
+    });
+    expect(asked.ok).toBe(true);
+    const link = /\/verify-email#(\S+)/.exec(api.email.sent.at(-1)?.text ?? "")?.[1] ?? "";
+    const address = newEmail("proven-now");
+    expect(await phoneStep(phone, await api.waitingEmailSignIn(address))).toMatchObject({
+      ok: true,
+      data: { emailLink: { outcome: "added", email: address } },
+    });
+    expect(await api.client.call(verifyEmailRoute, { body: { token: link } })).toMatchObject({
+      ok: false,
+      error: { code: "link_invalid" },
+    });
+    expect(await accountOf(userId)).toMatchObject({ email: address });
+  });
+
   it("puts the email in place of the account's other one, and tells the old address", async () => {
     const old = newEmail("old");
     const { phone, userId } = await memberWith(old);
@@ -482,6 +505,42 @@ describe("the phone step after an email (spec 26, 3.3)", () => {
       }),
     ).toMatchObject({ ok: false, error: { code: "provider_expired" } });
     expect(api.sms.outbox).toHaveLength(texts);
+  });
+
+  it("takes a waiting sign-in once when two numbers' codes come in at once", async () => {
+    const address = newEmail("two-numbers");
+    const pendingSignIn = await api.waitingEmailSignIn(address);
+    const phones = [api.newPhoneNumber(), api.newPhoneNumber()];
+    for (const phone of phones) {
+      api.advance(31);
+      newIp();
+      const started = await api.client.call(startPhoneSignInRoute, {
+        body: { phoneNumber: phone, locale: "en", pendingSignIn },
+      });
+      expect(started.ok).toBe(true);
+    }
+    const answers = await Promise.all(
+      phones.map((phone) =>
+        api.client.call(verifyPhoneCodeRoute, {
+          body: {
+            phoneNumber: phone,
+            code: api.lastCode(phone),
+            locale: "en",
+            device,
+            pendingSignIn,
+          },
+        }),
+      ),
+    );
+    expect(answers.map((answer) => answer.status).sort()).toEqual([200, 400]);
+    expect(answers.find((answer) => !answer.ok)).toMatchObject({
+      error: { code: "provider_expired" },
+    });
+    const owners = await api.connection.db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.email, address));
+    expect(owners).toHaveLength(1);
   });
 
   it("refuses a waiting sign-in that expired between the text and its code, and keeps the code", async () => {

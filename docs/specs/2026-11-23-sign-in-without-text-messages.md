@@ -1,9 +1,9 @@
 # Spec 26: Sign in with email or Google; a text message only checks the number
 
-**Owner:** Martin · **Date:** 2026-11-23 · **Status:** Proposed
+**Owner:** Martin · **Date:** 2026-11-23 · **Status:** Approved (2026-11-23)
 
 Decision record: [ADR 0046](../decisions/0046-sign-in-by-email-code-and-text-only-to-check-the-number.md)
-(proposed). This spec amends [spec 1](2026-11-13-sign-in-and-profile.md)
+(accepted). This spec amends [spec 1](2026-11-13-sign-in-and-profile.md)
 (3.2, 3.6, 3.8, R1.2 to R1.5), [spec 11](2026-11-13-privacy-self-service.md)
 (R11.1), [spec 19](2026-11-22-google-and-apple-sign-in.md) (3.1, 3.3, 3.4,
 R19.3, R19.7) and [spec 7](2026-11-13-chat-and-notifications.md) (R7.10).
@@ -168,9 +168,16 @@ Google (R19.3 becomes R26.5):
 1. "Change email" in Settings first asks for a confirm code (3.6), then sends
    the link to the new address as today (spec 1, 3.5). The address changes
    when the link is opened, and the old address gets the email of R26.6.
-2. Within 30 minutes of the account being made, no code is asked: that is
+2. A verified email is always replaced with a code. An account without one
+   adds an email with no code while sign-up is unfinished (the profile has
+   no name yet) or within 30 minutes of the account being made: that is
    spec 20's email at sign-up, which now shows only for the rare account
    without one (Google with an email another account has).
+3. Sending the waiting address's link again needs no new code: the address
+   was let through when first asked for.
+4. When the phone step gives the account a proven email (3.3), any link
+   still waiting for another address stops working, so it cannot later take
+   that email's place.
 
 ### 3.8 Sign-in methods in Settings
 
@@ -199,7 +206,7 @@ the console's recovery code and its notice (spec 22).
 | R26.2 | The app's text codes go only in the phone step of a waiting sign-in, at most 3 for one waiting sign-in, and as confirm codes to an account without a verified email (3.6). Spec 22's console recovery code is unchanged.                                 |
 | R26.3 | All sign-in and confirm texts together: at most 300 an hour and 1 000 a day, on top of R1.3. Reaching it is logged as an error.                                                                                                                       |
 | R26.4 | An email code follows R1.2. At most one per 30 seconds and 5 an hour per address, 20 an hour per network address; the answer is the same whether or not an account has the email.                                                                       |
-| R26.5 | A new way into an account (Google, Apple or a new email) is added only after a code to a way the account already has: the phone step's text code, or a confirm code. The one exception is an email added within 30 minutes of the account being made. |
+| R26.5 | A new way into an account (Google, Apple or a new email) is added only after a code to a way the account already has: the phone step's text code, or a confirm code. The one exception is an email added to an account without a verified one, before sign-up is finished or within 30 minutes of the account being made (3.7). |
 | R26.6 | When an account's verified email changes, the old address is told by email, with the new address partly hidden. An address never verified is not told.                                                                                                |
 | R26.7 | Confirm codes go to the account's verified email, and by text only to an account without one.                                                                                                                                                         |
 
@@ -257,7 +264,7 @@ Endpoints (`/v1`, shapes in `packages/contracts`):
 | `POST /auth/email/verify`                         | New: `signedIn` with tokens, or `phoneNeeded` with the waiting sign-in (`provider: "email"`); the code errors of today                                                         |
 | `POST /auth/phone/start`, `POST /auth/phone/verify` | `pendingSignIn` is required (`sr_ps_…` or `sr_pe_…`); a waiting sign-in that is gone gives `provider_expired`. The verify answer gains `emailLink` (`created`, `added`, `replaced`, `in_use`) |
 | `POST /me/confirm-code`                           | The answer gains `channel` (`email` or `sms`) and `sentTo` (the email partly hidden, or the number's last two digits)                                                           |
-| `PUT /me/email`                                   | Takes `code`, a confirm code, required unless the account was made in the last 30 minutes (3.7)                                                                                |
+| `PUT /me/email`                                   | Takes `code`, a confirm code: always in place of a verified email; for an account without one, once sign-up is finished and 30 minutes have passed (3.7) |
 | `GET /config`                                     | Gains `emailSignIn`                                                                                                                                                            |
 
 Logs: "code emailed" (with its purpose) and "email sign-in waiting for the
@@ -342,8 +349,8 @@ Apple (waits for the developer account); a magic link instead of a code.
 
 | #   | Question                                     | Decision                                                                                                                                                                                                                              |
 | --- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | What replaces the text code at sign-in?      | Google, or a code by email (Martin's decision card, 2026-11-23; recommended). Not chosen: Google only; email and password; email code plus passkeys                                                                                     |
-| 2   | Passwords?                                   | Not now: a password still needs an email code to reset it, more screens, and a password store to guard; it can be added on top of the email later (my recommendation, 2026-11-23)                                                        |
+| 1   | What replaces the text code at sign-in?      | Google, or a code by email, as built here. Martin, 2026-11-23 13:24: "google, email and password and then appleid in future and biometrics like fingerprint or Face ID", and "no hardware key". Passwords and passkeys (the phone's or laptop's own only) come on top of this, in their own spec |
+| 2   | Passwords?                                   | Yes, next (Martin, 2026-11-23), on top of the email: a forgotten password is reset with an email code, so this spec comes first |
 | 3   | A code or a link in the email?               | A code: it works when the email is read on another device or browser than the app, and it matches the text-message step (my call)                                                                                                     |
 | 4   | Which comes first at sign-up?                | The email, then the number: no text can be sent before an inbox is proven (my call)                                                                                                                                                   |
 | 5   | A number's account with another email?       | The new email takes its place, and the old address is told: proving the number is what signing in needed before, and it is the way back for a lost inbox (my call)                                                                     |

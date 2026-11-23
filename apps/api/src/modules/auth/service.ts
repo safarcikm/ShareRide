@@ -44,19 +44,20 @@ import {
   type LinkOutcome,
   type PendingSignIn,
 } from "./identities.ts";
+import { codeEmailContent, sendEmailChangedNotice } from "./emails.ts";
+import { issueTokens, openSession } from "./sessions.ts";
+import { uniqueViolation } from "../../platform/database-errors.ts";
 
 /** An email proven by its code, waiting for the phone step (spec 26, 3.3). */
 interface PendingEmailSignIn {
   readonly id: string;
   readonly email: string;
 }
-import { codeEmailContent, sendEmailChangedNotice } from "./emails.ts";
-import { issueTokens, openSession } from "./sessions.ts";
-import { uniqueViolation } from "../../platform/database-errors.ts";
 
 const {
   blockedNumbers,
   emailSignIns,
+  emailVerifications,
   providerSignIns,
   pushTokens,
   rateLimitEvents,
@@ -374,13 +375,17 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
   }
 
   /**
-   * A number's own count of codes sent: recovery codes are counted apart
-   * from sign-in and confirm codes (spec 22, R22.6).
+   * A key's own count of codes sent: recovery codes are counted apart from
+   * sign-in and confirm codes (spec 22, R22.6), and email codes by address.
    */
-  const perNumberLimit = (purpose: CodePurpose) =>
-    purpose === "console_recovery"
-      ? { scope: "console_recovery_phone", rules: recoveryCodeSendLimits.perNumber }
-      : { scope: "phone", rules: codeSendLimits.perNumber };
+  const perNumberLimit = (purpose: CodePurpose) => {
+    if (purpose === "console_recovery") {
+      return { scope: "console_recovery_phone", rules: recoveryCodeSendLimits.perNumber };
+    }
+    // An email code is counted by its address (R26.4), so its wait is read there.
+    if (purpose === "email_sign_in") return { scope: "email", rules: emailCodeSendLimits.perEmail };
+    return { scope: "phone", rules: codeSendLimits.perNumber };
+  };
 
   /** Seconds until a new code for this purpose can be sent to this number. */
   async function resendWait(
@@ -405,6 +410,10 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
     readonly rules: readonly RateLimitRule[];
   }
 
+  /** When the ceiling on all texts was last reported, in this process. */
+  let ceilingReportedAt = Number.NEGATIVE_INFINITY;
+  const ceilingReportEveryMs = 10 * 60 * 1000;
+
   /** Every sign-in and confirm text together (R26.3). */
   const allTexts = (): Limit => ({
     scope: "texts",
@@ -425,8 +434,16 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
     now: Date,
   ): Promise<{ readonly scope: string; readonly error: RateLimited } | undefined> {
     return db.transaction(async (tx) => {
-      // One request per key at a time, so two cannot both pass the limits.
-      await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${keyHash}, 0))`);
+      // One request per key and per counted limit at a time, so two cannot
+      // both pass a limit: the same number, the same waiting sign-in, or the
+      // ceiling on all texts (R26.2, R26.3). The locks are taken in sorted
+      // order, so two requests never wait for each other.
+      const lockKeys = [
+        ...new Set([keyHash, ...limits.map((limit) => `${limit.scope}:${limit.keyHash}`)]),
+      ].sort();
+      for (const lockKey of lockKeys) {
+        await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))`);
+      }
       for (const limit of limits) {
         const earlier = await sendTimes(tx, limit.scope, limit.keyHash, limit.rules, now);
         const check = checkRateLimits(earlier, limit.rules, now);
@@ -526,12 +543,16 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
       }
       if (refused.scope === "texts") {
         // The ceiling on all texts (R26.3): real sign-ups wait, so the operator
-        // must hear of it, through Sentry where it reports errors.
-        logger.error({ purpose }, "ceiling on all sign-in texts reached");
-        captureError(new Error("ceiling on all sign-in texts reached"), {
-          limit: "texts",
-          purpose,
-        });
+        // must hear of it, through Sentry where it reports errors: once in 10
+        // minutes, as refused requests are not counted and can come on end.
+        if (now.getTime() - ceilingReportedAt >= ceilingReportEveryMs) {
+          ceilingReportedAt = now.getTime();
+          logger.error({ purpose }, "ceiling on all sign-in texts reached");
+          captureError(new Error("ceiling on all sign-in texts reached"), {
+            limit: "texts",
+            purpose,
+          });
+        }
       }
       return err(refused.error);
     }
@@ -892,6 +913,12 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
       if (!uniqueViolation(error, "users_email_unique")) throw error;
       return { outcome: "in_use", email: pending.email };
     }
+    // A link sent earlier for another address stops working, as if used,
+    // so it cannot later take the place of the email proven now.
+    await tx
+      .update(emailVerifications)
+      .set({ usedAt: now, updatedAt: now })
+      .where(and(eq(emailVerifications.userId, userId), isNull(emailVerifications.usedAt)));
     return { outcome, email: pending.email };
   }
 

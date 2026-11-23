@@ -59,9 +59,24 @@ export function confirmChannel(hasVerifiedEmail: boolean): "email" | "sms" {
 /** Within this long of the account being made, an email is added without a code (R26.5). */
 export const emailChangeWithoutCodeSeconds = 30 * 60;
 
-/** Whether changing the email needs a confirm code first (3.7, R26.5). */
-export function emailChangeNeedsCode(accountCreatedAt: Date, now: Date): boolean {
-  return now.getTime() - accountCreatedAt.getTime() >= emailChangeWithoutCodeSeconds * 1000;
+/**
+ * Whether changing the email needs a confirm code first (3.7, R26.5). A
+ * verified email signs in, so replacing one always does. An account without
+ * one adds it freely while sign-up is unfinished or within 30 minutes of
+ * being made: that is the email at sign-up (spec 20).
+ */
+export function emailChangeNeedsCode(
+  account: {
+    readonly createdAt: Date;
+    readonly hasVerifiedEmail: boolean;
+    /** Whether sign-up is finished: the profile has a name. */
+    readonly signedUp: boolean;
+  },
+  now: Date,
+): boolean {
+  if (account.hasVerifiedEmail) return true;
+  if (!account.signedUp) return false;
+  return now.getTime() - account.createdAt.getTime() >= emailChangeWithoutCodeSeconds * 1000;
 }
 
 /**

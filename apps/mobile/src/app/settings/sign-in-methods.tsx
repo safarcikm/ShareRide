@@ -61,8 +61,9 @@ function refusalText(t: Translate, failure: CallFailure, provider: string): stri
  * Settings, Sign-in methods (spec 19, 3.4; spec 26, 3.8): the phone number,
  * which stays, the email, which signs in and can be changed, and Google and
  * Apple, each linked with its email or not linked. Adding
- * one opens its window, checks it can be added, then asks for a code
- * texted to the account's own number, as downloading the data does (R19.3).
+ * one opens its window, checks it can be added, then asks for a confirm
+ * code, as downloading the data does (R19.3): by email to the verified
+ * email, else by text to the account's own number (spec 26, 3.6).
  * Removing one asks first; sessions stay signed in. After a change the list
  * shows it at once and is loaded again; a list that fails to load then
  * stays as it was.

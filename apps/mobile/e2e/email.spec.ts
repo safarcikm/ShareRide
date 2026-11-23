@@ -1,12 +1,12 @@
 import { expect, test } from "@playwright/test";
 import { english, newEmail, signUp } from "./support/account";
-import { emailTo, linkIn } from "./support/email";
+import { confirmCodeSubject, emailedCode, emailTo, linkIn } from "./support/email";
 import { postTripToSelfoss } from "./support/trips";
 
 // An email on the web build (plan 4.6; spec 26, 3.7): a passenger signs up
-// with an email and sees it in Settings, changes it (no code in an
-// account's first 30 minutes), opens the new address's link from the test
-// API's email outbox, and the old address is told. Then, with no push in a
+// with an email and sees it in Settings, changes it with a confirm code
+// emailed to the address she has, opens the new address's link from the
+// test API's email outbox, and the old address is told. Then, with no push in a
 // browser, they get the "Pay now" email at the new address when the driver
 // accepts their request. The addresses are new each run and project.
 
@@ -37,11 +37,18 @@ test("a passenger changes their email and gets the Pay now email there", async (
   await expect(passenger.getByRole("heading", { name: "Your account" })).toBeVisible();
   await expect(passenger.getByText(first, { exact: true }).filter(visible)).toBeVisible();
 
-  // A new address waits for its link.
+  // A new address signs in, so it takes a code sent to the one she has
+  // (spec 26, R26.5), then waits for its link.
   const address = newEmail();
   await passenger.getByRole("link", { name: "Change your email" }).click();
   await passenger.getByRole("textbox", { name: "Email", exact: true }).fill(address);
-  await passenger.getByRole("button", { name: "Send the link" }).click();
+  const code = await emailedCode(first, confirmCodeSubject, () =>
+    passenger.getByRole("button", { name: "Send the link" }).click(),
+  );
+  await expect(
+    passenger.getByText(`We emailed a code to ${first.slice(0, 2)}•••@example.com.`),
+  ).toBeVisible();
+  await passenger.getByLabel("6-digit code").fill(code);
   await expect(
     passenger
       .getByText(`We sent a link to ${address}. Open it within 24 hours to add the address.`)

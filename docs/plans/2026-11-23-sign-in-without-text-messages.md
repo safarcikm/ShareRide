@@ -72,6 +72,9 @@ Playwright (web journeys).
   "created" | "added" | "replaced" | "already" | "in_use"` where
   `accountEmail === undefined` means no account.
 - `confirmChannel(hasVerifiedEmail): "email" | "sms"`.
+- `emailChangeNeedsCode({ createdAt, hasVerifiedEmail, signedUp }, now)`:
+  always with a verified email; without one, only once sign-up is
+  finished and 30 minutes have passed.
 - Tests pin the values above and each outcome.
 
 ### Task 2: Data

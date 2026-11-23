@@ -1,6 +1,9 @@
 # 0046. Sign in with an email code or Google; a text message only checks the number
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-11-23, by Martin, who asked for passwords and
+  Face ID or fingerprint on top: "google, email and password and then
+  appleid in future and biometrics like fingerprint or Face ID", "but no
+  hardware key tho". Those follow in their own spec and ADR.)
 - **Date:** 2026-11-23
 - **Deciders:** Martin
 - **Related:** supersedes the sign-in choice of

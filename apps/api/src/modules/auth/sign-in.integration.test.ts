@@ -341,6 +341,19 @@ describe("texts only for a waiting sign-in (spec 26, R26.1 to R26.3)", () => {
     ).toMatchObject({ status: 429, error: { code: "rate_limited" } });
   });
 
+  it("sends 3 texts for one waiting sign-in when more are asked for at once", async () => {
+    const pendingSignIn = await api.waitingEmailSignIn();
+    api.ip = "192.0.2.80";
+    const answers = await Promise.all(
+      Array.from({ length: 6 }, () =>
+        api.client.call(startPhoneSignInRoute, {
+          body: { phoneNumber: api.newPhoneNumber(), locale: "en", pendingSignIn },
+        }),
+      ),
+    );
+    expect(answers.map((answer) => answer.status).sort()).toEqual([202, 202, 202, 429, 429, 429]);
+  });
+
   it("stop at the ceiling on all texts, and log it as an error", async () => {
     // 300 texts this hour, as stored by earlier sends.
     const now = api.now();

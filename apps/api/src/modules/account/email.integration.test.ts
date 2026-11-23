@@ -55,6 +55,18 @@ function putEmailWithCode(who: Member, email: string, code: string) {
   return api.client.call(putEmailRoute, { accessToken: who.accessToken, body: { email, code } });
 }
 
+/** Asks for a new address in place of a verified one, with the confirm code emailed to it. */
+async function replaceEmail(who: Member, verifiedAddress: string, email: string) {
+  // After the last code and the last link.
+  api.advance(61);
+  const sent = await api.client.call(sendConfirmCodeRoute, {
+    accessToken: who.accessToken,
+    body: {},
+  });
+  if (!sent.ok) throw new Error(sent.error.code);
+  return putEmailWithCode(who, email, api.lastEmailCode(verifiedAddress));
+}
+
 async function me(who: Member) {
   const result = await api.client.call(getMeRoute, { accessToken: who.accessToken });
   if (!result.ok) throw new Error(result.error.code);
@@ -194,7 +206,9 @@ describe("adding an email (plan 4.6)", () => {
     const helga = await member();
     await verified(helga, "helga-first@example.com");
     api.advance(61);
-    await putEmail(helga, "helga-second@example.com");
+    expect(
+      await replaceEmail(helga, "helga-first@example.com", "helga-second@example.com"),
+    ).toMatchObject({ ok: true });
     expect(await me(helga)).toMatchObject({
       email: "helga-first@example.com",
       pendingEmail: "helga-second@example.com",
@@ -218,7 +232,9 @@ describe("adding an email (plan 4.6)", () => {
     const olof = await member();
     await verified(olof, "olof-first@example.com");
     api.advance(61);
-    await putEmail(olof, "olof-typo@example.con");
+    expect(
+      await replaceEmail(olof, "olof-first@example.com", "olof-typo@example.con"),
+    ).toMatchObject({ ok: true });
     const typo = lastToken();
     expect(await putEmail(olof, "olof-first@example.com")).toMatchObject({
       ok: true,
@@ -347,10 +363,19 @@ describe("adding an email (plan 4.6)", () => {
 });
 
 describe("a new email signs in, so it needs a confirm code (spec 26, R26.5, R26.6)", () => {
-  /** A member whose account was made more than 30 minutes ago, signed in again. */
+  /** Finishes sign-up: the profile has a name. */
+  async function signedUp(who: Member) {
+    await api.connection.db
+      .update(schema.users)
+      .set({ firstName: "Test" })
+      .where(eq(schema.users.id, who.userId));
+    return who;
+  }
+
+  /** A member who finished sign-up more than 30 minutes ago, signed in again. */
   async function oldMember() {
     const phone = api.newPhoneNumber();
-    await api.signIn(phone);
+    await signedUp(await api.signIn(phone));
     api.advance(30 * 60);
     // Signed in again: an access token lasts 15 minutes.
     return { phone, who: await api.signIn(phone) };
@@ -358,11 +383,46 @@ describe("a new email signs in, so it needs a confirm code (spec 26, R26.5, R26.
 
   it("needs no code within 30 minutes of the account being made", async () => {
     const phone = api.newPhoneNumber();
-    await api.signIn(phone);
+    await signedUp(await api.signIn(phone));
     api.advance(29 * 60);
     // Signed in again: an access token lasts 15 minutes.
     const newcomer = await api.signIn(phone);
     expect(await putEmail(newcomer, "new-in-time@example.com")).toMatchObject({ ok: true });
+  });
+
+  it("needs no code before sign-up is finished, however long it took", async () => {
+    const phone = api.newPhoneNumber();
+    await api.signIn(phone);
+    api.advance(2 * 60 * 60);
+    const unfinished = await api.signIn(phone);
+    expect(await putEmail(unfinished, "late-sign-up@example.com")).toMatchObject({ ok: true });
+  });
+
+  it("needs no new code to send the waiting address's link again", async () => {
+    const newcomer = await signedUp(await member());
+    await verified(newcomer, "has-one@example.com");
+    expect(
+      await replaceEmail(newcomer, "has-one@example.com", "waiting-again@example.com"),
+    ).toMatchObject({ ok: true });
+    api.advance(61);
+    expect(await putEmail(newcomer, "waiting-again@example.com")).toMatchObject({
+      ok: true,
+      data: { pendingEmail: "waiting-again@example.com" },
+    });
+    expect(await putEmail(newcomer, "another@example.com")).toMatchObject({
+      ok: false,
+      error: { code: "confirm_required" },
+    });
+  });
+
+  it("always asks a code to replace a verified email, even straight after sign-up", async () => {
+    const newcomer = await signedUp(await member());
+    await verified(newcomer, "first-address@example.com");
+    expect(await putEmail(newcomer, "second-address@example.com")).toMatchObject({
+      ok: false,
+      status: 403,
+      error: { code: "confirm_required" },
+    });
   });
 
   it("asks for a confirm code after that, and sends nothing without one", async () => {

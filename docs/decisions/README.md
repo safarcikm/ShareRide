@@ -40,7 +40,7 @@ Statuses: `Proposed`, `Accepted`, `Rejected`, `Deprecated`, `Superseded by ADR N
 | [0007](0007-eea-hosting-and-data-residency.md) | EEA hosting and data residency | Accepted |
 | [0008](0008-payments-phased.md) | Phased payments behind a provider-agnostic port | Superseded by ADR 0013 |
 | [0009](0009-maps-and-routing.md) | Maps with MapLibre and OpenStreetMap; precomputed routing | Accepted (map display superseded by ADR 0024, routing engine by ADR 0031) |
-| [0010](0010-authentication-and-identity.md) | Phone-first authentication and layered identity verification | Accepted (implementation superseded by ADR 0016) |
+| [0010](0010-authentication-and-identity.md) | Phone-first authentication and layered identity verification | Accepted (implementation superseded by ADR 0016, sign-in by text by ADR 0046) |
 | [0011](0011-localization.md) | Icelandic and English from day one | Accepted (formatting superseded by ADR 0025) |
 | [0012](0012-trip-price-level.md) | One price level per trip instead of per-segment price editing | Accepted |
 | [0013](0013-in-app-payments-only.md) | All payments through the app, from the beta | Accepted (set aside until milestone 15 by ADR 0038) |
@@ -76,4 +76,4 @@ Statuses: `Proposed`, `Accepted`, `Rejected`, `Deprecated`, `Superseded by ADR N
 | [0043](0043-legal-documents-published-from-the-repository.md) | Publish the legal documents from the repository | Proposed |
 | [0044](0044-console-password-on-production.md) | The console password on production too | Accepted |
 | [0045](0045-google-analytics-on-the-website-after-consent.md) | Google Analytics on the website, only after consent | Accepted |
-| [0046](0046-sign-in-by-email-code-and-text-only-to-check-the-number.md) | Sign in with an email code or Google; a text message only checks the number | Proposed |
+| [0046](0046-sign-in-by-email-code-and-text-only-to-check-the-number.md) | Sign in with an email code or Google; a text message only checks the number | Accepted |

@@ -82,16 +82,27 @@ describe("confirmChannel (R26.7)", () => {
 });
 
 describe("emailChangeNeedsCode (R26.5)", () => {
-  const madeAt = new Date("2026-11-23T12:00:00Z");
-  const later = (minutes: number) => new Date(madeAt.getTime() + minutes * 60_000);
+  const createdAt = new Date("2026-11-23T12:00:00Z");
+  const later = (minutes: number) => new Date(createdAt.getTime() + minutes * 60_000);
+  const account = { createdAt, hasVerifiedEmail: false, signedUp: true };
 
   it("asks no code within 30 minutes of the account being made", () => {
-    expect(emailChangeNeedsCode(madeAt, later(29))).toBe(false);
+    expect(emailChangeNeedsCode(account, later(29))).toBe(false);
   });
 
   it("asks a code from then on", () => {
-    expect(emailChangeNeedsCode(madeAt, later(30))).toBe(true);
-    expect(emailChangeNeedsCode(madeAt, later(60 * 24))).toBe(true);
+    expect(emailChangeNeedsCode(account, later(30))).toBe(true);
+    expect(emailChangeNeedsCode(account, later(60 * 24))).toBe(true);
+  });
+
+  it("asks no code before sign-up is finished, however long it took", () => {
+    expect(emailChangeNeedsCode({ ...account, signedUp: false }, later(60 * 24))).toBe(false);
+  });
+
+  it("always asks a code to replace a verified email", () => {
+    const verified = { ...account, hasVerifiedEmail: true };
+    expect(emailChangeNeedsCode(verified, later(1))).toBe(true);
+    expect(emailChangeNeedsCode({ ...verified, signedUp: false }, later(1))).toBe(true);
   });
 });
 

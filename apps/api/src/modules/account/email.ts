@@ -38,8 +38,10 @@ export type VerifyError = { readonly code: "link_invalid" } | { readonly code: "
 export interface EmailService {
   /**
    * Whether asking for this address needs a confirm code first: a new
-   * email signs in, so it does, except within 30 minutes of the account
-   * being made, or for the address the account already has (spec 26, R26.5).
+   * email signs in, so it does, always in place of a verified email; an
+   * account without one adds it freely while sign-up is unfinished or
+   * within 30 minutes of being made (spec 26, R26.5). The address the
+   * account already has, or the one waiting for its link, needs none.
    */
   needsCode(userId: string, address: string): Promise<boolean>;
   /** Sends a link to the address, unless it is already the account's verified email. */
@@ -100,12 +102,19 @@ export function createEmailService(dependencies: {
           email: users.email,
           verifiedAt: users.emailVerifiedAt,
           createdAt: users.createdAt,
+          firstName: users.firstName,
         })
         .from(users)
         .where(eq(users.id, userId));
       if (user === undefined) throw new Error("The signed-in user does not exist.");
-      if (user.email === address && user.verifiedAt !== null) return false;
-      return emailChangeNeedsCode(user.createdAt, clock());
+      const hasVerifiedEmail = user.email !== null && user.verifiedAt !== null;
+      if (hasVerifiedEmail && user.email === address) return false;
+      // Its link sent again: the address was let through when first asked for.
+      if ((await pendingEmailOf(db, userId, clock())) === address) return false;
+      return emailChangeNeedsCode(
+        { createdAt: user.createdAt, hasVerifiedEmail, signedUp: user.firstName !== null },
+        clock(),
+      );
     },
 
     async ask(userId, input) {

@@ -76,7 +76,7 @@ async function phoneOf(member: Member): Promise<string> {
   return user.phone;
 }
 
-/** Sends a confirm code to the member's own number and gives it back. */
+/** Sends a confirm code to the member and gives it back. */
 async function freshCode(member: Member): Promise<string> {
   // The sign-in code went a moment ago; one code per 30 seconds (R1.3).
   await later(31, member);
@@ -85,7 +85,18 @@ async function freshCode(member: Member): Promise<string> {
     body: {},
   });
   if (!sent.ok) throw new Error(sent.error.code);
+  // By email to a verified email, else by text (spec 26, 3.6).
+  if (sent.data.channel === "email") return api.lastEmailCode(await emailOf(member));
   return api.lastCode(await phoneOf(member));
+}
+
+async function emailOf(member: Member): Promise<string> {
+  const [user] = await api.connection.db
+    .select({ email: schema.users.email })
+    .from(schema.users)
+    .where(eq(schema.users.id, member.userId));
+  if (user === undefined || user.email === null) throw new Error("The member has no email.");
+  return user.email;
 }
 
 function check(member: Member) {

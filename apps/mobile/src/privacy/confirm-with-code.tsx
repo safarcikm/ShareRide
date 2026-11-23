@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { errorText, formatWait } from "@/auth/errors";
 import { useMe, useSession } from "@/auth/session";
+import { useConfig } from "@/beta/config";
 import { Button } from "@/components/button";
 import { Notice } from "@/components/notice";
 import { TextField } from "@/components/text-field";
@@ -60,6 +61,7 @@ export function ConfirmWithCode({
   const { t } = useLanguage();
   const session = useSession();
   const me = useMe();
+  const { emailSignIn } = useConfig();
   const palette = usePalette();
   // A code sent a moment ago, when the form was open before, is used again.
   const [reuse] = useState(() => Date.now() < sentUntil);
@@ -160,10 +162,11 @@ export function ConfirmWithCode({
     message = own ?? errorText(t, failure);
   }
 
-  // A code sent before this opened goes where codes go: the verified email, if any.
+  // A code sent before this opened goes where codes go: the verified email,
+  // if any, on a server that sends email.
   const where: SentWhere =
     sentWhere ??
-    (me === null || me.email === null
+    (me === null || me.email === null || !emailSignIn
       ? { channel: "sms", to: me?.phoneNumber?.slice(-2) ?? null }
       : { channel: "email", to: hideEmail(me.email) });
   // Until the first answer, sending; then where it went, or nothing if it
