@@ -3,6 +3,7 @@ CREATE TABLE "member_passkey_challenges" (
 	"challenge" text NOT NULL,
 	"purpose" text NOT NULL,
 	"user_id" uuid,
+	"user_handle" text,
 	"expires_at" timestamp with time zone NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,

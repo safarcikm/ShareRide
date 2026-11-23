@@ -286,6 +286,8 @@ export const memberPasskeyChallenges = pgTable(
     challenge: text().notNull().unique("member_passkey_challenges_challenge_unique"),
     purpose: text().notNull(),
     userId: uuid().references(() => users.id, { onDelete: "cascade" }),
+    /** For a new passkey: the handle its options gave the device (ADR 0048). */
+    userHandle: text(),
     expiresAt: at().notNull(),
     ...timestamps,
   },

@@ -920,6 +920,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "user_handle": {
+          "name": "user_handle",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "expires_at": {
           "name": "expires_at",
           "type": "timestamp with time zone",
