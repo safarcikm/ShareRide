@@ -1,6 +1,6 @@
 # Production on puffinride.is
 
-**Status:** in progress · **Date:** 2026-11-22 · **Owner:** Martin
+**Status:** done (live 2026-11-22) · **Date:** 2026-11-22 · **Owner:** Martin
 
 Martin asked on 2026-11-22 to go live for the public on `puffinride.is` once
 the day's work is merged (milestone 12 in the
@@ -36,3 +36,21 @@ wait for the beta label: [Claude Doc](https://claude.ai/artifact/SYY8Coa8WyLpfBg
 
 In the [production runbook](../operations/production.md#set-it-up-once),
 after PRs 1 and 2 and the first release.
+
+## What happened
+
+- 2026-11-22, about 19:30 UTC: `https://puffinride.is` live for the public,
+  after PRs 1 and 2 (#214, #217) and the first release.
+- Martin could not save a passkey on production (his browsers offered only
+  a security key or a phone's QR code), so the console takes the password
+  there too: [ADR 0044](../decisions/0044-console-password-on-production.md)
+  (#220). Delete `ADMIN_PASSWORD` once a passkey works.
+- Google sign-in with its own production client, a Sentry uptime monitor,
+  pay in person switched on, and photos in a Hetzner project of its own.
+- Martin imported and activated the 104 settlement points and the 32
+  sights; staging stays open to sign-ups (his choice, runbook step 9).
+- Releases the same evening brought pull to refresh and Sign out, the
+  console password, the branded emails, the cookie question with Google
+  Analytics, search engines, the sights and the round yellow car.
+- Still Martin's: the data processing agreements and Sentry's privacy
+  settings (runbook step 10), and a first real ride (step 11).
