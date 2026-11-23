@@ -1,7 +1,8 @@
 // Exports the app icon, the Android icon layers, the opening screen icon and
 // the browser tab icon from the drawings in assets/logo (spec 15, section
-// 4.9), and the link preview picture, public/share.png (spec 23, 3.6), from
-// assets/share, which the web export serves at /share.png. Run it after changing a drawing,
+// 4.9), the web's larger icons in public/, and the link preview picture,
+// public/share.png (spec 23, 3.6), from assets/share, which the web export
+// serves at /share.png. Run it after changing a drawing,
 // then commit the drawing and the pictures together:
 //   node scripts/export-icons.ts
 // It uses Playwright's Chromium; PLAYWRIGHT_CHROMIUM_PATH picks another one.
@@ -66,6 +67,25 @@ const forTheApi: readonly { drawing: string; size: number; file: string }[] = [
   },
 ];
 
+/**
+ * Icons the web export serves from public/ beside Expo's /favicon.ico (spec
+ * 23, 3.6): one of 192 pixels, a multiple of 48 as Google asks for to show
+ * it in search results, and the one a phone puts on its home screen, which
+ * fills its square as iOS wants.
+ */
+const forTheWeb: readonly { drawing: string; size: number; file: string }[] = [
+  {
+    drawing: "favicon",
+    size: 192,
+    file: join(import.meta.dirname, "..", "public", "icon-192.png"),
+  },
+  {
+    drawing: "icon",
+    size: 180,
+    file: join(import.meta.dirname, "..", "public", "apple-touch-icon.png"),
+  },
+];
+
 const env = process.env as Readonly<Record<string, string | undefined>>;
 const browser = await chromium.launch({ executablePath: env["PLAYWRIGHT_CHROMIUM_PATH"] });
 try {
@@ -76,6 +96,7 @@ try {
       file: join(assets, `${name}.png`),
     })),
     ...forTheApi,
+    ...forTheWeb,
   ];
   for (const { drawing: name, size, file } of exports) {
     const drawing = await readFile(join(assets, "logo", `${name}.svg`), "utf8");
