@@ -3,7 +3,11 @@ import { deviceName, memberPasskeyRules } from "./passkeys.ts";
 
 describe("memberPasskeyRules (R27.8, ADR 0048)", () => {
   it("allows 10 devices per account and a challenge for 5 minutes", () => {
-    expect(memberPasskeyRules).toEqual({ perAccount: 10, challengeSeconds: 300 });
+    expect(memberPasskeyRules).toEqual({
+      perAccount: 10,
+      challengeSeconds: 300,
+      signInOptionsLimits: [{ limit: 20, windowSeconds: 600 }],
+    });
   });
 });
 

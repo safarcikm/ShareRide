@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { passkeyRegistrationSchema, webAuthnOptionsResponseSchema } from "./admin.ts";
 import { passwordInputSchema, pendingSignInSchema, signInProviderSchema } from "./auth.ts";
 import { timestampSchema } from "./common.ts";
 import { errorResponseSchema } from "./errors.ts";
@@ -24,10 +25,25 @@ export type SignInMethod = z.infer<typeof signInMethodSchema>;
 export const passwordStateSchema = z.object({ setAt: timestampSchema });
 export type PasswordState = z.infer<typeof passwordStateSchema>;
 
+/**
+ * A device set up for Face ID or fingerprint (spec 27, 3.6): the browser
+ * and system that set it up, such as Safari and iPhone, null when unknown.
+ */
+export const memberPasskeySchema = z.object({
+  id: z.uuid(),
+  browser: z.string().nullable(),
+  system: z.string().nullable(),
+  createdAt: timestampSchema,
+  lastUsedAt: timestampSchema.nullable(),
+});
+export type MemberPasskey = z.infer<typeof memberPasskeySchema>;
+
 export const signInMethodsSchema = z.object({
   methods: z.array(signInMethodSchema),
   /** Null when the account has no password (spec 27, 3.6). */
   password: passwordStateSchema.nullable().default(null),
+  /** The devices set up for Face ID or fingerprint, oldest first; none from an API that does not say. */
+  passkeys: z.array(memberPasskeySchema).default([]),
 });
 
 export const listSignInMethodsRoute = defineRoute({
@@ -166,5 +182,67 @@ export const removePasswordRoute = defineRoute({
     204: { description: "Removed; the verified email is told" },
     401: unauthenticated,
     404: { description: "not_found: the account has no password", ...errors },
+  },
+});
+
+/** A confirm code, needed unless this device signed in less than 10 minutes ago (R27.5). */
+const freshCodeSchema = z
+  .string()
+  .regex(/^\d{6}$/)
+  .optional();
+
+export const passkeySetupOptionsRoute = defineRoute({
+  method: "post",
+  path: "/v1/me/passkeys/options",
+  summary: "Start setting up Face ID or fingerprint on this device (spec 27, 3.6)",
+  tags: ["me"],
+  auth: true,
+  request: { body: z.object({ code: freshCodeSchema }) },
+  responses: {
+    200: {
+      description:
+        "Options for navigator.credentials.create: a passkey kept on the device, not the account's others",
+      schema: webAuthnOptionsResponseSchema,
+    },
+    400: confirmCodeErrors[400],
+    401: unauthenticated,
+    403: {
+      description: "confirm_required: send a confirm code (R27.5)",
+      ...errors,
+    },
+    409: { description: "too_many: 10 devices are set up already (R27.8)", ...errors },
+    429: confirmCodeErrors[429],
+  },
+});
+
+export const addPasskeyRoute = defineRoute({
+  method: "post",
+  path: "/v1/me/passkeys",
+  summary: "Save the passkey this device made; the verified email is told",
+  tags: ["me"],
+  auth: true,
+  request: { body: z.object({ credential: passkeyRegistrationSchema }) },
+  responses: {
+    201: { description: "Saved", schema: memberPasskeySchema },
+    400: {
+      description: "passkey_invalid: a challenge used, late or someone else's, or a bad answer",
+      ...errors,
+    },
+    401: unauthenticated,
+    409: { description: "too_many: 10 devices are set up already (R27.8)", ...errors },
+  },
+});
+
+export const removePasskeyRoute = defineRoute({
+  method: "delete",
+  path: "/v1/me/passkeys/{id}",
+  summary: "Remove Face ID or fingerprint on one device; the email code still signs in",
+  tags: ["me"],
+  auth: true,
+  request: { params: z.object({ id: z.uuid() }) },
+  responses: {
+    204: { description: "Removed" },
+    401: unauthenticated,
+    404: { description: "not_found", ...errors },
   },
 });

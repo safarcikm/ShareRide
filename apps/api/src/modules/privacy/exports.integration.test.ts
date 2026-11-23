@@ -403,6 +403,59 @@ describe("download my data (spec 11, 3.2)", () => {
     expect(text).not.toContain("scrypt$");
   });
 
+  it("lists each device with Face ID or fingerprint, never its key or handle (spec 27, 3.6)", async () => {
+    const dora = await newMember("Dóra");
+    const createdAt = new Date("2026-11-21T10:00:00.000Z");
+    const usedAt = new Date("2026-11-22T08:30:00.000Z");
+    await api.connection.db.insert(schema.memberPasskeys).values([
+      {
+        userId: dora.userId,
+        credentialId: "export-credential-one",
+        publicKey: "export-public-key",
+        counter: 3,
+        transports: ["internal"],
+        backedUp: true,
+        userHandle: "export-user-handle",
+        browser: "Safari",
+        system: "iPhone",
+        lastUsedAt: usedAt,
+        createdAt,
+        updatedAt: usedAt,
+      },
+      {
+        userId: dora.userId,
+        credentialId: "export-credential-two",
+        publicKey: "export-public-key-two",
+        counter: 0,
+        transports: [],
+        backedUp: false,
+        userHandle: "export-user-handle",
+        browser: null,
+        system: null,
+        createdAt: usedAt,
+        updatedAt: usedAt,
+      },
+    ]);
+    const { data, text } = await exportOf(dora);
+    expect(data.sections.sign_in_methods).toEqual([
+      {
+        method: "Face ID or fingerprint: Safari on iPhone",
+        email: null,
+        linkedAt: createdAt.toISOString(),
+        lastUsedAt: usedAt.toISOString(),
+      },
+      {
+        method: "Face ID or fingerprint",
+        email: null,
+        linkedAt: usedAt.toISOString(),
+        lastUsedAt: null,
+      },
+    ]);
+    for (const secret of ["export-credential", "export-public-key", "export-user-handle"]) {
+      expect(text).not.toContain(secret);
+    }
+  });
+
   it("lists the reports I sent and their outcome, never a report about me (R9.2)", async () => {
     const anna = await driverOf(sampleTrip.north, "Anna");
     const gunna = await newMember("Gunna");

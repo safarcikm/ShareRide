@@ -39,6 +39,7 @@ const {
   feedback,
   feedbackScreenshots,
   identities,
+  memberPasskeys,
   memberPasswords,
   privacyRequests,
   pushTokens,
@@ -218,6 +219,18 @@ export async function collectExport(
     .select({ setAt: memberPasswords.setAt })
     .from(memberPasswords)
     .where(eq(memberPasswords.userId, userId));
+
+  // The device each was set up on, never its key or handle (spec 27, 3.6).
+  const passkeys = await q
+    .select({
+      browser: memberPasskeys.browser,
+      system: memberPasskeys.system,
+      createdAt: memberPasskeys.createdAt,
+      lastUsedAt: memberPasskeys.lastUsedAt,
+    })
+    .from(memberPasskeys)
+    .where(eq(memberPasskeys.userId, userId))
+    .orderBy(asc(memberPasskeys.createdAt), asc(memberPasskeys.id));
 
   const waiting = await q
     .select({ email: emailVerifications.email, sentAt: emailVerifications.sentAt })
@@ -796,6 +809,15 @@ export async function collectExport(
           : [
               { method: "Password", email: null, linkedAt: when(password.setAt), lastUsedAt: null },
             ]),
+        ...passkeys.map((row) => ({
+          method:
+            row.browser === null || row.system === null
+              ? "Face ID or fingerprint"
+              : `Face ID or fingerprint: ${row.browser} on ${row.system}`,
+          email: null,
+          linkedAt: when(row.createdAt),
+          lastUsedAt: when(row.lastUsedAt),
+        })),
       ],
       email_waiting: waiting.map((row) => ({ email: row.email, sentAt: when(row.sentAt) })),
       vehicles: cars.map((car) => ({

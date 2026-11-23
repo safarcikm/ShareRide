@@ -1,5 +1,7 @@
+import { schema, type Database } from "@shareride/db";
 import { hideEmail, type DeviceName } from "@shareride/domain";
 import { createTranslator, type Locale } from "@shareride/i18n";
+import { eq } from "drizzle-orm";
 import type { Logger } from "../../logger.ts";
 import type { EmailChannel } from "../../platform/email.ts";
 import { MaybeSent } from "../../platform/maybe-sent.ts";
@@ -160,4 +162,31 @@ export async function sendSignInChangeNotice(
     }
     logger.error({ err: error, userId: notice.userId, kind }, "sign-in change notice not sent");
   }
+}
+
+/**
+ * Tells the account's own verified email of a change to how it signs in
+ * (R27.7); nothing when it has none, or the server sends no email.
+ */
+export async function tellVerifiedEmail(
+  dependencies: {
+    readonly db: Database;
+    readonly email?: EmailChannel | undefined;
+    readonly logger: Logger;
+  },
+  userId: string,
+  change: SignInChange,
+): Promise<void> {
+  const { users } = schema;
+  const [user] = await dependencies.db
+    .select({ email: users.email, verifiedAt: users.emailVerifiedAt, locale: users.locale })
+    .from(users)
+    .where(eq(users.id, userId));
+  if (user === undefined || user.email === null || user.verifiedAt === null) return;
+  await sendSignInChangeNotice(dependencies.email, dependencies.logger, {
+    userId,
+    to: user.email,
+    locale: user.locale === "is" ? "is" : "en",
+    change,
+  });
 }

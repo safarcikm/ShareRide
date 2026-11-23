@@ -524,6 +524,11 @@ export interface Config {
   readonly adminOrigin: string | undefined;
   /** The console's temporary password; undefined turns password sign-in off (ADR 0041). */
   readonly adminPassword: string | undefined;
+  /**
+   * The website's origin for members' Face ID or fingerprint (ADR 0048):
+   * WEB_APP_URL, or the local web app outside production; undefined turns it off.
+   */
+  readonly passkeyOrigin: string | undefined;
   /** Where meeting point and profile photos are kept, if anywhere (ADRs 0022 and 0033). */
   readonly photos: PhotoStorageConfig;
   /** Google and Apple sign-in (ADR 0034). */
@@ -680,6 +685,7 @@ export function loadConfig(environment: Readonly<Record<string, string | undefin
     email: emailConfig(env),
     adminOrigin: adminOriginOf(env),
     adminPassword: env.ADMIN_PASSWORD,
+    passkeyOrigin: env.WEB_APP_URL ?? (env.NODE_ENV === "production" ? undefined : localWebApp),
     photos: photoStorageConfig(env),
     signIn: signInConfig(env),
     searchEngines: {

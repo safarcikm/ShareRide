@@ -47,6 +47,12 @@ export const configSchema = z.object({
    */
   emailSignIn: z.boolean().default(false),
   /**
+   * Whether this server takes Face ID or fingerprint on its website (spec
+   * 27, 3.3): it knows the website's address, which passkeys are bound to;
+   * false from an API that does not say.
+   */
+  passkeySignIn: z.boolean().default(false),
+  /**
    * Whether a booking made now is paid to the driver in person, in cash or
    * by bank transfer, while card payments are coming (rule M6, ADR 0038);
    * false from an API that does not say.

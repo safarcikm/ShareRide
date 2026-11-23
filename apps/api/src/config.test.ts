@@ -63,6 +63,7 @@ describe("loadConfig", () => {
       push: { accessToken: undefined },
       email: { provider: "dev", webAppUrl: "http://localhost:8081" },
       adminOrigin: "http://localhost:8080",
+      passkeyOrigin: "http://localhost:8081",
       photos: { provider: "folder", folder: join(tmpdir(), "shareride-photos") },
       signIn: {
         google: { mode: "dev" },
@@ -307,6 +308,14 @@ describe("loadConfig", () => {
     ).toBe("https://shareride-staging-api.onrender.com");
     expect(() => loadConfig({ ...valid, ADMIN_ORIGIN: "https://shareride.is/admin" })).toThrow(
       ConfigError,
+    );
+  });
+
+  it("binds members' Face ID or fingerprint to WEB_APP_URL, or the local web app (ADR 0048)", () => {
+    expect(loadConfig(development).passkeyOrigin).toBe("http://localhost:8081");
+    expect(loadConfig(valid).passkeyOrigin).toBeUndefined();
+    expect(loadConfig({ ...valid, WEB_APP_URL: "https://puffinride.is" }).passkeyOrigin).toBe(
+      "https://puffinride.is",
     );
   });
 
