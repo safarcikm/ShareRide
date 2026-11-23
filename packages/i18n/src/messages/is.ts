@@ -525,7 +525,7 @@ export const is = {
   "trip.time.notIncreasing": "Hafðu hann seinna en tímann á {name}.",
   "trip.time.tooFast": "Of stutt eftir {name}: aksturinn tekur venjulega {duration}.",
   "trip.time.longBreak": "Ætlarðu að taka langt hlé? Þessi leggur tekur venjulega {duration}.",
-  "trip.time.next": "Ákveða verð",
+  "trip.time.next": "Velja sæti",
   "trip.price.title": "Ákveddu verðið",
   "trip.price.wholeRoute": "Farþegi alla leiðina greiðir",
   "trip.price.levelValue": "{level}, farþegi alla leiðina greiðir {price}",
@@ -551,7 +551,7 @@ export const is = {
   "trip.price.stopLowersAll": "Við vistun lækkar verð allra leggja fyrir nýjar bókanir.",
   "trip.price.lowered":
     "Með {seats, plural, one {# sæti} other {# sætum}} er hæsta verðstigið {level}%, svo við lækkuðum þitt niður í það.",
-  "trip.price.next": "Velja sæti",
+  "trip.price.next": "Fara yfir ferðina",
   "trip.seats.title": "Sæti og óskir",
   "trip.seatsOffered": "Sæti í boði",
   "trip.seats.count": "{count, plural, one {# sæti} other {# sæti}}",
@@ -588,7 +588,7 @@ export const is = {
   "trip.note.tooLong": "Hafðu skilaboðin að hámarki {max} stafi.",
   "trip.noContactDetails":
     "Vinsamlegast ekki deila símanúmerum, netföngum eða tenglum. Farþegar geta spjallað við þig í appinu þegar þeir hafa bókað.",
-  "trip.seats.next": "Fara yfir ferðina",
+  "trip.seats.next": "Ákveða verð",
   "trip.review.title": "Yfirfara og birta",
   "trip.review.route": "Leið",
   "trip.review.times": "Dagur og tímar",

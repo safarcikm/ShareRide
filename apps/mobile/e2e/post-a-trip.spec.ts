@@ -215,9 +215,14 @@ async function postTrip(page: Page, journey: Journey) {
   await expect(timeField(page, journey.departure)).toBeFocused();
   await expect(timeField(page, journey.departure)).toHaveAccessibleName(/ 09:00$/u);
   await expect(minutes).toBeHidden();
+  await page.getByRole("button", { name: journey.toSeats }).click();
+
+  // 3. Seats and preferences, before the price, which depends on them.
+  await page.getByRole("radio", { name: journey.pets }).click();
+  await expect(page.getByRole("radio", { name: journey.pets })).toBeChecked();
   await page.getByRole("button", { name: journey.toPrice }).click();
 
-  // 3. The suggested price for the whole route, then 80%.
+  // 4. The suggested price for the whole route, then 80%.
   await expect(page.getByRole("heading", { name: journey.priceTitle })).toBeVisible();
   await expect(shownText(page, journey.fullPrice)).toBeVisible();
   await expect(page.getByText(journey.suggested)).toBeVisible();
@@ -227,11 +232,6 @@ async function postTrip(page: Page, journey: Journey) {
   await page.getByTestId("price-step-80").click();
   await expect(shownText(page, journey.lowerPrice)).toBeVisible();
   await expect(page.getByText("80%", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: journey.toSeats }).click();
-
-  // 4. Seats and preferences.
-  await page.getByRole("radio", { name: journey.pets }).click();
-  await expect(page.getByRole("radio", { name: journey.pets })).toBeChecked();
   await page.getByRole("button", { name: journey.toReview }).click();
 
   // 5. Check: the photo, car and licence come first and are done from

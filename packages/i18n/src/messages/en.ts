@@ -512,7 +512,7 @@ export const en = {
   "trip.time.notIncreasing": "Make it later than the time at {name}.",
   "trip.time.tooFast": "Too soon after {name}: the drive usually takes {duration}.",
   "trip.time.longBreak": "Planning a long break? This stretch usually takes {duration}.",
-  "trip.time.next": "Set your price",
+  "trip.time.next": "Choose seats",
   "trip.price.title": "Set your price",
   "trip.price.wholeRoute": "A passenger for the whole route pays",
   "trip.price.levelValue": "{level}, a passenger for the whole route pays {price}",
@@ -538,7 +538,7 @@ export const en = {
   "trip.price.stopLowersAll": "Saving lowers the price of every stretch for new bookings.",
   "trip.price.lowered":
     "With {seats, plural, one {# seat} other {# seats}} the highest price level is {level}%, so we lowered yours to it.",
-  "trip.price.next": "Choose seats",
+  "trip.price.next": "Review your trip",
   "trip.seats.title": "Seats and preferences",
   "trip.seatsOffered": "Seats offered",
   "trip.seats.count": "{count, plural, one {# seat} other {# seats}}",
@@ -576,7 +576,7 @@ export const en = {
   "trip.note.tooLong": "Keep the note to {max} characters.",
   "trip.noContactDetails":
     "Please don't share phone numbers, emails or links. Passengers can chat with you in the app once they book.",
-  "trip.seats.next": "Review your trip",
+  "trip.seats.next": "Set your price",
   "trip.review.title": "Check and publish",
   "trip.review.route": "Route",
   "trip.review.times": "Date and times",

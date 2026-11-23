@@ -2,7 +2,9 @@ import type { MyTrip } from "@shareride/contracts";
 import { router } from "expo-router";
 
 /** The five steps of posting a trip (spec 3, screens 4 to 9). */
-export const stepNames = ["route", "time", "price", "seats", "review"] as const;
+// The seats come before the price, as the highest price level depends on
+// them (spec 3, 3.6; spec 17).
+export const stepNames = ["route", "time", "seats", "price", "review"] as const;
 export type StepName = (typeof stepNames)[number];
 
 export const stepNumber = (step: StepName) => stepNames.indexOf(step) + 1;

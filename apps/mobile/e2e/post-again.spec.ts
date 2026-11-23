@@ -26,8 +26,8 @@ test("a driver posts the return of a trip from its page", async ({ page }) => {
   if (day.nextMonth) await page.getByRole("button", { name: "Next month" }).click();
   await page.getByRole("radio", { name: day.name }).click();
   await chooseTime(page, "Leaving N1 Selfoss at", "18:00");
-  await page.getByRole("button", { name: "Set your price" }).click();
   await page.getByRole("button", { name: "Choose seats" }).click();
+  await page.getByRole("button", { name: "Set your price" }).click();
   await page.getByRole("button", { name: "Review your trip" }).click();
   await page.getByRole("button", { name: "Publish trip" }).click();
   await expect(page.getByRole("heading", { name: "Your trip is published" })).toBeVisible();

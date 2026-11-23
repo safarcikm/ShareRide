@@ -352,7 +352,9 @@ changes on a phone.
    and is whole in a small laptop's window (1280 by 720) on every step
    (decision 13). On wide screens these steps have no bottom bar.
 3. "Your trip so far" has a row each for the route, the day and times, the
-   price, and the seats and booking. The open step's row shows what is
+   seats and booking, and the price (in the order of the steps since
+   2026-11-22, when the seats moved before the price; spec 3). The open
+   step's row shows what is
    being chosen, as it is chosen. The steps before it show what the draft
    holds, and so do the day and times whenever they are set. The price and
    the seats, while their steps are still to come, show "Step N", greyed

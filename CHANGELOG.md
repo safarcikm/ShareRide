@@ -1473,6 +1473,10 @@ releases follow [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Offering a ride asks for the seats before the price (spec 3, amended
+  2026-11-22): step 3 is seats and preferences, step 4 the price, which
+  then shows the highest price level for the seats chosen instead of a
+  guess from the last trip.
 - The puffins drive a round, sun-yellow car with a domed roof (spec 15,
   decision 14), seen through its side windows, with a case on the roof: on
   the front page and when a seat is booked. The pale open car almost

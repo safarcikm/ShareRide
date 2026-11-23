@@ -34,15 +34,15 @@ const asShown = (lines: readonly string[]): SoFarRow => ({ lines, spoken: lines.
 const rows = [
   { step: "route", title: "trip.review.route" },
   { step: "time", title: "trip.review.times" },
-  { step: "price", title: "trip.review.price" },
   { step: "seats", title: "trip.review.seats" },
+  { step: "price", title: "trip.review.price" },
 ] as const;
 
 /**
  * "Your trip so far", beside a step of posting a trip on a wide screen
  * (spec 18, 3.13): a row for each step before the review, with what the
  * trip has, or the step that sets it, in grey, until then. Each row is
- * read out as one thing, such as "Price: Step 3".
+ * read out as one thing, such as "Price: Step 4".
  */
 export function TripSoFar({ soFar }: { readonly soFar: SoFar }) {
   const { t } = useLanguage();

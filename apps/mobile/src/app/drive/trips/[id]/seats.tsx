@@ -28,7 +28,7 @@ import { savedSoFar, seatsSoFar } from "@/trips/trip-so-far";
 import { Loading, useDraftOnFocus } from "@/trips/use-draft";
 import { useQuote } from "@/trips/use-quote";
 
-/** Step 4, seats, booking mode, car, preferences and note (spec 3, 3.7). */
+/** Step 3, seats, booking mode, car, preferences and note (spec 3, 3.7), before the price. */
 export default function SeatsStepScreen() {
   const { id, from } = useLocalSearchParams<{ id: string; from?: string }>();
   const { t } = useLanguage();
@@ -89,7 +89,10 @@ function SeatsStep({
     priceLevel: trip.priceLevel,
   });
   const quote = quoted.result?.ok === true ? quoted.result.data : null;
-  const lowered = quote?.warnings.some((warning) => warning.code === "price_level_lowered");
+  // Before the price step the level is only the draft's, so lowering it is
+  // news only when the driver chose it and came back from the review.
+  const lowered =
+    fromReview && quote?.warnings.some((warning) => warning.code === "price_level_lowered");
   const noteProblem = checkNote(note)[0];
 
   const save = async () => {
@@ -113,7 +116,7 @@ function SeatsStep({
       setFailure(errorText(t, saved));
       return;
     }
-    goOn(trip.id, "review", fromReview);
+    goOn(trip.id, "price", fromReview);
   };
 
   return (

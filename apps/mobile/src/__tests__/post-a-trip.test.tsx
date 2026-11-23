@@ -101,8 +101,8 @@ describe("Posting a trip (spec 3)", () => {
     expect(screen.getByRole("header", { name: "Times at the 2 stops" })).toBeVisible();
     expect(screen.getByText("10:00  Borgarnes")).toBeVisible();
     expect(screen.getByText("11:00  Hof, Akureyri")).toBeVisible();
-    await fireEvent.press(screen.getByRole("button", { name: "Set your price" }));
-    expect(await screen.findByRole("header", { name: "Set your price" })).toBeVisible();
+    await fireEvent.press(screen.getByRole("button", { name: "Choose seats" }));
+    expect(await screen.findByRole("header", { name: "Seats and preferences" })).toBeVisible();
     const id = api.trips()[0]?.id ?? "";
     expect(bodiesOf(client, "/v1/trips/{id}")).toEqual([
       {
@@ -114,22 +114,8 @@ describe("Posting a trip (spec 3)", () => {
       },
     ]);
 
-    expect(await screen.findByText("3,000 ISK")).toBeVisible();
-    expect(screen.getByText("Suggested price")).toBeVisible();
-    expect(screen.getByLabelText("BSÍ bus terminal to Borgarnes, 1,500 ISK")).toBeVisible();
-    // Why there is a limit, and that it is for the whole trip (spec 17, section 9).
-    expect(
-      screen.getByText(
-        "The limit is for the whole trip, so what passengers have already booked counts towards it.",
-      ),
-    ).toBeVisible();
-    await fireEvent.press(screen.getByRole("button", { name: "Raise the price" }));
-    expect(await screen.findByText("3,400 ISK")).toBeVisible();
-    expect(screen.queryByText("Suggested price")).toBeNull();
-    expect(screen.getByTestId("price-level-value")).toHaveTextContent("110%");
-    await fireEvent.press(screen.getByRole("button", { name: "Choose seats" }));
-    expect(await screen.findByRole("header", { name: "Seats and preferences" })).toBeVisible();
-
+    // The seats come before the price, which depends on them (spec 3, 3.6).
+    expect(screen.getByText("Step 3 of 5")).toBeVisible();
     await fireEvent.press(screen.getByRole("button", { name: "One seat more" }));
     expect(screen.getByTestId("stepper-value")).toHaveTextContent("4");
     await fireEvent.press(screen.getByRole("radio", { name: /^Instant booking/ }));
@@ -138,8 +124,8 @@ describe("Posting a trip (spec 3)", () => {
       screen.getByLabelText("Note to passengers (optional)"),
       "Room for skis on the roof.",
     );
-    await fireEvent.press(screen.getByRole("button", { name: "Review your trip" }));
-    expect(await screen.findByRole("header", { name: "Check and publish" })).toBeVisible();
+    await fireEvent.press(screen.getByRole("button", { name: "Set your price" }));
+    expect(await screen.findByRole("header", { name: "Set your price" })).toBeVisible();
     expect(bodiesOf(client, "/v1/trips/{id}").at(-1)).toEqual({
       seats: 4,
       bookingMode: "instant",
@@ -153,6 +139,26 @@ describe("Posting a trip (spec 3)", () => {
       },
       note: "Room for skis on the roof.",
     });
+
+    // The price step works its limit out for the seats just chosen.
+    expect(screen.getByText("Step 4 of 5")).toBeVisible();
+    expect(await screen.findByText("3,000 ISK")).toBeVisible();
+    expect(bodiesOf(client, "/v1/routes/quote").at(-1)).toMatchObject({ seats: 4 });
+    expect(screen.getByText("Suggested price")).toBeVisible();
+    expect(screen.getByLabelText("BSÍ bus terminal to Borgarnes, 1,500 ISK")).toBeVisible();
+    // Why there is a limit, and that it is for the whole trip (spec 17, section 9).
+    expect(
+      screen.getByText(
+        "The limit is for the whole trip, so what passengers have already booked counts towards it.",
+      ),
+    ).toBeVisible();
+    await fireEvent.press(screen.getByRole("button", { name: "Raise the price" }));
+    expect(await screen.findByText("3,400 ISK")).toBeVisible();
+    expect(screen.queryByText("Suggested price")).toBeNull();
+    expect(screen.getByTestId("price-level-value")).toHaveTextContent("110%");
+    await fireEvent.press(screen.getByRole("button", { name: "Review your trip" }));
+    expect(await screen.findByRole("header", { name: "Check and publish" })).toBeVisible();
+    expect(bodiesOf(client, "/v1/trips/{id}").at(-1)).toEqual({ priceLevel: 110 });
 
     expect(screen.getByText("Sunday 15 November")).toBeVisible();
     expect(screen.getByText("09:00  BSÍ bus terminal")).toBeVisible();
@@ -348,7 +354,7 @@ describe("Posting a trip (spec 3)", () => {
     expect(
       screen.getByText("Planning a long break? This stretch usually takes 1 h."),
     ).toBeVisible();
-    await fireEvent.press(screen.getByRole("button", { name: "Set your price" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Choose seats" }));
     expect(
       await screen.findByText("Too soon after BSÍ bus terminal: the drive usually takes 1 h."),
     ).toBeVisible();
@@ -415,7 +421,7 @@ describe("Posting a trip (spec 3)", () => {
     expect(await screen.findByText("09:10  Borgarnes")).toBeVisible();
     // A time the driver chose is not worked out.
     expect(screen.queryByText("Worked out from typical driving times.")).toBeNull();
-    await fireEvent.press(screen.getByRole("button", { name: "Set your price" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Choose seats" }));
     expect(
       await screen.findByText("Too soon after BSÍ bus terminal: the drive usually takes 1 h."),
     ).toBeVisible();
@@ -451,7 +457,7 @@ describe("Posting a trip (spec 3)", () => {
     });
     const { client } = await open(`/drive/trips/${draft.id}/time`, [draft]);
     await fireEvent.press(await screen.findByRole("radio", { name: "Saturday 14 November" }));
-    await fireEvent.press(screen.getByRole("button", { name: "Set your price" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Choose seats" }));
     expect(await screen.findByText("Choose the time you're leaving.")).toBeVisible();
     expect(bodiesOf(client, "/v1/trips/{id}")).toEqual([]);
     // It is noon, so 12:30 is the earliest; the stops follow from it.
@@ -484,8 +490,8 @@ describe("Posting a trip (spec 3)", () => {
       "Time at Hof, Akureyri: Choose a time",
     );
     await chooseTime("Time at Hof, Akureyri", "11:05");
-    await fireEvent.press(screen.getByRole("button", { name: "Set your price" }));
-    expect(await screen.findByRole("header", { name: "Set your price" })).toBeVisible();
+    await fireEvent.press(screen.getByRole("button", { name: "Choose seats" }));
+    expect(await screen.findByRole("header", { name: "Seats and preferences" })).toBeVisible();
     expect(bodiesOf(client, "/v1/trips/{id}")).toEqual([
       {
         plannedTimes: [
@@ -501,7 +507,7 @@ describe("Posting a trip (spec 3)", () => {
     await open(`/drive/trips/${plannedDraft().id}/time`, [plannedDraft()]);
     await fireEvent.press(await screen.findByRole("radio", { name: "Saturday 14 November" }));
     await chooseTime("Leaving BSÍ bus terminal at", "12:10");
-    await fireEvent.press(screen.getByRole("button", { name: "Set your price" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Choose seats" }));
     expect(await screen.findByText("Leave at least 30 minutes from now.")).toBeVisible();
     expect(screen.getByRole("radio", { name: "Friday 13 November" })).toBeDisabled();
   });
@@ -528,16 +534,32 @@ describe("Posting a trip (spec 3)", () => {
     expect(bodiesOf(client, "/v1/routes/quote").at(-1)).toMatchObject({ priceLevel: 80 });
   });
 
-  it("lowers the price level when more seats bring the highest down", async () => {
+  it("quietly keeps a draft's price level within the highest for more seats, before the price step", async () => {
     const draft = plannedDraft({ priceLevel: 150 });
     const { client } = await open(`/drive/trips/${draft.id}/seats`, [draft]);
+    await fireEvent.press(await screen.findByRole("button", { name: "One seat more" }));
+    expect(await screen.findByTestId("stepper-value")).toHaveTextContent("4");
+    // No price was chosen yet on this pass, so there is nothing to tell.
+    expect(screen.queryByText(/so we lowered yours to it/)).toBeNull();
+    await fireEvent.press(screen.getByRole("button", { name: "Set your price" }));
+    await screen.findByRole("header", { name: "Set your price" });
+    expect(bodiesOf(client, "/v1/trips/{id}")).toEqual([
+      expect.objectContaining({ seats: 4, priceLevel: 110 }),
+    ]);
+    expect(await screen.findByTestId("price-level-value")).toHaveTextContent("110%");
+  });
+
+  it("tells the driver when more seats, changed from the review, lower the price chosen", async () => {
+    const draft = plannedDraft({ priceLevel: 150 });
+    const { client } = await open(`/drive/trips/${draft.id}/review`, [draft]);
+    await fireEvent.press(await screen.findByRole("link", { name: "Edit: Seats and booking" }));
     await fireEvent.press(await screen.findByRole("button", { name: "One seat more" }));
     expect(
       await screen.findByText(
         "With 4 seats the highest price level is 110%, so we lowered yours to it.",
       ),
     ).toBeVisible();
-    await fireEvent.press(screen.getByRole("button", { name: "Review your trip" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Save changes" }));
     await screen.findByRole("header", { name: "Check and publish" });
     expect(bodiesOf(client, "/v1/trips/{id}")).toEqual([
       expect.objectContaining({ seats: 4, priceLevel: 110 }),
@@ -555,7 +577,7 @@ describe("Posting a trip (spec 3)", () => {
         "Please don't share phone numbers, emails or links. Passengers can chat with you in the app once they book.",
       ),
     ).toBeVisible();
-    await fireEvent.press(screen.getByRole("button", { name: "Review your trip" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Set your price" }));
     expect(bodiesOf(client, "/v1/trips/{id}")).toEqual([]);
   });
 
@@ -762,16 +784,18 @@ describe("Posting a trip (spec 3)", () => {
 
   it("never saves an old copy of a step over a change made from the review", async () => {
     const draft = plannedDraft();
-    const { api } = await open(`/drive/trips/${draft.id}/seats`, [draft]);
-    await fireEvent.press(await screen.findByRole("button", { name: "Review your trip" }));
+    const { api } = await open(`/drive/trips/${draft.id}/price`, [draft]);
+    expect(await screen.findByText("3,000 ISK")).toBeVisible();
+    await fireEvent.press(screen.getByRole("button", { name: "Review your trip" }));
     await fireEvent.press(await screen.findByRole("link", { name: "Edit: Price" }));
     await fireEvent.press(await screen.findByRole("button", { name: "Raise the price" }));
     expect(await screen.findByText("3,400 ISK")).toBeVisible();
     await fireEvent.press(screen.getByRole("button", { name: "Save changes" }));
     expect(await screen.findByText("110% · the whole route 3,400 ISK")).toBeVisible();
-    // Back from the review is the seats step the driver came through.
+    // Back from the review is the price step the driver came through, at 100% then.
     await fireEvent.press(screen.getByRole("button", { name: "Back" }));
-    expect(await screen.findByRole("header", { name: "Seats and preferences" })).toBeVisible();
+    expect(await screen.findByRole("header", { name: "Set your price" })).toBeVisible();
+    expect(await screen.findByText("3,400 ISK")).toBeVisible();
     await fireEvent.press(await screen.findByRole("button", { name: "Review your trip" }));
     expect(await screen.findByText("110% · the whole route 3,400 ISK")).toBeVisible();
     expect(api.trips()[0]?.priceLevel).toBe(110);
@@ -779,8 +803,9 @@ describe("Posting a trip (spec 3)", () => {
 
   it("leaves the posting steps behind once the trip is published", async () => {
     const draft = plannedDraft();
-    await open(`/drive/trips/${draft.id}/seats`, [draft]);
-    await fireEvent.press(await screen.findByRole("button", { name: "Review your trip" }));
+    await open(`/drive/trips/${draft.id}/price`, [draft]);
+    expect(await screen.findByText("3,000 ISK")).toBeVisible();
+    await fireEvent.press(screen.getByRole("button", { name: "Review your trip" }));
     await fireEvent.press(await screen.findByRole("button", { name: "Publish trip" }));
     await fireEvent.press(await screen.findByRole("button", { name: "See my trips" }));
     expect(await screen.findByRole("header", { name: "My trips" })).toBeVisible();
@@ -1015,8 +1040,8 @@ describe("Posting a trip on a laptop (spec 18, 3.13)", () => {
     expect(soFar().getByRole("header", { name: "Your trip so far" })).toBeVisible();
     expect(soFar().getByLabelText("Route: Step 1")).toBeVisible();
     expect(soFar().getByLabelText("Date and times: Step 2")).toBeVisible();
-    expect(soFar().getByLabelText("Price: Step 3")).toBeVisible();
-    expect(soFar().getByLabelText("Seats and booking: Step 4")).toBeVisible();
+    expect(soFar().getByLabelText("Seats and booking: Step 3")).toBeVisible();
+    expect(soFar().getByLabelText("Price: Step 4")).toBeVisible();
     expect(side().getByRole("button", { name: "Choose date and time" })).toBeVisible();
 
     // The side column takes the bottom bar's place, and each thing is there once.
@@ -1098,37 +1123,38 @@ describe("Posting a trip on a laptop (spec 18, 3.13)", () => {
     expect(
       soFar().getByLabelText("Date and times: Sunday 15 November, 09:00 to 11:00"),
     ).toBeVisible();
-    expect(soFar().getByLabelText("Price: Step 3")).toBeVisible();
-    expect(soFar().getByLabelText("Seats and booking: Step 4")).toBeVisible();
-    expect(side().getByRole("button", { name: "Set your price" })).toBeVisible();
+    expect(soFar().getByLabelText("Seats and booking: Step 3")).toBeVisible();
+    expect(soFar().getByLabelText("Price: Step 4")).toBeVisible();
+    expect(side().getByRole("button", { name: "Choose seats" })).toBeVisible();
     expect(screen.queryByTestId("bottom-bar")).toBeNull();
   });
 
-  it("shows what earlier steps set, and the price and seats as they are chosen", async () => {
+  it("shows what earlier steps set, and the seats and price as they are chosen", async () => {
     const draft = plannedDraft();
-    await open(`/drive/trips/${draft.id}/price`, [draft]);
-    expect(await main().findByText("3,000 ISK")).toBeVisible();
+    await open(`/drive/trips/${draft.id}/seats`, [draft]);
+    expect(
+      await soFar().findByLabelText("Seats and booking: 3 seats, I approve each passenger"),
+    ).toBeVisible();
     expect(
       soFar().getByLabelText("Route: BSÍ bus terminal to Hof, Akureyri, 1 stop on the way"),
     ).toBeVisible();
     expect(
       soFar().getByLabelText("Date and times: Sunday 15 November, 09:00 to 11:00"),
     ).toBeVisible();
-    expect(soFar().getByLabelText("Price: 100% · the whole route 3,000 ISK")).toBeVisible();
-    expect(soFar().getByLabelText("Seats and booking: Step 4")).toBeVisible();
+    expect(soFar().getByLabelText("Price: Step 4")).toBeVisible();
     expect(screen.queryByTestId("bottom-bar")).toBeNull();
 
-    await fireEvent.press(main().getByRole("button", { name: "Raise the price" }));
-    expect(await soFar().findByLabelText("Price: 110% · the whole route 3,400 ISK")).toBeVisible();
-    await fireEvent.press(side().getByRole("button", { name: "Choose seats" }));
-    expect(await screen.findByRole("header", { name: "Seats and preferences" })).toBeVisible();
-    expect(await soFar().findByLabelText("Price: 110% · the whole route 3,400 ISK")).toBeVisible();
-    expect(
-      soFar().getByLabelText("Seats and booking: 3 seats, I approve each passenger"),
-    ).toBeVisible();
     await fireEvent.press(main().getByRole("button", { name: "One seat more" }));
     await fireEvent.press(main().getByRole("radio", { name: /^Instant booking/ }));
     expect(soFar().getByLabelText("Seats and booking: 4 seats, Instant booking")).toBeVisible();
+    await fireEvent.press(side().getByRole("button", { name: "Set your price" }));
+    expect(await screen.findByRole("header", { name: "Set your price" })).toBeVisible();
+    expect(
+      await soFar().findByLabelText("Seats and booking: 4 seats, Instant booking"),
+    ).toBeVisible();
+    expect(await soFar().findByLabelText("Price: 100% · the whole route 3,000 ISK")).toBeVisible();
+    await fireEvent.press(main().getByRole("button", { name: "Raise the price" }));
+    expect(await soFar().findByLabelText("Price: 110% · the whole route 3,400 ISK")).toBeVisible();
     expect(side().getByRole("button", { name: "Review your trip" })).toBeVisible();
   });
 
@@ -1224,7 +1250,7 @@ describe("Posting a trip on a laptop (spec 18, 3.13)", () => {
     expect(await main().findByRole("button", { name: "Try again" })).toBeVisible();
     expect(screen.getByTestId("page")).toBeVisible();
     expect(main().getByRole("button", { name: "Back" })).toBeVisible();
-    expect(main().getByText("Step 3 of 5")).toBeVisible();
+    expect(main().getByText("Step 4 of 5")).toBeVisible();
     expect(screen.queryByTestId("trip-so-far")).toBeNull();
   });
 
