@@ -107,6 +107,13 @@
 Each provider that touches personal data, chosen in an ADR. "DPA" is a data
 processing agreement; Martin signs each one when he opens the account.
 
+Production (`puffinride.is`, public since 2026-11-22) uses the same
+providers as staging, with its own Render database and services, its own
+Hetzner project and bucket (`puffinride-photos`, Nuremberg) and its own
+Google sign-in client; Sentry tells the two apart by environment. The
+agreements below are still to sign
+([production runbook](../operations/production.md#set-it-up-once), step 10).
+
 | Provider | Role | Personal data | Where | Decision | DPA |
 | -------- | ---- | ------------- | ----- | -------- | --- |
 | Render | Processor | Everything the API stores: the database, logs. Requests reach Render through Cloudflare (United States company), which ends TLS at its nearest edge and so handles every request in transit | Frankfurt, Germany (United States company); Cloudflare's edge nearest the user | [ADR 0018](../decisions/0018-hosting-on-render-frankfurt.md) | To sign; check that Render's DPA lists Cloudflare as a sub-processor |

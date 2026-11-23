@@ -37,9 +37,10 @@ What makes it production, rather than a second staging:
 
 ## Set it up (once)
 
-Claude first merges the blueprint and the published legal texts, and makes
-the first release, which creates the `production` branch that Render needs. Then Martin's steps, in
-order. Keys go into Render's secret store only, never into chat, email or
+Done on 2026-11-22, except steps 10 and 11 (still Martin's). Kept for a
+rebuild and as the record. Claude first merges the blueprint and the
+published legal texts, and makes the first release, which creates the
+`production` branch that Render needs. Then Martin's steps, in order. Keys go into Render's secret store only, never into chat, email or
 the repository.
 
 1. **The blueprint.** In Render, **New**, **Blueprint**, the repository,
@@ -101,10 +102,14 @@ the repository.
    required** is off.
 6. **Meeting points.** **Meeting points**, **Import**, the file
    `packages/db/src/places/settlement-meeting-points.csv` (a copy is in the
-   project files, `meeting-points/`). The points arrive as drafts. Check
-   each one and activate it ([spec 21](../specs/2026-11-22-meeting-points-for-every-settlement.md));
-   a photo is recommended, not required (ADR 0036). Nobody can post a ride
-   until points are active.
+   project files, `meeting-points/`), then the same for
+   `packages/db/src/places/sight-meeting-points.csv`, the sights' car parks
+   ([spec 21](../specs/2026-11-22-meeting-points-for-every-settlement.md),
+   3.6). The points arrive as drafts. Check each one and activate it, or
+   use **Confirm and activate** on the list for the ones that pass the
+   checks; a photo is recommended, not required (ADR 0036). Nobody can post
+   a ride until points are active. The console needs you to choose the file
+   yourself: Claude cannot attach a file in the browser.
 7. **Google sign-in.** In [Google Cloud](https://console.cloud.google.com/),
    signed in as `admin@puffinride.is`, the project `PuffinRide`:
    - **Clients**, **Create client**: **Web application**, name
@@ -120,9 +125,11 @@ the repository.
 8. **Uptime.** In Sentry, `shareride-api`, **Alerts**, **Uptime Monitors**:
    a monitor for `https://puffinride.is/v1/health/ready`, every minute,
    environment `production`, alerting you by email and in the Sentry app.
-9. **Close staging to strangers.** In staging's console,
-   **Settings**, **Beta**: turn on **Invite code required**, so nobody
-   signs up on staging by mistake. Testers get codes from the console.
+9. **Staging stays open.** Martin chose on 2026-11-22 to leave **Invite
+   code required** off on staging too. Its pages tell search engines not to
+   list them (spec 23). To close it later: staging's console, **Settings**,
+   **Beta**, turn on **Invite code required**; testers then get codes from
+   the console.
 10. **Data agreements.** Sign each provider's data processing agreement
     and tick it in the [privacy register](../compliance/privacy-gdpr.md#providers):
     Render, Vonage, Sentry, Mailjet and, once photos are on, Hetzner. In
@@ -201,9 +208,9 @@ These work as in the [staging runbook](staging.md), on `puffinride-api`,
 
 ## Turn on photos
 
-Production keeps its photos apart from staging's. Hetzner's S3 credentials
-open every bucket in their project, so the production bucket goes in a
-Hetzner project of its own:
+Done on 2026-11-22. Production keeps its photos apart from staging's.
+Hetzner's S3 credentials open every bucket in their project, so the
+production bucket goes in a Hetzner project of its own:
 
 1. In the Hetzner Console, **New project** `PuffinRide production`, then
    **Object Storage**, **Create Bucket**: location Nuremberg (`nbg1`), name
@@ -213,7 +220,10 @@ Hetzner project of its own:
 3. In `puffinride-api`, **Environment**: `PHOTO_STORAGE` = `hetzner`,
    `PHOTO_BUCKET_ENDPOINT` = `https://nbg1.your-objectstorage.com`,
    `PHOTO_BUCKET` = `puffinride-photos`, and `PHOTO_BUCKET_ACCESS_KEY` and
-   `PHOTO_BUCKET_SECRET_KEY`. Save; Render deploys again.
+   `PHOTO_BUCKET_SECRET_KEY`, all five in one save; with only the keys,
+   photos stay off. Render deploys again. Check: the page's
+   `Content-Security-Policy` names
+   `https://puffinride-photos.nbg1.your-objectstorage.com` under `img-src`.
 4. Check as on staging ([Turn on photos](staging.md#turn-on-photos), step 4).
 
 ## Google Search Console

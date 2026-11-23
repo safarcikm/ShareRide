@@ -248,8 +248,11 @@ beta is open to everyone,
 [ADR 0042](../decisions/0042-production-on-render-released-with-a-button.md),
 [runbook](../operations/production.md))
 
-- [ ] Production environment, separate from staging
-- [ ] Email from our own domain
+- [x] Production environment, separate from staging: live for the public on
+      2026-11-22 (the open beta, ADR 0035), with Google sign-in, photos, pay
+      in person and 136 meeting points
+- [x] Email from our own domain: `hello@puffinride.is` through Mailjet,
+      with SPF and DKIM
 - [x] Web members reached by email: the hour-before reminder, requests and
       "How was your trip?", links that open after signing in, and an email
       at sign-up on the web
@@ -291,9 +294,10 @@ Milestone 16: ready for the beta
 - [ ] Accessibility pass to WCAG 2.2 AA
 - [ ] Icelandic texts checked by a native speaker
 - [ ] TestFlight and Google Play internal testing builds against production
-- [ ] The real meeting points for the beta corridors in production (a
-      point in or near every settlement since spec 21: the import file is
-      built, the operator imports, checks and activates them)
+- [x] The real meeting points for the beta corridors in production (a
+      point in or near every settlement since spec 21): Martin imported,
+      checked and activated the 104 settlement points and the 32 sights on
+      2026-11-22
 
 Martin's steps, in the order of what they unblock:
 
