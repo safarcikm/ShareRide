@@ -1469,6 +1469,19 @@ releases follow [Semantic Versioning](https://semver.org/).
   ("Sign in faster next time"). Migration 0063 (`member_passwords`, and
   the passkey tables for spec 27's next part); Download my data says
   whether a password is set.
+- Face ID or fingerprint on the website (spec 27, ADR 0048): a passkey kept
+  on the device's own lock (Face ID, Touch ID, a fingerprint, Windows
+  Hello), never a hardware key. `POST /v1/auth/passkey/options` and
+  `/v1/auth/passkey` sign in with no email typed; `POST /v1/me/passkeys/options`,
+  `POST /v1/me/passkeys` and `DELETE /v1/me/passkeys/{id}` set it up and
+  remove it; `GET /v1/me/sign-in-methods` lists the devices and `GET
+  /v1/config` says `passkeySignIn`. The sign-in screen's "Face ID or
+  fingerprint" button where the browser has a built-in authenticator, the
+  devices in Settings, Sign-in methods, and "Use Face ID or fingerprint"
+  after sign-up. Setting one up needs a sign-in in the last 10 minutes or a
+  confirm code, at most 10 devices, and an email to the verified address;
+  Download my data lists the devices. New app package
+  `@simplewebauthn/browser`.
 
 ### Fixed
 

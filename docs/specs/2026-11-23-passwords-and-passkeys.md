@@ -107,6 +107,9 @@ button for Face ID or fingerprint:
    (removed in Settings, or the console's own passkey, which lives on the
    same domain) gives: "This device's sign-in isn't set up for your
    PuffinRide account. Use your email, then set it up again in Settings."
+   An answer after the sheet's 5 minutes gives "That took too long. Try
+   again." Closing the sheet keeps its challenge for the next tap (my call:
+   some browsers open the sheet only from a tap).
 3. Then as 3.2, item 3.
 
 ### 3.4 Forgot your password
@@ -166,11 +169,14 @@ button for Face ID or fingerprint:
 1. Sign-in methods lists, below the email and Google, **Password** ("Set"
    with the date it was last changed, or "Not set") and **Face ID or
    fingerprint**: one line per device, such as "Safari on iPhone", with
-   "Added 23 Nov 2026" and "Last used 24 Nov 2026", and "Remove".
+   "Added 23 November 2026" and "Last used 24 November 2026" ("Not used
+   yet" before the first sign-in), and "Remove".
 2. "Set up on this device" appears where the browser has a built-in
    authenticator (as 3.1, item 1). It asks for the proof of 3.5, item 5,
    then the browser's own sheet, and saves a passkey kept on the device
-   only (R27.6). The device's name comes from the browser (my call: "Chrome
+   only (R27.6). After a confirm code, closing the browser's sheet and
+   pressing again uses the same setup for its 5 minutes, with no new code
+   (my call: some browsers open the sheet only from a tap). The device's name comes from the browser (my call: "Chrome
    on Windows", "Safari on Mac"; no field to type a name).
 3. A device already set up says so: the browser refuses a second passkey on
    the same device, and the screen says "This device is set up already."
@@ -249,7 +255,7 @@ Endpoints (`/v1`, shapes in `packages/contracts`):
 | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
 | `POST /auth/password`            | New: email, password, device. Signed in with tokens (as `POST /auth/email/verify`), or `credentials_invalid`, `rate_limited`        |
 | `POST /auth/passkey/options`     | New: the options for the browser's passkey sheet. Limited per network address                                                       |
-| `POST /auth/passkey`             | New: the browser's answer and the device. Signed in with tokens, or `passkey_invalid`                                               |
+| `POST /auth/passkey`             | New: the browser's answer and the device. Signed in with tokens, or `passkey_invalid`, `passkey_expired` (challenge used or late)   |
 | `PUT /me/password`               | New: the password, and `code` when R27.5 asks for one. `confirm_required`, `email_required`, `password_invalid` (with the reason)    |
 | `DELETE /me/password`            | New                                                                                                                                   |
 | `POST /me/passkeys/options`      | New: `code` when R27.5 asks for one. The options for the browser, or `confirm_required`, `too_many`                                 |
