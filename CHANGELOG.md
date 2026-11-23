@@ -1502,6 +1502,10 @@ releases follow [Semantic Versioning](https://semver.org/).
   phone the name, the language and the puffins' car stand on a sky with
   mountains, glaciers, hills and a road, and on a laptop the title's line
   and the top of the search sit on a rounded panel with the same land.
+- Signed out, My rides, Offer, Messages and Profile have the puffin by its
+  pin over their title; Profile says what an account is for and shows the
+  meeting points and the legal documents as rows. Offer's first step says
+  what meeting points are for until both ends are chosen.
 - Sign out is on Profile too (spec 16, 3.4 item 4), under the rows; Sign
   out on all devices stays in Settings.
 - The living docs and the legal drafts say PuffinRide (ADR 0039): the

@@ -79,7 +79,12 @@ say where you are and what happens next.
      with "Sign in to offer a ride". After signing up, the posting form opens.
    - **Messages** says "Sign in to see your messages", with Sign in.
    - **Profile** shows Sign in, the language choice, the meeting points and
-     the legal documents.
+     the legal documents. Since 2026-11-22: "Sign in to book seats, offer
+     rides and keep your trips and messages in one place." with Sign in,
+     then the rows Meeting points and Terms, rules and privacy, as signed
+     in (3.4), then the language.
+   - My rides, Offer, Messages and Profile have the puffin by its pin over
+     their title, as an empty screen does (spec 15, 5.3).
 4. Pressing the tab you are on takes that tab back to its main screen.
 5. Signing in or out never changes the menu. After signing in, the app goes
    where the person was heading (a ride, Offer), or to Find. It no longer

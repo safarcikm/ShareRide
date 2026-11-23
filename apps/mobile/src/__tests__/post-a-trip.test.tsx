@@ -277,6 +277,22 @@ describe("Posting a trip (spec 3)", () => {
     expect(await screen.findByText("Borgarnes is already on your route.")).toBeVisible();
   });
 
+  it("says what meeting points are for until both ends are chosen", async () => {
+    await open("/drive/trips/new");
+    await screen.findByRole("header", { name: "Where are you driving?" });
+    const hint =
+      "Start and end at meeting points, so your passengers know where to find you. The meeting points on the way come next.";
+    expect(screen.getByText(hint)).toBeVisible();
+    // With the puffin by its pin, which screen readers skip.
+    expect(screen.getByTestId("puffin-by-pin", { includeHiddenElements: true })).toBeTruthy();
+    await choosePoint("From", "bs", "BSÍ bus terminal");
+    expect(screen.getByText(hint)).toBeVisible();
+    await choosePoint("To", "hof", "Hof, Akureyri");
+    await screen.findByRole("switch", { name: "Borgarnes" });
+    expect(screen.queryByText(hint)).toBeNull();
+    expect(screen.queryByTestId("puffin-by-pin", { includeHiddenElements: true })).toBeNull();
+  });
+
   it("needs both ends, and swaps them with the stops in between", async () => {
     await open("/drive/trips/new");
     await screen.findByRole("header", { name: "Where are you driving?" });
@@ -840,7 +856,12 @@ describe("Posting a trip (spec 3)", () => {
     expect(screen.getByText("Delete this draft? You can't undo this.")).toBeVisible();
     await fireEvent.press(screen.getByRole("button", { name: "Delete draft" }));
     expect(await screen.findByText("You have no trips yet.")).toBeVisible();
-    expect(screen.getByTestId("puffin-by-pin", { includeHiddenElements: true })).toBeTruthy();
+    // One puffin for My trips; Offer's first step, open behind it, has its
+    // own with its sentence.
+    const hidden = { includeHiddenElements: true };
+    const puffins = screen.queryAllByTestId("puffin-by-pin", hidden).length;
+    const steps = screen.queryAllByText(/^Start and end at meeting points/, hidden).length;
+    expect(puffins - steps).toBe(1);
     expect(api.trips()).toEqual([]);
   });
 });

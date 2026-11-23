@@ -104,7 +104,11 @@ missing, and each item can be done from there:
 
 1. **From** and **To**: the place search from spec 2, dropping down under
    the field on the route step, as in search (spec 4, 3.1; decision 10).
-   Choosing a town lists its nearest meeting points in the same list.
+   Choosing a town lists its nearest meeting points in the same list. Until
+   both are chosen, the puffin by its pin and "Start and end at meeting
+   points, so your passengers know where to find you. The meeting points on
+   the way come next." stand under them, where the stops come later
+   (amended 2026-11-22, spec 15, 5.3).
 2. **Stops are added automatically** (decision 1): every active meeting point
    that lies on the way becomes a stop, in route order. A point is on the way
    when going through it adds at most 5% or 3 km to the direct distance,

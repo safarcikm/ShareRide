@@ -247,6 +247,8 @@ export const is = {
   "profile.licenceConfirmed": "Staðfest",
   "profile.licenceNotYet": "Ekki staðfest enn",
   "profile.legal": "Skilmálar, reglur og persónuvernd",
+  "profile.welcome":
+    "Skráðu þig inn til að bóka sæti, bjóða far og hafa ferðirnar og skilaboðin á einum stað.",
   "profile.inSettings": "Símanúmer, tungumál og útskráning á öllum tækjum eru í stillingum.",
   "profile.noCars": "Engir bílar enn. Bættu við bílnum sem þú ekur.",
   "profile.photo.add": "Bæta við mynd",
@@ -489,6 +491,8 @@ export const is = {
   "trip.route.pointPaused": "Þessi mótsstaður er í hléi núna. Veldu annan.",
   "trip.route.sameEnds": "Upphaf og endir verða að vera ólíkir mótsstaðir.",
   "trip.route.chooseBoth": "Veldu hvaðan þú leggur af stað og hvert þú ferð.",
+  "trip.route.hint":
+    "Byrjaðu og endaðu á mótsstöðum, svo farþegarnir viti hvar þeir finna þig. Mótsstaðirnir á leiðinni koma næst.",
   "trip.route.map": "Leiðin þín á korti af Íslandi: {route}.",
   "trip.route.stopsTitle": "Viðkomustaðir á leiðinni",
   "trip.stopsAdded":

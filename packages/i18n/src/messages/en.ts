@@ -241,6 +241,8 @@ export const en = {
   "profile.licenceConfirmed": "Confirmed",
   "profile.licenceNotYet": "Not confirmed yet",
   "profile.legal": "Terms, rules and privacy",
+  "profile.welcome":
+    "Sign in to book seats, offer rides and keep your trips and messages in one place.",
   "profile.inSettings": "Phone number, language and signing out on all devices are in Settings.",
   "profile.noCars": "No cars yet. Add the car you drive.",
   "profile.photo.add": "Add a photo",
@@ -477,6 +479,8 @@ export const en = {
   "trip.route.pointPaused": "This meeting point is paused right now. Choose another.",
   "trip.route.sameEnds": "Start and end must be different meeting points.",
   "trip.route.chooseBoth": "Choose where you start and where you're going.",
+  "trip.route.hint":
+    "Start and end at meeting points, so your passengers know where to find you. The meeting points on the way come next.",
   "trip.route.map": "Your route on a map of Iceland: {route}.",
   "trip.route.stopsTitle": "Stops on the way",
   "trip.stopsAdded":

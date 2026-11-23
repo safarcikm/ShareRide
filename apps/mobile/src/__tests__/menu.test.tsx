@@ -92,6 +92,8 @@ describe("The menu (spec 16, 3.1)", () => {
     await renderApp("/");
     await fireEvent.press(await screen.findByRole("tab", { name: "My rides" }));
     expect(await screen.findByRole("header", { name: "Sign in to see your rides" })).toBeVisible();
+    // A signed-out place has the puffin by its pin over its title.
+    expect(screen.getByTestId("puffin-by-pin", { includeHiddenElements: true })).toBeTruthy();
     expect(tab("My rides")).toBeSelected();
     expect(screen).toHavePathname("/my-rides");
     // A main screen has no Back button.
@@ -113,16 +115,33 @@ describe("The menu (spec 16, 3.1)", () => {
     expect(key).toBe("pending-offer");
   });
 
-  it("shows Sign in, the language, meeting points and the legal documents on Profile when signed out", async () => {
+  it("welcomes on Profile when signed out: what an account is for and Sign in, then rows and the language", async () => {
     await renderApp("/");
     await fireEvent.press(await screen.findByRole("tab", { name: "Profile" }));
     expect(await screen.findByRole("header", { name: "Profile" })).toBeVisible();
+    // The puffin by its pin, which screen readers skip, over the welcome.
+    expect(screen.getByTestId("puffin-by-pin", { includeHiddenElements: true })).toBeTruthy();
+    expect(screen.queryByTestId("puffin-by-pin")).toBeNull();
+    expect(
+      screen.getByText(
+        "Sign in to book seats, offer rides and keep your trips and messages in one place.",
+      ),
+    ).toBeVisible();
     expect(screen.getByRole("button", { name: "Sign in" })).toBeVisible();
+    // The same rows as signed in.
+    expect(screen.getByRole("button", { name: "Meeting points" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Terms, rules and privacy" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Change the language to Icelandic" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "See the meeting points" })).toBeVisible();
-    expect(screen.getByRole("link", { name: "Read the Terms of Service" })).toBeVisible();
-    expect(screen.getByRole("link", { name: "Read the Community Rules" })).toBeVisible();
-    expect(screen.getByRole("link", { name: "Read the Privacy Policy" })).toBeVisible();
+  });
+
+  it("opens the legal documents from Profile when signed out", async () => {
+    await renderApp("/");
+    await fireEvent.press(await screen.findByRole("tab", { name: "Profile" }));
+    await fireEvent.press(await screen.findByRole("button", { name: "Terms, rules and privacy" }));
+    expect(await screen.findByRole("button", { name: "Terms of Service" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Community Rules" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Privacy Policy" })).toBeVisible();
+    expect(screen).toHavePathname("/legal");
   });
 
   it("opens a ride on top, with Back and without the tab bar", async () => {
