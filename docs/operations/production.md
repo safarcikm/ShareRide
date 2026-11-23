@@ -233,6 +233,8 @@ To tell Google about the site, once:
    Google shows a TXT record (`google-site-verification=…`).
 2. At ISNIC, **DNS Hosting** for `puffinride.is`, add a **TXT** record on
    the domain itself (`@`) with that value. Keep the A and CNAME records.
+   (On 2026-11-23 Google verified the domain on its own, from the record
+   Google Workspace already has, so this step was not needed.)
 3. Back in Search Console, **Verify**. It can take a few minutes, sometimes
    hours, for the record to show.
 4. **Sitemaps**: add `https://puffinride.is/sitemap.xml`. Its status should
@@ -254,6 +256,10 @@ accept the question about cookies, and only by each screen's pattern
 Without `GOOGLE_ANALYTICS_ID` the site asks nothing and loads nothing from
 Google; the phone apps never count.
 
+Done on 2026-11-23: account `PuffinRide` (417208564), property `PuffinRide`
+(565494786), web stream `PuffinRide website` with measurement ID
+`G-7FY53BDC5M`, set in Render. The steps, for a new property:
+
 Once, as `admin@puffinride.is`:
 
 1. In [Google Analytics](https://analytics.google.com), **Admin**,
@@ -264,9 +270,11 @@ Once, as `admin@puffinride.is`:
    name `PuffinRide website`. Turn **Enhanced measurement** off: it would
    send the real address of each screen.
 3. In the property, **Data collection and modification**:
-   **Data retention**: event data **14 months**; **Data collection**:
-   Google signals off. In the account's **Account details**, data sharing:
-   every box off.
+   **Data retention**: event data **14 months**, and **Reset on new user
+   activity** off, so nothing is kept longer than the privacy policy says;
+   **Data collection**: Google signals off, and under **Advanced settings to
+   allow for ads personalization**, **Disallow all** regions. In the
+   account's **Account details**, data sharing: every box off.
 4. Copy the stream's **Measurement ID** (`G-` and ten letters and digits).
 5. In Render, `puffinride-api`, **Environment**: `GOOGLE_ANALYTICS_ID` =
    that ID. Save; Render deploys again. The ID is not a secret, but it is
