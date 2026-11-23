@@ -1456,6 +1456,19 @@ releases follow [Semantic Versioning](https://semver.org/).
   email and the same number once, and the email is added; a lost email is
   replaced the same way, and the old address is told. Settings, Sign-in
   methods lists the email.
+- Passwords for members (spec 27, ADR 0047): `POST /v1/auth/password`,
+  `PUT` and `DELETE /v1/me/password`, and the password in `GET
+  /v1/me/sign-in-methods`; 8 to 128 characters with no other rule than
+  not a common password or the email; scrypt hashes from `node:crypto`,
+  checked outside any database transaction, one answer for every wrong
+  try, 10 wrong tries an hour per email and 30 per network address, and an
+  email to the verified address on each change. The
+  sign-in screen takes a password under the email ("Send code" becomes
+  "Sign in"), with "Forgot your password?" through the email code;
+  Choose a password in Settings, Sign-in methods, and once after sign-up
+  ("Sign in faster next time"). Migration 0063 (`member_passwords`, and
+  the passkey tables for spec 27's next part); Download my data says
+  whether a password is set.
 
 ### Fixed
 

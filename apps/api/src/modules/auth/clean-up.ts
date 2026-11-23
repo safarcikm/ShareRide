@@ -6,6 +6,7 @@ import { notHeld } from "../privacy/holds.ts";
 const {
   emailSignIns,
   emailVerifications,
+  memberPasskeyChallenges,
   providerSignIns,
   pushTokens,
   rateLimitEvents,
@@ -26,6 +27,8 @@ export interface CleanUpCounts {
   readonly providerSignIns: number;
   /** Email sign-ins waiting for the phone step, an hour after they expired (spec 26). */
   readonly emailSignIns: number;
+  /** Members' passkey challenges, an hour after they expired (spec 27). */
+  readonly passkeyChallenges: number;
 }
 
 /**
@@ -102,10 +105,16 @@ export async function cleanUpSignInRecords(db: Database, now: Date): Promise<Cle
       .where(lt(emailSignIns.expiresAt, cutoff.emailSignInsExpiredBefore))
       .returning({ id: emailSignIns.id });
 
+    const challengeRows = await tx
+      .delete(memberPasskeyChallenges)
+      .where(lt(memberPasskeyChallenges.expiresAt, cutoff.passkeyChallengesExpiredBefore))
+      .returning({ id: memberPasskeyChallenges.id });
+
     return {
       emailLinks: links.length,
       providerSignIns: providerRows.length,
       emailSignIns: emailRows.length,
+      passkeyChallenges: challengeRows.length,
       codes: codes.length,
       rateLimitEvents: events.length,
       tokens: tokens.length,

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { pendingSignInSchema, signInProviderSchema } from "./auth.ts";
+import { passwordInputSchema, pendingSignInSchema, signInProviderSchema } from "./auth.ts";
 import { timestampSchema } from "./common.ts";
 import { errorResponseSchema } from "./errors.ts";
 import { confirmCodeErrors } from "./me.ts";
@@ -20,7 +20,15 @@ export const signInMethodSchema = z.object({
 
 export type SignInMethod = z.infer<typeof signInMethodSchema>;
 
-export const signInMethodsSchema = z.object({ methods: z.array(signInMethodSchema) });
+/** The account's password, when it has one: never the password itself (spec 27, R27.3). */
+export const passwordStateSchema = z.object({ setAt: timestampSchema });
+export type PasswordState = z.infer<typeof passwordStateSchema>;
+
+export const signInMethodsSchema = z.object({
+  methods: z.array(signInMethodSchema),
+  /** Null when the account has no password (spec 27, 3.6). */
+  password: passwordStateSchema.nullable().default(null),
+});
 
 export const listSignInMethodsRoute = defineRoute({
   method: "get",
@@ -107,5 +115,56 @@ export const removeSignInMethodRoute = defineRoute({
     204: { description: "Removed; sessions stay signed in" },
     401: unauthenticated,
     404: { description: "not_found: none of this provider is linked", ...errors },
+  },
+});
+
+export const setPasswordBodySchema = z.object({
+  password: passwordInputSchema,
+  /**
+   * A confirm code, needed unless this device signed in less than 10
+   * minutes ago (spec 27, R27.5).
+   */
+  code: z
+    .string()
+    .regex(/^\d{6}$/)
+    .optional(),
+});
+
+export const setPasswordRoute = defineRoute({
+  method: "put",
+  path: "/v1/me/password",
+  summary: "Add or change my password (spec 27, 3.5)",
+  tags: ["me"],
+  auth: true,
+  request: { body: setPasswordBodySchema },
+  responses: {
+    200: { description: "Saved; the verified email is told", schema: passwordStateSchema },
+    400: {
+      description: `password_too_short, password_too_long, password_too_common, password_is_email (R27.2); ${confirmCodeErrors[400].description}`,
+      ...errors,
+    },
+    401: unauthenticated,
+    403: {
+      description: "confirm_required: send a confirm code with it (R27.5)",
+      ...errors,
+    },
+    409: { description: "email_required: a password needs a verified email", ...errors },
+    429: {
+      description: `${confirmCodeErrors[429].description}; rate_limited, with retryAfterSeconds: 10 new passwords an hour (R27.4)`,
+      ...errors,
+    },
+  },
+});
+
+export const removePasswordRoute = defineRoute({
+  method: "delete",
+  path: "/v1/me/password",
+  summary: "Remove my password; the email code still signs in",
+  tags: ["me"],
+  auth: true,
+  responses: {
+    204: { description: "Removed; the verified email is told" },
+    401: unauthenticated,
+    404: { description: "not_found: the account has no password", ...errors },
   },
 });

@@ -17,6 +17,7 @@ import { errorResponse } from "../../errors.ts";
 import { toOpenApiRoute, validated } from "../../openapi.ts";
 import { devProviderPath, devSignInPage } from "../../platform/identity-providers.ts";
 import type { AccountService } from "../account/index.ts";
+import type { PasswordService } from "./passwords.ts";
 import type { BrowserStep, ProviderSignInService } from "./provider-sign-in.ts";
 import { confirmCodeError, tokensBodyFor } from "./routes.ts";
 
@@ -35,6 +36,8 @@ function appleUserOf(user: string | undefined): unknown {
 
 export interface ProviderRoutesDependencies {
   readonly providers: ProviderSignInService;
+  /** For the password's line in Sign-in methods (spec 27, 3.6). */
+  readonly passwords: Pick<PasswordService, "setAt">;
   readonly account: AccountService;
   readonly requireAuth: MiddlewareHandler;
   /** The caller's address as a keyed hash, for the start limit. */
@@ -94,7 +97,7 @@ export function registerProviderRoutes(
   app: OpenAPIHono<AppEnv>,
   dependencies: ProviderRoutesDependencies,
 ): void {
-  const { providers, account, requireAuth, clientKey, secureCookies } = dependencies;
+  const { providers, passwords, account, requireAuth, clientKey, secureCookies } = dependencies;
 
   app.openapi(toOpenApiRoute(startProviderSignInRoute), async (c) => {
     const { provider } = validated(c, "param", startProviderSignInRoute.request.params);
@@ -174,10 +177,15 @@ export function registerProviderRoutes(
   });
 
   app.openapi(toOpenApiRoute(listSignInMethodsRoute, requireAuth), async (c) => {
-    const methods = await providers.list(authOf(c).userId);
+    const { userId } = authOf(c);
+    const [methods, passwordSetAt] = await Promise.all([
+      providers.list(userId),
+      passwords.setAt(userId),
+    ]);
     return c.json(
       {
         methods: methods.map((method) => ({ ...method, linkedAt: method.linkedAt.toISOString() })),
+        password: passwordSetAt === null ? null : { setAt: passwordSetAt.toISOString() },
       },
       200,
     );

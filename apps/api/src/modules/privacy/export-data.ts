@@ -39,6 +39,7 @@ const {
   feedback,
   feedbackScreenshots,
   identities,
+  memberPasswords,
   privacyRequests,
   pushTokens,
   reports,
@@ -211,6 +212,12 @@ export async function collectExport(
     .from(identities)
     .where(eq(identities.userId, userId))
     .orderBy(asc(identities.linkedAt));
+
+  // Only when it was set: never the password or its hash (spec 27, R27.3).
+  const [password] = await q
+    .select({ setAt: memberPasswords.setAt })
+    .from(memberPasswords)
+    .where(eq(memberPasswords.userId, userId));
 
   const waiting = await q
     .select({ email: emailVerifications.email, sentAt: emailVerifications.sentAt })
@@ -777,12 +784,19 @@ export async function collectExport(
         endedAt: when(device.endedAt),
         push: pushed.has(id),
       })),
-      sign_in_methods: linked.map((row) => ({
-        method: row.provider === "apple" ? "Apple" : "Google",
-        email: row.email,
-        linkedAt: when(row.linkedAt),
-        lastUsedAt: when(row.lastUsedAt),
-      })),
+      sign_in_methods: [
+        ...linked.map((row) => ({
+          method: row.provider === "apple" ? "Apple" : "Google",
+          email: row.email,
+          linkedAt: when(row.linkedAt),
+          lastUsedAt: when(row.lastUsedAt),
+        })),
+        ...(password === undefined
+          ? []
+          : [
+              { method: "Password", email: null, linkedAt: when(password.setAt), lastUsedAt: null },
+            ]),
+      ],
       email_waiting: waiting.map((row) => ({ email: row.email, sentAt: when(row.sentAt) })),
       vehicles: cars.map((car) => ({
         make: car.make,

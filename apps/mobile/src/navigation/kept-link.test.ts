@@ -2,7 +2,13 @@ import { keepPendingBooking } from "@/booking/pending-booking";
 import { keepPendingOffer } from "@/drive/pending-offer";
 import { keepPendingProblem } from "@/meeting-points/pending-problem";
 import { takeKeptChoice } from "./kept-choice";
-import { keepPendingLink, linkNeedingAccount, takePendingLink } from "./kept-link";
+import {
+  forgetPendingLink,
+  keepPendingLink,
+  keepPendingLinkIfNone,
+  linkNeedingAccount,
+  takePendingLink,
+} from "./kept-link";
 
 // The app's own storage, in memory.
 const mockStored = new Map<string, string>();
@@ -38,6 +44,8 @@ describe("which links need an account (spec 20, 3.2)", () => {
       "/settings/beta-news",
       "/settings/reports",
       "/settings/privacy/download",
+      "/settings/password",
+      "/onboarding/faster",
     ]) {
       expect(linkNeedingAccount(path)).toBe(path);
     }
@@ -87,6 +95,29 @@ describe("a link kept while someone signs in", () => {
       JSON.stringify({ path: "https://example.com/", keptAt: noon.toISOString() }),
     );
     expect(await takePendingLink(noon)).toBeNull();
+  });
+
+  it("is kept only if none waits, when it is only an offer (spec 27, 3.7)", async () => {
+    await keepPendingLink(rate, noon);
+    await keepPendingLinkIfNone("/onboarding/faster", minutesLater(5));
+    expect(await takePendingLink(minutesLater(6))).toBe(rate);
+
+    // One kept over an hour ago, or none: this one is kept.
+    await keepPendingLink(rate, noon);
+    await keepPendingLinkIfNone("/onboarding/faster", minutesLater(61));
+    expect(await takePendingLink(minutesLater(62))).toBe("/onboarding/faster");
+    await keepPendingLinkIfNone("/onboarding/faster", noon);
+    expect(await takePendingLink(minutesLater(1))).toBe("/onboarding/faster");
+  });
+
+  it("forgets a kept link only when it is the one named (spec 27, 3.4)", async () => {
+    await keepPendingLink("/settings/password", noon);
+    await forgetPendingLink("/settings/password");
+    expect(await takePendingLink(minutesLater(1))).toBeNull();
+
+    await keepPendingLink(rate, noon);
+    await forgetPendingLink("/settings/password");
+    expect(await takePendingLink(minutesLater(1))).toBe(rate);
   });
 
   it("leads on after signing in, after a booking or an offer chosen since", async () => {

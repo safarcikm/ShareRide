@@ -1,6 +1,8 @@
 import { codePurposes, signInProviders } from "@shareride/domain";
 import { sql } from "drizzle-orm";
 import {
+  bigint,
+  boolean,
   check,
   index,
   integer,
@@ -219,5 +221,83 @@ export const providerSignIns = pgTable(
   (table) => [
     index().on(table.expiresAt),
     check("provider_sign_ins_provider_check", oneOf(table.provider, signInProviders)),
+  ],
+);
+
+/**
+ * A member's password (spec 27, ADR 0047): only its scrypt hash, with the
+ * settings it was made with (`scrypt$15$8$3$<salt>$<hash>`). One per account.
+ */
+export const memberPasswords = pgTable("member_passwords", {
+  userId: uuid()
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  hash: text().notNull(),
+  /** When the person last chose it; a new hash at sign-in leaves it (spec 27, 3.6). */
+  setAt: at().notNull(),
+  ...timestamps,
+});
+
+/**
+ * A member's Face ID or fingerprint: a passkey kept on the device (spec 27,
+ * ADR 0048), apart from the console's (`operator_passkeys`). The public key
+ * and what the browser reported, never anything secret.
+ */
+export const memberPasskeys = pgTable(
+  "member_passkeys",
+  {
+    id: id(),
+    userId: uuid()
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    /** The credential's ID, base64url, as the browser sends it back. */
+    credentialId: text().notNull().unique("member_passkeys_credential_unique"),
+    /** The COSE public key, base64url. */
+    publicKey: text().notNull(),
+    /** The signature counter; one that goes back means a cloned key. */
+    counter: bigint({ mode: "number" }).notNull().default(0),
+    transports: text()
+      .array()
+      .notNull()
+      .default(sql`'{}'`),
+    /** Whether the passkey is synced to the person's other devices. */
+    backedUp: boolean().notNull(),
+    /**
+     * The user handle the device keeps, base64url: random, one per account,
+     * never the account's ID, which the console's passkeys use (ADR 0048).
+     */
+    userHandle: text().notNull(),
+    /** The browser and system that set it up, such as Safari and iPhone; null when unknown. */
+    browser: text(),
+    system: text(),
+    lastUsedAt: at(),
+    ...timestamps,
+  },
+  (table) => [index("member_passkeys_user_index").on(table.userId)],
+);
+
+/**
+ * A challenge waiting for a member's passkey: to sign in, or to set one up
+ * (`register`, with whose). Used once, good for 5 minutes; the hourly
+ * clean-up deletes the rest an hour after they expired.
+ */
+export const memberPasskeyChallenges = pgTable(
+  "member_passkey_challenges",
+  {
+    id: id(),
+    challenge: text().notNull().unique("member_passkey_challenges_challenge_unique"),
+    purpose: text().notNull(),
+    userId: uuid().references(() => users.id, { onDelete: "cascade" }),
+    /** For a new passkey: the handle its options gave the device (ADR 0048). */
+    userHandle: text(),
+    expiresAt: at().notNull(),
+    ...timestamps,
+  },
+  (table) => [
+    index("member_passkey_challenges_expires_index").on(table.expiresAt),
+    check(
+      "member_passkey_challenges_purpose_check",
+      sql`${table.purpose} in ('sign_in', 'register')`,
+    ),
   ],
 );

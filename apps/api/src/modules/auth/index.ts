@@ -3,3 +3,5 @@ export * from "./routes.ts";
 export * from "./service.ts";
 export * from "./provider-routes.ts";
 export * from "./provider-sign-in.ts";
+export * from "./password-routes.ts";
+export * from "./passwords.ts";

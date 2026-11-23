@@ -20,6 +20,12 @@ export interface SignInFlow {
   readonly emailCodeSent: (email: string, resendAfterSeconds: number) => void;
   /** After a wait the API asked for, such as too many wrong email codes. */
   readonly waitBeforeEmailResend: (seconds: number) => void;
+  /**
+   * Whether the code was asked for under "Forgot your password?" (spec 27,
+   * 3.4): once it is right, Choose a password opens.
+   */
+  readonly forgotPassword: boolean;
+  readonly setForgotPassword: (forgot: boolean) => void;
   readonly country: SupportedCountry;
   readonly setCountry: (country: SupportedCountry) => void;
   readonly typed: string;
@@ -71,6 +77,7 @@ export function SignInFlowProvider({
   const [email, setEmail] = useState("");
   const [emailSentTo, setEmailSentTo] = useState<string | null>(null);
   const [emailResendAt, setEmailResendAt] = useState(0);
+  const [forgotPassword, setForgotPassword] = useState(false);
   const [country, setCountry] = useState<SupportedCountry>("IS");
   const [typed, setTyped] = useState("");
   const [sentTo, setSentTo] = useState<string | null>(null);
@@ -93,6 +100,8 @@ export function SignInFlowProvider({
       waitBeforeEmailResend: (seconds) => {
         setEmailResendAt(Date.now() + seconds * 1000);
       },
+      forgotPassword,
+      setForgotPassword,
       country,
       setCountry,
       typed,
@@ -120,6 +129,7 @@ export function SignInFlowProvider({
       email,
       emailSentTo,
       emailResendAt,
+      forgotPassword,
       country,
       typed,
       sentTo,

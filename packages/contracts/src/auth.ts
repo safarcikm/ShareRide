@@ -408,3 +408,33 @@ export const verifyEmailCodeRoute = defineRoute({
     429: { description: "code_attempts_exceeded, with retryAfterSeconds", ...errors },
   },
 });
+
+/** A password as typed; its rules are checked when one is set (spec 27, R27.2). */
+export const passwordInputSchema = z.string().min(1).max(1024);
+
+export const passwordSignInBodySchema = z.object({
+  email: emailSchema,
+  password: passwordInputSchema,
+  device: deviceSchema,
+});
+
+export const passwordSignInRoute = defineRoute({
+  method: "post",
+  path: "/v1/auth/password",
+  summary: "Sign in with the account's email and its password (spec 27)",
+  tags: ["auth"],
+  request: { body: passwordSignInBodySchema },
+  responses: {
+    200: {
+      description: "Signed in",
+      schema: signedInSchema.extend({ status: z.literal("signedIn") }),
+    },
+    400: {
+      description:
+        "credentials_invalid: the same for a wrong password, an unknown email and an account without a password",
+      ...errors,
+    },
+    403: { description: "account_unavailable", ...errors },
+    429: { description: "rate_limited, with retryAfterSeconds (R27.4)", ...errors },
+  },
+});

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { english, enterPhoneCode, menuLink, signUp } from "./support/account";
+import { english, enterPhoneCode, menuLink, notNow, signUp } from "./support/account";
 import { confirmCodeSubject, emailCount, nthEmailTo, codeInSubject } from "./support/email";
 import { newPhoneNumber } from "./support/sms";
 
@@ -56,6 +56,7 @@ test.describe("Continue with Google", () => {
     await page.getByRole("checkbox", { name: english.age }).click();
     await page.getByRole("checkbox", { name: english.accept }).click();
     await page.getByRole("button", { name: english.createAccount, exact: true }).click();
+    await notNow(page, english);
     await expect(page.getByRole("heading", { name: english.findTitle })).toBeVisible();
 
     // Signed out, Google alone signs the member in again: no code.

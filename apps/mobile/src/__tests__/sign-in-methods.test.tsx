@@ -84,10 +84,15 @@ describe("Sign-in methods in Settings", () => {
     expect(await screen.findByRole("header", { name: "Sign-in methods" })).toBeVisible();
   });
 
-  it("has no row in Settings while neither is set up", async () => {
-    await renderApp("/settings", { me: completeMe });
-    expect(await screen.findByRole("header", { name: "Settings" })).toBeVisible();
-    expect(screen.queryByRole("button", { name: "Sign-in methods" })).toBeNull();
+  it("opens from Settings while neither is set up, for the email and a password (spec 27)", async () => {
+    await renderApp("/settings", {
+      me: completeMe,
+      setUp: (client) => {
+        client.answer("/v1/me/sign-in-methods", () => ok(200, { methods: [] }), "get");
+      },
+    });
+    await fireEvent.press(await screen.findByRole("button", { name: "Sign-in methods" }));
+    expect(await screen.findByRole("header", { name: "Sign-in methods" })).toBeVisible();
   });
 
   it("lists the phone number, a linked Google account and Apple not linked", async () => {
@@ -325,5 +330,66 @@ describe("Sign-in methods in Settings", () => {
     expect(await screen.findByRole("button", { name: "Add Google" })).toBeVisible();
     expect(lists).toBe(2);
     expect(screen.queryByRole("button", { name: "Try again" })).toBeNull();
+  });
+});
+
+describe("The password in Sign-in methods (spec 27, 3.5 and 3.6)", () => {
+  const anna = { ...completeMe, email: "anna@example.com" };
+
+  /** Opens Sign-in methods for an account with a verified email; the password as kept. */
+  async function openWithPassword(setAt: string | null) {
+    const kept = { password: setAt === null ? null : { setAt } };
+    const app = await renderApp("/settings/sign-in-methods", {
+      me: anna,
+      setUp: (client) => {
+        client.answer(
+          "/v1/me/sign-in-methods",
+          () => ok(200, { methods: [], password: kept.password }),
+          "get",
+        );
+        client.answer(
+          "/v1/me/password",
+          () => {
+            kept.password = null;
+            return ok(204);
+          },
+          "delete",
+        );
+      },
+    });
+    expect(await screen.findByRole("header", { name: "Sign-in methods" })).toBeVisible();
+    return app;
+  }
+
+  it("says when none is set, and opens Choose a password", async () => {
+    await openWithPassword(null);
+    expect(await screen.findByText("Not set")).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Remove password" })).toBeNull();
+    await fireEvent.press(screen.getByRole("button", { name: "Add a password" }));
+    expect(await screen.findByRole("header", { name: "Choose a password" })).toBeVisible();
+  });
+
+  it("says when it was set, changes it, and removes it after asking", async () => {
+    const app = await openWithPassword("2026-11-20T12:00:00.000Z");
+    expect(await screen.findByText("Set on 20 November 2026")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Change password" })).toBeVisible();
+    await fireEvent.press(screen.getByRole("button", { name: "Remove password" }));
+    expect(
+      screen.getByText("Remove your password? Your email code still gets you in."),
+    ).toBeVisible();
+    await fireEvent.press(screen.getByRole("button", { name: "Cancel" }));
+    expect(callsTo(app, "/v1/me/password")).toHaveLength(0);
+    await fireEvent.press(screen.getByRole("button", { name: "Remove password" }));
+    // The question's own button, in place of the one that asked.
+    await fireEvent.press(screen.getByRole("button", { name: "Remove password" }));
+    expect(await screen.findByText("Your password is removed.")).toBeVisible();
+    expect(screen.getByText("Not set")).toBeVisible();
+    expect(callsTo(app, "/v1/me/password")).toHaveLength(1);
+  });
+
+  it("asks for an email first when the account has none", async () => {
+    await openMethods([]);
+    expect(await screen.findByText("Add an email first. It's your user name.")).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Add a password" })).toBeNull();
   });
 });
