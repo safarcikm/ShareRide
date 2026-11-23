@@ -128,7 +128,7 @@ describe("setting a password (spec 27, 3.5)", () => {
       const answer = await setPassword(cecilia, password);
       return answer.ok ? null : answer.error.code;
     };
-    expect(await refused("a".repeat(9))).toBe("password_too_short");
+    expect(await refused("a".repeat(7))).toBe("password_too_short");
     expect(await refused("a".repeat(129))).toBe("password_too_long");
     expect(await refused("QwertyUiop")).toBe("password_too_common");
     expect(await refused(cecilia.email.toUpperCase())).toBe("password_is_email");

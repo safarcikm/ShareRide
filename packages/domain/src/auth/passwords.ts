@@ -6,7 +6,7 @@ import type { RateLimitRule } from "./rate-limit.ts";
 /** Why a new password is refused (R27.2). */
 export type PasswordProblem = "too_short" | "too_long" | "too_common" | "is_email";
 
-export const passwordRules = { minLength: 10, maxLength: 128 } as const;
+export const passwordRules = { minLength: 8, maxLength: 128 } as const;
 
 /**
  * Checks a new password and gives the form to hash: Unicode NFC, so a

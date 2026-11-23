@@ -124,7 +124,7 @@ export const en = {
   /** Choose a password (spec 27, 3.5). */
   "password.title": "Choose a password",
   "password.field": "New password",
-  "password.help": "At least 10 characters. A few words you'll remember work well.",
+  "password.help": "At least 8 characters. A few words you'll remember work well.",
   "password.save": "Save password",
   "password.saved": "Your password is saved.",
   "password.tooShort": "Use at least {min} characters.",

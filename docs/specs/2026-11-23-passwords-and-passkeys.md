@@ -127,14 +127,14 @@ button for Face ID or fingerprint:
 1. In Settings, Sign-in methods (3.6): "Add a password", or "Change
    password" and "Remove password" when there is one.
 2. "Choose a password": one field, "New password", with "Show" and help
-   "At least 10 characters. A few words you'll remember work well." and
+   "At least 8 characters. A few words you'll remember work well." and
    "Save password". It is typed once: "Show" replaces typing it twice. The
    browser offers to make and save a strong one (`autocomplete`
    `new-password`).
-3. The password (R27.2): 10 to 128 characters, not on a public list of
+3. The password (R27.2): 8 to 128 characters, not on a public list of
    the 100 000 most used passwords (in any case), and not the account's
    email. No other rules: no
-   required digits or symbols. Messages: "Use at least 10 characters.",
+   required capitals, digits or symbols (Martin: not too strict). Messages: "Use at least 8 characters.",
    "Use at most 128 characters.", "That password is too common. Add a few
    words.", "Don't use your email as the password."
 4. Only an account with a verified email can have a password (it is the
@@ -215,7 +215,7 @@ same passkeys work there (decided then, with its own ADR).
 | ID    | Rule                                                                                                                                                                                                                               |
 | ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | R27.1 | A password and Face ID or fingerprint are optional, on top of the email code and Google, which always keep working. A password needs a verified email, which is its user name.                                                     |
-| R27.2 | A password has 10 to 128 characters, is not on a public list of the 100 000 most used passwords (in any case), and is not the account's email. No other rules.                                                                       |
+| R27.2 | A password has 8 to 128 characters, is not on a public list of the 100 000 most used passwords (in any case), and is not the account's email. No other rules.                                                                       |
 | R27.3 | A password is stored only as a scrypt hash (ADR 0047). It is never logged, never sent back, and never in Download my data, which says only whether one is set and when.                                                            |
 | R27.4 | A wrong email or password gets one answer, whatever was wrong, in the same time. At most 10 wrong tries an hour for one email and 30 from one network address, 20 and 100 of any kind; 10 new passwords an hour per account.      |
 | R27.5 | Adding or changing a password, or setting up Face ID or fingerprint, needs a sign-in in the last 10 minutes or a confirm code (amends R26.5). Removing either needs neither.                                                       |
@@ -295,7 +295,7 @@ speaker):
 | `auth.passkey`              | Face ID or fingerprint                                                                                    |
 | `error.credentialsInvalid`  | Wrong email or password. Check them, or leave the password empty and we'll email you a code.              |
 | `password.title`            | Choose a password                                                                                         |
-| `password.help`             | At least 10 characters. A few words you'll remember work well.                                            |
+| `password.help`             | At least 8 characters. A few words you'll remember work well.                                             |
 | `password.tooCommon`        | That password is too common. Add a few words.                                                             |
 | `signUp.faster.title`       | Sign in faster next time                                                                                  |
 | `passkey.setUp`             | Set up on this device                                                                                     |

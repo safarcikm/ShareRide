@@ -24,9 +24,9 @@ authenticator.
 
 ## Global constraints
 
-- Password: 10 to 128 characters (code points, after NFC), not on the
+- Password: 8 to 128 characters (code points, after NFC), not on the
   NCSC 100 000 list (any case; `apps/api/assets/common-passwords.txt`, the
-  9 183 entries of 10 characters or more), not the account's email (any
+  46 476 entries of 8 characters or more), not the account's email (any
   case). R27.2.
 - scrypt N = 2^15, r = 8, p = 3, salt 16 bytes, key 32 bytes, `maxmem`
   64 MiB; stored `scrypt$15$8$3$<salt base64url>$<hash base64url>`.

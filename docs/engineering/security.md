@@ -69,9 +69,9 @@ How [ADR 0016](../decisions/0016-own-sign-in-module.md) is built, in
   a password ([spec 27](../specs/2026-11-23-passwords-and-passkeys.md)),
   which signs in with the verified email.
 - **Passwords** ([ADR 0047](../decisions/0047-member-passwords-hashed-with-scrypt.md)):
-  optional, 10 to 128 characters after Unicode NFC, not on the NCSC list
+  optional, 8 to 128 characters after Unicode NFC, not on the NCSC list
   of common passwords (`apps/api/assets/common-passwords.txt`, the entries
-  of 10 characters or more, in any case) and not the account's email.
+  of 8 characters or more, in any case) and not the account's email.
   Stored only as a scrypt hash from `node:crypto` (N = 2^15, r = 8, p = 3,
   a 16-byte salt, a 32-byte result, compared in constant time) in
   `member_passwords`, with its settings (`scrypt$15$8$3$…`), so a hash

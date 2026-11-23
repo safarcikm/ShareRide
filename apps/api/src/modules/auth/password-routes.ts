@@ -17,7 +17,7 @@ export interface PasswordRoutesDependencies {
 }
 
 const setMessages = {
-  password_too_short: "Use at least 10 characters.",
+  password_too_short: "Use at least 8 characters.",
   password_too_long: "Use at most 128 characters.",
   password_too_common: "That password is too common.",
   password_is_email: "Don't use the email as the password.",

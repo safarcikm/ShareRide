@@ -125,7 +125,7 @@ export const is = {
     "Of margar tilraunir. Notaðu kóða í tölvupósti eða reyndu aftur eftir {wait}.",
   "password.title": "Veldu lykilorð",
   "password.field": "Nýtt lykilorð",
-  "password.help": "Minnst 10 stafir. Nokkur orð sem þú manst duga vel.",
+  "password.help": "Minnst 8 stafir. Nokkur orð sem þú manst duga vel.",
   "password.save": "Vista lykilorð",
   "password.saved": "Lykilorðið þitt er vistað.",
   "password.tooShort": "Notaðu minnst {min} stafi.",

@@ -214,7 +214,7 @@ describe("Choosing a password (spec 27, 3.5)", () => {
   it("saves one typed once, which the browser may make and keep", async () => {
     const app = await openPassword();
     expect(
-      screen.getByText("At least 10 characters. A few words you'll remember work well."),
+      screen.getByText("At least 8 characters. A few words you'll remember work well."),
     ).toBeVisible();
     const field = screen.getByLabelText("New password");
     expect(field.props.autoComplete).toBe("new-password");
@@ -234,8 +234,8 @@ describe("Choosing a password (spec 27, 3.5)", () => {
     const app = await openPassword(anna, (client) => {
       client.answer("/v1/me/password", () => failure(400, "password_too_common"));
     });
-    await savePassword("too short");
-    expect(await screen.findByText("Use at least 10 characters.")).toBeVisible();
+    await savePassword("short");
+    expect(await screen.findByText("Use at least 8 characters.")).toBeVisible();
     await savePassword("x".repeat(129));
     expect(await screen.findByText("Use at most 128 characters.")).toBeVisible();
     await savePassword("ANNA@example.com");

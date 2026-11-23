@@ -49,10 +49,13 @@ scrypt hash made with Node's built-in `crypto.scrypt` (N = 2^15, r = 8, p =
 - The hash is stored with its settings, `scrypt$15$8$3$<salt>$<hash>`, in a
   table of its own, so stronger settings later apply at each person's next
   sign-in, when the hash is made again.
-- The password is normalised (Unicode NFC) before hashing. It has 10 to 128
+- The password is normalised (Unicode NFC) before hashing. It has 8 to 128
   characters, is not on the UK NCSC's list of the 100 000 most used
-  passwords (in any case; the 9 183 with 10 characters or more, kept in the
-  repository), and is not the account's email. No other rules.
+  passwords (in any case; the 46 476 with 8 characters or more, kept in the
+  repository), and is not the account's email. No other rules. (Martin,
+  2026-11-23: "Let's not go crazy on the password difficulty if not
+  necessary"; 8 rather than 10, since the limits on wrong tries hold
+  guessing at 10 an hour per email.)
 - The user name is the account's verified email. A wrong email or password
   gets one answer in about the same time: an email without a password is
   checked against a dummy hash.

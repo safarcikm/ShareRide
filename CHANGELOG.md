@@ -1458,9 +1458,11 @@ releases follow [Semantic Versioning](https://semver.org/).
   methods lists the email.
 - Passwords for members (spec 27, ADR 0047): `POST /v1/auth/password`,
   `PUT` and `DELETE /v1/me/password`, and the password in `GET
-  /v1/me/sign-in-methods`; scrypt hashes from `node:crypto`, one answer
-  for every wrong try, 10 wrong tries an hour per email and 30 per network
-  address, and an email to the verified address on each change. The
+  /v1/me/sign-in-methods`; 8 to 128 characters with no other rule than
+  not a common password or the email; scrypt hashes from `node:crypto`,
+  checked outside any database transaction, one answer for every wrong
+  try, 10 wrong tries an hour per email and 30 per network address, and an
+  email to the verified address on each change. The
   sign-in screen takes a password under the email ("Send code" becomes
   "Sign in"), with "Forgot your password?" through the email code;
   Choose a password in Settings, Sign-in methods, and once after sign-up

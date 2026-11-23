@@ -14,13 +14,15 @@ const check = (password: string, email: string | null = "anna@example.com") =>
   checkNewPassword(password, email, isCommon);
 
 describe("checkNewPassword (R27.2)", () => {
-  it("takes 10 to 128 characters, counted as characters, not bytes", () => {
-    expect(check("a".repeat(9))).toEqual({ ok: false, error: "too_short" });
-    expect(check("a".repeat(10))).toEqual({ ok: true, value: "a".repeat(10) });
+  it("takes 8 to 128 characters, counted as characters, not bytes", () => {
+    expect(check("a".repeat(7))).toEqual({ ok: false, error: "too_short" });
+    expect(check("a".repeat(8))).toEqual({ ok: true, value: "a".repeat(8) });
     expect(check("a".repeat(128)).ok).toBe(true);
     expect(check("a".repeat(129))).toEqual({ ok: false, error: "too_long" });
-    // Nine emoji and a letter: ten characters, though many more bytes.
-    expect(check(`${"🐧".repeat(9)}a`).ok).toBe(true);
+    // Seven emoji and a letter: eight characters, though many more bytes.
+    expect(check(`${"🐧".repeat(7)}a`).ok).toBe(true);
+    // No capitals, digits or symbols needed.
+    expect(check("lundabyggd").ok).toBe(true);
   });
 
   it("keeps spaces, and stores the NFC form of a character typed in two parts", () => {
