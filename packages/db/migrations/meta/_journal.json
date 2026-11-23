@@ -428,6 +428,13 @@
       "when": 1795362845160,
       "tag": "0060_console_recovery",
       "breakpoints": true
+    },
+    {
+      "idx": 61,
+      "version": "7",
+      "when": 1795396645542,
+      "tag": "0061_new_member_emails",
+      "breakpoints": true
     }
   ]
 }

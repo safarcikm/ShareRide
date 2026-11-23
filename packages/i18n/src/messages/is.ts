@@ -1497,6 +1497,13 @@ export const is = {
   "notify.switchStillOff": "Rofi er enn óvirkur",
   "notify.switchStillOffBody":
     "Óvirkt núna: {names}. Kveiktu aftur í stillingum stjórnborðsins þegar vandinn er leystur.",
+  "notify.newMembers":
+    "{count, plural, one {# nýr notandi á PuffinRide} other {# nýir notendur á PuffinRide}}",
+  "notify.newMembersBody":
+    "Frá {when} {count, plural, one {hefur # lokið} other {hafa # lokið}} skráningu. {total, plural, one {Alls er # notandi} other {Alls eru # notendur}} á PuffinRide.",
+  "notify.newMembersOpen": "Opna stjórnborðið",
+  "notify.newMembersFooter":
+    "Þú færð þennan póst því þú kveiktir á pósti um nýja notendur í stjórnborði PuffinRide. Þú slekkur á honum þar, undir Tölvupóstur til þín.",
   "notify.privacyRequestAnswered": "Svar við spurningu þinni um gögnin þín",
   "notify.privacyRequestAnsweredBody":
     "Þú spurðir okkur um gögnin þín þann {date}. Hér er svarið okkar:",
@@ -1764,6 +1771,7 @@ export const is = {
   "export.field.message": "Skilaboð",
   "export.field.messages": "Skilaboð",
   "export.field.model": "Gerð",
+  "export.field.newMemberEmailsSince": "Póstur um nýja notendur, kveikt frá",
   "export.field.note": "Athugasemd",
   "export.field.ourAnswer": "Svarið okkar",
   "export.field.ourReply": "Svarið okkar",
@@ -1921,6 +1929,7 @@ export const is = {
   "export.value.kind.announcement": "Fréttir af beta-prófuninni",
   "export.value.kind.announcement_test": "Prófun á tilkynningu",
   "export.value.kind.switch_still_off": "Rofi er enn óvirkur",
+  "export.value.kind.new_members": "Nýir notendur",
   "export.value.kind.warning": "Viðvörun",
   "export.value.kind.content_hidden": "Efni fjarlægt",
   "export.value.kind.suspension": "Lokun aðgangs",

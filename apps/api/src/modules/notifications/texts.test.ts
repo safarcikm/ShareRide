@@ -776,4 +776,42 @@ describe("notification texts", () => {
       "PuffinRide: SMS-kóði var notaður til að komast inn í stjórnborðið og vista nýjan aðgangslykil. Ef þetta varst ekki þú skaltu taka hlutverkið af á þjóninum strax (operator remove).",
     );
   });
+
+  describe("about new members (spec 25)", () => {
+    const since = new Date("2026-11-23T14:02:00.000Z");
+    const facts = (count: number, total: number) =>
+      ({ kind: "new_members", count, since, total }) as const;
+    const text = (count: number, total: number, locale: "en" | "is") =>
+      notificationText(facts(count, total), locale, defaultNotificationSettings);
+
+    it("say how many joined, since when and how many there are, never who (R25.4)", () => {
+      expect(text(2, 37, "en")).toEqual({
+        title: "2 new members on PuffinRide",
+        body: "Since 23 November at 14:02, 2 people have finished signing up. PuffinRide has 37 members now.",
+        path: "/admin",
+        open: "Open the console",
+        footer:
+          "You get this email because you turned on emails about new members in the PuffinRide console. Turn them off there, under Emails to you.",
+      });
+      expect(text(1, 1, "en")).toMatchObject({
+        title: "A new member on PuffinRide",
+        body: "Since 23 November at 14:02, 1 person has finished signing up. PuffinRide has 1 member now.",
+      });
+    });
+
+    it("say it in Icelandic, with the singular after 21", () => {
+      expect(text(2, 37, "is")).toEqual({
+        title: "2 nýir notendur á PuffinRide",
+        body: "Frá 23. nóvember kl. 14:02 hafa 2 lokið skráningu. Alls eru 37 notendur á PuffinRide.",
+        path: "/admin",
+        open: "Opna stjórnborðið",
+        footer:
+          "Þú færð þennan póst því þú kveiktir á pósti um nýja notendur í stjórnborði PuffinRide. Þú slekkur á honum þar, undir Tölvupóstur til þín.",
+      });
+      expect(text(21, 21, "is")).toMatchObject({
+        title: "21 nýr notandi á PuffinRide",
+        body: "Frá 23. nóvember kl. 14:02 hefur 21 lokið skráningu. Alls er 21 notandi á PuffinRide.",
+      });
+    });
+  });
 });

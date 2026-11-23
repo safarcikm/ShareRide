@@ -218,11 +218,19 @@ export function isAccountFacts(facts: {
 
 /**
  * To the operator: a new report, only whether it is about safety (spec 9,
- * R9.9); or the switches for emergencies that are off now (spec 10, 3.3).
+ * R9.9); the switches for emergencies that are off now (spec 10, 3.3); or
+ * how many members joined since when, and the members in all (spec 25,
+ * R25.4), never who.
  */
 export type OperatorNoticeFacts =
-  | { readonly kind: Exclude<OperatorNoticeKind, "switch_still_off"> }
-  | { readonly kind: "switch_still_off"; readonly off: readonly SwitchKey[] };
+  | { readonly kind: Exclude<OperatorNoticeKind, "switch_still_off" | "new_members"> }
+  | { readonly kind: "switch_still_off"; readonly off: readonly SwitchKey[] }
+  | {
+      readonly kind: "new_members";
+      readonly count: number;
+      readonly since: Date;
+      readonly total: number;
+    };
 
 export function isOperatorFacts(facts: {
   readonly kind: NotificationKind;
@@ -248,6 +256,8 @@ export interface NotificationText {
   readonly open?: string;
   /** The email's words, when they say more than the push may (a statement of reasons). */
   readonly emailBody?: string;
+  /** Why the email came, when not the usual words about having an account. */
+  readonly footer?: string;
 }
 
 function required<T>(value: T | null, what: string): T {
@@ -327,7 +337,7 @@ const switchNames = {
 
 /**
  * Only that a report came in, and whether about safety, never who or what
- * (R9.9); or which switches are off, by name.
+ * (R9.9); which switches are off, by name; or how many joined (spec 25).
  */
 function operatorText(facts: OperatorNoticeFacts, locale: Locale): NotificationText {
   const t = createTranslator(locale);
@@ -337,6 +347,20 @@ function operatorText(facts: OperatorNoticeFacts, locale: Locale): NotificationT
       title: t("notify.switchStillOff"),
       body: t("notify.switchStillOffBody", { names }),
       path: "/",
+    };
+  }
+  if (facts.kind === "new_members") {
+    // By email to the operator who turned it on, with how to turn it off (spec 25).
+    const when = t("notify.when", {
+      date: formatDayAndMonth(facts.since, locale),
+      time: formatClock(facts.since),
+    });
+    return {
+      title: t("notify.newMembers", { count: facts.count }),
+      body: t("notify.newMembersBody", { when, count: facts.count, total: facts.total }),
+      path: "/admin",
+      open: t("notify.newMembersOpen"),
+      footer: t("notify.newMembersFooter"),
     };
   }
   if (facts.kind === "console_recovered") {

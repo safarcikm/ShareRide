@@ -510,4 +510,12 @@ describe("the operator's alert of a new report (spec 9, 3.4.1; R9.9)", () => {
       { channel: "sms", send: false, reason: "no_phone" },
     ]);
   });
+
+  it("tells of new members by email only (spec 25, R25.5)", () => {
+    expect(isOperatorNotice("new_members")).toBe(true);
+    expect(channels("new_members", at("12:00"))).toEqual([{ channel: "email", send: true }]);
+    expect(channels("new_members", at("12:00"), { hasVerifiedEmail: false })).toEqual([
+      { channel: "email", send: false, reason: "no_email" },
+    ]);
+  });
 });

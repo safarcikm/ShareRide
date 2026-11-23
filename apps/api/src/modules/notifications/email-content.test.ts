@@ -61,6 +61,17 @@ describe("emailContent (spec 24)", () => {
       expect(email.text).toContain(`Confirm my email: ${link}`);
       expect(email.text).toContain("--\nYou get this email because this address was entered");
     });
+
+    it("uses a notification's own footer, such as the email about new members' (spec 25)", () => {
+      const email = emailContent(
+        { ...confirmed, footer: "You get this email because you turned it on." },
+        "en",
+        webAppUrl,
+      );
+      expect(email.text).toContain("--\nYou get this email because you turned it on.\nPuffinRide");
+      expect(email.html).toContain("You get this email because you turned it on.");
+      expect(email.html).not.toContain("you have a PuffinRide account");
+    });
   });
 
   describe("the HTML (3.1)", () => {

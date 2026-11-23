@@ -110,6 +110,9 @@ export const notificationRules = {
   announcement: { push: true, email: "always", sms: false },
   // "Send to me": the operator's own copy before sending, in both languages.
   announcement_test: { push: true, email: "always", sms: false },
+  // To each operator who turned it on, at most one an hour (spec 25, R25.3):
+  // how many joined, never who (R25.4), by email only (R25.5).
+  new_members: { push: false, email: "always", sms: false },
 } as const satisfies Record<string, NotificationRule>;
 
 export type NotificationKind = keyof typeof notificationRules;
@@ -136,12 +139,13 @@ export function isAccountNotice(kind: NotificationKind): kind is AccountNoticeKi
   return (accountNoticeKinds as readonly NotificationKind[]).includes(kind);
 }
 
-/** The kinds that tell the operator, about no trip of theirs (spec 9; spec 10, 3.3). */
+/** The kinds that tell the operator, about no trip of theirs (spec 9; spec 10, 3.3; spec 25). */
 export const operatorNoticeKinds = [
   "report_filed",
   "report_filed_urgent",
   "switch_still_off",
   "console_recovered",
+  "new_members",
 ] as const;
 export type OperatorNoticeKind = (typeof operatorNoticeKinds)[number];
 
