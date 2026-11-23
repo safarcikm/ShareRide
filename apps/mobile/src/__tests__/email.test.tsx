@@ -65,6 +65,33 @@ describe("Your email (plan 4.6)", () => {
     expect(screen.getByLabelText("Email")).toHaveDisplayValue("");
   });
 
+  it("asks for a confirm code first when the API wants one, then sends the link with it (spec 26, 3.7)", async () => {
+    const app = await openEmail(completeMe, () => failure(403, "confirm_required"));
+    app.client.answer("/v1/me/confirm-code", () =>
+      ok(202, { resendAfterSeconds: 30, channel: "email", sentTo: "an•••@example.com" }),
+    );
+    await sendLink("new@example.com");
+    expect(await screen.findByText("We emailed a code to an•••@example.com.")).toBeVisible();
+
+    app.client.answer("/v1/me/email", (input) => {
+      const { code } = input["body"] as { code?: string };
+      return code === "123456"
+        ? ok(200, { ...completeMe, pendingEmail: "new@example.com" })
+        : failure(400, "code_invalid", { attemptsLeft: 4 });
+    });
+    await fireEvent.changeText(await screen.findByLabelText("6-digit code"), "123456");
+    expect(
+      await screen.findByText(
+        "We sent a link to new@example.com. Open it within 24 hours to add the address.",
+      ),
+    ).toBeVisible();
+    expect(emailCalls(app).map((call) => call.input["body"])).toEqual([
+      { email: "new@example.com" },
+      { email: "new@example.com", code: "123456" },
+    ]);
+    expect(screen.queryByLabelText("6-digit code")).toBeNull();
+  });
+
   it("checks the address before sending anything", async () => {
     const app = await openEmail();
     await sendLink("anna");

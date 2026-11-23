@@ -1,7 +1,9 @@
 # 0010. Phone-first authentication and layered identity verification
 
 - **Status:** Accepted (2026-11-13, by Martin once the MVP specs were approved); the
-  "Implementation" choice is superseded by [ADR 0016](0016-own-sign-in-module.md)
+  "Implementation" choice is superseded by [ADR 0016](0016-own-sign-in-module.md),
+  and the phone number with a text code as the way to sign in by
+  [ADR 0046](0046-sign-in-by-email-code-and-text-only-to-check-the-number.md)
 - **Date:** 2026-11-13
 - **Deciders:** Martin
 - **Related:** [security](../engineering/security.md),

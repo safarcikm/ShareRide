@@ -87,7 +87,9 @@ async function openDeleteScreen({
       client.answer("/v1/me/deletion-check", () =>
         ok(200, checks[Math.min(looked++, checks.length - 1)]),
       );
-      client.answer("/v1/me/confirm-code", () => ok(202, { resendAfterSeconds: 30 }));
+      client.answer("/v1/me/confirm-code", () =>
+        ok(202, { resendAfterSeconds: 30, channel: "sms", sentTo: "00" }),
+      );
       client.answer("/v1/me/delete", (input) => {
         const { code } = input["body"] as { code: string };
         return remove(code);

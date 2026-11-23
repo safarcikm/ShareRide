@@ -17,6 +17,8 @@ export function registerConfigRoutes(
   signInProviders: readonly SignInProvider[] = [],
   /** Google Analytics on the website, for the question about cookies (spec 23). */
   analytics: Analytics | null = null,
+  /** Whether this server sends email, so it offers sign-in by email (spec 26, 3.1). */
+  emailSignIn = false,
 ): void {
   app.openapi(toOpenApiRoute(configRoute), async (c) => {
     const { values } = await settings.current();
@@ -32,6 +34,7 @@ export function registerConfigRoutes(
         beta: true,
         paused: pausedNow(values),
         signInProviders: [...signInProviders],
+        emailSignIn,
         payInPerson: values.pay_in_person === 1,
         analytics:
           analytics === null ? null : { googleMeasurementId: analytics.googleMeasurementId },

@@ -14,17 +14,20 @@ import { at, id, oneOf, timestamps } from "./columns.ts";
 import { users } from "./users.ts";
 
 /**
- * Sign-in codes sent by SMS (rule R1.2). The number is kept only as a keyed
- * hash and the code only as an HMAC, so a copy of this table reveals neither.
- * A code is deleted when used or replaced. A code to confirm a sensitive
- * action (spec 11) lives here too, and never signs in.
+ * Codes sent by SMS or email (rule R1.2). The number, or for an email
+ * sign-in code the email, is kept only as a keyed hash, and the code only as
+ * an HMAC, so a copy of this table reveals neither. A code is deleted when
+ * used or replaced. A code to confirm a sensitive action (spec 11) lives
+ * here too, keyed by the account's number however it was sent, and never
+ * signs in.
  */
 export const verificationCodes = pgTable(
   "verification_codes",
   {
     id: id(),
+    /** The number's keyed hash; for `email_sign_in`, the email's (spec 26). */
     phoneHash: text().notNull(),
-    /** `sign_in`, or `confirm` for a signed-in person's sensitive action. */
+    /** One of `codePurposes`: what the code is for. */
     purpose: text().notNull().default("sign_in"),
     codeHash: text().notNull(),
     expiresAt: at().notNull(),
@@ -125,6 +128,25 @@ export const emailVerifications = pgTable(
     ...timestamps,
   },
   (table) => [index("email_verifications_user_index").on(table.userId, table.sentAt)],
+);
+
+/**
+ * An email proven by its sign-in code that no account has yet, waiting for
+ * the phone step (spec 26, 3.3): the address, and the waiting sign-in
+ * (`sr_pe_…`) only as a SHA-256 hash. The phone step takes it and deletes
+ * the row; the hourly clean-up deletes the rest an hour after they expired.
+ */
+export const emailSignIns = pgTable(
+  "email_sign_ins",
+  {
+    id: id(),
+    email: text().notNull(),
+    pendingHash: text().notNull().unique("email_sign_ins_pending_hash_unique"),
+    /** 30 minutes after the code was right. */
+    expiresAt: at().notNull(),
+    ...timestamps,
+  },
+  (table) => [index().on(table.expiresAt)],
 );
 
 /**

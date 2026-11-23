@@ -105,31 +105,29 @@ async function pendingFor(person: number): Promise<string> {
   return finished.data.pendingSignIn;
 }
 
-/** Sends a sign-in code to the number, from a new address, 31 seconds later. */
-async function sendCode(phone: string): Promise<string> {
+/** Sends a sign-in code to the number for a waiting sign-in, from a new address, 31 seconds later. */
+async function sendCode(phone: string, pendingSignIn: string): Promise<string> {
   api.advance(31);
   newAddress();
-  const started = await api.client.call(startPhoneSignInRoute, {
-    body: { phoneNumber: phone, locale: "en" },
-  });
+  const started = await startPhoneStep(phone, pendingSignIn);
   if (!started.ok) throw new Error(started.error.code);
   return api.lastCode(phone);
 }
 
-function verify(phone: string, code: string, pendingSignIn?: string) {
+function startPhoneStep(phone: string, pendingSignIn: string) {
+  return api.client.call(startPhoneSignInRoute, {
+    body: { phoneNumber: phone, locale: "en", pendingSignIn },
+  });
+}
+
+function verify(phone: string, code: string, pendingSignIn: string) {
   return api.client.call(verifyPhoneCodeRoute, {
-    body: {
-      phoneNumber: phone,
-      code,
-      locale: "en",
-      device,
-      ...(pendingSignIn === undefined ? {} : { pendingSignIn }),
-    },
+    body: { phoneNumber: phone, code, locale: "en", device, pendingSignIn },
   });
 }
 
 async function phoneStep(phone: string, pendingSignIn: string) {
-  return verify(phone, await sendCode(phone), pendingSignIn);
+  return verify(phone, await sendCode(phone, pendingSignIn), pendingSignIn);
 }
 
 async function linksOf(userId: string) {
@@ -438,14 +436,17 @@ describe("a newcomer (spec 19, 3.3)", () => {
     api.advance(29 * 60);
     const phone = api.newPhoneNumber();
     // A code asked for at minute 29 works for its own 10 minutes.
-    const code = await sendCode(phone);
+    const code = await sendCode(phone, pending);
     api.advance(60);
     expect(await verify(phone, code, pending)).toMatchObject({
       ok: false,
       status: 400,
       error: { code: "provider_expired" },
     });
-    expect(await verify(phone, code)).toMatchObject({ ok: true, data: { isNewUser: true } });
+    expect(await verify(phone, code, await api.waitingEmailSignIn())).toMatchObject({
+      ok: true,
+      data: { isNewUser: true },
+    });
   });
 
   it("is refused a new account for a Google account another one has; the code is kept", async () => {
@@ -454,13 +455,16 @@ describe("a newcomer (spec 19, 3.3)", () => {
     const second = await pendingFor(anna);
     expect((await phoneStep(api.newPhoneNumber(), first)).ok).toBe(true);
     const phone = api.newPhoneNumber();
-    const code = await sendCode(phone);
+    const code = await sendCode(phone, second);
     expect(await verify(phone, code, second)).toMatchObject({
       ok: false,
       status: 409,
       error: { code: "provider_in_use" },
     });
-    expect(await verify(phone, code)).toMatchObject({ ok: true, data: { isNewUser: true } });
+    expect(await verify(phone, code, await api.waitingEmailSignIn())).toMatchObject({
+      ok: true,
+      data: { isNewUser: true },
+    });
   });
 
   it("makes one account when two phone steps race with one Google account (review focus 4)", async () => {
@@ -468,7 +472,7 @@ describe("a newcomer (spec 19, 3.3)", () => {
     const first = await pendingFor(anna);
     const second = await pendingFor(anna);
     const phones = [api.newPhoneNumber(), api.newPhoneNumber()];
-    const codes = [await sendCode(phones[0] ?? ""), await sendCode(phones[1] ?? "")];
+    const codes = [await sendCode(phones[0] ?? "", first), await sendCode(phones[1] ?? "", second)];
     const results = await Promise.all([
       verify(phones[0] ?? "", codes[0] ?? "", first),
       verify(phones[1] ?? "", codes[1] ?? "", second),
@@ -709,8 +713,14 @@ describe("Sign-in methods in Settings (spec 19, 3.4)", () => {
     if (!prepared.ok) throw new Error(prepared.error.code);
     const { pendingSignIn } = prepared.data;
 
-    // Not as the phone step's waiting sign-in.
-    expect(await phoneStep(api.newPhoneNumber(), pendingSignIn)).toMatchObject({
+    // Not as the phone step's waiting sign-in: no text, and no sign-in.
+    const other = api.newPhoneNumber();
+    expect(await startPhoneStep(other, pendingSignIn)).toMatchObject({
+      ok: false,
+      error: { code: "provider_expired" },
+    });
+    const textCode = await sendCode(other, await api.waitingEmailSignIn());
+    expect(await verify(other, textCode, pendingSignIn)).toMatchObject({
       ok: false,
       error: { code: "provider_expired" },
     });

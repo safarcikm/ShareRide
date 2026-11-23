@@ -58,7 +58,9 @@ async function openMethods(linked: SignInMethod[], setUp?: (client: FakeClient) 
         );
         return ok(204);
       });
-      client.answer("/v1/me/confirm-code", () => ok(202, { resendAfterSeconds: 30 }));
+      client.answer("/v1/me/confirm-code", () =>
+        ok(202, { resendAfterSeconds: 30, channel: "sms", sentTo: "00" }),
+      );
       setUp?.(client);
     },
   });
@@ -98,6 +100,13 @@ describe("Sign-in methods in Settings", () => {
     expect(screen.queryByRole("button", { name: "Add Google" })).toBeNull();
   });
 
+  it("lists the email, which signs in too, with a way to change it (spec 26, 3.8)", async () => {
+    await openMethods([]);
+    expect(await screen.findByText("No email yet")).toBeVisible();
+    await fireEvent.press(screen.getByRole("button", { name: "Add an email" }));
+    expect(await screen.findByRole("header", { name: "Your email" })).toBeVisible();
+  });
+
   it("says Apple hid the email when it is a relay address", async () => {
     await openMethods([
       {
@@ -114,7 +123,7 @@ describe("Sign-in methods in Settings", () => {
     const { app } = await openMethods([googleMethod]);
     await fireEvent.press(await screen.findByRole("button", { name: "Remove Google" }));
     expect(
-      screen.getByText("Remove Google? You can still sign in with your phone number."),
+      screen.getByText("Remove Google? Your email and phone number still get you in."),
     ).toBeVisible();
     expect(callsTo(app, "/v1/me/sign-in-methods/{provider}")).toEqual([]);
     await fireEvent.press(screen.getByRole("button", { name: "Cancel" }));
@@ -155,7 +164,7 @@ describe("Sign-in methods in Settings", () => {
     const mesBefore = callsTo(app, "/v1/me").length;
     await fireEvent.press(await screen.findByRole("button", { name: "Add Apple" }));
 
-    expect(await screen.findByText("To add Apple, enter the code we text you.")).toBeVisible();
+    expect(await screen.findByText("To add Apple, enter the code we send you.")).toBeVisible();
     const prepare = callsTo(app, "/v1/me/sign-in-methods/prepare")[0]?.input["body"] as {
       ticket: string;
       verifier: string;

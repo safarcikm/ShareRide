@@ -3,9 +3,9 @@ import { Dimensions } from "react-native";
 import { getLocales } from "expo-localization";
 import type { DriverReadiness } from "@shareride/contracts";
 import { readAppData, writeAppData } from "@/lib/app-data";
-import { completeMe, renderApp } from "@/testing/app";
+import { completeMe, renderApp, signInByEmail } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
-import { ok, testMe, tokens } from "@/testing/fake-client";
+import { ok, testMe } from "@/testing/fake-client";
 import { northResult, searchApi, soonestApi, soonRide, tripDetailsApi } from "@/testing/search";
 import { colors } from "@/theme/tokens";
 
@@ -46,17 +46,6 @@ function menuCopies(state: NavigationState | undefined): number {
   const here = state.routes.filter((route) => route.name === "(tabs)").length;
   if (here > 0) return here;
   return state.routes.reduce((count, route) => count + menuCopies(route.state), 0);
-}
-
-/** From the phone number screen, signs in as an account that has finished signing up. */
-async function signInWithCode(fake: { answer: (path: string, reply: () => unknown) => void }) {
-  fake.answer("/v1/auth/phone/start", () => ok(202, { resendAfterSeconds: 30 }));
-  fake.answer("/v1/auth/phone/verify", () =>
-    ok(200, { ...tokens(1), user: completeMe, isNewUser: false }),
-  );
-  await fireEvent.changeText(await screen.findByLabelText("Mobile number"), "690 0000");
-  await fireEvent.press(screen.getByRole("button", { name: "Send code" }));
-  await fireEvent.changeText(await screen.findByLabelText("6-digit code"), "123456");
 }
 
 /** On Find, chooses Borgarnes in From. */
@@ -228,7 +217,7 @@ describe("The menu (spec 16, 3.1)", () => {
     });
     await fireEvent.press(await screen.findByRole("tab", { name: "My rides" }));
     await fireEvent.press(await screen.findByRole("button", { name: "Sign in" }));
-    await signInWithCode(app.client);
+    await signInByEmail(app.client);
     expect(await screen.findByRole("tab", { name: "Find", selected: true })).toBeVisible();
     expect(menuCopies(app.getRouterState())).toBe(1);
     await fireEvent.press(tab("Profile"));
@@ -386,9 +375,9 @@ describe("The top bar on wide screens", () => {
 
   it("closes sign-in onto the menu it opened from", async () => {
     const app = await renderApp("/profile");
-    app.client.answer("/v1/auth/phone/start", () => ok(202, { resendAfterSeconds: 30 }));
+    app.client.answer("/v1/auth/email/start", () => ok(202, { resendAfterSeconds: 30 }));
     await fireEvent.press(await screen.findByRole("button", { name: "Sign in" }));
-    await fireEvent.changeText(await screen.findByLabelText("Mobile number"), "690 0000");
+    await fireEvent.changeText(await screen.findByLabelText("Email"), "anna@example.com");
     await fireEvent.press(screen.getByRole("button", { name: "Send code" }));
     expect(await screen.findByLabelText("6-digit code")).toBeVisible();
     await fireEvent.press(within(screen.getByTestId("top-bar")).getByRole("tab", { name: "Find" }));

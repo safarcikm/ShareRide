@@ -70,8 +70,20 @@ export const personalData: Readonly<Record<string, TablePrivacy>> = {
     "random keys of photo files waiting to be deleted from storage, gone within minutes",
   ),
   verification_codes: notAboutAPerson(
-    "keyed hashes of a number and a code, not linked to an account and gone within minutes",
+    "keyed hashes of a number or an email and a code, not linked to an account and gone within minutes",
   ),
+  email_sign_ins: {
+    category: "account",
+    export: {
+      leftOut:
+        "an email sign-in waiting for its phone step: not yet linked to an account, gone within 30 minutes, then deleted by the hourly clean-up",
+    },
+    personColumns: [],
+    onDeletion: {
+      rows: "leave",
+      note: "not linked to an account: gone within 30 minutes of the code, then deleted by the hourly clean-up",
+    },
+  },
   rate_limit_events: notAboutAPerson(
     "keyed hashes of numbers and network addresses, not linked to an account, kept 24 hours",
   ),

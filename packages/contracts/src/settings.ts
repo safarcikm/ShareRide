@@ -42,6 +42,11 @@ export const configSchema = z.object({
    */
   signInProviders: z.array(signInProviderSchema).default([]),
   /**
+   * Whether this server sends email, so the sign-in screen offers a code by
+   * email (spec 26, 3.1); false from an API that does not say.
+   */
+  emailSignIn: z.boolean().default(false),
+  /**
    * Whether a booking made now is paid to the driver in person, in cash or
    * by bank transfer, while card payments are coming (rule M6, ADR 0038);
    * false from an API that does not say.

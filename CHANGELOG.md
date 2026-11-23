@@ -1448,6 +1448,14 @@ releases follow [Semantic Versioning](https://semver.org/).
   two workers make one; `GET` and `PUT /admin/v1/me/emails`; the console's
   page Emails to you, above Passkeys, with one checkbox that saves at once;
   a console journey; the production runbook says how to turn it on.
+- Sign in with a code by email (spec 26, ADR 0046): `POST
+  /v1/auth/email/start` and `/verify`; the sign-in screen asks for the
+  email under Google, then the code, and only a new account gives its
+  phone number, texted a code once; migration 0062 (`email_sign_ins`, the
+  `email_sign_in` code purpose). A member from before signs in with an
+  email and the same number once, and the email is added; a lost email is
+  replaced the same way, and the old address is told. Settings, Sign-in
+  methods lists the email.
 
 ### Fixed
 
@@ -1492,6 +1500,13 @@ releases follow [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- A text message no longer signs in (spec 26): the phone step needs a
+  waiting email, Google or Apple sign-in (`pendingSignIn`), at most 3 texts
+  go for one, and all sign-in and confirm texts together stop at 300 an
+  hour and 1 000 a day. Confirm codes go by email to the account's verified
+  email, and the form says where they went. Changing the email after an
+  account's first 30 minutes needs a confirm code. Pausing texts now pauses
+  only the phone step.
 - The front page says what PuffinRide is (spec 16, 3.2, amended
   2026-11-23): the title is "Share your ride" ("Verum samferða"), with
   "Carpool across Iceland: find a seat in someone else's car, or offer the

@@ -28,14 +28,49 @@ beforeEach(() => {
 });
 
 const signedIn = { ...tokens(1), user: testMe, isNewUser: true };
+const pendingSignIn = `sr_pe_${"e".repeat(43)}`;
+/** The answer to an email's code when no account has the email (spec 26, 3.3). */
+const phoneNeeded = {
+  status: "phoneNeeded",
+  pendingSignIn,
+  provider: "email",
+  email: "anna@example.com",
+  firstName: null,
+  expiresAt: "2026-11-23T12:30:00.000Z",
+};
 
-/** Opens the app signed out, at the phone number screen. */
-async function openPhoneScreen() {
-  const app = await renderApp("/");
-  app.client.answer("/v1/auth/phone/start", () => ok(202, { resendAfterSeconds: 30 }));
+/** Answers the email steps: a code sent, and the phone step after it. */
+function emailApi(client: FakeClient) {
+  client.answer("/v1/auth/email/start", () => ok(202, { resendAfterSeconds: 30 }));
+  client.answer("/v1/auth/email/verify", () => ok(200, phoneNeeded));
+  client.answer("/v1/auth/phone/start", () => ok(202, { resendAfterSeconds: 30 }));
+}
+
+/** Opens the app signed out, at step 1: Google or the email. */
+async function openSignInScreen() {
+  const app = await renderApp("/", { setUp: emailApi });
   await fireEvent.press(await screen.findByRole("tab", { name: "Profile" }));
   await fireEvent.press(await screen.findByRole("button", { name: "Sign in" }));
   expect(await screen.findByRole("header", { name: "Sign in or create an account" })).toBeVisible();
+  return app;
+}
+
+async function sendEmailCodeTo(email: string) {
+  await fireEvent.changeText(screen.getByLabelText("Email"), email);
+  await fireEvent.press(screen.getByRole("button", { name: "Send code" }));
+}
+
+/** From step 1, proves an email no account has: the phone step opens. */
+async function proveEmail() {
+  await sendEmailCodeTo("anna@example.com");
+  await enterCode("246810");
+  expect(await screen.findByRole("header", { name: "Add your phone number" })).toBeVisible();
+}
+
+/** Opens the app signed out and proves an email, at the phone number screen. */
+async function openPhoneScreen() {
+  const app = await openSignInScreen();
+  await proveEmail();
   return app;
 }
 
@@ -48,17 +83,155 @@ async function enterCode(code: string) {
   await fireEvent.changeText(await screen.findByLabelText("6-digit code"), code);
 }
 
-describe("Signing in with a phone number", () => {
-  it("numbers the steps and says the same code creates an account (spec 16, 3.5)", async () => {
-    await openPhoneScreen();
+describe("Signing in with an email code (spec 26)", () => {
+  it("numbers the steps, says a code comes by email, and tells members from before what to do", async () => {
+    const app = await openSignInScreen();
     expect(screen.getByText("Step 1 of 3")).toBeVisible();
+    expect(screen.getByText("We email you a 6-digit code.")).toBeVisible();
     expect(
       screen.getByText(
-        "We text you a 6-digit code. New to PuffinRide? The same code creates your account.",
+        "Joined with your phone number? Use your email or Google, then the same number. It's added to your account.",
       ),
     ).toBeVisible();
     // Nothing kept: no ride card.
     expect(screen.queryByText("You're booking")).toBeNull();
+    // No phone number on step 1.
+    expect(screen.queryByLabelText("Mobile number")).toBeNull();
+
+    await sendEmailCodeTo(" Anna@Example.com ");
+    expect(await screen.findByText("We emailed a 6-digit code to anna@example.com.")).toBeVisible();
+    expect(screen.getByText("Step 1 of 3")).toBeVisible();
+    expect(app.client.calls.at(-1)).toEqual({
+      path: "/v1/auth/email/start",
+      input: { body: { email: "anna@example.com", locale: "en" } },
+    });
+  });
+
+  it("signs in a member with the email's code alone, and sends no text", async () => {
+    const app = await openSignInScreen();
+    app.client.answer("/v1/auth/email/verify", () =>
+      ok(200, { status: "signedIn", ...tokens(1), user: completeMe, isNewUser: false }),
+    );
+    await sendEmailCodeTo("anna@example.com");
+    await enterCode("135790");
+    expect(await screen.findByRole("tab", { name: "Find" })).toBeVisible();
+    expect(screen.queryByRole("header", { name: "Sign in or create an account" })).toBeNull();
+    expect(app.store.value).toBe("sr_rt_refresh-1");
+    expect(app.client.calls.find((call) => call.path === "/v1/auth/email/verify")?.input).toEqual({
+      body: {
+        email: "anna@example.com",
+        code: "135790",
+        device: { platform: "ios", appVersion: "0.1.0" },
+      },
+    });
+    expect(app.client.calls.some((call) => call.path.startsWith("/v1/auth/phone"))).toBe(false);
+  });
+
+  it("asks an email no account has for the phone number once, and says why", async () => {
+    await openPhoneScreen();
+    expect(screen.getByText("Step 2 of 3")).toBeVisible();
+    expect(
+      screen.getByText(
+        "Signed in as anna@example.com. We text you a code once, so the people you ride with can reach you. Next time your email is enough.",
+      ),
+    ).toBeVisible();
+    // Another way after all: back to step 1.
+    await fireEvent.press(screen.getByRole("button", { name: "Sign in another way" }));
+    expect(await screen.findByLabelText("Email")).toBeVisible();
+  });
+
+  it("says when the address is not an email, without calling the API", async () => {
+    const app = await openSignInScreen();
+    const before = app.client.calls.length;
+    await sendEmailCodeTo("anna at example");
+    expect(
+      await screen.findByText("Enter an email address, such as anna@example.com."),
+    ).toBeVisible();
+    expect(app.client.calls).toHaveLength(before);
+  });
+
+  it("shows the tries left after a wrong email code, and goes back to change the email", async () => {
+    const app = await openSignInScreen();
+    app.client.answer("/v1/auth/email/verify", () =>
+      failure(400, "code_invalid", { attemptsLeft: 3 }),
+    );
+    await sendEmailCodeTo("anna@example.com");
+    await enterCode("111111");
+    expect(await screen.findByText("That code isn't right. 3 tries left.")).toBeVisible();
+    await fireEvent.press(screen.getByRole("button", { name: "Change email" }));
+    expect(await screen.findByLabelText("Email")).toHaveDisplayValue("anna@example.com");
+  });
+
+  it("says when the email could not be sent", async () => {
+    const app = await openSignInScreen();
+    app.client.answer("/v1/auth/email/start", () => failure(502, "email_failed"));
+    await sendEmailCodeTo("anna@example.com");
+    expect(
+      await screen.findByText("We couldn't send the email. Try again in a minute."),
+    ).toBeVisible();
+  });
+
+  it("says when sign-in by email is not available on this server", async () => {
+    await renderApp("/sign-in", {
+      setUp: (client) => {
+        client.answer("/v1/config", () =>
+          ok(200, {
+            beta: false,
+            paused: [],
+            maxSeats: 8,
+            freeCancellationMinutes: 15,
+            maxMoveMinutes: 120,
+            reliabilityMonths: 12,
+            signInProviders: [],
+            emailSignIn: false,
+          }),
+        );
+      },
+    });
+    expect(
+      await screen.findByText("Sign-in by email is not available on this server."),
+    ).toBeVisible();
+    expect(screen.queryByLabelText("Email")).toBeNull();
+  });
+
+  it("goes back to the start when the email sign-in waited too long", async () => {
+    const app = await openPhoneScreen();
+    app.client.answer("/v1/auth/phone/start", () => failure(400, "provider_expired"));
+    await sendCodeTo("690 0000");
+    expect(
+      await screen.findByText("That took too long. Start again with your email."),
+    ).toBeVisible();
+    expect(screen.getByLabelText("Email")).toBeVisible();
+  });
+
+  it("tells a member from before that the email now signs in", async () => {
+    const app = await openPhoneScreen();
+    app.client.answer("/v1/auth/phone/verify", () =>
+      ok(200, {
+        ...tokens(1),
+        user: completeMe,
+        isNewUser: false,
+        emailLink: { outcome: "added", email: "anna@example.com" },
+      }),
+    );
+    await sendCodeTo("690 0000");
+    await enterCode("123456");
+    expect(await screen.findByText("Next time, sign in with anna@example.com.")).toBeVisible();
+    await fireEvent.press(screen.getByRole("button", { name: "Close the message" }));
+    expect(screen.queryByText("Next time, sign in with anna@example.com.")).toBeNull();
+  });
+
+  it("starts at step 1 when the email code screen is opened directly", async () => {
+    await renderApp("/sign-in/email-code");
+    expect(
+      await screen.findByRole("header", { name: "Sign in or create an account" }),
+    ).toBeVisible();
+  });
+});
+
+describe("The phone step", () => {
+  it("numbers the step and says the code comes by text", async () => {
+    await openPhoneScreen();
     await sendCodeTo("690 0000");
     expect(await screen.findByText("Step 2 of 3")).toBeVisible();
     expect(screen.getByRole("header", { name: "Enter the code" })).toBeVisible();
@@ -72,7 +245,7 @@ describe("Signing in with a phone number", () => {
     expect(await screen.findByText("We sent it to +354 690 0000.")).toBeVisible();
     expect(app.client.calls.at(-1)).toEqual({
       path: "/v1/auth/phone/start",
-      input: { body: { phoneNumber: "+3546900000", locale: "en" } },
+      input: { body: { phoneNumber: "+3546900000", locale: "en", pendingSignIn } },
     });
 
     await enterCode("123456");
@@ -85,6 +258,7 @@ describe("Signing in with a phone number", () => {
         code: "123456",
         locale: "en",
         device: { platform: "ios", appVersion: "0.1.0" },
+        pendingSignIn,
       },
     });
   });
@@ -101,7 +275,7 @@ describe("Signing in with a phone number", () => {
     await sendCodeTo("512 345 678");
     expect(await screen.findByText("We sent it to +48 512 345 678.")).toBeVisible();
     expect(app.client.calls.at(-1)?.input).toEqual({
-      body: { phoneNumber: "+48512345678", locale: "en" },
+      body: { phoneNumber: "+48512345678", locale: "en", pendingSignIn },
     });
   });
 
@@ -254,7 +428,7 @@ describe("Signing in with a ride kept (spec 16, 3.5)", () => {
     const app = await renderApp("/sign-in", {
       setUp: (client) => {
         setUp(client);
-        client.answer("/v1/auth/phone/start", () => ok(202, { resendAfterSeconds: 30 }));
+        emailApi(client);
       },
     });
     expect(
@@ -274,7 +448,7 @@ describe("Signing in with a ride kept (spec 16, 3.5)", () => {
     expect(screen.getByText("Sunday 15 November · 10:00 Borgarnes → 12:05 Blönduós")).toBeVisible();
     expect(screen.getByText("2 seats · 5,800 ISK · Driver: Anna")).toBeVisible();
 
-    await sendCodeTo("690 0000");
+    await proveEmail();
     expect(await screen.findByText("Step 2 of 3")).toBeVisible();
     expect(await screen.findByTestId("kept-ride")).toHaveAccessibleName(
       /^You're booking, Sunday 15 November/,
@@ -330,16 +504,16 @@ describe("Signing in with a ride kept (spec 16, 3.5)", () => {
     await screen.findByText("Step 1 of 3");
     expect(app.client.calls.some((call) => call.path === "/v1/trips/{id}")).toBe(true);
     expect(screen.queryByTestId("kept-ride")).toBeNull();
-    expect(screen.getByLabelText("Mobile number")).toBeVisible();
+    expect(screen.getByLabelText("Email")).toBeVisible();
   });
 
   it("takes someone who already has an account back to the ride after the code", async () => {
     keepBooking();
     const app = await openSignIn();
-    app.client.answer("/v1/auth/phone/verify", () =>
-      ok(200, { ...tokens(1), user: completeMe, isNewUser: false }),
+    app.client.answer("/v1/auth/email/verify", () =>
+      ok(200, { status: "signedIn", ...tokens(1), user: completeMe, isNewUser: false }),
     );
-    await sendCodeTo("690 0000");
+    await sendEmailCodeTo("anna@example.com");
     await enterCode("123456");
     expect(await screen.findByRole("header", { name: "Request this ride" })).toBeVisible();
     expect(screen).toHavePathname(`/trips/${northResult.tripId}/book`);
@@ -426,12 +600,12 @@ describe("Signing up while the beta is closed (spec 12, 3.2.3)", () => {
   });
 
   it("takes the code of an invite link along, and a member's sign-in sends none", async () => {
-    const app = await renderApp("/invite/abcd2345");
-    app.client.answer("/v1/auth/phone/start", () => ok(202, { resendAfterSeconds: 30 }));
+    const app = await renderApp("/invite/abcd2345", { setUp: emailApi });
     app.client.answer("/v1/auth/phone/verify", () => ok(200, signedIn));
     expect(
       await screen.findByRole("header", { name: "Sign in or create an account" }),
     ).toBeVisible();
+    await proveEmail();
     await sendCodeTo("690 0000");
     await enterCode("123456");
     expect(await screen.findByRole("header", { name: "Last step: about you" })).toBeVisible();
@@ -441,10 +615,10 @@ describe("Signing up while the beta is closed (spec 12, 3.2.3)", () => {
   });
 
   it("shows where a link's code did not work, with the code to correct", async () => {
-    const app = await renderApp("/invite/zzzz9999");
-    app.client.answer("/v1/auth/phone/start", () => ok(202, { resendAfterSeconds: 30 }));
+    const app = await renderApp("/invite/zzzz9999", { setUp: emailApi });
     app.client.answer("/v1/auth/phone/verify", () => failure(400, "invite_invalid"));
     await screen.findByRole("header", { name: "Sign in or create an account" });
+    await proveEmail();
     await sendCodeTo("690 0000");
     await enterCode("123456");
     expect(await screen.findByRole("header", { name: "Enter your invite code" })).toBeVisible();

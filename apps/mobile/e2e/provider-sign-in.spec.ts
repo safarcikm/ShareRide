@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
-import { english, enterCode, menuLink, signUp } from "./support/account";
-import { codeIn, newPhoneNumber, sentCount, textMessage } from "./support/sms";
+import { english, enterPhoneCode, menuLink, signUp } from "./support/account";
+import { confirmCodeSubject, emailCount, nthEmailTo, codeInSubject } from "./support/email";
+import { newPhoneNumber } from "./support/sms";
 
 // Spec 19's journeys (section 9) with the development stand-in for Google
 // (ADR 0034): its page opens in a pop-up, as Google's would, and comes back
@@ -47,7 +48,7 @@ test.describe("Continue with Google", () => {
     ).toBeVisible();
     // The ticket never stays in the address, here or in the pop-up.
     expect(page.url()).not.toContain("sr_");
-    await enterCode(page, english, newPhoneNumber());
+    await enterPhoneCode(page, english, newPhoneNumber());
 
     // Step 3 opens with the first name Google gave.
     await expect(page.getByRole("heading", { name: english.aboutYouTitle })).toBeVisible();
@@ -120,13 +121,13 @@ test.describe("Sign-in methods in Settings", () => {
     // stand-in's relay-style address is not Apple's own relay domain, so the
     // row shows it as it is; "Email hidden by Apple" has its screen test.
     const person = personOf(testInfo.project.name);
-    const { phone } = await signUp(page, english, "Gunna");
+    const { email } = await signUp(page, english, "Gunna");
     await page.goto("/settings");
     await page.getByRole("button", { name: "Sign-in methods" }).click();
     await expect(page.getByRole("heading", { name: "Sign-in methods" })).toBeVisible();
     await expect(page.getByText("Not linked")).toHaveCount(2);
 
-    const sentBefore = sentCount(phone.e164);
+    const sentBefore = emailCount(email, confirmCodeSubject);
     const popup = page.waitForEvent("popup");
     await page.getByRole("button", { name: "Add Apple" }).click();
     const window = await popup;
@@ -134,9 +135,10 @@ test.describe("Sign-in methods in Settings", () => {
     await window.getByRole("button", { name: person.label }).click();
     await window.waitForEvent("close");
 
-    await expect(page.getByText("To add Apple, enter the code we text you.")).toBeVisible();
-    const text = await textMessage(phone.e164, sentBefore + 1);
-    await page.getByLabel("6-digit code").fill(codeIn(text));
+    // The code goes to the account's email (spec 26, 3.6).
+    await expect(page.getByText("To add Apple, enter the code we send you.")).toBeVisible();
+    const sent = await nthEmailTo(email, confirmCodeSubject, sentBefore + 1);
+    await page.getByLabel("6-digit code").fill(codeInSubject(sent));
     await expect(
       page.getByText("Apple is now linked to your account. Next time you can continue with Apple."),
     ).toBeVisible();
@@ -145,7 +147,7 @@ test.describe("Sign-in methods in Settings", () => {
 
     await page.getByRole("button", { name: "Remove Apple" }).click();
     await expect(
-      page.getByText("Remove Apple? You can still sign in with your phone number."),
+      page.getByText("Remove Apple? Your email and phone number still get you in."),
     ).toBeVisible();
     await page.getByRole("button", { name: "Remove Apple" }).click();
     await expect(page.getByText("Apple is no longer linked to your account.")).toBeVisible();

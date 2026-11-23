@@ -1,4 +1,4 @@
-import { expect, type Page } from "@playwright/test";
+import { expect } from "@playwright/test";
 import { emailOutbox } from "../../playwright.config";
 import { readOutbox } from "./outbox";
 
@@ -27,16 +27,55 @@ export async function emailTo(address: string, subject: RegExp): Promise<Email> 
   return found;
 }
 
+/** How many emails to `address` so far whose subject matches. */
+export function emailCount(address: string, subject: RegExp): number {
+  return emailsTo(address).filter((email) => subject.test(email.subject)).length;
+}
+
+/** Waits for email number `count` (from 1) to `address` whose subject matches. */
+export async function nthEmailTo(address: string, subject: RegExp, count: number): Promise<Email> {
+  let found: Email | undefined;
+  await expect
+    .poll(() => {
+      found = emailsTo(address).filter((email) => subject.test(email.subject))[count - 1];
+      return found !== undefined;
+    })
+    .toBe(true);
+  if (found === undefined) throw new Error("No email.");
+  return found;
+}
+
+/** A sign-in code's email, in English or Icelandic: the code leads the subject (spec 26, 3.2). */
+export const signInCodeSubject = /^\d{6} (is your PuffinRide code|er PuffinRide-kóðinn þinn)$/;
+
+/** A confirm code's email (spec 26, 3.6). */
+export const confirmCodeSubject =
+  /^\d{6} (is your PuffinRide code to confirm|er PuffinRide-kóðinn til að staðfesta)$/;
+
+/** The six-digit code at the start of a code email's subject. */
+export function codeInSubject(email: Email): string {
+  const code = /^(\d{6}) /.exec(email.subject)?.[1];
+  if (code === undefined) throw new Error(`No code in "${email.subject}"`);
+  return code;
+}
+
+/**
+ * Runs `send`, which makes the API email a code to `address`, and gives
+ * that code: the next email whose subject matches.
+ */
+export async function emailedCode(
+  address: string,
+  subject: RegExp,
+  send: () => Promise<unknown>,
+): Promise<string> {
+  const before = emailCount(address, subject);
+  await send();
+  return codeInSubject(await nthEmailTo(address, subject, before + 1));
+}
+
 /** The link in an email's text, after "label: ". */
 export function linkIn(email: Email, label: string): string {
   const link = new RegExp(`${label}: (\\S+)`).exec(email.text)?.[1];
   if (link === undefined) throw new Error(`No "${label}" link in the email.`);
   return link;
-}
-
-/** Opens the link sent to confirm `address`, such as the one given at sign-up. */
-export async function confirmEmail(page: Page, address: string) {
-  const confirm = await emailTo(address, /^Confirm your email for PuffinRide$/);
-  await page.goto(linkIn(confirm, "Confirm my email"));
-  await expect(page.getByRole("heading", { name: "Your email is added" })).toBeVisible();
 }

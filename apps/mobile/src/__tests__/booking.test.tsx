@@ -264,6 +264,17 @@ describe("Booking from trip details (spec 5, 3.1)", () => {
       setUp: (fake) => {
         soonestApi(fake, [northResult]);
         tripDetailsApi(fake);
+        fake.answer("/v1/auth/email/start", () => ok(202, { resendAfterSeconds: 30 }));
+        fake.answer("/v1/auth/email/verify", () =>
+          ok(200, {
+            status: "phoneNeeded",
+            pendingSignIn: `sr_pe_${"e".repeat(43)}`,
+            provider: "email",
+            email: "anna@example.com",
+            firstName: null,
+            expiresAt: "2026-11-23T12:30:00.000Z",
+          }),
+        );
         fake.answer("/v1/auth/phone/start", () => ok(202, { resendAfterSeconds: 30 }));
         fake.answer("/v1/auth/phone/verify", () =>
           ok(200, { ...tokens(1), user: afterTerms, isNewUser: true }),
@@ -278,6 +289,9 @@ describe("Booking from trip details (spec 5, 3.1)", () => {
     expect(await screen.findByTestId("kept-ride")).toHaveAccessibleName(
       /^You're booking, Sunday 15 November, Leaves Borgarnes at 10:00, arrives at Blönduós at 12:05, 1 seat, 2,900 ISK, Driver: Anna/,
     );
+    await fireEvent.changeText(await screen.findByLabelText("Email"), "anna@example.com");
+    await fireEvent.press(screen.getByRole("button", { name: "Send code" }));
+    await fireEvent.changeText(await screen.findByLabelText("6-digit code"), "246810");
     await fireEvent.changeText(await screen.findByLabelText("Mobile number"), "690 0000");
     await fireEvent.press(screen.getByRole("button", { name: "Send code" }));
     expect(await screen.findByText("Step 2 of 3")).toBeVisible();

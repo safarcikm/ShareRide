@@ -83,29 +83,33 @@ await seedDevelopmentData(connection.db, new Date());
 writeFileSync(outbox, "");
 writeFileSync(emailOutbox, "");
 
-// Each code sent makes every earlier send look 31 seconds older to the
-// limits (R1.3), so a test can sign in to the same account again at once
-// without waiting out the resend limit. The clock itself stays the real
+// Each text or email sent makes every earlier send look 31 seconds older
+// to the limits (R1.3, R26.3), so a test can sign in to the same account
+// again at once without waiting out the resend limit. The clock itself stays the real
 // time, which the browser goes by too: moving it on with each code, as
 // before, put the API minutes ahead of the browser by the end of a full run,
 // and a trip moved to 15 minutes ago was already past its "I'm here" window
 // on the API. The sends look older before the message is written, so a test
 // that waits for the message can send again at once.
 const { rateLimitEvents } = schema;
+async function ageSends() {
+  await connection.db
+    .update(rateLimitEvents)
+    .set({ createdAt: sql`${rateLimitEvents.createdAt} - interval '31 seconds'` });
+}
 const sms: SmsSender = {
   async send(message) {
-    await connection.db
-      .update(rateLimitEvents)
-      .set({ createdAt: sql`${rateLimitEvents.createdAt} - interval '31 seconds'` });
+    await ageSends();
     appendFileSync(outbox, `${JSON.stringify(message)}\n`);
   },
 };
 
 const email: EmailSender = {
-  send(message) {
+  async send(message) {
+    await ageSends();
     const { to, subject, text } = message;
     appendFileSync(emailOutbox, `${JSON.stringify({ to, subject, text })}\n`);
-    return Promise.resolve({ id: `e2e-${message.idempotencyKey}` });
+    return { id: `e2e-${message.idempotencyKey}` };
   },
 };
 const clock = () => new Date();

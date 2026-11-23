@@ -316,6 +316,8 @@ describe("GET /v1/config", () => {
       signInProviders: ["google", "apple"],
       payInPerson: false,
       analytics: null,
+      // The test API sends email, so a code by email signs in (spec 26).
+      emailSignIn: true,
     });
 
     await change("invite_code_required", {
@@ -333,6 +335,8 @@ describe("GET /v1/config", () => {
       signInProviders: ["google", "apple"],
       payInPerson: false,
       analytics: null,
+      // The test API sends email, so a code by email signs in (spec 26).
+      emailSignIn: true,
     });
   });
 });

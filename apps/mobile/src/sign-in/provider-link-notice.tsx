@@ -1,4 +1,4 @@
-import type { ProviderLink } from "@shareride/contracts";
+import type { EmailLink, ProviderLink } from "@shareride/contracts";
 import type { Translate } from "@shareride/i18n";
 import { X } from "lucide-react-native";
 import { useSyncExternalStore } from "react";
@@ -31,9 +31,24 @@ export function providerLinkText(t: Translate, link: ProviderLink): string | nul
   }
 }
 
+/** What the phone step did with the proven email, in words (spec 26, 3.3). */
+export function emailLinkText(t: Translate, link: EmailLink): string | null {
+  switch (link.outcome) {
+    case "added":
+      return t("auth.email.added", { email: link.email });
+    case "replaced":
+      return t("auth.email.replaced", { email: link.email });
+    case "created":
+    case "already":
+    case "in_use":
+      return null;
+  }
+}
+
 /**
- * After the phone step linked a Google or Apple account to an account that
- * had the number (spec 19, 3.3): says so over whichever screen opens next,
+ * After the phone step linked a Google or Apple account, or an email, to
+ * an account that had the number (spec 19, 3.3; spec 26, 3.3): says so
+ * over whichever screen opens next,
  * since signing in closes the sign-in screens, until the person closes it.
  * It takes focus as it appears, so a screen reader reads it. On wide
  * screens it sits under the top bar, which pads the top itself.
@@ -45,7 +60,9 @@ export function ProviderLinkNotice({ belowTopBar }: { readonly belowTopBar: bool
   const insets = useSafeAreaInsets();
   const news = useSyncExternalStore(session.subscribe, session.signInNews, session.signInNews);
   const link = news?.providerLink ?? null;
-  const text = link === null ? null : providerLinkText(t, link);
+  const email = news?.emailLink ?? null;
+  const text =
+    link !== null ? providerLinkText(t, link) : email === null ? null : emailLinkText(t, email);
   if (text === null) return null;
   return (
     <View style={[styles.layer, { top: (belowTopBar ? 0 : insets.top) + spacing.sm }]}>
@@ -64,7 +81,7 @@ export function ProviderLinkNotice({ belowTopBar }: { readonly belowTopBar: bool
               icon={X}
               label={t("auth.provider.dismiss")}
               onPress={() => {
-                session.dismissProviderLink();
+                session.dismissLinkNotice();
               }}
             />
           </View>

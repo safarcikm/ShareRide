@@ -84,16 +84,25 @@ async function paused() {
 
 let addresses = 0;
 
-/** Asks for a sign-in code from a new address, 31 seconds later. */
-function start(phoneNumber: string) {
+/**
+ * Asks for a sign-in code from a new address, 31 seconds later, for a
+ * waiting email sign-in (spec 26): a new one unless one is given.
+ */
+async function start(phoneNumber: string, waiting?: string) {
+  const pendingSignIn = waiting ?? (await api.waitingEmailSignIn());
   api.advance(31);
   addresses += 1;
   api.ip = `203.0.113.${String(addresses % 250)}`;
-  return api.client.call(startPhoneSignInRoute, { body: { phoneNumber, locale: "en" } });
+  const started = await api.client.call(startPhoneSignInRoute, {
+    body: { phoneNumber, locale: "en", pendingSignIn },
+  });
+  return { started, pendingSignIn };
 }
 
-const verify = (phoneNumber: string, code: string) =>
-  api.client.call(verifyPhoneCodeRoute, { body: { phoneNumber, code, locale: "en", device } });
+const verify = (phoneNumber: string, code: string, pendingSignIn: string) =>
+  api.client.call(verifyPhoneCodeRoute, {
+    body: { phoneNumber, code, locale: "en", device, pendingSignIn },
+  });
 
 const stored = async (bookingId: string) => {
   const [row] = await api.connection.db
@@ -141,9 +150,10 @@ describe("new sign-ups paused", () => {
     expect(await paused()).toEqual(["signups"]);
 
     const newcomer = api.newPhoneNumber();
-    expect((await start(newcomer)).ok).toBe(true);
+    const { started, pendingSignIn } = await start(newcomer);
+    expect(started.ok).toBe(true);
     const code = api.lastCode(newcomer);
-    const refused = await verify(newcomer, code);
+    const refused = await verify(newcomer, code, pendingSignIn);
     expect(refused).toMatchObject({ ok: false, status: 503, error: { code: "signups_paused" } });
     const accounts = await api.connection.db
       .select({ id: schema.users.id })
@@ -151,15 +161,19 @@ describe("new sign-ups paused", () => {
       .where(eq(schema.users.phoneE164, newcomer));
     expect(accounts).toEqual([]);
 
-    expect((await start(member)).ok).toBe(true);
-    expect(await verify(member, api.lastCode(member))).toMatchObject({
+    const memberStep = await start(member);
+    expect(memberStep.started.ok).toBe(true);
+    expect(await verify(member, api.lastCode(member), memberStep.pendingSignIn)).toMatchObject({
       ok: true,
       data: { isNewUser: false },
     });
 
     // Back on: the same code still works, as no try was counted or used.
     await turn("signups_open", "on");
-    expect(await verify(newcomer, code)).toMatchObject({ ok: true, data: { isNewUser: true } });
+    expect(await verify(newcomer, code, pendingSignIn)).toMatchObject({
+      ok: true,
+      data: { isNewUser: true },
+    });
   });
 });
 
@@ -168,11 +182,12 @@ describe("text messages paused", () => {
     const member = await api.signIn(api.newPhoneNumber());
     await turn("sms_sending", "off");
     expect(await paused()).toEqual(["sms"]);
+    const waiting = await api.waitingEmailSignIn();
     const sentBefore = api.sms.outbox.length;
     const limitEvents = () => api.connection.db.$count(schema.rateLimitEvents);
     const countedBefore = await limitEvents();
 
-    const refused = await start(api.newPhoneNumber());
+    const { started: refused } = await start(api.newPhoneNumber(), waiting);
     expect(refused).toMatchObject({ ok: false, status: 503, error: { code: "sms_paused" } });
     const confirm = await api.client.call(sendConfirmCodeRoute, {
       accessToken: member.accessToken,
@@ -184,7 +199,7 @@ describe("text messages paused", () => {
     expect(await limitEvents()).toBe(countedBefore);
 
     await turn("sms_sending", "on");
-    expect((await start(api.newPhoneNumber())).ok).toBe(true);
+    expect((await start(api.newPhoneNumber(), waiting)).started.ok).toBe(true);
   });
 });
 

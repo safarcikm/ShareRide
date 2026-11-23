@@ -14,7 +14,7 @@ apps.
 | Threat | Example | Main controls |
 | ------ | ------- | ------------- |
 | Account takeover | SIM swap, guessed codes | Code expiry and attempt limits, device sessions list, re-verification for sensitive changes |
-| SMS fraud (SMS pumping) | Bots trigger thousands of codes to premium numbers | Rate limits per IP, number and prefix, and a daily cap per country (the SMS budget); country allow-list; a kill switch (`SMS_PAUSED`); bot checks; spending alerts |
+| SMS fraud (SMS pumping) | Bots trigger thousands of codes to premium numbers | No text without a proven email, Google or Apple sign-in first, at most 3 per waiting sign-in, and a ceiling on all sign-in texts (spec 26); rate limits per IP, number and prefix, and a daily cap per country (the SMS budget); country allow-list; a kill switch (`SMS_PAUSED`); spending alerts |
 | Scraping and stalking | Collecting who travels where and when | Public profiles show first name only; exact trip details and vehicle plate only to booked passengers; rate-limited search; no answer depends on who else is booked on a trip, so a block cannot reveal the other person's bookings |
 | Broken access control | Editing someone else's trip, reading other people's chats | Ownership checks in every application service; tests for each endpoint as another user |
 | Overbooking or price tampering | Race conditions, manipulated requests | Server computes prices and availability; transactional capacity check; database constraints |
@@ -58,16 +58,29 @@ apps.
 How [ADR 0016](../decisions/0016-own-sign-in-module.md) is built, in
 `apps/api/src/modules/auth` with the rules in `packages/domain/src/auth`.
 
+- **Ways in** ([ADR 0046](../decisions/0046-sign-in-by-email-code-and-text-only-to-check-the-number.md),
+  [spec 26](../specs/2026-11-23-sign-in-without-text-messages.md)): Google
+  or Apple, or a code emailed to an account's verified email. A phone
+  number alone never signs in: its text code only finishes a waiting email,
+  Google or Apple sign-in (`pendingSignIn`, required by
+  `POST /v1/auth/phone/start` and `/verify`), and adds the number, or, for
+  a number's account, the proven email. A replaced verified email is told
+  of the change, with the new address partly hidden.
 - **Codes:** 6 digits from `crypto.randomInt`, valid 10 minutes, 5 attempts.
-  Stored as HMAC-SHA-256 keyed with `AUTH_SECRET`, bound to the number, and
-  compared in constant time. Only the newest code for a number works; a used
-  code is deleted. The number itself is stored only as a keyed hash until the
-  account exists.
-- **Number guessing:** "send code" answers the same for every valid number,
-  whether or not it has an account. Wrong codes count against the code; after
+  Stored as HMAC-SHA-256 keyed with `AUTH_SECRET`, bound to the number or
+  the email, and compared in constant time. Only the newest code for a
+  number or an email works; a used code is deleted. The number and the
+  email are stored only as keyed hashes until the account exists; a proven
+  email waiting for the phone step is kept for at most 30 minutes, and
+  deleted an hour after it expired.
+- **Number and email guessing:** "send code" answers the same for every
+  valid number or email, whether or not it has an account. Wrong codes count against the code; after
   5 the person must ask for a new code, which the sending limits slow down.
-- **Sending limits:** per number, per IP address and per country calling code
-  (plan section 4.2). Keys are keyed hashes, so the table holds no numbers or
+- **Sending limits:** texts per number, per IP address and per country
+  calling code (plan section 4.2), at most 3 per waiting sign-in, and all
+  sign-in and confirm texts together at most 300 an hour and 1 000 a day,
+  logged as an error and reported to Sentry when reached (R26.3). Emailed codes: one per 30 seconds
+  and 5 an hour per address, 20 an hour per IP address. Keys are keyed hashes, so the table holds no numbers or
   addresses. The IP address comes from `X-Forwarded-For` only behind
   trusted proxies (`TRUST_PROXY`), and then from the entry the outermost
   one appended, counted from the end; earlier entries come from the client
@@ -101,9 +114,11 @@ How [ADR 0016](../decisions/0016-own-sign-in-module.md) is built, in
   the web only the API can delete the cookie, and "sign out on all devices"
   must reach the API, so those show the failure and the person stays signed
   in to try again. The phone number never appears in a web address.
-- **Confirming a sensitive action:** downloading my data and deleting my
-  account need a fresh code sent to the account's own number
-  (`POST /v1/me/confirm-code`, spec 11). It is a code of its own purpose: it
+- **Confirming a sensitive action:** downloading my data, deleting my
+  account, adding Google or Apple and changing the email (after the
+  account's first 30 minutes) need a fresh code, emailed to the account's
+  verified email, or texted to its own number when it has none
+  (`POST /v1/me/confirm-code`, spec 11, spec 26 3.6). It is a code of its own purpose: it
   never signs in, a sign-in code never confirms, and neither replaces the
   other. It shares the sign-in rules (10 minutes, 5 attempts, single use)
   and sending limits. `withConfirmCode` checks it and runs the action in one
@@ -175,9 +190,11 @@ How [ADR 0016](../decisions/0016-own-sign-in-module.md) is built, in
   the logs, and the API refuses to start with it in production. Vonage keeps
   the text in its records for 13 months unless redacted (a code works once,
   for ten minutes); 46elks, the fallback, sends with `dontlog=message`. Errors from either sender never
-  contain the number. `SMS_PAUSED=true` stops all SMS.
+  contain the number. `SMS_PAUSED=true` stops all SMS; signing in with an
+  email or Google goes on, and only the phone step waits.
 - **Clean-up:** an hourly job deletes expired codes, rate-limit events after
-  24 hours and expired access and refresh tokens, ends sessions unused for 60
+  24 hours, waiting email sign-ins an hour after they expired, and expired
+  access and refresh tokens, ends sessions unused for 60
   days and deletes sessions 30 days after they end. A rotated refresh token
   is kept until its session ends, however old, so presenting it again is
   still caught as reuse.

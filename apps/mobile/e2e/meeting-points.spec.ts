@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { mapSize, project, type Position } from "@shareride/ui/map";
-import { enterCode, english, finishSignUp } from "./support/account";
+import { english, enterCodes, finishSignUp } from "./support/account";
 import { newPhoneNumber } from "./support/sms";
 
 /** Phones show the map first and the list on a choice; wide screens show both. */
@@ -118,7 +118,7 @@ test.describe("meeting points on the web", () => {
       page.getByRole("heading", { name: "Sign in to tell us what's wrong" }),
     ).toBeVisible();
     await page.getByRole("button", { name: "Sign in", exact: true }).click();
-    await enterCode(page, english, newPhoneNumber());
+    await enterCodes(page, english, newPhoneNumber());
     await finishSignUp(page, english, "Freyja");
 
     await expect(page.getByRole("heading", { name: "What's wrong here?" })).toBeVisible();

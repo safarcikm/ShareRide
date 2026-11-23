@@ -1,5 +1,11 @@
 import { createApiClient } from "@shareride/api-client";
-import { getMeRoute, putEmailRoute, updateMeRoute, verifyEmailRoute } from "@shareride/contracts";
+import {
+  getMeRoute,
+  putEmailRoute,
+  sendConfirmCodeRoute,
+  updateMeRoute,
+  verifyEmailRoute,
+} from "@shareride/contracts";
 import { pingDatabase, schema } from "@shareride/db";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
@@ -32,6 +38,33 @@ const member = () => api.signIn(api.newPhoneNumber());
 
 function putEmail(who: Member, email: string) {
   return api.client.call(putEmailRoute, { accessToken: who.accessToken, body: { email } });
+}
+
+/** A confirm code for the member, sent 31 seconds later (spec 26, R26.5). */
+async function confirmCode(who: Member, phone: string): Promise<string> {
+  api.advance(31);
+  const sent = await api.client.call(sendConfirmCodeRoute, {
+    accessToken: who.accessToken,
+    body: {},
+  });
+  if (!sent.ok) throw new Error(sent.error.code);
+  return api.lastCode(phone);
+}
+
+function putEmailWithCode(who: Member, email: string, code: string) {
+  return api.client.call(putEmailRoute, { accessToken: who.accessToken, body: { email, code } });
+}
+
+/** Asks for a new address in place of a verified one, with the confirm code emailed to it. */
+async function replaceEmail(who: Member, verifiedAddress: string, email: string) {
+  // After the last code and the last link.
+  api.advance(61);
+  const sent = await api.client.call(sendConfirmCodeRoute, {
+    accessToken: who.accessToken,
+    body: {},
+  });
+  if (!sent.ok) throw new Error(sent.error.code);
+  return putEmailWithCode(who, email, api.lastEmailCode(verifiedAddress));
 }
 
 async function me(who: Member) {
@@ -128,7 +161,7 @@ describe("adding an email (plan 4.6)", () => {
     anna = await api.signIn(phone);
     expect(await me(anna)).toMatchObject({ email: null, pendingEmail: null });
 
-    await putEmail(anna, "anna-new@example.com");
+    await putEmailWithCode(anna, "anna-new@example.com", await confirmCode(anna, phone));
     const third = lastToken();
     expect((await open(third)).ok).toBe(true);
     expect(await open(third)).toMatchObject({ ok: false, error: { code: "link_invalid" } });
@@ -173,7 +206,9 @@ describe("adding an email (plan 4.6)", () => {
     const helga = await member();
     await verified(helga, "helga-first@example.com");
     api.advance(61);
-    await putEmail(helga, "helga-second@example.com");
+    expect(
+      await replaceEmail(helga, "helga-first@example.com", "helga-second@example.com"),
+    ).toMatchObject({ ok: true });
     expect(await me(helga)).toMatchObject({
       email: "helga-first@example.com",
       pendingEmail: "helga-second@example.com",
@@ -197,7 +232,9 @@ describe("adding an email (plan 4.6)", () => {
     const olof = await member();
     await verified(olof, "olof-first@example.com");
     api.advance(61);
-    await putEmail(olof, "olof-typo@example.con");
+    expect(
+      await replaceEmail(olof, "olof-first@example.com", "olof-typo@example.con"),
+    ).toMatchObject({ ok: true });
     const typo = lastToken();
     expect(await putEmail(olof, "olof-first@example.com")).toMatchObject({
       ok: true,
@@ -322,5 +359,170 @@ describe("adding an email (plan 4.6)", () => {
     await open(token);
     expect(api.logLines.join("")).not.toContain(token);
     expect(api.logLines.join("")).not.toContain("ari-logs");
+  });
+});
+
+describe("a new email signs in, so it needs a confirm code (spec 26, R26.5, R26.6)", () => {
+  /** Finishes sign-up: the profile has a name. */
+  async function signedUp(who: Member) {
+    await api.connection.db
+      .update(schema.users)
+      .set({ firstName: "Test" })
+      .where(eq(schema.users.id, who.userId));
+    return who;
+  }
+
+  /** A member who finished sign-up more than 30 minutes ago, signed in again. */
+  async function oldMember() {
+    const phone = api.newPhoneNumber();
+    await signedUp(await api.signIn(phone));
+    api.advance(30 * 60);
+    // Signed in again: an access token lasts 15 minutes.
+    return { phone, who: await api.signIn(phone) };
+  }
+
+  it("needs no code within 30 minutes of the account being made", async () => {
+    const phone = api.newPhoneNumber();
+    await signedUp(await api.signIn(phone));
+    api.advance(29 * 60);
+    // Signed in again: an access token lasts 15 minutes.
+    const newcomer = await api.signIn(phone);
+    expect(await putEmail(newcomer, "new-in-time@example.com")).toMatchObject({ ok: true });
+  });
+
+  it("needs no code before sign-up is finished, however long it took", async () => {
+    const phone = api.newPhoneNumber();
+    await api.signIn(phone);
+    api.advance(2 * 60 * 60);
+    const unfinished = await api.signIn(phone);
+    expect(await putEmail(unfinished, "late-sign-up@example.com")).toMatchObject({ ok: true });
+  });
+
+  it("needs no new code to send the waiting address's link again", async () => {
+    const newcomer = await signedUp(await member());
+    await verified(newcomer, "has-one@example.com");
+    expect(
+      await replaceEmail(newcomer, "has-one@example.com", "waiting-again@example.com"),
+    ).toMatchObject({ ok: true });
+    api.advance(61);
+    expect(await putEmail(newcomer, "waiting-again@example.com")).toMatchObject({
+      ok: true,
+      data: { pendingEmail: "waiting-again@example.com" },
+    });
+    expect(await putEmail(newcomer, "another@example.com")).toMatchObject({
+      ok: false,
+      error: { code: "confirm_required" },
+    });
+  });
+
+  it("always asks a code to replace a verified email, even straight after sign-up", async () => {
+    const newcomer = await signedUp(await member());
+    await verified(newcomer, "first-address@example.com");
+    expect(await putEmail(newcomer, "second-address@example.com")).toMatchObject({
+      ok: false,
+      status: 403,
+      error: { code: "confirm_required" },
+    });
+  });
+
+  it("asks for a confirm code after that, and sends nothing without one", async () => {
+    const { who } = await oldMember();
+    expect(await putEmail(who, "no-code@example.com")).toMatchObject({
+      ok: false,
+      status: 403,
+      error: { code: "confirm_required" },
+    });
+    expect(api.email.sent).toEqual([]);
+    expect(await me(who)).toMatchObject({ pendingEmail: null });
+  });
+
+  it("sends the link with the right code, and the code works once", async () => {
+    const { phone, who } = await oldMember();
+    const code = await confirmCode(who, phone);
+    expect(await putEmailWithCode(who, "with-code@example.com", code)).toMatchObject({
+      ok: true,
+      data: { pendingEmail: "with-code@example.com" },
+    });
+    api.advance(61);
+    expect(await putEmailWithCode(who, "again@example.com", code)).toMatchObject({
+      ok: false,
+      error: { code: "code_expired" },
+    });
+  });
+
+  it("counts a wrong code as a try and sends nothing", async () => {
+    const { phone, who } = await oldMember();
+    const code = await confirmCode(who, phone);
+    const wrong = code === "000000" ? "111111" : "000000";
+    expect(await putEmailWithCode(who, "wrong-code@example.com", wrong)).toMatchObject({
+      ok: false,
+      status: 400,
+      error: { code: "code_invalid", attemptsLeft: 4 },
+    });
+    expect(api.email.sent).toEqual([]);
+  });
+
+  it("keeps the code when the link could not be sent", async () => {
+    const { phone, who } = await oldMember();
+    const code = await confirmCode(who, phone);
+    api.email.failure = new Error("Mailjet refused the email (HTTP 503)");
+    expect(await putEmailWithCode(who, "kept-code@example.com", code)).toMatchObject({
+      ok: false,
+      status: 502,
+      error: { code: "email_failed" },
+    });
+    api.email.failure = null;
+    api.advance(61);
+    expect(await putEmailWithCode(who, "kept-code@example.com", code)).toMatchObject({ ok: true });
+  });
+
+  it("needs no code for the account's own verified email", async () => {
+    const phone = api.newPhoneNumber();
+    const newcomer = await api.signIn(phone);
+    await verified(newcomer, "own-email@example.com");
+    api.advance(30 * 60);
+    const who = await api.signIn(phone);
+    expect(await putEmail(who, "own-email@example.com")).toMatchObject({
+      ok: true,
+      data: { email: "own-email@example.com" },
+    });
+  });
+
+  it("tells the old verified address, with the new one partly hidden, and logs no address", async () => {
+    const phone = api.newPhoneNumber();
+    const newcomer = await api.signIn(phone);
+    await verified(newcomer, "old-address@example.com");
+    api.advance(30 * 60);
+    const who = await api.signIn(phone);
+    api.email.sent.length = 0;
+    const texts = api.sms.outbox.length;
+    await confirmCode(who, phone);
+    // The account has a verified email, so the code came by email, not by text (R26.7).
+    expect(api.sms.outbox).toHaveLength(texts);
+    const code = api.lastEmailCode("old-address@example.com");
+    expect(await putEmailWithCode(who, "new-address@example.com", code)).toMatchObject({
+      ok: true,
+    });
+    expect((await open(lastToken())).ok).toBe(true);
+
+    expect(api.email.sent.at(-1)).toMatchObject({
+      to: "old-address@example.com",
+      subject: "Your PuffinRide sign-in email changed",
+    });
+    expect(api.email.sent.at(-1)?.text).toContain("ne•••@example.com");
+    expect(api.email.sent.at(-1)?.text).not.toContain("new-address");
+    const logs = api.logLines.join("");
+    expect(logs).toContain("email change notice sent");
+    expect(logs).not.toContain("old-address");
+    expect(logs).not.toContain("new-address");
+  });
+
+  it("tells no address that was never verified", async () => {
+    const phone = api.newPhoneNumber();
+    const newcomer = await api.signIn(phone);
+    await putEmail(newcomer, "never-opened@example.com");
+    await verified(newcomer, "opened@example.com");
+    // Only its own link went to the address never opened: no notice.
+    expect(api.email.sent.filter((sent) => sent.to === "never-opened@example.com")).toHaveLength(1);
   });
 });

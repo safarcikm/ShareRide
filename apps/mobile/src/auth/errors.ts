@@ -41,3 +41,17 @@ export function errorText(t: Translate, failure: CallFailure): string {
       return t("error.generic");
   }
 }
+
+/** What to say when a sign-in code could not be emailed (spec 26, 3.2). */
+export function emailErrorText(t: Translate, failure: CallFailure): string {
+  switch (failure.error.code) {
+    case "email_invalid":
+      return t("error.email");
+    case "email_unavailable":
+      return t("auth.email.unavailable");
+    case "email_failed":
+      return t("error.email_failed");
+    default:
+      return errorText(t, failure);
+  }
+}

@@ -16,7 +16,8 @@ import { useOpenFeedback } from "./feedback";
 
 /**
  * Until the API has answered, and if it cannot be reached: nothing special
- * to show, and the values the rules start with.
+ * to show, and the values the rules start with. Sign-in by email shows, as
+ * on every server that sends email, rather than a line saying it is off.
  */
 const quiet: Config = {
   beta: false,
@@ -26,6 +27,7 @@ const quiet: Config = {
   maxMoveMinutes,
   reliabilityMonths: defaultReliabilitySettings.periodMonths,
   signInProviders: [],
+  emailSignIn: true,
   payInPerson: false,
   analytics: null,
 };

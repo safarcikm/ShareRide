@@ -247,7 +247,7 @@ describe("checking a recovery code (spec 22, 3.3 and 3.4)", () => {
     const { phone } = await newOperator();
     api.advance(31);
     await api.client.call(startPhoneSignInRoute, {
-      body: { phoneNumber: phone, locale: "en" },
+      body: { phoneNumber: phone, locale: "en", pendingSignIn: await api.waitingEmailSignIn() },
     });
     expect(await verify(phone, api.lastCode(phone))).toMatchObject({
       status: 400,

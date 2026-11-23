@@ -3,6 +3,7 @@ import { memoryTokenStore as memoryStore } from "@/testing/memory-token-store";
 import { createSessionManager } from "./session-manager";
 
 const device = { platform: "ios", appVersion: "1.0.0" } as const;
+const pendingEmail = `sr_pe_${"e".repeat(43)}`;
 
 describe("createSessionManager", () => {
   it("is signed out at start when no refresh token is stored", async () => {
@@ -46,7 +47,7 @@ describe("createSessionManager", () => {
       ok(200, { ...tokens(1), user: testMe, isNewUser: true }),
     );
     const session = createSessionManager({ client, tokenStore: store, device });
-    const result = await session.verify("+3546900000", "123456", "en");
+    const result = await session.verify("+3546900000", "123456", "en", undefined, pendingEmail);
     expect(result.ok).toBe(true);
     expect(store.value).toBe("sr_rt_refresh-1");
     expect(session.state()).toEqual({ status: "signedIn", me: testMe });
@@ -65,8 +66,81 @@ describe("createSessionManager", () => {
     expect(client.calls[0]?.input["body"]).toMatchObject({
       pendingSignIn: `sr_ps_${"p".repeat(43)}`,
     });
-    expect(session.signInNews()).toEqual({ providerLink, suggestedFirstName: null });
-    session.dismissProviderLink();
+    expect(session.signInNews()).toEqual({
+      providerLink,
+      emailLink: null,
+      suggestedFirstName: null,
+    });
+    session.dismissLinkNotice();
+    expect(session.signInNews()).toBeNull();
+  });
+
+  it("emails a code, and signs in with it when an account has the email (spec 26)", async () => {
+    const client = createFakeClient();
+    const store = memoryStore();
+    client.answer("/v1/auth/email/start", () => ok(202, { resendAfterSeconds: 30 }));
+    client.answer("/v1/auth/email/verify", () =>
+      ok(200, { status: "signedIn", ...tokens(1), user: testMe, isNewUser: false }),
+    );
+    const session = createSessionManager({ client, tokenStore: store, device });
+    expect((await session.startEmail("anna@example.com", "is")).ok).toBe(true);
+    const result = await session.verifyEmail("anna@example.com", "123456");
+    expect(result.ok && result.data.status).toBe("signedIn");
+    expect(client.calls.map((call) => call.input["body"])).toEqual([
+      { email: "anna@example.com", locale: "is" },
+      { email: "anna@example.com", code: "123456", device },
+    ]);
+    expect(store.value).toBe("sr_rt_refresh-1");
+    expect(session.state()).toEqual({ status: "signedIn", me: testMe });
+  });
+
+  it("stays signed out when the email needs the phone step, and sends its waiting sign-in", async () => {
+    const client = createFakeClient();
+    const phoneNeeded = {
+      status: "phoneNeeded",
+      pendingSignIn: pendingEmail,
+      provider: "email",
+      email: "anna@example.com",
+      firstName: null,
+      expiresAt: "2026-11-23T12:30:00.000Z",
+    };
+    client.answer("/v1/auth/email/verify", () => ok(200, phoneNeeded));
+    client.answer("/v1/auth/phone/start", () => ok(202, { resendAfterSeconds: 30 }));
+    const session = createSessionManager({ client, tokenStore: memoryStore(), device });
+    await session.restore();
+    const result = await session.verifyEmail("anna@example.com", "123456");
+    expect(result.ok && result.data).toEqual(phoneNeeded);
+    expect(session.state()).toEqual({ status: "signedOut" });
+    await session.start("+3546900000", "en", pendingEmail);
+    expect(client.calls.at(-1)?.input["body"]).toEqual({
+      phoneNumber: "+3546900000",
+      locale: "en",
+      pendingSignIn: pendingEmail,
+    });
+  });
+
+  it("tells of an email added or put in place at the phone step, not of a new account's", async () => {
+    const client = createFakeClient();
+    let outcome = "replaced";
+    client.answer("/v1/auth/phone/verify", () =>
+      ok(200, {
+        ...tokens(1),
+        user: testMe,
+        isNewUser: outcome === "created",
+        emailLink: { outcome, email: "anna@example.com" },
+      }),
+    );
+    const session = createSessionManager({ client, tokenStore: memoryStore(), device });
+    await session.verify("+3546900000", "123456", "en", undefined, pendingEmail);
+    expect(session.signInNews()).toEqual({
+      providerLink: null,
+      emailLink: { outcome: "replaced", email: "anna@example.com" },
+      suggestedFirstName: null,
+    });
+    session.dismissLinkNotice();
+    expect(session.signInNews()).toBeNull();
+    outcome = "created";
+    await session.verify("+3546900000", "123456", "en", undefined, pendingEmail);
     expect(session.signInNews()).toBeNull();
   });
 
@@ -85,7 +159,11 @@ describe("createSessionManager", () => {
     const session = createSessionManager({ client, tokenStore: memoryStore(), device });
     await session.verify("+3546900000", "123456", "en", undefined, `sr_ps_${"p".repeat(43)}`);
     // "created" needs no notice: the new account is the news.
-    expect(session.signInNews()).toEqual({ providerLink: null, suggestedFirstName: "Anna" });
+    expect(session.signInNews()).toEqual({
+      providerLink: null,
+      emailLink: null,
+      suggestedFirstName: "Anna",
+    });
     await session.signOut({ all: false });
     expect(session.signInNews()).toBeNull();
   });
@@ -138,7 +216,7 @@ describe("createSessionManager", () => {
     );
     client.answer("/v1/auth/refresh", () => ok(200, tokens(2)));
     const session = createSessionManager({ client, tokenStore: memoryStore(), device });
-    await session.verify("+3546900000", "123456", "en");
+    await session.verify("+3546900000", "123456", "en", undefined, pendingEmail);
 
     const [first, second] = await Promise.all([session.me(), session.me()]);
     expect(first.ok && second.ok).toBe(true);
@@ -154,7 +232,7 @@ describe("createSessionManager", () => {
     client.answer("/v1/me", () => failure(401, "unauthenticated"));
     client.answer("/v1/auth/refresh", () => failure(401, "session_ended"));
     const session = createSessionManager({ client, tokenStore: store, device });
-    await session.verify("+3546900000", "123456", "en");
+    await session.verify("+3546900000", "123456", "en", undefined, pendingEmail);
     await session.me();
     expect(session.state()).toEqual({ status: "signedOut" });
     expect(store.value).toBeNull();
@@ -189,7 +267,7 @@ describe("createSessionManager", () => {
     client.answer("/v1/me", () => failure(401, "unauthenticated"));
     client.answer("/v1/auth/refresh", () => refreshFailure);
     const session = createSessionManager({ client, tokenStore: store, device });
-    await session.verify("+3546900000", "123456", "en");
+    await session.verify("+3546900000", "123456", "en", undefined, pendingEmail);
     const result = await session.me();
     expect(result).toMatchObject({ ok: false, error: { code: refreshFailure.error.code } });
     expect(session.state()).toEqual({ status: "signedIn", me: testMe });
@@ -204,7 +282,7 @@ describe("createSessionManager", () => {
       ok(200, { ...tokens(1), user: testMe, isNewUser: true }),
     );
     const session = createSessionManager({ client, tokenStore: store, device });
-    const result = await session.verify("+3546900000", "123456", "en");
+    const result = await session.verify("+3546900000", "123456", "en", undefined, pendingEmail);
     expect(result.ok).toBe(true);
     expect(session.state()).toEqual({ status: "signedIn", me: testMe });
   });
@@ -217,7 +295,7 @@ describe("createSessionManager", () => {
     );
     client.answer("/v1/auth/sign-out", () => ok(204));
     const session = createSessionManager({ client, tokenStore: store, device });
-    await session.verify("+3546900000", "123456", "en");
+    await session.verify("+3546900000", "123456", "en", undefined, pendingEmail);
     await session.signOut({ all: true });
     expect(client.calls.at(-1)).toEqual({
       path: "/v1/auth/sign-out",
@@ -235,7 +313,7 @@ describe("createSessionManager", () => {
     );
     client.answer("/v1/auth/sign-out", () => failure(0, "network_error"));
     const session = createSessionManager({ client, tokenStore: store, device });
-    await session.verify("+3546900000", "123456", "en");
+    await session.verify("+3546900000", "123456", "en", undefined, pendingEmail);
     const result = await session.signOut({ all: true });
     expect(result.ok).toBe(false);
     expect(store.value).toBe("sr_rt_refresh-1");
@@ -253,7 +331,7 @@ describe("createSessionManager", () => {
       tokenStore: memoryStore(),
       device: { platform: "web" },
     });
-    await session.verify("+3546900000", "123456", "en");
+    await session.verify("+3546900000", "123456", "en", undefined, pendingEmail);
     const result = await session.signOut({ all: false });
     expect(result.ok).toBe(false);
     expect(session.state()).toEqual({ status: "signedIn", me: testMe });
@@ -267,7 +345,7 @@ describe("createSessionManager", () => {
     );
     client.answer("/v1/auth/sign-out", () => failure(0, "network_error"));
     const session = createSessionManager({ client, tokenStore: store, device });
-    await session.verify("+3546900000", "123456", "en");
+    await session.verify("+3546900000", "123456", "en", undefined, pendingEmail);
     await session.signOut({ all: false });
     expect(store.value).toBeNull();
     expect(session.state()).toEqual({ status: "signedOut" });
@@ -280,7 +358,7 @@ describe("createSessionManager", () => {
       ok(200, { ...tokens(1), user: testMe, isNewUser: false }),
     );
     const session = createSessionManager({ client, tokenStore: store, device });
-    await session.verify("+3546900000", "123456", "en");
+    await session.verify("+3546900000", "123456", "en", undefined, pendingEmail);
     await session.ended();
     expect(store.value).toBeNull();
     expect(session.state()).toEqual({ status: "signedOut" });
@@ -295,7 +373,7 @@ describe("createSessionManager", () => {
     const session = createSessionManager({ client, tokenStore: memoryStore(), device });
     const seen: string[] = [];
     session.subscribe(() => seen.push(session.state().status));
-    await session.verify("+3546900000", "123456", "en");
+    await session.verify("+3546900000", "123456", "en", undefined, pendingEmail);
     session.update({ ...testMe, firstName: "Anna" });
     expect(seen).toEqual(["signedIn", "signedIn"]);
     expect(session.state()).toMatchObject({ me: { firstName: "Anna" } });

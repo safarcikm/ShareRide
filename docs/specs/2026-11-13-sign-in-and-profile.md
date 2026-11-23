@@ -10,6 +10,13 @@ Signing up takes three steps, the number, the code and "about you", with the
 ride kept in view; step 3 takes the profile and the terms together, and the
 terms show on their own only when they change later (3.5). "Offer a ride"
 leads to Offer's form, "Where are you driving?", after signing up (3.6).
+
+Amended by [spec 26](2026-11-23-sign-in-without-text-messages.md): a person
+signs in with Google or a 6-digit code by email; the text-message code of
+3.2 only checks the number once, in the phone step of a waiting email or
+Google sign-in, under new limits (R26.1 to R26.4). A number that has an
+account signs in to it there and gets the new email (3.6's lost-number
+case now has a lost-email twin).
 Settings shows the language as two choices, English and Íslenska, then Your
 account, Notifications, Legal documents and signing out, its rows at the
 left (3.8).

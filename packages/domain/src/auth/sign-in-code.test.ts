@@ -86,7 +86,7 @@ describe("codeSendLimits (rule R1.3)", () => {
 });
 
 describe("codePurposes", () => {
-  it("keep a console recovery code apart from sign-in and confirm codes (spec 22, R22.1)", () => {
-    expect(codePurposes).toEqual(["sign_in", "confirm", "console_recovery"]);
+  it("keep each code to its job: the phone step, confirming, the console, email (R22.1, spec 26)", () => {
+    expect(codePurposes).toEqual(["sign_in", "confirm", "console_recovery", "email_sign_in"]);
   });
 });

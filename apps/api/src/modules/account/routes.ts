@@ -13,6 +13,9 @@ import { bodyLimit } from "hono/body-limit";
 import { authOf, type AppEnv } from "../../context.ts";
 import { errorBody, errorResponse } from "../../errors.ts";
 import { toOpenApiRoute, validated } from "../../openapi.ts";
+import { normaliseEmail } from "@shareride/domain";
+import { confirmCodeError } from "../auth/routes.ts";
+import type { AuthService } from "../auth/service.ts";
 import type { EmailService } from "./email.ts";
 import type { ProfilePhotoService } from "./photo.ts";
 import type { AccountService } from "./service.ts";
@@ -55,19 +58,46 @@ export function registerAccountRoutes(
   });
 }
 
-/** Adding an email (plan 4.6): the link is asked for signed in, and opened signed in or not. */
+/**
+ * Adding an email (plan 4.6): the link is asked for signed in, after a
+ * confirm code (spec 26, R26.5), and opened signed in or not.
+ */
 export function registerEmailRoutes(
   app: OpenAPIHono<AppEnv>,
-  email: EmailService,
-  account: AccountService,
-  requireAuth: MiddlewareHandler,
+  dependencies: {
+    readonly email: EmailService;
+    readonly account: AccountService;
+    readonly auth: Pick<AuthService, "withConfirmCode">;
+    readonly requireAuth: MiddlewareHandler;
+  },
 ): void {
+  const { email, account, auth, requireAuth } = dependencies;
   app.openapi(toOpenApiRoute(putEmailRoute, requireAuth), async (c) => {
     const body = validated(c, "json", putEmailRoute.request.body);
     const { userId } = authOf(c);
-    const asked = await email.ask(userId, body.email);
+    const address = normaliseEmail(body.email);
+    if (!address.ok) return errorResponse(c, 400, "email_invalid", "This is not an email address.");
+    const needsCode = await email.needsCode(userId, address.value);
+    if (needsCode && body.code === undefined) {
+      return errorResponse(
+        c,
+        403,
+        "confirm_required",
+        "A new email signs in: send a confirm code with it.",
+      );
+    }
+    // With a code, the link is asked for inside its check: a link that is
+    // not sent keeps the code for another try.
+    const asked =
+      needsCode && body.code !== undefined
+        ? await auth.withConfirmCode(userId, body.code, () => email.ask(userId, address.value))
+        : await email.ask(userId, address.value);
     if (asked.ok) return c.json(await account.me(userId), 200);
     switch (asked.error.code) {
+      case "code_invalid":
+      case "code_expired":
+      case "code_attempts_exceeded":
+        return confirmCodeError(c, asked.error);
       case "email_invalid":
         return errorResponse(c, 400, "email_invalid", "This is not an email address.");
       case "rate_limited":

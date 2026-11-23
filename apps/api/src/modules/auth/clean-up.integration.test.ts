@@ -1,6 +1,7 @@
 import {
   putEmailRoute,
   refreshRoute,
+  sendConfirmCodeRoute,
   signOutRoute,
   startPhoneSignInRoute,
 } from "@shareride/contracts";
@@ -28,9 +29,11 @@ const cleanUp = () => cleanUpSignInRecords(api.connection.db, api.now());
 const count = async (table: typeof verificationCodes | typeof rateLimitEvents) =>
   (await api.connection.db.select().from(table)).length;
 
+/** A text with a sign-in code for the phone step; the email code before it is counted too. */
 async function sendCode() {
+  const pendingSignIn = await api.waitingEmailSignIn();
   const result = await api.client.call(startPhoneSignInRoute, {
-    body: { phoneNumber: api.newPhoneNumber(), locale: "en" },
+    body: { phoneNumber: api.newPhoneNumber(), locale: "en", pendingSignIn },
   });
   if (!result.ok) throw new Error(result.error.code);
 }
@@ -58,6 +61,7 @@ describe("cleanUpSignInRecords", () => {
 
     api.advance(10 * 60 + 1);
     await sendCode();
+    // The first text's code, now expired (an email code went when it was used).
     expect(await cleanUp()).toMatchObject({ codes: 1 });
     expect(await count(verificationCodes)).toBe(1);
   });
@@ -67,12 +71,17 @@ describe("cleanUpSignInRecords", () => {
     const ask = async () => {
       // Signed in again each time: an access token lasts less than a day.
       const { accessToken } = await api.signIn(phone);
+      // Past the account's first 30 minutes, with a confirm code (R26.5).
+      api.advance(31);
+      const sent = await api.client.call(sendConfirmCodeRoute, { accessToken, body: {} });
+      if (!sent.ok) throw new Error(sent.error.code);
       return api.client.call(putEmailRoute, {
         accessToken,
-        body: { email: "anna-clean@example.com" },
+        body: { email: "anna-clean@example.com", code: api.lastCode(phone) },
       });
     };
-    const first = api.now().getTime() + 31_000;
+    // The first link goes 62 seconds from now: after the sign-in and the confirm code.
+    const first = api.now().getTime() + 62_000;
     expect((await ask()).ok).toBe(true);
     api.advance(day - 120);
     expect((await ask()).ok).toBe(true);
@@ -105,6 +114,29 @@ describe("cleanUpSignInRecords", () => {
     expect(left.map((kept) => kept.stateHash).sort()).toEqual(
       [hashToken("recent"), hashToken("open")].sort(),
     );
+  });
+
+  it("deletes email sign-ins an hour after they stopped waiting (spec 26, 4)", async () => {
+    const { emailSignIns } = schema;
+    const now = api.now();
+    const row = (name: string, expiresAt: Date) => ({
+      email: `${name}@example.test`,
+      pendingHash: hashToken(name),
+      expiresAt,
+    });
+    await api.connection.db
+      .insert(emailSignIns)
+      .values([
+        row("old", new Date(now.getTime() - 3601_000)),
+        row("recent", new Date(now.getTime() - 3599_000)),
+        row("open", new Date(now.getTime() + 600_000)),
+      ]);
+    expect(await cleanUp()).toMatchObject({ emailSignIns: 1 });
+    const left = await api.connection.db.select({ email: emailSignIns.email }).from(emailSignIns);
+    expect(left.map((kept) => kept.email).sort()).toEqual([
+      "open@example.test",
+      "recent@example.test",
+    ]);
   });
 
   it("deletes rate-limit events after 24 hours", async () => {

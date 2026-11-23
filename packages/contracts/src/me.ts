@@ -70,7 +70,18 @@ export const sessionSchema = z.object({
 export const sessionsResponseSchema = z.object({ sessions: z.array(sessionSchema) });
 
 /** The address to verify; the API checks its shape (spec 1, 3.5). */
-export const emailBodySchema = z.object({ email: z.string().max(320) });
+export const emailBodySchema = z.object({
+  email: z.string().max(320),
+  /**
+   * A confirm code (`POST /v1/me/confirm-code`): a new email signs in, so
+   * changing it needs one, except within 30 minutes of the account being
+   * made (spec 26, R26.5).
+   */
+  code: z
+    .string()
+    .regex(/^\d{6}$/)
+    .optional(),
+});
 
 export const emailVerificationBodySchema = z.object({
   /** From the link, after `#`. */
@@ -267,9 +278,16 @@ export const putEmailRoute = defineRoute({
         "The link was sent (or may have been) and the address waits as pendingEmail; an address already mine changes nothing",
       schema: meSchema,
     },
-    400: { description: "email_invalid", ...errors },
+    400: {
+      description: "email_invalid; code_invalid (with attemptsLeft), code_expired",
+      ...errors,
+    },
     401: unauthenticated,
-    429: { description: "rate_limited, with retryAfterSeconds", ...errors },
+    403: { description: "confirm_required: send a confirm code with the email", ...errors },
+    429: {
+      description: "rate_limited, code_attempts_exceeded, with retryAfterSeconds",
+      ...errors,
+    },
     502: { description: "email_failed: it was not sent; try again", ...errors },
     503: { description: "email_unavailable: this server sends no email", ...errors },
   },
@@ -321,6 +339,10 @@ export const updateNotificationSettingsRoute = defineRoute({
 export const confirmCodeSentSchema = z.object({
   /** Seconds until another code can be asked for. */
   resendAfterSeconds: z.int().positive(),
+  /** By email to the verified email, or by text without one (spec 26, R26.7). */
+  channel: z.enum(["email", "sms"]),
+  /** Where it went: the email partly hidden, or the number's last two digits. */
+  sentTo: z.string(),
 });
 
 /**
@@ -344,15 +366,15 @@ export const confirmCodeErrors = {
 export const sendConfirmCodeRoute = defineRoute({
   method: "post",
   path: "/v1/me/confirm-code",
-  summary: "Send a code to my own number to confirm a sensitive action",
+  summary: "Send a code to my email, or my number without one, to confirm a sensitive action",
   tags: ["me"],
   auth: true,
   request: { body: z.object({}) },
   responses: {
-    202: { description: "A code was sent by SMS", schema: confirmCodeSentSchema },
+    202: { description: "A code was sent, by email or SMS", schema: confirmCodeSentSchema },
     401: unauthenticated,
     429: { description: "rate_limited, with retryAfterSeconds", schema: errorResponseSchema },
-    502: { description: "sms_failed", schema: errorResponseSchema },
+    502: { description: "sms_failed, email_failed", schema: errorResponseSchema },
     503: { description: "sms_paused", schema: errorResponseSchema },
   },
 });

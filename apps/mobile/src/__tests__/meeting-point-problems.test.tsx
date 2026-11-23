@@ -1,6 +1,6 @@
 import { fireEvent, screen } from "expo-router/testing-library";
-import { failure, ok, tokens, type FakeClient } from "@/testing/fake-client";
-import { completeMe, renderApp } from "@/testing/app";
+import { failure, ok, type FakeClient } from "@/testing/fake-client";
+import { completeMe, renderApp, signInByEmail } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
 import { bsi, details } from "@/testing/meeting-points";
 
@@ -114,13 +114,9 @@ describe("Something wrong here? (spec 2, 3.5)", () => {
   });
 
   it("asks to sign in first, signed out, and opens the form after signing in", async () => {
-    await renderApp(`/meeting-points/${bsi.id}`, {
+    const app = await renderApp(`/meeting-points/${bsi.id}`, {
       setUp: (client) => {
         pointApi(client);
-        client.answer("/v1/auth/phone/start", () => ok(202, { resendAfterSeconds: 30 }));
-        client.answer("/v1/auth/phone/verify", () =>
-          ok(200, { ...tokens(1), user: completeMe, isNewUser: false }),
-        );
       },
     });
     await fireEvent.press(await screen.findByRole("button", { name: "Something wrong here?" }));
@@ -132,9 +128,7 @@ describe("Something wrong here? (spec 2, 3.5)", () => {
     expect(
       await screen.findByRole("header", { name: "Sign in or create an account" }),
     ).toBeVisible();
-    await fireEvent.changeText(screen.getByLabelText("Mobile number"), "690 0000");
-    await fireEvent.press(screen.getByRole("button", { name: "Send code" }));
-    await fireEvent.changeText(await screen.findByLabelText("6-digit code"), "123456");
+    await signInByEmail(app.client);
 
     // Back where they were, at the form, and the point is no longer kept.
     expect(await screen.findByRole("header", { name: "What's wrong here?" })).toBeVisible();

@@ -2,6 +2,7 @@ import { schema, type Database } from "@shareride/db";
 import {
   checkEmailLink,
   checkRateLimits,
+  emailChangeNeedsCode,
   emailLinkRules,
   err,
   normaliseEmail,
@@ -17,6 +18,7 @@ import { MaybeSent } from "../../platform/maybe-sent.ts";
 import type { EmailChannel } from "../../platform/email.ts";
 import { emailContent, type EmailContent } from "../notifications/email-content.ts";
 import { uniqueViolation } from "../../platform/database-errors.ts";
+import { sendEmailChangedNotice } from "../auth/emails.ts";
 
 // Adding an email (spec 1, 3.5; plan 4.6). The address waits with a link
 // sent to it, and becomes the account's, verified, once the link is opened.
@@ -34,6 +36,14 @@ export type AskError =
 export type VerifyError = { readonly code: "link_invalid" } | { readonly code: "email_taken" };
 
 export interface EmailService {
+  /**
+   * Whether asking for this address needs a confirm code first: a new
+   * email signs in, so it does, always in place of a verified email; an
+   * account without one adds it freely while sign-up is unfinished or
+   * within 30 minutes of being made (spec 26, R26.5). The address the
+   * account already has, or the one waiting for its link, needs none.
+   */
+  needsCode(userId: string, address: string): Promise<boolean>;
   /** Sends a link to the address, unless it is already the account's verified email. */
   ask(userId: string, input: string): Promise<Result<undefined, AskError>>;
   /** Makes the link's address the account's verified email. */
@@ -86,6 +96,27 @@ export function createEmailService(dependencies: {
   const { db, clock, logger, email } = dependencies;
 
   return {
+    async needsCode(userId, address) {
+      const [user] = await db
+        .select({
+          email: users.email,
+          verifiedAt: users.emailVerifiedAt,
+          createdAt: users.createdAt,
+          firstName: users.firstName,
+        })
+        .from(users)
+        .where(eq(users.id, userId));
+      if (user === undefined) throw new Error("The signed-in user does not exist.");
+      const hasVerifiedEmail = user.email !== null && user.verifiedAt !== null;
+      if (hasVerifiedEmail && user.email === address) return false;
+      // Its link sent again: the address was let through when first asked for.
+      if ((await pendingEmailOf(db, userId, clock())) === address) return false;
+      return emailChangeNeedsCode(
+        { createdAt: user.createdAt, hasVerifiedEmail, signedUp: user.firstName !== null },
+        clock(),
+      );
+    },
+
     async ask(userId, input) {
       if (email === undefined) return err({ code: "email_unavailable" });
       const address = normaliseEmail(input);
@@ -170,7 +201,7 @@ export function createEmailService(dependencies: {
     async verify(token) {
       const now = clock();
       try {
-        return await db.transaction(async (tx) => {
+        const verified = await db.transaction(async (tx) => {
           const [link] = await tx
             .select()
             .from(emailVerifications)
@@ -200,12 +231,39 @@ export function createEmailService(dependencies: {
             .where(and(eq(users.email, link.email), ne(users.id, link.userId)))
             .limit(1);
           if (other !== undefined) return err({ code: "email_taken" } as const);
+          const [before] = await tx
+            .select({ email: users.email, verifiedAt: users.emailVerifiedAt, locale: users.locale })
+            .from(users)
+            .where(eq(users.id, link.userId))
+            .for("update");
           await tx
             .update(users)
             .set({ email: link.email, emailVerifiedAt: now, updatedAt: now })
             .where(eq(users.id, link.userId));
-          return ok({ email: link.email });
+          // Only an address the person proved is told of the change (R26.6).
+          const oldEmail =
+            before === undefined || before.verifiedAt === null || before.email === link.email
+              ? null
+              : before.email;
+          return ok({
+            email: link.email,
+            notice:
+              oldEmail === null
+                ? null
+                : {
+                    userId: link.userId,
+                    oldEmail,
+                    newEmail: link.email,
+                    locale: before?.locale === "is" ? ("is" as const) : ("en" as const),
+                  },
+          });
         });
+        if (!verified.ok) return verified;
+        // The old address is told (spec 26, R26.6).
+        if (verified.value.notice !== null) {
+          await sendEmailChangedNotice(email, logger, verified.value.notice);
+        }
+        return ok({ email: verified.value.email });
       } catch (error) {
         // Another account verified the same address at the same moment.
         if (uniqueViolation(error, "users_email_unique")) return err({ code: "email_taken" });

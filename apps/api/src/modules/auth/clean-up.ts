@@ -4,6 +4,7 @@ import { and, eq, inArray, isNotNull, isNull, lt, lte, or } from "drizzle-orm";
 import { notHeld } from "../privacy/holds.ts";
 
 const {
+  emailSignIns,
   emailVerifications,
   providerSignIns,
   pushTokens,
@@ -23,6 +24,8 @@ export interface CleanUpCounts {
   readonly emailLinks: number;
   /** Google and Apple sign-ins, an hour after they expired. */
   readonly providerSignIns: number;
+  /** Email sign-ins waiting for the phone step, an hour after they expired (spec 26). */
+  readonly emailSignIns: number;
 }
 
 /**
@@ -94,9 +97,15 @@ export async function cleanUpSignInRecords(db: Database, now: Date): Promise<Cle
       .where(lt(providerSignIns.expiresAt, cutoff.providerSignInsExpiredBefore))
       .returning({ id: providerSignIns.id });
 
+    const emailRows = await tx
+      .delete(emailSignIns)
+      .where(lt(emailSignIns.expiresAt, cutoff.emailSignInsExpiredBefore))
+      .returning({ id: emailSignIns.id });
+
     return {
       emailLinks: links.length,
       providerSignIns: providerRows.length,
+      emailSignIns: emailRows.length,
       codes: codes.length,
       rateLimitEvents: events.length,
       tokens: tokens.length,

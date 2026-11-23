@@ -64,21 +64,37 @@ const overview = async () => (await send("GET", "/admin/v1/invite-codes")).body 
 
 let addresses = 0;
 
-/** Asks for a text-message code for a number, from a new address, 31 seconds later. */
+/**
+ * Proves a new email and asks for a text-message code for a number, from a
+ * new address, 31 seconds later (spec 26): the code, and the waiting
+ * sign-in the phone step goes with.
+ */
 async function start(phoneNumber: string) {
   api.advance(31);
   addresses += 1;
   api.ip = `203.0.113.${String(addresses % 250)}`;
+  const pendingSignIn = await api.waitingEmailSignIn();
   const started = await api.client.call(startPhoneSignInRoute, {
-    body: { phoneNumber, locale: "en" },
+    body: { phoneNumber, locale: "en", pendingSignIn },
   });
   expect(started.ok).toBe(true);
-  return api.lastCode(phoneNumber);
+  return { code: api.lastCode(phoneNumber), pendingSignIn };
 }
 
-const verify = (phoneNumber: string, code: string, inviteCode?: string) =>
+const verify = (
+  phoneNumber: string,
+  { code, pendingSignIn }: { code: string; pendingSignIn: string },
+  inviteCode?: string,
+) =>
   api.client.call(verifyPhoneCodeRoute, {
-    body: { phoneNumber, code, locale: "en", device, ...(inviteCode ? { inviteCode } : {}) },
+    body: {
+      phoneNumber,
+      code,
+      locale: "en",
+      device,
+      pendingSignIn,
+      ...(inviteCode ? { inviteCode } : {}),
+    },
   });
 
 const accountOf = async (phoneNumber: string) => {
@@ -260,7 +276,8 @@ describe("signing up while the beta is closed (R12.1)", () => {
     const { code: invite } = await makeCode();
     const phone = api.newPhoneNumber();
     const sms = await start(phone);
-    const refused = await verify(phone, sms === "000000" ? "111111" : "000000", invite);
+    const wrong = { ...sms, code: sms.code === "000000" ? "111111" : "000000" };
+    const refused = await verify(phone, wrong, invite);
     expect(refused).toMatchObject({ ok: false, error: { code: "code_invalid" } });
   });
 

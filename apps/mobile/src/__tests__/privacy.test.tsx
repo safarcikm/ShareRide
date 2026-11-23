@@ -54,7 +54,7 @@ const linkToFile = () =>
 async function openDownloadScreen({
   latest = [none],
   ask,
-  sendCode = () => ok(202, { resendAfterSeconds: 30 }),
+  sendCode = () => ok(202, { resendAfterSeconds: 30, channel: "sms", sentTo: "00" }),
   link = linkToFile,
   me = completeMe,
 }: Api = {}) {
@@ -144,6 +144,15 @@ describe("Download my data (spec 11, 3.2)", () => {
       { code: "123456" },
     ]);
     expect(screen.queryByLabelText("6-digit code")).toBeNull();
+  });
+
+  it("says when the code went to the account's email instead (spec 26, 3.6)", async () => {
+    await openDownloadScreen({
+      sendCode: () =>
+        ok(202, { resendAfterSeconds: 30, channel: "email", sentTo: "an•••@example.com" }),
+    });
+    await fireEvent.press(screen.getByRole("button", { name: "Make my file" }));
+    expect(await screen.findByText("We emailed a code to an•••@example.com.")).toBeVisible();
   });
 
   it("says a wrong code, keeps the screen, and takes the right one", async () => {

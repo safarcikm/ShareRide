@@ -13,6 +13,12 @@ Related: [ADR 0010](../decisions/0010-authentication-and-identity.md),
 [security](../engineering/security.md#sign-in-and-sessions),
 [privacy and GDPR](../compliance/privacy-gdpr.md).
 
+Amended by [spec 26](2026-11-23-sign-in-without-text-messages.md): the
+sign-in screen offers the email in place of the phone number (3.1), the
+phone step also finishes an email sign-in and sends its text only for a
+waiting sign-in (3.3, R26.2), the confirm code of 3.4 goes by email when the
+account has one (R26.7), and R19.3 widens to a new email (R26.5).
+
 ## 1. Problem and goal
 
 Martin, 2026-11-22: "I want to be able to log in/create account with google

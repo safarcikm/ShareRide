@@ -1,26 +1,38 @@
+import { randomUUID } from "node:crypto";
 import { schema, type Database } from "@shareride/db";
 import {
   checkCodeAttempt,
   checkRateLimits,
   codeRules,
   codeSendLimits,
+  confirmChannel,
   decideLink,
   decideRefresh,
+  emailAtPhoneStep,
+  emailCodeSendLimits,
+  emailSignInRules,
   err,
   generateCode,
+  hideEmail,
+  normaliseEmail,
   normalisePhoneNumber,
   ok,
   recoveryCodeSendLimits,
+  textSendLimits,
   type CodePurpose,
+  type EmailAtPhoneStep,
   type PhoneNumberError,
   type RateLimited,
   type RateLimitRule,
   type Result,
 } from "@shareride/domain";
 import { createTranslator, type Locale } from "@shareride/i18n";
-import { and, desc, eq, gt, inArray, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, isNotNull, isNull, ne, sql } from "drizzle-orm";
 import { addressBlock } from "../../platform/client-address.ts";
-import { hashToken, sameHash, type KeyedHasher } from "../../platform/crypto.ts";
+import { hashToken, newToken, sameHash, type KeyedHasher } from "../../platform/crypto.ts";
+import type { EmailChannel } from "../../platform/email.ts";
+import { captureError } from "../../platform/error-reporting.ts";
+import { MaybeSent } from "../../platform/maybe-sent.ts";
 import type { SmsSender } from "../../platform/sms.ts";
 import type { Logger } from "../../logger.ts";
 import type { SignUpGate, SignUpRefusal } from "../beta/invites.ts";
@@ -32,11 +44,21 @@ import {
   type LinkOutcome,
   type PendingSignIn,
 } from "./identities.ts";
+import { codeEmailContent, sendEmailChangedNotice } from "./emails.ts";
 import { issueTokens, openSession } from "./sessions.ts";
 import { uniqueViolation } from "../../platform/database-errors.ts";
 
+/** An email proven by its code, waiting for the phone step (spec 26, 3.3). */
+interface PendingEmailSignIn {
+  readonly id: string;
+  readonly email: string;
+}
+
 const {
   blockedNumbers,
+  emailSignIns,
+  emailVerifications,
+  providerSignIns,
   pushTokens,
   rateLimitEvents,
   sessions,
@@ -73,6 +95,51 @@ export interface SignedIn {
   readonly providerLink?: LinkOutcome;
   /** A new account's first name from Google or Apple, for step 3 only (R19.5). */
   readonly suggestedFirstName?: string;
+  /** With a waiting email sign-in: what became of its email (spec 26, 3.3). */
+  readonly emailLink?: EmailLink;
+  /** An email the phone step replaced, whose old address is told after the sign-in (R26.6). */
+  readonly emailChanged?: {
+    readonly oldEmail: string;
+    readonly newEmail: string;
+    readonly locale: Locale;
+  };
+}
+
+/** What the phone step did with a waiting email sign-in's address (spec 26, 3.3, item 3). */
+export interface EmailLink {
+  readonly outcome: EmailAtPhoneStep;
+  readonly email: string;
+}
+
+/** An email code's outcome: signed in to the email's account, or on to the phone step. */
+export type EmailVerified = ({ readonly status: "signedIn" } & SignedIn) | EmailPhoneNeeded;
+
+/** A proven email with no account, waiting for the phone step (spec 26, 3.2). */
+export interface EmailPhoneNeeded {
+  readonly status: "phoneNeeded";
+  readonly pendingSignIn: string;
+  readonly provider: "email";
+  readonly email: string;
+  readonly firstName: null;
+  readonly expiresAt: Date;
+}
+
+export type EmailStartError =
+  | { readonly code: "email_invalid" }
+  | { readonly code: "email_failed" }
+  /** The server sends no email (`EMAIL_PROVIDER=none`, spec 26, 3.1). */
+  | { readonly code: "email_unavailable" }
+  | RateLimited;
+
+export type EmailVerifyError =
+  { readonly code: "email_invalid" } | ConfirmError | { readonly code: "account_unavailable" };
+
+/** Where a confirm code went (spec 26, 3.6). */
+export interface ConfirmCodeSent {
+  readonly resendAfterSeconds: number;
+  readonly channel: "email" | "sms";
+  /** The email partly hidden, or the number's last two digits. */
+  readonly sentTo: string;
 }
 
 export interface Refreshed {
@@ -85,7 +152,9 @@ export type StartError =
   | RateLimited
   | { readonly code: "sms_failed" }
   /** The operator paused text messages (spec 10, 3.3): no code can be sent. */
-  | { readonly code: "sms_paused" };
+  | { readonly code: "sms_paused" }
+  /** The waiting email, Google or Apple sign-in is gone (spec 26, R26.2): no text is sent. */
+  | { readonly code: "provider_expired" };
 
 export type VerifyError =
   | PhoneNumberError
@@ -117,12 +186,29 @@ export interface SessionSummary {
 }
 
 export interface AuthService {
-  /** Sends a sign-in code (spec 1, 3.2). Never reveals whether an account exists. */
+  /**
+   * Texts the phone step's code (spec 1, 3.2; spec 26, 3.3), only for a
+   * waiting email, Google or Apple sign-in (R26.2). Never reveals whether
+   * an account exists.
+   */
   start(input: {
     readonly phoneNumber: string;
     readonly locale: Locale;
     readonly ipAddress: string;
+    readonly pendingSignIn: string;
   }): Promise<Result<{ readonly resendAfterSeconds: number }, StartError>>;
+  /** Emails a sign-in code (spec 26, 3.2): the same answer whether or not an account has it. */
+  startEmail(input: {
+    readonly email: string;
+    readonly locale: Locale;
+    readonly ipAddress: string;
+  }): Promise<Result<{ readonly resendAfterSeconds: number }, EmailStartError>>;
+  /** Checks an email code: signs in to the email's account, or waits for the phone step. */
+  verifyEmail(input: {
+    readonly email: string;
+    readonly code: string;
+    readonly device: Device;
+  }): Promise<Result<EmailVerified, EmailVerifyError>>;
   /** Checks a code, then signs in or creates the account and starts a session. */
   verify(input: {
     readonly phoneNumber: string;
@@ -131,8 +217,11 @@ export interface AuthService {
     readonly device: Device;
     /** For a number with no account, while the beta is closed (spec 12, R12.1). */
     readonly inviteCode?: string | undefined;
-    /** A Google or Apple sign-in waiting for this phone step (spec 19, 3.3). */
-    readonly pendingSignIn?: string | undefined;
+    /**
+     * The email, Google or Apple sign-in waiting for this phone step (spec
+     * 19, 3.3; spec 26, 3.3): a number alone never signs in (R26.1).
+     */
+    readonly pendingSignIn: string;
   }): Promise<Result<SignedIn, VerifyError>>;
   /** Rotates the refresh token (ADR 0016). */
   refresh(refreshToken: string): Promise<Result<Refreshed, RefreshError>>;
@@ -147,13 +236,15 @@ export interface AuthService {
   /** Ends one of the user's own sessions; false if there is no such active session. */
   endSession(userId: string, sessionId: string): Promise<boolean>;
   /**
-   * Sends a code to the person's own number to confirm a sensitive action
-   * (spec 11, R11.1), under the sign-in limits.
+   * Sends a code to confirm a sensitive action (spec 11, R11.1): by email
+   * to the account's verified email, by text to its number without one
+   * (spec 26, R26.7), under the sign-in limits. Either way it is the
+   * number's confirm code.
    */
   sendConfirmCode(input: {
     readonly userId: string;
     readonly ipAddress: string;
-  }): Promise<Result<{ readonly resendAfterSeconds: number }, StartError>>;
+  }): Promise<Result<ConfirmCodeSent, StartError | EmailStartError>>;
   /**
    * Checks a confirm code, then runs the action in the same transaction. A
    * wrong code is counted and the action does not run. The code is used up
@@ -195,6 +286,8 @@ export interface AuthServiceDependencies {
   readonly signUpGate?: SignUpGate;
   /** Whether the operator paused text messages (spec 10, 3.3); never when left out. */
   readonly smsPaused?: () => Promise<boolean>;
+  /** Who sends email: sign-in and confirm codes (spec 26); none when left out. */
+  readonly email?: EmailChannel;
 }
 
 const addSeconds = (date: Date, seconds: number) => new Date(date.getTime() + seconds * 1000);
@@ -255,7 +348,7 @@ export async function endAllSessions(
 }
 
 export function createAuthService(dependencies: AuthServiceDependencies): AuthService {
-  const { db, sms, hasher, clock, logger, randomInt } = dependencies;
+  const { db, sms, hasher, clock, logger, randomInt, email } = dependencies;
   const signUpGate: SignUpGate =
     dependencies.signUpGate ?? (() => Promise.resolve(ok({ inviteCodeId: null })));
   const smsPaused = dependencies.smsPaused ?? (() => Promise.resolve(false));
@@ -282,13 +375,17 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
   }
 
   /**
-   * A number's own count of codes sent: recovery codes are counted apart
-   * from sign-in and confirm codes (spec 22, R22.6).
+   * A key's own count of codes sent: recovery codes are counted apart from
+   * sign-in and confirm codes (spec 22, R22.6), and email codes by address.
    */
-  const perNumberLimit = (purpose: CodePurpose) =>
-    purpose === "console_recovery"
-      ? { scope: "console_recovery_phone", rules: recoveryCodeSendLimits.perNumber }
-      : { scope: "phone", rules: codeSendLimits.perNumber };
+  const perNumberLimit = (purpose: CodePurpose) => {
+    if (purpose === "console_recovery") {
+      return { scope: "console_recovery_phone", rules: recoveryCodeSendLimits.perNumber };
+    }
+    // An email code is counted by its address (R26.4), so its wait is read there.
+    if (purpose === "email_sign_in") return { scope: "email", rules: emailCodeSendLimits.perEmail };
+    return { scope: "phone", rules: codeSendLimits.perNumber };
+  };
 
   /** Seconds until a new code for this purpose can be sent to this number. */
   async function resendWait(
@@ -306,11 +403,82 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
     return check.ok ? 0 : check.error.retryAfterSeconds;
   }
 
+  /** A count a code must stay within: its scope, the keyed hash it counts by, its rules. */
+  interface Limit {
+    readonly scope: string;
+    readonly keyHash: string;
+    readonly rules: readonly RateLimitRule[];
+  }
+
+  /** When the ceiling on all texts was last reported, in this process. */
+  let ceilingReportedAt = Number.NEGATIVE_INFINITY;
+  const ceilingReportEveryMs = 10 * 60 * 1000;
+
+  /** Every sign-in and confirm text together (R26.3). */
+  const allTexts = (): Limit => ({
+    scope: "texts",
+    keyHash: hasher("texts", "all"),
+    rules: textSendLimits.all,
+  });
+
   /**
-   * Sends a new code for its purpose under the limits of rule R1.3, which
-   * sign-in and confirming share; a console recovery code has its own
-   * count per number only (spec 22, R22.6). It replaces the number's earlier
-   * code for the same purpose only.
+   * Stores a new code for its purpose and key under the limits, and counts
+   * it; or says which limit refused. Only the newest code works: it
+   * replaces the key's earlier code for the same purpose only.
+   */
+  async function storeCode(
+    keyHash: string,
+    purpose: CodePurpose,
+    limits: readonly Limit[],
+    code: string,
+    now: Date,
+  ): Promise<{ readonly scope: string; readonly error: RateLimited } | undefined> {
+    return db.transaction(async (tx) => {
+      // One request per key and per counted limit at a time, so two cannot
+      // both pass a limit: the same number, the same waiting sign-in, or the
+      // ceiling on all texts (R26.2, R26.3). The locks are taken in sorted
+      // order, so two requests never wait for each other.
+      const lockKeys = [
+        ...new Set([keyHash, ...limits.map((limit) => `${limit.scope}:${limit.keyHash}`)]),
+      ].sort();
+      for (const lockKey of lockKeys) {
+        await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))`);
+      }
+      for (const limit of limits) {
+        const earlier = await sendTimes(tx, limit.scope, limit.keyHash, limit.rules, now);
+        const check = checkRateLimits(earlier, limit.rules, now);
+        if (!check.ok) return { scope: limit.scope, error: check.error };
+      }
+      await tx
+        .delete(verificationCodes)
+        .where(
+          and(eq(verificationCodes.phoneHash, keyHash), eq(verificationCodes.purpose, purpose)),
+        );
+      await tx.insert(verificationCodes).values({
+        phoneHash: keyHash,
+        purpose,
+        codeHash: hasher("code", `${keyHash}:${code}`),
+        expiresAt: addSeconds(now, codeRules.validForSeconds),
+        createdAt: now,
+        updatedAt: now,
+      });
+      await tx.insert(rateLimitEvents).values(
+        limits.map((limit) => ({
+          scope: limit.scope,
+          keyHash: limit.keyHash,
+          createdAt: now,
+          updatedAt: now,
+        })),
+      );
+      return undefined;
+    });
+  }
+
+  /**
+   * Texts a new code for its purpose under the limits of rule R1.3, which
+   * the phone step and confirming share, with R26.3's ceiling on all texts
+   * and, for the phone step, R26.2's count per waiting sign-in; a console
+   * recovery code has its own count per number only (spec 22, R22.6).
    */
   async function sendCode(
     input:
@@ -320,6 +488,8 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
           readonly purpose: "sign_in" | "confirm";
           readonly locale: Locale;
           readonly ipAddress: string;
+          /** The waiting sign-in's keyed hash, for the phone step (R26.2). */
+          readonly pendingKey?: string | undefined;
         }
       | {
           readonly e164: string;
@@ -336,7 +506,7 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
     const now = clock();
     const phoneHash = hasher("phone", e164);
     const perNumber = { ...perNumberLimit(purpose), keyHash: phoneHash };
-    const limits =
+    const limits: Limit[] =
       input.purpose === "console_recovery"
         ? [perNumber]
         : [
@@ -352,46 +522,37 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
               keyHash: hasher("calling-code", callingCode),
               rules: codeSendLimits.perCallingCode(callingCode),
             },
+            ...(input.purpose === "sign_in" && input.pendingKey !== undefined
+              ? [
+                  {
+                    scope: "pending_sign_in",
+                    keyHash: input.pendingKey,
+                    rules: textSendLimits.perPendingSignIn,
+                  },
+                ]
+              : []),
+            allTexts(),
           ];
     const code = generateCode(randomInt);
-
-    const refused = await db.transaction(async (tx) => {
-      // One request per number at a time, so two cannot both pass the limits.
-      await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${phoneHash}, 0))`);
-      for (const limit of limits) {
-        const earlier = await sendTimes(tx, limit.scope, limit.keyHash, limit.rules, now);
-        const check = checkRateLimits(earlier, limit.rules, now);
-        if (!check.ok) return { scope: limit.scope, error: check.error };
-      }
-      // Only the newest code works: a new one replaces any earlier one.
-      await tx
-        .delete(verificationCodes)
-        .where(
-          and(eq(verificationCodes.phoneHash, phoneHash), eq(verificationCodes.purpose, purpose)),
-        );
-      await tx.insert(verificationCodes).values({
-        phoneHash,
-        purpose,
-        codeHash: hasher("code", `${phoneHash}:${code}`),
-        expiresAt: addSeconds(now, codeRules.validForSeconds),
-        createdAt: now,
-        updatedAt: now,
-      });
-      await tx.insert(rateLimitEvents).values(
-        limits.map((limit) => ({
-          scope: limit.scope,
-          keyHash: limit.keyHash,
-          createdAt: now,
-          updatedAt: now,
-        })),
-      );
-      return undefined;
-    });
+    const refused = await storeCode(phoneHash, purpose, limits, code, now);
 
     if (refused !== undefined) {
       if (refused.scope === "calling_code") {
         // An unusual number of codes to one country can be SMS fraud (R1.3).
         logger.warn({ callingCode }, "sign-in codes per calling code limit reached");
+      }
+      if (refused.scope === "texts") {
+        // The ceiling on all texts (R26.3): real sign-ups wait, so the operator
+        // must hear of it, through Sentry where it reports errors: once in 10
+        // minutes, as refused requests are not counted and can come on end.
+        if (now.getTime() - ceilingReportedAt >= ceilingReportEveryMs) {
+          ceilingReportedAt = now.getTime();
+          logger.error({ purpose }, "ceiling on all sign-in texts reached");
+          captureError(new Error("ceiling on all sign-in texts reached"), {
+            limit: "texts",
+            purpose,
+          });
+        }
       }
       return err(refused.error);
     }
@@ -410,6 +571,44 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
     }
     logger.info({ callingCode, purpose }, "sign-in code sent");
     return ok({ resendAfterSeconds: codeSendLimits.perNumber[0].windowSeconds });
+  }
+
+  /**
+   * Emails a new code (spec 26): a sign-in code keyed by the email, or a
+   * confirm code keyed by the account's number, under the limits given.
+   */
+  async function sendEmailCode(input: {
+    readonly to: string;
+    readonly keyHash: string;
+    readonly purpose: "email_sign_in" | "confirm";
+    readonly limits: readonly Limit[];
+    readonly locale: Locale;
+  }): Promise<Result<{ readonly resendAfterSeconds: number }, EmailStartError>> {
+    if (email === undefined) return err({ code: "email_unavailable" });
+    const now = clock();
+    const code = generateCode(randomInt);
+    const refused = await storeCode(input.keyHash, input.purpose, input.limits, code, now);
+    if (refused !== undefined) return err(refused.error);
+    const content = codeEmailContent(input.purpose, input.locale, email.webAppUrl, code);
+    try {
+      await email.sender.send({
+        to: input.to,
+        ...content,
+        // A new key for each code: Mailjet keeps it with the message, never the code.
+        idempotencyKey: `code-${randomUUID()}`,
+      });
+    } catch (error) {
+      // The error says why, never to whom: providers' errors carry no address.
+      if (error instanceof MaybeSent) {
+        // It may have arrived: the code stays, and another can be asked for.
+        logger.warn({ err: error, purpose: input.purpose }, "code email may not have been sent");
+      } else {
+        logger.error({ err: error, purpose: input.purpose }, "code email not sent");
+        return err({ code: "email_failed" });
+      }
+    }
+    logger.info({ purpose: input.purpose }, "code emailed");
+    return ok({ resendAfterSeconds: emailCodeSendLimits.perEmail[0].windowSeconds });
   }
 
   /**
@@ -525,7 +724,11 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
     const { e164, phoneHash, now } = input;
     // First, so a sign-in that took too long leaves the code unused (3.3, item 5).
     let pending: PendingSignIn | null = null;
-    if (input.pendingSignIn !== undefined) {
+    let pendingEmail: PendingEmailSignIn | null = null;
+    if (isEmailSignIn(input.pendingSignIn)) {
+      pendingEmail = await lockPendingEmailSignIn(tx, input.pendingSignIn, now);
+      if (pendingEmail === null) return err({ code: "provider_expired" });
+    } else {
       pending = await lockPendingSignIn(tx, input.pendingSignIn, now, null);
       if (pending === null) return err({ code: "provider_expired" });
     }
@@ -535,11 +738,21 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
     const { codeId } = checked.value;
 
     let [user] = await tx
-      .select({ id: users.id, status: users.status })
+      .select({
+        id: users.id,
+        status: users.status,
+        email: users.email,
+        emailVerifiedAt: users.emailVerifiedAt,
+        locale: users.locale,
+      })
       .from(users)
       .where(eq(users.phoneE164, e164))
       .for("update");
     const isNewUser = user === undefined;
+    const accountEmail = user?.email;
+    // Only an address the person proved is told of a change (R26.6).
+    const verifiedEmail =
+      user === undefined || user.emailVerifiedAt === null ? null : (accountEmail ?? null);
     const decision =
       pending === null
         ? null
@@ -582,7 +795,13 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
           createdAt: now,
           updatedAt: now,
         })
-        .returning({ id: users.id, status: users.status });
+        .returning({
+          id: users.id,
+          status: users.status,
+          email: users.email,
+          emailVerifiedAt: users.emailVerifiedAt,
+          locale: users.locale,
+        });
       if (user === undefined) throw new Error("The new user was not stored.");
     }
     await useUpCode(tx, codeId);
@@ -592,6 +811,15 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
       pending === null || decision === null
         ? undefined
         : await applyLink(tx, { decision, pending, userId: user.id, now });
+    const emailLink =
+      pendingEmail === null
+        ? undefined
+        : await takeEmail(tx, {
+            pending: pendingEmail,
+            userId: user.id,
+            accountEmail: isNewUser ? undefined : (accountEmail ?? null),
+            now,
+          });
 
     const { sessionId, tokens } = await openSession(tx, {
       userId: user.id,
@@ -607,6 +835,13 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
         "sign-in method linked",
       );
     }
+    if (emailLink !== undefined) {
+      logger.info(
+        { userId: user.id, outcome: emailLink.outcome },
+        "sign-in email at the phone step",
+      );
+    }
+    const oldEmail = emailLink?.outcome === "replaced" ? verifiedEmail : null;
     return ok({
       userId: user.id,
       sessionId,
@@ -617,18 +852,208 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
       ...(isNewUser && pending !== null && pending.firstName !== null
         ? { suggestedFirstName: pending.firstName }
         : {}),
+      ...(emailLink === undefined ? {} : { emailLink }),
+      ...(oldEmail === null || emailLink === undefined
+        ? {}
+        : {
+            emailChanged: {
+              oldEmail,
+              newEmail: emailLink.email,
+              locale: user.locale === "is" ? ("is" as const) : ("en" as const),
+            },
+          }),
     });
+  }
+
+  /**
+   * The phone step's part of an email sign-in (spec 26, 3.3, item 3): puts
+   * the proven email on the account when R26.5 allows, in a savepoint so a
+   * race on the address leaves the email as it was, and ends the waiting
+   * sign-in.
+   */
+  async function takeEmail(
+    tx: Transaction,
+    input: {
+      readonly pending: PendingEmailSignIn;
+      readonly userId: string;
+      /** Undefined for an account the phone step just made. */
+      readonly accountEmail: string | null | undefined;
+      readonly now: Date;
+    },
+  ): Promise<EmailLink> {
+    const { pending, userId, now } = input;
+    await tx.delete(emailSignIns).where(eq(emailSignIns.id, pending.id));
+    const [other] = await tx
+      .select({ id: users.id })
+      .from(users)
+      .where(and(eq(users.email, pending.email), ne(users.id, userId)))
+      .limit(1);
+    const outcome = emailAtPhoneStep({
+      accountEmail: input.accountEmail,
+      newEmail: pending.email,
+      takenByOther: other !== undefined,
+    });
+    if (outcome === "in_use") return { outcome, email: pending.email };
+    if (outcome === "already") {
+      // Proven now, if it was still waiting for its link.
+      await tx
+        .update(users)
+        .set({ emailVerifiedAt: now, updatedAt: now })
+        .where(and(eq(users.id, userId), isNull(users.emailVerifiedAt)));
+      return { outcome, email: pending.email };
+    }
+    try {
+      await tx.transaction((savepoint) =>
+        savepoint
+          .update(users)
+          .set({ email: pending.email, emailVerifiedAt: now, updatedAt: now })
+          .where(eq(users.id, userId)),
+      );
+    } catch (error) {
+      if (!uniqueViolation(error, "users_email_unique")) throw error;
+      return { outcome: "in_use", email: pending.email };
+    }
+    // A link sent earlier for another address stops working, as if used,
+    // so it cannot later take the place of the email proven now.
+    await tx
+      .update(emailVerifications)
+      .set({ usedAt: now, updatedAt: now })
+      .where(and(eq(emailVerifications.userId, userId), isNull(emailVerifications.usedAt)));
+    return { outcome, email: pending.email };
+  }
+
+  /** Whether a waiting sign-in is an email's (`sr_pe_…`) rather than Google's or Apple's. */
+  const isEmailSignIn = (token: string) => token.startsWith("sr_pe_");
+
+  /** Locks a waiting email sign-in by its token: less than 30 minutes old. Null when there is none. */
+  async function lockPendingEmailSignIn(
+    tx: Transaction,
+    token: string,
+    now: Date,
+  ): Promise<PendingEmailSignIn | null> {
+    const [row] = await tx
+      .select({ id: emailSignIns.id, email: emailSignIns.email })
+      .from(emailSignIns)
+      .where(and(eq(emailSignIns.pendingHash, hashToken(token)), gt(emailSignIns.expiresAt, now)))
+      .for("update");
+    return row ?? null;
+  }
+
+  /** Whether a waiting email, Google or Apple sign-in can still take the phone step. */
+  async function isWaiting(token: string, now: Date): Promise<boolean> {
+    if (isEmailSignIn(token)) {
+      const [row] = await db
+        .select({ id: emailSignIns.id })
+        .from(emailSignIns)
+        .where(
+          and(eq(emailSignIns.pendingHash, hashToken(token)), gt(emailSignIns.expiresAt, now)),
+        );
+      return row !== undefined;
+    }
+    const [row] = await db
+      .select({ id: providerSignIns.id })
+      .from(providerSignIns)
+      .where(
+        and(
+          eq(providerSignIns.pendingHash, hashToken(token)),
+          gt(providerSignIns.expiresAt, now),
+          isNotNull(providerSignIns.answeredAt),
+          isNull(providerSignIns.linkUserId),
+        ),
+      );
+    return row !== undefined;
   }
 
   return {
     async start(input) {
       const phone = normalisePhoneNumber(input.phoneNumber);
       if (!phone.ok) return err(phone.error);
+      // No text without a waiting sign-in (R26.2).
+      if (!(await isWaiting(input.pendingSignIn, clock())))
+        return err({ code: "provider_expired" });
       return sendCode({
         ...phone.value,
         purpose: "sign_in",
         locale: input.locale,
         ipAddress: input.ipAddress,
+        pendingKey: hasher("pending-sign-in", input.pendingSignIn),
+      });
+    },
+
+    async startEmail(input) {
+      const address = normaliseEmail(input.email);
+      if (!address.ok) return address;
+      const keyHash = hasher("email", address.value);
+      return sendEmailCode({
+        to: address.value,
+        keyHash,
+        purpose: "email_sign_in",
+        locale: input.locale,
+        limits: [
+          { scope: "email", keyHash, rules: emailCodeSendLimits.perEmail },
+          {
+            scope: "email_ip",
+            keyHash: hasher("ip", addressBlock(input.ipAddress)),
+            rules: emailCodeSendLimits.perIpAddress,
+          },
+        ],
+      });
+    },
+
+    async verifyEmail(input) {
+      const address = normaliseEmail(input.email);
+      if (!address.ok) return address;
+      const keyHash = hasher("email", address.value);
+      const now = clock();
+      return db.transaction(async (tx): Promise<Result<EmailVerified, EmailVerifyError>> => {
+        // A wrong code returns, so the transaction commits its count.
+        const checked = await checkCode(tx, keyHash, "email_sign_in", input.code, now);
+        if (!checked.ok) return checked;
+        await useUpCode(tx, checked.value.codeId);
+        // Only a verified email signs in: one waiting for its link is not the account's yet.
+        const [user] = await tx
+          .select({ id: users.id, status: users.status })
+          .from(users)
+          .where(and(eq(users.email, address.value), isNotNull(users.emailVerifiedAt)))
+          .for("update");
+        if (user === undefined) {
+          // A newcomer, or a member whose account has another email or none:
+          // the phone step finds out (3.3).
+          const pendingSignIn = newToken("pendingEmailSignIn");
+          const expiresAt = addSeconds(now, emailSignInRules.waitingSeconds);
+          await tx.insert(emailSignIns).values({
+            email: address.value,
+            pendingHash: hashToken(pendingSignIn),
+            expiresAt,
+            createdAt: now,
+            updatedAt: now,
+          });
+          logger.info({}, "email sign-in waiting for the phone step");
+          return ok({
+            status: "phoneNeeded",
+            pendingSignIn,
+            provider: "email",
+            email: address.value,
+            firstName: null,
+            expiresAt,
+          });
+        }
+        // As a phone sign-in: a suspended person signs in, an account waiting to be deleted too.
+        if (!canSignIn(user.status)) return err({ code: "account_unavailable" });
+        const { sessionId, tokens } = await openSession(tx, {
+          userId: user.id,
+          device: input.device,
+          now,
+        });
+        logger.info({ userId: user.id, sessionId, isNewUser: false, via: "email" }, "signed in");
+        return ok({
+          status: "signedIn",
+          userId: user.id,
+          sessionId,
+          platform: input.device.platform,
+          isNewUser: false,
+          tokens,
+        });
       });
     },
 
@@ -642,7 +1067,14 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
       const signIn = (tx: Transaction): Promise<Result<SignedIn, VerifyError>> =>
         verifyIn(tx, { ...input, e164, phoneHash, now });
       try {
-        return await db.transaction(signIn);
+        const signedIn = await db.transaction(signIn);
+        if (signedIn.ok && signedIn.value.emailChanged !== undefined) {
+          await sendEmailChangedNotice(email, logger, {
+            userId: signedIn.value.userId,
+            ...signedIn.value.emailChanged,
+          });
+        }
+        return signedIn;
       } catch (error) {
         // Two phone steps with one Google or Apple account at once: the
         // unique index lets one through, and the other makes nothing and
@@ -816,23 +1248,53 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
 
     async sendConfirmCode(input) {
       const [user] = await db
-        .select({ phoneE164: users.phoneE164, locale: users.locale })
+        .select({
+          phoneE164: users.phoneE164,
+          locale: users.locale,
+          email: users.email,
+          emailVerifiedAt: users.emailVerifiedAt,
+        })
         .from(users)
         .where(eq(users.id, input.userId));
       if (user === undefined || user.phoneE164 === null) {
         throw new Error("The signed-in user has no phone number.");
       }
+      const locale = user.locale === "is" ? "is" : "en";
       // The stored number as it is, so the code is kept under the same hash
       // that withConfirmCode looks for, even if the number would no longer
       // pass today's checks; its calling code only sets the limits and logs.
+      // By email or by text, it is the number's confirm code (R26.7).
+      const phoneHash = hasher("phone", user.phoneE164);
+      const verifiedEmail = user.emailVerifiedAt === null ? null : user.email;
+      if (confirmChannel(verifiedEmail !== null && email !== undefined) === "email") {
+        const address = verifiedEmail ?? "";
+        const sent = await sendEmailCode({
+          to: address,
+          keyHash: phoneHash,
+          purpose: "confirm",
+          locale,
+          limits: [
+            { ...perNumberLimit("confirm"), keyHash: phoneHash },
+            {
+              scope: "email_ip",
+              keyHash: hasher("ip", addressBlock(input.ipAddress)),
+              rules: emailCodeSendLimits.perIpAddress,
+            },
+          ],
+        });
+        if (!sent.ok) return sent;
+        return ok({ ...sent.value, channel: "email", sentTo: hideEmail(address) });
+      }
       const phone = normalisePhoneNumber(user.phoneE164);
-      return sendCode({
+      const sent = await sendCode({
         e164: user.phoneE164,
         callingCode: phone.ok ? phone.value.callingCode : "unknown",
         purpose: "confirm",
-        locale: user.locale === "is" ? "is" : "en",
+        locale,
         ipAddress: input.ipAddress,
       });
+      if (!sent.ok) return sent;
+      return ok({ ...sent.value, channel: "sms", sentTo: user.phoneE164.slice(-2) });
     },
 
     async withConfirmCode<T, E>(

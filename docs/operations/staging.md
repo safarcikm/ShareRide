@@ -100,30 +100,30 @@ network, so this holds for both addresses as long as nothing of ours sits in
 front (the DNS record is a plain CNAME). Check it after the first deploy,
 and again if Render changes its network or the domain's DNS:
 
-1. Set `SMS_PAUSED` to `true` (see [Pause SMS](#pause-sms)), so nothing is
-   sent. The requests below still count against the limits.
-2. From one computer, ask for 11 codes to 11 numbers, each request claiming
-   a different address in every header a client could forge:
+1. From one computer, check an invite code 11 times within a minute, each
+   request claiming a different address in every header a client could
+   forge. The check sends nothing and allows 10 a minute per address. (A
+   sign-in code can no longer be asked for this way: a text needs an email
+   proven first, spec 26.)
 
    ```sh
    STAGING=https://staging.puffinride.is
    for i in $(seq 1 11); do
-     curl -s -o /dev/null -w '%{http_code}\n' -X POST "$STAGING/v1/auth/phone/start" \
+     curl -s -o /dev/null -w '%{http_code}\n' -X POST "$STAGING/v1/invites/check" \
        -H 'Content-Type: application/json' \
        -H "X-Forwarded-For: 198.51.100.$i" -H "True-Client-IP: 198.51.100.$i" \
        -H "CF-Connecting-IP: 198.51.100.$i" \
-       -d "{\"phoneNumber\":\"+354690$(printf %04d "$i")\",\"locale\":\"en\"}"
+       -d '{"code":"CHECKING"}'
    done
    ```
 
-   Expected: ten `502` (SMS paused), then `429`: the forged addresses did
-   not count as different clients. Eleven `502` means a forged header got
-   through: stop and fix `TRUST_PROXY` before anyone relies on the limits.
-3. From a phone on mobile data (another address), ask for a code in the
-   app. It must say the code could not be sent, not that there were too
-   many tries. "Too many" means every client shares one address.
-4. Set `SMS_PAUSED` back to `false`. The computer from step 2 can ask for
-   codes again after an hour.
+   Expected: ten `200` or `400` (whether a code is needed just now), then
+   `429`: the forged addresses did not count as different clients. No `429`
+   means a forged header got through: stop and fix `TRUST_PROXY` before
+   anyone relies on the limits.
+2. Within the same minute, run the request once from another address, such
+   as a laptop on a phone's hotspot. It must not give `429`. A `429` means
+   every client shares one address.
 
 ## Move to puffinride.is
 
@@ -455,12 +455,18 @@ running version stays.
 
 ## Pause SMS
 
-If someone abuses sign-in to send SMS (see SMS pumping in
+If someone abuses sign-up to send SMS (see SMS pumping in
 [security](../engineering/security.md)): open `shareride-staging-api`,
 **Environment**, add or set `SMS_PAUSED` to `true` and save. Render
-deploys the service again with it; sign-in then says the code could not be
-sent. Set it back to
+deploys the service again with it. Members still sign in with their email
+or Google; only the phone step of a new account (and a confirm code to an
+account without an email) says texts are paused (spec 26). The console's
+Settings, Text messages, does the same without a deploy. Set it back to
 `false` (or delete it) when it is safe.
+
+Since spec 26 a text goes only after a proven email, Google or Apple
+sign-in, and the API reports the error "ceiling on all sign-in texts
+reached" to Sentry when 300 texts went in an hour or 1 000 in a day.
 
 ## Turn on email
 

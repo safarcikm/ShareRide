@@ -1,16 +1,16 @@
 import { expect, test, type Page } from "@playwright/test";
 import { apiUrl } from "../playwright.config";
-import { english, enterCode } from "./support/account";
+import { english, enterEmailCode } from "./support/account";
 import { confirmedBooking, secondPage, visible } from "./support/cancelling";
-import { confirmEmail, emailTo, linkIn } from "./support/email";
+import { emailTo, linkIn } from "./support/email";
 
 // "How was your trip?" by email on the web build (spec 20, 3.1 to 3.3).
-// Bára posts Mjódd to N1 Selfoss and Dóra books and pays; Dóra gave an
-// email at sign-up, as the web asks (a browser gets no push), and opens its
-// link. The test API then moves the trip a day and a half back, so it
-// completes and the email goes. Dóra opens its link in another browser
-// where she is not signed in, such as her phone's: the app asks her to sign
-// in and then opens the rating screen.
+// Bára posts Mjódd to N1 Selfoss and Dóra books and pays; Dóra signed up
+// with her email (a browser gets no push). The test API then moves the trip
+// a day and a half back, so it completes and the email goes. Dóra opens its
+// link in another browser where she is not signed in, such as her phone's:
+// the app asks her to sign in, with her email's code, and then opens the
+// rating screen.
 
 test.use({ locale: "en-GB" });
 
@@ -28,11 +28,7 @@ test("the passenger rates the driver from the email, signing in on the way", asy
 }, testInfo) => {
   test.slow();
   const { page: passenger, close } = await secondPage(browser, testInfo);
-  const { tripId, booking, passengerPhone, passengerEmail } = await confirmedBooking(
-    driver,
-    passenger,
-  );
-  await confirmEmail(passenger, passengerEmail);
+  const { tripId, booking, passengerEmail } = await confirmedBooking(driver, passenger);
   await move(driver, tripId, -36 * 60);
 
   // The email opens the rating screen of her booking.
@@ -47,7 +43,7 @@ test("the passenger rates the driver from the email, signing in on the way", asy
   await expect(
     phone.getByRole("heading", { name: "Sign in or create an account" }).filter(visible),
   ).toBeVisible();
-  await enterCode(phone, english, passengerPhone);
+  await enterEmailCode(phone, english, passengerEmail);
 
   // Signed in, she lands on the rating screen and sends her review.
   await expect(phone).toHaveURL(`${booking}/rate`);

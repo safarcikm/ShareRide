@@ -94,8 +94,14 @@ describe("a console recovery code (spec 22)", () => {
   it("leaves the number's sign-in codes in the app alone", async () => {
     const phone = api.newPhoneNumber();
     await send(phone);
+    const pendingSignIn = await api.waitingEmailSignIn();
     expect(
-      await auth.start({ phoneNumber: phone, locale: "en", ipAddress: "203.0.113.9" }),
+      await auth.start({
+        phoneNumber: phone,
+        locale: "en",
+        ipAddress: "203.0.113.9",
+        pendingSignIn,
+      }),
     ).toEqual({ ok: true, value: { resendAfterSeconds: 30 } });
   });
 
@@ -137,7 +143,8 @@ describe("a console recovery code (spec 22)", () => {
 
   it("does not take a sign-in code for recovery, or a recovery code for sign-in", async () => {
     const phone = api.newPhoneNumber();
-    await auth.start({ phoneNumber: phone, locale: "en", ipAddress: "203.0.113.7" });
+    const pendingSignIn = await api.waitingEmailSignIn();
+    await auth.start({ phoneNumber: phone, locale: "en", ipAddress: "203.0.113.7", pendingSignIn });
     const signInCode = api.lastCode(phone);
     expect(await recover(phone, signInCode)).toEqual({
       ok: false,
@@ -147,7 +154,13 @@ describe("a console recovery code (spec 22)", () => {
     await send(phone);
     const recoveryCode = api.lastCode(phone);
     const signedIn = await api.client.call(verifyPhoneCodeRoute, {
-      body: { phoneNumber: phone, code: recoveryCode, locale: "en", device: { platform: "web" } },
+      body: {
+        phoneNumber: phone,
+        code: recoveryCode,
+        locale: "en",
+        device: { platform: "web" },
+        pendingSignIn,
+      },
     });
     expect(signedIn).toMatchObject({ ok: false, error: { code: "code_invalid" } });
   });
