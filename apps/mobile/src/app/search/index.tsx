@@ -59,7 +59,7 @@ export default function SearchForm() {
         <BackButton />
       </View>
       <Title>{t("search.title")}</Title>
-      {route.fields}
+      {route.fields()}
       {recent.length === 0 ? null : (
         <>
           <Heading>{t("search.recent")}</Heading>

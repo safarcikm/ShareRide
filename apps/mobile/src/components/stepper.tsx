@@ -123,7 +123,10 @@ export function Stepper({
   readonly hint?: string;
   /** The label on the left and the buttons on the right, in one row. */
   readonly beside?: boolean;
-  /** In a row of fields: the label as a caption close over the buttons. */
+  /**
+   * In a row of fields: the label as a caption close over the buttons, and
+   * the value close between them, to leave the fields beside it room.
+   */
   readonly caption?: boolean;
   readonly value: number;
   readonly min: number;
@@ -165,13 +168,18 @@ export function Stepper({
         onDecrease={decrease}
         onIncrease={increase}
       >
-        <View style={styles.row}>
+        <View testID="stepper-buttons" style={[styles.row, caption && styles.tightRow]}>
           <StepButton icon={Minus} label={fewerLabel} onPress={decrease} disabled={value <= min} />
           <Text
             testID="stepper-value"
             accessibilityLiveRegion="polite"
             aria-label={Platform.OS === "web" ? valueText : undefined}
-            style={[typography.figure, styles.value, { color: palette.text }]}
+            style={[
+              typography.figure,
+              styles.value,
+              caption && styles.tightValue,
+              { color: palette.text },
+            ]}
           >
             {value}
           </Text>
@@ -189,6 +197,9 @@ const styles = StyleSheet.create({
   grow: { flex: 1 },
   row: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   value: { minWidth: sizes.buttonHeight, textAlign: "center" },
+  tightRow: { gap: spacing.xs },
+  // Room for the largest number of seats, one figure.
+  tightValue: { minWidth: spacing.xl },
   buttonOuter: {
     width: sizes.buttonHeight,
     height: sizes.buttonHeight,

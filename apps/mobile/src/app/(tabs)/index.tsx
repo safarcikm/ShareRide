@@ -103,8 +103,11 @@ function FrontPage() {
   const route = useRouteSearch((query) => {
     void openSearch(query, locale);
   });
-  const findRide = (
+  // In the row of a wide page, or as the main button at the end of a
+  // phone's search card.
+  const findRide = (main: boolean) => (
     <Button
+      main={main}
       label={t("welcome.findRide")}
       onPress={() => {
         route.submit();
@@ -146,7 +149,7 @@ function FrontPage() {
     return (
       <Screen width="page" refresh={refresh} refreshAsked={refreshAsked}>
         {title}
-        {route.row(findRide)}
+        {route.row(findRide(false))}
         <Columns
           side={
             <>
@@ -210,8 +213,7 @@ function FrontPage() {
       </View>
       {me === null ? null : <NextRide rides={mine} />}
       {title}
-      {route.fields}
-      {findRide}
+      {route.fields(findRide(true))}
       <LeavingSoon rides={rides} shown={shown} />
       <View style={styles.actions}>
         <Body>{t("nav.offerSignedOut")}</Body>

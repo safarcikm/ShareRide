@@ -102,7 +102,13 @@ Find replaces both the front page and My profile as the place the app opens.
    it can't be loaded, one notice says so, with Try again.
 3. **Search:** "Where are you going?", From, To, date ("Any day") and seats
    (1 to 4, as on the results today), then **Find a ride** as the main, filled
-   button. Seats move from the results into this form.
+   button. Seats move from the results into this form. On a phone the whole
+   search is one card (amended 2026-11-22): From and To, then the date and
+   the seats on one line, then Find a ride, so the button is on the first
+   screen. The date is a field that opens "Any day" and the calendar under
+   that line, as in the laptop's search row (spec 18, 3.5); very large text
+   takes the date onto a line of its own. The search form and Change search
+   (3.8) use the same card.
 4. **Leaving soon:** as today (spec 4, 3.8), with "See all".
 5. **Ride cards**, here and in the results:
    - The tag says "Book instantly" or "Driver approves", instead of "Instant"

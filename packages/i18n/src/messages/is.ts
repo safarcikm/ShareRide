@@ -686,7 +686,7 @@ export const is = {
   "search.typePlace": "Skrifaðu bæ eða mótsstað",
   "search.swap": "Víxla frá og til",
   "search.date": "Dagsetning",
-  "search.anyDay": "Hvaða dag sem er",
+  "search.anyDay": "Allir dagar",
   "search.chooseDay": "Velja dag",
   "search.seats": "Sæti",
   "search.seatCount": "{count, plural, one {# sæti} other {# sæti}}",

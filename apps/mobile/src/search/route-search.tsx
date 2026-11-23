@@ -1,6 +1,6 @@
 import { defaultTripSettings } from "@shareride/domain";
-import { capitalised, formatDay, formatShortDay, type Locale } from "@shareride/i18n";
-import { router } from "expo-router";
+import { capitalised, formatShortDay, type Locale } from "@shareride/i18n";
+import { router, useNavigation } from "expo-router";
 import { ChevronDown, ChevronUp } from "lucide-react-native";
 import {
   useEffect,
@@ -8,6 +8,7 @@ import {
   useState,
   type ComponentRef,
   type ReactElement,
+  type ReactNode,
   type RefObject,
 } from "react";
 import {
@@ -17,6 +18,7 @@ import {
   Pressable,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { useMaxSeats } from "@/beta/config";
@@ -28,17 +30,16 @@ import { Notice } from "@/components/notice";
 import { RouteEnds, type RouteEnd } from "@/components/route-ends";
 import { SearchField } from "@/components/search-field";
 import { Stepper } from "@/components/stepper";
-import { Body, Heading } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { now } from "@/lib/clock";
-import { addDays, dayOf, isoDay, noonOf, type Day } from "@/lib/days";
+import { addDays, dayOf, isoDay, type Day } from "@/lib/days";
 import { escapeOnWeb } from "@/lib/escape-on-web";
 import { PlaceDropdown } from "@/meeting-points/place-dropdown";
 import { searchEndOf } from "./search-end";
 import { saveRecentSearch, type SearchEnd, type SearchQuery } from "./recent-searches";
 import { resultsHref } from "./results-href";
 import { useHover } from "@/theme/hover";
-import { iconSizes, spacing, typography } from "@/theme/tokens";
+import { controlOutline, iconSizes, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
 /** Keeps a search among the recent ones and opens its results; resolves to the recent searches. */
@@ -50,10 +51,13 @@ export async function openSearch(query: SearchQuery, locale: Locale): Promise<Se
 
 export interface RouteSearch {
   /**
-   * From and to, each with a place search that drops down under it, the
-   * date, and a message when a place is missing.
+   * The search in one card, for a phone or a column (spec 16, 3.2): From
+   * and To, each with a place search that drops down under it, then the
+   * date and the seats on one line, and `action`, the button that searches,
+   * if it is in the card. The date opens the calendar under that line. A
+   * message when a place is missing goes under the card.
    */
-  readonly fields: ReactElement;
+  readonly fields: (action?: ReactElement) => ReactElement;
   /**
    * The same search as one row in a card, for a wide page (spec 18, 3.5):
    * From, the swap button, To, the date, the seats and `action`, the button
@@ -77,6 +81,8 @@ export function useRouteSearch(
   initial?: SearchQuery,
 ): RouteSearch {
   const { locale, t } = useLanguage();
+  const palette = usePalette();
+  const { fontScale } = useWindowDimensions();
   const maxSeats = useMaxSeats();
   const today = dayOf(now());
   const [from, setFrom] = useState<SearchEnd | null>(initial?.from ?? null);
@@ -87,8 +93,8 @@ export function useRouteSearch(
   const [picking, setPicking] = useState<RouteEnd | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
-  // In the row, once the calendar closes, focus goes back to the date it
-  // was for, rather than to the top of the page on the web.
+  // Once the calendar closes, focus goes back to the date it was for,
+  // rather than to the top of the page on the web.
   const dateField = useRef<DateFieldRef>(null);
   const wasChoosingDay = useRef(choosingDay);
   useEffect(() => {
@@ -100,20 +106,21 @@ export function useRouteSearch(
     else AccessibilityInfo.sendAccessibilityEvent(field, "focus");
   }, [choosingDay]);
 
-  // In the row, Android's back closes the calendar, as it does a list of
-  // places, rather than leaving the screen. In `fields` the calendar is a
-  // part of the form and stays.
+  // Android's back closes the calendar, as it does a list of places,
+  // rather than leaving the screen; not while another screen covers this
+  // one, which stays open under it with the calendar as it was.
+  const navigation = useNavigation();
   useEffect(() => {
     if (!choosingDay) return undefined;
     const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
-      if (dateField.current === null) return false;
+      if (!navigation.isFocused()) return false;
       setChoosingDay(false);
       return true;
     });
     return () => {
       subscription.remove();
     };
-  }, [choosingDay]);
+  }, [choosingDay, navigation]);
 
   const search =
     picking === null ? null : (
@@ -144,9 +151,10 @@ export function useRouteSearch(
     onSearch({ from, to, date: date === null ? null : isoDay(date), seats });
   };
 
-  const ends = (direction: "column" | "row") => (
+  const ends = (direction: "column" | "row", below?: ReactNode) => (
     <RouteEnds
       direction={direction}
+      below={below}
       from={from === null ? null : from.name[locale]}
       to={to === null ? null : to.name[locale]}
       labels={{
@@ -187,33 +195,72 @@ export function useRouteSearch(
   );
   const shortDay = date === null ? null : capitalised(formatShortDay(isoDay(date), locale), locale);
 
-  const fields = (
-    <>
-      {ends("column")}
-      <Notice message={message} />
-      <Heading>{t("search.date")}</Heading>
-      <View accessibilityRole="radiogroup" style={styles.chips}>
+  const dateChoice = (
+    <DateField
+      fieldRef={dateField}
+      label={t("search.date")}
+      value={shortDay ?? t("search.anyDay")}
+      chosen={date !== null}
+      open={choosingDay}
+      onPress={() => {
+        setChoosingDay(!choosingDay);
+      }}
+    />
+  );
+  // Escape closes the calendar from the date itself and from inside it.
+  const closesOnEscape = choosingDay
+    ? escapeOnWeb(() => {
+        setChoosingDay(false);
+      })
+    : {};
+  // In a card the calendar takes some of the card's padding, so its days
+  // keep their size on a phone 360 wide.
+  const dayChoice = (inCard: boolean) =>
+    choosingDay ? (
+      <View style={styles.day}>
+        {/* One choice with the days of the calendar, so a radio like them. */}
         <Chip
           role="radio"
           label={t("search.anyDay")}
-          selected={date === null && !choosingDay}
+          selected={date === null}
           onToggle={() => {
             setDate(null);
             setChoosingDay(false);
           }}
         />
-        <Chip
-          role="radio"
-          label={shortDay ?? t("search.chooseDay")}
-          selected={date !== null || choosingDay}
-          onToggle={() => {
-            setChoosingDay(true);
-          }}
-        />
+        <View testID="search-calendar" style={inCard ? styles.calendarInCard : undefined}>
+          {calendar((day) => {
+            setDate(day);
+            setChoosingDay(false);
+          })}
+        </View>
       </View>
-      {choosingDay ? calendar(setDate) : null}
-      {date === null ? null : <Body>{capitalised(formatDay(noonOf(date), locale), locale)}</Body>}
-      {seatsStepper(false)}
+    ) : null;
+
+  const fields = (action?: ReactElement) => (
+    <>
+      {ends(
+        "column",
+        <>
+          <View style={[styles.divider, { backgroundColor: palette.border }]} />
+          <View style={styles.rest} {...closesOnEscape}>
+            {/* The date takes the room the seats leave, and goes onto a line
+                of its own where large text needs more. */}
+            <View testID="search-when" style={styles.when}>
+              <View
+                testID="search-when-date"
+                style={[styles.whenDate, { flexBasis: dateBasis * fontScale }]}
+              >
+                {dateChoice}
+              </View>
+              {seatsStepper(true)}
+            </View>
+            {dayChoice(true)}
+          </View>
+          {action}
+        </>,
+      )}
+      <Notice message={message} />
     </>
   );
 
@@ -222,47 +269,13 @@ export function useRouteSearch(
       <Card>
         <View testID="search-row" style={styles.row}>
           {ends("row")}
-          {/* Escape closes the calendar from the date itself and from inside it. */}
-          <View
-            style={styles.rest}
-            {...(choosingDay
-              ? escapeOnWeb(() => {
-                  setChoosingDay(false);
-                })
-              : {})}
-          >
+          <View style={styles.rest} {...closesOnEscape}>
             <View style={styles.restRow}>
-              <DateField
-                fieldRef={dateField}
-                label={t("search.date")}
-                value={shortDay ?? t("search.anyDay")}
-                chosen={date !== null}
-                open={choosingDay}
-                onPress={() => {
-                  setChoosingDay(!choosingDay);
-                }}
-              />
+              {dateChoice}
               {seatsStepper(true)}
               <View style={styles.action}>{action}</View>
             </View>
-            {choosingDay ? (
-              <View style={styles.day}>
-                {/* One choice with the days of the calendar, so a radio like them. */}
-                <Chip
-                  role="radio"
-                  label={t("search.anyDay")}
-                  selected={date === null}
-                  onToggle={() => {
-                    setDate(null);
-                    setChoosingDay(false);
-                  }}
-                />
-                {calendar((day) => {
-                  setDate(day);
-                  setChoosingDay(false);
-                })}
-              </View>
-            ) : null}
+            {dayChoice(false)}
           </View>
         </View>
       </Card>
@@ -324,6 +337,15 @@ function DateField({
   );
 }
 
+/**
+ * The least width of the date beside the seats in a card, at the text size
+ * the screen is made for: "Allir dagar", the longer of "Any day" in our two
+ * languages, with the field's padding and its chevron. The two stay on one
+ * line on a phone 360 wide; larger text takes the date onto a line of its
+ * own. A long chosen day can take two lines in the field.
+ */
+const dateBasis = 136;
+
 /** "2026-11-15" as a day, or null. */
 function dayFromIso(date: string | null): Day | null {
   const match = date === null ? null : /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
@@ -332,7 +354,6 @@ function dayFromIso(date: string | null): Day | null {
 }
 
 const styles = StyleSheet.create({
-  chips: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
   // The two ends grow; the date, the seats and the button keep their size
   // and, where the row is too narrow for all, go to a second line together,
   // at the right. A part that opens grows downwards and the rest stay put.
@@ -350,5 +371,9 @@ const styles = StyleSheet.create({
   // Beside the values, under the captions.
   action: { marginTop: typography.caption.lineHeight + spacing.xs },
   dateField: { gap: spacing.xs },
+  divider: { height: controlOutline },
+  when: { flexDirection: "row", flexWrap: "wrap", alignItems: "flex-start", gap: spacing.ms },
+  whenDate: { flexGrow: 1, flexShrink: 1 },
   day: { gap: spacing.md },
+  calendarInCard: { marginHorizontal: -spacing.sm },
 });

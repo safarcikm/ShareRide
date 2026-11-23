@@ -430,8 +430,7 @@ function ChangeSearch({
       <TakesFocus>
         <Heading>{t("results.changeSearch")}</Heading>
       </TakesFocus>
-      {route.fields}
-      <Button main label={t("welcome.findRide")} onPress={route.submit} />
+      {route.fields(<Button main label={t("welcome.findRide")} onPress={route.submit} />)}
       <Button variant="text" label={t("common.cancel")} onPress={onCancel} />
     </>
   );
