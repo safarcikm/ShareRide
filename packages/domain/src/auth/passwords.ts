@@ -30,11 +30,22 @@ export function checkNewPassword(
   return ok(normalised);
 }
 
-/** Wrong passwords allowed (R27.4): per email, and per network address (IPv6 by its /64). */
+/**
+ * Password tries allowed (R27.4), per email and per network address (IPv6
+ * by its /64): wrong ones, and all of them, right ones too, since each
+ * costs a hash.
+ */
 export const passwordSignInLimits = {
   perEmail: [{ limit: 10, windowSeconds: 3600 }],
   perIpAddress: [{ limit: 30, windowSeconds: 3600 }],
+  allPerEmail: [{ limit: 20, windowSeconds: 3600 }],
+  allPerIpAddress: [{ limit: 100, windowSeconds: 3600 }],
 } as const satisfies Record<string, readonly RateLimitRule[]>;
+
+/** Passwords an account may save in an hour (R27.4), each hashed and each told by email. */
+export const passwordChangeLimits = [
+  { limit: 10, windowSeconds: 3600 },
+] as const satisfies readonly RateLimitRule[];
 
 /** scrypt's settings (ADR 0047): N = 2^logN, 32 MiB of memory per hash. */
 export const scryptSettings = { logN: 15, r: 8, p: 3, saltBytes: 16, keyBytes: 32 } as const;

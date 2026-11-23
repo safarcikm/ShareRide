@@ -133,6 +133,7 @@ export const is = {
   "password.tooCommon": "Þetta lykilorð er of algengt. Bættu við nokkrum orðum.",
   "password.isEmail": "Ekki nota netfangið þitt sem lykilorð.",
   "password.emailRequired": "Bættu fyrst við netfangi. Það er notandanafnið þitt.",
+  "password.tooMany": "Þetta eru mörg ný lykilorð. Reyndu aftur eftir {wait}.",
   "password.confirm": "Til að vista lykilorðið skaltu slá inn kóðann sem við sendum þér.",
   "password.notNow": "Ekki núna",
   "signUp.faster.title": "Skráðu þig hraðar inn næst",

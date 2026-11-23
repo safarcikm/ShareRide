@@ -233,6 +233,8 @@ export const memberPasswords = pgTable("member_passwords", {
     .primaryKey()
     .references(() => users.id, { onDelete: "cascade" }),
   hash: text().notNull(),
+  /** When the person last chose it; a new hash at sign-in leaves it (spec 27, 3.6). */
+  setAt: at().notNull(),
   ...timestamps,
 });
 

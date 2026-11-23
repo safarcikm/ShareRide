@@ -3,6 +3,7 @@ import { keepPendingOffer } from "@/drive/pending-offer";
 import { keepPendingProblem } from "@/meeting-points/pending-problem";
 import { takeKeptChoice } from "./kept-choice";
 import {
+  forgetPendingLink,
   keepPendingLink,
   keepPendingLinkIfNone,
   linkNeedingAccount,
@@ -107,6 +108,16 @@ describe("a link kept while someone signs in", () => {
     expect(await takePendingLink(minutesLater(62))).toBe("/onboarding/faster");
     await keepPendingLinkIfNone("/onboarding/faster", noon);
     expect(await takePendingLink(minutesLater(1))).toBe("/onboarding/faster");
+  });
+
+  it("forgets a kept link only when it is the one named (spec 27, 3.4)", async () => {
+    await keepPendingLink("/settings/password", noon);
+    await forgetPendingLink("/settings/password");
+    expect(await takePendingLink(minutesLater(1))).toBeNull();
+
+    await keepPendingLink(rate, noon);
+    await forgetPendingLink("/settings/password");
+    expect(await takePendingLink(minutesLater(1))).toBe(rate);
   });
 
   it("leads on after signing in, after a booking or an offer chosen since", async () => {

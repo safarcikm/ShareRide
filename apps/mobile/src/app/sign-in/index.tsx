@@ -22,8 +22,6 @@ import { Screen } from "@/components/screen";
 import { TextField } from "@/components/text-field";
 import { Body, Title } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
-import { now } from "@/lib/clock";
-import { keepPendingLink } from "@/navigation/kept-link";
 import { useSignInFlow } from "@/sign-in/flow";
 import { KeptRideCard } from "@/sign-in/kept-ride-card";
 import { pendingExpiredText, phoneStepHelp } from "@/sign-in/pending";
@@ -136,7 +134,7 @@ function ChooseHowScreen() {
       return;
     }
     // After the code, Choose a password opens (spec 27, 3.4).
-    if (forgot) await keepPendingLink("/settings/password", now());
+    flow.setForgotPassword(forgot);
     setPassword("");
     flow.emailCodeSent(address.value, result.data.resendAfterSeconds);
     router.push("/sign-in/email-code");

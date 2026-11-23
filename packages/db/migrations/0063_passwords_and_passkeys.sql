@@ -31,6 +31,7 @@ CREATE TABLE "member_passkeys" (
 CREATE TABLE "member_passwords" (
 	"user_id" uuid PRIMARY KEY NOT NULL,
 	"hash" text NOT NULL,
+	"set_at" timestamp with time zone NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );

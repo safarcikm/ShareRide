@@ -10,6 +10,8 @@ import { Screen } from "@/components/screen";
 import { TextField } from "@/components/text-field";
 import { Body, Title } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
+import { now } from "@/lib/clock";
+import { forgetPendingLink, keepPendingLinkIfNone } from "@/navigation/kept-link";
 import { useSignInFlow } from "@/sign-in/flow";
 import { KeptRideCard } from "@/sign-in/kept-ride-card";
 import { SignUpProgress } from "@/sign-in/sign-up-progress";
@@ -17,6 +19,7 @@ import { useSecondsUntil } from "@/sign-in/use-seconds-until";
 import { spacing } from "@/theme/tokens";
 
 const codeLength = codeRules.length;
+const choosePassword = "/settings/password";
 
 /**
  * Still step 1: the code from the email, with a resend timer (spec 26,
@@ -55,6 +58,10 @@ export default function EmailCodeScreen() {
     inFlight.current = true;
     setBusy(true);
     setMessage(null);
+    // Kept before the code goes, so it waits when sign-in closes; not in
+    // place of a link opened from an email, which goes first (spec 27, 3.4).
+    const forgot = flow.forgotPassword ? choosePassword : null;
+    if (forgot !== null) await keepPendingLinkIfNone(forgot, now());
     const result = await session.verifyEmail(email, entered);
     if (result.ok) {
       // Signed in: sign-in closes by itself. Otherwise the phone number comes next.
@@ -65,6 +72,7 @@ export default function EmailCodeScreen() {
       }
       return;
     }
+    if (forgot !== null) await forgetPendingLink(forgot);
     inFlight.current = false;
     setBusy(false);
     setCode("");

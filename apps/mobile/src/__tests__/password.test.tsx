@@ -150,6 +150,43 @@ describe("Forgot your password? (spec 27, 3.4)", () => {
     expect(await screen.findByRole("tab", { name: "Find" })).toBeVisible();
     expect(screen.queryByRole("header", { name: "Choose a password" })).toBeNull();
   });
+
+  it("keeps nothing until the code is checked, so signing in another way opens no form", async () => {
+    await openSignIn((client) => {
+      client.answer("/v1/auth/password", () =>
+        ok(200, { status: "signedIn", ...tokens(1), user: anna, isNewUser: false }),
+      );
+    });
+    await fireEvent.changeText(screen.getByLabelText("Email"), "anna@example.com");
+    await fireEvent.press(screen.getByRole("button", { name: "Forgot your password?" }));
+    expect(await screen.findByText("We emailed a 6-digit code to anna@example.com.")).toBeVisible();
+    expect(mockStored.get("pending-link") ?? "").toBe("");
+    // Remembered after all: back, and in with the password.
+    await fireEvent.press(screen.getByRole("button", { name: "Back" }));
+    await fireEvent.changeText(await screen.findByLabelText("Password"), strong);
+    await fireEvent.press(screen.getByRole("button", { name: "Sign in" }));
+    expect(await screen.findByRole("tab", { name: "Find", selected: true })).toBeVisible();
+    expect(screen.queryByRole("header", { name: "Choose a password" })).toBeNull();
+  });
+
+  it("opens the link from an email first, which was waiting before the code", async () => {
+    await openSignIn((client) => {
+      client.answer("/v1/auth/email/verify", () =>
+        ok(200, { status: "signedIn", ...tokens(1), user: anna, isNewUser: false }),
+      );
+      client.answer("/v1/me/notices", () => ok(200, { notices: [] }), "get");
+    });
+    // On the test's clock, which renderApp sets.
+    mockStored.set(
+      "pending-link",
+      JSON.stringify({ path: "/notices", keptAt: new Date().toISOString() }),
+    );
+    await fireEvent.changeText(screen.getByLabelText("Email"), "anna@example.com");
+    await fireEvent.press(screen.getByRole("button", { name: "Forgot your password?" }));
+    await fireEvent.changeText(await screen.findByLabelText("6-digit code"), "123456");
+    expect(await screen.findByRole("header", { name: "Notices" })).toBeVisible();
+    expect(screen.queryByRole("header", { name: "Choose a password" })).toBeNull();
+  });
 });
 
 /** Opens Choose a password, signed in; the password route answers as `answer` says. */
@@ -187,6 +224,8 @@ describe("Choosing a password (spec 27, 3.5)", () => {
     expect(callsTo(app.client, "/v1/me/password").map((call) => call.input["body"])).toEqual([
       { password: strong },
     ]);
+    // Not kept on the screen once saved.
+    expect(screen.queryByDisplayValue(strong)).toBeNull();
     await fireEvent.press(screen.getByRole("button", { name: "Done" }));
     expect(await screen.findByRole("tab", { name: "Find" })).toBeVisible();
   });
@@ -204,6 +243,18 @@ describe("Choosing a password (spec 27, 3.5)", () => {
     expect(callsTo(app.client, "/v1/me/password")).toHaveLength(0);
     await savePassword("qwertyuiop");
     expect(await screen.findByText("That password is too common. Add a few words.")).toBeVisible();
+  });
+
+  it("says when the account saved many new passwords this hour (R27.4)", async () => {
+    await openPassword(anna, (client) => {
+      client.answer("/v1/me/password", () =>
+        failure(429, "rate_limited", { retryAfterSeconds: 42 * 60 }),
+      );
+    });
+    await savePassword(strong);
+    expect(
+      await screen.findByText("That's a lot of new passwords. Try again in 42 minutes."),
+    ).toBeVisible();
   });
 
   it("asks for a confirm code when the sign-in is over 10 minutes old (R27.5)", async () => {

@@ -3,6 +3,7 @@ import {
   checkNewPassword,
   freshSignInSeconds,
   needsProof,
+  passwordChangeLimits,
   passwordSignInLimits,
   scryptSettings,
 } from "./passwords.ts";
@@ -59,10 +60,21 @@ describe("needsProof (R27.5)", () => {
 
 describe("limits and settings (R27.4, ADR 0047)", () => {
   it("allows 10 wrong tries an hour for an email and 30 from a network address", () => {
-    expect(passwordSignInLimits).toEqual({
+    expect(passwordSignInLimits).toMatchObject({
       perEmail: [{ limit: 10, windowSeconds: 3600 }],
       perIpAddress: [{ limit: 30, windowSeconds: 3600 }],
     });
+  });
+
+  it("allows 20 tries of any kind an hour for an email and 100 from a network address", () => {
+    expect(passwordSignInLimits).toMatchObject({
+      allPerEmail: [{ limit: 20, windowSeconds: 3600 }],
+      allPerIpAddress: [{ limit: 100, windowSeconds: 3600 }],
+    });
+  });
+
+  it("lets an account save a password 10 times an hour", () => {
+    expect(passwordChangeLimits).toEqual([{ limit: 10, windowSeconds: 3600 }]);
   });
 
   it("hashes with scrypt N = 2^15, r = 8, p = 3", () => {

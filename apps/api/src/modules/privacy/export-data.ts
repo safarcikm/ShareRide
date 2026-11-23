@@ -215,7 +215,7 @@ export async function collectExport(
 
   // Only when it was set: never the password or its hash (spec 27, R27.3).
   const [password] = await q
-    .select({ setAt: memberPasswords.updatedAt })
+    .select({ setAt: memberPasswords.setAt })
     .from(memberPasswords)
     .where(eq(memberPasswords.userId, userId));
 

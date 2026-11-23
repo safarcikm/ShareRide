@@ -96,14 +96,18 @@ licence in `#` lines, read once by the API and passed in as `isCommon`.
 `apps/api/src/modules/privacy/retention.ts`.
 
 - `member_passwords` (`user_id` primary key, cascade; `hash` text;
+  `set_at`, when the person chose it, which a new hash at sign-in leaves;
   timestamps).
 - `member_passkeys` (id; `user_id` cascade, indexed; `credential_id` text
-  unique; `public_key` bytea; `counter` bigint; `transports` text[];
+  unique; `public_key` text, base64url as the console keeps it; `counter`
+  bigint; `transports` text[];
   `backed_up` boolean; `user_handle` text; `browser` and `system` text,
   null when unknown; `last_used_at`;
   timestamps).
-- `member_passkey_challenges` (id; `challenge_hash` text unique;
-  `purpose` check `sign_in` or `register`; `user_id` null for `sign_in`;
+- `member_passkey_challenges` (id; `challenge` text unique, as the
+  console's: random, used once, gone within minutes, and it opens nothing
+  by itself; `purpose` check `sign_in` or `register`; `user_id` null for
+  `sign_in`; `user_handle`, the handle the options gave a new passkey;
   `expires_at`; timestamps).
 - The clean-up deletes challenges an hour after they expire.
 

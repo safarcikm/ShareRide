@@ -175,6 +175,26 @@ describe("setting a password (spec 27, 3.5)", () => {
     ]);
   });
 
+  it("saves at most 10 passwords an hour for an account, each hashed and emailed (R27.4)", async () => {
+    const elin = await member();
+    for (let i = 0; i < 10; i++) {
+      expect(await setPassword(elin, `${strong} number ${String(i)}`)).toMatchObject({
+        ok: true,
+      });
+    }
+    const refused = await setPassword(elin, `${strong} once more`);
+    expect(refused).toMatchObject({ ok: false, status: 429, error: { code: "rate_limited" } });
+    expect(refused.ok ? 0 : (refused.error.retryAfterSeconds ?? 0)).toBeGreaterThan(3500);
+    expect(api.email.sent).toHaveLength(10);
+    api.advance(3600);
+    newIp();
+    const again = await signIn(elin.email, `${strong} number 9`);
+    if (!again.ok) throw new Error(again.error.code);
+    expect(
+      await setPassword({ ...elin, accessToken: again.data.accessToken }, `${strong} later on`),
+    ).toMatchObject({ ok: true });
+  }, 60_000);
+
   it("lists the password in Sign-in methods, and removes it", async () => {
     const freyja = await member();
     const methods = () =>
@@ -266,26 +286,55 @@ describe("signing in with a password (spec 27, 3.2)", () => {
     const jona = await member();
     await setPassword(jona, strong);
     newIp();
-    await Promise.all(
+    const answers = await Promise.all(
       Array.from({ length: 12 }, (_, i) => signIn(jona.email, `wrong at once ${String(i)}`)),
     );
+    const statuses = answers.map((answer) => answer.status).sort();
+    expect(statuses).toEqual([...Array<number>(10).fill(400), 429, 429]);
     newIp();
     expect(await signIn(jona.email, strong)).toMatchObject({ status: 429 });
   }, 60_000);
 
-  it("makes a hash with older settings again at sign-in", async () => {
+  it("takes a right password back from the wrong tries, but counts every try, 20 an hour", async () => {
+    const oskar = await member();
+    await setPassword(oskar, strong);
+    newIp();
+    // More than the 10 wrong tries allowed: none of them was wrong. (Tries
+    // at the same moment each count as wrong until checked.)
+    for (let i = 0; i < 11; i++) {
+      expect(await signIn(oskar.email, strong)).toMatchObject({ ok: true });
+    }
+    expect(await signIn(oskar.email, "one wrong guess")).toMatchObject({ status: 400 });
+    for (let i = 0; i < 8; i++) {
+      expect(await signIn(oskar.email, strong)).toMatchObject({ ok: true });
+    }
+    newIp();
+    expect(await signIn(oskar.email, strong)).toMatchObject({
+      status: 429,
+      error: { code: "rate_limited" },
+    });
+    expect(api.logLines.join("")).toContain('"scope":"password_try_email"');
+  }, 60_000);
+
+  it("makes a hash with older settings again at sign-in, and keeps when it was chosen", async () => {
     const kari = await member();
+    const setAt = new Date("2026-11-01T12:00:00.000Z");
     await api.connection.db.insert(memberPasswords).values({
       userId: kari.userId,
       hash: await hashPassword(strong, { logN: 14, r: 8, p: 1 }),
+      setAt,
     });
     newIp();
     expect(await signIn(kari.email, strong)).toMatchObject({ ok: true });
     const [row] = await api.connection.db
-      .select({ hash: memberPasswords.hash })
+      .select({ hash: memberPasswords.hash, setAt: memberPasswords.setAt })
       .from(memberPasswords)
       .where(eq(memberPasswords.userId, kari.userId));
     expect(row?.hash.startsWith("scrypt$15$8$3$")).toBe(true);
+    expect(row?.setAt).toEqual(setAt);
+    expect(
+      await api.client.call(listSignInMethodsRoute, { accessToken: kari.accessToken }),
+    ).toMatchObject({ ok: true, data: { password: { setAt: setAt.toISOString() } } });
   });
 
   it("says an account cannot sign in only after the right password", async () => {
@@ -303,6 +352,19 @@ describe("signing in with a password (spec 27, 3.2)", () => {
     expect(await signIn(lilja.email, strong)).toMatchObject({
       status: 403,
       error: { code: "account_unavailable" },
+    });
+  });
+
+  it("signs in an account waiting to be deleted, which can then keep it", async () => {
+    const mia = await member();
+    await setPassword(mia, strong);
+    const deleteAfter = new Date(api.now().getTime() + 30 * 24 * 3600 * 1000);
+    await api.connection.db.update(users).set({ deleteAfter }).where(eq(users.id, mia.userId));
+    newIp();
+    expect(await signIn(mia.email, strong)).toMatchObject({
+      ok: true,
+      status: 200,
+      data: { user: { deletionScheduledFor: deleteAfter.toISOString() } },
     });
   });
 

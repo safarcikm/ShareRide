@@ -50,4 +50,5 @@ Specs follow the order in [features](../product/features.md#spec-order).
 | 23 | [Google Analytics with consent, and finding PuffinRide on Google](2026-11-22-google-analytics-and-search.md) | J3, the website | Proposed (2026-11-22) |
 | 24 | [Emails that look like PuffinRide](2026-11-22-branded-emails.md) | A1, E1, F2, every email | Approved (2026-11-22) |
 | 25 | [An email to the operator when new members join](2026-11-23-new-member-emails.md) | H5 | Approved (2026-11-23); built (2026-11-23) |
-| 26 | [Sign in with email or Google; a text message only checks the number](2026-11-23-sign-in-without-text-messages.md) | A1, A4, A5 | Proposed (2026-11-23) |
+| 26 | [Sign in with email or Google; a text message only checks the number](2026-11-23-sign-in-without-text-messages.md) | A1, A4, A5 | Approved (2026-11-23); built (2026-11-23) |
+| 27 | [Passwords, and Face ID or fingerprint (passkeys)](2026-11-23-passwords-and-passkeys.md) | A1, A4 | Approved (2026-11-23) |

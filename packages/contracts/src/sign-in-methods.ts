@@ -149,7 +149,10 @@ export const setPasswordRoute = defineRoute({
       ...errors,
     },
     409: { description: "email_required: a password needs a verified email", ...errors },
-    429: confirmCodeErrors[429],
+    429: {
+      description: `${confirmCodeErrors[429].description}; rate_limited, with retryAfterSeconds: 10 new passwords an hour (R27.4)`,
+      ...errors,
+    },
   },
 });
 

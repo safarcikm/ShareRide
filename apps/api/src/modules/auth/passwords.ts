@@ -7,17 +7,18 @@ import {
   needsProof,
   normaliseEmail,
   ok,
+  passwordChangeLimits,
   passwordSignInLimits,
   type RateLimited,
   type RateLimitRule,
   type Result,
 } from "@shareride/domain";
-import { and, eq, gt, isNotNull, sql } from "drizzle-orm";
+import { and, eq, gt, inArray, isNotNull, sql } from "drizzle-orm";
 import type { Logger } from "../../logger.ts";
 import { addressBlock } from "../../platform/client-address.ts";
 import type { KeyedHasher } from "../../platform/crypto.ts";
 import type { EmailChannel } from "../../platform/email.ts";
-import { hashPassword, verifyPassword } from "../../platform/passwords.ts";
+import { createHashGate, hashPassword, verifyPassword } from "../../platform/passwords.ts";
 import { sendSignInChangeNotice, type SignInChange } from "./emails.ts";
 import {
   canSignIn,
@@ -81,7 +82,7 @@ export interface PasswordService {
     readonly sessionId: string;
     readonly password: string;
     readonly code?: string;
-  }): Promise<Result<{ readonly setAt: Date }, SetPasswordError>>;
+  }): Promise<Result<{ readonly setAt: Date }, SetPasswordError | RateLimited>>;
   /** Removes the password; false when there was none. The verified email is told. */
   remove(userId: string): Promise<boolean>;
   /** When the password was last set, or null when there is none. */
@@ -99,6 +100,12 @@ export interface PasswordServiceDependencies {
   readonly isCommon?: (lowered: string) => boolean;
 }
 
+/** Two hashes at a time, 64 MiB together, and 20 more waiting (ADR 0047). */
+const gateSize = { running: 2, waiting: 20 } as const;
+
+/** The wait suggested when the hashes are all busy. */
+const busySeconds = 5;
+
 const problemCodes = {
   too_short: "password_too_short",
   too_long: "password_too_long",
@@ -110,9 +117,15 @@ export function createPasswordService(dependencies: PasswordServiceDependencies)
   const { db, clock, logger, hasher, auth, email } = dependencies;
   const isCommon = dependencies.isCommon ?? isCommonPassword;
 
-  /** Checked against when there is no hash, so a wrong answer takes as long either way (R27.4). */
-  let dummy: Promise<string> | undefined;
-  const dummyHash = () => (dummy ??= hashPassword("not a password anyone has"));
+  const gate = createHashGate(gateSize);
+  const busy = { code: "rate_limited", retryAfterSeconds: busySeconds } as const;
+
+  /**
+   * Checked against when there is no hash, so a wrong answer takes as long
+   * either way (R27.4); made now, not at the first unknown email.
+   */
+  const dummy = hashPassword("not a password anyone has");
+  dummy.catch(() => {});
 
   interface Limit {
     readonly scope: string;
@@ -120,7 +133,45 @@ export function createPasswordService(dependencies: PasswordServiceDependencies)
     readonly rules: readonly RateLimitRule[];
   }
 
-  async function wrongTries(tx: Transaction, limit: Limit, now: Date): Promise<Date[]> {
+  /**
+   * Takes the limits' locks, in sorted order so none wait in a ring, and
+   * checks them; the try counts only if `reserve` is called before the
+   * transaction ends.
+   */
+  async function lockAndCheck(
+    tx: Transaction,
+    limits: readonly Limit[],
+    now: Date,
+  ): Promise<Result<undefined, RateLimited & { readonly scope: string }>> {
+    for (const key of [
+      ...new Set(limits.map((limit) => `${limit.scope}:${limit.keyHash}`)),
+    ].sort()) {
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${key}, 0))`);
+    }
+    for (const limit of limits) {
+      const allowed = checkRateLimits(await triesIn(tx, limit, now), limit.rules, now);
+      if (!allowed.ok) return err({ ...allowed.error, scope: limit.scope });
+    }
+    return ok(undefined);
+  }
+
+  /** Counts this try under each limit; the events' ids, to take back a right one. */
+  async function reserve(tx: Transaction, limits: readonly Limit[], now: Date): Promise<string[]> {
+    const rows = await tx
+      .insert(rateLimitEvents)
+      .values(
+        limits.map((limit) => ({
+          scope: limit.scope,
+          keyHash: limit.keyHash,
+          createdAt: now,
+          updatedAt: now,
+        })),
+      )
+      .returning({ id: rateLimitEvents.id });
+    return rows.map((row) => row.id);
+  }
+
+  async function triesIn(tx: Transaction, limit: Limit, now: Date): Promise<Date[]> {
     const longest = Math.max(...limit.rules.map((rule) => rule.windowSeconds));
     const rows = await tx
       .select({ createdAt: rateLimitEvents.createdAt })
@@ -154,53 +205,72 @@ export function createPasswordService(dependencies: PasswordServiceDependencies)
       const address = normaliseEmail(input.email);
       // Not an address: no account has it, and the answer is the same.
       const emailKey = hasher("email", address.ok ? address.value : input.email.trim());
-      const limits: Limit[] = [
+      const ipKey = hasher("ip", addressBlock(input.ipAddress));
+      const wrong: Limit[] = [
         { scope: "password_email", keyHash: emailKey, rules: passwordSignInLimits.perEmail },
-        {
-          scope: "password_ip",
-          keyHash: hasher("ip", addressBlock(input.ipAddress)),
-          rules: passwordSignInLimits.perIpAddress,
-        },
+        { scope: "password_ip", keyHash: ipKey, rules: passwordSignInLimits.perIpAddress },
+      ];
+      const all: Limit[] = [
+        { scope: "password_try_email", keyHash: emailKey, rules: passwordSignInLimits.allPerEmail },
+        { scope: "password_try_ip", keyHash: ipKey, rules: passwordSignInLimits.allPerIpAddress },
       ];
       const now = clock();
-      return db.transaction(async (tx): Promise<Result<PasswordSignedIn, PasswordSignInError>> => {
-        // One try at a time per email and per network address, so two
-        // cannot both pass a limit; in sorted order, so none wait in a ring.
-        for (const key of limits.map((limit) => `${limit.scope}:${limit.keyHash}`).sort()) {
-          await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${key}, 0))`);
-        }
-        for (const limit of limits) {
-          const allowed = checkRateLimits(await wrongTries(tx, limit, now), limit.rules, now);
-          if (!allowed.ok) return allowed;
-        }
+      // 1. Quickly, under the limits' locks: the try is counted as wrong
+      // before it is checked, so tries at the same moment cannot pass a
+      // limit together, and the account's hash is read.
+      const counted = await db.transaction(async (tx) => {
+        const allowed = await lockAndCheck(tx, [...wrong, ...all], now);
+        if (!allowed.ok) return allowed;
+        const reserved = await reserve(tx, wrong, now);
+        await reserve(tx, all, now);
         const [account] = address.ok
           ? await tx
-              .select({ id: users.id, status: users.status, hash: memberPasswords.hash })
+              .select({ id: users.id, hash: memberPasswords.hash })
               .from(users)
               .innerJoin(memberPasswords, eq(memberPasswords.userId, users.id))
               .where(and(eq(users.email, address.value), isNotNull(users.emailVerifiedAt)))
           : [];
-        const password = input.password.normalize("NFC");
-        const checked = await verifyPassword(password, account?.hash ?? (await dummyHash()));
-        if (account === undefined || !checked.ok) {
-          // A wrong try returns, so the transaction commits its count.
-          await tx.insert(rateLimitEvents).values(
-            limits.map((limit) => ({
-              scope: limit.scope,
-              keyHash: limit.keyHash,
-              createdAt: now,
-              updatedAt: now,
-            })),
-          );
-          logger.info({}, "wrong password");
-          return err({ code: "credentials_invalid" });
-        }
+        return ok({ reserved, account });
+      });
+      if (!counted.ok) {
+        const { scope, ...limited } = counted.error;
+        logger.info({ scope }, "password tries limited");
+        return err(limited);
+      }
+      const { reserved, account } = counted.value;
+      // 2. The slow part, holding no database connection.
+      const password = input.password.normalize("NFC");
+      const hash = account?.hash ?? (await dummy);
+      const checked = await gate.run(() => verifyPassword(password, hash));
+      if (checked === null) {
+        // Not checked: the try was not wrong.
+        await db.delete(rateLimitEvents).where(inArray(rateLimitEvents.id, reserved));
+        logger.warn({}, "password checks busy");
+        return err(busy);
+      }
+      if (account === undefined || !checked.ok) {
+        logger.info({}, "wrong password");
+        return err({ code: "credentials_invalid" });
+      }
+      const newHash = checked.outdated ? await gate.run(() => hashPassword(password)) : null;
+      // 3. Quickly: the try was right, so it is taken back from the wrong ones.
+      return db.transaction(async (tx): Promise<Result<PasswordSignedIn, PasswordSignInError>> => {
+        const [current] = await tx
+          .select({ status: users.status, hash: memberPasswords.hash })
+          .from(users)
+          .innerJoin(memberPasswords, eq(memberPasswords.userId, users.id))
+          .where(eq(users.id, account.id))
+          .for("update", { of: memberPasswords });
+        // Changed or removed meanwhile: the password checked is not the account's now.
+        if (current?.hash !== account.hash) return err({ code: "credentials_invalid" });
+        await tx.delete(rateLimitEvents).where(inArray(rateLimitEvents.id, reserved));
         // Only now, with the right password: whether the account may sign in.
-        if (!canSignIn(account.status)) return err({ code: "account_unavailable" });
-        if (checked.outdated) {
+        if (!canSignIn(current.status)) return err({ code: "account_unavailable" });
+        if (newHash !== null) {
+          // Stronger settings; when it was chosen stays as it was.
           await tx
             .update(memberPasswords)
-            .set({ hash: await hashPassword(password), updatedAt: now })
+            .set({ hash: newHash, updatedAt: now })
             .where(eq(memberPasswords.userId, account.id));
         }
         const { sessionId, tokens } = await openSession(tx, {
@@ -234,8 +304,25 @@ export function createPasswordService(dependencies: PasswordServiceDependencies)
       const now = clock();
       const proofNeeded = needsProof(session.startedAt, now);
       if (proofNeeded && input.code === undefined) return err({ code: "confirm_required" });
+      // Each save costs a hash and an email: 10 an hour (R27.4), counted first.
+      const changes: Limit = {
+        scope: "password_set",
+        keyHash: hasher("user", userId),
+        rules: passwordChangeLimits,
+      };
+      const counted = await db.transaction(async (tx) => {
+        const allowed = await lockAndCheck(tx, [changes], now);
+        if (allowed.ok) await reserve(tx, [changes], now);
+        return allowed;
+      });
+      if (!counted.ok) {
+        const { scope, ...limited } = counted.error;
+        logger.info({ userId, scope }, "password saves limited");
+        return err(limited);
+      }
       // Hashed before the transaction, which then stays short.
-      const hash = await hashPassword(checked.value);
+      const hash = await gate.run(() => hashPassword(checked.value));
+      if (hash === null) return err(busy);
       const save = async (
         tx: Transaction,
       ): Promise<Result<{ readonly changed: boolean }, never>> => {
@@ -246,8 +333,11 @@ export function createPasswordService(dependencies: PasswordServiceDependencies)
           .for("update");
         await tx
           .insert(memberPasswords)
-          .values({ userId, hash, createdAt: now, updatedAt: now })
-          .onConflictDoUpdate({ target: memberPasswords.userId, set: { hash, updatedAt: now } });
+          .values({ userId, hash, setAt: now, createdAt: now, updatedAt: now })
+          .onConflictDoUpdate({
+            target: memberPasswords.userId,
+            set: { hash, setAt: now, updatedAt: now },
+          });
         return ok({ changed: before !== undefined });
       };
       const saved: Result<{ readonly changed: boolean }, ConfirmError> =
@@ -273,10 +363,10 @@ export function createPasswordService(dependencies: PasswordServiceDependencies)
 
     async setAt(userId) {
       const [row] = await db
-        .select({ updatedAt: memberPasswords.updatedAt })
+        .select({ setAt: memberPasswords.setAt })
         .from(memberPasswords)
         .where(eq(memberPasswords.userId, userId));
-      return row?.updatedAt ?? null;
+      return row?.setAt ?? null;
     },
   };
 }

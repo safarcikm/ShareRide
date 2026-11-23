@@ -84,7 +84,12 @@ button for Face ID or fingerprint:
 2. Limits (R27.4): 10 wrong tries an hour for one email, 30 an hour from
    one network address (an IPv6 address counted by its /64). Then: "Too
    many tries. Use the email code, or try again in 42 minutes." The email
-   code is not affected.
+   code is not affected. Each check costs the server a hash, so right
+   tries count too: 20 tries of any kind an hour for one email, 100 from
+   one network address. A try counts as wrong until it is checked, so
+   tries made at the same moment cannot pass a limit together.
+   When the server is busy checking many passwords at once, the answer is
+   the same "Too many tries", with a wait of a few seconds.
 3. Then, as after the email code (spec 26, 3.2, item 4): "Keep my account"
    while it waits to be deleted, step 3 while the profile is missing, the
    terms when they changed. A suspended account signs in as it does today.
@@ -111,7 +116,11 @@ button for Face ID or fingerprint:
    one first: "Type your email, and we'll send you a code."
 2. After the code, the person is signed in and sees "Choose a password"
    (3.5, item 2), with "Not now". The fresh sign-in is the proof (R27.5).
-   A sign-in step still left (the terms, "Keep my account") comes first.
+   A sign-in step still left (the terms, "Keep my account") comes first,
+   and a screen kept from a link the person opened, such as a review from
+   an email, goes first too. The form waits only from when the code is
+   checked: someone who remembers the password after all and goes back to
+   sign in with it, or with Google, does not see it.
 
 ### 3.5 Setting a password
 
@@ -147,6 +156,10 @@ button for Face ID or fingerprint:
 7. Other devices stay signed in. "Sign out on all devices" sits next to it
    in Settings (my call: the password is one way in of several, and the
    person decides).
+8. At most 10 new passwords an hour for an account (R27.4), since each
+   one is hashed and told by email; then the app's usual "Too many tries"
+   text with the wait. Settings shows when the password was chosen: a
+   new hash at sign-in, after stronger settings (ADR 0047), leaves it.
 
 ### 3.6 Face ID or fingerprint in Settings
 
@@ -204,7 +217,7 @@ same passkeys work there (decided then, with its own ADR).
 | R27.1 | A password and Face ID or fingerprint are optional, on top of the email code and Google, which always keep working. A password needs a verified email, which is its user name.                                                     |
 | R27.2 | A password has 10 to 128 characters, is not on a public list of the 100 000 most used passwords (in any case), and is not the account's email. No other rules.                                                                       |
 | R27.3 | A password is stored only as a scrypt hash (ADR 0047). It is never logged, never sent back, and never in Download my data, which says only whether one is set and when.                                                            |
-| R27.4 | A wrong email or password gets one answer, whatever was wrong, in the same time. At most 10 wrong tries an hour for one email and 30 from one network address; then the email code, or waiting.                                    |
+| R27.4 | A wrong email or password gets one answer, whatever was wrong, in the same time. At most 10 wrong tries an hour for one email and 30 from one network address, 20 and 100 of any kind; 10 new passwords an hour per account.      |
 | R27.5 | Adding or changing a password, or setting up Face ID or fingerprint, needs a sign-in in the last 10 minutes or a confirm code (amends R26.5). Removing either needs neither.                                                       |
 | R27.6 | Face ID or fingerprint is a passkey kept on the device itself: Face ID, Touch ID, an Android fingerprint or face, Windows Hello. Never a separate security key (ADR 0048).                                                         |
 | R27.7 | Adding, changing or removing a password, and setting up Face ID or fingerprint, is told by email to the verified email.                                                                                                            |
@@ -225,8 +238,10 @@ Data (one migration):
   (`sign_in` or `register`), whose (registering only), when it expires (5
   minutes). Deleted when used; the hourly clean-up deletes the rest an hour
   after they expire.
-- `rate_limit_events`: new scopes for wrong passwords per email and per
-  network address, and for passkey sign-in requests per network address.
+- `rate_limit_events`: new scopes for wrong password tries and for all
+  password tries, per email and per network address (keyed hashes), and
+  for new passwords per account. Passkey sign-in requests per network
+  address are counted in the API's memory, as the console's are.
 
 Endpoints (`/v1`, shapes in `packages/contracts`):
 

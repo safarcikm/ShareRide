@@ -74,6 +74,10 @@ export function registerPasswordRoutes(
         return errorResponse(c, 409, error.code, "A password needs a verified email first.");
       case "confirm_required":
         return errorResponse(c, 403, error.code, "Send a confirm code with the password.");
+      case "rate_limited":
+        return errorResponse(c, 429, error.code, "Too many new passwords. Wait a little.", {
+          retryAfterSeconds: error.retryAfterSeconds,
+        });
       default:
         return confirmCodeError(c, error);
     }

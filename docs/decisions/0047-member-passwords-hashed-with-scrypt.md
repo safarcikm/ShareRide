@@ -71,6 +71,13 @@ scrypt hash made with Node's built-in `crypto.scrypt` (N = 2^15, r = 8, p =
   limit caps it at 10 tries an hour, and the email code is unaffected.
 - The list of common passwords is a file to keep; it comes from SecLists
   (MIT licence), named in the file.
+- Hashing is slow on purpose, so it never runs inside a database
+  transaction: a try is counted first, under the limit's lock, then
+  checked with no connection held, then taken back if it was right. Two
+  hashes run at a time (64 MiB) with 20 waiting; more get "Too many tries"
+  for a few seconds. Right tries count towards a wider limit of their own.
+- After stronger settings, an account with an older hash answers a little
+  faster than an unknown email until its next sign-in makes a new hash.
 - Follow-up: security doc, the privacy record (a new table), Download my
   data (whether a password is set), erasure.
 

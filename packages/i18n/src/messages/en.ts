@@ -132,6 +132,7 @@ export const en = {
   "password.tooCommon": "That password is too common. Add a few words.",
   "password.isEmail": "Don't use your email as the password.",
   "password.emailRequired": "Add an email first. It's your user name.",
+  "password.tooMany": "That's a lot of new passwords. Try again in {wait}.",
   "password.confirm": "To save your password, enter the code we send you.",
   "password.notNow": "Not now",
   /** Once, after sign-up (spec 27, 3.7). */

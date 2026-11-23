@@ -5,7 +5,7 @@ import type { Translate } from "@shareride/i18n";
 import { router } from "expo-router";
 import { useRef, useState } from "react";
 import { StyleSheet, View } from "react-native";
-import { errorText } from "@/auth/errors";
+import { errorText, formatWait } from "@/auth/errors";
 import { useMe, useSession } from "@/auth/session";
 import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
@@ -80,6 +80,9 @@ function PasswordForm({ me }: { readonly me: Me }) {
     const problem = apiProblems[failure.error.code];
     if (problem !== undefined) return problemText(t, problem);
     if (failure.error.code === "email_required") return t("password.emailRequired");
+    if (failure.error.code === "rate_limited") {
+      return t("password.tooMany", { wait: formatWait(t, failure.error.retryAfterSeconds ?? 0) });
+    }
     return errorText(t, failure);
   }
 
@@ -88,6 +91,7 @@ function PasswordForm({ me }: { readonly me: Me }) {
     const result = await session.call(setPasswordRoute, { body: { password: confirming, code } });
     if (!result.ok) return result;
     setConfirming(null);
+    setPassword("");
     setSaved(true);
     return { ok: true } as const;
   }
@@ -106,6 +110,8 @@ function PasswordForm({ me }: { readonly me: Me }) {
     sending.current = false;
     setBusy(false);
     if (result.ok) {
+      // Saved: the password is not kept on the screen.
+      setPassword("");
       setSaved(true);
       return;
     }

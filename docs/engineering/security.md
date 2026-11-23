@@ -80,12 +80,21 @@ How [ADR 0016](../decisions/0016-own-sign-in-module.md) is built, in
   one answer (`credentials_invalid`), after checking a dummy hash so they
   take as long; only after the right password does the API say an account
   cannot sign in. Wrong tries: 10 an hour per email and 30 an hour per IP
-  address (its /64 for IPv6), counted under the same ordered advisory locks
-  as code sends, so tries made at once cannot pass a limit together; the
-  email code is not limited by them. Adding or changing a password needs
-  the request's session to have signed in within 10 minutes, or a confirm
-  code (R27.5); removing one needs neither. The verified email is told of
-  each change. No password, hash or email appears in a log line.
+  address (its /64 for IPv6); tries of any kind, right ones too, 20 and
+  100. Each try is counted first, as wrong, in a short transaction under
+  the same ordered advisory locks as code sends, so tries made at once
+  cannot pass a limit together; the hash is then checked with no database
+  connection held, and a right try is taken back from the wrong ones. Two
+  hashes run at a time (32 MiB each) with 20 waiting; more get
+  `rate_limited` for 5 seconds. The email code is not limited by any of
+  them. Adding or changing a password needs the request's session to have
+  signed in within 10 minutes, or a confirm code (R27.5), and 10 an hour
+  per account at most; removing one needs neither. A stored hash with
+  settings the server would not make (not whole numbers, over 64 MiB,
+  more than 4 passes) is not read and answers as wrong, after a hash of the
+  same cost. The verified email is told of each change. No password, hash
+  or email appears in a log line; a limit reached is logged with its scope
+  only.
 - **Codes:** 6 digits from `crypto.randomInt`, valid 10 minutes, 5 attempts.
   Stored as HMAC-SHA-256 keyed with `AUTH_SECRET`, bound to the number or
   the email, and compared in constant time. Only the newest code for a

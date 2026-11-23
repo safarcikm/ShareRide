@@ -391,8 +391,10 @@ describe("download my data (spec 11, 3.2)", () => {
     await api.connection.db.insert(schema.memberPasswords).values({
       userId: bara.userId,
       hash: "scrypt$15$8$3$c2FsdHNhbHRzYWx0c2FsdA$aGFzaGhhc2hoYXNoaGFzaGhhc2hoYXNoaGFzaGhhc2g",
+      setAt,
       createdAt: setAt,
-      updatedAt: setAt,
+      // A new hash at sign-in later on leaves the date it was chosen.
+      updatedAt: new Date("2026-11-22T09:00:00.000Z"),
     });
     const { data, text } = await exportOf(bara);
     expect(data.sections.sign_in_methods).toEqual([

@@ -45,6 +45,21 @@ export async function keepPendingLinkIfNone(path: string, at: Date): Promise<voi
   await keepPendingLink(path, at);
 }
 
+/** Forgets the kept link if it is `path`; another one stays. */
+export async function forgetPendingLink(path: string): Promise<void> {
+  const stored = await readAppData(key);
+  if (stored === null || stored === "") return;
+  let kept: unknown;
+  try {
+    kept = JSON.parse(stored);
+  } catch {
+    return;
+  }
+  if (typeof kept === "object" && kept !== null && (kept as { path?: unknown }).path === path) {
+    await writeAppData(key, "");
+  }
+}
+
 /** The link kept within the last hour, once: taking it forgets it. */
 export async function takePendingLink(at: Date): Promise<string | null> {
   const stored = await readAppData(key);
