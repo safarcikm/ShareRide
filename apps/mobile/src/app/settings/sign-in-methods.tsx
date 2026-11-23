@@ -5,6 +5,7 @@ import {
   prepareSignInMethodRoute,
   removePasswordRoute,
   removeSignInMethodRoute,
+  type MemberPasskey,
   type PasswordState,
   type SignInMethod,
 } from "@shareride/contracts";
@@ -33,6 +34,7 @@ import { useLanguage } from "@/i18n/language";
 import { useLoaded } from "@/lib/use-loaded";
 import { BackToMenu } from "@/navigation/back-to-menu";
 import { ConfirmWithCode } from "@/privacy/confirm-with-code";
+import { PasskeyDevices } from "@/sign-in/passkey-devices";
 import { providerNames, useProviderWindow } from "@/sign-in/provider-window";
 import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
@@ -67,7 +69,8 @@ function refusalText(t: Translate, failure: CallFailure, provider: string): stri
  * phone number, which stays, the email, which signs in and can be changed,
  * Google and Apple, each linked with its email or not linked, and the
  * password, set on a day or not set, which Choose a password adds or
- * changes and which is removed here after asking. Adding
+ * changes and which is removed here after asking, and Face ID or
+ * fingerprint, one line per device (`PasskeyDevices`). Adding
  * one opens its window, checks it can be added, then asks for a confirm
  * code, as downloading the data does (R19.3): by email to the verified
  * email, else by text to the account's own number (spec 26, 3.6).
@@ -99,6 +102,8 @@ function SignInMethods({
   const [changed, setChanged] = useState<readonly SignInMethod[] | null>(null);
   // The password as changed here or loaded again; undefined while as first loaded.
   const [changedPassword, setChangedPassword] = useState<PasswordState | null | undefined>();
+  // The devices as changed here or loaded again; undefined while as first loaded.
+  const [changedPasskeys, setChangedPasskeys] = useState<readonly MemberPasskey[] | undefined>();
   const [busy, setBusy] = useState<Changeable | null>(null);
   const [asking, setAsking] = useState<Changeable | null>(null);
   const [adding, setAdding] = useState<Adding | null>(null);
@@ -124,6 +129,7 @@ function SignInMethods({
     if (result.ok) {
       setChanged(result.data.methods);
       setChangedPassword(result.data.password ?? null);
+      setChangedPasskeys(result.data.passkeys);
     }
   }, [session]);
 
@@ -248,6 +254,7 @@ function SignInMethods({
         ? (answer.data.password ?? null)
         : null
       : changedPassword;
+  const passkeys = changedPasskeys ?? (answer?.ok === true ? answer.data.passkeys : []);
   if (answer === undefined && changed === null) {
     return (
       <Screen>
@@ -397,6 +404,23 @@ function SignInMethods({
               />
             )}
           </View>
+          <PasskeyDevices
+            passkeys={passkeys}
+            onSaved={(passkey) => {
+              setChangedPasskeys([...passkeys.filter((kept) => kept.id !== passkey.id), passkey]);
+              void refresh();
+            }}
+            onRemoved={(id) => {
+              setChangedPasskeys(passkeys.filter((kept) => kept.id !== id));
+              void refresh();
+            }}
+            onChanged={() => void refresh()}
+            tell={tell}
+            clearOutcome={() => {
+              setOutcome(null);
+              setClosed(null);
+            }}
+          />
         </View>
       </Card>
       {/* The code field takes focus itself, as in Download my data. */}

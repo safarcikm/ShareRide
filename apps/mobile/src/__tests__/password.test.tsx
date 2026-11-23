@@ -135,7 +135,9 @@ describe("Forgot your password? (spec 27, 3.4)", () => {
       client.answer("/v1/auth/email/verify", () =>
         ok(200, { status: "signedIn", ...tokens(1), user: anna, isNewUser: false }),
       );
-      client.answer("/v1/me/sign-in-methods", () => ok(200, { methods: [], password: null }));
+      client.answer("/v1/me/sign-in-methods", () =>
+        ok(200, { passkeys: [], methods: [], password: null }),
+      );
     });
     await fireEvent.changeText(screen.getByLabelText("Email"), "anna@example.com");
     await fireEvent.changeText(screen.getByLabelText("Password"), "the one I forgot");

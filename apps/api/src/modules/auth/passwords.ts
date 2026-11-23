@@ -19,7 +19,7 @@ import { addressBlock } from "../../platform/client-address.ts";
 import type { KeyedHasher } from "../../platform/crypto.ts";
 import type { EmailChannel } from "../../platform/email.ts";
 import { createHashGate, hashPassword, verifyPassword } from "../../platform/passwords.ts";
-import { sendSignInChangeNotice, type SignInChange } from "./emails.ts";
+import { tellVerifiedEmail, type SignInChange } from "./emails.ts";
 import {
   canSignIn,
   type AuthService,
@@ -186,19 +186,8 @@ export function createPasswordService(dependencies: PasswordServiceDependencies)
     return rows.map((row) => row.createdAt);
   }
 
-  async function notify(userId: string, change: SignInChange): Promise<void> {
-    const [user] = await db
-      .select({ email: users.email, verifiedAt: users.emailVerifiedAt, locale: users.locale })
-      .from(users)
-      .where(eq(users.id, userId));
-    if (user === undefined || user.email === null || user.verifiedAt === null) return;
-    await sendSignInChangeNotice(email, logger, {
-      userId,
-      to: user.email,
-      locale: user.locale === "is" ? "is" : "en",
-      change,
-    });
-  }
+  const notify = (userId: string, change: SignInChange) =>
+    tellVerifiedEmail({ db, email, logger }, userId, change);
 
   return {
     async signIn(input) {

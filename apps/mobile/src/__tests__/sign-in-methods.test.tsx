@@ -49,7 +49,11 @@ async function openMethods(linked: SignInMethod[], setUp?: (client: FakeClient) 
     me: completeMe,
     setUp: (client) => {
       withProviders(client);
-      client.answer("/v1/me/sign-in-methods", () => ok(200, { methods: [...methods] }), "get");
+      client.answer(
+        "/v1/me/sign-in-methods",
+        () => ok(200, { passkeys: [], methods: [...methods] }),
+        "get",
+      );
       client.answer("/v1/me/sign-in-methods/{provider}", (input) => {
         const { provider } = input["params"] as { provider: string };
         methods.splice(
@@ -77,7 +81,11 @@ describe("Sign-in methods in Settings", () => {
       me: completeMe,
       setUp: (client) => {
         withProviders(client);
-        client.answer("/v1/me/sign-in-methods", () => ok(200, { methods: [] }), "get");
+        client.answer(
+          "/v1/me/sign-in-methods",
+          () => ok(200, { passkeys: [], methods: [] }),
+          "get",
+        );
       },
     });
     await fireEvent.press(await screen.findByRole("button", { name: "Sign-in methods" }));
@@ -88,7 +96,11 @@ describe("Sign-in methods in Settings", () => {
     await renderApp("/settings", {
       me: completeMe,
       setUp: (client) => {
-        client.answer("/v1/me/sign-in-methods", () => ok(200, { methods: [] }), "get");
+        client.answer(
+          "/v1/me/sign-in-methods",
+          () => ok(200, { passkeys: [], methods: [] }),
+          "get",
+        );
       },
     });
     await fireEvent.press(await screen.findByRole("button", { name: "Sign-in methods" }));
@@ -316,7 +328,7 @@ describe("Sign-in methods in Settings", () => {
         () => {
           lists += 1;
           return lists === 1
-            ? ok(200, { methods: [googleMethod] })
+            ? ok(200, { passkeys: [], methods: [googleMethod] })
             : failure(503, "service_unavailable");
         },
         "get",
@@ -344,7 +356,7 @@ describe("The password in Sign-in methods (spec 27, 3.5 and 3.6)", () => {
       setUp: (client) => {
         client.answer(
           "/v1/me/sign-in-methods",
-          () => ok(200, { methods: [], password: kept.password }),
+          () => ok(200, { passkeys: [], methods: [], password: kept.password }),
           "get",
         );
         client.answer(

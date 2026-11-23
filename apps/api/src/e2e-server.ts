@@ -171,6 +171,7 @@ const app = createApp({
     secureCookies: false,
     payments: createTestPaymentProvider(),
     adminOrigin,
+    passkeyOrigin: webOrigin,
     ...photoStorage,
     // Google and Apple through the development stand-in's page (ADR 0034).
     signIn: selectSignIn({

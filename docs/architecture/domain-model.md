@@ -333,6 +333,17 @@ detailed in [spec 13](../specs/2026-11-13-payments.md#6-data-and-api):
   and waiting sign-in are kept; the row is deleted when used, cancelled or
   failed, and the hourly clean-up deletes the rest an hour after they end
   ([plan 4.1](../plans/2026-11-22-google-and-apple-sign-in.md#4-design)).
+- `MemberPassword` (table `member_passwords`): a member's optional
+  password, as a scrypt hash with its settings and salt, and when it was
+  set; one per account, which needs a verified email
+  ([spec 27](../specs/2026-11-23-passwords-and-passkeys.md#5-data-and-api),
+  [ADR 0047](../decisions/0047-member-passwords-hashed-with-scrypt.md)).
+- `MemberPasskey` (table `member_passkeys`): Face ID or fingerprint on one
+  device, a passkey of the website's: its credential ID and public key,
+  counter, the account's handle, the browser and system, when it was added
+  and last used; at most 10 per account. `MemberPasskeyChallenge` holds
+  one WebAuthn challenge for 5 minutes, bound to the account when setting
+  up ([ADR 0048](../decisions/0048-member-passkeys-on-the-device-only.md)).
 - `AuditLog`: who did what to which record, when, from where (the
   operator, their console session, an action such as
   `meeting_point.update`, the record's type and ID, the fields before and

@@ -95,6 +95,25 @@ How [ADR 0016](../decisions/0016-own-sign-in-module.md) is built, in
   same cost. The verified email is told of each change. No password, hash
   or email appears in a log line; a limit reached is logged with its scope
   only.
+- **Passkeys for members** ([ADR 0048](../decisions/0048-member-passkeys-on-the-device-only.md)):
+  Face ID or fingerprint on the website, through `@simplewebauthn/server`
+  and `@simplewebauthn/browser`, bound to the host of `WEB_APP_URL` (the
+  console's passkeys share the domain but not the table: one used here is
+  refused as `passkey_invalid`). Setup asks for a platform authenticator
+  with user verification and a resident key, and excludes the account's
+  passkeys, so a device set up already is refused by the browser. Each
+  account's user handle is a keyed hash of it (HMAC with `AUTH_SECRET`),
+  never its ID, and stays the same when a device is set up again, so the
+  device replaces its passkey rather than keeping two. Challenges last 5
+  minutes, are used once (an answer to one that is gone gets
+  `passkey_expired`), and a setup's is bound to the account, with at most 5
+  of an account's setups waiting at once; sign-in
+  options are limited to 20 per 10 minutes per IP address (its /64), in
+  the API's memory. Setting one up needs the same proof as a password
+  (R27.5), 10 devices at most, and the verified email is told; removing
+  one needs no proof. The app offers it only where `GET /v1/config` says
+  `passkeySignIn` and the browser reports a built-in authenticator; the
+  phone apps do not yet.
 - **Codes:** 6 digits from `crypto.randomInt`, valid 10 minutes, 5 attempts.
   Stored as HMAC-SHA-256 keyed with `AUTH_SECRET`, bound to the number or
   the email, and compared in constant time. Only the newest code for a

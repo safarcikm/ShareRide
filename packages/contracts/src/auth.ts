@@ -1,5 +1,6 @@
 import { signInProviders } from "@shareride/domain";
 import { z } from "zod";
+import { passkeyAssertionSchema, webAuthnOptionsResponseSchema } from "./admin.ts";
 import { inviteCodeInputSchema } from "./beta.ts";
 import { localeSchema, platformSchema, timestampSchema } from "./common.ts";
 import { errorResponseSchema } from "./errors.ts";
@@ -436,5 +437,40 @@ export const passwordSignInRoute = defineRoute({
     },
     403: { description: "account_unavailable", ...errors },
     429: { description: "rate_limited, with retryAfterSeconds (R27.4)", ...errors },
+  },
+});
+
+export const passkeySignInOptionsRoute = defineRoute({
+  method: "post",
+  path: "/v1/auth/passkey/options",
+  summary: "Start signing in with Face ID or fingerprint, a passkey on the device (spec 27, 3.3)",
+  tags: ["auth"],
+  request: { body: z.object({}) },
+  responses: {
+    200: {
+      description: "Options for navigator.credentials.get; any of the site's passkeys may answer",
+      schema: webAuthnOptionsResponseSchema,
+    },
+    429: { description: "rate_limited, with retryAfterSeconds", ...errors },
+  },
+});
+
+export const passkeySignInRoute = defineRoute({
+  method: "post",
+  path: "/v1/auth/passkey",
+  summary: "Sign in with a passkey's answer (spec 27, 3.3)",
+  tags: ["auth"],
+  request: { body: z.object({ credential: passkeyAssertionSchema, device: deviceSchema }) },
+  responses: {
+    200: {
+      description: "Signed in",
+      schema: signedInSchema.extend({ status: z.literal("signedIn") }),
+    },
+    400: {
+      description:
+        "passkey_invalid: not a member's passkey (removed, or the console's), or a bad answer; passkey_expired: the challenge was used, or answered after 5 minutes",
+      ...errors,
+    },
+    403: { description: "account_unavailable", ...errors },
   },
 });

@@ -318,6 +318,8 @@ describe("GET /v1/config", () => {
       analytics: null,
       // The test API sends email, so a code by email signs in (spec 26).
       emailSignIn: true,
+      // It knows the website's address, so Face ID or fingerprint signs in (spec 27).
+      passkeySignIn: true,
     });
 
     await change("invite_code_required", {
@@ -337,6 +339,8 @@ describe("GET /v1/config", () => {
       analytics: null,
       // The test API sends email, so a code by email signs in (spec 26).
       emailSignIn: true,
+      // It knows the website's address, so Face ID or fingerprint signs in (spec 27).
+      passkeySignIn: true,
     });
   });
 });

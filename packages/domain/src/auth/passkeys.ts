@@ -1,3 +1,5 @@
+import type { RateLimitRule } from "./rate-limit.ts";
+
 // Face ID or fingerprint for members: passkeys kept on the device (spec 27,
 // ADR 0048).
 
@@ -6,6 +8,8 @@ export const memberPasskeyRules = {
   perAccount: 10,
   /** How long the browser has to answer a challenge. */
   challengeSeconds: 5 * 60,
+  /** Sign-in challenges per address (its /64 for IPv6), so nobody fills the table. */
+  signInOptionsLimits: [{ limit: 20, windowSeconds: 10 * 60 }] satisfies readonly RateLimitRule[],
 } as const;
 
 const browsers: readonly (readonly [RegExp, string])[] = [

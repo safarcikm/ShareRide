@@ -197,6 +197,9 @@ settings, and nothing stops working in between. Martin's steps, in order:
 6. **Tell Claude.** Claude switches the blueprint's `ADMIN_ORIGIN`,
    `WEB_APP_URL` and `API_ORIGIN` to `https://staging.puffinride.is`,
    `EMAIL_FROM` to `hello@puffinride.is`, and the app builds' API address.
+   Members' Face ID or fingerprint is bound to `WEB_APP_URL`'s host (ADR
+   0048): every device set up before a change stops signing in, and members
+   set it up again in Settings.
 7. **After that deploy, the console.** Its passkeys belong to the old
    address. In the API's **Shell** in Render, run
    `node apps/api/src/operator-cli.ts add <your phone number>`, open the

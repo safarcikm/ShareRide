@@ -28,6 +28,7 @@ const quiet: Config = {
   reliabilityMonths: defaultReliabilitySettings.periodMonths,
   signInProviders: [],
   emailSignIn: true,
+  passkeySignIn: false,
   payInPerson: false,
   analytics: null,
 };

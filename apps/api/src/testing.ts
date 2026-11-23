@@ -150,6 +150,7 @@ export async function startTestApi(): Promise<TestApi> {
     payments: createTestPaymentProvider(),
     adminOrigin: testAdminOrigin,
     adminPassword: testAdminPassword,
+    passkeyOrigin: testWebAppUrl,
     photos,
     // Legs on straight lines; south of 63.3° N, at sea off the south coast, there is no road.
     router: createStraightLineRouter({ offRoad: (position) => position.latitude < 63.3 }),

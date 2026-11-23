@@ -24,17 +24,21 @@ import { Body, Title } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { useSignInFlow } from "@/sign-in/flow";
 import { KeptRideCard } from "@/sign-in/kept-ride-card";
+import { devicePasskeys, passkeyFailure, type PasskeyOptions } from "@/sign-in/passkey";
+import { keepPasskeyOptionsMs } from "@/sign-in/passkey-set-up";
 import { pendingExpiredText, phoneStepHelp } from "@/sign-in/pending";
 import { ProviderButtons } from "@/sign-in/provider-buttons";
 import { providerNames, useProviderWindow } from "@/sign-in/provider-window";
 import { SignUpProgress } from "@/sign-in/sign-up-progress";
+import { usePasskeysOffered } from "@/sign-in/use-passkeys";
 import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
 /**
- * Step 1 of signing in or up: Continue with Google or Apple, or the email,
- * which gets a code (spec 26, 3.1), or signs in with its password when one
- * is typed (spec 27, 3.1), under the ride kept on the way. After
+ * Step 1 of signing in or up: Continue with Google or Apple, Face ID or
+ * fingerprint where the device has it, or the email, which gets a code
+ * (spec 26, 3.1), or signs in with its password when one is typed (spec 27,
+ * 3.1), under the ride kept on the way. After
  * an email or a Google or Apple account no account has, it asks for the
  * phone number, with a line on top saying why (spec 19, 3.3; spec 26,
  * 3.3): a text goes only to a number on its way into an account.
@@ -55,19 +59,37 @@ function passwordErrorText(t: Translate, failure: CallFailure): string {
   return errorText(t, failure);
 }
 
-/** Google or Apple, or the email with a code or its password. */
+/** What a refused sign-in with Face ID or fingerprint says (spec 27, 3.3, item 2). */
+function passkeyErrorText(t: Translate, failure: CallFailure): string {
+  const { code, retryAfterSeconds = 0 } = failure.error;
+  if (code === "passkey_invalid") return t("passkey.unknown");
+  if (code === "passkey_expired") return t("passkey.expired");
+  if (code === "rate_limited") {
+    return t("error.passwordTries", { wait: formatWait(t, retryAfterSeconds) });
+  }
+  return errorText(t, failure);
+}
+
+/** Google or Apple, Face ID or fingerprint, or the email with a code or its password. */
 function ChooseHowScreen() {
   const { locale, t } = useLanguage();
   const session = useSession();
   const flow = useSignInFlow();
   const { signInProviders, emailSignIn } = useConfig();
   const providerWindow = useProviderWindow();
+  const passkeyOffered = usePasskeysOffered();
   const [fieldError, setFieldError] = useState<string>();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [providerBusy, setProviderBusy] = useState<SignInProvider | null>(null);
+  const [passkeyBusy, setPasskeyBusy] = useState(false);
   // Never kept in the flow: it goes when this screen does.
   const [password, setPassword] = useState("");
+  // Options whose sheet was closed, used again on the next tap while their
+  // challenge lasts: a browser may open the sheet only from a tap.
+  const keptOptions = useRef<{ readonly options: PasskeyOptions; readonly until: number } | null>(
+    null,
+  );
   // Guards against a second tap or a Return key before the first reply.
   const sending = useRef(false);
 
@@ -101,6 +123,51 @@ function ChooseHowScreen() {
     }
     // Signed in: sign-in closes by itself. Otherwise the phone number comes next.
     if (result.data.status === "phoneNeeded") flow.setPending(result.data);
+  }
+
+  /**
+   * The device's own sheet, then signed in with no email typed (spec 27,
+   * 3.3). Closing the sheet, or a browser with no passkey for PuffinRide,
+   * changes nothing, and the next tap uses the same options.
+   */
+  async function signInWithPasskey() {
+    if (sending.current) return;
+    sending.current = true;
+    setError(null);
+    flow.setNotice(null);
+    setPasskeyBusy(true);
+    try {
+      const before = keptOptions.current;
+      keptOptions.current = null;
+      let options: PasskeyOptions;
+      if (before !== null && Date.now() < before.until) {
+        options = before.options;
+      } else {
+        const asked = await session.passkeyOptions();
+        if (!asked.ok) {
+          setError(passkeyErrorText(t, asked));
+          return;
+        }
+        options = asked.data.options;
+      }
+      let credential;
+      try {
+        credential = await devicePasskeys.get(options);
+      } catch (failure) {
+        if (passkeyFailure(failure) === "cancelled") {
+          keptOptions.current = { options, until: Date.now() + keepPasskeyOptionsMs };
+        } else {
+          setError(t("error.generic"));
+        }
+        return;
+      }
+      const signedIn = await session.signInWithPasskey(credential);
+      // Signed in: sign-in closes by itself.
+      if (!signedIn.ok) setError(passkeyErrorText(t, signedIn));
+    } finally {
+      sending.current = false;
+      setPasskeyBusy(false);
+    }
   }
 
   /** The password when one is typed; otherwise, or when it was forgotten, a code by email. */
@@ -146,14 +213,24 @@ function ChooseHowScreen() {
       <KeptRideCard kept={flow.keptRide} />
       <Title>{t("signIn.title")}</Title>
       <PausedBanner part="signups" />
-      {signInProviders.length > 0 ? (
+      {signInProviders.length > 0 || passkeyOffered ? (
         <View style={styles.providers}>
           <ProviderButtons
             providers={signInProviders}
             busy={providerBusy}
-            disabled={!providerWindow.ready || busy}
+            disabled={!providerWindow.ready || busy || passkeyBusy}
             onPress={(provider) => void continueWith(provider)}
           />
+          {passkeyOffered ? (
+            <Button
+              variant="secondary"
+              fill
+              label={t("auth.passkey")}
+              busy={passkeyBusy}
+              disabled={busy || providerBusy !== null}
+              onPress={() => void signInWithPasskey()}
+            />
+          ) : null}
           {emailSignIn ? <OrWithEmail label={t("auth.orEmail")} /> : null}
         </View>
       ) : null}
@@ -194,14 +271,14 @@ function ChooseHowScreen() {
           <Button
             label={t(password === "" ? "auth.email.send" : "auth.signIn")}
             busy={busy}
-            disabled={providerBusy !== null}
+            disabled={providerBusy !== null || passkeyBusy}
             onPress={() => void send()}
           />
           <View style={styles.forgot}>
             <Button
               variant="text"
               label={t("auth.forgotPassword")}
-              disabled={busy || providerBusy !== null}
+              disabled={busy || providerBusy !== null || passkeyBusy}
               onPress={() => void send(true)}
             />
           </View>

@@ -11,6 +11,7 @@ import {
   defaultReviewSettings,
   inviteCheckLimitsPerAddress,
   operatorSignInLimitsPerAddress,
+  memberPasskeyRules,
   operatorPasswordRules,
   providerSignInRules,
   searchLimitsPerAddress,
@@ -52,10 +53,12 @@ import { checkStanding } from "./modules/account/standing.ts";
 import {
   createAuthService,
   createOptionalAuth,
+  createMemberPasskeyService,
   createPasswordService,
   createProviderSignInService,
   createRequireAuth,
   registerAuthRoutes,
+  registerPasskeyRoutes,
   registerPasswordRoutes,
   registerProviderRoutes,
 } from "./modules/auth/index.ts";
@@ -217,6 +220,11 @@ export interface FeatureDependencies {
   readonly adminOrigin?: string;
   /** The console's temporary password (ADR 0041); left out, password sign-in is off. */
   readonly adminPassword?: string;
+  /**
+   * The website's origin, which members' Face ID or fingerprint is bound to
+   * (ADR 0048). Left out, it is off.
+   */
+  readonly passkeyOrigin?: string;
   /** Where meeting point and profile photos are kept (ADRs 0022 and 0033); none when `PHOTO_STORAGE=none`. */
   readonly photos?: PhotoStorage;
   /** The same storage when it is a folder, whose files the API serves itself. */
@@ -499,10 +507,20 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       }),
     });
     const passwords = createPasswordService({ ...features, logger, auth });
+    const memberPasskeys =
+      features.passkeyOrigin === undefined
+        ? undefined
+        : createMemberPasskeyService({
+            ...features,
+            logger,
+            auth,
+            passkeyOrigin: features.passkeyOrigin,
+          });
     registerProviderRoutes(app, {
       ...features,
       providers: providerSignIn,
       passwords,
+      ...(memberPasskeys === undefined ? {} : { passkeys: memberPasskeys }),
       account,
       requireAuth,
       // A keyed hash of the address's block, as for the other limits per address.
@@ -514,6 +532,20 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       account,
       requireAuth,
     });
+    if (memberPasskeys !== undefined) {
+      registerPasskeyRoutes(app, {
+        ...features,
+        passkeys: memberPasskeys,
+        account,
+        requireAuth,
+        limiter: createMemoryRateLimiter({
+          rules: memberPasskeyRules.signInOptionsLimits,
+          clock: features.clock,
+        }),
+        clientKey: (c) =>
+          features.hasher("passkey-sign-in", addressBlock(features.clientAddress(c))),
+      });
+    }
     registerAccountRoutes(app, account, requireAuth);
     registerProfilePhotoRoutes(
       app,
@@ -646,6 +678,7 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       providerSignIn.names,
       dependencies.analytics ?? null,
       features.email !== undefined,
+      memberPasskeys !== undefined,
     );
     registerSettingsAdminRoutes(app, { ...features, settings: operatorSettings, requireOperator });
     registerInviteRoutes(app, {

@@ -95,6 +95,7 @@ const app = createApp({
     secureCookies: config.nodeEnv === "production",
     ...(config.adminOrigin === undefined ? {} : { adminOrigin: config.adminOrigin }),
     ...(config.adminPassword === undefined ? {} : { adminPassword: config.adminPassword }),
+    ...(config.passkeyOrigin === undefined ? {} : { passkeyOrigin: config.passkeyOrigin }),
     ...(payments === undefined ? {} : { payments }),
     ...(email === undefined ? {} : { email }),
     ...photoStorage,

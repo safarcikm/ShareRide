@@ -95,6 +95,8 @@ export const en = {
   "auth.continueGoogle": "Continue with Google",
   "auth.continueApple": "Continue with Apple",
   "auth.orEmail": "or with your email",
+  /** Sign in with a passkey on this device (spec 27, 3.1 and 3.3). */
+  "auth.passkey": "Face ID or fingerprint",
   "auth.email.label": "Email",
   "auth.email.send": "Send code",
   "auth.email.help": "We email you a {length}-digit code.",
@@ -139,6 +141,7 @@ export const en = {
   "signUp.faster.title": "Sign in faster next time",
   "signUp.faster.password": "Add a password",
   "signUp.faster.help": "Your email code always works too.",
+  "signUp.faster.passkey": "Use Face ID or fingerprint",
   "auth.provider.phoneTitle": "Add your phone number",
   "auth.provider.phoneHelp":
     "You signed in with {provider} as {email}. We text you a code once, so the people you ride with can reach you. Next time {provider} is enough.",
@@ -345,6 +348,27 @@ export const en = {
   "settings.signInMethods.removePasswordQuestion":
     "Remove your password? Your email code still gets you in.",
   "settings.signInMethods.passwordRemoved": "Your password is removed.",
+  /** Face ID or fingerprint, a passkey kept on each device (spec 27, 3.3 and 3.6). */
+  "passkey.unknown":
+    "This device's sign-in isn't set up for your PuffinRide account. Use your email, then set it up again in Settings.",
+  "passkey.unknownDevice": "A browser",
+  "passkey.notSetUp": "Not set up",
+  "passkey.added": "Added {date}",
+  "passkey.lastUsed": "Last used {date}",
+  "passkey.neverUsed": "Not used yet",
+  "passkey.remove": "Remove",
+  "passkey.removeLabel": "Remove Face ID or fingerprint for {device}",
+  "passkey.removeQuestion":
+    "Remove Face ID or fingerprint for {device}? You can still sign in with your email.",
+  "passkey.removed": "Face ID or fingerprint is removed for {device}.",
+  "passkey.setUp": "Set up on this device",
+  "passkey.saved": "Face ID or fingerprint is set up on this device.",
+  "passkey.confirm": "To set up Face ID or fingerprint, enter the code we send you.",
+  "passkey.already": "This device is set up already.",
+  "passkey.tooMany": "You have {max} devices set up. Remove one to add another.",
+  "passkey.expired": "That took too long. Try again.",
+  "passkey.failed":
+    "Face ID or fingerprint couldn't be set up. Try again, or keep using your email.",
   "settings.addEmail": "Add an email",
   "settings.changeEmail": "Change your email",
   "settings.emailWaiting": "Waiting for you to open the link sent to {email}.",
