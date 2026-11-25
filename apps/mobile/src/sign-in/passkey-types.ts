@@ -20,6 +20,23 @@ export interface DevicePasskeys {
   create(options: PasskeyOptions): Promise<PasskeyRegistration>;
   /** Answers a challenge with one of the site's passkeys; throws like `create`. */
   get(options: PasskeyOptions): Promise<PasskeyAssertion>;
+  /**
+   * Whether the browser can offer the site's passkeys in the email field's
+   * suggestions (spec 28, 3.1): a built-in lock and a quiet request.
+   */
+  autofillAvailable(): Promise<boolean>;
+  /**
+   * The quiet request: waits, with no sheet, until the person picks a
+   * passkey from the email field's suggestions. Throws when cancelled.
+   */
+  autofill(options: PasskeyOptions): Promise<PasskeyAssertion>;
+  /** Stops the request that is waiting, quiet or not. */
+  cancel(): void;
+  /**
+   * Tells the browser this site has no passkey `credentialId` any more, so
+   * it stops offering it (spec 28, 3.4). Never throws.
+   */
+  forget(credentialId: string): Promise<void>;
 }
 
 /** Why the device's sheet gave no passkey: cancelled, or this device has one already. */

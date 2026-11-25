@@ -1,8 +1,11 @@
 import {
   browserSupportsWebAuthn,
+  browserSupportsWebAuthnAutofill,
   platformAuthenticatorIsAvailable,
+  sendSignal,
   startAuthentication,
   startRegistration,
+  WebAuthnAbortService,
   type PublicKeyCredentialCreationOptionsJSON,
   type PublicKeyCredentialRequestOptionsJSON,
 } from "@simplewebauthn/browser";
@@ -21,17 +24,47 @@ export type {
   PasskeyRegistration,
 } from "./passkey-types";
 
-// On the website: the browser's own passkey sheet (spec 27, 3.3 and 3.6).
-// Offered only where the browser says the device has a built-in
-// authenticator, never a hardware key (ADR 0048).
+// On the website: the browser's own passkey sheet (spec 27, 3.3 and 3.6),
+// and its quiet request in the email field (spec 28, 3.1). Offered only
+// where the browser says the device has a built-in authenticator, never a
+// hardware key (ADR 0048).
+
+async function hasLock(): Promise<boolean> {
+  if (!browserSupportsWebAuthn()) return false;
+  try {
+    return await platformAuthenticatorIsAvailable();
+  } catch {
+    return false;
+  }
+}
 
 export const devicePasskeys: DevicePasskeys = {
-  async available() {
-    if (!browserSupportsWebAuthn()) return false;
+  available: hasLock,
+  async autofillAvailable() {
+    if (!(await hasLock())) return false;
     try {
-      return await platformAuthenticatorIsAvailable();
+      return await browserSupportsWebAuthnAutofill();
     } catch {
       return false;
+    }
+  },
+  async autofill(options) {
+    const optionsJSON = options as unknown as PublicKeyCredentialRequestOptionsJSON;
+    return (await startAuthentication({
+      optionsJSON,
+      useBrowserAutofill: true,
+    })) as unknown as PasskeyAssertion;
+  },
+  cancel() {
+    WebAuthnAbortService.cancelCeremony();
+  },
+  async forget(credentialId) {
+    try {
+      // The site's passkeys are bound to the web app's own host (ADR 0048).
+      const rpID = globalThis.location.hostname;
+      await sendSignal({ signalName: "unknownCredential", rpID, credentialID: credentialId });
+    } catch {
+      // A browser without the Signal API keeps offering it; nothing else changes.
     }
   },
   async create(options) {
