@@ -125,6 +125,7 @@ Only production's public pages that hold no person's data (R23.6):
 | Page                           | Address                                                              |
 | ------------------------------ | -------------------------------------------------------------------- |
 | Find, the front page           | `/`                                                                  |
+| Carpool in Iceland (3.9)       | `/carpool-iceland`                                                   |
 | Meeting points                 | `/meeting-points`                                                    |
 | A meeting point                | `/meeting-points/<id>`, each active one                              |
 | A place and its nearest points | `/places/<id>`, each place                                           |
@@ -161,9 +162,17 @@ lists both (decision 7).
 1. Each indexable screen sets its title, `<page> · PuffinRide`, and a
    description, in the language shown (section 8).
 2. The first answer from the server already carries, for the requested
-   language: the page language, Find's title and description, the
+   language: the page language, the page's own title and description, the
    canonical address and the alternates, so a crawler that does not run the
-   app still reads them.
+   app still reads them. Changed 2026-11-25 (3.9): before, every address
+   carried Find's title, and Google showed a meeting point under Find's
+   title. The server now takes a meeting point's and a place's name from the
+   database, and the titles from the same function the app's screens use
+   (`pageText` in the i18n package); other pages keep Find's. A meeting
+   point's title calls it a carpool meeting point ("Hlemmur: carpool meeting
+   point · PuffinRide"). A meeting point or place address that the sitemap
+   does not list (unknown, not active, or a sample) answers with
+   `X-Robots-Tag: noindex, nofollow`.
 3. The words people search for a shared ride with (added 2026-11-23, on
    Martin's word): carpool, ride share and lift in English; samferða, far,
    samakstur and deila bíl in Icelandic. They are in Find's title and
@@ -186,6 +195,14 @@ lists both (decision 7).
    these links into the page without the app's head mark, so the app keeps
    them. `node scripts/export-icons.ts` makes both from the logo drawings.
 
+6. **Links search engines follow** (added 2026-11-25, 3.9): every way
+   from one public page to another is a real link, an `<a href>` on the
+   web: Find's "See the meeting points", the meeting points in the list and
+   on the map's list, and a place's nearest meeting points. A plain click
+   opens the screen within the app as before; a click with a modifier key
+   or the middle button is the browser's (a new tab). Search engines find
+   pages through links; until now they had only the sitemap.
+
 ### 3.7 robots.txt and the sitemap
 
 - `/robots.txt` on production allows everything except `/admin` and names
@@ -201,6 +218,52 @@ Martin adds `puffinride.is` as a **domain property** in Search Console as
 `admin@puffinride.is`, verified with the TXT record Google gives, added at
 ISNIC DNS Hosting, then submits `https://puffinride.is/sitemap.xml`. No code;
 the steps are in the [production runbook](../operations/production.md).
+
+### 3.9 Found when people search for carpooling in Iceland
+
+Added 2026-11-25. Martin: "still cant find our web on google when i type
+carpool iceland".
+
+What we found on 2026-11-25, three days after the launch: Google has the
+site (Search Console: the front page crawled that night, 8 showings in
+results, no problem reported), but for "carpool iceland" PuffinRide is on
+page 3, behind sites that have been there for years, two with the words in
+their address. On our side: every page told Google Find's title (3.6, item
+2); our pages had almost no links Google could follow, so the 560 meeting
+point and place pages were reachable only through the sitemap (3.6, item
+6); and no page was about carpooling in Iceland: Find has one line of it.
+
+**The Carpool in Iceland page.** A public page at `/carpool-iceland`, in
+both languages like the others (3.5), which says in words what PuffinRide
+is and how carpooling with it works, for people who search for it:
+
+1. Its title and description name what people search for: "Carpool in
+   Iceland: find or offer a ride · PuffinRide", "Samferða um Ísland: finndu
+   far eða bjóddu far · PuffinRide".
+2. The page: the title "Carpool in Iceland" / "Samferða um Ísland", a line
+   that says what PuffinRide is, then "Find a ride" (to Find) and "Offer a
+   ride" (Offer), then short sections: how it works (find, book, meet,
+   offer), meeting points (with a link to them), well-travelled roads in
+   words (Reykjavík to Akureyri, Selfoss, Borgarnes, Vík, Egilsstaðir, and
+   from Keflavík Airport), trust (a checked phone number, drivers' photos,
+   reviews after each trip, a link to the community rules) and a few
+   questions: is it a taxi (no: drivers share a trip they are making
+   anyway), and is it in English.
+3. Nothing about money: no prices, payments or fees (Martin's rule for
+   marketing texts).
+4. Find links to it ("How carpooling works") beside "See the meeting
+   points", so Google finds it from the front page.
+5. Search engines that do not run the app read its text too: the server
+   writes the page's sections into the first answer's `<noscript>`, from
+   the same texts the screen shows.
+6. It is in the sitemap and in the list of 3.4.
+
+**Outside the code** (Martin): links from other sites are what lift a
+young site for a phrase others have held for years: a post in the Facebook
+carpool groups, Reddit's Iceland travel groups when someone asks, a line in
+Hitchwiki's Iceland page and travel guides' "getting around" pages, the
+Icelandic listings (Já.is). Search Console: ask Google to index the new
+page once it is live. Expect weeks, not days.
 
 ## 4. Rules
 

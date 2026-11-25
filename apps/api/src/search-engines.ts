@@ -3,7 +3,15 @@
 // page's head filled per request and language; robots.txt and the sitemap.
 import { schema, type Database } from "@shareride/db";
 import { legalDocumentTypes } from "@shareride/domain";
-import { createTranslator, isLocale, locales, pickLocale, type Locale } from "@shareride/i18n";
+import {
+  createTranslator,
+  isLocale,
+  locales,
+  pageText,
+  pickLocale,
+  type Locale,
+  type PublicPage,
+} from "@shareride/i18n";
 import { and, asc, eq } from "drizzle-orm";
 
 export interface SearchEngines {
@@ -135,6 +143,69 @@ export async function publicPages(db: Database): Promise<string[]> {
   ];
 }
 
+/**
+ * What a meeting point's or a place's address is about: its name, so the
+ * first answer carries the page's own title (3.6, item 2); or `missing` for
+ * one the sitemap does not list, which is kept out of the index.
+ */
+export type PageSubject =
+  | {
+      readonly kind: "meetingPoint" | "place";
+      readonly name: Readonly<Record<Locale, string>>;
+    }
+  | { readonly kind: "missing" };
+
+/** The subject of an address, or undefined for an address that has none. */
+export type FindSubject = (path: string) => Promise<PageSubject | undefined>;
+
+const subjectPaths = [
+  { kind: "meetingPoint", pattern: /^\/meeting-points\/([^/]+)$/ },
+  { kind: "place", pattern: /^\/places\/([^/]+)$/ },
+] as const;
+
+const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const missing: PageSubject = { kind: "missing" };
+
+/** Looks up the subjects of 3.4's meeting point and place pages, as the sitemap lists them. */
+export function subjectFinder(db: Database): FindSubject {
+  const { meetingPoints, places } = schema;
+  return async (path) => {
+    for (const { kind, pattern } of subjectPaths) {
+      const id = pattern.exec(path)?.[1];
+      if (id === undefined) continue;
+      if (!uuid.test(id)) return missing;
+      const [row] =
+        kind === "meetingPoint"
+          ? await db
+              .select({ nameIs: meetingPoints.nameIs, nameEn: meetingPoints.nameEn })
+              .from(meetingPoints)
+              .where(
+                and(
+                  eq(meetingPoints.id, id),
+                  eq(meetingPoints.status, "active"),
+                  eq(meetingPoints.sample, false),
+                ),
+              )
+          : await db
+              .select({ nameIs: places.nameIs, nameEn: places.nameEn })
+              .from(places)
+              .where(and(eq(places.id, id), eq(places.sample, false)));
+      if (row === undefined) return missing;
+      return { kind, name: { is: row.nameIs, en: row.nameEn ?? row.nameIs } };
+    }
+    return undefined;
+  };
+}
+
+/** The page of 3.4 an address shows, for its title and description. */
+function publicPageOf(path: string, subject: PageSubject | undefined, locale: Locale): PublicPage {
+  if (subject !== undefined && subject.kind !== "missing") {
+    return { kind: subject.kind, name: subject.name[locale] };
+  }
+  return path === "/meeting-points" ? { kind: "meetingPoints" } : { kind: "find" };
+}
+
 const escapeHtml = (text: string) =>
   text
     .replaceAll("&", "&amp;")
@@ -190,19 +261,25 @@ function languagesOf(header: string | null): string[] {
 /**
  * What a crawler that does not run the app reads (3.6, item 2): the
  * language the address names, otherwise the one Facebook asks a link's
- * preview in, otherwise the browser's, as the app picks it; Find's title and description, and the words people search with; on production, for a public page, its
- * canonical address and alternates; and the same link preview everywhere,
- * which names nobody (R23.7). The app's screens set their own once it runs.
+ * preview in, otherwise the browser's, as the app picks it; the page's own
+ * title and description (Find's where it has none), and the words people
+ * search with; on production, for a public page, its canonical address and
+ * alternates; and the same link preview everywhere, which names nobody
+ * (R23.7). The app's screens set the same title once it runs.
  */
-export function pageHead(request: PageRequest, engines: SearchEngines): PageHead {
+export function pageHead(
+  request: PageRequest,
+  engines: SearchEngines,
+  subject?: PageSubject,
+): PageHead {
   const named = request.lang !== null && isLocale(request.lang) ? request.lang : null;
   const locale =
     named ??
     facebookLanguage(request.facebookLocale) ??
     pickLocale(languagesOf(request.acceptLanguage));
   const t = createTranslator(locale);
-  const title = t("seo.findTitle");
-  const description = t("seo.findDescription");
+  const { title, description } = pageText(t, publicPageOf(request.path, subject, locale));
+  const preview = pageText(t, { kind: "find" });
   const meta = (attribute: "name" | "property", key: string, content: string) =>
     `<meta data-rh="true" ${attribute}="${key}" content="${escapeHtml(content)}">`;
   const link = (attributes: string) => `<link data-rh="true" ${attributes}>`;
@@ -211,8 +288,8 @@ export function pageHead(request: PageRequest, engines: SearchEngines): PageHead
     meta("name", "keywords", t("seo.keywords")),
     meta("property", "og:type", "website"),
     meta("property", "og:site_name", t("app.name")),
-    meta("property", "og:title", title),
-    meta("property", "og:description", description),
+    meta("property", "og:title", preview.title),
+    meta("property", "og:description", preview.description),
     meta("property", "og:locale", ogLocales[locale]),
     ...locales
       .filter((other) => other !== locale)
@@ -228,7 +305,7 @@ export function pageHead(request: PageRequest, engines: SearchEngines): PageHead
       meta("property", "og:image:alt", t("seo.shareImage")),
     );
   }
-  if (origin !== null && mayIndex(engines, request.path)) {
+  if (origin !== null && mayIndex(engines, request.path) && subject?.kind !== "missing") {
     const canonical = addressOf(origin, request.path, named);
     tags.push(
       link(`rel="canonical" href="${escapeHtml(canonical)}"`),

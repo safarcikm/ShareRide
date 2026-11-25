@@ -4,11 +4,17 @@ import { useHover } from "@/theme/hover";
 import { chunky } from "@/theme/pressable";
 import { edges, radii, spacing } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
+import { linkProps, type AppPath } from "@/navigation/link-props";
 
 interface CardProps {
   readonly children: ReactNode;
   /** Makes the whole card a button, for example to open a meeting point. */
   readonly onPress?: () => void;
+  /**
+   * Makes the whole card a link to this screen instead: an `<a href>` on the
+   * web, which search engines follow (spec 23, 3.6).
+   */
+  readonly href?: AppPath;
   /** The button's name: what the card shows, in one line. */
   readonly accessibilityLabel?: string;
   /**
@@ -39,6 +45,7 @@ interface CardProps {
 export function Card({
   children,
   onPress,
+  href,
   accessibilityLabel,
   onHoverIn,
   onFocus,
@@ -61,7 +68,7 @@ export function Card({
       {children}
     </View>
   );
-  if (onPress === undefined) {
+  if (onPress === undefined && href === undefined) {
     return (
       <View
         testID="card"
@@ -74,9 +81,9 @@ export function Card({
   return (
     <Pressable
       testID="card"
-      accessibilityRole="button"
+      accessibilityRole={href === undefined ? "button" : "link"}
       accessibilityLabel={accessibilityLabel}
-      onPress={onPress}
+      {...(href === undefined ? { onPress } : linkProps(href))}
       onHoverIn={() => {
         hover.onHoverIn();
         onHoverIn?.();

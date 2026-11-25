@@ -6,7 +6,14 @@ import { providerReturnPath } from "@shareride/domain";
 import type { Context } from "hono";
 import { isConsolePath } from "./admin-app.ts";
 import type { AppEnv } from "./context.ts";
-import { fillPage, notIndexed, pageHead, type SearchEngines } from "./search-engines.ts";
+import {
+  fillPage,
+  noIndex,
+  notIndexed,
+  pageHead,
+  type FindSubject,
+  type SearchEngines,
+} from "./search-engines.ts";
 
 const isApiPath = (path: string) =>
   path === "/v1" ||
@@ -113,13 +120,15 @@ async function readPage(root: string): Promise<string | undefined> {
  * Returns undefined for everything else, which gets the API's 404.
  * Running after the routes, not as a route, keeps API route names in logs.
  * Which answers search engines may index is the app's middleware's to say
- * (spec 23, R23.6; trip pages, R4.6, add a robots tag of their own too).
+ * (spec 23, R23.6; trip pages, R4.6, add a robots tag of their own too);
+ * this adds one for a meeting point or place that is not listed (3.6).
  */
 export function createWebApp(
   root: string,
   photoOrigin: string | null = null,
   searchEngines: SearchEngines = notIndexed,
   analytics: Analytics | null = null,
+  findSubject?: FindSubject,
 ): WebApp {
   const contentSecurityPolicy = webContentSecurityPolicy(photoOrigin, analytics !== null);
   const files = serveStatic<AppEnv>({ root });
@@ -146,6 +155,9 @@ export function createWebApp(
     // export's index.html as it is.
     const html = await readPage(root);
     if (html === undefined) return undefined;
+    const subject = await findSubject?.(c.req.path);
+    // A meeting point or place the sitemap does not list stays out of the index.
+    if (subject?.kind === "missing") c.header("X-Robots-Tag", noIndex);
     const head = pageHead(
       {
         path: c.req.path,
@@ -154,6 +166,7 @@ export function createWebApp(
         facebookLocale: c.req.header("x-facebook-locale") ?? c.req.query("fb_locale") ?? null,
       },
       searchEngines,
+      subject,
     );
     if (head.fromBrowser) c.header("Vary", "Accept-Language, X-Facebook-Locale");
     return c.html(fillPage(html, head));

@@ -1,5 +1,5 @@
 import { meetingPointsRoute, type TripSearchResult } from "@shareride/contracts";
-import { router, useFocusEffect } from "expo-router";
+import { useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useRef } from "react";
 import { StyleSheet, View } from "react-native";
 import { useSession } from "@/auth/session";
@@ -70,13 +70,7 @@ export function FindMap({ shown }: { readonly shown: TripSearchResult | undefine
       />
       {/* In a row, so the link starts at the left, its text under the map's edge. */}
       <View style={styles.link}>
-        <Button
-          variant="text"
-          label={t("meetingPoints.open")}
-          onPress={() => {
-            router.push("/meeting-points");
-          }}
-        />
+        <Button variant="text" label={t("meetingPoints.open")} href="/meeting-points" />
       </View>
     </View>
   );

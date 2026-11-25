@@ -16,6 +16,7 @@ export const is = {
     "Mótsstaðirnir þar sem bílstjórar og farþegar PuffinRide hittast til samaksturs, um allt Ísland, á korti og eftir landshlutum.",
   "seo.meetingPointDescription":
     "{name}: mótsstaður PuffinRide fyrir samakstur, þar sem bílstjórar og farþegar hittast til að verða samferða.",
+  "seo.meetingPointTitle": "{name}: mótsstaður fyrir samakstur",
   "seo.placeTitle": "{place}: næstu mótsstaðir fyrir samakstur",
   "seo.placeDescription":
     "Næstu mótsstaðir PuffinRide við {place}, til að finna far eða bjóða far í samakstri.",
