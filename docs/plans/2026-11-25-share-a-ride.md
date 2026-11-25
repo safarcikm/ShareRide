@@ -34,7 +34,7 @@ migration, no new dependency.
 6. **Web journey:** a search result's icon copies its link (`search.spec.ts`).
 7. **Docs:** spec 4, 3.7 points to spec 28; the changelog.
 
-## PR 3: Share your ride
+## PR 3: Share this ride
 
 `feat(drive)`, spec 28, 3.1 items 5 and 6, 3.2 items 1 to 4 and 6, 3.3,
 3.4, 3.6.

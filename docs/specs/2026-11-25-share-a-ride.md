@@ -99,16 +99,19 @@ is added (Martin asked, 2026-11-25).
    seconds and "Link copied. Paste it wherever you like." is read out.
    Where the link cannot be copied either, the card shows the link to copy
    by hand under it, as the trip page does.
-5. **On a driver's card in My trips it opens Share your ride** (3.2) for
+5. **On a driver's card in My trips it opens Share this ride** (3.2) for
    that trip, since a driver wants the post text and the picture too.
 6. The trip page of a driver's own trip (spec 5's driver's trip) gets the
    same icon in its head, beside the trip's name, while the trip can be
-   changed (before the planned departure). It opens Share your ride.
+   changed (before the planned departure). It opens Share this ride.
 
-### 3.2 Share your ride
+### 3.2 Share this ride
+
+Put to Martin as "Share your ride"; named "Share this ride" in the app, since
+"Share your ride" is already the front page's title (`home.title`, spec 16).
 
 A panel, on the **Your trip is published** screen (spec 3, screen 10) right
-after the ride's card, and on a screen of its own, **Share your ride**
+after the ride's card, and on a screen of its own, **Share this ride**
 (`/drive/trips/{id}/share`), opened from My trips and the driver's trip
 page. On the published screen it replaces the "Share the trip" button.
 
@@ -117,7 +120,7 @@ the last, so passengers choose their part there.
 
 From the top:
 
-1. **Share your ride** (heading) and "Post it where people look for rides,
+1. **Share this ride** (heading) and "Post it where people look for rides,
    such as carpool groups on Facebook."
 2. **Share** (secondary button with the Share icon), only where the phone
    or browser has a share window: it opens it with the post text (3.4)
@@ -237,7 +240,7 @@ the Page gets its short name.
 - **R28.3** Nothing from Facebook or Instagram is loaded or sent before the
   person taps one of their buttons; no SDK, script, pixel or tracking.
 - **R28.4** Only a published trip that has not left can be shared from
-  Share your ride; a result card is always for one that can be booked.
+  Share this ride; a result card is always for one that can be booked.
 
 ## 5. Screens
 
@@ -248,7 +251,7 @@ People can now find it and book a seat.
 │ Reykjavík → Akureyri                 │
 │ Friday 28 November at 09:00          │
 └──────────────────────────────────────┘
-Share your ride
+Share this ride
 Post it where people look for rides, such as carpool groups on Facebook.
 [ ⇪ Share ]                        (where there is a share window)
 [ Share on Facebook ]
@@ -308,7 +311,7 @@ A result card, with the icon in its corner:
 | Key | English | Icelandic |
 | --- | ------- | --------- |
 | `shareRide.cardLabel` | Share the ride {route} | Deila ferðinni {route} |
-| `shareRide.heading` | Share your ride | Deildu ferðinni |
+| `shareRide.heading` | Share this ride | Deildu þessari ferð |
 | `shareRide.intro` | Post it where people look for rides, such as carpool groups on Facebook. | Settu hana þar sem fólk leitar að fari, til dæmis í samferðahópa á Facebook. |
 | `shareRide.share` | Share | Deila |
 | `shareRide.facebook` | Share on Facebook | Deila á Facebook |
@@ -337,14 +340,14 @@ Icelandic texts want a native read, as the ads did.
   instant and an approval trip, and that it holds no "kr", fee or name;
   Facebook's address; the card's icon shares the part's link and does not
   open the trip; it copies and shows the tick without a share window; the
-  driver's card and trip page open Share your ride; the panel shows Share
+  driver's card and trip page open Share this ride; the panel shows Share
   only with a share window, changes the text's language, copies it, opens
   Facebook, offers Share picture or Download picture on the web only, and
   links to the Page; the screen of its own refuses a trip that has left.
 - API: `story.png` answers a PNG 1080 × 1920, 404 for a cancelled trip, a
   file with its name for `download=1`; long routes and many stops fit
   inside the safe area; nothing about the driver.
-- Web journeys: publishing shows Share your ride and copies the text; a
+- Web journeys: publishing shows Share this ride and copies the text; a
   search result's icon copies its link; the laptop journey checks the
   share screen at 1280.
 
