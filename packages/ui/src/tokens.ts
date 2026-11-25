@@ -275,7 +275,7 @@ export const sizes = {
   inputHeight: 52,
   chipHeight: 40,
   iconButton: 44,
-  /** A quiet icon button, such as Share in a card's corner, with `hitSlop` to 44 (spec 28, 3.1). */
+  /** The round of a quiet icon button, drawn inside its 44 button (spec 28, 3.1). */
   iconButtonSmall: 36,
   checkbox: 26,
   /** The round mark of a radio card. */
