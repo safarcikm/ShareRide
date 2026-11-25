@@ -182,7 +182,7 @@ for (const locale of ["en-GB", "is-IS"] as const) {
         expect(drawn.y).toBeCloseTo(firstCard.y, 0);
         // Every meeting point is a dot on it: far more than a ride's two ends.
         await expect.poll(() => map.locator("circle").count()).toBeGreaterThan(10);
-        const points = await box(side.getByRole("button", { name: texts.meetingPoints }));
+        const points = await box(side.getByRole("link", { name: texts.meetingPoints }));
         expect(points.y).toBeGreaterThan(drawn.y + drawn.height - 1);
         expect(points.x + points.width).toBeLessThanOrEqual(column.x + column.width);
 
@@ -332,7 +332,7 @@ test.describe("Find's search row", () => {
     // The map is whole in a window 720 high, with the link under it.
     await page.setViewportSize({ width: 1280, height: 720 });
     const link = await box(
-      page.getByTestId("columns-side").getByRole("button", { name: "See the meeting points" }),
+      page.getByTestId("columns-side").getByRole("link", { name: "See the meeting points" }),
     );
     expect(link.y + link.height).toBeLessThanOrEqual(720);
   });
