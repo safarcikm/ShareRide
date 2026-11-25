@@ -81,7 +81,7 @@ export interface RideCard {
  * The drawing's own version: raise it when the picture's look or its words
  * change, so sites that kept a card read the new picture (item 4).
  */
-const drawingVersion = 1;
+const drawingVersion = 2;
 
 /** The card's title: the part's route and when it leaves. */
 function titleOf(ride: Ride, locale: Locale): string {

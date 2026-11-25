@@ -91,9 +91,9 @@ describe("a ride's picture (spec 23, 3.10)", () => {
   });
 
   it("writes names as text, never as markup", () => {
-    const odd = ride(["Kaffi & <Co>", "Vík – N1"]);
+    const odd = ride(["Bakarí & <Co>", "Vík – N1"]);
     const svg = rideSvg(odd, "en");
-    expect(svg).toContain("Kaffi &amp; &lt;Co&gt;");
+    expect(svg).toContain("Bakarí &amp; &lt;Co&gt;");
     expect(svg).not.toContain("<Co>");
   });
 
@@ -101,6 +101,14 @@ describe("a ride's picture (spec 23, 3.10)", () => {
     const odd = ride(["Vík\u0001 – N1", "Höfn – N1"]);
     expect(rideSvg(odd, "en")).not.toContain("\u0001");
     expect((await drawRide(odd, "en")).length).toBeGreaterThan(0);
+  });
+
+  it("draws f and l as two letters, never as one joined letter", () => {
+    // resvg cannot turn ligatures off, and its "fl" in Fredoka looks like "ƀ" (Kefƀavík).
+    const svg = rideSvg(ride(["Hlemmur", "Keflavíkurflugvöllur"]), "is");
+    expect(svg).toContain("Kef\u200Clavíkurf\u200Clugvöllur");
+    const words = [...svg.matchAll(/>([^<]*)<\/text>/g)].map(([, text]) => text).join(" ");
+    expect(words).not.toMatch(/f\p{L}/u);
   });
 
   it("keeps the count of more stops when even one name is too long", () => {

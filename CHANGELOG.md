@@ -1505,6 +1505,10 @@ releases follow [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- A shared ride's picture spells Keflavík right: resvg drew Fredoka's "fl"
+  as one letter that looked like "ƀ" (Kefƀavík). An "f" before a letter is
+  now drawn on its own, and the picture's address changes, so a site that
+  kept the old picture reads the new one.
 - Google gets each public page's own title (spec 23, 3.6 and 3.9): the
   server's first answer for a meeting point or a place names it, such as
   "Hlemmur: carpool meeting point · PuffinRide", where every page said
