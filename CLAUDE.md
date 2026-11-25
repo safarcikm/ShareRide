@@ -62,6 +62,10 @@ We use the Superpowers workflow (see
 - **Secrets** never enter the repository. Use environment variables and the
   secret store of the environment.
 - **Dependencies:** justify every new runtime dependency in the PR description.
+- **Every file goes in git** (Martin, 2026-11-25): pictures, texts, drafts
+  and the scripts that make them are committed in the same work, not left
+  only in project files. Marketing lives in [marketing/](marketing/README.md).
+  Real personal data and secrets still never go in.
 
 ## Git and pull requests
 

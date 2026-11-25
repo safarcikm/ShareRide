@@ -5,3 +5,5 @@ node_modules/
 dist/
 coverage/
 .turbo/
+# Map data the page kit generator writes (marketing/social-pages/src/export_map.ts)
+marketing/social-pages/src/iceland-map.json
