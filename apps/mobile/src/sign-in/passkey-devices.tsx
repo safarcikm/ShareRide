@@ -11,6 +11,7 @@ import { Body } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
+import { devicePasskeys } from "./passkey";
 import { PasskeySetUp, setUpOutcomeText } from "./passkey-set-up";
 import { usePasskeysOffered } from "./use-passkeys";
 
@@ -24,7 +25,8 @@ export function passkeyName(t: Translate, passkey: Pick<MemberPasskey, "browser"
 /**
  * Face ID or fingerprint in Settings, Sign-in methods (spec 27, 3.6): one
  * line per device, with when it was added and last used, and Remove, which
- * asks first; "Not set up" without one. "Set up on this device" shows where
+ * asks first, and tells this browser to forget it (spec 28, 3.4); "Not
+ * set up" without one. "Set up on this device" shows where
  * the device has its own lock, until 10 devices are set up (R27.8). Where it
  * has none, as in the phone apps for now, the section shows only devices set
  * up elsewhere, so they can be removed, and is left out without any.
@@ -62,6 +64,8 @@ export function PasskeyDevices({
     setBusy(null);
     setAsking(null);
     if (result.ok || result.error.code === "not_found") {
+      // This browser stops offering it, if it keeps it (spec 28, 3.4).
+      void devicePasskeys.forget(passkey.credentialId);
       setSetUpKey((key) => key + 1);
       onRemoved(passkey.id);
       tell(t("passkey.removed", { device: passkeyName(t, passkey) }), false);

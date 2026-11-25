@@ -25,6 +25,11 @@ interface TextFieldProps extends Pick<
   readonly help?: string;
   /** Shown under the field in place of the help, and read out by screen readers. */
   readonly error?: string | undefined;
+  /**
+   * The web's own `autocomplete`, in place of `autoComplete` there, for a
+   * value the phones do not know, such as "username webauthn" (spec 28, 3.1).
+   */
+  readonly webAutoComplete?: string;
 }
 
 /**
@@ -33,7 +38,15 @@ interface TextFieldProps extends Pick<
  * error turns the outline and message red and puts an alert icon before the
  * message, so it does not rely on colour alone.
  */
-export function TextField({ label, value, onChangeText, help, error, ...input }: TextFieldProps) {
+export function TextField({
+  label,
+  value,
+  onChangeText,
+  help,
+  error,
+  webAutoComplete,
+  ...input
+}: TextFieldProps) {
   const palette = usePalette();
   const hint = error ?? help;
   const hasError = error !== undefined;
@@ -43,6 +56,8 @@ export function TextField({ label, value, onChangeText, help, error, ...input }:
   const hintId = useId();
   const describedBy: object =
     Platform.OS === "web" && hint !== undefined ? { "aria-describedby": hintId } : {};
+  const webOnly: object =
+    Platform.OS === "web" && webAutoComplete !== undefined ? { autoComplete: webAutoComplete } : {};
   const outline = hasError ? palette.error : focused ? palette.primary : palette.control;
   return (
     <View style={styles.field}>
@@ -71,6 +86,7 @@ export function TextField({ label, value, onChangeText, help, error, ...input }:
           },
         ]}
         {...input}
+        {...webOnly}
       />
       {hint === undefined ? null : (
         <View style={styles.hint}>

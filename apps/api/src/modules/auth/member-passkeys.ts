@@ -57,10 +57,7 @@ export interface PasskeyExpired {
   readonly code: "passkey_expired";
 }
 export type PasskeySignInError =
-  | PasskeyInvalid
-  | PasskeyUnknown
-  | PasskeyExpired
-  | { readonly code: "account_unavailable" };
+  PasskeyInvalid | PasskeyUnknown | PasskeyExpired | { readonly code: "account_unavailable" };
 export type PasskeySetupError = { readonly code: "confirm_required" } | TooMany | ConfirmError;
 
 export interface PasskeySignedIn {

@@ -7,9 +7,9 @@ import {
   type SignInProvider,
 } from "@shareride/domain";
 import { countryNames } from "@shareride/i18n";
-import { router } from "expo-router";
+import { router, useIsFocused } from "expo-router";
 import { useRef, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Platform, StyleSheet, Text, View } from "react-native";
 import type { CallFailure } from "@shareride/api-client";
 import type { Translate } from "@shareride/i18n";
 import { emailErrorText, errorText, formatWait } from "@/auth/errors";
@@ -18,18 +18,24 @@ import { PausedBanner, useConfig } from "@/beta/config";
 import { Button } from "@/components/button";
 import { Notice } from "@/components/notice";
 import { PasswordField } from "@/components/password-field";
-import { Screen } from "@/components/screen";
+import { Screen, useWideScreen } from "@/components/screen";
 import { TextField } from "@/components/text-field";
 import { Body, Title } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { useSignInFlow } from "@/sign-in/flow";
 import { KeptRideCard } from "@/sign-in/kept-ride-card";
-import { devicePasskeys, passkeyFailure, type PasskeyOptions } from "@/sign-in/passkey";
+import {
+  devicePasskeys,
+  passkeyFailure,
+  type PasskeyAssertion,
+  type PasskeyOptions,
+} from "@/sign-in/passkey";
 import { keepPasskeyOptionsMs } from "@/sign-in/passkey-set-up";
 import { pendingExpiredText, phoneStepHelp } from "@/sign-in/pending";
 import { ProviderButtons } from "@/sign-in/provider-buttons";
 import { providerNames, useProviderWindow } from "@/sign-in/provider-window";
 import { SignUpProgress } from "@/sign-in/sign-up-progress";
+import { usePasskeyAutofill } from "@/sign-in/use-passkey-autofill";
 import { usePasskeysOffered } from "@/sign-in/use-passkeys";
 import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
@@ -59,10 +65,13 @@ function passwordErrorText(t: Translate, failure: CallFailure): string {
   return errorText(t, failure);
 }
 
-/** What a refused sign-in with Face ID or fingerprint says (spec 27, 3.3, item 2). */
+/**
+ * What a refused sign-in with Face ID or fingerprint says (spec 27, 3.3,
+ * item 2): the same for a passkey removed as for the console's (spec 28, 3.4).
+ */
 function passkeyErrorText(t: Translate, failure: CallFailure): string {
   const { code, retryAfterSeconds = 0 } = failure.error;
-  if (code === "passkey_invalid") return t("passkey.unknown");
+  if (code === "passkey_invalid" || code === "passkey_unknown") return t("passkey.unknown");
   if (code === "passkey_expired") return t("passkey.expired");
   if (code === "rate_limited") {
     return t("error.passwordTries", { wait: formatWait(t, retryAfterSeconds) });
@@ -92,6 +101,28 @@ function ChooseHowScreen() {
   );
   // Guards against a second tap or a Return key before the first reply.
   const sending = useRef(false);
+  const focused = useIsFocused();
+  // On a laptop the field takes the focus, so its suggestions show at once
+  // (spec 28, 3.1, item 5); not on a phone, where the keyboard would cover the rest.
+  const wide = useWideScreen();
+  const focusEmail = Platform.OS === "web" && wide;
+  // A passkey picked from the email field's suggestions (spec 28, 3.1).
+  const autofill = usePasskeyAutofill({
+    enabled: passkeyOffered && emailSignIn && focused,
+    async onAnswer(credential) {
+      if (sending.current) return false;
+      sending.current = true;
+      setError(null);
+      flow.setNotice(null);
+      setPasskeyBusy(true);
+      try {
+        return await finishPasskey(credential);
+      } finally {
+        sending.current = false;
+        setPasskeyBusy(false);
+      }
+    },
+  });
 
   /**
    * Opens the window at once, in the tap itself, so a browser lets the
@@ -102,11 +133,13 @@ function ChooseHowScreen() {
     setError(null);
     flow.setNotice(null);
     setProviderBusy(provider);
+    autofill.pause();
     const opened = providerWindow.open(provider);
     const name = providerNames[provider];
     const outcome = await opened;
     if (outcome.kind !== "ticket") {
       setProviderBusy(null);
+      autofill.resume();
       if (outcome.kind === "expired") setError(t("auth.provider.expired", { provider: name }));
       if (outcome.kind === "failed") setError(t("auth.provider.failed", { provider: name }));
       return;
@@ -114,6 +147,7 @@ function ChooseHowScreen() {
     const result = await session.finishProviderSignIn(outcome.ticket, outcome.verifier);
     setProviderBusy(null);
     if (!result.ok) {
+      autofill.resume();
       setError(
         result.error.code === "ticket_invalid"
           ? t("auth.provider.failed", { provider: name })
@@ -126,9 +160,24 @@ function ChooseHowScreen() {
   }
 
   /**
+   * Signs in with the device's answer, from the button's sheet or the email
+   * field; true when signed in. A passkey the site no longer has is one this
+   * browser stops offering (spec 28, 3.4).
+   */
+  async function finishPasskey(credential: PasskeyAssertion): Promise<boolean> {
+    const signedIn = await session.signInWithPasskey(credential);
+    // Signed in: sign-in closes by itself.
+    if (signedIn.ok) return true;
+    setError(passkeyErrorText(t, signedIn));
+    if (signedIn.error.code === "passkey_unknown") void devicePasskeys.forget(credential.id);
+    return false;
+  }
+
+  /**
    * The device's own sheet, then signed in with no email typed (spec 27,
    * 3.3). Closing the sheet, or a browser with no passkey for PuffinRide,
-   * changes nothing, and the next tap uses the same options.
+   * changes nothing, and the next tap uses the same options. The email
+   * field's quiet request waits meanwhile (spec 28, 3.1, item 4).
    */
   async function signInWithPasskey() {
     if (sending.current) return;
@@ -136,6 +185,8 @@ function ChooseHowScreen() {
     setError(null);
     flow.setNotice(null);
     setPasskeyBusy(true);
+    autofill.pause();
+    let signedIn = false;
     try {
       const before = keptOptions.current;
       keptOptions.current = null;
@@ -161,12 +212,11 @@ function ChooseHowScreen() {
         }
         return;
       }
-      const signedIn = await session.signInWithPasskey(credential);
-      // Signed in: sign-in closes by itself.
-      if (!signedIn.ok) setError(passkeyErrorText(t, signedIn));
+      signedIn = await finishPasskey(credential);
     } finally {
       sending.current = false;
       setPasskeyBusy(false);
+      if (!signedIn) autofill.resume();
     }
   }
 
@@ -246,6 +296,9 @@ function ChooseHowScreen() {
             error={fieldError}
             keyboardType="email-address"
             autoComplete="username"
+            // The browser lists the site's passkeys among its suggestions (spec 28, 3.1).
+            webAutoComplete="username webauthn"
+            autoFocus={focusEmail}
             textContentType="username"
             autoCapitalize="none"
             maxLength={320}
