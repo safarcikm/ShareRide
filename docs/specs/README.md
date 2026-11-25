@@ -52,3 +52,4 @@ Specs follow the order in [features](../product/features.md#spec-order).
 | 25 | [An email to the operator when new members join](2026-11-23-new-member-emails.md) | H5 | Approved (2026-11-23); built (2026-11-23) |
 | 26 | [Sign in with email or Google; a text message only checks the number](2026-11-23-sign-in-without-text-messages.md) | A1, A4, A5 | Approved (2026-11-23); built (2026-11-23) |
 | 27 | [Passwords, and Face ID or fingerprint (passkeys)](2026-11-23-passwords-and-passkeys.md) | A1, A4 | Approved (2026-11-23); built (2026-11-23) |
+| 28 | [Share a ride on Facebook, Instagram and anywhere else](2026-11-25-share-a-ride.md) | C1, C5, D1, D2 | Proposed (2026-11-25) |
