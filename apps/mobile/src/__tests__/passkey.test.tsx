@@ -55,6 +55,7 @@ const named = (name: string) => Object.assign(new Error(name), { name });
 
 const iPhone: MemberPasskey = {
   id: "0190a1d6-0000-7000-8000-0000000000a1",
+  credentialId: "credential-of-the-iphone",
   browser: "Safari",
   system: "iPhone",
   createdAt: "2026-11-21T10:00:00.000Z",
@@ -62,6 +63,7 @@ const iPhone: MemberPasskey = {
 };
 const mac: MemberPasskey = {
   id: "0190a1d6-0000-7000-8000-0000000000a2",
+  credentialId: "credential-of-the-mac",
   browser: "Chrome",
   system: "Mac",
   createdAt: "2026-11-23T12:00:00.000Z",

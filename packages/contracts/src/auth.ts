@@ -468,7 +468,7 @@ export const passkeySignInRoute = defineRoute({
     },
     400: {
       description:
-        "passkey_invalid: not a member's passkey (removed, or the console's), or a bad answer; passkey_expired: the challenge was used, or answered after 5 minutes",
+        "passkey_unknown: the site has no such passkey (removed), so the browser may forget it (spec 28, 3.4); passkey_invalid: the console's passkey, or a bad answer; passkey_expired: the challenge was used, or answered after 5 minutes",
       ...errors,
     },
     403: { description: "account_unavailable", ...errors },

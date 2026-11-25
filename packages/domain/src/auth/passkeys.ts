@@ -8,8 +8,12 @@ export const memberPasskeyRules = {
   perAccount: 10,
   /** How long the browser has to answer a challenge. */
   challengeSeconds: 5 * 60,
-  /** Sign-in challenges per address (its /64 for IPv6), so nobody fills the table. */
-  signInOptionsLimits: [{ limit: 20, windowSeconds: 10 * 60 }] satisfies readonly RateLimitRule[],
+  /**
+   * Sign-in challenges per address (its /64 for IPv6), so nobody fills the
+   * table. Room for step 1's quiet request, which asks on every visit and
+   * again every 4.5 minutes (R28.6).
+   */
+  signInOptionsLimits: [{ limit: 60, windowSeconds: 10 * 60 }] satisfies readonly RateLimitRule[],
 } as const;
 
 const browsers: readonly (readonly [RegExp, string])[] = [
