@@ -20,6 +20,13 @@ export const en = {
     "The PuffinRide carpool meeting points nearest to {place}, for finding or offering a shared ride.",
   "seo.legalDescription": "PuffinRide's Terms of Service, Community Rules and Privacy Policy.",
   "seo.shareImage": "Two PuffinRide puffins driving in a little car",
+  "seo.tripTitle": "{route} · {when}",
+  "seo.tripDescription":
+    "A shared ride on PuffinRide, carpooling across Iceland. See the trip and book a seat.",
+  "seo.tripImage": "{route}, {when}, on PuffinRide",
+  "seo.tripStops": "Stops on the way: {stops}",
+  "seo.tripMoreStops": "{stops} and {count} more",
+  "seo.tripFreeSeats": "Free seats",
   "seo.cookiesDescription":
     "What the PuffinRide website keeps on your device, and your choice about Google Analytics.",
   "consent.title": "Cookies",

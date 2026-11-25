@@ -155,6 +155,8 @@ import {
   createSearchService,
   createTripDetailsService,
   registerSearchRoutes,
+  rideFinder,
+  type FindRide,
 } from "./modules/search/index.ts";
 import {
   createRouteService,
@@ -283,6 +285,11 @@ export interface AppDependencies {
    * the page's title (spec 23, 3.6); by default from the database.
    */
   readonly findSubject?: FindSubject;
+  /**
+   * Looks up the ride a trip page's address shows, for its own link preview
+   * (spec 23, 3.10); by default through the trip details.
+   */
+  readonly findRide?: FindRide;
   /** Google Analytics on the website (spec 23); none when left out. */
   readonly analytics?: Analytics | null;
 }
@@ -412,6 +419,8 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
     }
   });
 
+  /** Finds a shared ride's address for its own link preview (spec 23, 3.10), from the trip details. */
+  let rideFinderOfApp: FindRide | undefined;
   if (dependencies.features !== undefined) {
     const { features } = dependencies;
     // First: the guard covers only routes registered after it, and closes
@@ -609,6 +618,12 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       });
     }
     const ruleSettings = ruleSettingsSource(operatorSettings);
+    const tripDetails = createTripDetailsService({
+      ...features,
+      settings: () => ruleSettings.search(),
+      reliabilitySettings,
+    });
+    rideFinderOfApp = rideFinder(tripDetails);
     // Before the trip routes, so /v1/trips/search is never taken for a trip's ID.
     registerSearchRoutes(app, {
       search: createSearchService({
@@ -616,11 +631,7 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
         settings: () => ruleSettings.search(),
         searchLog: features.searchLog ?? createSearchLog({ ...features, logger }),
       }),
-      details: createTripDetailsService({
-        ...features,
-        settings: () => ruleSettings.search(),
-        reliabilitySettings,
-      }),
+      details: tripDetails,
       optionalAuth: createOptionalAuth(auth),
       limiter: createMemoryRateLimiter({ rules: searchLimitsPerAddress, clock: features.clock }),
       // A keyed hash, as for sign-in limits: no plain address is kept, even in memory.
@@ -811,6 +822,7 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
             (dependencies.features?.db === undefined
               ? undefined
               : subjectFinder(dependencies.features.db)),
+          dependencies.findRide ?? rideFinderOfApp,
         );
   const adminApp =
     dependencies.adminAppDir === undefined

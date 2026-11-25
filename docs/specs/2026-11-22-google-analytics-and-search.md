@@ -187,7 +187,8 @@ lists both (decision 7).
    the requested language. Facebook and Messenger ask for the preview in
    the reader's language (`X-Facebook-Locale` or `fb_locale`), so an
    Icelandic reader sees it in Icelandic. A trip's link shows no name or
-   photo (R23.7).
+   photo (R23.7). Changed 2026-11-25: a ride's link has a preview of its
+   own, with its route, day and time (3.10).
 5. **Icons** (added 2026-11-23): besides Expo's `/favicon.ico` (16, 32 and
    48 pixels), every page links `/icon-192.png`, 192 pixels, a multiple of
    48 as Google asks for to show the icon beside a result, and
@@ -265,6 +266,55 @@ Hitchwiki's Iceland page and travel guides' "getting around" pages, the
 Icelandic listings (Já.is). Search Console: ask Google to index the new
 page once it is live. Expect weeks, not days.
 
+### 3.10 A shared ride's link preview
+
+Added 2026-11-25. Martin: "how does it look like on Facebook if you share
+your ride (it should look pretty and branded)". Until now a ride's link
+showed the same card as every other address (3.6, item 4): the puffins,
+the name and Find's description, with nothing to say which ride it was. Martin
+chose "Own picture for each ride" on a decision card, over the ride in the
+title only (the same picture) and no change.
+
+1. **Which links.** A trip page's address, `/trips/<id>` with the part's
+   `from` and `to` as the app's Share button gives it (spec 4, 3.7), whose
+   part has not left and is not cancelled (state open, full or closed).
+   Any other trip address (unknown, a draft, cancelled, left, a week past
+   its last stop) keeps the general preview.
+2. **What it shows**, in the language asked for (3.6, item 4):
+   - title: the part's route and when it leaves, "Reykjavík → Akureyri ·
+     fös. 28. nóv. kl. 09:00" / "Reykjavík → Akureyri · Fri 28 Nov at
+     09:00";
+   - description: "Far á PuffinRide, samferða um Ísland. Sjáðu ferðina og
+     bókaðu sæti." / "A shared ride on PuffinRide, carpooling across
+     Iceland. See the trip and book a seat.";
+   - a picture of its own, 1200 × 630: the PuffinRide name at the top, the
+     route in large letters, the day and time ("Föstudagur 28. nóvember kl.
+     09:00"), the meeting points on the way (as many as fit, then "and 2
+     more"), and the front page's Iceland scene below: a pin at each end and
+     the puffin driver in the yellow car, its back seat free, with a "Free
+     seats" tag while the part can be booked (state open). A long route
+     shrinks to fit, then breaks before the arrow.
+3. **Nothing else.** It shows only what the trip page shows anyone with the
+   link (R4.6): the route, its meeting points, the day and the time. Never
+   a name, a photo, the car or its number plate, a price, or how many seats
+   are free, which would also go stale in Facebook's copy (R23.7, R23.8).
+4. **The picture's address:** `/v1/trips/<id>/preview.png?fromStop=…&toStop=…&lang=is`,
+   with `v=` from the texts it shows, so a trip whose time changed gets a
+   new address the next time a site reads the link. It is a file, not in
+   the OpenAPI document; the search limit counts it; it answers 404 where
+   item 1 gives the general preview, and may be kept an hour
+   (`Cache-Control: public, max-age=3600`).
+5. **How it is drawn:** on the server, as an SVG turned into a PNG with
+   resvg ([ADR 0049](../decisions/0049-draw-link-preview-pictures-with-resvg.md)),
+   with the app's fonts (Fredoka and Nunito, SIL Open Font License) and a
+   copy of the front page's car, kept in `apps/api/assets/trip-preview/`
+   because the API's image holds no `apps/mobile`. `node
+   scripts/export-icons.ts` in `apps/mobile` copies the car again after it
+   changes.
+6. **Facebook keeps what it read.** A card already posted keeps the old
+   time if the driver moves it; the trip page shows the change. Facebook's
+   Sharing Debugger reads a link again on request.
+
 ## 4. Rules
 
 | ID    | Rule                                                                                                                                                                                     |
@@ -276,6 +326,7 @@ page once it is live. Expect weeks, not days.
 | R23.5 | A choice is kept in the browser for 12 months, then asked again.                                                                                                                         |
 | R23.6 | Only production's pages of 3.4 may be indexed; every other address of the web app answers with noindex.                                                                                  |
 | R23.7 | Link previews show no person's name or photo.                                                                                                                                            |
+| R23.8 | A ride's link preview shows its route, meeting points, day and time only: no name, photo, car, number plate, price or seat count.                                                         |
 
 ## 5. Screens
 
@@ -325,6 +376,10 @@ page once it is live. Expect weeks, not days.
   someone who does not accept.
 - Indexing: trip pages, results and people stay out (R4.6, R23.6); Find's
   ride list is kept out of snippets; previews never name anyone (R23.7).
+- A ride's preview (3.10) carries what its trip page already shows anyone
+  with the link, and nothing about a person (R23.8). Facebook and other
+  sites keep a copy of the card; that is why it leaves out the seat count
+  and why nobody is named.
 
 ## 8. Texts (first draft; Icelandic to be reviewed by a native speaker)
 
@@ -351,6 +406,12 @@ page once it is live. Expect weeks, not days.
 | `seo.legalDescription`         | PuffinRide's Terms of Service, Community Rules and Privacy Policy.                                                                                                                                           | Notendaskilmálar, samfélagsreglur og persónuverndarstefna PuffinRide.                                                                                                                                                               |
 | `seo.shareImage`               | Two PuffinRide puffins driving in a little car                                                                                                                                                               | Tveir lundar PuffinRide á ferð í litlum bíl                                                                                                                                                                                         |
 | `seo.cookiesDescription`       | What the PuffinRide website keeps on your device, and your choice about Google Analytics.                                                                                                                    | Hvað vefur PuffinRide geymir í tækinu þínu, og val þitt um Google Analytics.                                                                                                                                                        |
+| `seo.tripTitle`                | {route} · {when}                                                                                                                                                                                             | {route} · {when}                                                                                                                                                                                                                    |
+| `seo.tripDescription`          | A shared ride on PuffinRide, carpooling across Iceland. See the trip and book a seat.                                                                                                                       | Far á PuffinRide, samferða um Ísland. Sjáðu ferðina og bókaðu sæti.                                                                                                                                                                 |
+| `seo.tripImage`                | {route}, {when}, on PuffinRide                                                                                                                                                                               | {route}, {when}, á PuffinRide                                                                                                                                                                                                       |
+| `seo.tripStops`                | Stops on the way: {stops}                                                                                                                                                                                    | Mótsstaðir á leiðinni: {stops}                                                                                                                                                                                                      |
+| `seo.tripMoreStops`            | {stops} and {count} more                                                                                                                                                                                     | {stops} og {count} til viðbótar                                                                                                                                                                                                     |
+| `seo.tripFreeSeats`            | Free seats                                                                                                                                                                                                   | Laus sæti                                                                                                                                                                                                                           |
 
 `seo.placeDescription` in Icelandic puts the place after "við", which takes
 the accusative; most place names read well there, but a native speaker
@@ -363,6 +424,10 @@ should check (for example "við Selfoss").
 - **API:** robots.txt and the sitemap per environment; the noindex header
   on every address outside 3.4, and on everything off production; the
   filled page per language; the policy with and without the ID; the config.
+- **A ride's preview (3.10):** its texts and picture for a part, in both
+  languages; a long route and many stops still fit; nothing about a person
+  in the tags or the picture; the general preview for a cancelled, left or
+  unknown trip; the picture answers a PNG, and 404 where there is none.
 - **Screens:** the bar shows only on the web with analytics on and no
   choice; Accept adds Google's script and a page view by pattern; Decline
   adds nothing; the Cookies switch withdraws and removes the cookies; the
@@ -393,3 +458,4 @@ Manager; Bing's own tools (Bing reads the sitemap from robots.txt).
 | 8   | Is Privacy Policy version 3 material?                                | No: announced without blocking, as nobody has to accept anything new (recommended; or material, and everyone accepts again)                                                                      |
 | 9   | Staging and other copies?                                            | Noindex on every answer, crawling allowed so Google sees it (R23.6; my call)                                                                                                                     |
 | 10  | How is Search Console verified?                                      | A domain property, by a TXT record at ISNIC (my call)                                                                                                                                            |
+| 11  | How does a shared ride look on Facebook?                             | Its own card: the route, day, time and stops drawn in our look, no person (3.10; Martin, 2026-11-25, on a decision card; not chosen: the route in the title only, or no change)                   |

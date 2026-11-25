@@ -1482,6 +1482,16 @@ releases follow [Semantic Versioning](https://semver.org/).
   confirm code, at most 10 devices, and an email to the verified address;
   Download my data lists the devices. New app package
   `@simplewebauthn/browser`.
+- A shared ride's own link preview (spec 23, 3.10, ADR 0049): a trip
+  page's link, as the Share button gives it, shows on Facebook, Messenger
+  and other apps with the part's route and when it leaves as the title, and
+  a picture in our look with the route, the day and time, the stops on the
+  way and the puffin driver's car; in the reader's language, and never a
+  name, a photo, the car, a price or a seat count (R23.8). A cancelled,
+  departed or unknown trip keeps the general card. The picture is drawn on
+  request at `GET /v1/trips/{id}/preview.png`, with resvg and the app's
+  fonts kept in `apps/api/assets/trip-preview/` (copied there by
+  `export-icons.ts`). New API package `@resvg/resvg-js`.
 
 ### Fixed
 

@@ -11,6 +11,7 @@ import {
   type AccountSuspended,
   type Result,
 } from "@shareride/domain";
+import { isLocale } from "@shareride/i18n";
 import type { Context, MiddlewareHandler } from "hono";
 import { every } from "hono/combine";
 import { createMiddleware } from "hono/factory";
@@ -20,6 +21,8 @@ import { toOpenApiRoute, validated } from "../../openapi.ts";
 import type { RateLimiter } from "../../platform/memory-rate-limiter.ts";
 import { accountSuspended } from "../account/standing.ts";
 import type { TripDetailsError, TripDetailsService } from "./details.ts";
+import { rideOf, stopPosition } from "./link-preview.ts";
+import { drawRide } from "./ride-picture.ts";
 import type { SearchError, SearchService } from "./service.ts";
 
 export interface SearchRoutesDependencies {
@@ -33,6 +36,9 @@ export interface SearchRoutesDependencies {
   /** Refuses a suspended person: they cannot search (spec 9, 3.6.2). */
   readonly standing: (userId: string) => Promise<Result<void, AccountSuspended>>;
 }
+
+/** The address of a shared ride's picture (spec 23, 3.10, item 4), for Hono. */
+const tripPreviewPicturePath = "/v1/trips/:id/preview.png";
 
 function searchError(c: Context, error: SearchError) {
   if (error.code === "same_place") {
@@ -111,6 +117,37 @@ export function registerSearchRoutes(
     const { limit } = validated(c, "query", soonestTripsRoute.request.query);
     const results = await search.soonest(limit, c.get("auth")?.userId ?? null);
     return c.json({ results }, 200);
+  });
+
+  // A shared ride's picture for its link preview (spec 23, 3.10, item 4): a
+  // file, so not in the OpenAPI document. Before /v1/trips/{id}, as above.
+  app.get(tripPreviewPicturePath, limited, async (c) => {
+    const id = c.req.param("id");
+    const isId = /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(id);
+    const lang = c.req.query("lang");
+    const found = isId
+      ? await details.details(
+          id,
+          {
+            board: stopPosition(c.req.query("fromStop")),
+            alight: stopPosition(c.req.query("toStop")),
+            seats: 1,
+          },
+          null,
+        )
+      : undefined;
+    const ride = found?.ok === true ? rideOf(found.value) : undefined;
+    if (ride === undefined) return errorResponse(c, 404, "not_found", "There is no such trip.");
+    return c.body(
+      new Uint8Array(drawRide(ride, lang !== undefined && isLocale(lang) ? lang : "en")),
+      200,
+      {
+        "Content-Type": "image/png",
+        // Sites read a card's picture once; the address changes with what it shows.
+        "Cache-Control": "public, max-age=3600",
+        "X-Content-Type-Options": "nosniff",
+      },
+    );
   });
 
   // Registered as the GET of /v1/trips/{id} only, so a draft's changes are not counted.

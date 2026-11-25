@@ -6,6 +6,7 @@ import { providerReturnPath } from "@shareride/domain";
 import type { Context } from "hono";
 import { isConsolePath } from "./admin-app.ts";
 import type { AppEnv } from "./context.ts";
+import type { FindRide } from "./modules/search/link-preview.ts";
 import {
   fillPage,
   noIndex,
@@ -122,6 +123,7 @@ async function readPage(root: string): Promise<string | undefined> {
  * Which answers search engines may index is the app's middleware's to say
  * (spec 23, R23.6; trip pages, R4.6, add a robots tag of their own too);
  * this adds one for a meeting point or place that is not listed (3.6).
+ * A shared ride's page gets its own link preview (3.10).
  */
 export function createWebApp(
   root: string,
@@ -129,6 +131,7 @@ export function createWebApp(
   searchEngines: SearchEngines = notIndexed,
   analytics: Analytics | null = null,
   findSubject?: FindSubject,
+  findRide?: FindRide,
 ): WebApp {
   const contentSecurityPolicy = webContentSecurityPolicy(photoOrigin, analytics !== null);
   const files = serveStatic<AppEnv>({ root });
@@ -156,6 +159,8 @@ export function createWebApp(
     const html = await readPage(root);
     if (html === undefined) return undefined;
     const subject = await findSubject?.(c.req.path);
+    // A shared ride's address gets a link preview of its own (spec 23, 3.10).
+    const ride = await findRide?.(c.req.path, (name) => c.req.query(name));
     // A meeting point or place the sitemap does not list stays out of the index.
     if (subject?.kind === "missing") c.header("X-Robots-Tag", noIndex);
     const head = pageHead(
@@ -167,6 +172,7 @@ export function createWebApp(
       },
       searchEngines,
       subject,
+      ride,
     );
     if (head.fromBrowser) c.header("Vary", "Accept-Language, X-Facebook-Locale");
     return c.html(fillPage(html, head));

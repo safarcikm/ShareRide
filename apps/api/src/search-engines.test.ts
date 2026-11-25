@@ -5,6 +5,7 @@ import { Writable } from "node:stream";
 import { describe, expect, it } from "vitest";
 import { createApp } from "./app.ts";
 import { createLogger } from "./logger.ts";
+import { rideOf, type FindRide, type Ride } from "./modules/search/link-preview.ts";
 import {
   fillPage,
   isIndexablePath,
@@ -35,7 +36,7 @@ function webApp(): string {
   return dir;
 }
 
-function setup(searchEngines?: SearchEngines, findSubject?: FindSubject) {
+function setup(searchEngines?: SearchEngines, findSubject?: FindSubject, findRide?: FindRide) {
   const destination = new Writable({
     write: (_chunk, _encoding, callback) => {
       callback();
@@ -47,7 +48,29 @@ function setup(searchEngines?: SearchEngines, findSubject?: FindSubject) {
     webAppDir: webApp(),
     ...(searchEngines === undefined ? {} : { searchEngines }),
     ...(findSubject === undefined ? {} : { findSubject }),
+    ...(findRide === undefined ? {} : { findRide }),
   });
+}
+
+const tripId = "6f1c2f9e-3b1a-4c7d-9e2f-0a1b2c3d4e5f";
+
+/** Selfoss to Vík on Friday 27 November 2026 at 09:00, by Hella. */
+function sampleRide(): Ride {
+  const stop = (is: string, en: string, plannedAt: string) => ({
+    meetingPoint: { name: { is, en } },
+    plannedAt,
+  });
+  const ride = rideOf({
+    id: tripId,
+    stops: [
+      stop("Selfoss – Olís", "Selfoss – Olís", "2026-11-27T09:00:00.000Z"),
+      stop("Hella – N1", "Hella – N1", "2026-11-27T09:40:00.000Z"),
+      stop("Vík – N1", "Vík – N1", "2026-11-27T11:00:00.000Z"),
+    ],
+    part: { board: 0, alight: 2, state: "open" },
+  });
+  if (ride === undefined) throw new Error("no ride");
+  return ride;
 }
 
 describe("which pages search engines may index (spec 23, 3.4)", () => {
@@ -277,6 +300,62 @@ describe("the page's head (spec 23, 3.6)", () => {
     const page = fillPage(exportedPage, head);
     expect(page).not.toContain("<script>");
     expect(page).toContain("/meeting-points/&quot;&gt;&lt;script&gt;$&amp;");
+  });
+});
+
+describe("a shared ride's own card (spec 23, 3.10)", () => {
+  it("names the ride and points at its picture, in the language asked for", () => {
+    const head = pageHead(
+      { path: `/trips/${tripId}`, lang: null, acceptLanguage: null, facebookLocale: "is_IS" },
+      production,
+      undefined,
+      sampleRide(),
+    );
+    expect(head.tags).toContain(
+      '<meta data-rh="true" property="og:title" content="Selfoss – Olís → Vík – N1 · fös. 27. nóv. kl. 09:00">',
+    );
+    expect(head.tags).toContain(
+      '<meta data-rh="true" property="og:description" content="Far á PuffinRide, samferða um Ísland. Sjáðu ferðina og bókaðu sæti.">',
+    );
+    expect(head.tags).toMatch(
+      new RegExp(
+        `<meta data-rh="true" property="og:image" content="${site}/v1/trips/${tripId}/preview\\.png\\?fromStop=0&amp;toStop=2&amp;lang=is&amp;v=[0-9a-f]{12}">`,
+      ),
+    );
+    expect(head.tags).toContain(
+      '<meta data-rh="true" property="og:image:alt" content="Selfoss – Olís → Vík – N1, föstudagur 27. nóvember kl. 09:00, á PuffinRide">',
+    );
+    expect(head.tags).not.toContain("/share.png");
+    expect(head.tags).not.toContain("og:url");
+  });
+
+  it("keeps the page's own title and the search words", () => {
+    const head = pageHead(
+      { path: `/trips/${tripId}`, lang: "en", acceptLanguage: null },
+      production,
+      undefined,
+      sampleRide(),
+    );
+    expect(head.title).toBe("PuffinRide · Carpool and shared rides across Iceland");
+    expect(head.tags).toContain('name="keywords"');
+  });
+
+  it("writes the card into the first answer of a trip's page", async () => {
+    const asked: string[] = [];
+    const findRide: FindRide = (path, query) => {
+      asked.push(`${path}?from=${query("from") ?? ""}&to=${query("to") ?? ""}`);
+      return Promise.resolve(path === `/trips/${tripId}` ? sampleRide() : undefined);
+    };
+    const app = setup(production, undefined, findRide);
+    const page = await (await app.request(`/trips/${tripId}?from=0&to=2&lang=en`)).text();
+    expect(page).toContain(
+      '<meta data-rh="true" property="og:title" content="Selfoss – Olís → Vík – N1 · Fri 27 Nov at 09:00">',
+    );
+    expect(asked).toEqual([`/trips/${tripId}?from=0&to=2`]);
+    const other = await (await app.request("/trips/other?lang=en")).text();
+    expect(other).toContain(
+      `<meta data-rh="true" property="og:image" content="${site}/share.png">`,
+    );
   });
 });
 
