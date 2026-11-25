@@ -307,27 +307,28 @@ A result card, with the icon in its corner:
 
 | Key | English | Icelandic |
 | --- | ------- | --------- |
-| `share.cardLabel` | Share the ride {route} | Deila ferðinni {route} |
-| `share.heading` | Share your ride | Deildu ferðinni |
-| `share.intro` | Post it where people look for rides, such as carpool groups on Facebook. | Settu hana þar sem fólk leitar að fari, til dæmis í samferðahópa á Facebook. |
-| `share.share` | Share | Deila |
-| `share.facebook` | Share on Facebook | Deila á Facebook |
-| `share.facebookHint` | On your wall, in a group or in Messenger. Facebook doesn't let apps write the post, so copy the text below and paste it in. | Á vegginn þinn, í hóp eða í Messenger. Facebook leyfir öppum ekki að skrifa færsluna, svo afritaðu textann hér fyrir neðan og límdu hann inn. |
-| `share.postText` | Text for your post | Texti í færsluna |
-| `share.copyText` | Copy text | Afrita texta |
-| `share.textCopied` | Text copied. Paste it into your post. | Textinn var afritaður. Límdu hann í færsluna. |
-| `share.post.offer` | Offering a ride: {route} | Býð far: {route} |
-| `share.post.book` | Book a seat on PuffinRide: | Bókaðu sæti á PuffinRide: |
-| `share.post.ask` | Ask for a seat on PuffinRide: | Óskaðu eftir sæti á PuffinRide: |
-| `share.story` | Story on Instagram | Story á Instagram |
-| `share.storyHint` | A picture of your ride for your story. Instagram doesn't take links in posts, so add the link with a link sticker. | Mynd af ferðinni í story. Instagram tekur ekki hlekki í færslum, svo bættu hlekknum við með hlekkjalímmiða. |
-| `share.sharePicture` | Share picture | Deila mynd |
-| `share.downloadPicture` | Download picture | Sækja mynd |
-| `share.copyLink` | Copy link | Afrita hlekk |
-| `share.follow` | Follow PuffinRide on Facebook | Fylgdu PuffinRide á Facebook |
-| `share.notShareable` | Only a published trip that hasn't left can be shared. | Aðeins er hægt að deila birtri ferð sem er ekki lögð af stað. |
+| `shareRide.cardLabel` | Share the ride {route} | Deila ferðinni {route} |
+| `shareRide.heading` | Share your ride | Deildu ferðinni |
+| `shareRide.intro` | Post it where people look for rides, such as carpool groups on Facebook. | Settu hana þar sem fólk leitar að fari, til dæmis í samferðahópa á Facebook. |
+| `shareRide.share` | Share | Deila |
+| `shareRide.facebook` | Share on Facebook | Deila á Facebook |
+| `shareRide.facebookHint` | On your wall, in a group or in Messenger. Facebook doesn't let apps write the post, so copy the text below and paste it in. | Á vegginn þinn, í hóp eða í Messenger. Facebook leyfir öppum ekki að skrifa færsluna, svo afritaðu textann hér fyrir neðan og límdu hann inn. |
+| `shareRide.postText` | Text for your post | Texti í færsluna |
+| `shareRide.copyText` | Copy text | Afrita texta |
+| `shareRide.textCopied` | Text copied. Paste it into your post. | Textinn var afritaður. Límdu hann í færsluna. |
+| `shareRide.post.offer` | Offering a ride: {route} | Býð far: {route} |
+| `shareRide.post.book` | Book a seat on PuffinRide: | Bókaðu sæti á PuffinRide: |
+| `shareRide.post.ask` | Ask for a seat on PuffinRide: | Óskaðu eftir sæti á PuffinRide: |
+| `shareRide.story` | Story on Instagram | Story á Instagram |
+| `shareRide.storyHint` | A picture of your ride for your story. Instagram doesn't take links in posts, so add the link with a link sticker. | Mynd af ferðinni í story. Instagram tekur ekki hlekki í færslum, svo bættu hlekknum við með hlekkjalímmiða. |
+| `shareRide.sharePicture` | Share picture | Deila mynd |
+| `shareRide.downloadPicture` | Download picture | Sækja mynd |
+| `shareRide.copyLink` | Copy link | Afrita hlekk |
+| `shareRide.follow` | Follow PuffinRide on Facebook | Fylgdu PuffinRide á Facebook |
+| `shareRide.notShareable` | Only a published trip that hasn't left can be shared. | Aðeins er hægt að deila birtri ferð sem er ekki lögð af stað. |
 
-The when and stops lines reuse `trip.mine.when` and `seo.tripStops`. The
+The when and stops lines reuse `trip.mine.when` and `seo.tripStops`; `share.*`
+is spec 9's "Share trip details", so these keys are `shareRide.*`. The
 Icelandic texts want a native read, as the ads did.
 
 ## 9. Testing

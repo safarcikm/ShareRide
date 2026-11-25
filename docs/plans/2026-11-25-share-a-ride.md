@@ -30,7 +30,7 @@ migration, no new dependency.
    copy, `ShareNotice` under the card after a failure. The top row leaves
    the icon room. Tests in `search` screen tests: shares the part's link,
    does not open the trip, copies without a share window.
-5. **Texts:** `share.cardLabel` in both languages.
+5. **Texts:** `shareRide.cardLabel` in both languages.
 6. **Web journey:** a search result's icon copies its link (`search.spec.ts`).
 7. **Docs:** spec 4, 3.7 points to spec 28; the changelog.
 
@@ -51,10 +51,10 @@ migration, no new dependency.
    window and a clipboard.
 4. **Screens:** the published screen shows the panel instead of "Share the
    trip"; `app/drive/trips/[id]/share.tsx` shows it for a trip that can be
-   shared, otherwise `share.notShareable` and a link to the trip; My
+   shared, otherwise `shareRide.notShareable` and a link to the trip; My
    trips' published cards and the driver's trip page head get the quiet
    icon that opens it. Tests in the drive screen tests.
-5. **Texts:** the `share.*` keys of spec 28, 8, except the story's.
+5. **Texts:** the `shareRide.*` keys of spec 28, 8, except the story's.
 6. **Web journeys:** `post-a-trip.spec.ts` sees the panel after
    publishing and copies the text; `laptop.spec.ts` looks at the share
    screen at 1280.
@@ -76,8 +76,8 @@ migration, no new dependency.
    picture where `navigator.canShare` takes a file (fetched when the panel
    shows), otherwise Download picture (`openDownload`), and Copy link.
    Tests for both.
-3. **Texts:** `share.story`, `share.storyHint`, `share.sharePicture`,
-   `share.downloadPicture`, `share.copyLink`.
+3. **Texts:** `shareRide.story`, `shareRide.storyHint`, `shareRide.sharePicture`,
+   `shareRide.downloadPicture`, `shareRide.copyLink`.
 4. **Check by eye:** draw the story for a short, a long and a many-stop
    trip in both languages.
 5. **Docs:** spec 23, 3.10 mentions the story picture; the changelog.
