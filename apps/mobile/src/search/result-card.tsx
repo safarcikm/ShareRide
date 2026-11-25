@@ -8,13 +8,17 @@ import {
   formatShortDay,
 } from "@shareride/i18n";
 import { router } from "expo-router";
+import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { Card } from "@/components/card";
+import { Card, cardCornerRoom } from "@/components/card";
+import { ShareNotice } from "@/components/share-notice";
 import { Tag } from "@/components/tag";
 import { useLanguage } from "@/i18n/language";
 import { dayOf, isoDay } from "@/lib/days";
+import type { Shared } from "@/lib/share";
 import { RatingLine, ratingText } from "@/people/standing";
-import { tripHref } from "@/trip-details/trip-link";
+import { ShareCorner } from "@/sharing/share-corner";
+import { tripHref, tripWebAddress } from "@/trip-details/trip-link";
 import { controlOutline, radii, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
@@ -29,7 +33,8 @@ export interface SearchedNames {
  * results board): times and stops of the part, the whole trip, the price
  * for one seat and for the seats searched, the booking mode, the driver
  * and the seats left. Other passengers are never shown, not even as taken
- * seats (spec 4, section 7). The card opens the trip for this part.
+ * seats (spec 4, section 7). The card opens the trip for this part; the
+ * icon in its corner shares the part's link (spec 28, 3.1).
  */
 export function ResultCard({
   result,
@@ -60,6 +65,7 @@ export function ResultCard({
 }) {
   const { locale, t } = useLanguage();
   const palette = usePalette();
+  const [shared, setShared] = useState<Shared | null>(null);
   const boardsAt = new Date(result.board.plannedAt);
   const alightsAt = new Date(result.alight.plannedAt);
   const boardName = result.board.meetingPoint.name[locale];
@@ -113,8 +119,11 @@ export function ResultCard({
     .filter((part) => part !== null)
     .join(", ");
 
+  const part = { board: result.board.position, alight: result.alight.position };
+  const route = t("search.route", { from: boardName, to: alightName });
+
   const muted = { color: palette.textMuted };
-  return (
+  const card = (
     <Card
       fill={fill}
       marked={marked}
@@ -122,14 +131,16 @@ export function ResultCard({
       onFocus={onShow}
       accessibilityLabel={label}
       onPress={() => {
-        router.push(
-          tripHref(
-            result.tripId,
-            { board: result.board.position, alight: result.alight.position },
-            seats,
-          ),
-        );
+        router.push(tripHref(result.tripId, part, seats));
       }}
+      corner={
+        <ShareCorner
+          url={tripWebAddress(result.tripId, part)}
+          text={t("trip.shareText", { route })}
+          route={route}
+          onShared={setShared}
+        />
+      }
     >
       <View style={[styles.content, fill && styles.fill]} testID="trip-result">
         {day === null ? null : <Text style={[typography.caption, muted]}>{day}</Text>}
@@ -143,7 +154,7 @@ export function ResultCard({
             />
             <Stop time={formatClock(alightsAt)} name={alightName} details={[alightNearby]} />
           </View>
-          <View style={styles.price}>
+          <View style={[styles.price, day === null && styles.besideCorner]}>
             <Text style={[typography.figure, { color: free ? palette.primary : palette.text }]}>
               {price}
             </Text>
@@ -180,6 +191,13 @@ export function ResultCard({
         </View>
       </View>
     </Card>
+  );
+  // The link to copy by hand, under the card, when it could not be shared.
+  return (
+    <View style={[styles.withNotice, fill && styles.fill]}>
+      {card}
+      {shared?.outcome === "failed" ? <ShareNotice shared={shared} /> : null}
+    </View>
   );
 }
 
@@ -252,6 +270,9 @@ const styles = StyleSheet.create({
   time: { minWidth: spacing.xxl },
   grow: { flex: 1 },
   price: { alignItems: "flex-end" },
+  // The price's line is the card's first: the share icon is at its end.
+  besideCorner: { marginRight: cardCornerRoom },
+  withNotice: { gap: spacing.sm },
   tripLine: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   divider: { height: controlOutline / 2 },
   driverRow: { flexDirection: "row", alignItems: "center", gap: spacing.ms },

@@ -23,6 +23,15 @@ test.describe("trip details without an account", () => {
     await choose(page, "From", "borgarn", /^N1 Borgarnes,/);
     await choose(page, "To", "blondu", /^Olís Blönduós,/);
     await page.getByRole("button", { name: "Search", exact: true }).click();
+    // The icon in a result's corner copies the part's link, and the results stay (spec 28, 3.1).
+    await page
+      .getByRole("button", { name: "Share the ride N1 Borgarnes → Olís Blönduós" })
+      .first()
+      .click();
+    await expect
+      .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+      .toMatch(/^http:\/\/localhost:8082\/trips\/[0-9a-f-]+\?from=1&to=2$/);
+    await expect(page).toHaveURL(/\/search\/results\?/);
     await page
       .getByRole("button", { name: /^Leaves N1 Borgarnes at \d\d:\d\d, .*Anna, New driver/ })
       .first()
@@ -71,8 +80,11 @@ test.describe("trip details without an account", () => {
     await expect(page).toHaveURL(/\?from=0&to=2$/);
 
     // Share copies the link, which opens the same part in another browser.
-    await page.getByRole("button", { name: "Share" }).click();
-    await expect(page.getByText("Link copied. Paste it wherever you like.")).toBeVisible();
+    await page.getByRole("button", { name: "Share", exact: true }).click();
+    // The results' card said the same to screen readers; that screen is hidden now.
+    await expect(
+      page.getByText("Link copied. Paste it wherever you like.").filter({ visible: true }),
+    ).toBeVisible();
     const link = await page.evaluate(() => navigator.clipboard.readText());
     expect(link).toMatch(/^http:\/\/localhost:8082\/trips\/[0-9a-f-]+\?from=0&to=2$/);
 
