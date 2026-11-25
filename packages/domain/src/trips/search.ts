@@ -38,6 +38,16 @@ export const searchLimitsPerAddress: readonly RateLimitRule[] = [
   { limit: 600, windowSeconds: 3600 },
 ];
 
+/**
+ * A shared ride's link preview picture from one IP address (spec 23, 3.10,
+ * item 4). Looser than search: a few sites' readers fetch the pictures, each
+ * from few addresses, and the API keeps the pictures it has drawn.
+ */
+export const ridePictureLimitsPerAddress: readonly RateLimitRule[] = [
+  { limit: 120, windowSeconds: 60 },
+  { limit: 2000, windowSeconds: 3600 },
+];
+
 /** A day on the calendar in Iceland. */
 export interface CalendarDay {
   readonly year: number;

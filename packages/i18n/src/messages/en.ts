@@ -23,6 +23,13 @@ export const en = {
     "How carpooling in Iceland works with PuffinRide: find a seat in a car going your way, or offer the empty seats in yours, and meet at public meeting points around the country.",
   "seo.legalDescription": "PuffinRide's Terms of Service, Community Rules and Privacy Policy.",
   "seo.shareImage": "Two PuffinRide puffins driving in a little car",
+  "seo.tripTitle": "{route} · {when}",
+  "seo.tripDescription":
+    "A shared ride on PuffinRide, carpooling across Iceland. See the trip and book a seat.",
+  "seo.tripImage": "{route}, {when}, on PuffinRide",
+  "seo.tripStops": "Stops on the way: {stops}",
+  "seo.tripMoreStops": "{stops} and {count} more",
+  "seo.tripFreeSeats": "Free seats",
   "seo.cookiesDescription":
     "What the PuffinRide website keeps on your device, and your choice about Google Analytics.",
   "carpool.title": "Carpool in Iceland",

@@ -15,6 +15,7 @@ import {
   type Translate,
 } from "@shareride/i18n";
 import { and, asc, eq } from "drizzle-orm";
+import { rideCard, type Ride } from "./modules/search/link-preview.ts";
 
 export interface SearchEngines {
   /** Search engines may index the public pages: production, with its address (R23.6). */
@@ -271,13 +272,15 @@ function languagesOf(header: string | null): string[] {
  * preview in, otherwise the browser's, as the app picks it; the page's own
  * title and description (Find's where it has none), and the words people
  * search with; on production, for a public page, its canonical address and
- * alternates; and the same link preview everywhere, which names nobody
- * (R23.7). The app's screens set the same title once it runs.
+ * alternates; and the general link preview, or a shared ride's own card
+ * (3.10), both naming nobody (R23.7, R23.8). The app's screens set the same
+ * title once it runs.
  */
 export function pageHead(
   request: PageRequest,
   engines: SearchEngines,
   subject?: PageSubject,
+  ride?: Ride,
 ): PageHead {
   const named = request.lang !== null && isLocale(request.lang) ? request.lang : null;
   const locale =
@@ -286,7 +289,9 @@ export function pageHead(
     pickLocale(languagesOf(request.acceptLanguage));
   const t = createTranslator(locale);
   const { title, description } = pageText(t, publicPageOf(request.path, subject, locale));
-  const preview = pageText(t, { kind: "find" });
+  // A shared ride's link has a card of its own (3.10); every other address Find's.
+  const card = ride === undefined ? undefined : rideCard(ride, locale);
+  const preview = card ?? pageText(t, { kind: "find" });
   const meta = (attribute: "name" | "property", key: string, content: string) =>
     `<meta data-rh="true" ${attribute}="${key}" content="${escapeHtml(content)}">`;
   const link = (attributes: string) => `<link data-rh="true" ${attributes}>`;
@@ -306,10 +311,10 @@ export function pageHead(
   const origin = engines.siteOrigin;
   if (origin !== null) {
     tags.push(
-      meta("property", "og:image", `${origin}/share.png`),
+      meta("property", "og:image", `${origin}${card?.imagePath ?? "/share.png"}`),
       meta("property", "og:image:width", "1200"),
       meta("property", "og:image:height", "630"),
-      meta("property", "og:image:alt", t("seo.shareImage")),
+      meta("property", "og:image:alt", card?.imageAlt ?? t("seo.shareImage")),
     );
   }
   if (origin !== null && mayIndex(engines, request.path) && subject?.kind !== "missing") {

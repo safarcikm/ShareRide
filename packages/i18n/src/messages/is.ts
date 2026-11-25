@@ -25,6 +25,12 @@ export const is = {
     "Svona virkar samakstur um Ísland með PuffinRide: finndu sæti í bíl sem fer þína leið eða bjóddu laus sæti í þínum, og hittist á opinberum mótsstöðum um allt land.",
   "seo.legalDescription": "Notendaskilmálar, samfélagsreglur og persónuverndarstefna PuffinRide.",
   "seo.shareImage": "Tveir lundar PuffinRide á ferð í litlum bíl",
+  "seo.tripTitle": "{route} · {when}",
+  "seo.tripDescription": "Far á PuffinRide, samferða um Ísland. Sjáðu ferðina og bókaðu sæti.",
+  "seo.tripImage": "{route}, {when}, á PuffinRide",
+  "seo.tripStops": "Mótsstaðir á leiðinni: {stops}",
+  "seo.tripMoreStops": "{stops} og {count} til viðbótar",
+  "seo.tripFreeSeats": "Laus sæti",
   "seo.cookiesDescription":
     "Hvað vefur PuffinRide geymir í tækinu þínu, og val þitt um Google Analytics.",
   "carpool.title": "Samferða um Ísland",

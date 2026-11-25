@@ -186,7 +186,10 @@ agreements below are still to sign
   `X-Robots-Tag: noindex`; Find's rides leaving soon are kept out of
   snippets, and link previews name nobody
   ([spec 23](../specs/2026-11-22-google-analytics-and-search.md), R23.6,
-  R23.7).
+  R23.7). A shared ride's link preview shows only what its trip page shows
+  anyone with the link: the route, its meeting points, the day and the
+  time; never a name, a photo, the car, a price or a seat count, since
+  Facebook and other sites keep a copy of the card (spec 23, 3.10, R23.8).
 - Production data never copied to staging or development.
 - Privacy impact is a checkbox in every PR template.
 - Retention jobs are tested like any other feature.

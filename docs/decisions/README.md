@@ -79,3 +79,4 @@ Statuses: `Proposed`, `Accepted`, `Rejected`, `Deprecated`, `Superseded by ADR N
 | [0046](0046-sign-in-by-email-code-and-text-only-to-check-the-number.md) | Sign in with an email code or Google; a text message only checks the number | Accepted |
 | [0047](0047-member-passwords-hashed-with-scrypt.md) | Members may set a password, stored as a scrypt hash | Proposed |
 | [0048](0048-member-passkeys-on-the-device-only.md) | Face ID or fingerprint for members: passkeys kept on the device | Accepted |
+| [0049](0049-draw-link-preview-pictures-with-resvg.md) | Draw link preview pictures on the server with resvg | Accepted |
