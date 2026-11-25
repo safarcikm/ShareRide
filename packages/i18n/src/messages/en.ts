@@ -18,10 +18,44 @@ export const en = {
   "seo.placeTitle": "{place}: nearest carpool meeting points",
   "seo.placeDescription":
     "The PuffinRide carpool meeting points nearest to {place}, for finding or offering a shared ride.",
+  "seo.carpoolTitle": "Carpool in Iceland: find or offer a ride",
+  "seo.carpoolDescription":
+    "How carpooling in Iceland works with PuffinRide: find a seat in a car going your way, or offer the empty seats in yours, and meet at public meeting points around the country.",
   "seo.legalDescription": "PuffinRide's Terms of Service, Community Rules and Privacy Policy.",
   "seo.shareImage": "Two PuffinRide puffins driving in a little car",
   "seo.cookiesDescription":
     "What the PuffinRide website keeps on your device, and your choice about Google Analytics.",
+  "carpool.title": "Carpool in Iceland",
+  "carpool.intro":
+    "PuffinRide is a carpool site for Iceland. People who drive between towns offer the empty seats in their car, and people who need a ride book a seat, so you travel together.",
+  "carpool.howTitle": "How it works",
+  "carpool.howFind":
+    "Find a ride: choose where you leave from, where you're going and the day. You can ride the whole way or only part of it.",
+  "carpool.howBook":
+    "Book a seat: some drivers take bookings at once, others approve each passenger first. Once booked, you and the driver can message each other in the app.",
+  "carpool.howMeet":
+    "Meet and go: you get in at a meeting point at the time the ride shows, and out at the one you chose.",
+  "carpool.howOffer":
+    "Offer a ride: driving somewhere with empty seats? Post your trip with its meeting points, and passengers book the seats.",
+  "carpool.pointsTitle": "Meeting points",
+  "carpool.points":
+    "Passengers get in and out only at public places, such as fuel stations, bus stops and shopping centres, in towns and villages all around Iceland and at well-known sights.",
+  "carpool.roadsTitle": "Where rides go",
+  "carpool.roads":
+    "Rides go where drivers are heading: for example from Reykjavík to Akureyri, Selfoss, Borgarnes, Vík or Egilsstaðir, or between Keflavík Airport and Reykjavík.",
+  "carpool.trustTitle": "Who you travel with",
+  "carpool.trust":
+    "Every member has a checked phone number. Drivers show a profile photo, and after each trip drivers and passengers review each other. Everyone agrees to our community rules.",
+  "carpool.rules": "Read the community rules",
+  "carpool.questionsTitle": "Questions",
+  "carpool.taxiQuestion": "Is PuffinRide a taxi?",
+  "carpool.taxiAnswer":
+    "No. Drivers offer seats on a trip they are making anyway, and PuffinRide puts them in touch with people going the same way.",
+  "carpool.languageQuestion": "Can I use it in English?",
+  "carpool.languageAnswer": "Yes. PuffinRide is in English and Icelandic.",
+  "carpool.accountQuestion": "Do I need an account to look?",
+  "carpool.accountAnswer":
+    "No. Anyone can look at the rides and the meeting points. To book a seat or offer a ride, sign up with your email or Google.",
   "consent.title": "Cookies",
   "consent.text":
     "May we count your visit with Google Analytics? It uses cookies and tells Google which pages you open, never your name.",
@@ -57,6 +91,7 @@ export const en = {
   "nav.offerSignIn": "Sign in to offer a ride",
   "nav.messagesSignedOut": "Sign in to see your messages",
   "home.title": "Share your ride",
+  "home.howItWorks": "How carpooling works",
   "home.intro":
     "Carpool across Iceland: find a seat in someone else's car, or offer the empty seats in yours.",
   "home.nextRide": "Your next ride",

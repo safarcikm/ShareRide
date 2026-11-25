@@ -35,7 +35,8 @@ what holds it back on our side; links from other sites are Martin's part
 
 ## PR 2: the Carpool in Iceland page
 
-`feat(search)`, no new dependency, no migration.
+`feat(search)`, no new dependency, no migration. Built on top of PR 1
+(#240).
 
 1. Texts in both languages: the page's title, description, line, sections
    and questions, and Find's "How carpooling works". Nothing about money.

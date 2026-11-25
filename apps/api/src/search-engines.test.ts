@@ -51,9 +51,10 @@ function setup(searchEngines?: SearchEngines, findSubject?: FindSubject) {
 }
 
 describe("which pages search engines may index (spec 23, 3.4)", () => {
-  it("lists Find, the meeting points, the places, the legal texts and Cookies", () => {
+  it("lists Find, Carpool in Iceland, the meeting points, the places, the legal texts and Cookies", () => {
     for (const path of [
       "/",
+      "/carpool-iceland",
       "/meeting-points",
       "/meeting-points/0190a1d6-0000-7000-8000-0000000000d1",
       "/places/0190a1d6-0000-7000-8000-0000000000e1",
@@ -267,6 +268,45 @@ describe("the page's head (spec 23, 3.6)", () => {
     );
     expect(head.title).toBe("PuffinRide · Carpool and shared rides across Iceland");
     expect(head.tags).not.toContain("canonical");
+  });
+
+  it("gives Carpool in Iceland its title, with the words people search for (3.9)", () => {
+    const head = pageHead(
+      { path: "/carpool-iceland", lang: "en", acceptLanguage: null },
+      production,
+    );
+    expect(head.title).toBe("Carpool in Iceland: find or offer a ride · PuffinRide");
+    expect(head.tags).toContain(
+      `<link data-rh="true" rel="canonical" href="${site}/carpool-iceland?lang=en">`,
+    );
+  });
+
+  it("writes Carpool in Iceland's text for search engines that do not run the app (3.9, item 5)", () => {
+    const head = pageHead(
+      { path: "/carpool-iceland", lang: "is", acceptLanguage: null },
+      production,
+    );
+    const page = fillPage(
+      exportedPage.replace(
+        '<div id="root">',
+        '<noscript> You need to enable JavaScript to run this app. </noscript><div id="root">',
+      ),
+      head,
+    );
+    const noscript = /<noscript>([\s\S]*)<\/noscript>/.exec(page)?.[1] ?? "";
+    expect(noscript).toContain("You need to enable JavaScript to run this app.");
+    expect(noscript).toContain("<h1>Samferða um Ísland</h1>");
+    expect(noscript).toContain("<h2>Svona virkar þetta</h2>");
+    expect(noscript).toContain("<h3>Er PuffinRide leigubíll?</h3>");
+    // Its links keep the language the address asked for.
+    expect(noscript).toContain('<a href="/meeting-points?lang=is">Skoða mótsstaði</a>');
+    expect(noscript).toContain('<a href="/legal/community-rules?lang=is">');
+    // Other pages keep the export's own.
+    const front = fillPage(
+      exportedPage.replace('<div id="root">', '<noscript>JS</noscript><div id="root">'),
+      pageHead({ path: "/", lang: "en", acceptLanguage: null }, production),
+    );
+    expect(front).toContain("<noscript>JS</noscript>");
   });
 
   it("escapes what it writes into the page", () => {
