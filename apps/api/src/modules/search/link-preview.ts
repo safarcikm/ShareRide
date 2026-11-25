@@ -77,19 +77,43 @@ export interface RideCard {
   readonly imagePath: string;
 }
 
+/**
+ * The drawing's own version: raise it when the picture's look or its words
+ * change, so sites that kept a card read the new picture (item 4).
+ */
+const drawingVersion = 1;
+
+/** The card's title: the part's route and when it leaves. */
+function titleOf(ride: Ride, locale: Locale): string {
+  const t = createTranslator(locale);
+  const { from, to } = endsOf(ride);
+  const route = t("search.route", { from: from.name[locale], to: to.name[locale] });
+  return t("seo.tripTitle", { route, when: whenOf(ride, locale, false) });
+}
+
+/** A short fingerprint of everything the picture shows, for its address and the API's copy (item 4). */
+export function rideVersion(ride: Ride, locale: Locale): string {
+  const shown = [
+    String(drawingVersion),
+    locale,
+    titleOf(ride, locale),
+    ...endsOf(ride).between.map((stop) => stop.name[locale]),
+    String(ride.bookable),
+  ];
+  return createHash("sha256").update(shown.join("\n")).digest("hex").slice(0, 12);
+}
+
 /** The card's texts and the picture's address, in one language (item 2). */
 export function rideCard(ride: Ride, locale: Locale): RideCard {
   const t = createTranslator(locale);
-  const { from, to, between } = endsOf(ride);
+  const { from, to } = endsOf(ride);
   const route = t("search.route", { from: from.name[locale], to: to.name[locale] });
-  const title = t("seo.tripTitle", { route, when: whenOf(ride, locale, false) });
-  const shown = [title, ...between.map((stop) => stop.name[locale]), String(ride.bookable)];
-  const version = createHash("sha256").update(shown.join("\n")).digest("hex").slice(0, 12);
+  const title = titleOf(ride, locale);
   const query = new URLSearchParams({
     fromStop: String(ride.board),
     toStop: String(ride.alight),
     lang: locale,
-    v: version,
+    v: rideVersion(ride, locale),
   });
   return {
     title,
@@ -114,17 +138,27 @@ export function stopPosition(value: string | undefined): number | undefined {
 
 /**
  * Finds a trip page's ride the way the page shows it to someone not signed
- * in: `/trips/<id>?from=1&to=3`, as the Share button gives it (item 1).
+ * in: `/trips/<id>?from=1&to=3`, as the Share button gives it (item 1). When
+ * the trip cannot be read just now, the page keeps the general card: the app
+ * still loads, and `onError` hears why.
  */
-export function rideFinder(details: TripDetailsService): FindRide {
+export function rideFinder(
+  details: TripDetailsService,
+  onError: (error: unknown) => void = () => undefined,
+): FindRide {
   return async (path, query) => {
     const id = tripPage.exec(path)?.[1];
     if (id === undefined) return undefined;
-    const found = await details.details(
-      id.toLowerCase(),
-      { board: stopPosition(query("from")), alight: stopPosition(query("to")), seats: 1 },
-      null,
-    );
-    return found.ok ? rideOf(found.value) : undefined;
+    try {
+      const found = await details.details(
+        id.toLowerCase(),
+        { board: stopPosition(query("from")), alight: stopPosition(query("to")), seats: 1 },
+        null,
+      );
+      return found.ok ? rideOf(found.value) : undefined;
+    } catch (error) {
+      onError(error);
+      return undefined;
+    }
   };
 }

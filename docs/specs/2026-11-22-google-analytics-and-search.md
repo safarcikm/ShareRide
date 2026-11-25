@@ -299,11 +299,16 @@ title only (the same picture) and no change.
    a name, a photo, the car or its number plate, a price, or how many seats
    are free, which would also go stale in Facebook's copy (R23.7, R23.8).
 4. **The picture's address:** `/v1/trips/<id>/preview.png?fromStop=…&toStop=…&lang=is`,
-   with `v=` from the texts it shows, so a trip whose time changed gets a
-   new address the next time a site reads the link. It is a file, not in
-   the OpenAPI document; the search limit counts it; it answers 404 where
-   item 1 gives the general preview, and may be kept an hour
-   (`Cache-Control: public, max-age=3600`).
+   with `v=` from what it shows and the drawing's own version, so a trip
+   whose time changed, or a new look, gets a new address the next time a
+   site reads the link. The address always draws the trip as it is now;
+   `v` only makes it new. It is a file, not in the OpenAPI document. It
+   answers 404 where item 1 gives the general preview, and may be kept an
+   hour (`Cache-Control: public, max-age=3600`). The API keeps the last
+   100 pictures it drew, draws at most two at once (503 `busy` beyond
+   that, with `Retry-After`), and counts picture requests per address on
+   their own: 120 a minute, 2,000 an hour. When the trip cannot be read,
+   the page keeps the general card and the app still loads.
 5. **How it is drawn:** on the server, as an SVG turned into a PNG with
    resvg ([ADR 0049](../decisions/0049-draw-link-preview-pictures-with-resvg.md)),
    with the app's fonts (Fredoka and Nunito, SIL Open Font License) and a

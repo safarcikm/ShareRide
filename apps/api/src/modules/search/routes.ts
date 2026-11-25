@@ -22,7 +22,7 @@ import type { RateLimiter } from "../../platform/memory-rate-limiter.ts";
 import { accountSuspended } from "../account/standing.ts";
 import type { TripDetailsError, TripDetailsService } from "./details.ts";
 import { rideOf, stopPosition } from "./link-preview.ts";
-import { drawRide } from "./ride-picture.ts";
+import { createRidePictures, type RidePictures } from "./ride-picture.ts";
 import type { SearchError, SearchService } from "./service.ts";
 
 export interface SearchRoutesDependencies {
@@ -35,6 +35,14 @@ export interface SearchRoutesDependencies {
   readonly clientKey: (c: Context) => string;
   /** Refuses a suspended person: they cannot search (spec 9, 3.6.2). */
   readonly standing: (userId: string) => Promise<Result<void, AccountSuspended>>;
+  /**
+   * Per IP address, for a ride's picture alone (spec 23, 3.10, item 4): link
+   * previews come from a few sites' readers, and a refused picture stays
+   * missing from their copy of the card.
+   */
+  readonly pictureLimiter: RateLimiter;
+  /** The pictures the API keeps; a new set by default. */
+  readonly pictures?: RidePictures;
 }
 
 /** The address of a shared ride's picture (spec 23, 3.10, item 4), for Hono. */
@@ -64,7 +72,9 @@ export function registerSearchRoutes(
   app: OpenAPIHono<AppEnv>,
   dependencies: SearchRoutesDependencies,
 ): void {
-  const { search, details, optionalAuth, limiter, clientKey, standing } = dependencies;
+  const { search, details, optionalAuth, limiter, clientKey, standing, pictureLimiter } =
+    dependencies;
+  const pictures = dependencies.pictures ?? createRidePictures();
 
   /** Searching signed in, as anyone but a suspended person. Trip details stay open to read. */
   const searching = every(
@@ -84,6 +94,16 @@ export function registerSearchRoutes(
     const check = limiter.hit(clientKey(c));
     if (!check.ok) {
       return errorResponse(c, 429, "rate_limited", "Too many searches. Try again shortly.", {
+        retryAfterSeconds: check.error.retryAfterSeconds,
+      });
+    }
+    await next();
+    return undefined;
+  });
+  const pictureLimited = createMiddleware<AppEnv>(async (c, next) => {
+    const check = pictureLimiter.hit(clientKey(c));
+    if (!check.ok) {
+      return errorResponse(c, 429, "rate_limited", "Too many pictures. Try again shortly.", {
         retryAfterSeconds: check.error.retryAfterSeconds,
       });
     }
@@ -121,7 +141,7 @@ export function registerSearchRoutes(
 
   // A shared ride's picture for its link preview (spec 23, 3.10, item 4): a
   // file, so not in the OpenAPI document. Before /v1/trips/{id}, as above.
-  app.get(tripPreviewPicturePath, limited, async (c) => {
+  app.get(tripPreviewPicturePath, pictureLimited, async (c) => {
     const id = c.req.param("id");
     const isId = /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(id);
     const lang = c.req.query("lang");
@@ -138,16 +158,18 @@ export function registerSearchRoutes(
       : undefined;
     const ride = found?.ok === true ? rideOf(found.value) : undefined;
     if (ride === undefined) return errorResponse(c, 404, "not_found", "There is no such trip.");
-    return c.body(
-      new Uint8Array(drawRide(ride, lang !== undefined && isLocale(lang) ? lang : "en")),
-      200,
-      {
-        "Content-Type": "image/png",
-        // Sites read a card's picture once; the address changes with what it shows.
-        "Cache-Control": "public, max-age=3600",
-        "X-Content-Type-Options": "nosniff",
-      },
-    );
+    const png = await pictures.picture(ride, lang !== undefined && isLocale(lang) ? lang : "en");
+    if (png === undefined) {
+      return errorResponse(c, 503, "busy", "Busy drawing other pictures. Try again shortly.", {
+        retryAfterSeconds: 2,
+      });
+    }
+    return c.body(new Uint8Array(png), 200, {
+      "Content-Type": "image/png",
+      // Sites read a card's picture once; the address changes with what it shows.
+      "Cache-Control": "public, max-age=3600",
+      "X-Content-Type-Options": "nosniff",
+    });
   });
 
   // Registered as the GET of /v1/trips/{id} only, so a draft's changes are not counted.

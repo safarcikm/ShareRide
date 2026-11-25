@@ -14,6 +14,7 @@ import {
   memberPasskeyRules,
   operatorPasswordRules,
   providerSignInRules,
+  ridePictureLimitsPerAddress,
   searchLimitsPerAddress,
   type ReturnUrlsAllowed,
   type SettingValues,
@@ -623,7 +624,15 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       settings: () => ruleSettings.search(),
       reliabilitySettings,
     });
-    rideFinderOfApp = rideFinder(tripDetails);
+    // A trip page whose ride cannot be read keeps the general card, and says why.
+    rideFinderOfApp = rideFinder(tripDetails, (error) => {
+      logger.warn({ err: error }, "a shared ride's link preview could not be read");
+      dependencies.reportError?.(error, {
+        method: "GET",
+        route: "/trips/:id",
+        requestId: undefined,
+      });
+    });
     // Before the trip routes, so /v1/trips/search is never taken for a trip's ID.
     registerSearchRoutes(app, {
       search: createSearchService({
@@ -634,6 +643,10 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       details: tripDetails,
       optionalAuth: createOptionalAuth(auth),
       limiter: createMemoryRateLimiter({ rules: searchLimitsPerAddress, clock: features.clock }),
+      pictureLimiter: createMemoryRateLimiter({
+        rules: ridePictureLimitsPerAddress,
+        clock: features.clock,
+      }),
       // A keyed hash, as for sign-in limits: no plain address is kept, even in memory.
       clientKey: (c) => features.hasher("search-address", addressBlock(features.clientAddress(c))),
       standing: (userId) => checkStanding(features.db, userId, features.clock()),

@@ -27,8 +27,8 @@ rest of PuffinRide: the app's fonts and drawings.
 1. **resvg (`@resvg/resvg-js`).** We write the picture as SVG and resvg
    turns it into a PNG, with the fonts we give it. Prebuilt for Linux,
    macOS and Windows as Node-API modules, no install script, no system
-   libraries; MPL-2.0. Draws in a few milliseconds and measures text, so
-   long names can be fitted. A native module per platform (about 2 MB);
+   libraries; MPL-2.0. Draws a picture in 30 to 85 ms of one core and
+   measures text, so long names can be fitted. A native module per platform (about 2 MB);
    no layout engine, so we place things ourselves.
 2. **A headless browser on the server** (Chromium through Playwright), as
    `scripts/export-icons.ts` does at build time. Draws HTML and CSS, so the
@@ -58,8 +58,11 @@ request, and keeps the picture in our own code and look.
 - A new kind of dependency: a native module in the API. Dependabot keeps it
   current; it must keep prebuilt binaries for Linux x64 (Render, CI) and
   for Windows and macOS (development).
-- Drawing costs a few milliseconds of CPU per picture. The search limit
-  counts each request and the picture may be cached for an hour.
+- Drawing costs 30 to 85 ms of CPU per picture, more on the half-CPU
+  server. So the API draws off the main thread, keeps the last 100
+  pictures in memory (about 70 kB each), draws at most two at once
+  ("busy" beyond that), and counts picture requests with a limit of their
+  own; sites may keep a picture for an hour.
 - The fonts (SIL Open Font License, licence beside them) and the car are
   copies; `node scripts/export-icons.ts` in `apps/mobile` copies the car
   again when it changes.

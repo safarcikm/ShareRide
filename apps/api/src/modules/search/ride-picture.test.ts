@@ -1,6 +1,14 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { rideOf, type RideSource } from "./link-preview.ts";
-import { drawRide, layOutRide, pictureSize, rideSvg, textWidth } from "./ride-picture.ts";
+import {
+  createRidePictures,
+  drawRide,
+  layOutRide,
+  pictureSize,
+  rideSvg,
+  textWidth,
+} from "./ride-picture.ts";
 
 const stop = (name: string, plannedAt = "2026-11-27T09:00:00.000Z") => ({
   meetingPoint: { name: { is: name, en: name } },
@@ -38,8 +46,8 @@ const manyStops = ride([
 const room = pictureSize.width - 2 * pictureSize.margin;
 
 describe("a ride's picture (spec 23, 3.10)", () => {
-  it("is a PNG of 1200 by 630", () => {
-    const png = drawRide(short, "en");
+  it("is a PNG of 1200 by 630", async () => {
+    const png = await drawRide(short, "en");
     expect([...png.subarray(0, 8)]).toEqual([137, 80, 78, 71, 13, 10, 26, 10]);
     const header = Buffer.from(png.subarray(16, 24));
     expect([header.readUInt32BE(0), header.readUInt32BE(4)]).toEqual([1200, 630]);
@@ -87,5 +95,69 @@ describe("a ride's picture (spec 23, 3.10)", () => {
     const svg = rideSvg(odd, "en");
     expect(svg).toContain("Kaffi &amp; &lt;Co&gt;");
     expect(svg).not.toContain("<Co>");
+  });
+
+  it("leaves out characters a picture cannot hold, instead of failing", async () => {
+    const odd = ride(["Vík\u0001 – N1", "Höfn – N1"]);
+    expect(rideSvg(odd, "en")).not.toContain("\u0001");
+    expect((await drawRide(odd, "en")).length).toBeGreaterThan(0);
+  });
+
+  it("keeps the count of more stops when even one name is too long", () => {
+    const long = "Kirkjubæjarklaustur – við upplýsingamiðstöðina í Skaftárstofu og gömlu kirkjuna";
+    const layout = layOutRide(ride(["Reykjavík – BSÍ", long, "Vík – N1", "Höfn – N1"]), "en");
+    expect(layout.stops).toMatch(/… and 1 more$/);
+    expect(textWidth(layout.stops ?? "", "stops")).toBeLessThanOrEqual(room);
+  });
+});
+
+describe("the pictures the API keeps (spec 23, 3.10, item 4)", () => {
+  const other = ride(["Selfoss – Olís", "Vík – N1"]);
+
+  it("draws a ride once and keeps the picture", async () => {
+    const pictures = createRidePictures();
+    const first = await pictures.picture(short, "en");
+    expect(first).toBeInstanceOf(Buffer);
+    expect(await pictures.picture(short, "en")).toBe(first);
+    expect(await pictures.picture(short, "is")).not.toBe(first);
+  });
+
+  it("draws again once what it shows has changed", async () => {
+    const pictures = createRidePictures();
+    const open = await pictures.picture(short, "en");
+    const full = ride(
+      ["Reykjavík – BSÍ", "Borgarnes – N1", "Blönduós – N1", "Akureyri – Hof"],
+      "full",
+    );
+    expect(await pictures.picture(full, "en")).not.toBe(open);
+  });
+
+  it("forgets the oldest picture when it holds as many as it may", async () => {
+    const pictures = createRidePictures({ capacity: 1 });
+    const first = await pictures.picture(short, "en");
+    await pictures.picture(other, "en");
+    expect(await pictures.picture(short, "en")).not.toBe(first);
+  });
+
+  it("is busy rather than drawing more than it may at once", async () => {
+    const pictures = createRidePictures({ drawingAtOnce: 1 });
+    const drawing = pictures.picture(short, "en");
+    expect(await pictures.picture(other, "en")).toBeUndefined();
+    expect(await drawing).toBeInstanceOf(Buffer);
+    expect(await pictures.picture(other, "en")).toBeInstanceOf(Buffer);
+  });
+});
+
+describe("the drawings copied for the API (scripts/export-icons.ts)", () => {
+  it("are the app's own", () => {
+    for (const [copy, original] of [
+      ["puffins-in-car.svg", "share/puffins-in-car.svg"],
+      ["icon.svg", "logo/icon.svg"],
+    ]) {
+      const read = (path: string) => readFileSync(new URL(path, import.meta.url), "utf8");
+      expect(read(`../../../assets/trip-preview/${copy}`), copy).toBe(
+        read(`../../../../mobile/assets/${original}`),
+      );
+    }
   });
 });

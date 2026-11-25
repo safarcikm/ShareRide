@@ -1489,7 +1489,8 @@ releases follow [Semantic Versioning](https://semver.org/).
   way and the puffin driver's car; in the reader's language, and never a
   name, a photo, the car, a price or a seat count (R23.8). A cancelled,
   departed or unknown trip keeps the general card. The picture is drawn on
-  request at `GET /v1/trips/{id}/preview.png`, with resvg and the app's
+  first request at `GET /v1/trips/{id}/preview.png` and kept in memory
+  (at most two drawn at once, with a request limit of its own), with resvg and the app's
   fonts kept in `apps/api/assets/trip-preview/` (copied there by
   `export-icons.ts`). New API package `@resvg/resvg-js`.
 

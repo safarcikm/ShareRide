@@ -3,12 +3,12 @@
 // route, the day and time, the stops on the way and the Iceland scene with
 // the puffin driver's car; never a name, a photo, a price or a seat count
 // (R23.8).
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { Resvg, type ResvgRenderOptions } from "@resvg/resvg-js";
+import { renderAsync, Resvg, type ResvgRenderOptions } from "@resvg/resvg-js";
 import { capitalised, createTranslator, type Locale } from "@shareride/i18n";
 import { colors, icelandScene, people } from "@shareride/ui";
-import { endsOf, whenOf, type Ride } from "./link-preview.ts";
+import { endsOf, rideVersion, whenOf, type Ride } from "./link-preview.ts";
 
 /** The size link previews want, and the margin words keep from each side. */
 export const pictureSize = { width: 1200, height: 630, margin: 56 } as const;
@@ -19,14 +19,15 @@ export const pictureSize = { width: 1200, height: 630, margin: 56 } as const;
  * apps/mobile.
  */
 const assets = join(import.meta.dirname, "..", "..", "..", "assets", "trip-preview");
+const fontFiles = ["Fredoka_600SemiBold.ttf", "Nunito_700Bold.ttf", "Nunito_600SemiBold.ttf"].map(
+  (file) => join(assets, file),
+);
+// resvg draws no words at all, without a word of warning, when a font is missing.
+for (const file of fontFiles) {
+  if (!existsSync(file)) throw new Error(`The ride picture's font is missing: ${file}`);
+}
 const renderOptions: ResvgRenderOptions = {
-  font: {
-    fontFiles: ["Fredoka_600SemiBold.ttf", "Nunito_700Bold.ttf", "Nunito_600SemiBold.ttf"].map(
-      (file) => join(assets, file),
-    ),
-    loadSystemFonts: false,
-    defaultFontFamily: "Nunito",
-  },
+  font: { fontFiles, loadSystemFonts: false, defaultFontFamily: "Nunito" },
 };
 
 const inner = (svg: string) =>
@@ -61,8 +62,13 @@ const styles = {
 } as const;
 type Style = keyof typeof styles;
 
+/** Characters XML cannot hold at all: control characters other than tab and line breaks. */
+// eslint-disable-next-line no-control-regex -- these are the characters it removes
+const notInXml = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]/g;
+
 const escapeXml = (text: string) =>
   text
+    .replace(notInXml, "")
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
@@ -83,12 +89,21 @@ function textElement(
   );
 }
 
+/** Widths measured before: the same meeting point names come up again and again. */
+const widths = new Map<string, number>();
+
 /** How wide a text is drawn, in pixels, measured with the fonts the picture uses. */
 export function textWidth(text: string, style: Style, size: number = styles[style].size): number {
   if (text.trim() === "") return 0;
+  const key = `${style}\u0000${String(size)}\u0000${text}`;
+  const known = widths.get(key);
+  if (known !== undefined) return known;
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="4000" height="400">${textElement(text, style, 0, 200, { size })}</svg>`;
   const box = new Resvg(svg, renderOptions).getBBox();
-  return box === undefined ? 0 : box.x + box.width;
+  const width = box === undefined ? 0 : box.x + box.width;
+  if (widths.size >= 5000) widths.clear();
+  widths.set(key, width);
+  return width;
 }
 
 /** The arrow between the two ends, and the gap on each side of it, for a route size. */
@@ -144,19 +159,26 @@ export function layOutRide(ride: Ride, locale: Locale): RideLayout {
   if (route === undefined) throw new Error("unreachable: the smallest size always fits");
 
   const names = between.map((stop) => stop.name[locale]);
+  const stopsLine = (shown: readonly string[]) =>
+    t("seo.tripStops", {
+      stops:
+        shown.length === names.length
+          ? shown.join(", ")
+          : t("seo.tripMoreStops", { stops: shown.join(", "), count: names.length - shown.length }),
+    });
   let stops: string | null = null;
   for (let shown = names.length; shown >= 1 && stops === null; shown -= 1) {
-    const list =
-      shown === names.length
-        ? names.join(", ")
-        : t("seo.tripMoreStops", {
-            stops: names.slice(0, shown).join(", "),
-            count: names.length - shown,
-          });
-    const line = t("seo.tripStops", { stops: list });
-    if (textWidth(line, "stops") <= room || shown === 1) {
-      stops = shortened(line, "stops", styles.stops.size, room);
+    const line = stopsLine(names.slice(0, shown));
+    if (textWidth(line, "stops") <= room) stops = line;
+  }
+  const [firstStop] = names;
+  if (stops === null && firstStop !== undefined) {
+    // Not even one name fits: shorten it, and keep the count of the others.
+    let kept = firstStop;
+    while (kept.length > 1 && textWidth(stopsLine([`${kept}…`]), "stops") > room) {
+      kept = kept.slice(0, -1);
     }
+    stops = stopsLine([`${kept.trimEnd()}…`]);
   }
 
   return { route, when: capitalised(whenOf(ride, locale, true), locale), stops };
@@ -351,7 +373,51 @@ export function rideSvg(ride: Ride, locale: Locale): string {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${s}</svg>`;
 }
 
-/** The picture as a PNG (item 5). */
-export function drawRide(ride: Ride, locale: Locale): Buffer {
-  return new Resvg(rideSvg(ride, locale), renderOptions).render().asPng();
+/** The picture as a PNG (item 5), drawn off the main thread. */
+export async function drawRide(ride: Ride, locale: Locale): Promise<Buffer> {
+  return (await renderAsync(rideSvg(ride, locale), renderOptions)).asPng();
+}
+
+export interface RidePictures {
+  /**
+   * A ride's picture, drawn once and then kept while what it shows stays the
+   * same; undefined when as many are being drawn as may be at once.
+   */
+  picture(ride: Ride, locale: Locale): Promise<Buffer | undefined>;
+}
+
+/**
+ * The pictures the API keeps (item 4). A picture takes tens of milliseconds
+ * of a small server's processor, and sites read one link many times, so the
+ * API keeps the last `capacity` pictures (about 70 kB each) and draws at
+ * most `drawingAtOnce` at a time.
+ */
+export function createRidePictures({ capacity = 100, drawingAtOnce = 2 } = {}): RidePictures {
+  const kept = new Map<string, Buffer>();
+  let drawing = 0;
+  return {
+    async picture(ride, locale) {
+      const key = [ride.id, ride.board, ride.alight, rideVersion(ride, locale)].join(" ");
+      const known = kept.get(key);
+      if (known !== undefined) {
+        // Most recently used last, so the oldest is first to go.
+        kept.delete(key);
+        kept.set(key, known);
+        return known;
+      }
+      if (drawing >= drawingAtOnce) return undefined;
+      drawing += 1;
+      try {
+        const png = await drawRide(ride, locale);
+        kept.set(key, png);
+        for (const oldest of kept.keys()) {
+          if (kept.size <= capacity) break;
+          kept.delete(oldest);
+        }
+        return png;
+      } finally {
+        drawing -= 1;
+      }
+    },
+  };
 }

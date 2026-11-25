@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { rideCard, rideOf, type RideSource } from "./link-preview.ts";
+import type { TripDetailsService } from "./details.ts";
+import { rideCard, rideFinder, rideOf, type RideSource } from "./link-preview.ts";
 
 const id = "6f1c2f9e-3b1a-4c7d-9e2f-0a1b2c3d4e5f";
 
@@ -107,5 +108,26 @@ describe("what a ride's card says (spec 23, 3.10, item 2)", () => {
     const moved = rideFrom(trip("open", 0, 3, "2026-11-27T10:00:00.000Z"));
     expect(rideCard(moved, "en").imagePath).not.toBe(now);
     expect(rideCard(rideFrom(trip("full")), "en").imagePath).not.toBe(now);
+    const later = trip();
+    const renamed = {
+      ...later,
+      stops: later.stops.map((one, index) =>
+        index === 1 ? stop("Borgarnes – Olís", "Borgarnes – Olís", one.plannedAt) : one,
+      ),
+    };
+    expect(rideCard(rideFrom(renamed), "en").imagePath).not.toBe(now);
+  });
+});
+
+describe("finding a trip page's ride (spec 23, 3.10, item 1)", () => {
+  it("keeps the general card when the trip cannot be read just now", async () => {
+    const failed = new Error("connection lost");
+    const details = {
+      details: () => Promise.reject(failed),
+    } as unknown as TripDetailsService;
+    const errors: unknown[] = [];
+    const find = rideFinder(details, (error) => errors.push(error));
+    expect(await find(`/trips/${id}`, () => undefined)).toBeUndefined();
+    expect(errors).toEqual([failed]);
   });
 });
