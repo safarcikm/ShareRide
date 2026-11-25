@@ -83,6 +83,91 @@ function readPng(path: string): Png {
   };
 }
 
+/** The alpha, 0 to 255, of every pixel of an 8-bit RGBA PNG, row by row. */
+function alphaOf(path: string): {
+  readonly size: number;
+  readonly alpha: (x: number, y: number) => number;
+} {
+  const file = readFileSync(join(appDir, path));
+  expect(file[25]).toBe(6);
+  const width = file.readUInt32BE(16);
+  const data: Buffer[] = [];
+  for (let at = 8; at < file.length;) {
+    const length = file.readUInt32BE(at);
+    if (file.subarray(at + 4, at + 8).toString("latin1") === "IDAT") {
+      data.push(file.subarray(at + 8, at + 8 + length));
+    }
+    at += 12 + length;
+  }
+  const raw = inflateSync(Buffer.concat(data));
+  const stride = width * 4;
+  const rows: Buffer[] = [];
+  // Undo each row's filter (PNG, section 9), so every pixel can be read.
+  for (let y = 0; y * (stride + 1) < raw.length; y++) {
+    const filter = raw[y * (stride + 1)];
+    const row = Buffer.from(raw.subarray(y * (stride + 1) + 1, (y + 1) * (stride + 1)));
+    const above = rows[y - 1] ?? Buffer.alloc(stride);
+    for (let i = 0; i < stride; i++) {
+      const left = i >= 4 ? (row[i - 4] ?? 0) : 0;
+      const up = above[i] ?? 0;
+      const upLeft = i >= 4 ? (above[i - 4] ?? 0) : 0;
+      const guess = left + up - upLeft;
+      const near = [left, up, upLeft].map((value) => Math.abs(guess - value));
+      const paeth =
+        (near[0] ?? 0) <= (near[1] ?? 0) && (near[0] ?? 0) <= (near[2] ?? 0)
+          ? left
+          : (near[1] ?? 0) <= (near[2] ?? 0)
+            ? up
+            : upLeft;
+      const add = [0, left, up, Math.floor((left + up) / 2), paeth][filter ?? 0] ?? 0;
+      row[i] = ((row[i] ?? 0) + add) & 0xff;
+    }
+    rows.push(row);
+  }
+  return { size: width, alpha: (x, y) => rows[y]?.[x * 4 + 3] ?? 0 };
+}
+
+/**
+ * A disc that fills its square: opaque across the middle to every edge,
+ * see-through in the corners. Google shows a site's icon in a round frame
+ * (spec 23, 3.6, item 5), so a disc fills it, where a rounded square left
+ * the frame's corners empty.
+ */
+function expectDisc(path: string, size: number): void {
+  const { size: width, alpha } = alphaOf(path);
+  expect(width).toBe(size);
+  const at = (fraction: number) => Math.round(fraction * (size - 1));
+  // A pixel the circle's edge only crosses is a little see-through, so
+  // "opaque" is nearly so, and "see-through" is nearly empty.
+  const looks = (points: readonly (readonly [number, number])[]) =>
+    Object.fromEntries(
+      points.map(([x, y]) => {
+        const value = alpha(at(x), at(y));
+        const look = value >= 224 ? "opaque" : value <= 16 ? "see-through" : String(value);
+        return [`${String(x)}, ${String(y)}`, look];
+      }),
+    );
+  const all = (points: readonly (readonly [number, number])[], look: string) =>
+    Object.fromEntries(points.map(([x, y]) => [`${String(x)}, ${String(y)}`, look]));
+  // Opaque across the middle, to the edge on every side.
+  const edges = [
+    [0.5, 0.01],
+    [0.01, 0.5],
+    [0.99, 0.5],
+    [0.5, 0.99],
+    [0.5, 0.5],
+  ] as const;
+  expect(looks(edges)).toEqual(all(edges, "opaque"));
+  // See-through inside a rounded square's corner, which is outside the circle.
+  const corners = [
+    [0.09, 0.09],
+    [0.91, 0.09],
+    [0.09, 0.91],
+    [0.91, 0.91],
+  ] as const;
+  expect(looks(corners)).toEqual(all(corners, "see-through"));
+}
+
 /** An icon the phone cuts to shape itself: square, 1024, no transparency. */
 function expectFullSquare(path: string, corner: string): void {
   const png = readPng(path);
@@ -124,8 +209,13 @@ describe("app icon and opening screen (spec 15, section 4.9)", () => {
     expectSeeThrough(splash.image, 1152);
   });
 
-  it("shows the icon in the browser tab", () => {
+  it("shows the icon in the browser tab as a disc", () => {
     expectSeeThrough(config.web.favicon, 48);
+    expectDisc(config.web.favicon, 48);
+  });
+
+  it("gives Google a round icon of 192 pixels, which fills its round frame (spec 23, 3.6)", () => {
+    expectDisc("public/icon-192.png", 192);
   });
 
   it("keeps a drawing for every picture and no picture the app does not use", () => {

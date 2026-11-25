@@ -71,8 +71,9 @@ const forTheApi: readonly { drawing: string; size: number; file: string }[] = [
 /**
  * Icons the web export serves from public/ beside Expo's /favicon.ico (spec
  * 23, 3.6): one of 192 pixels, a multiple of 48 as Google asks for to show
- * it in search results, and the one a phone puts on its home screen, which
- * fills its square as iOS wants.
+ * it in search results, round like the tab icon so it fills Google's round
+ * frame, and the one a phone puts on its home screen, which fills its square
+ * as iOS wants.
  */
 const forTheWeb: readonly { drawing: string; size: number; file: string }[] = [
   {

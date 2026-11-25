@@ -26,7 +26,7 @@ describe("emailLogo (spec 24, 3.1)", () => {
     // drawing at 48 pixels, so both start as PNGs with see-through corners.
     const tab = readFileSync(new URL("../../../../mobile/assets/favicon.png", import.meta.url));
     expect(sizeOf(tab)).toEqual({ width: 48, height: 48 });
-    // Colour type 6: RGBA, as the rounded corners are see-through.
+    // Colour type 6: RGBA, as the corners outside the disc are see-through.
     expect(emailLogo.content[25]).toBe(6);
     expect(tab[25]).toBe(6);
   });

@@ -195,6 +195,11 @@ lists both (decision 7).
    `/apple-touch-icon.png` for a phone's home screen. The server writes
    these links into the page without the app's head mark, so the app keeps
    them. `node scripts/export-icons.ts` makes both from the logo drawings.
+   Changed 2026-11-25, on Martin's word: Google shows a site's icon in a
+   round frame, and our rounded square left its corners empty. The tab
+   icon, `/favicon.ico` and `/icon-192.png` are now a disc, the moss square
+   cut to a circle, so the frame shows a full circle. The home screen icon
+   stays a full square, as phones cut it to shape themselves.
 
 6. **Links search engines follow** (added 2026-11-25, 3.9): every way
    from one public page to another is a real link, an `<a href>` on the
@@ -203,6 +208,14 @@ lists both (decision 7).
    opens the screen within the app as before; a click with a modifier key
    or the middle button is the browser's (a new tab). Search engines find
    pages through links; until now they had only the sitemap.
+7. **The site's name** (added 2026-11-25, on Martin's word): Google showed
+   "puffinride.is" above our results. The front page's first answer now
+   carries WebSite structured data, `{"@type": "WebSite", "name":
+   "PuffinRide", "url": "https://puffinride.is/"}`, which Google reads from
+   a site's home page to name it, beside the title and `og:site_name` that
+   already say PuffinRide. It is not marked for the app's head, so the app
+   keeps it. Google changes the name and the icon at its next crawl of the
+   front page, which can take days to weeks.
 
 ### 3.7 robots.txt and the sitemap
 
