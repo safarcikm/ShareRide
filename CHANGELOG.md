@@ -1485,6 +1485,14 @@ releases follow [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Google gets each public page's own title (spec 23, 3.6 and 3.9): the
+  server's first answer for a meeting point or a place names it, such as
+  "Hlemmur: carpool meeting point · PuffinRide", where every page said
+  Find's title before; one the sitemap does not list answers with noindex.
+  The links between the public pages are real links (`<a href>`) on the
+  web, so search engines follow them: "See the meeting points", the
+  meeting points in the lists and a place's nearest points. A plain click
+  still opens the screen within the app.
 - Google may show our icon beside puffinride.is in its results (spec 23,
   3.4 and 3.6): on production the icons and the link preview picture no
   longer answer with noindex, and every page links a 192-pixel icon

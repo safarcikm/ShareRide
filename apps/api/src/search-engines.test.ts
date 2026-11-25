@@ -11,6 +11,7 @@ import {
   pageHead,
   robotsTxt,
   sitemapXml,
+  type FindSubject,
   type SearchEngines,
 } from "./search-engines.ts";
 
@@ -34,7 +35,7 @@ function webApp(): string {
   return dir;
 }
 
-function setup(searchEngines?: SearchEngines) {
+function setup(searchEngines?: SearchEngines, findSubject?: FindSubject) {
   const destination = new Writable({
     write: (_chunk, _encoding, callback) => {
       callback();
@@ -45,6 +46,7 @@ function setup(searchEngines?: SearchEngines) {
     checkDatabase: () => Promise.resolve(),
     webAppDir: webApp(),
     ...(searchEngines === undefined ? {} : { searchEngines }),
+    ...(findSubject === undefined ? {} : { findSubject }),
   });
 }
 
@@ -141,7 +143,7 @@ describe("the page's head (spec 23, 3.6)", () => {
       production,
     );
     expect(head.locale).toBe("is");
-    expect(head.title).toBe("PuffinRide · Samferða um Ísland: far og samakstur");
+    expect(head.title).toBe("Mótsstaðir · PuffinRide");
     expect(head.tags).toContain(
       `<link data-rh="true" rel="canonical" href="${site}/meeting-points?lang=is">`,
     );
@@ -233,6 +235,40 @@ describe("the page's head (spec 23, 3.6)", () => {
     expect(page).toContain('<div id="root"></div>');
   });
 
+  it("gives a meeting point and a place their own title and description (3.6, item 2)", () => {
+    const point = pageHead(
+      { path: "/meeting-points/p1", lang: "en", acceptLanguage: null },
+      production,
+      { kind: "meetingPoint", name: { is: "Reynisfjara", en: "Reynisfjara beach" } },
+    );
+    expect(point.title).toBe("Reynisfjara beach: carpool meeting point · PuffinRide");
+    expect(point.tags).toContain(
+      '<meta data-rh="true" name="description" content="Reynisfjara beach: a PuffinRide meeting point, where drivers and passengers meet to carpool.">',
+    );
+    expect(point.tags).toContain(
+      `<link data-rh="true" rel="canonical" href="${site}/meeting-points/p1?lang=en">`,
+    );
+    // The link preview stays the same for every address (3.6, item 4).
+    expect(point.tags).toContain(
+      '<meta data-rh="true" property="og:title" content="PuffinRide · Carpool and shared rides across Iceland">',
+    );
+    const place = pageHead({ path: "/places/p2", lang: "is", acceptLanguage: null }, production, {
+      kind: "place",
+      name: { is: "Akureyri", en: "Akureyri" },
+    });
+    expect(place.title).toBe("Akureyri: næstu mótsstaðir fyrir samakstur · PuffinRide");
+  });
+
+  it("names no canonical address for a meeting point or place that is not listed", () => {
+    const head = pageHead(
+      { path: "/meeting-points/gone", lang: "en", acceptLanguage: null },
+      production,
+      { kind: "missing" },
+    );
+    expect(head.title).toBe("PuffinRide · Carpool and shared rides across Iceland");
+    expect(head.tags).not.toContain("canonical");
+  });
+
   it("escapes what it writes into the page", () => {
     const head = pageHead(
       { path: '/meeting-points/"><script>$&', lang: null, acceptLanguage: null },
@@ -287,6 +323,28 @@ describe("the web app for search engines", () => {
     }
     for (const path of ["/", "/legal/privacy", "/places/abc"]) {
       expect((await app.request(path)).headers.get("x-robots-tag"), path).toBeNull();
+    }
+  });
+
+  it("writes a meeting point's own title into the first answer", async () => {
+    const app = setup(production, (path) =>
+      Promise.resolve(
+        path === "/meeting-points/p1"
+          ? { kind: "meetingPoint", name: { is: "Hlemmur", en: "Hlemmur" } }
+          : undefined,
+      ),
+    );
+    const response = await app.request("/meeting-points/p1?lang=en");
+    expect(await response.text()).toContain(
+      "<title>Hlemmur: carpool meeting point · PuffinRide</title>",
+    );
+    expect(response.headers.get("x-robots-tag")).toBeNull();
+  });
+
+  it("keeps a meeting point or place that is not listed out of the index", async () => {
+    const app = setup(production, () => Promise.resolve({ kind: "missing" }));
+    for (const path of ["/meeting-points/gone", "/places/gone"]) {
+      expect((await app.request(path)).headers.get("x-robots-tag"), path).toBe("noindex, nofollow");
     }
   });
 

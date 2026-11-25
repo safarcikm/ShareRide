@@ -1,5 +1,12 @@
 import { meetingPointRoute, type MeetingPointDetails } from "@shareride/contracts";
-import { amenityKeys, formatDate, regionKeys, seasonText, typeKeys } from "@shareride/i18n";
+import {
+  amenityKeys,
+  formatDate,
+  pageText,
+  regionKeys,
+  seasonText,
+  typeKeys,
+} from "@shareride/i18n";
 import { router, useLocalSearchParams } from "expo-router";
 import { Check } from "lucide-react-native";
 import { useCallback, useState } from "react";
@@ -70,10 +77,7 @@ function Details({ point }: { readonly point: MeetingPointDetails }) {
       : t("meetingPoints.pausedBecause", { reason: point.pauseReason[locale] });
   return (
     <>
-      <PageHead
-        title={t("seo.title", { page: name })}
-        description={t("seo.meetingPointDescription", { name })}
-      />
+      <PageHead {...pageText(t, { kind: "meetingPoint", name })} />
       <Title>{name}</Title>
       {otherName === name ? null : <Body>{otherName}</Body>}
       <Body>

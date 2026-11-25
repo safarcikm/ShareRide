@@ -27,7 +27,7 @@ test.describe("meeting points on the web", () => {
 
   test("lists the sample points by region and opens one", async ({ page }) => {
     await page.goto("/");
-    await page.getByRole("button", { name: "See the meeting points" }).click();
+    await page.getByRole("link", { name: "See the meeting points" }).click();
     await expect(page.getByRole("heading", { name: "Meeting points" })).toBeVisible();
     await expect(page.getByText(/These are sample meeting points/)).toBeVisible();
     await expect(page.getByRole("heading", { level: 1, name: "Meeting points" })).toBeVisible();
@@ -35,7 +35,7 @@ test.describe("meeting points on the web", () => {
     await expect(page.getByRole("heading", { level: 2, name: "Capital area" })).toBeVisible();
     await expect(page.getByRole("heading", { level: 2, name: "Northeast" })).toBeVisible();
 
-    await page.getByRole("button", { name: /^Hof bus stop, Akureyri/ }).click();
+    await page.getByRole("link", { name: /^Hof bus stop, Akureyri/ }).click();
     await expect(page.getByRole("heading", { name: "Hof bus stop, Akureyri" })).toBeVisible();
     await expect(page.getByText("Hof, Akureyri", { exact: true })).toBeVisible();
     await expect(page.getByText("In use all year")).toBeVisible();
@@ -51,14 +51,14 @@ test.describe("meeting points on the web", () => {
 
     // Hof bus stop and Akureyri Airport are 3 km apart: one spot on the map.
     await clickMapAt(page, { latitude: 65.6832, longitude: -18.0871 });
-    await expect(map.getByRole("button", { name: /^Hof bus stop, Akureyri/ })).toBeVisible();
-    await expect(map.getByRole("button", { name: /^Akureyri Airport/ })).toBeVisible();
+    await expect(map.getByRole("link", { name: /^Hof bus stop, Akureyri/ })).toBeVisible();
+    await expect(map.getByRole("link", { name: /^Akureyri Airport/ })).toBeVisible();
 
     // N1 Vík is on its own: a second click opens it.
     const vik = { latitude: 63.4191, longitude: -19.0061 };
     await clickMapAt(page, vik);
-    await expect(map.getByRole("button", { name: /^N1 Vík/ })).toBeVisible();
-    await expect(map.getByRole("button", { name: /^Akureyri Airport/ })).toBeHidden();
+    await expect(map.getByRole("link", { name: /^N1 Vík/ })).toBeVisible();
+    await expect(map.getByRole("link", { name: /^Akureyri Airport/ })).toBeHidden();
     await clickMapAt(page, vik);
     await expect(page.getByRole("heading", { name: "N1 Vík" })).toBeVisible();
     await expect(page.getByRole("img", { name: "N1 Vík on a map of Iceland" })).toBeVisible();
@@ -72,7 +72,7 @@ test.describe("meeting points on the web", () => {
     await page.goto("/meeting-points");
     // The capital area's sample points share one spot on the map.
     await clickMapAt(page, { latitude: 64.1374, longitude: -21.9356 });
-    const cards = page.getByTestId("points-map").getByRole("button");
+    const cards = page.getByTestId("points-map").getByRole("link");
     await expect(cards.first()).toBeVisible();
     expect(await cards.count()).toBeGreaterThan(4);
 
@@ -91,7 +91,7 @@ test.describe("meeting points on the web", () => {
     await page.getByRole("button", { name: /^Þorlákshöfn, Town/ }).click();
     await expect(page.getByRole("heading", { name: "Þorlákshöfn" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Nearest meeting points" })).toBeVisible();
-    await expect(page.getByRole("button", { name: /^N1 Þorlákshöfn, .* away/ })).toBeVisible();
+    await expect(page.getByRole("link", { name: /^N1 Þorlákshöfn, .* away/ })).toBeVisible();
   });
 
   test("tolerates a typo and finds the airport by its code", async ({ page }) => {
@@ -109,9 +109,9 @@ test.describe("meeting points on the web", () => {
   // and after signing up the form opens again for the same point.
   test("reports a problem with a point after signing up", async ({ page }) => {
     await page.goto("/");
-    await page.getByRole("button", { name: "See the meeting points" }).click();
+    await page.getByRole("link", { name: "See the meeting points" }).click();
     await showList(page);
-    await page.getByRole("button", { name: /^N1 Vík/ }).click();
+    await page.getByRole("link", { name: /^N1 Vík/ }).click();
     await expect(page.getByRole("heading", { name: "N1 Vík" })).toBeVisible();
     await page.getByRole("button", { name: "Something wrong here?" }).click();
     await expect(

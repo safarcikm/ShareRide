@@ -1,0 +1,66 @@
+import { router, type Href } from "expo-router";
+import { Platform } from "react-native";
+
+/** An address inside the app, such as "/meeting-points" or a pathname with its params. */
+export type AppPath = Href;
+
+/** The address an `<a href>` names: a pathname's params fill its segments, the rest the query. */
+export function addressOf(href: AppPath): string {
+  if (typeof href === "string") return href;
+  const rest = new Map(Object.entries(href.params ?? {}).map(([name, value]) => [name, value]));
+  const path = href.pathname.replace(/\[([^\]]+)\]/g, (_segment, name: string) => {
+    const value = rest.get(name);
+    rest.delete(name);
+    return encodeURIComponent(String(value));
+  });
+  const query = new URLSearchParams(
+    [...rest]
+      .filter(([, value]) => value !== undefined)
+      .map(([name, value]) => [name, String(value)]),
+  ).toString();
+  return query === "" ? path : `${path}?${query}`;
+}
+
+/** The parts of a click a link looks at; a press on a phone has none. */
+interface Click {
+  readonly preventDefault?: () => void;
+  readonly metaKey?: boolean;
+  readonly ctrlKey?: boolean;
+  readonly shiftKey?: boolean;
+  readonly altKey?: boolean;
+  readonly button?: number;
+}
+
+/**
+ * What makes a pressable a real link (spec 23, 3.6, item 6). On the web it
+ * is an `<a href>`: search engines follow it to the page, and a click with
+ * a modifier key or the middle button is the browser's, such as a new tab;
+ * a plain click opens the screen within the app. On a phone, a press that
+ * opens the screen. Spread over a `Pressable` with the role `link`.
+ */
+export function linkProps(href: AppPath): {
+  readonly href?: string;
+  readonly onPress: (event?: Click) => void;
+} {
+  if (Platform.OS !== "web") {
+    return {
+      onPress: () => {
+        router.push(href);
+      },
+    };
+  }
+  return {
+    href: addressOf(href),
+    onPress: (event) => {
+      const modified =
+        event?.metaKey === true ||
+        event?.ctrlKey === true ||
+        event?.shiftKey === true ||
+        event?.altKey === true ||
+        (event?.button ?? 0) !== 0;
+      if (modified) return;
+      event?.preventDefault?.();
+      router.push(href);
+    },
+  };
+}

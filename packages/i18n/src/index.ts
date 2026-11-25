@@ -7,4 +7,5 @@ export * from "./language-names.generated.ts";
 export * from "./locales.ts";
 export * from "./meeting-points.ts";
 export * from "./safety.ts";
+export * from "./seo.ts";
 export * from "./translator.ts";

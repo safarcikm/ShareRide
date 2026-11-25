@@ -11,7 +11,8 @@ import { usePalette } from "@/theme/use-palette";
 /**
  * A meeting point in a list: its name, type and municipality, an optional
  * detail such as its distance, and tags for paused and sample points. The
- * whole card opens it. `compact` shows it as a row of a dropdown list.
+ * whole card opens it, as a link unless `onPress` says otherwise.
+ * `compact` shows it as a row of a dropdown list.
  * `sampleTag={false}` leaves the sample tag to a list that shows it once
  * (spec 16, 3.8).
  */
@@ -26,7 +27,11 @@ export function MeetingPointCard({
   readonly detail?: string;
   readonly compact?: boolean;
   readonly sampleTag?: boolean;
-  readonly onPress: () => void;
+  /**
+   * What a press does; left out, the card is a link to the meeting point's
+   * page, which search engines follow (spec 23, 3.6).
+   */
+  readonly onPress?: () => void;
 }) {
   const { locale, t } = useLanguage();
   const name = point.name[locale];
@@ -34,14 +39,11 @@ export function MeetingPointCard({
   const tags: { kind: TagKind; label: string }[] = [];
   if (point.status === "paused") tags.push({ kind: "warning", label: t("meetingPoints.paused") });
   if (point.sample && sampleTag) tags.push({ kind: "info", label: t("meetingPoints.sample") });
-  const Frame = compact ? Row : Card;
-  return (
-    <Frame
-      onPress={onPress}
-      accessibilityLabel={[name, detail, type, point.municipality, ...tags.map((tag) => tag.label)]
-        .filter((part) => part !== undefined)
-        .join(", ")}
-    >
+  const label = [name, detail, type, point.municipality, ...tags.map((tag) => tag.label)]
+    .filter((part) => part !== undefined)
+    .join(", ");
+  const lines = (
+    <>
       <Lines
         name={name}
         nameTestID="meeting-point-name"
@@ -56,6 +58,19 @@ export function MeetingPointCard({
           ))}
         </View>
       )}
+    </>
+  );
+  if (onPress === undefined) {
+    return (
+      <Card href={`/meeting-points/${point.id}`} accessibilityLabel={label}>
+        {lines}
+      </Card>
+    );
+  }
+  const Frame = compact ? Row : Card;
+  return (
+    <Frame onPress={onPress} accessibilityLabel={label}>
+      {lines}
     </Frame>
   );
 }

@@ -1,7 +1,7 @@
 import type { CallResult } from "@shareride/api-client";
 import { meetingPointsRoute, type MeetingPointSummary } from "@shareride/contracts";
 import { regions } from "@shareride/domain";
-import { regionKeys } from "@shareride/i18n";
+import { pageText, regionKeys } from "@shareride/i18n";
 import { useCallback, useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { errorText } from "@/auth/errors";
@@ -37,10 +37,7 @@ export default function MeetingPointsScreen() {
   const points = result?.ok === true ? result.data.meetingPoints : [];
   return (
     <Screen aside={points.length === 0 ? undefined : <PointsMap points={points} />}>
-      <PageHead
-        title={t("seo.title", { page: t("meetingPoints.title") })}
-        description={t("seo.meetingPointsDescription")}
-      />
+      <PageHead {...pageText(t, { kind: "meetingPoints" })} />
       <BackButton />
       <Title>{t("meetingPoints.title")}</Title>
       <Body>{t("meetingPoints.intro")}</Body>
@@ -173,15 +170,9 @@ function PointsMap({ points }: { readonly points: readonly MeetingPointSummary[]
   );
 }
 
+/** A link to the meeting point's page, which search engines follow (spec 23, 3.6). */
 function PointCard({ point }: { readonly point: MeetingPointSummary }) {
-  return (
-    <MeetingPointCard
-      point={point}
-      onPress={() => {
-        openSearchResult({ kind: "meetingPoint", meetingPoint: point });
-      }}
-    />
-  );
+  return <MeetingPointCard point={point} />;
 }
 
 const styles = StyleSheet.create({

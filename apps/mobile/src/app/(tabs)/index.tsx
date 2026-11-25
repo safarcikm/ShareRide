@@ -1,4 +1,5 @@
 import { soonestTripsRoute, type TripSearchResult } from "@shareride/contracts";
+import { pageText } from "@shareride/i18n";
 import { router } from "expo-router";
 import { useCallback, useState, type ReactNode } from "react";
 import {
@@ -91,7 +92,7 @@ export default function FindScreen() {
 /** Find's title and description for search engines (spec 23, 3.6). */
 function FindHead() {
   const { t } = useLanguage();
-  return <PageHead title={t("seo.findTitle")} description={t("seo.findDescription")} />;
+  return <PageHead {...pageText(t, { kind: "find" })} />;
 }
 
 function FrontPage() {
@@ -175,14 +176,9 @@ function FrontPage() {
       }}
     />
   );
+  // A link, which search engines follow to the meeting points (spec 23, 3.6).
   const meetingPoints = (
-    <Button
-      variant="text"
-      label={t("meetingPoints.open")}
-      onPress={() => {
-        router.push("/meeting-points");
-      }}
-    />
+    <Button variant="text" label={t("meetingPoints.open")} href="/meeting-points" />
   );
   if (wide) {
     const listed = rides.slice(0, shown);

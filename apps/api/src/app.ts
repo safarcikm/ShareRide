@@ -188,6 +188,8 @@ import {
   publicPages,
   robotsTxt,
   sitemapXml,
+  subjectFinder,
+  type FindSubject,
   type SearchEngines,
 } from "./search-engines.ts";
 
@@ -276,6 +278,11 @@ export interface AppDependencies {
   readonly reportError?: ErrorReporter;
   /** What search engines may index (spec 23); nothing when left out. */
   readonly searchEngines?: SearchEngines;
+  /**
+   * Looks up the name a meeting point's or a place's address is about, for
+   * the page's title (spec 23, 3.6); by default from the database.
+   */
+  readonly findSubject?: FindSubject;
   /** Google Analytics on the website (spec 23); none when left out. */
   readonly analytics?: Analytics | null;
 }
@@ -800,6 +807,10 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
           photoOrigin,
           searchEngines,
           dependencies.analytics ?? null,
+          dependencies.findSubject ??
+            (dependencies.features?.db === undefined
+              ? undefined
+              : subjectFinder(dependencies.features.db)),
         );
   const adminApp =
     dependencies.adminAppDir === undefined

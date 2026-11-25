@@ -1,5 +1,5 @@
 import { nearestMeetingPointsRoute, type NearestMeetingPoints } from "@shareride/contracts";
-import { formatDistance, placeKindKeys, regionKeys } from "@shareride/i18n";
+import { formatDistance, pageText, placeKindKeys, regionKeys } from "@shareride/i18n";
 import { useLocalSearchParams } from "expo-router";
 import { useCallback } from "react";
 import { ActivityIndicator } from "react-native";
@@ -13,14 +13,13 @@ import { Screen } from "@/components/screen";
 import { Body, Heading, Title } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { useLoaded } from "@/lib/use-loaded";
-import { openSearchResult } from "@/meeting-points/open-result";
 import { MeetingPointCard } from "@/meeting-points/result-cards";
 import { usePalette } from "@/theme/use-palette";
 
 /**
  * A town, village, landmark or area chosen in place search, with the active
  * meeting points nearest to it and their distance in a straight line
- * (spec 2, 3.4.3). Open to everyone.
+ * (spec 2, 3.4.3), each a link to its page (spec 23, 3.6). Open to everyone.
  */
 export default function PlaceScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -57,10 +56,7 @@ function Nearest({ nearest }: { readonly nearest: NearestMeetingPoints }) {
   const { place } = nearest;
   return (
     <>
-      <PageHead
-        title={t("seo.title", { page: t("seo.placeTitle", { place: place.name[locale] }) })}
-        description={t("seo.placeDescription", { place: place.name[locale] })}
-      />
+      <PageHead {...pageText(t, { kind: "place", name: place.name[locale] })} />
       <Title>{place.name[locale]}</Title>
       <Body>
         {t("places.summary", {
@@ -75,9 +71,6 @@ function Nearest({ nearest }: { readonly nearest: NearestMeetingPoints }) {
           key={meetingPoint.id}
           point={meetingPoint}
           detail={t("search.distanceAway", { distance: formatDistance(distanceM, locale) })}
-          onPress={() => {
-            openSearchResult({ kind: "meetingPoint", meetingPoint });
-          }}
         />
       ))}
     </>

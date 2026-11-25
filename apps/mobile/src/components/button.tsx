@@ -11,12 +11,25 @@ import {
   type Palette,
 } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
+import { linkProps, type AppPath } from "@/navigation/link-props";
 
 type Variant = "primary" | "secondary" | "text";
 
-interface ButtonProps {
+type ButtonProps = ButtonLook &
+  (
+    | { readonly onPress: () => void; readonly href?: never }
+    | {
+        /**
+         * Opens this screen: a link, an `<a href>` on the web that search
+         * engines follow (spec 23, 3.6), that looks like the button.
+         */
+        readonly href: AppPath;
+        readonly onPress?: never;
+      }
+  );
+
+interface ButtonLook {
   readonly label: string;
-  readonly onPress: () => void;
   /** Read by screen readers instead of the label, when the label is not enough. */
   readonly accessibilityLabel?: string;
   readonly variant?: Variant;
@@ -80,6 +93,7 @@ function look(variant: Variant, palette: Palette, disabled: boolean, hovered: bo
 export function Button({
   label,
   onPress,
+  href,
   accessibilityLabel,
   variant = "primary",
   busy = false,
@@ -100,14 +114,14 @@ export function Button({
   } = look(variant, palette, disabled, hovered);
   return (
     <Pressable
-      accessibilityRole="button"
+      accessibilityRole={href === undefined ? "button" : "link"}
       accessibilityLabel={accessibilityLabel ?? label}
       // aria-* rather than accessibilityState, which the web build drops.
       aria-disabled={inactive}
       aria-busy={busy}
       aria-expanded={expanded}
       disabled={inactive}
-      onPress={onPress}
+      {...(href === undefined ? { onPress } : linkProps(href))}
       {...hover}
       style={({ pressed }) => [
         styles.outer,

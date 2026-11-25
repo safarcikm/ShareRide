@@ -14,6 +14,7 @@ export const en = {
     "The meeting points where PuffinRide drivers and passengers meet to carpool, all around Iceland, on the map and by region.",
   "seo.meetingPointDescription":
     "{name}: a PuffinRide meeting point, where drivers and passengers meet to carpool.",
+  "seo.meetingPointTitle": "{name}: carpool meeting point",
   "seo.placeTitle": "{place}: nearest carpool meeting points",
   "seo.placeDescription":
     "The PuffinRide carpool meeting points nearest to {place}, for finding or offering a shared ride.",

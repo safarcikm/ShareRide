@@ -80,8 +80,9 @@ describe("Meeting points", () => {
       .getAllByTestId("meeting-point-name")
       .map((name) => name.props.children as string);
     expect(names).toEqual(["BSÍ bus terminal", "Fitjar", "Keflavík Airport", "Hof, Akureyri"]);
+    // Each a link, which search engines follow to its page (spec 23, 3.6).
     expect(
-      screen.getByRole("button", {
+      screen.getByRole("link", {
         name: "BSÍ bus terminal, Bus hub, Reykjavíkurborg, Sample meeting point",
       }),
     ).toBeVisible();
@@ -91,7 +92,7 @@ describe("Meeting points", () => {
     await openList();
     expect(screen.getByText(/These are sample meeting points/)).toBeVisible();
     expect(screen.getAllByText("Sample meeting point")).toHaveLength(4);
-    const paused = screen.getByRole("button", { name: /^Fitjar/ });
+    const paused = screen.getByRole("link", { name: /^Fitjar/ });
     expect(within(paused).getByText("Not in use at the moment")).toBeVisible();
   });
 
@@ -132,7 +133,7 @@ describe("Meeting points", () => {
 
   it("opens from the welcome screen", async () => {
     await renderApp("/", { setUp: catalogue });
-    await fireEvent.press(await screen.findByRole("button", { name: "See the meeting points" }));
+    await fireEvent.press(await screen.findByRole("link", { name: "See the meeting points" }));
     expect(await screen.findByRole("header", { name: "Meeting points" })).toBeVisible();
     expect(screen).toHavePathname("/meeting-points");
   });
@@ -215,7 +216,8 @@ describe("The map of meeting points", () => {
     await tapAt(kef);
     expect(screen).toHavePathname("/meeting-points");
 
-    await fireEvent.press(screen.getByRole("button", { name: /^Fitjar/ }));
+    // A link, so search engines follow it to the meeting point (spec 23, 3.6).
+    await fireEvent.press(screen.getByRole("link", { name: /^Fitjar/ }));
     expect(await screen.findByRole("header", { name: "Fitjar" })).toBeVisible();
   });
 
@@ -243,7 +245,7 @@ describe("The map of meeting points", () => {
 describe("Meeting point details", () => {
   async function openDetails(name: RegExp) {
     const app = await openList();
-    await fireEvent.press(screen.getByRole("button", { name }));
+    await fireEvent.press(screen.getByRole("link", { name }));
     return app;
   }
 
@@ -352,7 +354,7 @@ describe("Meeting point details", () => {
     expect(screen.queryAllByText("Hof, Akureyri")).toHaveLength(1);
 
     await fireEvent.press(screen.getByRole("button", { name: "Back" }));
-    await fireEvent.press(await screen.findByRole("button", { name: /^Keflavík Airport/ }));
+    await fireEvent.press(await screen.findByRole("link", { name: /^Keflavík Airport/ }));
     expect(await screen.findByText("Also known as KEF, Leifsstöð")).toBeVisible();
   });
 
@@ -426,7 +428,8 @@ describe("Place search", () => {
     expect(screen.getByText("38 km away")).toBeVisible();
     expect(screen.queryByText(/There are no meeting points near/)).toBeNull();
 
-    await fireEvent.press(screen.getByRole("button", { name: /^Fitjar/ }));
+    // A link, so search engines follow it to the meeting point (spec 23, 3.6).
+    await fireEvent.press(screen.getByRole("link", { name: /^Fitjar/ }));
     expect(await screen.findByRole("header", { name: "Fitjar" })).toBeVisible();
   });
 

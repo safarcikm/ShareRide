@@ -408,7 +408,7 @@ describe("Find: search, rides and offering (spec 16, 3.2; spec 4, 3.8)", () => {
     expect(within(offer).getByTestId("button-face")).toHaveStyle({
       borderColor: colors.light.control,
     });
-    expect(screen.getByRole("button", { name: "See the meeting points" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "See the meeting points" })).toBeVisible();
   });
 
   it("is the same page for someone signed in", async () => {
@@ -1056,9 +1056,9 @@ describe("Find on a laptop (spec 18, 3.5)", () => {
     expect(side.getByRole("header", { name: "Your next ride" })).toBeVisible();
     expect(side.getByRole("button", { name: /^Passenger, Sunday 15 November/ })).toBeVisible();
     expect(map()).toBeVisible();
-    expect(side.getByRole("button", { name: "See the meeting points" })).toBeVisible();
+    expect(side.getByRole("link", { name: "See the meeting points" })).toBeVisible();
     // Each once: the side column takes the place of the page's last part.
-    expect(screen.getAllByRole("button", { name: "See the meeting points" })).toHaveLength(1);
+    expect(screen.getAllByRole("link", { name: "See the meeting points" })).toHaveLength(1);
     expect(screen.getAllByRole("header", { name: "Your next ride" })).toHaveLength(1);
   });
 
@@ -1353,7 +1353,7 @@ describe("Find on a laptop (spec 18, 3.5)", () => {
     expect(drawn("map-dot-muted")).toHaveLength(4);
     expect(drawn("map-dot-chosen")).toHaveLength(0);
     expect(
-      within(screen.getByTestId("columns-side")).getByRole("button", {
+      within(screen.getByTestId("columns-side")).getByRole("link", {
         name: "See the meeting points",
       }),
     ).toBeVisible();
@@ -1406,7 +1406,7 @@ describe("Find on a laptop (spec 18, 3.5)", () => {
       "Ferðin á korti af Íslandi: BSÍ umferðarmiðstöð → Hof, Akureyri.",
     );
     expect(screen.getByRole("button", { name: "Bjóða far" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Skoða mótsstaði" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Skoða mótsstaði" })).toBeVisible();
   });
 
   it("counts the meeting points on the map in Icelandic", async () => {
