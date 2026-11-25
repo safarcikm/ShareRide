@@ -20,10 +20,44 @@ export const is = {
   "seo.placeTitle": "{place}: næstu mótsstaðir fyrir samakstur",
   "seo.placeDescription":
     "Næstu mótsstaðir PuffinRide við {place}, til að finna far eða bjóða far í samakstri.",
+  "seo.carpoolTitle": "Samferða um Ísland: finndu far eða bjóddu far",
+  "seo.carpoolDescription":
+    "Svona virkar samakstur um Ísland með PuffinRide: finndu sæti í bíl sem fer þína leið eða bjóddu laus sæti í þínum, og hittist á opinberum mótsstöðum um allt land.",
   "seo.legalDescription": "Notendaskilmálar, samfélagsreglur og persónuverndarstefna PuffinRide.",
   "seo.shareImage": "Tveir lundar PuffinRide á ferð í litlum bíl",
   "seo.cookiesDescription":
     "Hvað vefur PuffinRide geymir í tækinu þínu, og val þitt um Google Analytics.",
+  "carpool.title": "Samferða um Ísland",
+  "carpool.intro":
+    "PuffinRide er vefur fyrir samakstur á Íslandi. Fólk sem ekur milli bæja býður laus sæti í bílnum sínum og þeir sem vantar far bóka sæti og ferðast með þeim.",
+  "carpool.howTitle": "Svona virkar þetta",
+  "carpool.howFind":
+    "Finndu far: veldu hvaðan þú ferð, hvert og hvaða dag. Þú getur farið alla leiðina eða bara hluta hennar.",
+  "carpool.howBook":
+    "Bókaðu sæti: sumir bílstjórar taka við bókun strax en aðrir samþykkja hvern farþega fyrst. Þegar þú hefur bókað getið þú og bílstjórinn sent hvort öðru skilaboð í appinu.",
+  "carpool.howMeet":
+    "Hittist og farið: þú ferð inn á mótsstað á þeim tíma sem ferðin sýnir og út á þeim sem þú valdir.",
+  "carpool.howOffer":
+    "Bjóddu far: ertu að fara eitthvert með laus sæti? Settu inn ferðina með mótsstöðunum og farþegar bóka sætin.",
+  "carpool.pointsTitle": "Mótsstaðir",
+  "carpool.points":
+    "Farþegar fara aðeins inn og út á opinberum stöðum, svo sem bensínstöðvum, biðstöðvum og verslunarmiðstöðvum, í bæjum og þorpum um allt land og við þekkta ferðamannastaði.",
+  "carpool.roadsTitle": "Hvert ferðirnar fara",
+  "carpool.roads":
+    "Ferðirnar fara þangað sem bílstjórarnir eru að fara: til dæmis frá Reykjavík til Akureyrar, Selfoss, Borgarness, Víkur eða Egilsstaða, eða milli Keflavíkurflugvallar og Reykjavíkur.",
+  "carpool.trustTitle": "Með hverjum þú ferðast",
+  "carpool.trust":
+    "Allir notendur eru með staðfest símanúmer. Bílstjórar sýna prófílmynd og eftir hverja ferð gefa bílstjórar og farþegar hvert öðru umsögn. Allir samþykkja samfélagsreglurnar okkar.",
+  "carpool.rules": "Lesa samfélagsreglurnar",
+  "carpool.questionsTitle": "Spurningar",
+  "carpool.taxiQuestion": "Er PuffinRide leigubíll?",
+  "carpool.taxiAnswer":
+    "Nei. Bílstjórar bjóða sæti í ferð sem þeir fara hvort sem er og PuffinRide kemur þeim í samband við fólk sem er að fara sömu leið.",
+  "carpool.languageQuestion": "Get ég notað það á ensku?",
+  "carpool.languageAnswer": "Já. PuffinRide er á íslensku og ensku.",
+  "carpool.accountQuestion": "Þarf ég aðgang til að skoða?",
+  "carpool.accountAnswer":
+    "Nei. Allir geta skoðað ferðirnar og mótsstaðina. Til að bóka sæti eða bjóða far skráir þú þig með netfangi eða Google.",
   "consent.title": "Vafrakökur",
   "consent.text":
     "Megum við telja heimsókn þína með Google Analytics? Það notar vafrakökur og segir Google hvaða síður þú opnar, aldrei nafnið þitt.",
@@ -59,6 +93,7 @@ export const is = {
   "nav.offerSignIn": "Skráðu þig inn til að bjóða far",
   "nav.messagesSignedOut": "Skráðu þig inn til að sjá skilaboðin þín",
   "home.title": "Verum samferða",
+  "home.howItWorks": "Svona virkar samakstur",
   "home.intro":
     "Samakstur um allt Ísland: finndu far með öðrum eða bjóddu laus sæti í bílnum þínum.",
   "home.nextRide": "Næsta ferðin þín",

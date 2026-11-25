@@ -1483,6 +1483,15 @@ releases follow [Semantic Versioning](https://semver.org/).
   Download my data lists the devices. New app package
   `@simplewebauthn/browser`.
 
+- Carpool in Iceland (spec 23, 3.9): a public page at `/carpool-iceland`,
+  "Samferða um Ísland" in Icelandic, that says in words what PuffinRide is
+  and how carpooling with it works (find, book, meet, offer), the meeting
+  points, where rides go, who you travel with and a few questions, with
+  Find a ride and Offer a ride; nothing about money. Find links to it as
+  "How carpooling works". It is in the sitemap with its own title, and the
+  server writes its text into the first answer's `<noscript>` for search
+  engines that do not run the app.
+
 ### Fixed
 
 - Google gets each public page's own title (spec 23, 3.6 and 3.9): the

@@ -88,6 +88,7 @@ describe("the sitemap on production (spec 23, 3.7)", () => {
     expect(listed).toEqual(
       expect.arrayContaining([
         "/",
+        "/carpool-iceland",
         "/meeting-points",
         `/meeting-points/${point("active")}`,
         `/places/${point("place")}`,
