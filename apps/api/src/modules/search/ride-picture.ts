@@ -74,6 +74,12 @@ const escapeXml = (text: string) =>
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;");
 
+/**
+ * A zero-width non-joiner after each "f" that a letter follows, so "fl", "fi" and "ff" stay two
+ * letters: resvg cannot turn ligatures off, and its "fl" in Fredoka looks like "ƀ" (Kefƀavík).
+ */
+const withoutLigatures = (text: string) => text.replace(/f(?=\p{L})/gu, "f\u200C");
+
 function textElement(
   text: string,
   style: Style,
@@ -85,7 +91,7 @@ function textElement(
   const size = options.size ?? styles[style].size;
   return (
     `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" font-family="${family}" font-weight="${String(weight)}" ` +
-    `font-size="${size.toFixed(1)}" fill="${options.fill ?? light.text}" text-anchor="${options.anchor ?? "start"}">${escapeXml(text)}</text>`
+    `font-size="${size.toFixed(1)}" fill="${options.fill ?? light.text}" text-anchor="${options.anchor ?? "start"}">${escapeXml(withoutLigatures(text))}</text>`
   );
 }
 

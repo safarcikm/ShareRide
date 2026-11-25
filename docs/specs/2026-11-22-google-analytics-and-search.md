@@ -315,7 +315,9 @@ title only (the same picture) and no change.
    copy of the front page's car, kept in `apps/api/assets/trip-preview/`
    because the API's image holds no `apps/mobile`. `node
    scripts/export-icons.ts` in `apps/mobile` copies the car again after it
-   changes.
+   changes. Letters are never joined: resvg cannot turn ligatures off and
+   draws Fredoka's "fl" like "ƀ", so a zero-width non-joiner follows each
+   "f" before a letter (Keflavík, Hafnarfjörður).
 6. **Facebook keeps what it read.** A card already posted keeps the old
    time if the driver moves it; the trip page shows the change. Facebook's
    Sharing Debugger reads a link again on request.
