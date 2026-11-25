@@ -169,7 +169,8 @@ function ChooseHowScreen() {
     // Signed in: sign-in closes by itself.
     if (signedIn.ok) return true;
     setError(passkeyErrorText(t, signedIn));
-    if (signedIn.error.code === "passkey_unknown") void devicePasskeys.forget(credential.id);
+    // Before the field offers its passkeys again, so it does not offer this one.
+    if (signedIn.error.code === "passkey_unknown") await devicePasskeys.forget(credential.id);
     return false;
   }
 

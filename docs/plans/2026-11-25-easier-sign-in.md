@@ -67,16 +67,16 @@ approval in the [plan doc](https://claude.ai/artifact/A41X4xdkpNGaFc47ryXzYA).
 `{ code: "passkey_unknown" }`, answered 400 by `POST /v1/auth/passkey`;
 `MemberPasskey.credentialId: string`.
 
-- [ ] Failing tests: domain, the limit is 60 per 600 s; integration,
+- [x] Failing tests: domain, the limit is 60 per 600 s; integration,
   "a passkey in neither table is passkey_unknown", "an operator's passkey is
   passkey_invalid" (insert an `operatorPasskeys` row with that credential
   ID), "Sign-in methods lists each passkey's credentialId".
-- [ ] In `signIn`, when no member passkey has the credential, look up
+- [x] In `signIn`, when no member passkey has the credential, look up
   `schema.operatorPasskeys` by `credentialId`: found → `passkey_invalid`,
   else → `passkey_unknown`. `toMemberPasskey` adds `credentialId`.
-- [ ] Contracts: describe `passkey_unknown` on the route; add
+- [x] Contracts: describe `passkey_unknown` on the route; add
   `credentialId` to `memberPasskeySchema`.
-- [ ] Run `pnpm --filter @shareride/domain test` and the API's integration
+- [x] Run `pnpm --filter @shareride/domain test` and the API's integration
   file; commit.
 
 ### Task 2: The device layer
@@ -93,7 +93,7 @@ approval in the [plan doc](https://claude.ai/artifact/A41X4xdkpNGaFc47ryXzYA).
 with `rpId` = `location.hostname`, which is `WEB_APP_URL`'s host, when the
 browser has it; never throws). Native: `false`, rejected, no-op, no-op.
 
-- [ ] Types and both modules; `pnpm --filter @shareride/mobile typecheck`.
+- [x] Types and both modules; `pnpm --filter @shareride/mobile typecheck`.
 
 ### Task 3: Step 1 and Settings
 
@@ -109,17 +109,17 @@ answer and its options to `onAnswer`, renews every `keepPasskeyOptionsMs`,
 cancels on unmount and on `pause`, starts again on `resume`; ignores every
 failure.
 
-- [ ] Failing tests in `passkey.test.tsx` ("Face ID in the email field
+- [x] Failing tests in `passkey.test.tsx` ("Face ID in the email field
   (spec 28, 3.1)"): starts where `autofillAvailable` and `passkeySignIn`;
   not otherwise; an answer signs in with no tap; the button pauses it (one
   `get`, `cancel` called) and it resumes after; renews after
   `keepPasskeyOptionsMs` with fake timers; `passkey_unknown` shows
   `passkey.unknown` and calls `forget(credential.id)`; removing a device in
   Settings calls `forget(passkey.credentialId)`.
-- [ ] Build the hook, use it in `ChooseHowScreen` (one `finishPasskey`
+- [x] Build the hook, use it in `ChooseHowScreen` (one `finishPasskey`
   shared by the button and the hook), focus the email field on a wide
   screen, map `passkey_unknown` like `passkey_invalid`.
-- [ ] `pnpm --filter @shareride/mobile test -- passkey`; commit.
+- [x] `pnpm --filter @shareride/mobile test -- passkey`; commit.
 
 ### Task 4: Journey and docs
 
@@ -128,10 +128,11 @@ failure.
 spec 27 (a line pointing to spec 28 under 3.1, 3.3 and 3.6);
 `docs/specs/README.md`, `docs/plans/README.md`.
 
-- [ ] Add "picks the passkey from the email field" where Chromium's
+- [x] Add "picks the passkey from the email field" where Chromium's
   virtual authenticator answers a conditional request; if it cannot, say so
-  in the PR and rely on Task 3's tests.
-- [ ] Run the passkey and sign-in journeys on the desktop project;
+  in the PR and rely on Task 3's tests. (It can, and it takes the Signal
+  API: the journey adds a passkey no member has and sees it forgotten.)
+- [x] Run the passkey and sign-in journeys on the desktop project;
   `npx --yes markdownlint-cli2@0.24.0`; `pnpm check`; open PR 1.
 
 ## PR 2: Face ID offered after another way in

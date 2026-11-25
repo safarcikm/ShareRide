@@ -99,7 +99,9 @@ How [ADR 0016](../decisions/0016-own-sign-in-module.md) is built, in
   Face ID or fingerprint on the website, through `@simplewebauthn/server`
   and `@simplewebauthn/browser`, bound to the host of `WEB_APP_URL` (the
   console's passkeys share the domain but not the table: one used here is
-  refused as `passkey_invalid`). Setup asks for a platform authenticator
+  refused as `passkey_invalid`, and one in neither table as
+  `passkey_unknown`, so the app tells the browser to forget it through the
+  Signal API, never the console's, R28.4). Setup asks for a platform authenticator
   with user verification and a resident key, and excludes the account's
   passkeys, so a device set up already is refused by the browser. Each
   account's user handle is a keyed hash of it (HMAC with `AUTH_SECRET`),
@@ -108,8 +110,13 @@ How [ADR 0016](../decisions/0016-own-sign-in-module.md) is built, in
   minutes, are used once (an answer to one that is gone gets
   `passkey_expired`), and a setup's is bound to the account, with at most 5
   of an account's setups waiting at once; sign-in
-  options are limited to 20 per 10 minutes per IP address (its /64), in
-  the API's memory. Setting one up needs the same proof as a password
+  options are limited to 60 per 10 minutes per IP address (its /64), in
+  the API's memory, which leaves room for step 1's quiet request (spec 28,
+  3.1): where the browser can list passkeys among the email field's
+  suggestions (conditional mediation), step 1 asks for options as it opens
+  and every 4.5 minutes while it stays open, and the passkey picked there
+  is checked exactly as the button's is. Removing a device in Settings
+  tells this browser too (the Signal API's `signalUnknownCredential`). Setting one up needs the same proof as a password
   (R27.5), 10 devices at most, and the verified email is told; removing
   one needs no proof. The app offers it only where `GET /v1/config` says
   `passkeySignIn` and the browser reports a built-in authenticator; the
