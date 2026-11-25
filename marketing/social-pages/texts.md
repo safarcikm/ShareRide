@@ -75,6 +75,7 @@ All pictures are in this folder (`marketing/social-pages/`), drawn in the same l
 | Posts | `posts/post-01-welcome … post-07-feedback` | 1080 × 1350 | Facebook and Instagram feed. 4:5 takes the most room on a phone, and the sides stay clear for Instagram's 3:4 grid |
 | How it works | `posts/post-02-how-it-works-<is or en>-slide1 … slide6` | 1080 × 1350 | One carousel post, slides in order |
 | Stories | `stories/story-welcome-<is or en>`, plus the six launch ad stories | 1080 × 1920 | Instagram and Facebook stories. Words stay out of the top 270 and bottom 340 px |
+| Reel | `reels/reel-share-your-ride-<is or en>-1080x1920.mp4`, cover `reels/reel-share-your-ride-<is or en>-cover-1080x1920.png` | 1080 × 1920, 15 s | Instagram and Facebook reels. Words stay out of the top 250 and bottom 420 px and clear of the buttons on the right |
 | Shared ride card | `link-preview/` | 1200 × 630 | Not uploaded by you: the site makes it for each shared trip link once that change is live |
 
 The source drawings are in `src/kit.py` (it reuses the launch ads' `../launch-ads/src`), so any text can be changed and the pictures rebuilt; [the folder's README](../README.md) says how.
@@ -194,6 +195,22 @@ Alt text: "Lundi með talblöðru á grasi. Texti: Segðu okkur hvað þér finn
 
 Picture: `story-welcome-is` and `-en`. Add a link sticker ("puffinride.is", the story link from the links table) in the moss area under the road, above the bottom 340 px. Save it to the "Svona virkar" highlight. The six launch ad stories go to "Finna far" (ride, part) and "Bjóða far" (drive).
 
+### Reel: share your ride
+
+Video: `reels/reel-share-your-ride-is-1080x1920.mp4` and `-en-`, 15 seconds. The yellow car drives in with empty seats, a puffin waits at the Borgarnes meeting point and hops into the back seat, the car drives on, and it ends on "Verum samferða" / "Share your ride" and puffinride.is. The words are on the screen, so it works with the sound off.
+
+- **Sound:** the file has a silent sound track. Add a song from Instagram's or Facebook's own music library in the app (Add audio); those are cleared for reels, other music may not be.
+- **Cover:** Edit cover, Add from camera roll, the `-cover-` picture (the end card).
+- **Both languages:** post the Icelandic reel first and the English one three days later, as with the carousel. Share each one to Facebook as a reel too: Instagram offers it when the accounts are linked, or post it on the Page.
+
+> Laus sæti í bílnum? Bjóddu far á PuffinRide og farþegar hoppa inn á mótsstöðum á leiðinni, alla leið eða bara hluta hennar. Verum samferða! puffinride.is
+>
+> Empty seats in your car? Offer a ride on PuffinRide, and passengers hop in at meeting points on the way, for the whole trip or just part of it. Share your ride! puffinride.is
+
+Hashtags: #PuffinRide #samferða #samakstur #carpooling #Iceland
+
+Alt text: "Teiknimynd: gulur bíll með lunda við stýrið keyrir eftir vegi, lundi bíður við mótsstaðinn í Borgarnesi og hoppar inn í aftursætið, og bíllinn heldur áfram. Texti: Laus sæti í bílnum? Farþegar hoppa inn á leiðinni. Alla leið eða bara hluta hennar. Verum samferða. puffinride.is" / "Animation: a yellow car with a puffin driving goes along a road, a puffin waits at the Borgarnes meeting point and hops into the back seat, and the car drives on. Text: Empty seats in your car? Passengers hop in on the way. The whole way or just part of it. Share your ride. puffinride.is"
+
 ## Four-week starter plan
 
 Two or three posts a week from Monday 30 November, with Christmas early enough for people to plan the trip home. Meta Business Suite (business.facebook.com, Planner) schedules the same post to Facebook and Instagram at once. Evenings around 20:00 suit a local audience.
@@ -203,7 +220,9 @@ Two or three posts a week from Monday 30 November, with Christmas early enough f
 | Mon 30 Nov | 1. Welcome | Both, pin it | Also share it to your own profile and to friends in Messenger |
 | Tue 1 Dec | Story: welcome | Instagram and Facebook stories | Save to the "Svona virkar" highlight |
 | Wed 2 Dec | 2. How it works (Icelandic slides) | Both, pin on Instagram |  |
+| Thu 3 Dec | Reel (Icelandic) | Both, as a reel | Add a song from the app's music library |
 | Fri 4 Dec | 2. How it works (English slides) | Both |  |
+| Sun 6 Dec | Reel (English) | Both, as a reel |  |
 | Mon 7 Dec | 5. Christmas | Both | Early, so drivers post trips home before people book buses |
 | Wed 9 Dec | 3. Meeting points | Both, pin on Instagram | Invites comments about missing places |
 | Sat 12 Dec | Launch ad story "drive" | Stories | Save to "Bjóða far" |

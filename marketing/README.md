@@ -9,7 +9,7 @@ puffinride.is today.
 | Folder | What | Made |
 | ------ | ---- | ---- |
 | `launch-ads/` | Facebook and Instagram ads (square, feed, story) in Icelandic and English, the Facebook cover and an A5 flyer with a QR code. Texts and tagged links in [ad-texts.md](launch-ads/ad-texts.md) | 2026-11-22 |
-| `social-pages/` | The Facebook Page and Instagram profile kit: profile picture, highlight covers, the first seven posts, a welcome story, and the texts (names, bios, captions, hashtags, alt text, a four-week plan, Messenger replies and the setup checklist) in [texts.md](social-pages/texts.md) | 2026-11-25 |
+| `social-pages/` | The Facebook Page and Instagram profile kit: profile picture, highlight covers, the first seven posts, a welcome story, a 15-second reel (MP4), and the texts (names, bios, captions, hashtags, alt text, a four-week plan, Messenger replies and the setup checklist) in [texts.md](social-pages/texts.md) | 2026-11-25 |
 
 ## Drawing them again
 
@@ -25,6 +25,10 @@ same puffins and Beetle-style car as the site.
   map comes from `social-pages/src/iceland-map.json`; after the points
   change, run `node social-pages/src/export_map.ts` to write it again from
   the app's map and `packages/db/src/places/*.csv`.
+- **Reel:** `sh social-pages/src/reel.sh <build dir> <out dir> [is|en]` plays
+  the reel's animation frame by frame in Chromium and makes the MP4 with
+  ffmpeg (H.264, 30 frames a second, a silent sound track), about a minute
+  a language. The words and timings are in `social-pages/src/reel.py`.
 
 Then copy the new pictures over the old ones here, in the same pull request
 as the script change.
