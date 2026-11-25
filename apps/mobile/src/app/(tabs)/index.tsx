@@ -176,10 +176,12 @@ function FrontPage() {
       }}
     />
   );
-  // A link, which search engines follow to the meeting points (spec 23, 3.6).
+  // Links, which search engines follow to the meeting points and to
+  // Carpool in Iceland (spec 23, 3.6 and 3.9).
   const meetingPoints = (
     <Button variant="text" label={t("meetingPoints.open")} href="/meeting-points" />
   );
+  const howItWorks = <Button variant="text" label={t("home.howItWorks")} href="/carpool-iceland" />;
   if (wide) {
     const listed = rides.slice(0, shown);
     const onMap = listed.find((ride) => ride.tripId === shownId) ?? listed[0];
@@ -285,6 +287,7 @@ function FrontPage() {
         <Body>{t("nav.offerSignedOut")}</Body>
         {offer}
         {meetingPoints}
+        {howItWorks}
       </View>
     </Screen>
   );

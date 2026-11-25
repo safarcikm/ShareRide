@@ -68,9 +68,10 @@ export function FindMap({ shown }: { readonly shown: TripSearchResult | undefine
             : [{ id: "shown", positions: ends.map((end) => end.position), look: "part" }]
         }
       />
-      {/* In a row, so the link starts at the left, its text under the map's edge. */}
+      {/* In a row, so the links start at the left, the first's text under the map's edge. */}
       <View style={styles.link}>
         <Button variant="text" label={t("meetingPoints.open")} href="/meeting-points" />
+        <Button variant="text" label={t("home.howItWorks")} href="/carpool-iceland" />
       </View>
     </View>
   );

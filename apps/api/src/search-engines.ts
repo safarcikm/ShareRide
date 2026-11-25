@@ -4,6 +4,7 @@
 import { schema, type Database } from "@shareride/db";
 import { legalDocumentTypes } from "@shareride/domain";
 import {
+  carpoolPage,
   createTranslator,
   isLocale,
   locales,
@@ -11,6 +12,7 @@ import {
   pickLocale,
   type Locale,
   type PublicPage,
+  type Translate,
 } from "@shareride/i18n";
 import { and, asc, eq } from "drizzle-orm";
 import { rideCard, type Ride } from "./modules/search/link-preview.ts";
@@ -30,6 +32,7 @@ export const noIndex = "noindex, nofollow";
 
 const indexablePaths: readonly RegExp[] = [
   /^\/$/,
+  /^\/carpool-iceland$/,
   /^\/meeting-points$/,
   /^\/meeting-points\/[^/]+$/,
   /^\/places\/[^/]+$/,
@@ -135,6 +138,7 @@ export async function publicPages(db: Database): Promise<string[]> {
   ]);
   return [
     "/",
+    carpoolPage.path,
     "/meeting-points",
     ...points.map(({ id }) => `/meeting-points/${id}`),
     ...placeRows.map(({ id }) => `/places/${id}`),
@@ -204,6 +208,7 @@ function publicPageOf(path: string, subject: PageSubject | undefined, locale: Lo
   if (subject !== undefined && subject.kind !== "missing") {
     return { kind: subject.kind, name: subject.name[locale] };
   }
+  if (path === carpoolPage.path) return { kind: "carpool" };
   return path === "/meeting-points" ? { kind: "meetingPoints" } : { kind: "find" };
 }
 
@@ -234,6 +239,8 @@ export interface PageHead {
   readonly title: string;
   /** The tags to add, marked as the app's head component marks its own, so it replaces them. */
   readonly tags: string;
+  /** The page's text for search engines that do not run the app, where it has one (3.9). */
+  readonly noscript: string | null;
 }
 
 const ogLocales: Readonly<Record<Locale, string>> = { is: "is_IS", en: "en_GB" };
@@ -325,14 +332,48 @@ export function pageHead(
       ),
     );
   }
-  return { locale, fromBrowser: named === null, title, tags: tags.join("") };
+  const noscript =
+    request.path === carpoolPage.path ? carpoolText(t, (path) => addressOf("", path, named)) : null;
+  return { locale, fromBrowser: named === null, title, tags: tags.join(""), noscript };
 }
 
-/** The exported page with the head's language, title, icons and tags. */
+/**
+ * Carpool in Iceland's text as HTML (3.9, item 5), from the texts the
+ * screen shows; its links keep the language the address named.
+ */
+function carpoolText(t: Translate, address: (path: string) => string): string {
+  const link = (path: string, label: string) =>
+    `<a href="${escapeHtml(address(path))}">${escapeHtml(label)}</a>`;
+  const paragraph = (text: string) => `<p>${text}</p>`;
+  return [
+    "<main>",
+    `<h1>${escapeHtml(t(carpoolPage.title))}</h1>`,
+    paragraph(escapeHtml(t(carpoolPage.intro))),
+    paragraph(`${link("/", t("welcome.findRide"))} · ${link("/offer", t("driver.offerRide"))}`),
+    ...carpoolPage.sections.flatMap((section) => [
+      `<h2>${escapeHtml(t(section.heading))}</h2>`,
+      ...section.paragraphs.map((key) => paragraph(escapeHtml(t(key)))),
+      ...(section.questions ?? []).flatMap(({ question, answer }) => [
+        `<h3>${escapeHtml(t(question))}</h3>`,
+        paragraph(escapeHtml(t(answer))),
+      ]),
+      ...(section.link === undefined
+        ? []
+        : [paragraph(link(section.link.href, t(section.link.label)))]),
+    ]),
+    "</main>",
+  ].join("");
+}
+
+/** The exported page with the head's language, title, icons and tags, and its text where it has one. */
 export function fillPage(html: string, head: PageHead): string {
-  const withLanguage = /<html[^>]*>/.test(html)
-    ? html.replace(/<html[^>]*>/, () => `<html lang="${head.locale}">`)
-    : html;
+  const withText =
+    head.noscript === null
+      ? html
+      : html.replace(/<\/noscript>/, () => `${head.noscript ?? ""}</noscript>`);
+  const withLanguage = /<html[^>]*>/.test(withText)
+    ? withText.replace(/<html[^>]*>/, () => `<html lang="${head.locale}">`)
+    : withText;
   const title = `<title>${escapeHtml(head.title)}</title>${iconLinks}${head.tags}`;
   return /<title>[^<]*<\/title>/.test(withLanguage)
     ? withLanguage.replace(/<title>[^<]*<\/title>/, () => title)
