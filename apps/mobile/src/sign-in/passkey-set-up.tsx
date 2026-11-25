@@ -10,14 +10,8 @@ import { Body } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { ConfirmWithCode } from "@/privacy/confirm-with-code";
 import { spacing } from "@/theme/tokens";
-import type { PasskeyOptions } from "./passkey";
+import { keepPasskeyOptionsMs, type PasskeyOptions } from "./passkey";
 import { passkeySetUpOptions, savePasskey, type SetUpOutcome } from "./use-passkeys";
-
-/**
- * How long options whose sheet was closed are used again: a little short of
- * their challenge's 5 minutes, for the trip to the API.
- */
-export const keepPasskeyOptionsMs = (memberPasskeyRules.challengeSeconds - 30) * 1000;
 
 /** What an outcome other than saved or cancelled says. */
 export function setUpOutcomeText(t: Translate, outcome: SetUpOutcome): string {

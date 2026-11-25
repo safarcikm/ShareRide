@@ -26,11 +26,11 @@ import { useSignInFlow } from "@/sign-in/flow";
 import { KeptRideCard } from "@/sign-in/kept-ride-card";
 import {
   devicePasskeys,
+  keepPasskeyOptionsMs,
   passkeyFailure,
   type PasskeyAssertion,
   type PasskeyOptions,
 } from "@/sign-in/passkey";
-import { keepPasskeyOptionsMs } from "@/sign-in/passkey-set-up";
 import { pendingExpiredText, phoneStepHelp } from "@/sign-in/pending";
 import { ProviderButtons } from "@/sign-in/provider-buttons";
 import { providerNames, useProviderWindow } from "@/sign-in/provider-window";
@@ -235,18 +235,24 @@ function ChooseHowScreen() {
     sending.current = true;
     flow.setNotice(null);
     setBusy(true);
+    // A passkey picked from the field meanwhile would be lost: none is offered.
+    autofill.pause();
     if (password !== "" && !forgot) {
       const signedIn = await session.signInWithPassword(address.value, password);
       sending.current = false;
       setBusy(false);
       // Signed in: sign-in closes by itself.
-      if (!signedIn.ok) setError(passwordErrorText(t, signedIn));
+      if (!signedIn.ok) {
+        setError(passwordErrorText(t, signedIn));
+        autofill.resume();
+      }
       return;
     }
     const result = await session.startEmail(address.value, locale);
     sending.current = false;
     setBusy(false);
     if (!result.ok) {
+      autofill.resume();
       if (result.error.code === "email_invalid") setFieldError(t("error.email"));
       else setError(emailErrorText(t, result));
       return;

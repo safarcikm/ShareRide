@@ -1,6 +1,6 @@
 import type { DevicePasskeys } from "./passkey-types";
 
-export { passkeyFailure } from "./passkey-types";
+export { keepPasskeyOptionsMs, passkeyFailure } from "./passkey-types";
 export type {
   DevicePasskeys,
   PasskeyAssertion,

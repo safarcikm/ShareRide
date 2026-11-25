@@ -11,17 +11,17 @@ apps.
 
 ## Threats we design against
 
-| Threat | Example | Main controls |
-| ------ | ------- | ------------- |
-| Account takeover | SIM swap, guessed codes | Code expiry and attempt limits, device sessions list, re-verification for sensitive changes |
-| SMS fraud (SMS pumping) | Bots trigger thousands of codes to premium numbers | No text without a proven email, Google or Apple sign-in first, at most 3 per waiting sign-in, and a ceiling on all sign-in texts (spec 26); rate limits per IP, number and prefix, and a daily cap per country (the SMS budget); country allow-list; a kill switch (`SMS_PAUSED`); spending alerts |
-| Scraping and stalking | Collecting who travels where and when | Public profiles show first name only; exact trip details and vehicle plate only to booked passengers; rate-limited search; no answer depends on who else is booked on a trip, so a block cannot reveal the other person's bookings |
-| Broken access control | Editing someone else's trip, reading other people's chats | Ownership checks in every application service; tests for each endpoint as another user |
-| Overbooking or price tampering | Race conditions, manipulated requests | Server computes prices and availability; transactional capacity check; database constraints |
-| Harassment | Abusive messages, unsafe behaviour | Report and block, moderation queue, suspension, retained evidence for reports |
-| Data breach | Leaked database or backups | Encryption at rest and in transit, least-privilege database roles, no personal data in logs, access audit |
-| Supply chain | Malicious package or action | Lockfile, pinned actions, dependency review, minimal dependencies |
-| Admin misuse | Operator account compromised | Separate operator role, passkey or hardware-key sign-in (a password for now while `ADMIN_PASSWORD` is set, ADRs 0041 and 0044), a lost passkey replaced only after a text code to the operator's own number with every other session ended and a notice (ADR 0040), audit log of every admin action |
+| Threat                         | Example                                                   | Main controls                                                                                                                                                                                                                                                                                       |
+| ------------------------------ | --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Account takeover               | SIM swap, guessed codes                                   | Code expiry and attempt limits, device sessions list, re-verification for sensitive changes                                                                                                                                                                                                         |
+| SMS fraud (SMS pumping)        | Bots trigger thousands of codes to premium numbers        | No text without a proven email, Google or Apple sign-in first, at most 3 per waiting sign-in, and a ceiling on all sign-in texts (spec 26); rate limits per IP, number and prefix, and a daily cap per country (the SMS budget); country allow-list; a kill switch (`SMS_PAUSED`); spending alerts  |
+| Scraping and stalking          | Collecting who travels where and when                     | Public profiles show first name only; exact trip details and vehicle plate only to booked passengers; rate-limited search; no answer depends on who else is booked on a trip, so a block cannot reveal the other person's bookings                                                                  |
+| Broken access control          | Editing someone else's trip, reading other people's chats | Ownership checks in every application service; tests for each endpoint as another user                                                                                                                                                                                                              |
+| Overbooking or price tampering | Race conditions, manipulated requests                     | Server computes prices and availability; transactional capacity check; database constraints                                                                                                                                                                                                         |
+| Harassment                     | Abusive messages, unsafe behaviour                        | Report and block, moderation queue, suspension, retained evidence for reports                                                                                                                                                                                                                       |
+| Data breach                    | Leaked database or backups                                | Encryption at rest and in transit, least-privilege database roles, no personal data in logs, access audit                                                                                                                                                                                           |
+| Supply chain                   | Malicious package or action                               | Lockfile, pinned actions, dependency review, minimal dependencies                                                                                                                                                                                                                                   |
+| Admin misuse                   | Operator account compromised                              | Separate operator role, passkey or hardware-key sign-in (a password for now while `ADMIN_PASSWORD` is set, ADRs 0041 and 0044), a lost passkey replaced only after a text code to the operator's own number with every other session ended and a notice (ADR 0040), audit log of every admin action |
 
 ## Baseline controls
 
@@ -80,8 +80,7 @@ How [ADR 0016](../decisions/0016-own-sign-in-module.md) is built, in
   one answer (`credentials_invalid`), after checking a dummy hash so they
   take as long; only after the right password does the API say an account
   cannot sign in. Wrong tries: 10 an hour per email and 30 an hour per IP
-  address (its /64 for IPv6); tries of any kind, right ones too, 20 and
-  100. Each try is counted first, as wrong, in a short transaction under
+  address (its /64 for IPv6); tries of any kind, right ones too, 20 and 100. Each try is counted first, as wrong, in a short transaction under
   the same ordered advisory locks as code sends, so tries made at once
   cannot pass a limit together; the hash is then checked with no database
   connection held, and a right try is taken back from the wrong ones. Two
@@ -116,7 +115,11 @@ How [ADR 0016](../decisions/0016-own-sign-in-module.md) is built, in
   suggestions (conditional mediation), step 1 asks for options as it opens
   and every 4.5 minutes while it stays open, and the passkey picked there
   is checked exactly as the button's is. Removing a device in Settings
-  tells this browser too (the Signal API's `signalUnknownCredential`). Setting one up needs the same proof as a password
+  tells this browser too (the Signal API's `signalUnknownCredential`).
+  The trade-off accepted: `passkey_unknown` tells a caller with no account
+  that a credential ID is in neither table, which `passkey_invalid` alone
+  did not; credential IDs are random, and each try uses up a challenge
+  under the limit above. Setting one up needs the same proof as a password
   (R27.5), 10 devices at most, and the verified email is told; removing
   one needs no proof. The app offers it only where `GET /v1/config` says
   `passkeySignIn` and the browser reports a built-in authenticator; the

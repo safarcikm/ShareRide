@@ -4,6 +4,8 @@ import { failure, ok, tokens, type FakeClient } from "@/testing/fake-client";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
 import { memberPasskeyRules } from "@shareride/domain";
+import { router } from "expo-router";
+import { openAuthSessionAsync } from "@/testing/web-browser";
 import type * as PasskeyTypes from "@/sign-in/passkey-types";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
@@ -203,22 +205,31 @@ describe("Signing in with Face ID or fingerprint (spec 27, 3.1 and 3.3)", () => 
  */
 function quietRequests() {
   const waiting: { resolve: (answer: typeof assertion) => void; reject: (e: Error) => void }[] = [];
+  const abortAll = () => {
+    for (const request of waiting.splice(0)) request.reject(named("AbortError"));
+  };
+  // As the browser does, a new request ends the one before.
   mockDevice.autofill.mockImplementation(
     () =>
       new Promise((resolve, reject) => {
+        abortAll();
         waiting.push({ resolve, reject });
       }),
   );
-  mockDevice.cancel.mockImplementation(() => {
-    for (const request of waiting.splice(0)) request.reject(named("AbortError"));
-  });
+  mockDevice.cancel.mockImplementation(abortAll);
   return {
     waiting,
     pick: (answer = assertion) => {
       waiting.shift()?.resolve(answer);
     },
+    /** The browser ends it, as when the person cancels Face ID after picking the passkey. */
+    end: () => {
+      waiting.shift()?.reject(named("NotAllowedError"));
+    },
   };
 }
+
+const keepOptionsMs = (memberPasskeyRules.challengeSeconds - 30) * 1000;
 
 const signedInAsAnna = (client: FakeClient) => {
   client.answer("/v1/auth/passkey", () =>
@@ -320,9 +331,7 @@ describe("Face ID in the email field (spec 28, 3.1)", () => {
         expect(quiet.waiting).toHaveLength(1);
       });
       // 30 seconds before the challenge's 5 minutes are up.
-      await act(() =>
-        jest.advanceTimersByTimeAsync((memberPasskeyRules.challengeSeconds - 30) * 1000),
-      );
+      await act(() => jest.advanceTimersByTimeAsync(keepOptionsMs));
       await waitFor(() => {
         expect(mockDevice.autofill).toHaveBeenCalledTimes(2);
       });
@@ -332,9 +341,146 @@ describe("Face ID in the email field (spec 28, 3.1)", () => {
         quiet.pick();
       });
       expect(await screen.findByRole("tab", { name: "Find", selected: true })).toBeVisible();
+      // Gone with step 1: no more options.
+      await act(() => jest.advanceTimersByTimeAsync(2 * keepOptionsMs));
+      expect(callsTo(app.client, "/v1/auth/passkey/options")).toHaveLength(2);
     } finally {
       jest.useRealTimers();
     }
+  });
+
+  it("offers the passkey again with the same options after the person cancels Face ID", async () => {
+    jest.useFakeTimers();
+    try {
+      const quiet = quietRequests();
+      const app = await openSignIn();
+      await waitFor(() => {
+        expect(quiet.waiting).toHaveLength(1);
+      });
+      await act(() => jest.advanceTimersByTimeAsync(5_000));
+      await act(() => {
+        quiet.end();
+      });
+      await waitFor(() => {
+        expect(quiet.waiting).toHaveLength(1);
+      });
+      expect(mockDevice.autofill.mock.calls).toEqual([[options], [options]]);
+      expect(callsTo(app.client, "/v1/auth/passkey/options")).toHaveLength(1);
+      expect(screen.queryByRole("alert")).toBeNull();
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it("waits for new options when the browser refuses the quiet request at once", async () => {
+    jest.useFakeTimers();
+    try {
+      const quiet = quietRequests();
+      const app = await openSignIn();
+      await waitFor(() => {
+        expect(quiet.waiting).toHaveLength(1);
+      });
+      await act(() => {
+        quiet.end();
+      });
+      await act(() => jest.advanceTimersByTimeAsync(10_000));
+      expect(mockDevice.autofill).toHaveBeenCalledTimes(1);
+      await act(() => jest.advanceTimersByTimeAsync(keepOptionsMs));
+      await waitFor(() => {
+        expect(quiet.waiting).toHaveLength(1);
+      });
+      expect(callsTo(app.client, "/v1/auth/passkey/options")).toHaveLength(2);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it("asks again 30 seconds after the options could not be had, and shows nothing", async () => {
+    jest.useFakeTimers();
+    try {
+      const quiet = quietRequests();
+      let answers = 0;
+      const app = await openSignIn((client) => {
+        client.answer("/v1/auth/passkey/options", () => {
+          answers += 1;
+          return answers === 1 ? failure(0, "network_error") : ok(200, { options });
+        });
+      });
+      await waitFor(() => {
+        expect(callsTo(app.client, "/v1/auth/passkey/options")).toHaveLength(1);
+      });
+      expect(mockDevice.autofill).not.toHaveBeenCalled();
+      expect(screen.queryByRole("alert")).toBeNull();
+      await act(() => jest.advanceTimersByTimeAsync(30_000));
+      await waitFor(() => {
+        expect(quiet.waiting).toHaveLength(1);
+      });
+      expect(callsTo(app.client, "/v1/auth/passkey/options")).toHaveLength(2);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it("stops waiting when the email code screen opens, and waits again back on step 1", async () => {
+    jest.useFakeTimers();
+    try {
+      const quiet = quietRequests();
+      const app = await openSignIn((client) => {
+        client.answer("/v1/auth/email/start", () => ok(202, { resendAfterSeconds: 30 }));
+      });
+      await waitFor(() => {
+        expect(quiet.waiting).toHaveLength(1);
+      });
+      await fireEvent.changeText(screen.getByLabelText("Email"), "anna@example.com");
+      await fireEvent.press(screen.getByRole("button", { name: "Send code" }));
+      expect(await screen.findByRole("header", { name: "Enter the code" })).toBeVisible();
+      expect(mockDevice.cancel).toHaveBeenCalled();
+      expect(quiet.waiting).toHaveLength(0);
+      await act(() => jest.advanceTimersByTimeAsync(2 * keepOptionsMs));
+      expect(callsTo(app.client, "/v1/auth/passkey/options")).toHaveLength(1);
+
+      await act(() => {
+        router.back();
+      });
+      await waitFor(() => {
+        expect(quiet.waiting).toHaveLength(1);
+      });
+      expect(callsTo(app.client, "/v1/auth/passkey/options")).toHaveLength(2);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it("steps aside while Google's window is open, and waits again once it is closed", async () => {
+    const quiet = quietRequests();
+    await openSignIn((client) => {
+      client.answer("/v1/config", () =>
+        ok(200, {
+          beta: false,
+          paused: [],
+          maxSeats: 8,
+          freeCancellationMinutes: 15,
+          maxMoveMinutes: 120,
+          reliabilityMonths: 12,
+          signInProviders: ["google"],
+          emailSignIn: true,
+          passkeySignIn: true,
+        }),
+      );
+    });
+    await waitFor(() => {
+      expect(quiet.waiting).toHaveLength(1);
+    });
+    openAuthSessionAsync.mockClear();
+    // The person closes Google's window.
+    await fireEvent.press(screen.getByRole("button", { name: "Continue with Google" }));
+    await waitFor(() => {
+      expect(mockDevice.autofill).toHaveBeenCalledTimes(2);
+    });
+    const [cancelled] = mockDevice.cancel.mock.invocationCallOrder;
+    const [opened] = openAuthSessionAsync.mock.invocationCallOrder;
+    expect(cancelled).toBeLessThan(opened ?? 0);
+    expect(quiet.waiting).toHaveLength(1);
   });
 
   it("says a passkey this site no longer has is not set up, and tells the browser (3.4)", async () => {

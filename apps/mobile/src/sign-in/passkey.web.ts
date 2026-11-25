@@ -16,7 +16,7 @@ import type {
   PasskeyRegistration,
 } from "./passkey-types";
 
-export { passkeyFailure } from "./passkey-types";
+export { keepPasskeyOptionsMs, passkeyFailure } from "./passkey-types";
 export type {
   DevicePasskeys,
   PasskeyAssertion,
@@ -28,6 +28,9 @@ export type {
 // and its quiet request in the email field (spec 28, 3.1). Offered only
 // where the browser says the device has a built-in authenticator, never a
 // hardware key (ADR 0048).
+
+/** How long `forget` waits for the browser, at most. */
+const forgetWaitMs = 1_000;
 
 async function hasLock(): Promise<boolean> {
   if (!browserSupportsWebAuthn()) return false;
@@ -62,7 +65,13 @@ export const devicePasskeys: DevicePasskeys = {
     try {
       // The site's passkeys are bound to the web app's own host (ADR 0048).
       const rpID = globalThis.location.hostname;
-      await sendSignal({ signalName: "unknownCredential", rpID, credentialID: credentialId });
+      const told = sendSignal({
+        signalName: "unknownCredential",
+        rpID,
+        credentialID: credentialId,
+      });
+      // A passkey manager that never answers does not hold the screen up.
+      await Promise.race([told, new Promise((done) => setTimeout(done, forgetWaitMs))]);
     } catch {
       // A browser without the Signal API keeps offering it; nothing else changes.
     }
