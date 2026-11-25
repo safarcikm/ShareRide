@@ -1,6 +1,6 @@
 # 0049. Draw link preview pictures on the server with resvg
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-11-25, by Martin)
 - **Date:** 2026-11-25
 - **Deciders:** Martin
 - **Related:** [spec 23, 3.10](../specs/2026-11-22-google-analytics-and-search.md#310-a-shared-rides-link-preview),
