@@ -1,6 +1,12 @@
 import { join } from "node:path";
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { soonestTripsRoute, type TripDetails, type TripSearchResult } from "@shareride/contracts";
+import {
+  soonestTripsRoute,
+  type Booking,
+  type TripDetails,
+  type TripSearchResult,
+} from "@shareride/contracts";
+import { confirmedBooking, secondPage } from "./support/cancelling";
 import { ticketFit } from "./support/layout";
 import { openTrip } from "./support/trips";
 
@@ -360,4 +366,104 @@ test.describe("a ride's page with long place names, 360 wide", () => {
       }
     });
   }
+});
+
+// And on a booked seat (spec 31, 3.8): the title beside Back, the ticket,
+// Message beside a driver with a long name, and the small map beside where
+// to stand. Dóra's booking is given the long names on its way to her page.
+test.describe("a booked seat with long names, 360 wide", () => {
+  test.use({ locale: "en-GB" });
+
+  const getIn = "Kirkjubæjarklaustur, N1 við Skaftárskála";
+  const getOut = "Keflavíkurflugvöllur, komusalur";
+  const driverName = "Sigurbjörg Aðalheiður";
+
+  test("holds its title, its ticket, the driver and where to stand, with the text as set and twice as large", async ({
+    page: driver,
+    browser,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== "phone", "A phone's column; laptops have two.");
+    test.slow();
+    const { page, close } = await secondPage(browser, testInfo);
+    const { booking } = await confirmedBooking(driver, page);
+    await page.setViewportSize({ width: 360, height: 740 });
+    await page.route(
+      (url) => /^\/v1\/bookings\/[0-9a-f-]{36}$/.test(url.pathname),
+      async (route) => {
+        const response = await route.fetch();
+        if (route.request().method() !== "GET" || !response.ok()) {
+          await route.fulfill({ response });
+          return;
+        }
+        const seat = (await response.json()) as Booking;
+        const named = (name: string) => ({ is: name, en: name });
+        const long: Booking = {
+          ...seat,
+          driver: { ...seat.driver, firstName: driverName },
+          board: {
+            ...seat.board,
+            meetingPoint: { ...seat.board.meetingPoint, name: named(getIn) },
+          },
+          alight: {
+            ...seat.alight,
+            meetingPoint: { ...seat.alight.meetingPoint, name: named(getOut) },
+          },
+        };
+        await route.fulfill({ response, json: long });
+      },
+    );
+    await page.goto(booking);
+    const shown = { visible: true } as const;
+    const ticket = page.getByTestId("booking-ticket").filter(shown);
+    await expect(ticket.getByText(getIn)).toBeVisible();
+    const message = page.getByRole("link", { name: `Message ${driverName}` }).filter(shown);
+    await expect(message).toBeVisible();
+
+    for (const zoom of [1, 2] as const) {
+      if (zoom === 2) await twiceAsLarge(page);
+      // Each part is whole in the window, with nothing past its edges and
+      // no text cut.
+      const head = await ticketFit(page, "screen-head", "h1");
+      const seat = await ticketFit(page, "booking-ticket");
+      const stand = await ticketFit(page, "where-to-stand", "[dir]");
+      for (const part of [head, seat, stand]) {
+        expect(part.cut).toEqual([]);
+        expect(part.beyondWindow).toBe(0);
+      }
+      expect(head.past).toEqual([]);
+      expect(seat.past).toEqual([]);
+      // Where to stand holds its small map, which cuts the country around
+      // the stop to its own frame, and "Open in maps".
+      const place = page.getByTestId("where-to-stand").filter(shown);
+      const frame = await box(place);
+      for (const inside of [place.getByTestId("iceland-map"), place.getByRole("link")]) {
+        const part = await box(inside);
+        expect(part.x).toBeGreaterThanOrEqual(frame.x - 1);
+        expect(part.x + part.width).toBeLessThanOrEqual(frame.x + frame.width + 1);
+      }
+      // The driver: the name is whole, and Message stands inside the card,
+      // beside the driver or under them.
+      const who = await ticketFit(page, "driver-card", "[dir]");
+      expect(who.cut).toEqual([]);
+      expect(who.beyondWindow).toBe(0);
+      const card = await box(page.getByTestId("driver-card").filter(shown));
+      const button = await box(message);
+      expect(button.x).toBeGreaterThanOrEqual(card.x - 1);
+      expect(button.x + button.width).toBeLessThanOrEqual(card.x + card.width + 1);
+      if (zoom === 1) {
+        // With the text as set every word is whole, and the screen does
+        // not scroll sideways.
+        for (const part of [head, seat, stand, who]) expect(part.brokenWords).toEqual([]);
+        expect(seat.screenWider).toBeLessThanOrEqual(0);
+        // Where to stand: the place stands beside the small map.
+        const map = await box(place.getByTestId("iceland-map"));
+        const name = await box(place.getByText(getIn));
+        expect(name.x).toBeGreaterThanOrEqual(map.x + map.width);
+      } else {
+        // Twice as large, only a word longer than a whole line is broken.
+        for (const part of [head, seat, stand, who]) expect(part.needlessly).toEqual([]);
+      }
+    }
+    await close();
+  });
 });

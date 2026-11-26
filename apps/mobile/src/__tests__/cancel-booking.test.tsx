@@ -188,6 +188,12 @@ describe("Cancelling a booking (spec 6, 3.5)", () => {
     const head = within(await screen.findByTestId("screen-head"));
     expect(head.getByRole("header", { name: "Cancelled" })).toBeVisible();
     expect(head.getByText("You cancelled this booking: Plans changed")).toBeVisible();
+    // With the refund and whether it shows on the profile, heard with it.
+    const outcome = within(head.getByTestId("screen-head-outcome"));
+    expect(
+      outcome.getByText("Full refund of 2,900 ISK, back to the card you paid with."),
+    ).toBeVisible();
+    expect(outcome.getByText("This cancellation shows on your profile")).toBeVisible();
     expect(focusMoves).toHaveBeenCalledTimes(1);
     focusMoves.mockRestore();
     expect(screen).toHavePathname(`/bookings/${bookingId}`);

@@ -11,13 +11,12 @@ import { BookingTicket } from "@/booking/booking-ticket";
 import { PaymentSheet, usePayment } from "@/booking/payment";
 import {
   canCancel,
-  isWithdrawn,
   offersSearchAgain,
   promptOccasion,
   searchAgainHref,
   statusKey,
 } from "@/booking/status";
-import { cancellationTexts } from "@/booking/texts";
+import { endedLines } from "@/booking/texts";
 import { bookingRoad, bookingTitle, reviewOpen } from "@/booking/title";
 import { TripChanges, useMoveChoice } from "@/booking/trip-changes";
 import { showsWhereToStand, WhereToStand } from "@/booking/where-to-stand";
@@ -47,7 +46,7 @@ import { firstNameOf } from "@/people/texts";
 import { ReviewSection } from "@/reviews/review-section";
 import { bookingShareText } from "@/safety/share-details";
 import { showsWeatherAndRoads, WeatherAndRoadsRow } from "@/safety/weather-roads-row";
-import { maxContentWidth, spacing } from "@/theme/tokens";
+import { spacing } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 import { onTripDay, PassengerImHere, showsImHere } from "@/trip-day/passenger";
 import { ReportStatus } from "@/trip-day/report-status";
@@ -224,11 +223,14 @@ function BookingDetails({
   // between the bar and the side column.
   const payment = usePayment({ onSettled: onChanged, onStale });
   const withdrawing = useWithdraw({ booking, onStart: onAction, onWithdrawn: onChanged, onStale });
-  // So is that "I'm here" was said, until the booking loads again with it.
+  // So are that "I'm here" was said here, and that focus went to what it
+  // told: moving it between the bar and the side column says nothing new.
   const [saidHere, setSaidHere] = useState<string | null>(null);
+  const [saidHeard, setSaidHeard] = useState(false);
   const [shared, setShared] = useState<ShareOutcome | null>(null);
 
   const head = bookingTitle(t, locale, booking, at);
+  const ended = passenger ? endedLines(t, locale, booking) : [];
   const road = bookingRoad(t, booking);
   // The driver said "I'm here" while this page was open: the title says
   // so, and a screen reader hears it.
@@ -346,7 +348,7 @@ function BookingDetails({
         ) : null}
         {withdraws ? (
           // Backing out of withdrawing puts focus back on the row.
-          <TakesFocus when={withdrawing.kept}>
+          <TakesFocus when={withdrawing.kept} onFocused={withdrawing.onKeptFocused}>
             <Row danger icon={X} title={t("booking.withdraw")} onPress={withdrawing.ask} />
           </TakesFocus>
         ) : null}
@@ -367,18 +369,25 @@ function BookingDetails({
     if (withdrawing.asking) return <WithdrawQuestion booking={booking} withdrawing={withdrawing} />;
     if (booking.status === "accepted") {
       // The payment sheet opens in place of Pay.
-      return payment.sheet !== null ? (
-        <PaymentSheet payment={payment} />
-      ) : (
-        <Button
-          main
-          busy={payment.starting}
-          label={t("booking.pay", { total })}
-          onPress={() => {
-            onAction();
-            void payment.start(booking.id);
-          }}
-        />
+      if (payment.sheet !== null) return <PaymentSheet payment={payment} />;
+      return (
+        <View style={styles.action}>
+          {/* Why a payment did not go through, beside the button to try again. */}
+          {payment.notice === null ? null : (
+            <TakesFocus key={payment.notice}>
+              <Notice message={payment.notice} />
+            </TakesFocus>
+          )}
+          <Button
+            main
+            busy={payment.starting}
+            label={t("booking.pay", { total })}
+            onPress={() => {
+              onAction();
+              void payment.start(booking.id);
+            }}
+          />
+        </View>
       );
     }
     if (tripDay) {
@@ -397,6 +406,10 @@ function BookingDetails({
             <PassengerImHere
               booking={booking}
               said={saidHere}
+              focusSaid={!saidHeard}
+              onSaidFocused={() => {
+                setSaidHeard(true);
+              }}
               onSaid={(checkedInAt) => {
                 setSaidHere(checkedInAt);
                 onReload();
@@ -459,6 +472,16 @@ function BookingDetails({
           focus: passenger && (announce || (reported && reportState(booking, now()) === null)),
           onFocused: onReportAnnounced,
         }}
+        // What else a cancellation says is part of that outcome (spec 6).
+        more={
+          ended.length === 0
+            ? undefined
+            : ended.map((line) => (
+                <Body key={line} align="start">
+                  {line}
+                </Body>
+              ))
+        }
       />
       <Announcer message={arrived} />
 
@@ -479,13 +502,7 @@ function BookingDetails({
             <Notice message={stale} />
           </TakesFocus>
         )}
-        {payment.notice === null ? null : (
-          <TakesFocus key={payment.notice}>
-            <Notice message={payment.notice} />
-          </TakesFocus>
-        )}
         <ReportStatus booking={booking} announce={reported} onAnnounced={onReportAnnounced} />
-        {passenger ? <Ended booking={booking} /> : null}
         {passenger ? (
           <TripChanges
             booking={booking}
@@ -550,31 +567,6 @@ function BookingDetails({
   );
 }
 
-/**
- * What else a cancellation says to the passenger, under the title that
- * says how the booking ended and why (spec 6): the driver's note, the
- * refund, and whether it shows on their profile.
- */
-function Ended({ booking }: { readonly booking: Booking }) {
-  const { locale, t } = useLanguage();
-  const cancelled =
-    (booking.status === "cancelled" && !isWithdrawn(booking)) || booking.status === "declined";
-  const texts = cancelled ? cancellationTexts(t, locale, booking) : null;
-  if (texts === null || (texts.note === null && texts.refund === null && !texts.counts)) {
-    return null;
-  }
-  return (
-    <View testID="booking-ended" style={styles.ended}>
-      {texts.note === null ? null : <Body align="start">{texts.note}</Body>}
-      {texts.refund === null ? null : <Body align="start">{texts.refund}</Body>}
-      {texts.counts ? <Body align="start">{t("booking.countsOnReliability")}</Body> : null}
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   action: { gap: spacing.sm },
-  // No wider than a column, also in the main column of a wide page: a
-  // notice to read, not a banner.
-  ended: { gap: spacing.sm, maxWidth: maxContentWidth },
 });

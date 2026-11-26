@@ -1,5 +1,11 @@
 import { act, fireEvent, screen, within } from "expo-router/testing-library";
-import { AccessibilityInfo, Dimensions } from "react-native";
+import type { ReactElement } from "react";
+import {
+  AccessibilityInfo,
+  Dimensions,
+  type RefreshControlProps,
+  type ScrollViewProps,
+} from "react-native";
 import type { Booking } from "@shareride/contracts";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
@@ -11,9 +17,9 @@ import {
   unpaidBooking,
 } from "@/testing/bookings";
 import { filledButtons } from "@/testing/buttons";
-import { ok, type FakeClient } from "@/testing/fake-client";
+import { failure, ok, type FakeClient } from "@/testing/fake-client";
 import { completedBooking } from "@/testing/reviews";
-import { onTheDay } from "@/testing/trip-day";
+import { dispute, onTheDay } from "@/testing/trip-day";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
 jest.mock("@/auth/token-store", () => {
@@ -89,6 +95,16 @@ const inOrder = (...texts: readonly string[]) => {
 };
 
 const bar = () => within(screen.getByTestId("bottom-bar"));
+
+/** Pulls the screen down, as a phone's RefreshControl does: the booking loads again. */
+async function pullDown() {
+  const control = (screen.getByTestId("screen-scroll").props as ScrollViewProps).refreshControl as
+    ReactElement<RefreshControlProps> | undefined;
+  if (control === undefined) throw new Error("This screen does not pull to refresh.");
+  await act(() => {
+    void control.props.onRefresh?.();
+  });
+}
 const rows = () =>
   within(screen.getByTestId("action-rows"))
     .getAllByTestId("row-words")
@@ -175,6 +191,8 @@ describe("a booked seat on a phone (spec 31, 3.8)", () => {
     await screen.findByRole("header", { name: "Your seat is confirmed" });
     inOrder(
       "Your seat is confirmed",
+      // The road's steps.
+      "Trip day",
       "Passenger",
       "2,900 ISK",
       "Message",
@@ -240,6 +258,46 @@ describe("a booked seat on a phone (spec 31, 3.8)", () => {
       focus.mockRestore();
     });
 
+    it("moves focus back to the row once, not each time the window changes its size", async () => {
+      await open(northBooking());
+      await fireEvent.press(await screen.findByRole("button", { name: "Withdraw request" }));
+      await fireEvent.press(screen.getByRole("button", { name: "Keep my request" }));
+      const focus = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
+      focus.mockClear();
+      // The rows move to the side column and back: nothing was just done.
+      await act(() => {
+        Dimensions.set({ window: laptop });
+      });
+      await act(() => {
+        Dimensions.set({ window: phone });
+      });
+      expect(rows().at(-1)).toBe("Withdraw request");
+      expect(focus).not.toHaveBeenCalled();
+      focus.mockRestore();
+    });
+
+    it("drops the question once the driver has answered, for what the seat needs now", async () => {
+      const { change } = await open(northBooking());
+      await fireEvent.press(await screen.findByRole("button", { name: "Withdraw request" }));
+      expect(bar().getByText(question)).toBeVisible();
+      // Anna says yes meanwhile, and the page loads again.
+      change(
+        northBooking({
+          status: "accepted",
+          requestExpiresAt: null,
+          paymentDueAt: "2026-11-14T12:30:00.000Z",
+        }),
+      );
+      await pullDown();
+      expect(
+        await screen.findByRole("header", { name: "Anna said yes: pay to keep your seat" }),
+      ).toBeVisible();
+      expect(screen.queryByText(question)).toBeNull();
+      expect(screen.queryByRole("button", { name: "Withdraw request" })).toBeNull();
+      expect(bar().getByRole("button", { name: "Pay 2,900 ISK" })).toBeVisible();
+      expect(filledButtons()).toBe(1);
+    });
+
     it("withdraws, and the page says so", async () => {
       const withdrawn = northBooking({ status: "cancelled", withdrawn: true });
       const { client } = await open(northBooking(), (fake) => {
@@ -254,7 +312,7 @@ describe("a booked seat on a phone (spec 31, 3.8)", () => {
           "You withdrew this request. That never counts against you.",
         ),
       ).toBeVisible();
-      expect(screen.queryByTestId("booking-ended")).toBeNull();
+      expect(screen.queryByTestId("screen-head-outcome")).toBeNull();
       expect(
         client.calls.filter((call) => call.path === "/v1/bookings/{id}/withdraw"),
       ).toHaveLength(1);
@@ -302,6 +360,47 @@ describe("a booked seat on a phone (spec 31, 3.8)", () => {
       expect(
         await bar().findByRole("header", { name: "Test payment: no money moves" }),
       ).toBeVisible();
+    });
+
+    it("says beside Pay why a payment could not start, where the passenger is looking", async () => {
+      await open(unpaidBooking, (fake) => {
+        fake.answer(
+          "/v1/bookings/{id}/payment",
+          () => failure(503, "payments_unavailable"),
+          "post",
+        );
+      });
+      await fireEvent.press(await bar().findByRole("button", { name: "Pay 2,900 ISK" }));
+      const notice = await bar().findByRole("alert");
+      expect(notice).toHaveTextContent("Paying isn't available right now. Try again soon.");
+      expect(bar().getByRole("button", { name: "Pay 2,900 ISK" })).toBeVisible();
+      // Once, not also at the top of the page.
+      expect(screen.getAllByRole("alert")).toHaveLength(1);
+      expect(filledButtons()).toBe(1);
+    });
+
+    it("moves focus to the title once the seat is paid", async () => {
+      const paymentId = "0190a1d6-0000-7000-8000-0000000000e1";
+      await open(unpaidBooking, (fake) => {
+        fake.answer("/v1/bookings/{id}/payment", () =>
+          ok(200, {
+            paymentId,
+            provider: "test",
+            amount: unpaidBooking.total,
+            dueAt: unpaidBooking.paymentDueAt,
+          }),
+        );
+        fake.answer("/v1/test-payments/{id}", () => ok(200, paidBooking));
+      });
+      await fireEvent.press(await bar().findByRole("button", { name: "Pay 2,900 ISK" }));
+      await bar().findByRole("header", { name: "Test payment: no money moves" });
+      const focus = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
+      focus.mockClear();
+      await fireEvent.press(bar().getByRole("button", { name: "Pay 2,900 ISK" }));
+      expect(await screen.findByRole("header", { name: "Your seat is confirmed" })).toBeVisible();
+      expect(focus).toHaveBeenCalledTimes(1);
+      focus.mockRestore();
+      expect(screen.queryByTestId("bottom-bar")).toBeNull();
     });
   });
 
@@ -378,8 +477,21 @@ describe("a booked seat on a phone (spec 31, 3.8)", () => {
         "Gunna pays you 2,900 ISK in cash or by bank transfer when they get in.",
       ),
     ).toBeVisible();
-    // Not on a free ride, and not where the app takes the payment.
-    await open({ ...paidBooking, viewer: "driver" });
+  });
+
+  it.each([
+    ["where the app takes the payment", { ...paidBooking, viewer: "driver" as const }],
+    [
+      "on a free ride",
+      {
+        ...paidBooking,
+        viewer: "driver" as const,
+        payment: "in_person" as const,
+        total: { amount: 0, currency: "ISK" as const },
+      },
+    ],
+  ])("tells a driver nothing about being paid in person %s", async (_, booking) => {
+    await open(booking);
     await screen.findByRole("header", { name: "Borgarnes to Blönduós" });
     expect(screen.queryByText(/pays you/)).toBeNull();
   });
@@ -469,12 +581,35 @@ describe("the trip day on a phone (spec 31, 3.9)", () => {
     expect(filledButtons()).toBe(1);
   });
 
-  it("has The driver didn't come as the bar's button once I'm here was said or has closed", async () => {
+  it("has The driver didn't come as the bar's button once I'm here has closed", async () => {
     mockNow = new Date("2026-11-15T11:01:00Z");
     await open(onTheDay());
     expect(await bar().findByRole("link", { name: "The driver didn't come" })).toBeVisible();
     expect(bar().queryByRole("button", { name: "I'm here" })).toBeNull();
     expect(filledButtons()).toBe(1);
+  });
+
+  it("has it as the bar's button under what I'm here told, once that was said", async () => {
+    mockNow = new Date("2026-11-15T10:11:00Z");
+    await open(onTheDay({ passengerCheckedInAt: "2026-11-15T09:55:00.000Z" }));
+    expect(await bar().findByText("We've told the driver you're here.")).toBeVisible();
+    expect(bar().getByRole("link", { name: "The driver didn't come" })).toBeVisible();
+    expect(bar().queryByRole("button", { name: "I'm here" })).toBeNull();
+    expect(filledButtons()).toBe(1);
+  });
+
+  it("says the driver didn't come in its title while that report is open, with no road", async () => {
+    // The day after: the seat stays confirmed until the report is decided (R8.2).
+    mockNow = new Date("2026-11-16T09:00:00Z");
+    await open({
+      ...onTheDay({ phase: "completed" }),
+      dispute: dispute({ kind: "driver_absent" }),
+    });
+    expect(await screen.findByRole("header", { name: "The driver didn't come" })).toBeVisible();
+    expect(screen.queryByText(/picks you up/)).toBeNull();
+    expect(screen.queryByLabelText(/^Step /)).toBeNull();
+    expect(screen.queryByRole("button", { name: "I'm here" })).toBeNull();
+    expect(filledButtons()).toBe(0);
   });
 });
 

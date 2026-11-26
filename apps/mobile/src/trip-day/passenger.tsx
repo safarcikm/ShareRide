@@ -33,17 +33,22 @@ export function showsImHere(booking: Booking, at: Date): boolean {
 /**
  * The passenger's "I'm here", which tells the driver (spec 8, 3.2). That
  * the driver is at the meeting point is the page's title (spec 31, 3.9).
- * The page keeps when it was `said`, as it moves this between its bar and
- * its side column.
+ * The page keeps when it was `said`, and whether focus has gone to what
+ * that told (`focusSaid`, `onSaidFocused`), as it moves this between its
+ * bar and its side column.
  */
 export function PassengerImHere({
   booking,
   said,
+  focusSaid,
+  onSaidFocused,
   onSaid,
   onStale,
 }: {
   readonly booking: Booking;
   readonly said: string | null;
+  readonly focusSaid: boolean;
+  readonly onSaidFocused: () => void;
   readonly onSaid: (checkedInAt: string) => void;
   /** The booking changed meanwhile, such as cancelled: say why and load it again. */
   readonly onStale: (why: string) => void;
@@ -62,6 +67,8 @@ export function PassengerImHere({
       told={t("tripDay.toldDriver")}
       send={() => session.call(passengerCheckInRoute, { params: { id: booking.id }, body: {} })}
       said={said}
+      focusSaid={focusSaid}
+      onSaidFocused={onSaidFocused}
       onSaid={onSaid}
       onStale={() => {
         onStale(t("tripDay.bookingChanged"));

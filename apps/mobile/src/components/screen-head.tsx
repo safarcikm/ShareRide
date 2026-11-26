@@ -20,7 +20,9 @@ import { Title } from "./text";
  * Where the title is the outcome of what was just done, as a booked seat's
  * is after paying (3.8), `outcome` moves keyboard and screen-reader focus
  * to the title and its line: when the head appears, and each time
- * `outcome.of` changes, as long as `outcome.focus` is true then.
+ * `outcome.of` changes, as long as `outcome.focus` is true then. What
+ * `more` an outcome says, such as the refund after cancelling, stands
+ * under the line and takes focus with it.
  *
  * (`PageHead` is the title a page has for search engines.)
  */
@@ -32,6 +34,7 @@ export function ScreenHead({
   action,
   road,
   outcome,
+  more,
 }: {
   readonly title: string;
   readonly over?: string | undefined;
@@ -46,6 +49,8 @@ export function ScreenHead({
     readonly focus: boolean;
     readonly onFocused?: (() => void) | undefined;
   };
+  /** Under the line, part of what the title says: more lines of an outcome. */
+  readonly more?: ReactNode;
 }) {
   const palette = usePalette();
   const backButton = back === null ? null : <BackButton fallback={back} />;
@@ -57,6 +62,11 @@ export function ScreenHead({
       <Title align="start">{title}</Title>
       {line === undefined ? null : (
         <Text style={[typography.body, { color: palette.textMuted }]}>{line}</Text>
+      )}
+      {more === undefined || more === null ? null : (
+        <View testID="screen-head-outcome" style={styles.more}>
+          {more}
+        </View>
       )}
     </View>
   );
@@ -119,6 +129,7 @@ const titleDrop = (sizes.iconButton - typography.title.lineHeight) / 2;
 const styles = StyleSheet.create({
   head: { flexDirection: "row", alignItems: "flex-start", gap: spacing.ms },
   titles: { flexShrink: 1 },
+  more: { marginTop: spacing.sm, gap: spacing.sm },
   beside: { flex: 1, minWidth: 0, paddingTop: titleDrop },
   withAction: {
     flex: 1,

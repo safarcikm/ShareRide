@@ -87,6 +87,14 @@ export function bookingTitle(
       );
     }
     case "confirmed": {
+      // The passenger said the driver didn't come: the seat stays confirmed
+      // until that is decided (R8.2), and the report under the title says
+      // where it stands.
+      if (booking.dispute?.kind === "driver_absent" && booking.dispute.outcome === null) {
+        return said(t("tripDay.driverAbsent"));
+      }
+      // The ride is over: nobody picks anyone up any more.
+      if (booking.tripDay?.phase === "completed") return said(t("booking.confirmed"));
       if (!onTripDay(booking)) {
         return said(
           t("booking.confirmed"),
@@ -129,7 +137,8 @@ export function bookingTitle(
  * Done, and which step the car stands on. A ride booked instantly was
  * never asked for, so its road starts at Confirmed, and has none before
  * it is paid. A booking that was declined, expired, cancelled or a
- * no-show leads nowhere and has no road.
+ * no-show leads nowhere and has no road; nor has a seat still confirmed
+ * once its ride is over.
  */
 export function bookingRoad(
   t: Translate,
@@ -137,16 +146,22 @@ export function bookingRoad(
 ): { readonly steps: readonly string[]; readonly current: number } | null {
   if (booking.viewer !== "passenger") return null;
   const asked = booking.trip.bookingMode === "approval";
-  const reached =
-    booking.status === "requested" || booking.status === "accepted"
-      ? 0
-      : booking.status === "confirmed"
-        ? booking.tripDay !== null && booking.tripDay.phase !== "upcoming"
-          ? 2
-          : 1
-        : booking.status === "completed"
-          ? 3
-          : null;
+  const reached = ((): number | null => {
+    switch (booking.status) {
+      case "requested":
+      case "accepted":
+        return 0;
+      case "confirmed":
+        // Still confirmed once the ride is over, it waits for a report to
+        // be decided (R8.2), which says how it ends: no road leads there.
+        if (booking.tripDay?.phase === "completed") return null;
+        return booking.tripDay?.phase === "trip_day" ? 2 : 1;
+      case "completed":
+        return 3;
+      default:
+        return null;
+    }
+  })();
   if (reached === null || (!asked && reached === 0)) return null;
   const steps = [t("road.asked"), t("road.confirmed"), t("road.tripDay"), t("road.done")];
   return asked ? { steps, current: reached } : { steps: steps.slice(1), current: reached - 1 };

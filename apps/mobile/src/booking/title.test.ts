@@ -151,6 +151,36 @@ describe("the title of a booked seat", () => {
     });
   });
 
+  describe("while a report that the driver didn't come is open", () => {
+    // The booking stays confirmed until the report is decided (R8.2).
+    const reported = (phase: "trip_day" | "completed") => ({
+      ...onTheDay({ phase }),
+      dispute: dispute({ kind: "driver_absent" }),
+    });
+    const dayAfter = new Date("2026-11-16T09:00:00Z");
+
+    it("says so, and leaves where it stands to the report under the title", () => {
+      expect(title(reported("completed"), dayAfter)).toEqual({
+        over: null,
+        title: "The driver didn't come",
+        line: null,
+      });
+      expect(titill(reported("completed"), dayAfter).title).toBe("Bílstjórinn kom ekki");
+    });
+
+    it("says so on the trip day too, once it was said", () => {
+      expect(title(reported("trip_day"), onDay("10:20")).title).toBe("The driver didn't come");
+    });
+
+    it("promises no pick-up once the ride is over, whatever else", () => {
+      expect(title(onTheDay({ phase: "completed" }), dayAfter)).toEqual({
+        over: null,
+        title: "Your seat is confirmed",
+        line: null,
+      });
+    });
+  });
+
   describe("once it ended", () => {
     const rideCancelled = northBooking({
       status: "declined",
@@ -305,6 +335,10 @@ describe("the road of a booked seat", () => {
 
   it("has none before an instant booking is paid: nothing is confirmed yet", () => {
     expect(bookingRoad(en, unpaidBooking)).toBeNull();
+  });
+
+  it("has none for a confirmed seat whose ride is over: its report decides how it ends", () => {
+    expect(bookingRoad(en, onTheDay({ phase: "completed" }))).toBeNull();
   });
 
   it.each([

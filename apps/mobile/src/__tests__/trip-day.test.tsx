@@ -112,15 +112,18 @@ describe("the passenger's trip day (spec 8, 3.1; spec 31, 3.9)", () => {
 
   it("keeps the usual page before the trip day", async () => {
     await openBooking(onTheDay({ phase: "upcoming" }));
-    expect(await screen.findByText("Your seat is confirmed")).toBeVisible();
-    expect(screen.queryByRole("header", { name: "Trip day" })).toBeNull();
+    expect(await screen.findByRole("header", { name: "Your seat is confirmed" })).toBeVisible();
+    expect(screen.queryByRole("header", { name: /^Leaves in/ })).toBeNull();
     expect(screen.queryByRole("button", imHere)).toBeNull();
+    expect(screen.queryByTestId("bottom-bar")).toBeNull();
   });
 
   it("is only for a confirmed booking", async () => {
     await openBooking(onTheDay({}, { status: "completed" }));
-    expect(await screen.findByText("Borgarnes")).toBeVisible();
-    expect(screen.queryByRole("header", { name: "Trip day" })).toBeNull();
+    expect(await screen.findByRole("header", { name: "Completed" })).toBeVisible();
+    expect(screen.queryByRole("header", { name: /^Leaves in/ })).toBeNull();
+    expect(screen.queryByRole("button", imHere)).toBeNull();
+    expect(screen.queryByTestId("bottom-bar")).toBeNull();
   });
 });
 
@@ -181,6 +184,10 @@ describe("the passenger's trip day on a laptop (spec 18, 3.9; spec 31, 3.16)", (
     await waitFor(() => {
       expect(loadsOf(client, "/v1/bookings/{id}")).toBe(2);
     });
+    // Focus went to what was told when it was said, and stays where the
+    // passenger puts it after: a window that changes size says nothing new.
+    const focus = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
+    focus.mockClear();
     await act(() => {
       Dimensions.set({ window: phone });
     });
@@ -191,6 +198,8 @@ describe("the passenger's trip day on a laptop (spec 18, 3.9; spec 31, 3.16)", (
     });
     expect(within(screen.getByTestId("columns-side")).getByText(told)).toBeVisible();
     expect(loadsOf(client, "/v1/bookings/{id}")).toBe(2);
+    expect(focus).not.toHaveBeenCalled();
+    focus.mockRestore();
   });
 });
 

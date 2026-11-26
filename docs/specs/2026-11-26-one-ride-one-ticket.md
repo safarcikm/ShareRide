@@ -463,9 +463,15 @@ and on a laptop
   as the line under it ("You withdrew this request. That never counts
   against you.", "You cancelled this booking: Plans changed"), in the
   place of the notice that said so. What else a cancellation says, the
-  driver's note, the refund and whether it shows on the profile, stays
-  under the title. When an action here changes the state, focus moves to
-  the title and its line, which say the outcome.
+  driver's note, the refund and whether it shows on the profile, stands
+  under that line, in the head. When an action here changes the state,
+  focus moves to the title with what stands under it, which say the
+  outcome: after cancelling, a screen reader hears the refund too.
+- While the passenger's report that the driver didn't come is open, the
+  seat stays confirmed until it is decided (R8.2): the title is "The
+  driver didn't come", the report under it says where it stands, and
+  there is no road. A seat still confirmed once the ride is over
+  promises no pick-up.
 - The road has three steps for a ride booked instantly (Confirmed, Trip
   day, Done) and none before it is paid: nothing is confirmed yet. A
   request the driver said yes to stays at Asked until it is paid.
@@ -484,21 +490,26 @@ and on a laptop
   of the country, and "Open in maps" shows the street.
 - Paying. The deadline is the line under the title and **Pay** is the
   main button in the bar, so there is no paying card; the payment opens
-  in the bar, in Pay's place. The line about paying the driver in person
-  is a notice under where to stand. A driver who opens a passenger's
-  booking paid in person reads "Gunna pays you 2,900 ISK in cash or by
-  bank transfer when they get in." there.
+  in the bar, in Pay's place, and a payment that did not go through says
+  so over Pay, where the passenger is looking. The line about paying the
+  driver in person is a notice under the driver and where to stand. A
+  driver who opens a passenger's booking paid in person reads "Gunna pays
+  you 2,900 ISK in cash or by bank transfer when they get in." there.
 - The rows, each only when it has something to do: "The driver didn't
   come" (after the ride, while it can still be said, R8.5), "Share the
   ride's details", "Weather and roads" (as on a ride's details), "Report
   a problem with this ride", and red and last "Cancel booking", which
   opens its screen, or "Withdraw request". Withdrawing asks first, in the
   bar: the red row gives way to the question, focus goes to it, and
-  "Keep my request" puts the row and the focus back.
+  "Keep my request" puts the row and the focus back. The question is
+  gone once the driver has answered: the bar then holds what the seat
+  needs now.
 - The bar holds the one main button, when there is one: Pay; "I'm here"
   (3.9); "Rate the driver", once the ride is over and while it can be
-  reviewed; "Find another ride", after a booking the passenger did not
-  end themselves. A confirmed seat with nothing to do has no bar.
+  reviewed; "Find another ride", after a request that was declined,
+  expired or withdrawn, and after a booking someone else cancelled. A
+  confirmed seat with nothing to do has no bar, nor has a booking the
+  passenger cancelled.
 - The prompt to turn on notifications or add an email (spec 7, 3.6.2),
   when it shows on this screen, has outlined buttons: the bar's button is
   the only filled one (R31.1).

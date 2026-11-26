@@ -14,8 +14,10 @@ import { spacing } from "@/theme/tokens";
 export interface Withdrawing {
   /** The question is open: withdraw, or keep the request. */
   readonly asking: boolean;
-  /** The request was kept after asking, so focus goes back to what opened the question. */
+  /** The request was kept after asking, so focus goes back to what opened the question, once. */
   readonly kept: boolean;
+  /** Focus went back there: a later move of the row, as between columns, leaves it alone. */
+  readonly onKeptFocused: () => void;
   /** Withdrawing is on its way. */
   readonly busy: boolean;
   /** Why the last try did not withdraw it, if it did not. */
@@ -29,9 +31,11 @@ export interface Withdrawing {
  * Withdrawing a request that waits for the driver (spec 5, 3.4; R5.8): at
  * any time, after a second press to make sure. Its state lives with the
  * page, so the question stays open when the window crosses the breakpoint
- * and the question moves from the bar to the side column. `onWithdrawn`
- * hears the booking as withdrawing left it; `onStale` why it could not be
- * withdrawn any more, such as the driver answering first.
+ * and the question moves from the bar to the side column. The question is
+ * only ever open on a request: once the page loads the booking again with
+ * the driver's answer, it is gone. `onWithdrawn` hears the booking as
+ * withdrawing left it; `onStale` why it could not be withdrawn any more,
+ * such as the driver answering first.
  */
 export function useWithdraw({
   booking,
@@ -50,13 +54,18 @@ export function useWithdraw({
   const [kept, setKept] = useState(false);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const requested = booking.status === "requested";
   return {
-    asking,
-    kept,
+    asking: asking && requested,
+    kept: kept && requested,
+    onKeptFocused: () => {
+      setKept(false);
+    },
     busy,
     notice,
     ask: () => {
       setNotice(null);
+      setKept(false);
       setAsking(true);
     },
     keep: () => {

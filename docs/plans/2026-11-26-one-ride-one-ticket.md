@@ -611,10 +611,24 @@ where a person sees it, in 3.8, 3.9 and 3.16):
 - `ScreenHead` gains `outcome`: the title and its line take focus when
   they are the outcome of an action, as the status line did. For a
   booking that ended the line is why (`endedText` in `booking/texts.ts`),
-  in the place of the notice that said so, so a screen reader hears "You
-  cancelled this booking: Plans changed" with "Cancelled" (the journeys
-  `cancel-booking.spec.ts` and `my-rides.spec.ts` check that focus holds
-  the sentence).
+  in the place of the notice that said so, and `more` holds what else a
+  cancellation says (`endedLines`), so a screen reader hears "You
+  cancelled this booking: Plans changed" and the refund with "Cancelled"
+  (the journeys `cancel-booking.spec.ts` and `my-rides.spec.ts` check
+  that focus holds them).
+- From the code review, mended here: the question about withdrawing is
+  only open on a request (it stayed in the bar, over Pay, when the driver
+  answered meanwhile); a payment that did not go through says so over
+  Pay, not at the top of the page; a seat still confirmed once its ride
+  is over, which it is while a report that the driver didn't come is
+  open, has that as its title and no road, in the place of "Anna picks
+  you up at 10:00"; and focus goes back to the Withdraw row, and to what
+  "I'm here" told, once, not each time the window crosses the breakpoint.
+  Left for the last pass (PR 12): a ticket that is not pressed reads its
+  two ends to a screen reader as times and places, with nothing that
+  says which is where I get in; "Find another ride" is "Leita aftur" in
+  Icelandic; and an Icelandic reader should look at the status words now
+  that they are titles ("Afbókuð", "Útrunnin", "Dregin til baka").
 - The page has one tree for a phone and a wide screen, as before, and
   what must survive the breakpoint lives in the page: the payment, the
   question about withdrawing, and that "I'm here" was said (`ImHere`
@@ -782,7 +796,16 @@ and deleting the account (3.19).
    card, and the heading before the picture in "Where you sit"; on
    Booking a seat, "driver" beside the driver's name for a screen reader;
    a cancelled ride's page without the seats stepper and "Where you sit".
-8. **Docs:** spec 31 becomes Built, with what differs from the drawings;
+8. **Small things PR 7a's code review named:** a ticket that is not
+   pressed says which end is where I get in and where I get out, for a
+   screen reader; "Find another ride" in Icelandic ("Leita aftur" today,
+   and spec 5's table says "Search again"); an Icelandic reader looks at
+   the status words as titles ("Afbókuð", "Útrunnin", "Dregin til baka",
+   "Mætti ekki"), and at "bílstjóri" beside "ökumaður"; with text at 200%
+   on a phone 360 wide the road's four labels run into each other
+   (`look.spec.ts` measures the booked seat's head, ticket, driver and
+   where to stand there, not the road).
+9. **Docs:** spec 31 becomes Built, with what differs from the drawings;
    spec 15 has the parts; the roadmap and the changelog.
 
 ## After merging

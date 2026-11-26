@@ -1716,8 +1716,9 @@ releases follow [Semantic Versioning](https://semver.org/).
   31, 3.8): "Request sent", "Anna said yes: pay to keep your seat", "Your
   seat is confirmed", "How was your ride?", "Cancelled", with one line
   under it on what happens next, or on why it ended ("You cancelled this
-  booking: Plans changed"), and a road (Asked, Confirmed, Trip day,
-  Done). Then the ride as a ticket with the seats and the price, the
+  booking: Plans changed", with the refund under it), and a road (Asked,
+  Confirmed, Trip day, Done). While a report that the driver didn't come
+  is open, the title says that. Then the ride as a ticket with the seats and the price, the
   driver with Message and the number plate as a tag, where to stand with
   a small map and "Open in maps", and rows: share the ride's details,
   weather and roads, report a problem, and "Cancel booking" or "Withdraw

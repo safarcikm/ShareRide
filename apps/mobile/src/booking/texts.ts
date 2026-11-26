@@ -152,6 +152,21 @@ export function endedText(t: Translate, locale: Locale, booking: Booking): strin
 }
 
 /**
+ * What else a cancellation says to the passenger, under why the booking
+ * ended (spec 6): the driver's note, the refund, and that it shows on
+ * their profile. None for a booking that ended another way.
+ */
+export function endedLines(t: Translate, locale: Locale, booking: Booking): readonly string[] {
+  const cancelled =
+    (booking.status === "cancelled" && !isWithdrawn(booking)) || booking.status === "declined";
+  const texts = cancelled ? cancellationTexts(t, locale, booking) : null;
+  if (texts === null) return [];
+  return [texts.note, texts.refund, texts.counts ? t("booking.countsOnReliability") : null].filter(
+    (line) => line !== null,
+  );
+}
+
+/**
  * A cancelled booking's outcome for its passenger, or a request's declined
  * because the driver cancelled the trip: who cancelled what and why, the
  * refund if there was one, and whether it shows on their profile.
