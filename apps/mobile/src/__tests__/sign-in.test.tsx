@@ -1,4 +1,4 @@
-import { act, fireEvent, screen } from "expo-router/testing-library";
+import { act, fireEvent, screen, waitFor } from "expo-router/testing-library";
 import { failure, ok, testMe, tokens, type FakeClient } from "@/testing/fake-client";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
@@ -84,10 +84,12 @@ async function enterCode(code: string) {
 }
 
 describe("Signing in with an email code (spec 26)", () => {
-  it("numbers the steps, says a code comes by email, and tells members from before what to do", async () => {
+  it("numbers no steps before the phone number, and tells members from before what to do", async () => {
     const app = await openSignInScreen();
-    expect(screen.getByText("Step 1 of 3")).toBeVisible();
-    expect(screen.getByText("We email you a 6-digit code.")).toBeVisible();
+    // Who is new is not known yet (spec 29, 3.6).
+    expect(screen.queryByText("Step 1 of 3")).toBeNull();
+    expect(screen.getByText("Leave it empty and we'll email you a code.")).toBeVisible();
+    expect(screen.queryByText("We email you a 6-digit code.")).toBeNull();
     expect(
       screen.getByText(
         "Joined with your phone number? Use your email or Google, then the same number. It's added to your account.",
@@ -100,7 +102,7 @@ describe("Signing in with an email code (spec 26)", () => {
 
     await sendEmailCodeTo(" Anna@Example.com ");
     expect(await screen.findByText("We emailed a 6-digit code to anna@example.com.")).toBeVisible();
-    expect(screen.getByText("Step 1 of 3")).toBeVisible();
+    expect(screen.queryByText("Step 1 of 3")).toBeNull();
     expect(app.client.calls.at(-1)).toEqual({
       path: "/v1/auth/email/start",
       input: { body: { email: "anna@example.com", locale: "en" } },
@@ -501,8 +503,9 @@ describe("Signing in with a ride kept (spec 16, 3.5)", () => {
     const app = await openSignIn((client) => {
       client.answer("/v1/trips/{id}", () => failure(0, "network_error"));
     });
-    await screen.findByText("Step 1 of 3");
-    expect(app.client.calls.some((call) => call.path === "/v1/trips/{id}")).toBe(true);
+    await waitFor(() => {
+      expect(app.client.calls.some((call) => call.path === "/v1/trips/{id}")).toBe(true);
+    });
     expect(screen.queryByTestId("kept-ride")).toBeNull();
     expect(screen.getByLabelText("Email")).toBeVisible();
   });

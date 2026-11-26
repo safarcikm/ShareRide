@@ -224,7 +224,7 @@ test), `packages/contracts`, `docs/decisions/0050-*.md`.
 `firstWay(lastWay, offered: { providers: SignInProvider[]; passkey: boolean; email: boolean }): SignInWay | null`),
 `apps/mobile/src/app/sign-in/index.tsx`, texts.
 
-- [ ] Tests: each kept way that is offered comes first with "Last used";
+- [x] Tests: each kept way that is offered comes first with "Last used";
   one not offered, or none kept, keeps today's order with no mark; email
   and password put the form first. Implement; commit.
 
@@ -235,7 +235,8 @@ test), `packages/contracts`, `docs/decisions/0050-*.md`.
 `/onboarding/*`), texts (`auth.passwordHelp`; `auth.email.help` leaves
 step 1), affected app tests and journeys.
 
-- [ ] Failing tests: no "Step 1 of 3" on step 1, "Step 2 of 3" on the
+- [x] Failing tests: no "Step 1 of 3" on step 1, "Step 2 of 3" on the
   phone step; the cookie question waits on sign-in screens and shows after.
-- [ ] Implement; `pnpm check`; the sign-in, welcome and analytics journeys;
-  spec 16 and spec 27 pointers; open PR 4; release; Martin's manual check.
+- [x] Implement; `pnpm check`; the sign-in, welcome and analytics journeys;
+  spec 16 and spec 27 pointers; open PR 4.
+- [ ] Release; Martin's manual check.

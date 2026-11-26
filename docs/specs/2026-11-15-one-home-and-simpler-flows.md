@@ -245,6 +245,8 @@ Find replaces both the front page and My profile as the place the app opens.
 
 ### 3.5 Sign up without losing your ride (proposal 3)
 
+> [Spec 29](2026-11-25-easier-sign-in.md), 3.6, changes item 1: step 1 shows no step, and the numbering starts at the phone number ("Step 2 of 3").
+
 1. Three steps, numbered "Step 1 of 3" and so on: 1 the phone number, 2 the
    code, 3 about you. Someone who already has an account is done after step 2.
 2. Step 1 is titled "Sign in or create an account": "We text you a 6-digit

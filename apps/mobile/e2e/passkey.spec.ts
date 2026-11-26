@@ -1,5 +1,5 @@
 import { generateKeyPairSync, randomBytes } from "node:crypto";
-import { expect, test, type CDPSession, type Page } from "@playwright/test";
+import { expect, test, type CDPSession, type Locator, type Page } from "@playwright/test";
 import { english, enterCodes, finishSignUp, menuLink, signIn, signUp } from "./support/account";
 import { emailTo } from "./support/email";
 import { newPhoneNumber } from "./support/sms";
@@ -72,6 +72,11 @@ async function signOut(page: Page) {
   await menuLink(page, english.profileTab).click();
   await page.getByRole("button", { name: "Sign out", exact: true }).click();
   await expect(page.getByRole("heading", { name: english.findTitle })).toBeVisible();
+}
+
+/** How far down the page a control starts. */
+async function top(control: Locator): Promise<number> {
+  return (await control.boundingBox())?.y ?? Number.NaN;
 }
 
 /** Opens step 1 of signing in from Profile, signed out. */
@@ -160,6 +165,17 @@ test("a member who signs in with the email code is offered Face ID, and uses it 
   await page.getByRole("button", { name: "Face ID or fingerprint", exact: true }).click();
   await expect(page.getByRole("heading", { name: english.hi("Hekla") })).toBeVisible();
   await expect(page.getByRole("heading", { name: offerTitle })).toHaveCount(0);
+
+  // The time after, step 1 shows it first, marked (spec 29, 3.5).
+  await signOut(page);
+  await openSignIn(page);
+  const lastUsed = page.getByText("Last used", { exact: true }).filter(visible);
+  const faceId = page.getByRole("button", { name: "Face ID or fingerprint", exact: true });
+  await expect(lastUsed).toBeVisible();
+  expect(await top(lastUsed)).toBeLessThan(await top(faceId));
+  expect(await top(faceId)).toBeLessThan(await top(page.getByLabel("Email").filter(visible)));
+  await faceId.click();
+  await expect(page.getByRole("heading", { name: english.findTitle })).toBeVisible();
 });
 
 test("after a password, a browser that saves no passkey by itself offers Face ID (spec 29, 3.3)", async ({

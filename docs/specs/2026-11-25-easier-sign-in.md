@@ -243,6 +243,7 @@ speaker):
 | `passkeyOffer.body`     | Sign in with a glance or a touch on this device. Your email code always works too. |
 | `passkeyOffer.setUp`    | Set it up                                                                          |
 | `auth.lastUsed`         | Last used                                                                          |
+| `auth.or`               | or                                                                                 |
 | `auth.passwordHelp`     | Leave it empty and we'll email you a code.                                         |
 
 "Not now", "Done" and the device's messages are spec 27's.

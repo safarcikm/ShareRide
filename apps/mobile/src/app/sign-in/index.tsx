@@ -1,14 +1,14 @@
 import type { PhoneNeeded } from "@shareride/contracts";
 import {
   callingCode,
-  codeRules,
   normaliseEmail,
   normalisePhoneNumber,
   type SignInProvider,
+  type SignInWay,
 } from "@shareride/domain";
 import { countryNames } from "@shareride/i18n";
 import { router, useIsFocused } from "expo-router";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Platform, StyleSheet, Text, View } from "react-native";
 import type { CallFailure } from "@shareride/api-client";
 import type { Translate } from "@shareride/i18n";
@@ -19,6 +19,7 @@ import { Button } from "@/components/button";
 import { Notice } from "@/components/notice";
 import { PasswordField } from "@/components/password-field";
 import { Screen, useWideScreen } from "@/components/screen";
+import { Tag } from "@/components/tag";
 import { TextField } from "@/components/text-field";
 import { Body, Title } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
@@ -35,7 +36,8 @@ import { pendingExpiredText, phoneStepHelp } from "@/sign-in/pending";
 import { ProviderButtons } from "@/sign-in/provider-buttons";
 import { providerNames, useProviderWindow } from "@/sign-in/provider-window";
 import { SignUpProgress } from "@/sign-in/sign-up-progress";
-import { forgetPasskeyHere } from "@/sign-in/this-browser";
+import { firstWay } from "@/sign-in/last-used";
+import { forgetPasskeyHere, lastWay } from "@/sign-in/this-browser";
 import { usePasskeyAutofill } from "@/sign-in/use-passkey-autofill";
 import { usePasskeysOffered } from "@/sign-in/use-passkeys";
 import { spacing, typography } from "@/theme/tokens";
@@ -103,6 +105,16 @@ function ChooseHowScreen() {
   // Guards against a second tap or a Return key before the first reply.
   const sending = useRef(false);
   const focused = useIsFocused();
+  const [last, setLast] = useState<SignInWay | null>(null);
+  useEffect(() => {
+    let live = true;
+    void lastWay().then((way) => {
+      if (live) setLast(way);
+    });
+    return () => {
+      live = false;
+    };
+  }, []);
   // On a laptop the field takes the focus, so its suggestions show at once
   // (spec 29, 3.1, item 5); not on a phone, where the keyboard would cover the rest.
   const wide = useWideScreen();
@@ -269,35 +281,62 @@ function ChooseHowScreen() {
     router.push("/sign-in/email-code");
   }
 
+  // The way this browser used last time, first and marked (spec 29, 3.5).
+  const first = firstWay(last, {
+    providers: signInProviders,
+    passkey: passkeyOffered,
+    email: emailSignIn,
+  });
+  const formFirst = first === "email" || first === "password";
+  const providerFirst = first === "google" || first === "apple" ? first : null;
+  const providers =
+    providerFirst === null
+      ? signInProviders
+      : [providerFirst, ...signInProviders.filter((provider) => provider !== providerFirst)];
+  const lastUsed = <Tag kind="info" label={t("auth.lastUsed")} />;
+  const passkeyButton = passkeyOffered ? (
+    <Button
+      variant="secondary"
+      fill
+      label={t("auth.passkey")}
+      busy={passkeyBusy}
+      disabled={busy || providerBusy !== null}
+      onPress={() => void signInWithPasskey()}
+    />
+  ) : null;
+  const buttons =
+    signInProviders.length > 0 || passkeyOffered ? (
+      <View style={styles.providers}>
+        {formFirst ? <OrWithEmail label={t("auth.or")} /> : null}
+        {first === "passkey" ? (
+          <>
+            {lastUsed}
+            {passkeyButton}
+          </>
+        ) : null}
+        {providerFirst === null ? null : lastUsed}
+        <ProviderButtons
+          providers={providers}
+          busy={providerBusy}
+          disabled={!providerWindow.ready || busy || passkeyBusy}
+          onPress={(provider) => void continueWith(provider)}
+        />
+        {first === "passkey" ? null : passkeyButton}
+        {emailSignIn && !formFirst ? <OrWithEmail label={t("auth.orEmail")} /> : null}
+      </View>
+    ) : null;
+
   return (
     <Screen>
-      <SignUpProgress step={1} />
+      {/* Who is new is not known yet: the steps start at the number (spec 29, 3.6). */}
+      <SignUpProgress />
       <KeptRideCard kept={flow.keptRide} />
       <Title>{t("signIn.title")}</Title>
       <PausedBanner part="signups" />
-      {signInProviders.length > 0 || passkeyOffered ? (
-        <View style={styles.providers}>
-          <ProviderButtons
-            providers={signInProviders}
-            busy={providerBusy}
-            disabled={!providerWindow.ready || busy || passkeyBusy}
-            onPress={(provider) => void continueWith(provider)}
-          />
-          {passkeyOffered ? (
-            <Button
-              variant="secondary"
-              fill
-              label={t("auth.passkey")}
-              busy={passkeyBusy}
-              disabled={busy || providerBusy !== null}
-              onPress={() => void signInWithPasskey()}
-            />
-          ) : null}
-          {emailSignIn ? <OrWithEmail label={t("auth.orEmail")} /> : null}
-        </View>
-      ) : null}
+      {formFirst ? null : buttons}
       {emailSignIn ? (
         <View style={styles.form}>
+          {formFirst ? lastUsed : null}
           <TextField
             label={t("auth.email.label")}
             value={flow.email}
@@ -347,7 +386,6 @@ function ChooseHowScreen() {
               onPress={() => void send(true)}
             />
           </View>
-          <Body>{t("auth.email.help", { length: codeRules.length })}</Body>
           <Body>{t("auth.email.before")}</Body>
         </View>
       ) : (
@@ -356,6 +394,7 @@ function ChooseHowScreen() {
           <Notice message={error ?? flow.notice} />
         </View>
       )}
+      {formFirst ? buttons : null}
     </Screen>
   );
 }

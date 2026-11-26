@@ -103,7 +103,7 @@ export default function EmailCodeScreen() {
 
   return (
     <Screen>
-      <SignUpProgress step={1} />
+      <SignUpProgress />
       <KeptRideCard kept={flow.keptRide} />
       <Title>{t("auth.code.title")}</Title>
       <Body>{t("auth.emailCode.help", { length: codeLength, email })}</Body>

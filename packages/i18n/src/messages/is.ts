@@ -170,11 +170,14 @@ export const is = {
   "auth.continueGoogle": "Halda áfram með Google",
   "auth.continueApple": "Halda áfram með Apple",
   "auth.orEmail": "eða með netfanginu þínu",
+  /** Step 1: before the buttons when the email form comes first (spec 29, 3.5). */
+  "auth.or": "eða",
+  /** The way this browser signed in last time (spec 29, 3.5). */
+  "auth.lastUsed": "Síðast notað",
   /** Sign in with a passkey on this device (spec 27, 3.1 and 3.3). */
   "auth.passkey": "Face ID eða fingrafar",
   "auth.email.label": "Netfang",
   "auth.email.send": "Senda kóða",
-  "auth.email.help": "Við sendum þér {length} stafa kóða í tölvupósti.",
   "auth.email.before":
     "Skráðir þú þig með símanúmeri? Notaðu netfangið þitt eða Google og svo sama númer. Því er bætt við aðganginn þinn.",
   "auth.email.unavailable": "Innskráning með netfangi er ekki í boði á þessum netþjóni.",
@@ -186,8 +189,7 @@ export const is = {
   "auth.email.added": "Næst skráir þú þig inn með {email}.",
   "auth.email.replaced": "Innskráningarnetfangið þitt er nú {email}.",
   "auth.password": "Lykilorð",
-  "auth.passwordHelp":
-    "Aðeins ef þú hefur valið lykilorð. Annars sendum við þér kóða í tölvupósti.",
+  "auth.passwordHelp": "Skildu það eftir autt og við sendum þér kóða í tölvupósti.",
   "auth.signIn": "Skrá inn",
   "auth.forgotPassword": "Gleymdirðu lykilorðinu?",
   "auth.forgotPasswordEmail": "Sláðu inn netfangið þitt og við sendum þér kóða.",

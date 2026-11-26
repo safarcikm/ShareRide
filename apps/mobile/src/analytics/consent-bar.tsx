@@ -24,7 +24,8 @@ import { screenPattern } from "./screen-pattern";
  * card at the bottom of every screen, above the menu bar on phones and at
  * the page's bottom right on wide screens, except on the Cookies page, which
  * asks with its switch. It does not block the page or take the focus. Accept
- * and Decline look the same, side by side (R23.2).
+ * and Decline look the same, side by side (R23.2). It waits while signing in
+ * or up, and asks on the next screen (spec 29, 3.6).
  */
 export function ConsentBar({ wide }: { readonly wide: boolean }) {
   const { t } = useLanguage();
@@ -34,7 +35,8 @@ export function ConsentBar({ wide }: { readonly wide: boolean }) {
   const segments = useSegments();
   const inMenu = segments[0] === "(tabs)";
   const menuBar = useTabBarHeight(insets.bottom);
-  if (!available || choice !== null || screenPattern(segments) === "/cookies") return null;
+  const pattern = screenPattern(segments);
+  if (!available || choice !== null || pattern === "/cookies" || signingIn(pattern)) return null;
   const bottom = wide ? spacing.md : (inMenu ? menuBar : insets.bottom) + spacing.sm;
   return (
     <View testID="consent-layer" style={[styles.layer, { bottom }]}>
@@ -79,6 +81,13 @@ export function ConsentBar({ wide }: { readonly wide: boolean }) {
         </View>
       </View>
     </View>
+  );
+}
+
+/** Step 1, the codes, the phone number, About you and the Face ID offers. */
+function signingIn(pattern: string): boolean {
+  return ["/sign-in", "/onboarding"].some(
+    (start) => pattern === start || pattern.startsWith(`${start}/`),
   );
 }
 

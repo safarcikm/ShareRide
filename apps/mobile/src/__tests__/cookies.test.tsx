@@ -6,7 +6,7 @@ import { createFakeAnalyticsHost, setAnalyticsHost } from "@/testing/analytics-h
 import { renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
 import type * as TestHost from "@/testing/analytics-host";
-import { ok, type FakeClient } from "@/testing/fake-client";
+import { ok, testMe, type FakeClient } from "@/testing/fake-client";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
 jest.mock("@/auth/token-store", () => {
@@ -174,6 +174,32 @@ describe("The question about cookies", () => {
     setAnalyticsHost(null);
     await renderApp("/legal/privacy", withAnalytics);
     expect(await screen.findByText("Draft text.")).toBeVisible();
+    expect(screen.queryByText(question)).toBeNull();
+  });
+
+  it("waits while signing in or up, and asks on the next screen (spec 29, 3.6)", async () => {
+    await renderApp("/sign-in", withAnalytics);
+    expect(
+      await screen.findByRole("header", { name: "Sign in or create an account" }),
+    ).toBeVisible();
+    expect(screen.queryByText(question)).toBeNull();
+    await act(() => {
+      router.push("/sign-in/country");
+    });
+    expect(await screen.findByRole("header", { name: "Choose a country" })).toBeVisible();
+    expect(screen.queryByText(question)).toBeNull();
+    await act(() => {
+      router.replace("/legal/privacy");
+    });
+    expect(await screen.findByText(question)).toBeVisible();
+  });
+
+  it("waits on About you too (spec 29, 3.6)", async () => {
+    await renderApp("/", {
+      ...withAnalytics,
+      me: { ...testMe, ageConfirmed: true, missingSteps: ["profile"] },
+    });
+    expect(await screen.findByRole("header", { name: "Last step: about you" })).toBeVisible();
     expect(screen.queryByText(question)).toBeNull();
   });
 

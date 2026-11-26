@@ -1557,6 +1557,16 @@ releases follow [Semantic Versioning](https://semver.org/).
   ago, and only the answer to such options is saved without "user present"
   or "user verified".
   Migration 0064.
+- The way you used last time first (spec 29, 3.5): step 1 of signing in
+  shows the way this browser signed in with last, marked "Last used":
+  Google, Apple or Face ID at the top, or for the email code or a password
+  the email form first, then "or" and the buttons. A way the screen no
+  longer offers keeps the usual order with no mark.
+- A calmer sign-in screen (spec 29, 3.6): step 1 and its email code show no
+  "Step 1 of 3" (the steps start at the phone number), the password's help
+  says "Leave it empty and we'll email you a code." in place of the line
+  about a 6-digit code, and the cookie question waits until signing in or
+  up is done.
 - About PuffinRide (spec 30), a public page at `/about`: what PuffinRide is,
   the Terms of Service, Community Rules, Privacy Policy and Cookies, who
   runs PuffinRide (as the Terms say it) and how to reach us
