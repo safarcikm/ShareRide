@@ -13,6 +13,7 @@ import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 import { devicePasskeys } from "./passkey";
 import { PasskeySetUp, setUpOutcomeText } from "./passkey-set-up";
+import { forgetPasskeyHere } from "./this-browser";
 import { usePasskeysOffered } from "./use-passkeys";
 
 /** A device's name, such as "Safari on iPhone", from what its browser said. */
@@ -64,8 +65,10 @@ export function PasskeyDevices({
     setBusy(null);
     setAsking(null);
     if (result.ok || result.error.code === "not_found") {
-      // This browser stops offering it, if it keeps it (spec 29, 3.4).
+      // This browser stops offering it, if it keeps it (spec 29, 3.4), and
+      // is no longer known to have one if it was this one (3.2, item 5).
       void devicePasskeys.forget(passkey.credentialId);
+      void forgetPasskeyHere(passkey.credentialId);
       setSetUpKey((key) => key + 1);
       onRemoved(passkey.id);
       tell(t("passkey.removed", { device: passkeyName(t, passkey) }), false);

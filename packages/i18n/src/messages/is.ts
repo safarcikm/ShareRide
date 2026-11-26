@@ -186,6 +186,10 @@ export const is = {
   "signUp.faster.title": "Skráðu þig hraðar inn næst",
   "signUp.faster.password": "Bæta við lykilorði",
   "signUp.faster.help": "Kóði í tölvupósti virkar líka alltaf.",
+  "passkeyOffer.title": "Nota Face ID eða fingrafar næst?",
+  "passkeyOffer.body":
+    "Skráðu þig inn með augnaráði eða snertingu í þessu tæki. Kóði í tölvupósti virkar líka alltaf.",
+  "passkeyOffer.setUp": "Setja upp",
   "signUp.faster.passkey": "Nota Face ID eða fingrafar",
   "auth.provider.phoneTitle": "Bættu við símanúmerinu þínu",
   "auth.provider.phoneHelp":

@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import type { SessionManager } from "@/auth/session-manager";
 import { useConfig } from "@/beta/config";
 import { devicePasskeys, passkeyFailure, type PasskeyOptions } from "./passkey";
+import { markPasskeyHere, unnamedPasskey } from "./this-browser";
 
 /**
  * Whether to offer Face ID or fingerprint (spec 27, 3.1, item 1): the
@@ -69,7 +70,8 @@ export async function passkeySetUpOptions(
 
 /**
  * The device's own sheet with those options, then the passkey saved. The
- * verified email is told (R27.7).
+ * verified email is told (R27.7). This browser is then known to have one
+ * (spec 29, 3.2, item 5), as it is when it refuses a second one.
  */
 export async function savePasskey(
   session: Pick<SessionManager, "call">,
@@ -79,10 +81,15 @@ export async function savePasskey(
   try {
     credential = await devicePasskeys.create(options);
   } catch (error) {
-    return { kind: passkeyFailure(error) };
+    const failure = passkeyFailure(error);
+    if (failure === "already") await markPasskeyHere(unnamedPasskey);
+    return { kind: failure };
   }
   const saved = await session.call(addPasskeyRoute, { body: { credential } });
-  if (saved.ok) return { kind: "saved", passkey: saved.data };
+  if (saved.ok) {
+    await markPasskeyHere(saved.data.credentialId);
+    return { kind: "saved", passkey: saved.data };
+  }
   if (saved.error.code === "too_many") return { kind: "too_many" };
   if (saved.error.code === "passkey_invalid") return { kind: "failed" };
   return { kind: "refused", failure: saved };
