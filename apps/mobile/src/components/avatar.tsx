@@ -27,6 +27,7 @@ export function Avatar({
   const shown = photo !== null && photo !== failed;
   return (
     <View
+      testID="avatar"
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
       style={[
@@ -53,6 +54,16 @@ export function Avatar({
 }
 
 export const avatarSize = spacing.xxl;
+
+/**
+ * A picture with what is written beside it, the name first: a line or two
+ * stand at the picture's middle, and a taller block starts at its top, so
+ * the picture stays with the name (spec 31, 3.18).
+ */
+export const besideAvatar = StyleSheet.create({
+  row: { flexDirection: "row", alignItems: "flex-start", gap: spacing.ms },
+  text: { flex: 1, minHeight: avatarSize, justifyContent: "center" },
+});
 
 const styles = StyleSheet.create({
   avatar: {

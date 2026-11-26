@@ -10,7 +10,7 @@ import {
   PawPrint,
 } from "lucide-react-native";
 import { StyleSheet, Text, View } from "react-native";
-import { Avatar, avatarSize } from "@/components/avatar";
+import { Avatar, avatarSize, besideAvatar } from "@/components/avatar";
 import { Icon } from "@/components/icon";
 import { NeedBubble } from "@/components/need-bubble";
 import { Tag } from "@/components/tag";
@@ -108,9 +108,9 @@ export function DriverAndCar({
     : listed;
   return (
     <>
-      <View style={styles.person}>
+      <View style={besideAvatar.row}>
         <Avatar firstName={driver.firstName} colour={driver.colour} photo={driver.photo} />
-        <View style={styles.grow}>
+        <View style={besideAvatar.text}>
           <Text style={[typography.bodyStrong, { color: palette.text }]}>{driver.firstName}</Text>
           {driver.standing === null ? null : (
             <StandingLines
@@ -123,11 +123,11 @@ export function DriverAndCar({
         </View>
       </View>
       {car === null ? null : (
-        <View style={styles.person}>
+        <View style={besideAvatar.row}>
           <View style={[styles.avatar, { backgroundColor: palette.background }]}>
             <Icon icon={Car} color={palette.text} />
           </View>
-          <View style={styles.grow}>
+          <View style={besideAvatar.text}>
             <Text style={[typography.bodyStrong, { color: palette.text }]}>{carText(t, car)}</Text>
             {carNote === undefined ? null : (
               <Text style={[typography.small, { color: palette.textMuted }]}>{carNote}</Text>
@@ -155,7 +155,6 @@ export function DriverAndCar({
 const styles = StyleSheet.create({
   partStop: { flexDirection: "row", alignItems: "center", gap: spacing.ms },
   grow: { flex: 1 },
-  person: { flexDirection: "row", alignItems: "center", gap: spacing.ms },
   avatar: {
     width: avatarSize,
     height: avatarSize,

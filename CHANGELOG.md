@@ -1563,6 +1563,17 @@ releases follow [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Titles keep their words apart on the website (spec 31, 3.18): Fredoka's
+  space is narrow and its kerning closed it further, so "N1 Vík" read as
+  "N1Vík". Titles, headings, times, prices and button labels are set
+  without kerning and with a word space 0.06 em wider.
+- On Edit trip and on the last step of posting, a part's link goes under
+  its title where the two do not fit on one line, where "Change the
+  preferences and note" ran out of its card on a phone; "Remove a stop"
+  starts at the left, under the stops (spec 31, 3.18).
+- A profile picture stands with the name, at the top of the lines beside
+  it, on the driver's card and on a request to answer, where it sat at
+  their middle (spec 31, 3.18).
 - Carpool in Iceland says what samferða means (spec 23, 3.9), with the
   spelling without ð (samferda) in English, for people who search for the
   word.
