@@ -1561,6 +1561,15 @@ releases follow [Semantic Versioning](https://semver.org/).
   wide as the page; on a phone's browser, small links in a few lines. Not
   on signing in, forms, My rides, Messages, Profile or in the phone apps.
 
+- The parts of "one ride, one ticket" (spec 31, 3.3), not on a screen yet:
+  `RideTicket` (a ride as a timetable with a tear line and a foot), `Road`
+  (where a booking or a draft stands, with the puffins' car on the step),
+  `NeedsYouCard` (what needs you, in the car's yellow), `ActionRows` (a card
+  of rows) and `ScreenHead` (Back, the title at the left, one line). `Row`
+  can have an icon, be red, unfold, hold a switch or only show a value;
+  `Tag` can have an icon; `Avatar` has a small size; tests can count a
+  screen's filled buttons.
+
 ### Fixed
 
 - Titles keep their words apart on the website (spec 31, 3.18): Fredoka's
@@ -1636,6 +1645,10 @@ releases follow [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- A booking's status tag follows what the colours say (spec 31, 3.2, rule
+  6): declined, expired, cancelled and withdrawn are a quiet grey tag, as
+  nothing is asked of anyone, and "No-show" is red. They were amber, or
+  blue for a withdrawal. "Waiting for payment" stays amber.
 - CI skips its code jobs (bundles, unit, integration and web tests, the API
   image) for a change to docs, marketing and other files that no code reads,
   and on `main` when the pull request already tested exactly the same files

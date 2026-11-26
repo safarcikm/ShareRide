@@ -1,10 +1,16 @@
 import { act, render, screen, within } from "@testing-library/react-native";
 import { getLocales } from "expo-localization";
+import { Share } from "lucide-react-native";
+import type { ReactElement } from "react";
 import { Dimensions, StyleSheet } from "react-native";
+import { LanguageProvider } from "@/i18n/language";
 import { renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
 import { colors } from "@/theme/tokens";
+import { IconButton } from "./icon-button";
+import { Road } from "./road";
 import { Screen } from "./screen";
+import { ScreenHead } from "./screen-head";
 import { Body, Title } from "./text";
 import { TextLink } from "./text-link";
 
@@ -35,6 +41,72 @@ describe("BackButton", () => {
     });
     expect(screen.getByTestId("back-face")).toHaveStyle({ backgroundColor: colors.light.surface });
     expect(screen.queryByText("Back")).toBeNull();
+  });
+});
+
+describe("ScreenHead (spec 31, 3.3)", () => {
+  const inEnglish = (ui: ReactElement) => render(<LanguageProvider>{ui}</LanguageProvider>);
+
+  it("puts Back before the title, which starts at the left and is the heading", async () => {
+    await inEnglish(<ScreenHead title="Your ride to Vík" line="1 request needs your answer." />);
+    expect(screen.getByRole("button", { name: "Back" })).toBeVisible();
+    const title = screen.getByRole("header", { name: "Your ride to Vík" });
+    expect(title).toHaveStyle({ fontFamily: "Fredoka_600SemiBold", fontSize: 28 });
+    expect(title).not.toHaveStyle({ textAlign: "center" });
+    expect(screen.getAllByRole("header")).toHaveLength(1);
+    // At most one line under it, in muted text, at the left like the title.
+    const line = screen.getByText("1 request needs your answer.");
+    expect(line).toHaveStyle({ fontSize: 17, color: colors.light.textMuted });
+    expect(line).not.toHaveStyle({ textAlign: "center" });
+    expect(screen.getByTestId("screen-head")).toHaveStyle({
+      flexDirection: "row",
+      alignItems: "flex-start",
+    });
+  });
+
+  it("has no Back on a screen with nowhere to go back to", async () => {
+    await inEnglish(<ScreenHead back={null} title="My rides" />);
+    expect(screen.queryByRole("button", { name: "Back" })).toBeNull();
+    expect(screen.getByRole("header", { name: "My rides" })).toBeVisible();
+  });
+
+  it("shows small text over the title, such as a ride's day", async () => {
+    await inEnglish(<ScreenHead over="Saturday 28 November" title="Selfoss to Vík" />);
+    expect(screen.getByText("Saturday 28 November")).toHaveStyle({
+      fontSize: 15,
+      color: colors.light.textMuted,
+    });
+  });
+
+  it("holds one more round button at the right", async () => {
+    await inEnglish(
+      <ScreenHead
+        title="Selfoss to Vík"
+        action={<IconButton icon={Share} label="Share this ride" onPress={jest.fn()} />}
+      />,
+    );
+    const buttons = within(screen.getByTestId("screen-head")).getAllByRole("button");
+    expect(buttons.map((button) => button.props.accessibilityLabel as string)).toEqual([
+      "Back",
+      "Share this ride",
+    ]);
+  });
+
+  it("stands a posting step's road beside Back, over the title", async () => {
+    await inEnglish(
+      <ScreenHead
+        title="Check and publish"
+        line="This is how people will see your ride."
+        road={<Road steps={["Route", "Time", "Seats", "Price", "Check"]} current={4} />}
+      />,
+    );
+    const top = screen.getByTestId("screen-head");
+    expect(within(top).getByRole("button", { name: "Back" })).toBeVisible();
+    expect(within(top).getByRole("image", { name: "Step 5 of 5: Check" })).toBeVisible();
+    expect(screen.getByTestId("screen-head-road")).toHaveStyle({ flex: 1 });
+    // The title has the whole width under them.
+    expect(within(top).queryByRole("header")).toBeNull();
+    expect(screen.getByRole("header", { name: "Check and publish" })).toBeVisible();
   });
 });
 

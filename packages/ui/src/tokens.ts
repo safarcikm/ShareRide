@@ -302,6 +302,19 @@ export const sizes = {
   barAction: 200,
   /** A row that opens a screen, such as My cars on Profile. */
   row: 56,
+  /** The soft square behind a row's icon, and behind the icon of what needs you (spec 31, 3.3). */
+  rowIcon: 36,
+  /**
+   * The road that shows where things stand (spec 31, 3.3): the car on it,
+   * how high its lane is, and the round mark of a step.
+   */
+  roadCar: 60,
+  road: 12,
+  roadMark: 10,
+  /** The notch a ride ticket's tear line cuts into each edge (spec 31, 3.3). */
+  ticketNotch: 16,
+  /** A small picture of a person, as in a ride ticket's foot (spec 31, 3.3). */
+  avatarSmall: 28,
   /** A place of the menu's tab bar, and the pill behind its icon when chosen. */
   tab: 56,
   tabPill: 56,

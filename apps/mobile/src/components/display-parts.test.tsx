@@ -1,26 +1,92 @@
 import { fireEvent, render, screen, within } from "@testing-library/react-native";
 import { Text } from "react-native";
+import { LanguageProvider } from "@/i18n/language";
 import { colors } from "@/theme/tokens";
-import { ChevronLeft, Share } from "lucide-react-native";
+import { ChevronLeft, Pencil, Share, X, Zap } from "lucide-react-native";
+import { ActionRows } from "./action-rows";
+import { Avatar } from "./avatar";
 import { Card, useCardCorner } from "./card";
 import { IconButton } from "./icon-button";
 import { Row } from "./row";
 import { Tag } from "./tag";
 
+/** The colour scheme the parts see; light unless a test says otherwise. */
+let mockScheme: "light" | "dark" = "light";
+jest.mock("react-native/Libraries/Utilities/useColorScheme", () => ({
+  __esModule: true,
+  default: () => mockScheme,
+}));
+
+jest.mock("expo-localization", () => ({ getLocales: () => [{ languageTag: "en-GB" }] }));
+jest.mock("@/lib/preferences", () => ({
+  readPreference: jest.fn(() => Promise.resolve(null)),
+  writePreference: jest.fn(() => Promise.resolve()),
+}));
+
+afterEach(() => {
+  mockScheme = "light";
+});
+
+const hidden = (testID: string) => screen.getByTestId(testID, { includeHiddenElements: true });
+
 describe("Tag", () => {
-  it.each([
-    ["positive", colors.light.primary, colors.light.primarySoft],
-    ["warning", colors.light.warning, colors.light.warningSoft],
-    ["info", colors.light.info, colors.light.infoSoft],
-    ["womenOnly", colors.light.womenOnly, colors.light.womenOnlySoft],
-  ] as const)("shows a %s tag as caption text on its tint", async (kind, text, fill) => {
-    await render(<Tag kind={kind} label="Sample meeting point" />);
-    expect(screen.getByText("Sample meeting point")).toHaveStyle({
-      color: text,
-      fontFamily: "Nunito_700Bold",
-      fontSize: 13,
+  const kinds = [
+    ["positive", "primary", "primarySoft"],
+    ["warning", "warning", "warningSoft"],
+    ["info", "info", "infoSoft"],
+    ["womenOnly", "womenOnly", "womenOnlySoft"],
+    // Nothing is asked of anyone, and a problem (spec 31, 3.3).
+    ["plain", "textMuted", "background"],
+    ["problem", "error", "errorSoft"],
+  ] as const;
+
+  describe.each(["light", "dark"] as const)("in %s", (scheme) => {
+    it.each(kinds)("shows a %s tag as caption text on its tint", async (kind, text, fill) => {
+      mockScheme = scheme;
+      await render(<Tag kind={kind} label="Sample meeting point" />);
+      expect(screen.getByText("Sample meeting point")).toHaveStyle({
+        color: colors[scheme][text],
+        fontFamily: "Nunito_700Bold",
+        fontSize: 13,
+      });
+      expect(screen.getByTestId("tag")).toHaveStyle({
+        backgroundColor: colors[scheme][fill],
+        borderRadius: 12,
+      });
     });
-    expect(screen.getByTestId("tag")).toHaveStyle({ backgroundColor: fill, borderRadius: 12 });
+  });
+
+  it("puts an icon before its label, in the label's colour", async () => {
+    await render(<Tag kind="positive" label="Book instantly" icon={Zap} />);
+    const tag = screen.getByTestId("tag");
+    expect(tag).toHaveStyle({ flexDirection: "row", alignItems: "center" });
+    // The words carry the meaning: a screen reader hears only them.
+    expect(hidden("tag-icon")).toBeOnTheScreen();
+    expect(screen.queryByTestId("tag-icon")).toBeNull();
+    expect(within(tag).getByText("Book instantly")).toBeVisible();
+  });
+
+  it("has no icon unless it is given one", async () => {
+    await render(<Tag kind="positive" label="Book instantly" />);
+    expect(screen.queryByTestId("tag-icon", { includeHiddenElements: true })).toBeNull();
+  });
+});
+
+describe("Avatar", () => {
+  it("is 48 round, and 28 when small, as in a ticket's foot (spec 31, 3.3)", async () => {
+    await render(
+      <LanguageProvider>
+        <Avatar firstName="Jón" colour={2} />
+      </LanguageProvider>,
+    );
+    expect(hidden("avatar")).toHaveStyle({ width: 48, height: 48, borderRadius: 999 });
+    await screen.rerender(
+      <LanguageProvider>
+        <Avatar small firstName="Jón" colour={2} />
+      </LanguageProvider>,
+    );
+    expect(hidden("avatar")).toHaveStyle({ width: 28, height: 28, borderRadius: 999 });
+    expect(screen.getByText("J", { includeHiddenElements: true })).toHaveStyle({ fontSize: 13 });
   });
 });
 
@@ -183,6 +249,121 @@ describe("Row", () => {
     expect(row).toHaveStyle({ backgroundColor: colors.light.primarySoft });
     await fireEvent(row, "hoverOut");
     expect(row).not.toHaveStyle({ backgroundColor: colors.light.primarySoft });
+  });
+
+  it("is at least 56 high, with a chevron, and has no icon unless given one", async () => {
+    await render(<Row title="My cars" onPress={jest.fn()} />);
+    expect(screen.getByRole("button", { name: "My cars" })).toHaveStyle({ minHeight: 56 });
+    expect(hidden("row-chevron")).toBeOnTheScreen();
+    expect(screen.queryByTestId("row-icon", { includeHiddenElements: true })).toBeNull();
+  });
+
+  it("shows its icon in a soft square (spec 31, 3.3)", async () => {
+    await render(<Row icon={Pencil} title="Edit the ride" onPress={jest.fn()} />);
+    expect(hidden("row-icon")).toHaveStyle({
+      width: 36,
+      height: 36,
+      borderRadius: 12,
+      backgroundColor: colors.light.background,
+    });
+  });
+
+  it("is a link when it has an address", async () => {
+    await render(<Row icon={Share} title="Share this ride" href="/about" />);
+    expect(screen.getByRole("link", { name: "Share this ride" })).toBeVisible();
+  });
+
+  it("is red and has no chevron when it cannot be undone (R31.3)", async () => {
+    const onPress = jest.fn();
+    await render(<Row danger icon={X} title="Cancel the ride" onPress={onPress} />);
+    const row = screen.getByRole("button", { name: "Cancel the ride" });
+    expect(screen.getByText("Cancel the ride")).toHaveStyle({ color: colors.light.error });
+    expect(hidden("row-icon")).toHaveStyle({ backgroundColor: colors.light.errorSoft });
+    expect(screen.queryByTestId("row-chevron", { includeHiddenElements: true })).toBeNull();
+    await fireEvent(row, "hoverIn");
+    expect(row).toHaveStyle({ backgroundColor: colors.light.errorSoft });
+    await fireEvent.press(row);
+    expect(onPress).toHaveBeenCalledTimes(1);
+  });
+
+  it("unfolds what is under it, and says whether it is open", async () => {
+    const onToggle = jest.fn();
+    const row = (expanded: boolean) => (
+      <Row title="Gunnar" value="1 seat" expanded={expanded} onToggle={onToggle}>
+        <Text>Mjódd to Hella</Text>
+      </Row>
+    );
+    await render(row(false));
+    const button = screen.getByRole("button", { name: "Gunnar, 1 seat" });
+    expect(button).toBeCollapsed();
+    expect(screen.queryByText("Mjódd to Hella")).toBeNull();
+    expect(hidden("row-chevron-down")).toBeOnTheScreen();
+    await fireEvent.press(button);
+    expect(onToggle).toHaveBeenCalledTimes(1);
+    await screen.rerender(row(true));
+    expect(screen.getByRole("button", { name: "Gunnar, 1 seat" })).toBeExpanded();
+    expect(screen.getByText("Mjódd to Hella")).toBeVisible();
+    expect(hidden("row-chevron-up")).toBeOnTheScreen();
+  });
+
+  it("holds a switch", async () => {
+    const onSwitch = jest.fn();
+    await render(<Row title="New booking requests" switched={false} onSwitch={onSwitch} />);
+    const toggle = screen.getByRole("switch", { name: "New booking requests" });
+    expect(toggle).not.toBeChecked();
+    expect(screen.getByTestId("switch-track")).toHaveStyle({
+      borderColor: colors.light.control,
+    });
+    expect(screen.queryByTestId("row-chevron", { includeHiddenElements: true })).toBeNull();
+    await fireEvent.press(toggle);
+    expect(onSwitch).toHaveBeenCalledWith(true);
+    await screen.rerender(<Row title="New booking requests" switched onSwitch={onSwitch} />);
+    expect(screen.getByRole("switch", { name: "New booking requests" })).toBeChecked();
+    expect(screen.getByTestId("switch-track")).toHaveStyle({
+      backgroundColor: colors.light.primary,
+    });
+  });
+
+  it("only shows a value when that is all it does: no button, no chevron", async () => {
+    await render(<Row shows title="Phone" value="Confirmed" />);
+    expect(screen.queryByRole("button")).toBeNull();
+    expect(screen.queryByRole("link")).toBeNull();
+    expect(screen.getByText("Phone")).toBeVisible();
+    expect(screen.getByText("Confirmed")).toHaveStyle({ color: colors.light.textMuted });
+    expect(screen.queryByTestId("row-chevron", { includeHiddenElements: true })).toBeNull();
+  });
+});
+
+describe("ActionRows", () => {
+  it("is a card of rows with a line between them (spec 31, 3.3)", async () => {
+    const show = false as boolean;
+    await render(
+      <ActionRows>
+        <Row icon={Pencil} title="Edit the ride" onPress={jest.fn()} />
+        {show ? <Row icon={Share} title="Hidden" onPress={jest.fn()} /> : null}
+        <Row icon={Share} title="Share this ride" onPress={jest.fn()} />
+        <Row danger icon={X} title="Cancel the ride" onPress={jest.fn()} />
+      </ActionRows>,
+    );
+    // The rows reach the card's edges, so the card has no padding of its own.
+    expect(screen.getByTestId("card-face")).toHaveStyle({
+      padding: 0,
+      overflow: "hidden",
+      backgroundColor: colors.light.surface,
+    });
+    expect(screen.getByTestId("card")).toHaveStyle({ borderBottomWidth: 3 });
+    // A line over every row but the first; a row that is left out leaves none.
+    const lines = screen.getAllByTestId("action-row");
+    expect(lines).toHaveLength(3);
+    expect(lines[0]).not.toHaveStyle({ borderTopWidth: 2 });
+    expect(lines[1]).toHaveStyle({ borderTopWidth: 2, borderTopColor: colors.light.border });
+    expect(lines[2]).toHaveStyle({ borderTopWidth: 2, borderTopColor: colors.light.border });
+    // Inside the card a row is padded by 16 and its tint reaches the edges.
+    expect(screen.getByRole("button", { name: "Edit the ride" })).toHaveStyle({
+      paddingHorizontal: 16,
+      marginHorizontal: 0,
+      borderRadius: 0,
+    });
   });
 });
 

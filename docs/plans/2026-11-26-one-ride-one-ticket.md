@@ -54,10 +54,10 @@ request goes to `main` and so to staging; production waits for him.
 - **Privacy:** the number plate shows only once the seat is confirmed, a
   phone number never shows, Report and Block stay two presses away at most.
 - **Pictures:** each flow's pull request adds its screens as built to
-  `docs/specs/images/one-ride-one-ticket/built/` (a phone in English and
-  light, a laptop in English and light, a phone in Icelandic and dark),
-  taken with the walk of `images/one-ride-one-ticket/src/walk/`, for Martin
-  to compare with the drawings.
+  `docs/specs/images/one-ride-one-ticket/built/` as `.webp` (a phone in
+  English and light, a laptop in English and light, a phone in Icelandic
+  and dark), taken with the walk of `images/one-ride-one-ticket/src/walk/`,
+  for Martin to compare with the drawings.
 - **Docs travel with code:** the spec a screen belongs to (3 to 9, 15, 16,
   18) says what changed and points to spec 31; the changelog gets a line.
 
@@ -84,7 +84,8 @@ its test in the pull request named.
 1. **Someone without a name.** A former member's `firstName` is null: a
    ticket's foot, "Dóra asks for 1 seat", a passenger's row and a
    conversation's head say what `firstNameOf` says today, never "null" or
-   an empty line (PR 2 ticket test, PR 5 needs-me test, PR 8, PR 10).
+   an empty line (PR 5 ticket and needs-me tests, PR 8, PR 10; the foot of
+   `RideTicket` shows what its caller gives it).
 2. **A deadline that passes.** A request or a payment whose deadline is
    behind the clock needs nobody; a ride that has completed is not on its
    trip day; two needs at the same minute keep the server's order (PR 3,
@@ -112,11 +113,14 @@ Decided here so every flow uses the same names. All in
 export type TagKind = "positive" | "warning" | "info" | "womenOnly" | "plain" | "problem";
 export function Tag(props: { label: string; kind: TagKind; icon?: LucideIcon }): ReactElement;
 
-// ride-ticket.tsx
+// card.tsx: `flush` (no padding, cut by its corners) and `mine` (a moss edge).
+// avatar.tsx: `small`, 28, for a ticket's foot.
+
+// ride-ticket.tsx: a flush Card.
 export interface TicketEnd {
   readonly time: string; // "18:30"
   readonly place: string;
-  /** Under the place, such as "1.3 km from Kringlan" or Change. */
+  /** Under the place, such as "1.3 km from Kringlan". */
   readonly under?: ReactNode;
 }
 export interface TicketTag { readonly label: string; readonly kind: TagKind; readonly icon?: LucideIcon }
@@ -144,20 +148,23 @@ export function RideTicket(props: {
 /** The foot's usual line: a picture and name at the left, something at the right. */
 export function TicketFoot(props: { readonly start: ReactNode; readonly end?: ReactNode }): ReactElement;
 
-// road.tsx: decoration with one line for screen readers, "Step 2 of 4: Confirmed".
+// road.tsx: a picture with one line for screen readers, "Step 2 of 4: Confirmed".
+// `current` counts from 0.
 export function Road(props: { readonly steps: readonly string[]; readonly current: number }): ReactElement;
 
-// needs-you-card.tsx: testID "needs-you-card".
-export function NeedsYouCard(props: {
-  readonly icon: LucideIcon;
-  readonly title: string;
-  readonly detail?: string;
-  /** Outlined on the last posting step, where Publish ride is the main button. */
-  readonly action?: { readonly label: string; readonly outlined?: boolean } &
-    ({ readonly onPress: () => void } | { readonly href: AppPath });
-  /** In place of the title's line: the whole request on the driver's ride. */
-  readonly children?: ReactNode;
-}): ReactElement;
+// needs-you-card.tsx: testID "needs-you-card". Either its lines or children.
+export function NeedsYouCard(props:
+  | {
+      readonly icon: LucideIcon;
+      readonly title: string;
+      readonly detail?: string;
+      /** Outlined on the last posting step, where Publish ride is the main button. */
+      readonly action?: { readonly label: string; readonly outlined?: boolean } &
+        ({ readonly onPress: () => void } | { readonly href: AppPath });
+    }
+  /** In place of the lines: the whole request on the driver's ride. */
+  | { readonly children: ReactNode }
+): ReactElement;
 
 // row.tsx: today's Row gains an icon, a red look and three more kinds.
 export function Row(props: {
@@ -255,17 +262,18 @@ firstRequest: z
 
 ## PR 1: this plan
 
-`docs(plans)`: this plan and its line in the plans index; spec 31 becomes
-Approved, with decision 1 answered.
+Merged, #259. `docs(plans)`: this plan and its line in the plans index;
+spec 31 becomes Approved, with decision 1 answered.
 
 ## PR 2: the parts and the tags
 
 `feat(look)`, spec 31, 3.3. Nothing but the status tags changes on a
 screen.
 
-1. **Tokens:** `sizes.roadCar` 60, `sizes.road` 8, `sizes.roadMark` 10,
-   `sizes.ticketNotch` 16, `sizes.rowIcon` 40. Spec 15's size table and
-   component table get the five parts.
+1. **Tokens:** `sizes.roadCar` 60, `sizes.road` 12, `sizes.roadMark` 10,
+   `sizes.ticketNotch` 16, `sizes.rowIcon` 36, `sizes.avatarSmall` 28, as
+   the drawings have them. Spec 15's size table and component table get
+   the five parts.
 2. **`Tag`:** `plain` (`textMuted` on `background`) and `problem` (`error`
    on `errorSoft`), and `icon`. Test in `display-parts.test.tsx`: each
    kind's two colours in light and dark. The tokens test gets the two
@@ -281,8 +289,9 @@ screen.
    `mine` gives the `primary` edge; with `href` it is one link named by
    `accessibilityLabel`; a `corner` button does not press it; a long place
    keeps its time on the first line.
-5. **`Road`:** the marks up to `current` and the road behind the car in
-   `primary`, the rest in `control`; the car at `current`; its label is
+5. **`Road`:** the road behind the car in `primary`, the rest in the
+   scene's road grey with its dashed line; passed marks `surface`, those
+   to come ringed in `control`; the car at `current`, from 0; its label is
    `road.step` ("Step {step} of {total}: {name}", "Skref {step} af
    {total}: {name}"). Tests: the label for the first, a middle and the
    last step; one car; the names of the steps hidden from screen readers.
@@ -303,9 +312,10 @@ screen.
 9. **`filledButtons`** in `testing/buttons.ts`: `Button` marks a primary
    button `testID="filled-button"`. Test: a screen with one main button and
    a `NeedsYouCard` with a button answers one.
-10. **By eye:** a temporary screen that shows the five parts in both
-    themes, never committed, pictured into `built/parts-light.png` and
-    `built/parts-dark.png` and compared with the drawing of the parts.
+10. **By eye:** a screen that shows the parts, kept beside the spec's
+    other sources (`images/one-ride-one-ticket/src/built/`) and never a
+    route of the app, pictured on a phone and a laptop in both themes into
+    `built/parts-*.webp` and compared with the drawing of the parts.
 
 ## PR 3: what needs me
 

@@ -607,6 +607,7 @@ export const en = {
   "trip.post": "Post a trip",
   "trip.myTrips": "My trips",
   "trip.step": "Step {step} of {total}",
+  "road.step": "Step {step} of {total}: {name}",
   "trip.soFar": "Your trip so far",
   "trip.soFarLater": "Step {step}",
   "trip.soFarStops": "{count, plural, one {# stop on the way} other {# stops on the way}}",

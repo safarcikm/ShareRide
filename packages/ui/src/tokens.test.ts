@@ -39,6 +39,11 @@ const textPairs = [
   ["warning", "warningSoft"],
   ["info", "infoSoft"],
   ["womenOnly", "womenOnlySoft"],
+  // A tag for a problem, such as "Did not show up", and a row that cannot
+  // be undone under the pointer (spec 31, 3.3).
+  ["error", "errorSoft"],
+  // What needs you: the bold line on the card's soft yellow (spec 31, 3.3).
+  ["text", "warningSoft"],
 ] as const;
 
 const edgePairs = [
@@ -61,6 +66,12 @@ describe.each(["light", "dark"] as const)("%s colours", (scheme) => {
     expect(
       contrastRatio(colors[scheme][foreground], colors[scheme][background]),
     ).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe("what needs you (spec 31, 3.3)", () => {
+  it("shows its icon on the car's yellow", () => {
+    expect(contrastRatio(people.face, people.sun)).toBeGreaterThanOrEqual(3);
   });
 });
 

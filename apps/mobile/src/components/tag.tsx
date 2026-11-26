@@ -1,10 +1,17 @@
+import type { LucideIcon } from "lucide-react-native";
 import { StyleSheet, Text, View } from "react-native";
-import { radii, spacing, typography, type Palette } from "@/theme/tokens";
+import { iconSizes, radii, spacing, typography, type Palette } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
+import { Icon } from "./icon";
 
-export type TagKind = "positive" | "warning" | "info" | "womenOnly";
+export type TagKind = "positive" | "warning" | "info" | "womenOnly" | "plain" | "problem";
 
-/** Text and fill of each kind of tag (spec 15, section 4.1). */
+/**
+ * Text and fill of each kind of tag (spec 15, section 4.1). What the
+ * colours say (spec 31, 3.2, rule 6): moss is good news or what you can
+ * do, amber is yours and now, blue is waiting and information, red is a
+ * problem, and `plain` asks nothing of anyone.
+ */
 function look(kind: TagKind, palette: Palette) {
   switch (kind) {
     case "positive":
@@ -15,19 +22,35 @@ function look(kind: TagKind, palette: Palette) {
       return { text: palette.info, fill: palette.infoSoft };
     case "womenOnly":
       return { text: palette.womenOnly, fill: palette.womenOnlySoft };
+    case "plain":
+      return { text: palette.textMuted, fill: palette.background };
+    case "problem":
+      return { text: palette.error, fill: palette.errorSoft };
   }
 }
 
 /**
  * A short label on a tinted fill, such as "Sample meeting point" or "Not in
- * use at the moment" (spec 15, section 5.2). The words carry the meaning;
- * the colour only repeats it.
+ * use at the moment" (spec 15, section 5.2), with an icon before it when it
+ * is given one. The words carry the meaning; the colour and the icon only
+ * repeat it.
  */
-export function Tag({ label, kind }: { readonly label: string; readonly kind: TagKind }) {
+export function Tag({
+  label,
+  kind,
+  icon,
+}: {
+  readonly label: string;
+  readonly kind: TagKind;
+  readonly icon?: LucideIcon | undefined;
+}) {
   const palette = usePalette();
   const { text, fill } = look(kind, palette);
   return (
     <View testID="tag" style={[styles.tag, { backgroundColor: fill }]}>
+      {icon === undefined ? null : (
+        <Icon testID="tag-icon" icon={icon} color={text} size={iconSizes.tick} />
+      )}
       <Text style={[typography.caption, { color: text }]}>{label}</Text>
     </View>
   );
@@ -36,6 +59,9 @@ export function Tag({ label, kind }: { readonly label: string; readonly kind: Ta
 const styles = StyleSheet.create({
   tag: {
     alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
     borderRadius: radii.tag,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs / 2,

@@ -10,6 +10,7 @@ in the app or runs in CI.
 | `mock/` | The proposed screens as drawings: `kit.cjs` (the app's colours, fonts, icons and drawings, and the new parts) and `build.cjs` (the screens) |
 | `mock/assets/` | Drawings copied out of the running app: the scene, the car, the puffin, the seat view and the maps |
 | `page/` | The proposal page: `page.html` (its text and look) and `make.py` (puts the pictures in) |
+| `built/` | The parts as built: `parts-screen.tsx` (a screen that shows them all) and `shoot.cjs` (takes its picture on a phone and a laptop, light and dark) |
 
 ## The "now" pictures
 
@@ -60,3 +61,24 @@ python3 docs/specs/images/one-ride-one-ticket/src/page/make.py /tmp/walk /tmp/mo
 It writes `index.html` and `img/*.webp` (needs Pillow). `index.html` is the
 page as published; it has no `<html>` or `<head>` of its own, because the
 place it is published to adds them.
+
+## The parts as built
+
+The pictures in `../built/parts-*.webp` show the parts of section 3.3 in
+the web app itself, to compare with the drawing of the parts. The screen is
+not one of the app's: it is copied in for the pictures and taken out again.
+From `apps/mobile`:
+
+```sh
+B=../../docs/specs/images/one-ride-one-ticket/src/built
+cp $B/parts-screen.tsx src/app/zz-parts.tsx
+EXPO_PUBLIC_API_URL=http://localhost:3001 npx expo export --platform web
+rm src/app/zz-parts.tsx   # never commit it there: it would be a page of the app
+node scripts/serve-web.ts 8082 &
+node $B/shoot.cjs /zz-parts parts /tmp/built
+```
+
+The pictures land in `/tmp/built/parts-<phone|laptop>-<light|dark>.png`; no
+API has to run, as `shoot.cjs` answers the app's first calls itself. They
+are saved here as `.webp` (Pillow, quality 82). The people in them are made
+up.
