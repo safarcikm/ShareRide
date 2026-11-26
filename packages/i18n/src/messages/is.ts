@@ -23,6 +23,8 @@ export const is = {
   "seo.carpoolTitle": "Samferða um Ísland: finndu far eða bjóddu far",
   "seo.carpoolDescription":
     "Svona virkar samakstur um Ísland með PuffinRide: finndu sæti í bíl sem fer þína leið eða bjóddu laus sæti í þínum, og hittist á opinberum mótsstöðum um allt land.",
+  "seo.aboutDescription":
+    "Hver rekur PuffinRide, hvernig þú nærð í okkur, og notendaskilmálar, samfélagsreglur og persónuverndarstefna PuffinRide.",
   "seo.legalDescription": "Notendaskilmálar, samfélagsreglur og persónuverndarstefna PuffinRide.",
   "seo.shareImage": "Tveir lundar PuffinRide á ferð í litlum bíl",
   "seo.tripTitle": "{route} · {when}",
@@ -67,6 +69,17 @@ export const is = {
   "carpool.accountQuestion": "Þarf ég aðgang til að skoða?",
   "carpool.accountAnswer":
     "Nei. Allir geta skoðað ferðirnar og mótsstaðina. Til að bóka sæti eða bjóða far skráir þú þig með netfangi eða Google.",
+  "about.title": "Um PuffinRide",
+  "about.intro":
+    "PuffinRide er samakstur um allt Ísland. Bílstjórar sem eru hvort sem er á leiðinni bjóða laus sæti í bílnum sínum og farþegar bóka sæti alla leiðina eða hluta hennar, frá einum mótsstað til annars.",
+  "about.beta":
+    "PuffinRide er í opinni prófun: allir 18 ára og eldri geta verið með og við erum enn að bæta það.",
+  "about.documents": "Skilmálar og reglur",
+  "about.operatorTitle": "Hver rekur PuffinRide",
+  "about.operator": "PuffinRide er rekið af Martin Safarcik, Skinnar, 851 Hella, Íslandi.",
+  "about.contactTitle": "Hafðu samband",
+  "about.contact": "Spurningar eða hugmyndir? Skrifaðu okkur, á íslensku eða ensku.",
+  "about.facebook": "PuffinRide á Facebook",
   "consent.title": "Vafrakökur",
   "consent.text":
     "Megum við telja heimsókn þína með Google Analytics? Það notar vafrakökur og segir Google hvaða síður þú opnar, aldrei nafnið þitt.",
@@ -343,7 +356,6 @@ export const is = {
   "profile.myCars": "Bílarnir mínir",
   "profile.licenceConfirmed": "Staðfest",
   "profile.licenceNotYet": "Ekki staðfest enn",
-  "profile.legal": "Skilmálar, reglur og persónuvernd",
   "profile.welcome":
     "Skráðu þig inn til að bóka sæti, bjóða far og hafa ferðirnar og skilaboðin á einum stað.",
   "profile.inSettings": "Símanúmer, tungumál og útskráning á öllum tækjum eru í stillingum.",

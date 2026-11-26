@@ -1,5 +1,5 @@
 import { router, type Href } from "expo-router";
-import { Platform } from "react-native";
+import { Linking, Platform } from "react-native";
 
 /** An address inside the app, such as "/meeting-points" or a pathname with its params. */
 export type AppPath = Href;
@@ -61,6 +61,32 @@ export function linkProps(href: AppPath): {
       if (modified) return;
       event?.preventDefault?.();
       router.push(href);
+    },
+  };
+}
+
+/**
+ * What makes a pressable a link to a page outside the app, such as our
+ * Facebook Page, or to a `mailto:` address (spec 30, 3.1). On the web it is
+ * an `<a href>` the browser opens itself: a web page in a new tab, without
+ * telling it where it came from. On a phone, a press opens it in the
+ * browser or the mail app; with none to open it, nothing happens, and the
+ * link's text still says where it goes. Spread over a `Pressable` with the
+ * role `link`.
+ */
+export function externalLinkProps(url: string): {
+  readonly href?: string;
+  readonly hrefAttrs?: { readonly target: "_blank"; readonly rel: string };
+  readonly onPress?: () => void;
+} {
+  if (Platform.OS === "web") {
+    return /^https?:/.test(url)
+      ? { href: url, hrefAttrs: { target: "_blank", rel: "noopener noreferrer" } }
+      : { href: url };
+  }
+  return {
+    onPress: () => {
+      Linking.openURL(url).catch(() => undefined);
     },
   };
 }

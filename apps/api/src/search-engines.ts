@@ -4,6 +4,7 @@
 import { schema, type Database } from "@shareride/db";
 import { legalDocumentTypes } from "@shareride/domain";
 import {
+  aboutPage,
   carpoolPage,
   createTranslator,
   isLocale,
@@ -11,6 +12,7 @@ import {
   pageText,
   pickLocale,
   type Locale,
+  type MessageKey,
   type PublicPage,
   type Translate,
 } from "@shareride/i18n";
@@ -33,10 +35,10 @@ export const noIndex = "noindex, nofollow";
 const indexablePaths: readonly RegExp[] = [
   /^\/$/,
   /^\/carpool-iceland$/,
+  /^\/about$/,
   /^\/meeting-points$/,
   /^\/meeting-points\/[^/]+$/,
   /^\/places\/[^/]+$/,
-  /^\/legal$/,
   new RegExp(`^/legal/(${legalDocumentTypes.join("|")})$`),
   /^\/cookies$/,
 ];
@@ -139,10 +141,10 @@ export async function publicPages(db: Database): Promise<string[]> {
   return [
     "/",
     carpoolPage.path,
+    aboutPage.path,
     "/meeting-points",
     ...points.map(({ id }) => `/meeting-points/${id}`),
     ...placeRows.map(({ id }) => `/places/${id}`),
-    "/legal",
     ...legalDocumentTypes.map((type) => `/legal/${type}`),
     "/cookies",
   ];
@@ -209,6 +211,7 @@ function publicPageOf(path: string, subject: PageSubject | undefined, locale: Lo
     return { kind: subject.kind, name: subject.name[locale] };
   }
   if (path === carpoolPage.path) return { kind: "carpool" };
+  if (path === aboutPage.path) return { kind: "about" };
   return path === "/meeting-points" ? { kind: "meetingPoints" } : { kind: "find" };
 }
 
@@ -337,8 +340,13 @@ export function pageHead(
       ),
     );
   }
+  const address = (path: string) => addressOf("", path, named);
   const noscript =
-    request.path === carpoolPage.path ? carpoolText(t, (path) => addressOf("", path, named)) : null;
+    request.path === carpoolPage.path
+      ? carpoolText(t, address)
+      : request.path === aboutPage.path
+        ? aboutText(t, address)
+        : null;
   const website =
     origin !== null && request.path === "/" ? websiteData(t("app.name"), `${origin}/`) : null;
   return { locale, fromBrowser: named === null, title, tags: tags.join(""), noscript, website };
@@ -383,6 +391,33 @@ function carpoolText(t: Translate, address: (path: string) => string): string {
         ? []
         : [paragraph(link(section.link.href, t(section.link.label)))]),
     ]),
+    "</main>",
+  ].join("");
+}
+
+/**
+ * About's text as HTML (spec 30, 3.4), from the texts the screen shows; its
+ * links keep the language the address named.
+ */
+function aboutText(t: Translate, address: (path: string) => string): string {
+  const link = (href: string, label: string) =>
+    `<a href="${escapeHtml(href)}">${escapeHtml(label)}</a>`;
+  const paragraph = (text: string) => `<p>${text}</p>`;
+  const heading = (key: MessageKey) => `<h2>${escapeHtml(t(key))}</h2>`;
+  return [
+    "<main>",
+    `<h1>${escapeHtml(t(aboutPage.title))}</h1>`,
+    ...aboutPage.intro.map((key) => paragraph(escapeHtml(t(key)))),
+    paragraph(link(address(aboutPage.howItWorks.href), t(aboutPage.howItWorks.label))),
+    heading(aboutPage.documentsTitle),
+    `<ul>${aboutPage.documents
+      .map((document) => `<li>${link(address(document.href), t(document.label))}</li>`)
+      .join("")}</ul>`,
+    heading(aboutPage.operatorTitle),
+    paragraph(escapeHtml(t(aboutPage.operator))),
+    heading(aboutPage.contactTitle),
+    paragraph(escapeHtml(t(aboutPage.contact))),
+    paragraph(link(`mailto:${aboutPage.email}`, aboutPage.email)),
     "</main>",
   ].join("");
 }

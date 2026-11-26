@@ -21,6 +21,8 @@ export const en = {
   "seo.carpoolTitle": "Carpool in Iceland: find or offer a ride",
   "seo.carpoolDescription":
     "How carpooling in Iceland works with PuffinRide: find a seat in a car going your way, or offer the empty seats in yours, and meet at public meeting points around the country.",
+  "seo.aboutDescription":
+    "Who runs PuffinRide, how to reach us, and PuffinRide's Terms of Service, Community Rules and Privacy Policy.",
   "seo.legalDescription": "PuffinRide's Terms of Service, Community Rules and Privacy Policy.",
   "seo.shareImage": "Two PuffinRide puffins driving in a little car",
   "seo.tripTitle": "{route} · {when}",
@@ -66,6 +68,17 @@ export const en = {
   "carpool.accountQuestion": "Do I need an account to look?",
   "carpool.accountAnswer":
     "No. Anyone can look at the rides and the meeting points. To book a seat or offer a ride, sign up with your email or Google.",
+  "about.title": "About PuffinRide",
+  "about.intro":
+    "PuffinRide is carpooling across Iceland. Drivers who are making a trip anyway offer the empty seats in their car, and passengers book a seat for the whole way or part of it, from one meeting point to another.",
+  "about.beta":
+    "PuffinRide is in an open beta: anyone aged 18 or over can join, and we are still making it better.",
+  "about.documents": "Terms and policies",
+  "about.operatorTitle": "Who runs PuffinRide",
+  "about.operator": "PuffinRide is run by Martin Safarcik, Skinnar, 851 Hella, Iceland.",
+  "about.contactTitle": "Contact us",
+  "about.contact": "Questions or ideas? Write to us, in English or Icelandic.",
+  "about.facebook": "PuffinRide on Facebook",
   "consent.title": "Cookies",
   "consent.text":
     "May we count your visit with Google Analytics? It uses cookies and tells Google which pages you open, never your name.",
@@ -339,7 +352,6 @@ export const en = {
   "profile.myCars": "My cars",
   "profile.licenceConfirmed": "Confirmed",
   "profile.licenceNotYet": "Not confirmed yet",
-  "profile.legal": "Terms, rules and privacy",
   "profile.welcome":
     "Sign in to book seats, offer rides and keep your trips and messages in one place.",
   "profile.inSettings": "Phone number, language and signing out on all devices are in Settings.",

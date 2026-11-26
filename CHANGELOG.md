@@ -1547,6 +1547,14 @@ releases follow [Semantic Versioning](https://semver.org/).
   on that browser; anything kept from before signing in (a booking, Offer,
   a link) opens instead. The browser keeps the way it last signed in with,
   its own passkey's ID and the date of "Not now" (privacy, device storage).
+- About PuffinRide (spec 30), a public page at `/about`: what PuffinRide is,
+  the Terms of Service, Community Rules, Privacy Policy and Cookies, who
+  runs PuffinRide (as the Terms say it) and how to reach us
+  (`admin@puffinride.is`, our Facebook Page). It takes the place of "Terms,
+  rules and privacy": Profile's row is "About PuffinRide", and `/legal`
+  answers with a permanent redirect to `/about`. About has its own title, is
+  in the sitemap in place of `/legal`, and its words are in the first
+  answer's `<noscript>` for search engines.
 
 ### Fixed
 

@@ -106,6 +106,17 @@ describe("the web app on the API's origin", () => {
     }
   });
 
+  it("sends the old Terms, rules and privacy page to About, in the language asked (spec 30, 3.2)", async () => {
+    const plain = await app.request("/legal");
+    expect(plain.status).toBe(301);
+    expect(plain.headers.get("location")).toBe("/about");
+    const english = await app.request("/legal?lang=en");
+    expect(english.status).toBe(301);
+    expect(english.headers.get("location")).toBe("/about?lang=en");
+    // The documents stay where they are.
+    expect((await app.request("/legal/privacy")).status).toBe(200);
+  });
+
   it("keeps trip pages out of search engines (R4.6; spec 23 has the rest)", async () => {
     const trip = await app.request("/trips/0190a1d6-0000-7000-8000-0000000000d1?fromStop=1");
     expect(trip.status).toBe(200);

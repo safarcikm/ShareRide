@@ -82,7 +82,8 @@ say where you are and what happens next.
      the legal documents. Since 2026-11-22: "Sign in to book seats, offer
      rides and keep your trips and messages in one place." with Sign in,
      then the rows Meeting points and Terms, rules and privacy, as signed
-     in (3.4), then the language.
+     in (3.4), then the language. Since 2026-11-26 the second row is About
+     PuffinRide ([spec 30](2026-11-26-about-page-and-footer.md), 3.2).
    - My rides, Offer, Messages and Profile have the puffin by its pin over
      their title, as an empty screen does (spec 15, 5.3).
 4. Pressing the tab you are on takes that tab back to its main screen.
@@ -162,7 +163,9 @@ Find replaces both the front page and My profile as the place the app opens.
 2. Rows, left-aligned: My cars, Driving licence ("Confirmed" or "Not
    confirmed yet"), Meeting points, Settings, and Terms, rules and privacy.
    My cars lists the cars, each opening to edit it, with Add a car. Terms,
-   rules and privacy lists the three documents. "See it as others do" shows
+   rules and privacy lists the three documents. Since 2026-11-26 the row is
+   **About PuffinRide**, a page that holds the documents and Cookies, who
+   runs PuffinRide and how to reach us ([spec 30](2026-11-26-about-page-and-footer.md)). "See it as others do" shows
    the public profile of spec 1: the avatar, first name, languages, "Member
    since" and About you, never the phone number.
 3. My cars and Driving licence replace the car and licence parts of "Before

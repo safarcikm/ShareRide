@@ -25,7 +25,7 @@ export default function CookiesScreen() {
         title={t("seo.title", { page: t("cookies.title") })}
         description={t("seo.cookiesDescription")}
       />
-      <BackButton fallback="/legal" />
+      <BackButton fallback="/about" />
       <Title>{t("cookies.title")}</Title>
       <Body align="start">{t("cookies.needed")}</Body>
       {available ? (

@@ -36,7 +36,7 @@ export default function LegalDocumentScreen() {
 
   return (
     <Screen>
-      <BackButton />
+      <BackButton fallback="/about" />
       {result === undefined ? (
         <Loading />
       ) : result === null || !result.ok ? (

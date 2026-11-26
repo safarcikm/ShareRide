@@ -119,18 +119,18 @@ describe("The menu (spec 16, 3.1)", () => {
     expect(screen.getByRole("button", { name: "Sign in" })).toBeVisible();
     // The same rows as signed in.
     expect(screen.getByRole("button", { name: "Meeting points" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Terms, rules and privacy" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "About PuffinRide" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Change the language to Icelandic" })).toBeVisible();
   });
 
-  it("opens the legal documents from Profile when signed out", async () => {
+  it("opens the legal documents on About from Profile when signed out", async () => {
     await renderApp("/");
     await fireEvent.press(await screen.findByRole("tab", { name: "Profile" }));
-    await fireEvent.press(await screen.findByRole("button", { name: "Terms, rules and privacy" }));
-    expect(await screen.findByRole("button", { name: "Terms of Service" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Community Rules" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Privacy Policy" })).toBeVisible();
-    expect(screen).toHavePathname("/legal");
+    await fireEvent.press(await screen.findByRole("button", { name: "About PuffinRide" }));
+    expect(await screen.findByRole("link", { name: "Terms of Service" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Community Rules" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Privacy Policy" })).toBeVisible();
+    expect(screen).toHavePathname("/about");
   });
 
   it("opens a ride on top, with Back and without the tab bar", async () => {

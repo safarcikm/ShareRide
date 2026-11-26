@@ -8,7 +8,7 @@ here, update or accept the linked ADR, and move the row to "Answered".
 
 ## Open
 
-A new question goes in a table here with the next free number (Q29
+A new question goes in a table here with the next free number (Q31
 onwards), a recommendation and the docs it affects.
 
 | #   | Question | Recommendation | Affects |
@@ -75,3 +75,4 @@ onwards), a recommendation and the docs it affects.
 | A54 | The web app gets no push, and email is optional (spec 1, decision 5). Should a web account have to give an email? | Yes, at sign-up on the web (Martin chose this on a decision card): step 3 asks for one unless the account already has a verified email, as Google and Apple give. The phone apps keep it optional. The hour-before reminder and "How was your trip?" go by email when there is no push, as a new request already does. See [ADR 0035](../decisions/0035-open-web-beta-reached-by-email.md) and [spec 20](../specs/2026-11-22-email-alerts-and-open-beta.md). | 2026-11-22 |
 | A55 | ADR 0013 takes every payment in the app, and real payments (milestone 15) need the company, a provider and the legal opinion. How do passengers pay in the open beta until then? | They pay the driver in person, in cash or by bank transfer, the price the app shows, when they get in (Martin, 2026-11-22, "keep it as is"; he had also looked at free rides only). A console switch turns it on; a booking is confirmed when accepted, nothing is refunded, a late cancellation or a no-show owes nothing, and there is no fee. Where the payment step was, the app says card payments are coming soon. See [ADR 0038](../decisions/0038-pay-the-driver-in-person-until-card-payments.md) and rule M6 in [pricing and seats](../product/pricing-and-seats.md). | 2026-11-22 |
 | A56 | Q11 again: brand and domain (changes A32) | The product is called PuffinRide, on puffinride.is (Martin, 2026-11-22). Everything people see is renamed now; internal names follow later or stay ([ADR 0039](../decisions/0039-rename-to-puffinride.md)). | 2026-11-22 |
+| A57 | Q30: Iceland's Act 30/2002 on electronic commerce (article 6) asks a service provider to give its kennitala too, where it has one. Until the ehf. is registered, the provider is Martin himself. Should the About page show Martin's own kennitala? | No: leave it out until the ehf. is registered (Martin, on a decision card). About gives the name, address and email the Terms give; once the company is registered, About and a new version of the Terms give the company's name and kennitala ([spec 30](../specs/2026-11-26-about-page-and-footer.md), ADR 0043). | 2026-11-26 |

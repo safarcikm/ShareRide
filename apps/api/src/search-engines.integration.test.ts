@@ -89,16 +89,18 @@ describe("the sitemap on production (spec 23, 3.7)", () => {
       expect.arrayContaining([
         "/",
         "/carpool-iceland",
+        "/about",
         "/meeting-points",
         `/meeting-points/${point("active")}`,
         `/places/${point("place")}`,
-        "/legal",
         "/legal/terms",
         "/legal/community-rules",
         "/legal/privacy",
         "/cookies",
       ]),
     );
+    // About's old address only redirects (spec 30, 3.2).
+    expect(listed).not.toContain("/legal");
     for (const left of ["paused", "draft", "sample-place"]) {
       expect(xml, left).not.toContain(point(left));
     }
