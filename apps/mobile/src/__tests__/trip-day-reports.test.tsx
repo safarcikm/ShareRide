@@ -4,9 +4,11 @@ import type { AnswerDisputeBody, Booking, MyTrip } from "@shareride/contracts";
 import { renderApp, completeMe } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
 import { bookingApi, driverApi, northBooking, northMyTrip, paidBooking } from "@/testing/bookings";
+import { filledButtons } from "@/testing/buttons";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
 import { dispute, onTheDay, rider, tripOnTheDay } from "@/testing/trip-day";
 import { tripsApi } from "@/testing/trips";
+import { colors } from "@/theme/tokens";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
 jest.mock("@/auth/token-store", () => {
@@ -83,6 +85,33 @@ function answered(booking: Booking, body: AnswerDisputeBody) {
 
 const driverAbsent = { name: "The driver didn't come" } as const;
 
+/**
+ * The shape of a screen around a booking (spec 31, 3.19): Back and the
+ * title at the left, the ride as the booked seat's ticket under them in
+ * place of a line of small text, and the one main button in the bar. It
+ * tells PuffinRide what happened and takes nothing away: the moss button,
+ * not the red one (decision 17).
+ */
+function expectHeadTicketAndBar(title: string, main: string) {
+  const head = within(screen.getByTestId("screen-head"));
+  expect(head.getByRole("header", { name: title })).toBeVisible();
+  expect(head.getByRole("button", { name: "Back" })).toBeVisible();
+  const ticket = within(screen.getByTestId("booking-ticket"));
+  expect(ticket.getByText("Sun 15 Nov")).toBeVisible();
+  expect(ticket.getByText("Borgarnes")).toBeVisible();
+  expect(ticket.getByText("Blönduós")).toBeVisible();
+  expect(screen.queryByText(/Sunday 15 November · /)).toBeNull();
+  const button = within(screen.getByTestId("bottom-bar")).getByRole("button", { name: main });
+  expect(button).toHaveStyle({ minHeight: 56 });
+  expect(filledButtons()).toBe(1);
+  expect(screen.getByTestId("filled-button")).toBe(button);
+  expect(within(button).getByTestId("button-face")).toHaveStyle({
+    backgroundColor: colors.light.primary,
+  });
+}
+
+const inBar = () => within(screen.getByTestId("bottom-bar"));
+
 describe("The driver didn't come (spec 8, 3.4; R8.5)", () => {
   it("is offered on the trip day once the wait after the passenger's time has passed", async () => {
     await openBooking(onTheDay());
@@ -152,6 +181,13 @@ describe("The driver didn't come (spec 8, 3.4; R8.5)", () => {
     ]);
   });
 
+  it("has its title over the ride as a ticket, and Tell PuffinRide as the main button in the bar (spec 31, 3.19)", async () => {
+    await openBooking(onTheDay());
+    await fireEvent.press(await screen.findByRole("link", driverAbsent));
+    await screen.findByRole("header", driverAbsent);
+    expectHeadTicketAndBar("The driver didn't come", "Tell PuffinRide");
+  });
+
   it("sends no note when none was written, and says nothing of a refund for a free ride", async () => {
     const free = { amount: 0, currency: "ISK" } as const;
     const { client } = await openBooking(onTheDay({}, { total: free }));
@@ -192,7 +228,8 @@ describe("The driver didn't come (spec 8, 3.4; R8.5)", () => {
     await openBooking(onTheDay(), { report: () => answer });
     await fireEvent.press(await screen.findByRole("link", driverAbsent));
     await fireEvent.press(await screen.findByRole("button", { name: "Tell PuffinRide" }));
-    expect(await screen.findByText(said)).toBeVisible();
+    // Over the button, where it is seen.
+    expect(await inBar().findByText(said)).toBeVisible();
   });
 
   it.each(["already_reported", "not_boarding", "not_found"])(
@@ -333,6 +370,14 @@ describe("Answering a no-show (spec 8, 3.3; R8.6)", () => {
       params: { id: disputeId },
       body: { answer: "contested", note: "I was by the pumps from 09:55." },
     });
+  });
+
+  it("has its title over the ride as a ticket, and Send answer as the main button in the bar (spec 31, 3.19)", async () => {
+    await openBooking(markedNoShow());
+    await fireEvent.press(await screen.findByRole("button", { name: "That's not right" }));
+    await screen.findByRole("header", { name: "Is this right?" });
+    expectHeadTicketAndBar("Is this right?", "Send answer");
+    expect(screen.getByText("Anna says you didn't come.")).toBeVisible();
   });
 
   it("moves focus to the outcome once the no-show stands", async () => {
@@ -499,6 +544,13 @@ describe("Marking a no-show (spec 8, 3.3; R8.4)", () => {
       await screen.findByText("To mark a no-show here, press “I'm here” first."),
     ).toBeVisible();
     expect(screen.queryByRole("button", markGunna)).toBeNull();
+  });
+
+  it("has its title over the ride as a ticket, and Mark as no-show as the main button in the bar (spec 31, 3.19)", async () => {
+    await openDriverTrip(tripOnTheDay([0, 1]), riders());
+    await fireEvent.press(await screen.findByRole("button", markGunna));
+    await screen.findByRole("header", markGunna);
+    expectHeadTicketAndBar("Mark as no-show: Gunna", "Mark as no-show");
   });
 
   it("confirms with what it does, takes a note for PuffinRide, and marks them", async () => {

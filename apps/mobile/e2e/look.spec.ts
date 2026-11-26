@@ -377,16 +377,10 @@ test.describe("a booked seat with long names, 360 wide", () => {
   const getIn = "Kirkjubæjarklaustur, N1 við Skaftárskála";
   const getOut = "Keflavíkurflugvöllur, komusalur";
   const driverName = "Sigurbjörg Aðalheiður";
+  const shown = { visible: true } as const;
 
-  test("holds its title, its ticket, the driver and where to stand, with the text as set and twice as large", async ({
-    page: driver,
-    browser,
-  }, testInfo) => {
-    test.skip(testInfo.project.name !== "phone", "A phone's column; laptops have two.");
-    test.slow();
-    const { page, close } = await secondPage(browser, testInfo);
-    const { booking } = await confirmedBooking(driver, page);
-    await page.setViewportSize({ width: 360, height: 740 });
+  /** Gives the booking its long names on its way to the page. */
+  async function withLongNames(page: Page) {
     await page.route(
       (url) => /^\/v1\/bookings\/[0-9a-f-]{36}$/.test(url.pathname),
       async (route) => {
@@ -412,8 +406,19 @@ test.describe("a booked seat with long names, 360 wide", () => {
         await route.fulfill({ response, json: long });
       },
     );
+  }
+
+  test("holds its title, its ticket, the driver and where to stand, with the text as set and twice as large", async ({
+    page: driver,
+    browser,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== "phone", "A phone's column; laptops have two.");
+    test.slow();
+    const { page, close } = await secondPage(browser, testInfo);
+    const { booking } = await confirmedBooking(driver, page);
+    await page.setViewportSize({ width: 360, height: 740 });
+    await withLongNames(page);
     await page.goto(booking);
-    const shown = { visible: true } as const;
     const ticket = page.getByTestId("booking-ticket").filter(shown);
     await expect(ticket.getByText(getIn)).toBeVisible();
     const message = page.getByRole("link", { name: `Message ${driverName}` }).filter(shown);
@@ -464,6 +469,77 @@ test.describe("a booked seat with long names, 360 wide", () => {
         for (const part of [head, seat, stand, who]) expect(part.needlessly).toEqual([]);
       }
     }
+    await close();
+  });
+
+  // Cancelling it (spec 31, 3.19): the title, the ticket and the reasons
+  // in the column, and in the bar the red button over the one that keeps
+  // the booking, each whole in the window.
+  test("holds the screen that cancels it, with the two buttons of its bar, with the text as set and twice as large", async ({
+    page: driver,
+    browser,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== "phone", "A phone's column and bar.");
+    test.slow();
+    const { page, close } = await secondPage(browser, testInfo);
+    const { booking } = await confirmedBooking(driver, page);
+    const window = { width: 360, height: 740 };
+    await page.setViewportSize(window);
+    await withLongNames(page);
+    await page.goto(`${booking}/cancel`);
+    await expect(page.getByRole("heading", { name: "Cancel your booking" })).toBeVisible();
+    const bar = page.getByTestId("bottom-bar").filter(shown);
+    const cancel = bar.getByRole("button", { name: "Cancel booking", exact: true });
+    const keep = bar.getByRole("button", { name: "Keep my booking" });
+    await expect(keep).toBeVisible();
+
+    for (const zoom of [1, 2] as const) {
+      if (zoom === 2) await twiceAsLarge(page);
+      const head = await ticketFit(page, "screen-head", "h1");
+      const seat = await ticketFit(page, "booking-ticket");
+      for (const part of [head, seat]) {
+        expect(part.cut).toEqual([]);
+        expect(part.past).toEqual([]);
+        expect(part.beyondWindow).toBe(0);
+        expect(part.screenWider).toBeLessThanOrEqual(0);
+      }
+      // The reasons wrap inside the column.
+      const reasons = await box(page.getByRole("radiogroup").filter(shown));
+      expect(reasons.x).toBeGreaterThanOrEqual(0);
+      expect(reasons.x + reasons.width).toBeLessThanOrEqual(window.width);
+      // The bar: the red button over Keep, both whole in the window and
+      // in view, with their labels whole.
+      const red = await box(cancel);
+      const kept = await box(keep);
+      for (const button of [red, kept]) {
+        expect(button.x).toBeGreaterThanOrEqual(0);
+        expect(button.x + button.width).toBeLessThanOrEqual(window.width);
+        expect(button.y + button.height).toBeLessThanOrEqual(window.height);
+      }
+      expect(kept.y).toBeGreaterThanOrEqual(red.y + red.height);
+      const buttons = await ticketFit(page, "bottom-bar", "[dir]");
+      expect(buttons.cut).toEqual([]);
+      expect(buttons.past).toEqual([]);
+      if (zoom === 1) {
+        expect(head.brokenWords).toEqual([]);
+        expect(buttons.brokenWords).toEqual([]);
+        // The title is in view over the bar: the bar leaves room for the page.
+        const title = await box(page.getByRole("heading", { name: "Cancel your booking" }));
+        const top = await box(bar);
+        expect(title.y + title.height).toBeLessThan(top.y);
+      } else {
+        expect(head.needlessly).toEqual([]);
+        expect(buttons.needlessly).toEqual([]);
+      }
+    }
+    // Why nothing was cancelled stands over the red button, in view.
+    await cancel.click();
+    const why = bar.getByRole("alert");
+    await expect(why).toHaveText("Choose a reason.");
+    const said = await box(why);
+    const red = await box(cancel);
+    expect(said.y).toBeGreaterThanOrEqual(0);
+    expect(said.y + said.height).toBeLessThanOrEqual(red.y + 1);
     await close();
   });
 });

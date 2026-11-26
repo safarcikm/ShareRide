@@ -1,9 +1,10 @@
 // Reports nobody answered in time stand (R8.6): the API's minute job, next
 // to the trips moving on. Each is decided once, with its trip locked as a
 // booking change locks it.
-import { schema, type Database } from "@shareride/db";
+import { schema } from "@shareride/db";
 import { completesAt, settlesUnanswered, type TripDaySettings } from "@shareride/domain";
 import { and, asc, eq, isNull } from "drizzle-orm";
+import type { Queryable } from "../bookings/seats.ts";
 import { asRule } from "./disputes.ts";
 import { applyOutcome } from "./outcome.ts";
 
@@ -17,7 +18,7 @@ const { bookings, disputes, trips } = schema;
  * the run settles them, then fails with the first error, to be reported.
  */
 export async function settleUnansweredReports(
-  db: Database,
+  db: Queryable,
   now: Date,
   settings: TripDaySettings,
 ): Promise<number> {

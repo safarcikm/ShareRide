@@ -1,6 +1,6 @@
 import type { Booking } from "@shareride/contracts";
 import { AccessibilityInfo } from "react-native";
-import { fireEvent, screen } from "expo-router/testing-library";
+import { fireEvent, screen, within } from "expo-router/testing-library";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
 import {
@@ -10,9 +10,11 @@ import {
   northStop,
   requestToDrive,
 } from "@/testing/bookings";
+import { filledButtons } from "@/testing/buttons";
 import { failure, type FakeClient } from "@/testing/fake-client";
 import { tripsApi } from "@/testing/trips";
 import { aProfileId, newcomer } from "@/testing/people";
+import { colors } from "@/theme/tokens";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
 jest.mock("@/auth/token-store", () => {
@@ -152,6 +154,25 @@ describe("The driver cancels one booking (spec 6, 3.4)", () => {
     focusMoves.mockRestore();
     expect(screen).toHavePathname(tripPage);
     expect(screen.queryByLabelText(/^Jón, /)).toBeNull();
+  });
+
+  it("has its title over the passenger's seats as a ticket, and Cancel booking red in the bar (spec 31, 3.19)", async () => {
+    await openCancel("Jón");
+    const head = within(screen.getByTestId("screen-head"));
+    expect(head.getByRole("header", { name: "Cancel booking: Jón" })).toBeVisible();
+    const ticket = within(screen.getByTestId("booking-ticket"));
+    expect(ticket.getByText("Sun 15 Nov")).toBeVisible();
+    expect(ticket.getByText("2 seats")).toBeVisible();
+    expect(ticket.getByText("8,000 ISK")).toBeVisible();
+    // The seat is theirs: nothing marks the driver as its passenger.
+    expect(ticket.queryByText("Passenger")).toBeNull();
+    const bar = within(screen.getByTestId("bottom-bar"));
+    const cancel = bar.getByRole("button", { name: "Cancel booking" });
+    expect(within(cancel).getByTestId("button-face")).toHaveStyle({
+      backgroundColor: colors.light.error,
+    });
+    expect(filledButtons()).toBe(1);
+    expect(bar.getByRole("button", { name: "Keep the booking" })).toBeVisible();
   });
 
   it("says an unpaid booking has nothing to refund, and sends no note when none is written", async () => {

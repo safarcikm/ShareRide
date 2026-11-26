@@ -280,7 +280,7 @@ function seatsOn(
  * Each trip is locked as booking locks it, and one already locked is left
  * for the next run, so instances never wait on each other or on a booking.
  */
-export async function expireAllDueBookings(db: Database, now: Date): Promise<number> {
+export async function expireAllDueBookings(db: Queryable, now: Date): Promise<number> {
   const due = await db
     .selectDistinct({ tripId: bookings.tripId })
     .from(bookings)

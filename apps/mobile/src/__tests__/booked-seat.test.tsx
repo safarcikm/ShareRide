@@ -20,6 +20,7 @@ import { filledButtons } from "@/testing/buttons";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
 import { completedBooking } from "@/testing/reviews";
 import { dispute, onTheDay } from "@/testing/trip-day";
+import { colors } from "@/theme/tokens";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
 jest.mock("@/auth/token-store", () => {
@@ -247,9 +248,13 @@ describe("a booked seat on a phone (spec 31, 3.8)", () => {
       await fireEvent.press(await screen.findByRole("button", { name: "Withdraw request" }));
       expect(bar().getByText(question)).toBeVisible();
       expect(focus).toHaveBeenCalledTimes(1);
-      // The row gave way to the question: one button says it.
+      // The row gave way to the question: one button says it, and it is
+      // red, as what cannot be undone is (spec 31, 3.19).
       expect(screen.getAllByRole("button", { name: "Withdraw request" })).toHaveLength(1);
       expect(filledButtons()).toBe(1);
+      expect(
+        within(bar().getByRole("button", { name: "Withdraw request" })).getByTestId("button-face"),
+      ).toHaveStyle({ backgroundColor: colors.light.error });
       await fireEvent.press(screen.getByRole("button", { name: "Keep my request" }));
       expect(screen.queryByText(question)).toBeNull();
       expect(screen.queryByTestId("bottom-bar")).toBeNull();

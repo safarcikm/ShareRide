@@ -291,6 +291,11 @@ As built (milestone 6, PR 4):
    hours of boarding and at most 5 a day (spec 7, 3.4 and R7.10), says only
    that the driver cancelled, the day and time, and whether it is refunded.
    The note never leaves the app.
+4. Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.19) the screen
+   has its title at the left, "Cancel booking: Dóra", over the passenger's
+   part as a ticket with the seats and the price, and its two buttons in
+   the bar at the bottom, as the passenger's has (3.5, item 7), with "Keep
+   the booking" as the second.
 
 ### 3.5 Cancelling a booking (passenger)
 
@@ -314,6 +319,11 @@ As built (milestone 6, PR 4):
    "Cancel booking" is the last of the booking's rows, in red, and never a
    filled button; it opens the screen of items 1 to 3. After a booking the
    driver cancelled, "Find another ride" is the page's main button.
+7. Since spec 31 (3.19) that screen has its title at the left, "Cancel
+   your booking", over the booked seat as its ticket. **Cancel booking**
+   is its main button, in red, in the bar at the bottom, with "Keep my
+   booking" outlined under it; with no reason chosen, "Choose a reason."
+   stands over the button and takes focus.
 
 ### 3.6 Post again and post the return trip (C6)
 

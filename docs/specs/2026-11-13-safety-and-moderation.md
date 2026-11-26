@@ -73,6 +73,12 @@ decision, with every operator action logged.
    terms: "We've taken action" or "We found no breach of our rules". The
    reported person is never told who reported them.
 7. A user can see their own reports and their outcomes in Settings.
+8. Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.19) the report
+   screen has its title at the left and **Send report** as its main
+   button, in the bar at the bottom, with "Choose what happened." over it
+   when nothing is chosen; the community rules are a row under the form.
+   The thanks are the screen's title, with focus, and "Back" its main
+   button; after a report about a person, "Block Bára too" is a red row.
 
 ### 3.2 Blocking (G2)
 
@@ -88,6 +94,12 @@ decision, with every operator action logged.
    be used to dodge the late-cancellation rules (decision 1).
 4. Blocked people are listed in Settings (spec 1), where they can be
    unblocked.
+5. Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.19) the screen
+   that asks, "Block Bára?", has **Block Bára** as its main button, in
+   red, in the bar at the bottom. Done, "Bára is blocked." is the title,
+   with focus; each ride still shared is its ticket with "Cancel booking",
+   "Withdraw request" or "Decline request" outlined under it (item 3), and
+   the way back to the conversation or the profile is the main button.
 
 ### 3.3 Safety information and trip sharing (G4)
 

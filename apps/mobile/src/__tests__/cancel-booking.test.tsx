@@ -1,5 +1,5 @@
 import type { Booking, CancelBookingBody } from "@shareride/contracts";
-import { fireEvent, screen, within } from "expo-router/testing-library";
+import { act, fireEvent, screen, within } from "expo-router/testing-library";
 import { AccessibilityInfo } from "react-native";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
@@ -204,6 +204,72 @@ describe("Cancelling a booking (spec 6, 3.5)", () => {
     expect(screen.getByText("This cancellation shows on your profile")).toBeVisible();
     expect(screen.queryByRole("button", { name: "Cancel booking" })).toBeNull();
     expect(screen.queryByRole("button", { name: /^Message/ })).toBeNull();
+  });
+
+  it("has its title at the left over the ride as a ticket (spec 31, 3.19)", async () => {
+    await openCancel();
+    const head = within(screen.getByTestId("screen-head"));
+    expect(head.getByRole("header", { name: "Cancel your booking" })).toBeVisible();
+    expect(head.getByRole("button", { name: "Back" })).toBeVisible();
+    // The ride is the ticket of the booked seat, not a line of small text.
+    const ticket = within(screen.getByTestId("booking-ticket"));
+    expect(ticket.getByText("Sun 15 Nov")).toBeVisible();
+    expect(ticket.getByText("Borgarnes")).toBeVisible();
+    expect(ticket.getByText("Blönduós")).toBeVisible();
+    expect(ticket.getByText("1 seat")).toBeVisible();
+    expect(ticket.getByText("2,900 ISK")).toBeVisible();
+    expect(screen.queryByText(/Sunday 15 November · /)).toBeNull();
+  });
+
+  it("has one main button, red, in the bar, over Keep my booking (R31.1)", async () => {
+    await openCancel();
+    const bar = within(screen.getByTestId("bottom-bar"));
+    const cancel = bar.getByRole("button", { name: "Cancel booking" });
+    // It cannot be undone: the red main button.
+    expect(within(cancel).getByTestId("button-face")).toHaveStyle({
+      backgroundColor: colors.light.error,
+    });
+    expect(cancel).toHaveStyle({ minHeight: 56 });
+    expect(filledButtons()).toBe(1);
+    expect(screen.getByTestId("filled-button")).toBe(cancel);
+    const buttons = bar.getAllByRole("button");
+    expect(buttons.indexOf(bar.getByRole("button", { name: "Keep my booking" }))).toBeGreaterThan(
+      buttons.indexOf(cancel),
+    );
+  });
+
+  it("says over the button why nothing was cancelled, where it is seen", async () => {
+    await openCancel();
+    await fireEvent.press(screen.getByRole("button", { name: "Cancel booking" }));
+    expect(within(screen.getByTestId("bottom-bar")).getByRole("alert")).toHaveTextContent(
+      "Choose a reason.",
+    );
+  });
+
+  it("holds both buttons while the booking is being cancelled", async () => {
+    let release: () => void = () => undefined;
+    await openCancel(paidBooking, {
+      answers: [
+        new Promise((resolve) => {
+          release = () => {
+            resolve(failure(500, "internal_error"));
+          };
+        }),
+      ],
+    });
+    await choose("Plans changed");
+    await fireEvent.press(screen.getByRole("button", { name: "Cancel booking" }));
+    const bar = within(screen.getByTestId("bottom-bar"));
+    expect(await bar.findByRole("button", { name: "Cancel booking", busy: true })).toBeVisible();
+    expect(bar.getByRole("button", { name: "Keep my booking" })).toBeDisabled();
+    await act(async () => {
+      release();
+      await Promise.resolve();
+    });
+    // It was not cancelled: why is over the buttons, and both can be pressed.
+    expect(await bar.findByRole("alert")).toBeVisible();
+    expect(bar.getByRole("button", { name: "Keep my booking" })).toBeEnabled();
+    expect(bar.getByRole("button", { name: "Cancel booking", busy: false })).toBeVisible();
   });
 
   it("asks for a reason before cancelling", async () => {

@@ -30,6 +30,18 @@ test("a passenger cancels a paid booking the day before, with a full refund", as
   await expect(passenger.getByRole("heading", { name: "Cancel your booking" })).toBeVisible();
   await expect(passenger.getByText(/^Full refund of [\d,]+ ISK$/).filter(visible)).toBeVisible();
   const counts = passenger.getByText("This cancellation shows on your profile");
+  // The ride is the seat's ticket, and the bar holds the button that
+  // cancels over the one that keeps the booking, both in view (spec 31, 3.19).
+  await expect(passenger.getByTestId("booking-ticket").filter(visible)).toBeVisible();
+  const bar = passenger.getByTestId("bottom-bar").filter(visible);
+  await expect(bar.getByRole("button", { name: "Cancel booking" })).toBeInViewport();
+  await expect(bar.getByRole("button", { name: "Keep my booking" })).toBeInViewport();
+  // With no reason chosen, why nothing was cancelled stands over the
+  // button and takes focus.
+  await bar.getByRole("button", { name: "Cancel booking" }).click();
+  await expect(bar.getByRole("alert")).toHaveText("Choose a reason.");
+  await expect(bar.getByRole("alert")).toBeInViewport();
+  await expect.poll(() => focused(passenger)).toContain("Choose a reason.");
 
   // The weather never counts; changed plans do, in the last 24 hours.
   await passenger.getByRole("radio", { name: "Weather" }).click();

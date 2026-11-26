@@ -33,7 +33,7 @@ const placesOfTicket =
 /**
  * How a ticket holds what is in it (spec 31, review focus 3), for the first
  * ticket in view with this test id; or another part of a screen, such as
- * its head, with `words` choosing the texts to read in it:
+ * its head or its bar, with `words` choosing the texts to read in it:
  *
  * - `past`: the parts that reach past its edges. The notches of the tear
  *   line sit half outside the ticket on purpose and are not counted.
@@ -112,7 +112,13 @@ export function ticketFit(
         Math.ceil(edge.right - window.innerWidth),
         Math.ceil(-edge.left),
       );
-      const screen = ticket.closest<HTMLElement>('[data-testid="screen-scroll"]');
+      // A screen's bar stands under what scrolls, not in it.
+      const screen =
+        ticket.closest<HTMLElement>('[data-testid="screen-scroll"]') ??
+        ticket
+          .closest('[data-testid="screen-safe-area"]')
+          ?.querySelector<HTMLElement>('[data-testid="screen-scroll"]') ??
+        null;
       if (screen === null) throw new Error(`The ${id} is on no screen`);
       const screenWider = screen.scrollWidth - screen.clientWidth;
       return { past, cut, brokenWords, needlessly, beyondWindow, screenWider };

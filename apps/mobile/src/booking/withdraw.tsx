@@ -4,7 +4,7 @@ import { StyleSheet, View } from "react-native";
 import { errorText } from "@/auth/errors";
 import { useSession } from "@/auth/session";
 import { Button } from "@/components/button";
-import { Notice } from "@/components/notice";
+import { ActionNotice } from "@/components/notice";
 import { TakesFocus } from "@/components/takes-focus";
 import { Body } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
@@ -101,8 +101,9 @@ export function useWithdraw({
 
 /**
  * The question itself, where the page has its main button: "Withdraw your
- * request to Anna for 1 seat?", with the button that does it and the one
- * that keeps the request. It takes focus as it opens.
+ * request to Anna for 1 seat?", with the button that does it, red as it
+ * takes the request away (spec 31, 3.19 and decision 17), and the one that
+ * keeps the request. It takes focus as it opens.
  */
 export function WithdrawQuestion({
   booking,
@@ -117,13 +118,10 @@ export function WithdrawQuestion({
     <TakesFocus>
       <View testID="withdraw-question" style={styles.question}>
         <Body align="start">{t("booking.withdrawAsk", { driver, seats: booking.seats })}</Body>
-        {withdrawing.notice === null ? null : (
-          <TakesFocus key={withdrawing.notice}>
-            <Notice message={withdrawing.notice} />
-          </TakesFocus>
-        )}
+        <ActionNotice says={withdrawing.notice} />
         <Button
           main
+          variant="danger"
           busy={withdrawing.busy}
           label={t("booking.withdraw")}
           onPress={() => {

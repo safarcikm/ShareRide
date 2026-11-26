@@ -33,6 +33,8 @@ const textPairs = [
   ["error", "background"],
   ["error", "surface"],
   ["onError", "error"],
+  // A red main button under the pointer (spec 31, 3.19).
+  ["onError", "errorHover"],
   ["text", "errorSoft"],
   ["text", "infoSoft"],
   // Tags (spec 15, section 4.1); positive is primary on primarySoft, above.

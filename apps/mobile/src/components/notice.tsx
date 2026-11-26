@@ -1,8 +1,10 @@
 import { CircleAlert, Info } from "lucide-react-native";
+import { useCallback, useRef, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { iconSizes, radii, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 import { Icon } from "./icon";
+import { TakesFocus } from "./takes-focus";
 
 /**
  * A message about the last action, read out by screen readers when it
@@ -45,6 +47,51 @@ export function Notice({
         {message}
       </Text>
     </View>
+  );
+}
+
+/** What an `ActionNotice` says, and which press of the button it answers. */
+export interface Said {
+  readonly message: string;
+  readonly press: number;
+}
+
+/**
+ * What a screen's main button has to say, for its `ActionNotice`: `say`
+ * the words after a press that did nothing, and null once that is mended
+ * or the button is pressed again. The same words after another press are
+ * said again, as that press changed nothing else a screen reader could
+ * tell.
+ */
+export function useSaid(): readonly [Said | null, (message: string | null) => void] {
+  const [said, setSaid] = useState<Said | null>(null);
+  const presses = useRef(0);
+  const say = useCallback((message: string | null) => {
+    if (message === null) {
+      setSaid(null);
+      return;
+    }
+    presses.current += 1;
+    setSaid({ message, press: presses.current });
+  }, []);
+  return [said, say];
+}
+
+/**
+ * Why a screen's main button did not do what it says, over that button: in
+ * the bar it is seen without scrolling, on a phone too (spec 31, 3.8 and
+ * 3.19). It takes focus when it appears, when it says something new, and
+ * when another press gets the same words (`useSaid`). Plain words, as from
+ * a call that failed, do for a notice that goes while the call is tried
+ * again.
+ */
+export function ActionNotice({ says }: { readonly says: Said | string | null }) {
+  if (says === null) return null;
+  const { message, press } = typeof says === "string" ? { message: says, press: 0 } : says;
+  return (
+    <TakesFocus key={`${press}:${message}`}>
+      <Notice message={message} />
+    </TakesFocus>
   );
 }
 

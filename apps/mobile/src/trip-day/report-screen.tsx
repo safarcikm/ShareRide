@@ -6,21 +6,30 @@ import {
   type Booking,
 } from "@shareride/contracts";
 import { checkDisputeNote, disputeNoteMaxLength, type DisputeKind } from "@shareride/domain";
-import { capitalised, formatClock, formatDay, formatMoney, type Translate } from "@shareride/i18n";
+import {
+  capitalised,
+  formatClock,
+  formatDay,
+  formatMoney,
+  type Locale,
+  type Translate,
+} from "@shareride/i18n";
 import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useState } from "react";
-import { ActivityIndicator, Text, View } from "react-native";
+import { ActivityIndicator, Text } from "react-native";
 import { errorText } from "@/auth/errors";
 import { useSession } from "@/auth/session";
+import { BookingTicket } from "@/booking/booking-ticket";
 import { otherPerson } from "@/chat/texts";
 import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
-import { Notice } from "@/components/notice";
+import { ActionNotice, Notice, useSaid } from "@/components/notice";
 import { Screen } from "@/components/screen";
+import { ScreenHead } from "@/components/screen-head";
 import { TakesFocus } from "@/components/takes-focus";
 import { TextField } from "@/components/text-field";
-import { Body, Title } from "@/components/text";
+import { Body } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { useLoaded } from "@/lib/use-loaded";
 import { typography } from "@/theme/tokens";
@@ -102,14 +111,17 @@ export function NotLoaded({
 }) {
   const { t } = useLanguage();
   const palette = usePalette();
+  const back = { pathname: "/bookings/[id]", params: { id } } as const;
   return (
     <Screen>
-      <BackButton fallback={{ pathname: "/bookings/[id]", params: { id } }} />
       {answer === undefined ? (
-        <ActivityIndicator accessibilityLabel={t("common.loading")} color={palette.primary} />
+        <>
+          <BackButton fallback={back} />
+          <ActivityIndicator accessibilityLabel={t("common.loading")} color={palette.primary} />
+        </>
       ) : (
         <>
-          <Title>{title}</Title>
+          <ScreenHead title={title} back={back} />
           <Notice
             message={
               answer.status === 404 || answer.status === 400
@@ -126,19 +138,42 @@ export function NotLoaded({
   );
 }
 
-/** "Sunday 15 November · Borgarnes to Blönduós", above a report's title. */
-export function BookingLine({ booking }: { readonly booking: Booking }) {
-  const { locale, t } = useLanguage();
-  const palette = usePalette();
+/**
+ * The booking in words, for a title where the ride is not shown as a
+ * ticket, as on rating: its `day` ("Sunday 15 November") to stand over
+ * the title, and its `part` ("Borgarnes → Blönduós") under it.
+ */
+export function bookingWords(
+  t: Translate,
+  locale: Locale,
+  booking: Booking,
+): { readonly day: string; readonly part: string } {
   const { board, alight } = booking;
+  return {
+    day: capitalised(formatDay(new Date(board.plannedAt), locale), locale),
+    part: t("search.route", {
+      from: board.meetingPoint.name[locale],
+      to: alight.meetingPoint.name[locale],
+    }),
+  };
+}
+
+/**
+ * The top of a screen around a booking (spec 31, 3.19): Back and the title
+ * at the left, and the ride as the booked seat's ticket under them.
+ */
+export function BookingHead({
+  booking,
+  title,
+}: {
+  readonly booking: Booking;
+  readonly title: string;
+}) {
   return (
-    <Text style={[typography.small, { color: palette.textMuted }]}>
-      {capitalised(formatDay(new Date(board.plannedAt), locale), locale)} ·{" "}
-      {t("search.route", {
-        from: board.meetingPoint.name[locale],
-        to: alight.meetingPoint.name[locale],
-      })}
-    </Text>
+    <>
+      <ScreenHead title={title} back={backTo(booking)} />
+      <BookingTicket booking={booking} />
+    </>
   );
 }
 
@@ -171,9 +206,12 @@ function problemOf(t: Translate, failure: CallFailure): string | null {
 
 /**
  * Marking a passenger as a no-show (spec 8, screen 3), by the driver, or
- * saying the driver didn't come (screen 4), by the passenger: what it does
- * and who is told, with an optional note only ShareRide reads. Done, it
- * goes back to the trip or the booking, where focus moves to the report.
+ * saying the driver didn't come (screen 4), by the passenger: the title
+ * over the ride as a ticket (spec 31, 3.19), what it does and who is told,
+ * with an optional note only ShareRide reads. The main button is in the
+ * bar, with why it did nothing over it. It sends a report and takes
+ * nothing away, so it is not the red one. Done, it goes back to the trip
+ * or the booking, where focus moves to the report.
  */
 export function ReportScreen({ kind }: { readonly kind: DisputeKind }) {
   const { t } = useLanguage();
@@ -205,7 +243,7 @@ function ReportForm({
   const session = useSession();
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, say] = useSaid();
   const [changed, setChanged] = useState(false);
   const noShow = kind === "no_show";
   // Paid to the driver in person (rule M6): no refund either way.
@@ -218,10 +256,10 @@ function ReportForm({
 
   const send = async () => {
     if (problem !== undefined) {
-      setNotice(problem);
+      say(problem);
       return;
     }
-    setNotice(null);
+    say(null);
     setBusy(true);
     const input = { params: { id: booking.id }, body: noteBody(note) };
     const answer: CallResult<typeof markNoShowRoute> | CallResult<typeof reportDriverAbsentRoute> =
@@ -235,17 +273,13 @@ function ReportForm({
     }
     const why = problemOf(t, answer);
     if (why === null) setChanged(true);
-    else setNotice(why);
+    else say(why);
   };
 
   if (changed) {
     return (
       <Screen>
-        <BackButton fallback={backTo(booking)} />
-        <View>
-          <BookingLine booking={booking} />
-          <Title align="start">{title}</Title>
-        </View>
+        <BookingHead booking={booking} title={title} />
         <TakesFocus>
           <Changed booking={booking} />
         </TakesFocus>
@@ -256,21 +290,20 @@ function ReportForm({
   return (
     <Screen
       footer={
-        <Button
-          main
-          busy={busy}
-          label={noShow ? t("tripDay.markNoShow") : t("tripDay.tellShareRide")}
-          onPress={() => {
-            void send();
-          }}
-        />
+        <>
+          <ActionNotice says={notice} />
+          <Button
+            main
+            busy={busy}
+            label={noShow ? t("tripDay.markNoShow") : t("tripDay.tellShareRide")}
+            onPress={() => {
+              void send();
+            }}
+          />
+        </>
       }
     >
-      <BackButton fallback={backTo(booking)} />
-      <View>
-        <BookingLine booking={booking} />
-        <Title align="start">{title}</Title>
-      </View>
+      <BookingHead booking={booking} title={title} />
       <Card>
         <Text style={[typography.bodyStrong, { color: palette.text }]}>
           {noShow
@@ -295,7 +328,7 @@ function ReportForm({
         label={t("report.note")}
         value={note}
         onChangeText={(text) => {
-          setNotice(null);
+          say(null);
           setNote(text);
         }}
         multiline
@@ -303,11 +336,6 @@ function ReportForm({
         help={t("report.noteHelp", { max: disputeNoteMaxLength })}
         error={problem}
       />
-      {notice === null ? null : (
-        <TakesFocus key={notice}>
-          <Notice message={notice} />
-        </TakesFocus>
-      )}
     </Screen>
   );
 }

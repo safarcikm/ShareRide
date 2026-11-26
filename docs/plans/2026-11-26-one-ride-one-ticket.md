@@ -658,6 +658,67 @@ where a person sees it, in 3.8, 3.9 and 3.16):
   (Message, "Rate the driver", "The driver didn't come" and "Open in
   maps" are links). Pictures: `built/booking-*` and `built/trip-day-*`.
 
+As built in 7b (spec 31 says the same where a person sees it, in 3.19,
+R31.3 and decision 17):
+
+- `Button` gains the variant `danger`: `error` fill, `onError` label, the
+  primary button's 4 edge in the new colour `errorEdge`, and `errorHover`
+  under the pointer (`onError` on it is 8.1:1 in light and 11.7:1 in dark,
+  which `tokens.test.ts` keeps). It carries `testID="filled-button"`, so
+  `filledButtons` counts it as the screen's one.
+- **Which main buttons are red** (decision 17): "Cancel booking",
+  "Withdraw request" (the question 7a put in the booking's bar) and
+  "Block {name}". "Tell PuffinRide", "Mark as no-show", "Send answer",
+  "Send review" and "Send report" stay moss. PR 8 looks at the no-show
+  screen again with the driver's ride, and takes cancelling a ride.
+- `ActionNotice` in `components/notice.tsx`: why the main button did
+  nothing, over that button in the bar, with focus when it appears and
+  when it says something new. A form keeps what it says with `useSaid`,
+  which counts the presses, so the same words after another press take
+  focus again. The six screens and the question about withdrawing use it;
+  the notice at the end of their column is gone. Reporting has one notice
+  for nothing chosen, a description that is too long (it said so only at
+  the field) and what the server refused.
+- `BookingHead` in `trip-day/report-screen.tsx` (`ScreenHead` over the
+  `BookingTicket`) is the top of "The driver didn't come", "Mark as
+  no-show" and answering a report; cancelling a booking builds the same
+  from its own title. `BookingLine`, the small line with the day and the
+  places, is gone, and `bookingWords` gives the day and the part to the
+  rating's head (`over` and `line`), which has no ticket.
+- Cancelling: the red main button over the outlined "Keep my booking"
+  (`fill`), both in the bar.
+- After the outcome the way back is the main button in the bar on the
+  three screens that stay open: blocking ("Back to the conversation" or
+  "Back to the profile"), reporting ("Back") and rating ("Back to the
+  booking" or "Back to the ride"). Blocking's and reporting's outcome is
+  `ScreenHead`'s title with `outcome`, with no Back in the head.
+  `BlockPerson` takes `back` as an address for its head. A rating whose
+  booking changed meanwhile shows `Changed`, with its outlined button and
+  no bar, on sending as on opening.
+- Blocked with rides still shared: each is a `BookingTicket` with its
+  outlined button under it. Reporting: the community rules are a `Row` in
+  `ActionRows`, and "Block {name} too" a red row, each with an icon.
+- From the code review, mended here: the report's silent main button
+  with a long description; the same words after a second press; rating's
+  two screens for a booking that changed; comments that gave the old rule
+  for red; tests that pin the moss of the five buttons that tell
+  PuffinRide, the order of the rating's head, and "Keep my booking"
+  waiting while the booking is cancelled. Left for the last pass (PR 12):
+  see its item 9.
+- No text key is new or gone. Two colours are new: `errorEdge` and
+  `errorHover`.
+- Tests: the head, the ticket and the one filled button in the bar on
+  each screen; the red of the three; why nothing happened inside the bar;
+  the outcome's focus and the way back as the main button. Journeys:
+  `cancel-booking.spec.ts`, `reporting.spec.ts` and `blocking.spec.ts`
+  read the bar, its alert and what has focus; `look.spec.ts` opens the
+  screen that cancels a seat with long names on a phone 360 wide, with
+  the text as set and twice as large, and measures the head, the ticket
+  and the bar's two buttons (`ticketFit` in `support/layout.ts` now finds
+  the screen of a part that is in the bar). Pictures: `built/cancel-*`,
+  `built/driver-absent-*`, `built/rate-*`, `built/block-*` and
+  `built/report-*`.
+
 ## PR 8: the driver's ride and My rides
 
 `feat(drive)`, spec 31, 3.10, 3.12, 3.16 items 3 and 4, and Edit trip,
@@ -688,7 +749,11 @@ cancelling a ride, sharing and messaging all passengers (3.19).
 4. **My trips goes:** `/drive/trips` redirects to My rides; Back from a
    posting step and deleting a draft lead to Offer.
 5. **Edit trip:** its parts as rows with what is set now; each part's
-   screen keeps its fields.
+   screen keeps its fields. **Cancelling a ride** takes what 7b gave
+   cancelling a booking: the head, the ride as its ticket, the red main
+   button over "Keep the ride" in the bar, and why nothing was cancelled
+   over it. The no-show screen's main button, moss since 7b, is looked at
+   again here beside the row that opens it (decision 17).
 6. Tests: a request card's parts and that Accept and Decline do what they
    do today; a passenger's row unfolds to See profile, Cancel booking and
    Report; the seats line names the busiest run; the redirect; the rating
@@ -805,8 +870,21 @@ and deleting the account (3.19).
    on a phone 360 wide the road's four labels run into each other
    (`look.spec.ts` measures the booked seat's head, ticket, driver and
    where to stand there, not the road).
-9. **Docs:** spec 31 becomes Built, with what differs from the drawings;
-   spec 15 has the parts; the roadmap and the changelog.
+9. **Small things PR 7b's code review named:** after an outcome the way
+   back is the main button where the button just pressed was (blocking,
+   reporting, rating, and "Find another ride" after withdrawing, from
+   7a), so a second press meant for that one leaves the screen before
+   the outcome is read: the bar ignores a press for a moment after its
+   main button changes. On a short window (a phone on its side, or a
+   laptop zoomed until the window is 320 by 256) the bar takes much of
+   the height, about 88 with one button and 148 with two, more with a
+   notice: under a height to be chosen the bar joins the end of the page.
+   After blocking, "You still have a booking together" stays the title's
+   line once that booking is cancelled. `BookingHead`, `bookingWords`,
+   `backTo` and `leave` serve bookings, reviews and blocking from
+   `trip-day/report-screen.tsx`: `@/booking/` is their home.
+10. **Docs:** spec 31 becomes Built, with what differs from the drawings;
+    spec 15 has the parts; the roadmap and the changelog.
 
 ## After merging
 

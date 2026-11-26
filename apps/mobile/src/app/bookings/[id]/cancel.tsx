@@ -7,7 +7,7 @@ import {
   type CancellationPreview,
 } from "@shareride/contracts";
 import { checkNote, noteMaxLength, type CancelReason } from "@shareride/domain";
-import { cancelReasonText, capitalised, formatDay } from "@shareride/i18n";
+import { cancelReasonText } from "@shareride/i18n";
 import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
@@ -18,25 +18,29 @@ import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
 import { Chip } from "@/components/chip";
-import { Notice } from "@/components/notice";
+import { ActionNotice, Notice, useSaid } from "@/components/notice";
 import { Screen } from "@/components/screen";
+import { ScreenHead } from "@/components/screen-head";
 import { TakesFocus } from "@/components/takes-focus";
 import { TextField } from "@/components/text-field";
-import { Body, Title } from "@/components/text";
+import { Body } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { useLoaded } from "@/lib/use-loaded";
 import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 import { firstNameOf } from "@/people/texts";
+import { BookingHead } from "@/trip-day/report-screen";
 
 /**
  * Cancelling a booking (spec 6, 3.4 and 3.5; screen 6), by its passenger
- * or its driver: the reasons, the refund (rule M2) and, for the reason
- * chosen, whether it shows on the canceller's profile (R6.7, R6.8), all
- * from the server's preview. The driver can add a note to the passenger.
- * "Cancel booking" sends the terms shown; if they changed meanwhile, such
- * as the last 15 minutes before boarding starting, the new ones show to
- * confirm again. Done, it goes back where the canceller came from, the
+ * or its driver: the title at the left over the ride as a ticket (spec 31,
+ * 3.19), the reasons, the refund (rule M2) and, for the reason chosen,
+ * whether it shows on the canceller's profile (R6.7, R6.8), all from the
+ * server's preview. The driver can add a note to the passenger.
+ * "Cancel booking" takes the seat away, so it is the red main button, in
+ * the bar (decision 17); why it did nothing stands over it. It sends the terms shown; if they
+ * changed meanwhile, such as the last 15 minutes before boarding starting,
+ * the new ones show to confirm again. Done, it goes back where the canceller came from, the
  * booking or the driver's trip, where focus moves to the outcome. `reason`
  * chooses one to begin with, such as "The trip changed".
  */
@@ -139,8 +143,10 @@ function CancelFailed({
   const driver = booking?.viewer === "driver";
   return (
     <Screen>
-      <BackButton fallback={back} />
-      <Title>{booking === undefined ? t("booking.cancelTitle") : titleOf(t, booking)}</Title>
+      <ScreenHead
+        title={booking === undefined ? t("booking.cancelTitle") : titleOf(t, booking)}
+        back={back}
+      />
       <Notice
         message={
           notCancellable
@@ -194,7 +200,7 @@ function CancelForm({
   const palette = usePalette();
   const session = useSession();
   const [busy, setBusy] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, say] = useSaid();
   const driver = booking.viewer === "driver";
   const passengerName = firstNameOf(t, booking.passenger);
   // Checked as typed, as the server checks it: no contact details (R3.10).
@@ -209,19 +215,17 @@ function CancelForm({
   // The refund is the same whatever the reason (rule M2), so it shows before one is chosen.
   const first = preview.reasons[0];
   const terms = chosen ?? first;
-  const { board, alight } = booking;
-  const name = (stop: Booking["board"]) => stop.meetingPoint.name[locale];
 
   const cancel = async () => {
     if (noteError !== undefined) {
-      setNotice(noteError);
+      say(noteError);
       return;
     }
     if (chosen === null) {
-      setNotice(t("booking.cancelChooseReason"));
+      say(t("booking.cancelChooseReason"));
       return;
     }
-    setNotice(null);
+    say(null);
     setBusy(true);
     const answer = await session.call(cancelBookingRoute, {
       params: { id: booking.id },
@@ -241,7 +245,7 @@ function CancelForm({
       onTermsChanged();
       return;
     }
-    setNotice(
+    say(
       answer.error.code === "booking_not_cancellable"
         ? t("booking.notCancellable")
         : errorText(t, answer),
@@ -251,9 +255,11 @@ function CancelForm({
   return (
     <Screen
       footer={
-        <View style={styles.actions}>
+        <>
+          <ActionNotice says={notice} />
           <Button
             main
+            variant="danger"
             busy={busy}
             label={t("booking.cancel")}
             onPress={() => {
@@ -261,24 +267,18 @@ function CancelForm({
             }}
           />
           <Button
-            variant="text"
+            variant="secondary"
+            fill
             disabled={busy}
             label={driver ? t("booking.keepTheirs") : t("booking.keep")}
             onPress={() => {
               leave(backTo(booking));
             }}
           />
-        </View>
+        </>
       }
     >
-      <BackButton fallback={backTo(booking)} />
-      <View>
-        <Text style={[typography.small, { color: palette.textMuted }]}>
-          {capitalised(formatDay(new Date(board.plannedAt), locale), locale)} ·{" "}
-          {t("search.route", { from: name(board), to: name(alight) })}
-        </Text>
-        <Title align="start">{titleOf(t, booking)}</Title>
-      </View>
+      <BookingHead booking={booking} title={titleOf(t, booking)} />
 
       {changed === null ? null : (
         <TakesFocus key={changed}>
@@ -300,7 +300,7 @@ function CancelForm({
               label={cancelReasonText(t, option.reason)}
               selected={option.reason === chosen?.reason}
               onToggle={() => {
-                setNotice(null);
+                say(null);
                 onChoose(option.reason);
               }}
             />
@@ -332,7 +332,7 @@ function CancelForm({
           label={t("booking.cancelNote")}
           value={note}
           onChangeText={(text) => {
-            setNotice(null);
+            say(null);
             onNote(text);
           }}
           multiline
@@ -341,12 +341,6 @@ function CancelForm({
           error={noteError}
         />
       ) : null}
-
-      {notice === null ? null : (
-        <TakesFocus key={notice}>
-          <Notice message={notice} />
-        </TakesFocus>
-      )}
     </Screen>
   );
 }
@@ -354,5 +348,4 @@ function CancelForm({
 const styles = StyleSheet.create({
   reasons: { gap: spacing.sm },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  actions: { gap: spacing.xs },
 });

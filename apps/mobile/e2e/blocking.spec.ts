@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { english, signUp } from "./support/account";
-import { postTripToSelfoss } from "./support/trips";
+import { focused, postTripToSelfoss } from "./support/trips";
 
 // Spec 9's blocking on the web build, in two browsers: a passenger with a
 // confirmed booking blocks the driver from their chat, is offered to cancel
@@ -58,8 +58,16 @@ test("a passenger blocks a driver, loses their trips, and unblocks them", async 
   const chat = passenger.url();
   await passenger.getByRole("button", { name: "Block Bára" }).click();
   await expect(passenger.getByRole("heading", { name: "Block Bára?" })).toBeVisible();
-  await passenger.getByRole("button", { name: "Block Bára" }).click();
+  // The button that blocks is in the bar, in view (spec 31, 3.19).
+  const bar = passenger.getByTestId("bottom-bar").filter(visible);
+  await expect(bar.getByRole("button", { name: "Block Bára" })).toBeInViewport();
+  await bar.getByRole("button", { name: "Block Bára" }).click();
   await expect(passenger.getByRole("heading", { name: "Bára is blocked." })).toBeVisible();
+  // The outcome is the title with what is left to do, and takes focus; the
+  // booking they share is its ticket.
+  await expect.poll(() => focused(passenger)).toContain("Bára is blocked.");
+  expect(await focused(passenger)).toContain("You still have a booking together.");
+  await expect(passenger.getByTestId("booking-ticket").filter(visible)).toBeVisible();
   await expect(
     passenger
       .getByText("You still have a booking together. You can cancel it under the usual rules.")

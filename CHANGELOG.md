@@ -1734,6 +1734,16 @@ releases follow [Semantic Versioning](https://semver.org/).
 - A driver who opens a passenger's booking paid in person reads who pays
   them, and how much (ADR 0038): the line was written with paying in
   person and never showed.
+- The screens around a booking take the same rules (spec 31, 3.19):
+  cancelling it, "The driver didn't come", marking a no-show, answering a
+  report, rating, blocking and reporting have their title at the left,
+  the booked seat as its ticket where they show the ride, and their main
+  button in a bar at the bottom. That button is red where it takes
+  something away ("Cancel booking", "Withdraw request", "Block Bára") and
+  moss where it tells PuffinRide what happened. Why it did nothing
+  ("Choose a reason.") stands over it and is read out, where it was at
+  the end of the page. After blocking, reporting and rating, the way back
+  is the main button.
 - The web journeys never give two test accounts the same phone number: a
   run in ten did, and a sign-in journey then failed.
 - CI skips its code jobs (bundles, unit, integration and web tests, the API

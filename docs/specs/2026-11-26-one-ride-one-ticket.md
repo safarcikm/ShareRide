@@ -18,7 +18,8 @@ dependency or business rule. Sign-in is left to
 
 A second reader checked this spec against the app's code on 2026-11-26.
 What that settled is in decisions 9 to 16, each a working choice of
-Claude's that Martin can change.
+Claude's that Martin can change. Decision 17 came with the build, and is
+one too.
 
 The proposal as Martin saw it, each screen as it is beside how it would
 look: [proposal page](https://claude.ai/artifact/3hMRPHSfiQxqVFkhtdAQtx)
@@ -160,7 +161,8 @@ The rest of this spec describes B.
 
 New parts of the design system (spec 15, section 5), light and dark. They
 need no new colour value; what the colours mean changes in two places,
-named in item 3.
+named in item 3. The red main button, which came with the build (3.19,
+decision 17), added two: its edge and its fill under the pointer.
 
 1. **`RideTicket`** takes the place of the four ride cards (`ResultCard`,
    the My rides row, the My trips card, the stretch inside a request).
@@ -778,7 +780,7 @@ ticket wherever it shows a ride (R31.2), and the tags of rule 6.
 | ------ | ------------ |
 | Booking a seat (`/trips/[id]/book`) | My part as a ticket at the top; the main button stays in the bar |
 | "You're booked" and "Your ride is published" | The ride as a ticket; the share panel of spec 28 stays; centred, with their puffins |
-| Cancelling a booking or a ride, answering a report, "The driver didn't come", "The passenger didn't come", reporting, blocking | The head at the left; the ride as a ticket where it shows today; the main button in the bar, red when it cannot be undone |
+| Cancelling a booking or a ride, answering a report, "The driver didn't come", "The passenger didn't come", reporting, blocking | The head at the left; the ride as a ticket where it shows today; the main button in the bar, red when it cannot be undone (as built: red when it takes something away, decision 17) |
 | Rating (`/bookings/[id]/rate`) | The head at the left; the stars and fields as today |
 | Edit trip (`/drive/trips/[id]/edit`) | Its parts become rows with what is set now: Time, Stops (with Add a stop and Remove a stop under it), Price, Seats, Car, How people book, Preferences and note. Each part's screen and "Check the change" keep their fields |
 | Sharing a ride, messaging all passengers | The head at the left |
@@ -807,6 +809,63 @@ and on a laptop
   has for it, under the line about the day and time, with "Seat confirmed"
   or "Waiting for Jón's answer" in its foot. It opens the booking.
 
+As built, the screens around a booking: cancelling it on a phone
+([light](images/one-ride-one-ticket/built/cancel-phone-light.webp),
+[dark, in Icelandic](images/one-ride-one-ticket/built/cancel-phone-dark.webp))
+and on a
+[laptop](images/one-ride-one-ticket/built/cancel-laptop-light.webp), and
+on a phone
+["The driver didn't come"](images/one-ride-one-ticket/built/driver-absent-phone-light.webp),
+[rating](images/one-ride-one-ticket/built/rate-phone-light.webp),
+[blocking](images/one-ride-one-ticket/built/block-phone-light.webp) and
+[reporting](images/one-ride-one-ticket/built/report-phone-light.webp).
+Cancelling a ride comes with the driver's ride (3.12).
+
+- **The head and the ticket:** cancelling a booking, "The driver didn't
+  come", "Mark as no-show" and answering a report have Back and their
+  title at the left, and under them the booked seat as its ticket, with
+  the seats and the price in its foot, in the place of a small line with
+  the day and the two places. Rating has no ticket, as the stars come
+  first there: the day stands over "How was your ride?" and the part under
+  it. Blocking and reporting show no ride while they ask.
+- **The main button is in the bar** at the bottom, on a laptop too: these
+  screens stay one column there (spec 18, 3.15).
+- **Red or moss:** the main button is red where pressing it takes
+  something away: "Cancel booking", with "Keep my booking" outlined under
+  it in the same bar; "Withdraw request" in the question on the booking
+  (3.8); and "Block Bára". It stays moss where it tells PuffinRide what
+  happened: "Tell PuffinRide" (the driver didn't come), "Mark as no-show",
+  "Send answer", "Send review" and "Send report". None of these can be
+  taken back either, but a red button there would warn people off saying
+  what happened, and each of those screens is itself the question "are
+  you sure?". The no-show screen is looked at again with the driver's
+  ride (3.12).
+- **Why nothing happened** stands over the main button, in the bar, and
+  takes focus: "Choose a reason.", "Choose what happened.", "Choose a
+  rating from 1 to 5 stars.", a note or a description that is too long,
+  and what the server refused. It was at the end of the column, out of
+  sight on a phone; a report whose description was too long said so only
+  at the field. Pressing again with nothing mended says the same words
+  again, for a screen reader too.
+- **After it is done:** cancelling, the reports and the answer go back to
+  the booking or the trip, where the outcome has focus, as before.
+  Blocking, reporting and rating stay on their screen, and the way back
+  is then the main button in the bar ("Back to the conversation", "Back",
+  "Back to the booking"). After blocking and reporting the outcome is the
+  title, at the left, with focus ("Bára is blocked.", "Thank you. We look
+  at every report."); after a review the head stays and a notice under it
+  says it was sent, with focus. A screen that only says a booking has
+  changed meanwhile keeps an outlined button and has no bar, whether it
+  finds out on opening or on sending.
+- **Blocked, with rides still shared:** the title's line says so, and each
+  ride is its ticket with "Cancel booking", "Withdraw request" or "Decline
+  request" outlined under it, as before; none is filled, as the way back
+  is the main button. Once it is done, what happened stands in the
+  button's place and takes focus.
+- **Reporting:** "Read the community rules" is a row under the form, and
+  "Block Bára too", after a report about a person, is a red row, each
+  with its icon.
+
 Not changed: signing in and joining (`/sign-in`, `/onboarding`, the
 invitation and email links), which are spec 29's; About, the legal
 documents, cookies and the public pages for search engines (specs 23 and
@@ -825,10 +884,15 @@ declaration before publishing (spec 3, R3.1 and R3.2; spec 16, 3.6).
   are those of `NeedsYouCard`s, one for each thing that needs me (a
   request's Accept, "See the request"). A screen test counts them: one
   main button at most, and no filled button outside a `NeedsYouCard`.
+  A screen that stays one column on a laptop (spec 18, 3.15) keeps the
+  bar there.
 - **R31.2** A ride is shown as a `RideTicket` wherever a member sees it in
   a list or as a summary.
 - **R31.3** An action that cannot be undone is a red row, last in its
-  card, and still asks before it acts, as today.
+  card, and still asks before it acts, as today. Where it asks, the main
+  button is red when pressing it takes something away (cancelling,
+  withdrawing, blocking), and moss when it tells PuffinRide what happened
+  (3.19).
 - **R31.4** Sun yellow as a card's colour is kept for what needs the
   member now, and amber as a tag's for what is theirs to do. Neither is
   used for decoration or for a problem (those are red).
@@ -1055,3 +1119,4 @@ Working choices, for Martin to change:
 | 14 | Naming who asks for a seat, on Find and My rides | A ride in my list gains `firstRequest` in the API (section 6) |
 | 15 | Drafts | All of them are listed on Offer; the page of drafts goes with My trips (3.11, item 6) |
 | 16 | Filled buttons | One main button a screen; the button of a `NeedsYouCard` is the only other filled one (R31.1) |
+| 17 | Which main buttons are red | The ones that take something away: "Cancel booking", "Withdraw request", "Block Bára". The ones that tell PuffinRide what happened stay moss, so that red does not warn anyone off a report: "Tell PuffinRide", "Mark as no-show", "Send answer", "Send review", "Send report" (3.19, R31.3) |
