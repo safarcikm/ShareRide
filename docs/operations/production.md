@@ -312,7 +312,7 @@ about cookies shows at the bottom, and the browser's network tab shows
 nothing from Google. **Accept**: `gtag/js` loads, and Google Analytics'
 **Realtime** report shows one visitor on `/` within a minute. Open a trip:
 Realtime shows `/trips/[id]`, never the trip's ID. On **Cookies** (Profile,
-Terms, rules and privacy, Cookies), turn it off: the `_ga` cookies go.
+About PuffinRide, Cookies), turn it off: the `_ga` cookies go.
 
 Links in ads and on flyers can carry campaign tags, such as
 `https://puffinride.is/?lang=is&utm_source=flyer&utm_medium=qr&utm_campaign=launch`,

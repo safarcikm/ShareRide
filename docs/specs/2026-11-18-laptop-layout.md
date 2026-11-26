@@ -334,7 +334,8 @@ changes on a phone.
 2. **Main column:** the two groups of rows (My cars, Driving licence,
    Meeting points; Settings, Terms, rules and privacy, Send feedback,
    Notices), the line about what is in Settings, and Sign out, at the left
-   (spec 16, 3.4 item 4).
+   (spec 16, 3.4 item 4). Since 2026-11-26 Terms, rules and privacy is
+   About PuffinRide ([spec 30](2026-11-26-about-page-and-footer.md)).
 3. The title starts at the left, over the card. The card stays in view
    while the rows scroll.
 4. Signed out, Profile stays one centred column.

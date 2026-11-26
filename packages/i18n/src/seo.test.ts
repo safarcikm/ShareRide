@@ -114,13 +114,9 @@ describe("the About page (spec 30, 3.1 and 3.4)", () => {
     expect(aboutPage.howItWorks.href).toBe("/carpool-iceland");
   });
 
-  it("names who runs PuffinRide as the Terms do, and an address that receives mail (R30.2)", () => {
-    expect(en(aboutPage.operator)).toBe(
-      "PuffinRide is run by Martin Safarcik, Skinnar, 851 Hella, Iceland.",
-    );
-    expect(is(aboutPage.operator)).toBe(
-      "PuffinRide er rekið af Martin Safarcik, Skinnar, 851 Hella, Íslandi.",
-    );
+  // That it names who runs PuffinRide as the newest Terms do is the API's
+  // test (search-engines.test.ts), which reads the published texts.
+  it("gives an address that receives mail (R30.2)", () => {
     expect(aboutPage.email).toBe("admin@puffinride.is");
   });
 

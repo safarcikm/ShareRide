@@ -1,5 +1,6 @@
 import { fireEvent, screen, waitFor } from "expo-router/testing-library";
 import { getLocales } from "expo-localization";
+import { aboutPage, createTranslator } from "@shareride/i18n";
 import { Linking } from "react-native";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
@@ -13,6 +14,8 @@ jest.mock("@/lib/preferences", () => ({
   readPreference: jest.fn(() => Promise.resolve(null)),
   writePreference: jest.fn(() => Promise.resolve()),
 }));
+
+const en = createTranslator("en");
 
 function deviceLanguage(languageTag: string) {
   (getLocales as jest.Mock).mockReturnValue([{ languageTag }]);
@@ -40,9 +43,8 @@ describe("About PuffinRide", () => {
     for (const heading of ["Terms and policies", "Who runs PuffinRide", "Contact us"]) {
       expect(screen.getByRole("header", { name: heading })).toBeVisible();
     }
-    expect(
-      screen.getByText("PuffinRide is run by Martin Safarcik, Skinnar, 851 Hella, Iceland."),
-    ).toBeVisible();
+    // In the words of the published Terms (R30.2), which a test of the API checks.
+    expect(screen.getByText(en(aboutPage.operator))).toBeVisible();
     expect(screen.getByRole("link", { name: "admin@puffinride.is" })).toBeVisible();
     expect(screen.getByRole("link", { name: "PuffinRide on Facebook" })).toBeVisible();
   });
@@ -93,6 +95,14 @@ describe("About PuffinRide", () => {
     await renderApp("/legal");
     expect(await screen.findByRole("header", { name: "About PuffinRide" })).toBeVisible();
     expect(screen).toHavePathname("/about");
+  });
+
+  // On the website an address's ?lang= chooses the language (spec 23, 3.5).
+  it("keeps the language the old address asked for", async () => {
+    await renderApp("/legal?lang=is");
+    expect(await screen.findByRole("header", { name: "About PuffinRide" })).toBeVisible();
+    expect(screen).toHavePathname("/about");
+    expect(screen).toHaveSearchParams({ lang: "is" });
   });
 
   it("opens from Profile, signed in", async () => {

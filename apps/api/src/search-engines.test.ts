@@ -2,6 +2,8 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Writable } from "node:stream";
+import { bodyOf, publishedVersions } from "@shareride/db/testing";
+import { aboutPage, createTranslator, locales } from "@shareride/i18n";
 import { describe, expect, it } from "vitest";
 import { createApp } from "./app.ts";
 import { createLogger } from "./logger.ts";
@@ -358,10 +360,18 @@ describe("the page's head (spec 23, 3.6)", () => {
     expect(noscript).toContain('<a href="/legal/terms?lang=is">Notendaskilmálar</a>');
     expect(noscript).toContain('<a href="/cookies?lang=is">Vafrakökur</a>');
     expect(noscript).toContain('<a href="/carpool-iceland?lang=is">');
-    expect(noscript).toContain(
-      "<p>PuffinRide er rekið af Martin Safarcik, Skinnar, 851 Hella, Íslandi.</p>",
-    );
+    expect(noscript).toContain(`<p>${createTranslator("is")(aboutPage.operator)}</p>`);
     expect(noscript).toContain('<a href="mailto:admin@puffinride.is">admin@puffinride.is</a>');
+  });
+
+  it("says who runs PuffinRide on About as the newest Terms do (R30.2)", () => {
+    const newest = publishedVersions
+      .filter((version) => version.type === "terms")
+      .reduce((last, version) => (version.version > last.version ? version : last));
+    for (const language of locales) {
+      const operator = createTranslator(language)(aboutPage.operator).replace(/\.$/, "");
+      expect(bodyOf(newest, language), language).toContain(operator);
+    }
   });
 
   it("names the site PuffinRide for Google on the front page, which the app keeps (3.6, item 7)", () => {
