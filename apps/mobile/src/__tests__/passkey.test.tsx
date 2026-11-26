@@ -13,9 +13,14 @@ jest.mock("@/auth/token-store", () => {
   return jest.requireActual<typeof TestApp>("@/testing/app").mockTokenStoreModule;
 });
 jest.mock("expo-localization", () => ({ getLocales: () => [{ languageTag: "en-GB" }] }));
+// This browser's own storage (spec 29, section 5).
+const mockPreferences = new Map<string, string>();
 jest.mock("@/lib/preferences", () => ({
-  readPreference: jest.fn(() => Promise.resolve(null)),
-  writePreference: jest.fn(() => Promise.resolve()),
+  readPreference: jest.fn((key: string) => Promise.resolve(mockPreferences.get(key) ?? null)),
+  writePreference: jest.fn((key: string, value: string) => {
+    mockPreferences.set(key, value);
+    return Promise.resolve();
+  }),
 }));
 const mockStored = new Map<string, string>();
 jest.mock("@/lib/app-data", () => ({
@@ -98,6 +103,7 @@ function withPasskeys(client: FakeClient, passkeySignIn = true) {
 
 beforeEach(() => {
   mockStored.clear();
+  mockPreferences.clear();
   mockDevice.available.mockReset().mockReturnValue(Promise.resolve(true));
   mockDevice.create.mockReset().mockReturnValue(Promise.resolve(registration));
   mockDevice.get.mockReset().mockReturnValue(Promise.resolve(assertion));
@@ -502,24 +508,30 @@ describe("Face ID in the email field (spec 29, 3.1)", () => {
     });
   });
 
-  it("tells the browser after the button's passkey is unknown too", async () => {
+  it("tells the browser after the button's passkey is unknown too, and this browser has none", async () => {
     quietRequests();
+    // Removed from another device's Settings since this browser signed in with it.
+    mockPreferences.set("passkey-here", "credential-one");
     await openSignIn((client) => {
       client.answer("/v1/auth/passkey", () => failure(400, "passkey_unknown"));
     });
     await fireEvent.press(await screen.findByRole("button", { name: "Face ID or fingerprint" }));
     expect(await screen.findByText(notSetUp)).toBeVisible();
     expect(mockDevice.forget).toHaveBeenCalledWith("credential-one");
+    // So Face ID can be offered here again (spec 29, 3.2, item 5).
+    expect(mockPreferences.get("passkey-here")).toBe("");
   });
 
   it("keeps the console's passkey with the browser (R29.4)", async () => {
     quietRequests();
+    mockPreferences.set("passkey-here", "credential-one");
     await openSignIn((client) => {
       client.answer("/v1/auth/passkey", () => failure(400, "passkey_invalid"));
     });
     await fireEvent.press(await screen.findByRole("button", { name: "Face ID or fingerprint" }));
     expect(await screen.findByText(notSetUp)).toBeVisible();
     expect(mockDevice.forget).not.toHaveBeenCalled();
+    expect(mockPreferences.get("passkey-here")).toBe("credential-one");
   });
 });
 
@@ -587,6 +599,31 @@ describe("Face ID or fingerprint in Settings (spec 27, 3.6)", () => {
     expect(callsTo(app.client, "/v1/me/passkeys/{id}")).toHaveLength(1);
     // This browser stops offering it (spec 29, 3.4).
     expect(mockDevice.forget).toHaveBeenCalledWith("credential-of-the-iphone");
+  });
+
+  it("forgets that this browser has a passkey when its own is removed, not another's", async () => {
+    mockPreferences.set("passkey-here", mac.credentialId);
+    await openMethods([iPhone, mac]);
+    await fireEvent.press(
+      await screen.findByRole("button", {
+        name: "Remove Face ID or fingerprint for Safari on iPhone",
+      }),
+    );
+    await fireEvent.press(screen.getByRole("button", { name: "Remove" }));
+    expect(
+      await screen.findByText("Face ID or fingerprint is removed for Safari on iPhone."),
+    ).toBeVisible();
+    expect(mockPreferences.get("passkey-here")).toBe(mac.credentialId);
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Remove Face ID or fingerprint for Chrome on Mac" }),
+    );
+    await fireEvent.press(screen.getByRole("button", { name: "Remove" }));
+    expect(
+      await screen.findByText("Face ID or fingerprint is removed for Chrome on Mac."),
+    ).toBeVisible();
+    await waitFor(() => {
+      expect(mockPreferences.get("passkey-here")).toBe("");
+    });
   });
 
   it("sets up this device with a fresh sign-in", async () => {
@@ -691,6 +728,153 @@ describe("Face ID or fingerprint in Settings (spec 27, 3.6)", () => {
     expect(await screen.findByText("Add a password")).toBeVisible();
     expect(screen.queryByText("Face ID or fingerprint")).toBeNull();
     expect(screen.queryByText("Not set up")).toBeNull();
+  });
+});
+
+describe("Face ID offered after another way in (spec 29, 3.2)", () => {
+  const offerTitle = "Use Face ID or fingerprint next time?";
+  const dayMs = 24 * 60 * 60 * 1000;
+
+  /** Step 1, ready for the email code or a password; the API saves a passkey as the Mac's. */
+  async function openSignInForOffer(isNewUser = false, setUp?: (client: FakeClient) => void) {
+    return openSignIn((client) => {
+      const signedIn = () => ok(200, { status: "signedIn", ...tokens(1), user: anna, isNewUser });
+      client.answer("/v1/auth/email/start", () => ok(202, { resendAfterSeconds: 30 }));
+      client.answer("/v1/auth/email/verify", signedIn);
+      client.answer("/v1/auth/password", signedIn);
+      client.answer("/v1/me/passkeys/options", () => ok(200, { options }));
+      client.answer("/v1/me/passkeys", () => ok(201, mac));
+      setUp?.(client);
+    });
+  }
+
+  async function signInWithEmailCode() {
+    await fireEvent.changeText(screen.getByLabelText("Email"), "anna@example.com");
+    await fireEvent.press(screen.getByRole("button", { name: "Send code" }));
+    await fireEvent.changeText(await screen.findByLabelText("6-digit code"), "123456");
+  }
+
+  async function signInWithPassword() {
+    await fireEvent.changeText(screen.getByLabelText("Email"), "anna@example.com");
+    await fireEvent.changeText(screen.getByLabelText("Password"), "puffins fly north in May");
+    await fireEvent.press(screen.getByRole("button", { name: "Sign in" }));
+  }
+
+  /** Signed in and on Find, with what follows a sign-in done: this browser keeps the way. */
+  async function onFind(way: string) {
+    expect(await screen.findByRole("tab", { name: "Find", selected: true })).toBeVisible();
+    await waitFor(() => {
+      expect(mockPreferences.get("last-sign-in")).toBe(way);
+    });
+  }
+
+  it("asks a member after the email code, and Not now goes on and is kept on this browser", async () => {
+    await openSignInForOffer();
+    await signInWithEmailCode();
+    expect(await screen.findByRole("header", { name: offerTitle })).toBeVisible();
+    expect(
+      screen.getByText(
+        "Sign in with a glance or a touch on this device. Your email code always works too.",
+      ),
+    ).toBeVisible();
+    await fireEvent.press(screen.getByRole("button", { name: "Not now" }));
+    expect(await screen.findByRole("tab", { name: "Find", selected: true })).toBeVisible();
+    expect(mockPreferences.get("last-sign-in")).toBe("email");
+    expect(Date.parse(mockPreferences.get("passkey-offer-declined") ?? "")).toBeGreaterThan(
+      Date.now() - 60_000,
+    );
+  });
+
+  it("sets it up with the fresh sign-in, and this browser is known to have one", async () => {
+    const app = await openSignInForOffer();
+    await signInWithEmailCode();
+    await fireEvent.press(await screen.findByRole("button", { name: "Set it up" }));
+    expect(
+      await screen.findByText("Face ID or fingerprint is set up on this device."),
+    ).toBeVisible();
+    expect(mockDevice.create).toHaveBeenCalledWith(options);
+    expect(callsTo(app.client, "/v1/me/passkeys")).toHaveLength(1);
+    expect(mockPreferences.get("passkey-here")).toBe(mac.credentialId);
+    await fireEvent.press(screen.getByRole("button", { name: "Done" }));
+    expect(await screen.findByRole("tab", { name: "Find", selected: true })).toBeVisible();
+    expect(mockPreferences.get("passkey-offer-declined")).toBeUndefined();
+  });
+
+  it("says a device set up already, then goes on after Done", async () => {
+    mockDevice.create.mockReturnValue(Promise.reject(named("InvalidStateError")));
+    await openSignInForOffer();
+    await signInWithEmailCode();
+    await fireEvent.press(await screen.findByRole("button", { name: "Set it up" }));
+    expect(await screen.findByText("This device is set up already.")).toBeVisible();
+    expect(mockPreferences.get("passkey-here")).toBe("*");
+    await fireEvent.press(screen.getByRole("button", { name: "Done" }));
+    expect(await screen.findByRole("tab", { name: "Find", selected: true })).toBeVisible();
+  });
+
+  it("is not asked after a passkey, and this browser is then known to have one", async () => {
+    await openSignIn(signedInAsAnna);
+    await fireEvent.press(await screen.findByRole("button", { name: "Face ID or fingerprint" }));
+    await onFind("passkey");
+    expect(mockPreferences.get("passkey-here")).toBe("credential-one");
+    expect(screen.queryByRole("header", { name: offerTitle })).toBeNull();
+  });
+
+  it("is not asked of a new account, which has Sign in faster next time", async () => {
+    await openSignInForOffer(true);
+    await signInWithEmailCode();
+    await onFind("email");
+    expect(screen.queryByRole("header", { name: offerTitle })).toBeNull();
+  });
+
+  it("is not asked on a browser known to have a passkey", async () => {
+    mockPreferences.set("passkey-here", "credential-of-the-iphone");
+    await openSignInForOffer();
+    await signInWithEmailCode();
+    await onFind("email");
+    expect(screen.queryByRole("header", { name: offerTitle })).toBeNull();
+  });
+
+  it("is not asked within 30 days of Not now, and is asked again after", async () => {
+    mockPreferences.set("passkey-offer-declined", new Date(Date.now() - 29 * dayMs).toISOString());
+    await openSignInForOffer();
+    await signInWithEmailCode();
+    await onFind("email");
+    expect(screen.queryByRole("header", { name: offerTitle })).toBeNull();
+  });
+
+  it("is asked again 30 days after Not now", async () => {
+    mockPreferences.set("passkey-offer-declined", new Date(Date.now() - 30 * dayMs).toISOString());
+    await openSignInForOffer();
+    await signInWithEmailCode();
+    expect(await screen.findByRole("header", { name: offerTitle })).toBeVisible();
+  });
+
+  it("is not asked on a device without its own lock", async () => {
+    mockDevice.available.mockReturnValue(Promise.resolve(false));
+    await openSignInForOffer();
+    await signInWithEmailCode();
+    await onFind("email");
+    expect(screen.queryByRole("header", { name: offerTitle })).toBeNull();
+  });
+
+  it("lets Offer kept through sign-in open first, with no question that time", async () => {
+    mockStored.set("pending-offer", JSON.stringify({ keptAt: new Date().toISOString() }));
+    await openSignInForOffer();
+    await signInWithEmailCode();
+    await waitFor(() => {
+      expect(screen).toHavePathname("/offer");
+    });
+    await waitFor(() => {
+      expect(mockPreferences.get("last-sign-in")).toBe("email");
+    });
+    expect(screen.queryByRole("header", { name: offerTitle })).toBeNull();
+  });
+
+  it("asks after a password too", async () => {
+    const app = await openSignInForOffer();
+    await signInWithPassword();
+    expect(await screen.findByRole("header", { name: offerTitle })).toBeVisible();
+    expect(callsTo(app.client, "/v1/me/passkeys")).toHaveLength(0);
   });
 });
 

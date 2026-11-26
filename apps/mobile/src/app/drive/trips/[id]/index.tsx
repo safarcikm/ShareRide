@@ -2,6 +2,7 @@ import type { CallFailure } from "@shareride/api-client";
 import { myTripRoute, tripBookingsRoute, type Booking } from "@shareride/contracts";
 import { cancelReasonText, capitalised, formatClock, formatDay } from "@shareride/i18n";
 import { router, useLocalSearchParams } from "expo-router";
+import { Share } from "lucide-react-native";
 import { useCallback, useState, type ReactNode } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { errorText } from "@/auth/errors";
@@ -11,6 +12,7 @@ import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
 import { Columns, PageColumn } from "@/components/columns";
+import { IconButton } from "@/components/icon-button";
 import { Notice } from "@/components/notice";
 import { Screen, useWideScreen } from "@/components/screen";
 import { TakesFocus } from "@/components/takes-focus";
@@ -127,8 +129,21 @@ export default function DriverTripScreen() {
   }
 
   const departure = trip.data.departsAt === null ? null : new Date(trip.data.departsAt);
+  // From the planned departure, the trip day takes over (R6.1; spec 8).
+  const open = isChangeable(trip.data, now());
+  // Until then the trip can be shared, from beside its name (spec 28, 3.1).
+  const share = open ? (
+    <IconButton
+      quiet
+      icon={Share}
+      label={t("shareRide.heading")}
+      onPress={() => {
+        router.push({ pathname: "/drive/trips/[id]/share", params: { id } });
+      }}
+    />
+  ) : null;
   const name = (
-    <View style={wide ? styles.grow : null}>
+    <View style={wide || share !== null ? styles.grow : null}>
       {departure === null ? null : (
         <Text style={[typography.small, { color: palette.textMuted }]}>
           {capitalised(
@@ -149,12 +164,20 @@ export default function DriverTripScreen() {
       <View testID="page-head" style={styles.wideHead}>
         <BackButton fallback="/drive/trips" />
         {name}
+        {share}
         {actions === null ? null : <View style={styles.headActions}>{actions}</View>}
       </View>
     ) : (
       <>
         <BackButton fallback="/drive/trips" />
-        {name}
+        {share === null ? (
+          name
+        ) : (
+          <View style={styles.nameRow}>
+            {name}
+            {share}
+          </View>
+        )}
       </>
     );
 
@@ -202,8 +225,6 @@ export default function DriverTripScreen() {
     setOutcome((last) => ({ text: said, count: (last?.count ?? 0) + 1, cancelled }));
     refresh();
   };
-  // From the planned departure, the trip day takes over (R6.1; spec 8).
-  const open = isChangeable(trip.data, now());
   // Safety stays until the last stop's time, the trip day included (spec 9, 3.3).
   const arrived = trip.data.arrivesAt !== null && new Date(trip.data.arrivesAt) <= now();
   const said =
@@ -396,4 +417,5 @@ const styles = StyleSheet.create({
   // `minWidth`: a long route wraps, and does not push the buttons out.
   grow: { flex: 1, minWidth: 0 },
   headActions: { flexDirection: "row", gap: spacing.sm },
+  nameRow: { flexDirection: "row", alignItems: "flex-start", gap: spacing.sm },
 });

@@ -59,6 +59,7 @@ export default function CodeScreen() {
       locale,
       flow.inviteCode,
       pending.pendingSignIn,
+      pending.provider,
     );
     if (result.ok) return;
     inFlight.current = false;

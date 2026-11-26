@@ -45,7 +45,7 @@ migration, no new dependency.
 2. **`sharing/links.ts`:** Facebook's share address for a link, and the
    Page's address. Test: the link is encoded.
 3. **`sharing/share-ride-panel.tsx`:** heading, Share (only with a share
-   window: `canShare()` in `lib/share.ts`), Share on Facebook
+   window: `canShareWindow()` in `lib/share.ts`), Share on Facebook
    (`Linking.openURL`), the text box with the language chips and Copy
    text, Follow PuffinRide on Facebook. Tests with and without a share
    window and a clipboard.

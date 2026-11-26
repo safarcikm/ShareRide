@@ -1,6 +1,6 @@
 import { generateKeyPairSync, randomBytes } from "node:crypto";
 import { expect, test, type CDPSession, type Page } from "@playwright/test";
-import { english, enterCodes, finishSignUp, menuLink } from "./support/account";
+import { english, enterCodes, finishSignUp, menuLink, signIn, signUp } from "./support/account";
 import { emailTo } from "./support/email";
 import { newPhoneNumber } from "./support/sms";
 
@@ -15,6 +15,7 @@ import { newPhoneNumber } from "./support/sms";
 test.use({ locale: "en-GB" });
 
 const visible = { visible: true } as const;
+const offerTitle = "Use Face ID or fingerprint next time?";
 const notSetUp =
   "This device's sign-in isn't set up for your PuffinRide account. Use your email, then set it up again in Settings.";
 
@@ -132,6 +133,33 @@ test("a member signs in from the email field's suggestions, with no tap (spec 29
   await expect(page.getByRole("heading", { name: english.findTitle })).toBeVisible();
   await menuLink(page, english.profileTab).click();
   await expect(page.getByText("Hekla", { exact: true }).filter(visible)).toBeVisible();
+});
+
+test("a member who signs in with the email code is offered Face ID, and uses it next time (spec 29, 3.2)", async ({
+  page,
+}) => {
+  await addDeviceLock(page);
+  await withoutSuggestions(page);
+  // An account from before, which said "Not now" to Face ID at sign-up.
+  const { email } = await signUp(page, english, "Hekla");
+  await signOut(page);
+
+  // Back with the email code: asked once, and set up with the fresh sign-in.
+  await signIn(page, english, email);
+  await expect(page.getByRole("heading", { name: offerTitle })).toBeVisible();
+  await page.getByRole("button", { name: "Set it up", exact: true }).click();
+  await expect(
+    page.getByText("Face ID or fingerprint is set up on this device.").filter(visible),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Done" }).click();
+  await expect(page.getByRole("heading", { name: english.findTitle })).toBeVisible();
+
+  // Next time the device's lock signs in, and nothing is offered.
+  await signOut(page);
+  await openSignIn(page);
+  await page.getByRole("button", { name: "Face ID or fingerprint", exact: true }).click();
+  await expect(page.getByRole("heading", { name: english.findTitle })).toBeVisible();
+  await expect(page.getByRole("heading", { name: offerTitle })).toHaveCount(0);
 });
 
 test("a passkey the site does not have says so, and the browser forgets it (spec 29, 3.4)", async ({

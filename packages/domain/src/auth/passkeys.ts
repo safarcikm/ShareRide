@@ -16,6 +16,56 @@ export const memberPasskeyRules = {
   signInOptionsLimits: [{ limit: 60, windowSeconds: 10 * 60 }] satisfies readonly RateLimitRule[],
 } as const;
 
+/** The ways in (spec 29, 3.2 and 3.5): Google, Apple, a passkey, a password or the email code. */
+export const signInWays = ["google", "apple", "passkey", "password", "email"] as const;
+export type SignInWay = (typeof signInWays)[number];
+
+/** "Use Face ID or fingerprint next time?" after another way in (spec 29, 3.2). */
+export const passkeyOfferRules = {
+  /** After "Not now", this browser is asked again this many days later. */
+  askAgainAfterDays: 30,
+} as const;
+
+/** What decides whether a sign-in is followed by the offer (R29.2). */
+export interface PasskeyOfferInput {
+  readonly isNewUser: boolean;
+  readonly way: SignInWay;
+  /** The browser reports a built-in authenticator (spec 27, 3.1, item 1). */
+  readonly deviceHasLock: boolean;
+  /** `passkeySignIn` in the server's config. */
+  readonly serverHasPasskeys: boolean;
+  /** This browser is known to have a PuffinRide passkey (spec 29, 3.2, item 5). */
+  readonly passkeyHere: boolean;
+  /** When "Not now" was last pressed on this browser. */
+  readonly declinedAt: Date | null;
+  /** A booking, Offer, a report form or a link waits from before signing in. */
+  readonly keptChoice: boolean;
+  readonly now: Date;
+}
+
+/**
+ * Whether to ask "Use Face ID or fingerprint next time?" (R29.2): an
+ * account from before this sign-in, in by any way but a passkey, on a
+ * browser that can keep one and is not known to have one, not declined
+ * there in 30 days, and with nothing kept to open first.
+ */
+export function passkeyOfferDue(input: PasskeyOfferInput): boolean {
+  const { declinedAt, now } = input;
+  const askAgainMs = passkeyOfferRules.askAgainAfterDays * 24 * 60 * 60 * 1000;
+  // A date still to come, as from a clock that was wrong, is no answer.
+  const since = declinedAt === null ? null : now.getTime() - declinedAt.getTime();
+  const declinedLately = since !== null && since >= 0 && since < askAgainMs;
+  return (
+    !input.isNewUser &&
+    input.way !== "passkey" &&
+    input.deviceHasLock &&
+    input.serverHasPasskeys &&
+    !input.passkeyHere &&
+    !declinedLately &&
+    !input.keptChoice
+  );
+}
+
 const browsers: readonly (readonly [RegExp, string])[] = [
   [/\bEdg(A|iOS)?\//, "Edge"],
   [/\bSamsungBrowser\//, "Samsung Internet"],

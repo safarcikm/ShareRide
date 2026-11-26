@@ -205,7 +205,9 @@ Drivers do not edit segment prices one by one (decision 2,
 2. "Publish" runs every check in section 4 again on the server and publishes
    the trip, or lists what must be fixed.
 3. After publishing, the trip page opens with "Share" (a link to the trip on
-   the web app) and "Post the return trip" (C6, spec 6).
+   the web app) and "Post the return trip" (C6, spec 6). "Share" is now
+   Share this ride, with Facebook and a post's text to copy
+   ([spec 28](2026-11-25-share-a-ride.md), 3.2).
 4. Until published, the trip is a draft. Drafts are saved as the driver goes,
    listed under "My trips", and deleted 30 days after their last change, or
    when their departure has passed.
@@ -264,7 +266,8 @@ Phone first. The same screens work in the web app in a centred column.
    for the seats chosen (step 4)
 8. Note
 9. Review and publish
-10. Published: share and post the return trip
+10. Published: share ([spec 28](2026-11-25-share-a-ride.md)'s Share this
+    ride) and post the return trip
 
 ## 6. Data and API
 

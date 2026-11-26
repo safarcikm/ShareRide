@@ -145,7 +145,7 @@ spec 27 (a line pointing to spec 29 under 3.1, 3.3 and 3.6);
 `passkeyOfferDue(input: { isNewUser: boolean; way: SignInWay; deviceHasLock: boolean; serverHasPasskeys: boolean; passkeyHere: boolean; declinedAt: Date | null; keptChoice: boolean; now: Date }): boolean`,
 with `SignInWay = "google" | "apple" | "passkey" | "password" | "email"`.
 
-- [ ] Tests: true for an email sign-in on a capable browser; false for
+- [x] Tests: true for an email sign-in on a capable browser; false for
   each condition of R29.2 alone; declined 29 days ago false, 30 days ago
   true. Implement; commit.
 
@@ -158,9 +158,9 @@ with `SignInWay = "google" | "apple" | "passkey" | "password" | "email"`.
 set before the state turns signed in; `finishProviderSignIn(ticket, verifier, provider)`
 and `verify(..., pendingSignIn, startedWith)` take the way.
 
-- [ ] Tests per sign-in method; implement; update the callers; commit.
+- [x] Tests per sign-in method; implement; update the callers; commit.
 
-### Task 7: The offer, and the quiet passkey after a password
+### Task 7: The offer
 
 **Files:** `apps/mobile/src/sign-in/this-browser.ts` (new: `lastWay`,
 `rememberWay`, `passkeyHere`, `markPasskeyHere(credentialId)`,
@@ -169,27 +169,52 @@ preference keys `last-sign-in`, `passkey-here`, `passkey-offer-declined`),
 `apps/mobile/src/sign-in/after-sign-in.ts` (new: `useAfterSignIn`, used by
 `(tabs)/_layout.tsx` in place of `useKeptChoice`),
 `apps/mobile/src/app/onboarding/face-id.tsx` (new screen, in
-`member-screens.ts`), `DevicePasskeys.createQuietly(options)` and
-`quietCreateAvailable()`, texts, `docs/compliance/privacy-gdpr.md`
+`member-screens.ts`), texts, `docs/compliance/privacy-gdpr.md`
 (device-storage row), `apps/mobile/src/__tests__/passkey.test.tsx`.
 
-- [ ] Failing tests: offered after an email code; not after a passkey; not
-  for a new account (which gets "Sign in faster next time"); not within 30
-  days of "Not now"; not with a kept booking (the booking opens); "Set it
-  up" saves and marks this browser; after a password, a quiet passkey saved
-  means no offer, a refused one means the offer; removing the marked
-  credential in Settings forgets the mark.
-- [ ] Implement; `pnpm --filter @shareride/mobile test`; commit.
+- [x] Failing tests: offered after an email code and after a password; not
+  after a passkey; not for a new account (which gets "Sign in faster next
+  time"); not within 30 days of "Not now"; not with a kept booking (the
+  booking opens); "Set it up" saves and marks this browser; removing the
+  marked credential in Settings forgets the mark.
+- [x] Implement; `pnpm --filter @shareride/mobile test`; commit.
 
 ### Task 8: Journey
 
-- [ ] `passkey.spec.ts`: an existing member signs in with the email code,
+- [x] `passkey.spec.ts`: an existing member signs in with the email code,
   is offered Face ID, sets it up, signs out and back in with the button.
   Run; open PR 2.
 
-## PR 3: The way you used last time first, and a calmer screen
+## PR 3: A passkey the browser saves after a password
 
-### Task 9: Last used first
+Martin chose on 2026-11-26 to let the browser save one by itself, with a
+new ADR (0050): the browser's quiet save checks neither presence nor Face
+ID (WebAuthn conditional create), which ADR 0048 requires at setup.
+
+### Task 9: The quiet setup on the API
+
+**Files:** `apps/api/src/modules/auth/member-passkeys.ts` (+ integration
+test), `packages/contracts`, `docs/decisions/0050-*.md`.
+
+- [ ] Failing tests: quiet options only for a session opened with a
+  password in the last 10 minutes; a quiet answer without presence or user
+  verification is saved with its own challenge only; the usual setup still
+  needs both; 10 devices and the usual email as in spec 27.
+- [ ] Implement; ADR 0050 (supersedes that part of ADR 0048); commit.
+
+### Task 10: The quiet save in the app
+
+**Files:** `DevicePasskeys.createQuietly(options)` and
+`quietCreateAvailable()`, `apps/mobile/src/sign-in/after-sign-in.ts`,
+`apps/mobile/src/__tests__/passkey.test.tsx`.
+
+- [ ] Failing tests: after a password, a quiet passkey saved means no
+  offer, a refused one means the offer; never after another way in.
+- [ ] Implement; docs (spec 29, 3.3 and its intro; security); open PR 3.
+
+## PR 4: The way you used last time first, and a calmer screen
+
+### Task 11: Last used first
 
 **Files:** `apps/mobile/src/sign-in/last-used.ts` (+ test:
 `firstWay(lastWay, offered: { providers: SignInProvider[]; passkey: boolean; email: boolean }): SignInWay | null`),
@@ -199,7 +224,7 @@ preference keys `last-sign-in`, `passkey-here`, `passkey-offer-declined`),
   one not offered, or none kept, keeps today's order with no mark; email
   and password put the form first. Implement; commit.
 
-### Task 10: A calmer screen
+### Task 12: A calmer screen
 
 **Files:** `apps/mobile/src/sign-in/sign-up-progress.tsx` and step 1,
 `apps/mobile/src/analytics/consent-bar.tsx` (waits on `/sign-in/*` and
@@ -209,4 +234,4 @@ step 1), affected app tests and journeys.
 - [ ] Failing tests: no "Step 1 of 3" on step 1, "Step 2 of 3" on the
   phone step; the cookie question waits on sign-in screens and shows after.
 - [ ] Implement; `pnpm check`; the sign-in, welcome and analytics journeys;
-  spec 16 and spec 27 pointers; open PR 3; release; Martin's manual check.
+  spec 16 and spec 27 pointers; open PR 4; release; Martin's manual check.

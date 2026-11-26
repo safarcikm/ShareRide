@@ -4,6 +4,7 @@ import {
   soonestTripsRoute,
   type TripSearchResult,
 } from "@shareride/contracts";
+import { maxContentWidth } from "@shareride/ui";
 import { english, signUp } from "./support/account";
 import { expectNoSidewaysScroll, laptop, widths } from "./support/laptop";
 import { addPhotoBeforePublishing } from "./support/photo";
@@ -1128,6 +1129,21 @@ test.describe("Offer a ride and the driver's trip", () => {
       await expectNoSidewaysScroll(driver);
     }
     await driver.setViewportSize(laptop(1280));
+
+    // Share this ride (spec 28, 3.1 and 3.2), from beside the trip's name:
+    // the trip and the panel in the screen's column, the post's text in it.
+    await head.getByRole("button", { name: "Share this ride" }).click();
+    await expect(driver.getByRole("heading", { name: "Share this ride" })).toBeVisible();
+    const post = driver
+      .getByText(/^Offering a ride: Mjódd bus terminal → N1 Selfoss\n/u)
+      .filter(shown);
+    await expect(post).toBeVisible();
+    await expect(driver.getByRole("button", { name: "Share on Facebook" })).toBeVisible();
+    expect((await box(post)).width).toBeLessThanOrEqual(maxContentWidth);
+    await expectNoSidewaysScroll(driver);
+    await driver.goBack();
+    await expect(head.getByRole("button", { name: "Edit trip" })).toBeVisible();
+
     await main.getByRole("button", { name: "Accept", exact: true }).click();
     await expect(main.getByLabel("Dóra, 1 seat, Waiting for payment")).toBeVisible();
     await expect(side.getByRole("heading", { name: "Seats on each stretch" })).toBeVisible();

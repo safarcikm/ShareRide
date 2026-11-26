@@ -270,3 +270,4 @@ apps' builds); Google One Tap; magic links; staying signed in longer
 | 6   | Offer Face ID when a booking was waiting?    | No: the booking opens, and the offer waits for a later sign-in (my call)                                                               |
 | 7   | Focus the email field on step 1?             | On a laptop only (my call: a phone's keyboard would cover the buttons)                                                                 |
 | 8   | Keep the last way after signing out?         | Yes (my call: it helps the next sign-in on that browser, and says nothing about who)                                                   |
+| 9   | Does "Not now" at sign-up count for 3.2?     | No: a new member's next sign-in asks once (my call: it is a different question, among a password and Face ID); leaving the offer without an answer asks again at the next sign-in, at most every 60 days |

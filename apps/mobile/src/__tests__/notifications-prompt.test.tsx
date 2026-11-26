@@ -63,7 +63,7 @@ async function openPosted(me = completeMe) {
 }
 
 /** Lets the prompt finish asking the phone and the device's storage. */
-async function settled(button = "Share the trip") {
+async function settled(button = "See my trips") {
   await waitFor(() => {
     expect(screen.getByRole("button", { name: button })).toBeVisible();
   });

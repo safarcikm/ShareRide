@@ -6,13 +6,16 @@ import { StyleSheet, Text, View } from "react-native";
 import { useSession } from "@/auth/session";
 import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
-import { Card } from "@/components/card";
+import { Card, cardCornerRoom } from "@/components/card";
 import { Screen } from "@/components/screen";
 import { Tag } from "@/components/tag";
 import { PuffinByPin } from "@/components/puffin-scenes";
 import { Body, Heading, Title } from "@/components/text";
+import { isChangeable } from "@/driver-trip/changes";
 import { useLanguage } from "@/i18n/language";
+import { now } from "@/lib/clock";
 import { useLoadedOnFocus } from "@/lib/use-loaded";
+import { ShareTripCorner } from "@/sharing/share-corner";
 import { sizes, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 import { resumeStep, stepHref } from "@/trips/steps";
@@ -83,7 +86,8 @@ export default function MyTripsScreen() {
 /**
  * A trip's route and when it leaves. A draft opens to carry on with it; a
  * published trip opens the driver's trip page, with the requests waiting
- * on it counted here (spec 5, 3.3).
+ * on it counted here (spec 5, 3.3). Until it leaves, a published trip has
+ * the share icon in its corner (spec 28, 3.1).
  */
 function TripCard({ trip, onPress }: { readonly trip: MyTrip; readonly onPress?: () => void }) {
   const { locale, t } = useLanguage();
@@ -100,12 +104,16 @@ function TripCard({ trip, onPress }: { readonly trip: MyTrip; readonly onPress?:
   const seats = t("trip.seats.count", { count: trip.seats });
   const requests =
     trip.openRequests === 0 ? null : t("trip.mine.requests", { count: trip.openRequests });
+  const shareable = isChangeable(trip, now());
   return (
     <Card
       onPress={onPress}
       accessibilityLabel={[route, when, seats, requests].filter((part) => part !== null).join(", ")}
+      {...(shareable ? { corner: <ShareTripCorner tripId={trip.id} route={route} /> } : {})}
     >
-      <Text style={[typography.heading, { color: palette.text }]}>{route}</Text>
+      <Text style={[typography.heading, shareable && styles.besideCorner, { color: palette.text }]}>
+        {route}
+      </Text>
       <Text style={[typography.small, { color: palette.textMuted }]}>{when}</Text>
       <Text style={[typography.small, { color: palette.textMuted }]}>{seats}</Text>
       {requests === null ? null : (
@@ -119,4 +127,5 @@ function TripCard({ trip, onPress }: { readonly trip: MyTrip; readonly onPress?:
 
 const styles = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  besideCorner: { marginRight: cardCornerRoom },
 });
