@@ -1,7 +1,16 @@
 import type { MyTrip } from "@shareride/contracts";
 import { act, fireEvent, screen } from "expo-router/testing-library";
 import { AccessibilityInfo, Dimensions, Linking } from "react-native";
-import { canCopy, canShareWindow, copyText, shareLink } from "@/lib/share";
+import {
+  canCopy,
+  canShareWindow,
+  copyText,
+  fetchPicture,
+  pictureSharing,
+  savePicture,
+  shareLink,
+  sharePicture,
+} from "@/lib/share";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
 import { driverApi, northMyTrip } from "@/testing/bookings";
@@ -28,12 +37,23 @@ jest.mock("@/lib/share", () => ({
   canShareWindow: jest.fn(() => true),
   canCopy: jest.fn(() => true),
   copyText: jest.fn(() => Promise.resolve("copied")),
+  // The apps have no story section yet (spec 28, 3.5): each story test says.
+  pictureSharing: jest.fn(() => "none"),
+  fetchPicture: jest.fn(() => Promise.resolve({ name: "puffinride.png" })),
+  sharePicture: jest.fn(() => Promise.resolve("shared")),
+  savePicture: jest.fn(),
+  pictureAddress: jest.fn(() => "blob:story"),
+  forgetPictureAddress: jest.fn(),
 }));
 
 const mockedShare = shareLink as jest.Mock;
 const mockedCopy = copyText as jest.Mock;
 const hasShareWindow = canShareWindow as jest.Mock;
 const hasClipboard = canCopy as jest.Mock;
+const sharingPictures = pictureSharing as jest.Mock;
+const mockedFetchPicture = fetchPicture as jest.Mock;
+const mockedSharePicture = sharePicture as jest.Mock;
+const mockedSave = savePicture as jest.Mock;
 let openURL: jest.SpyInstance;
 
 beforeEach(() => {
@@ -41,6 +61,10 @@ beforeEach(() => {
   mockedCopy.mockClear();
   hasShareWindow.mockReturnValue(true);
   hasClipboard.mockReturnValue(true);
+  sharingPictures.mockReturnValue("none");
+  mockedFetchPicture.mockClear();
+  mockedSharePicture.mockClear().mockImplementation(() => Promise.resolve("shared"));
+  mockedSave.mockClear();
   openURL = jest.spyOn(Linking, "openURL").mockResolvedValue(undefined);
 });
 
@@ -373,5 +397,128 @@ describe("Share this ride, a screen of its own (spec 28, 3.1 and 3.2)", () => {
     expect(screen.queryByLabelText("Text for your post")).toBeNull();
     await fireEvent.press(screen.getByRole("link", { name: "See the trip" }));
     expect(screen).toHavePathname(`/drive/trips/${tripId}`);
+  });
+});
+
+describe("Story on Instagram, on the web (spec 28, 3.2 item 5 and 3.5)", () => {
+  const published = `/drive/trips/${tripId}/published`;
+  const story = `http://localhost:3000/v1/trips/${tripId}/story.png?fromStop=0&toStop=3&lang=en&download=1`;
+  const storyFile = { name: "puffinride.png" };
+
+  it("shares or saves the picture, fetched once as the panel shows, from a phone's browser", async () => {
+    sharingPictures.mockReturnValue("share");
+    await openDriver(published);
+    expect(await screen.findByRole("header", { name: "Story on Instagram" })).toBeVisible();
+    expect(
+      screen.getByText(
+        "A picture of your ride for your story. Instagram doesn't take links in posts, so add the link with a link sticker.",
+      ),
+    ).toBeVisible();
+    expect(mockedFetchPicture).toHaveBeenCalledTimes(1);
+    expect(mockedFetchPicture).toHaveBeenCalledWith(story, "puffinride.png", expect.anything());
+    await fireEvent.press(await screen.findByRole("button", { name: "Share picture" }));
+    expect(mockedSharePicture).toHaveBeenCalledWith(storyFile);
+    // A laptop's browser may share a file too, so the picture can always be saved.
+    await fireEvent.press(screen.getByRole("button", { name: "Download picture" }));
+    expect(mockedSave).toHaveBeenCalledWith(storyFile);
+  });
+
+  it("draws the picture in the post's language", async () => {
+    sharingPictures.mockReturnValue("share");
+    await openDriver(published);
+    await fireEvent.press(await screen.findByRole("radio", { name: "Íslenska" }));
+    expect(mockedFetchPicture).toHaveBeenLastCalledWith(
+      story.replace("lang=en", "lang=is"),
+      "puffinride.png",
+      expect.anything(),
+    );
+  });
+
+  it("saves the picture where the browser cannot share it", async () => {
+    sharingPictures.mockReturnValue("download");
+    await openDriver(published);
+    await fireEvent.press(await screen.findByRole("button", { name: "Download picture" }));
+    expect(mockedSave).toHaveBeenCalledWith(storyFile);
+    expect(screen.queryByRole("button", { name: "Share picture" })).toBeNull();
+  });
+
+  it("says when the picture could not be made, and tries again", async () => {
+    sharingPictures.mockReturnValue("share");
+    mockedFetchPicture.mockResolvedValueOnce(null);
+    await openDriver(published);
+    expect(await screen.findByText("The picture couldn't be made just now.")).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Share picture" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Download picture" })).toBeNull();
+    await fireEvent.press(screen.getByRole("button", { name: "Try again" }));
+    expect(await screen.findByRole("button", { name: "Share picture" })).toBeVisible();
+    expect(mockedFetchPicture).toHaveBeenCalledTimes(2);
+    expect(screen.queryByText("The picture couldn't be made just now.")).toBeNull();
+  });
+
+  it("says when the picture could not be shared, and keeps Download picture", async () => {
+    sharingPictures.mockReturnValue("share");
+    mockedSharePicture.mockImplementation(() => Promise.resolve("failed"));
+    await openDriver(published);
+    await fireEvent.press(await screen.findByRole("button", { name: "Share picture" }));
+    expect(
+      await screen.findByText("The picture couldn't be shared here. Download it instead."),
+    ).toBeVisible();
+    expect(screen.getByRole("button", { name: "Download picture" })).toBeVisible();
+  });
+
+  it("opens one share window at a time, and keeps Share picture after it", async () => {
+    sharingPictures.mockReturnValue("share");
+    let close = () => {};
+    mockedSharePicture.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          close = () => {
+            resolve("shared");
+          };
+        }),
+    );
+    // A second share while the window is open would be refused by the browser.
+    mockedSharePicture.mockImplementation(() => Promise.resolve("failed"));
+    await openDriver(published);
+    const share = await screen.findByRole("button", { name: "Share picture" });
+    await fireEvent.press(share);
+    await fireEvent.press(share);
+    expect(mockedSharePicture).toHaveBeenCalledTimes(1);
+    await act(() => {
+      close();
+    });
+    expect(screen.getByRole("button", { name: "Share picture" })).toBeVisible();
+    expect(
+      screen.queryByText("The picture couldn't be shared here. Download it instead."),
+    ).toBeNull();
+  });
+
+  it("copies the link for the sticker", async () => {
+    sharingPictures.mockReturnValue("download");
+    await openDriver(published);
+    await fireEvent.press(await screen.findByRole("button", { name: "Copy link" }));
+    expect(mockedCopy).toHaveBeenCalledWith(tripLink);
+    expect(await screen.findByText("Link copied. Paste it wherever you like.")).toBeVisible();
+  });
+
+  it("reads out each link copied", async () => {
+    sharingPictures.mockReturnValue("download");
+    const announce = jest.spyOn(AccessibilityInfo, "announceForAccessibility");
+    await openDriver(published);
+    const copy = await screen.findByRole("button", { name: "Copy link" });
+    announce.mockClear();
+    await fireEvent.press(copy);
+    await fireEvent.press(copy);
+    expect(
+      announce.mock.calls.filter(([said]) => said === "Link copied. Paste it wherever you like."),
+    ).toHaveLength(2);
+    announce.mockRestore();
+  });
+
+  it("is not in the apps yet", async () => {
+    await openDriver(published);
+    expect(await screen.findByRole("header", { name: "Share this ride" })).toBeVisible();
+    expect(screen.queryByRole("header", { name: "Story on Instagram" })).toBeNull();
+    expect(mockedFetchPicture).not.toHaveBeenCalled();
   });
 });

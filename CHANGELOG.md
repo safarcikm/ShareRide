@@ -1508,6 +1508,15 @@ releases follow [Semantic Versioning](https://semver.org/).
   day, the stops, the link; never a price, a fee or a name) in Icelandic or
   English to copy, with a link to follow PuffinRide's Facebook Page. It
   replaces "Share the trip" on the published screen.
+- Story on Instagram (spec 28, 3.2 item 5 and 3.5), on the website's Share
+  this ride: a picture of the ride for a story, 1080 × 1920
+  (`GET /v1/trips/{id}/story.png`, the route large, the day, the stops, the
+  Iceland scene, nothing in Instagram's own top and bottom), with Share
+  picture where the browser can share a file, otherwise Download picture
+  (`&download=1`, named after the route), and Copy link for the link
+  sticker. Any site may show a trip's pictures; every other answer keeps
+  the same-origin resource policy. `pnpm --filter @shareride/api
+  story-pictures` draws sample stories.
 
 - Carpool in Iceland (spec 23, 3.9): a public page at `/carpool-iceland`,
   "Samferða um Ísland" in Icelandic, that says in words what PuffinRide is

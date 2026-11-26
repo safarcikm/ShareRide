@@ -18,6 +18,17 @@ async function choose(page: Page, end: "From" | "To", typed: string, name: RegEx
   await page.getByRole("button", { name }).click();
 }
 
+/** Makes the window as tall as the open screen, which scrolls inside the page, to draw all of it. */
+async function showWhole(page: Page, width: number) {
+  const scroll = page.getByTestId("screen-scroll").filter({ visible: true });
+  // The screen's top too: on a laptop the page's header is above it.
+  const height = await scroll.evaluate(
+    (element) => element.getBoundingClientRect().top + element.scrollHeight,
+  );
+  await page.setViewportSize({ width, height: Math.max(Math.ceil(height), 720) });
+  await page.waitForTimeout(500);
+}
+
 test.describe("pictures", () => {
   test.skip(root === undefined, "PICTURES_DIR is not set");
   test.use({
@@ -67,12 +78,21 @@ test.describe("pictures", () => {
     const tripId = await postTripToSelfoss(page, "09:00");
 
     // After publishing, on a phone, in English. The screen scrolls inside
-    // the page, so a tall window shows all of it.
+    // the page, so a window as tall as the screen shows all of it.
     if (!wide) {
       await expect(page.getByRole("heading", { name: "Share this ride" })).toBeVisible();
-      await page.setViewportSize({ width: 412, height: 1110 });
-      await page.waitForTimeout(500);
+      await expect(page.getByRole("heading", { name: "Story on Instagram" })).toBeVisible();
+      await expect(page.locator('[style*="blob:"]')).toBeVisible();
+      await showWhole(page, 412);
       await page.screenshot({ path: join(folder, "published-phone.png") });
+      // The story section: from its heading to Copy link.
+      const top = await page.getByRole("heading", { name: "Story on Instagram" }).boundingBox();
+      const end = await page.getByRole("button", { name: "Copy link" }).boundingBox();
+      if (top === null || end === null) throw new Error("The story section is not there");
+      await page.screenshot({
+        path: join(folder, "story-section-phone.png"),
+        clip: { x: 0, y: top.y - 16, width: 412, height: end.y + end.height - top.y + 32 },
+      });
       // The icon beside the trip's name on the driver's trip page, and in
       // the corner of the trip in My trips.
       await page.setViewportSize({ width: 412, height: 839 });
@@ -109,8 +129,9 @@ test.describe("pictures", () => {
     await page.getByRole("button", { name: "Change the language to Icelandic" }).click();
     await expect(page.getByRole("heading", { name: "Deildu þessari ferð" })).toBeVisible();
     await expect(page.getByText(/^Býð far: /u)).toBeVisible();
-    await page.setViewportSize({ width: 1280, height: 980 });
-    await page.waitForTimeout(500);
+    await expect(page.getByRole("heading", { name: "Story á Instagram" })).toBeVisible();
+    await expect(page.locator('[style*="blob:"]')).toBeVisible();
+    await showWhole(page, 1280);
     await page.screenshot({ path: join(folder, "share-screen-laptop-is.png") });
   });
 });

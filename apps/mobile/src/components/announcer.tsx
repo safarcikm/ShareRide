@@ -17,9 +17,11 @@ export function Announcer({
     }
   }, [message]);
   if (Platform.OS !== "web") return null;
+  // A new element for each message: the same words again change nothing in
+  // the page otherwise, and are not read out.
   return (
     <View accessibilityLiveRegion="polite" style={styles.unseen}>
-      <Text>{message?.text ?? ""}</Text>
+      <Text key={message?.count ?? 0}>{message?.text ?? ""}</Text>
     </View>
   );
 }

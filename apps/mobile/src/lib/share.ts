@@ -66,6 +66,101 @@ export async function copyText(text: string): Promise<"copied" | "failed"> {
   }
 }
 
+/**
+ * How a picture, such as a ride's story (spec 28, 3.5), can be shared
+ * here: as a file in the share window and saved with a download ("share",
+ * browsers that can share a file, mostly on phones), saved with a download
+ * only ("download", other browsers), or not yet ("none", the apps, which
+ * need a package of their own to share a file).
+ */
+export function pictureSharing(): "share" | "download" | "none" {
+  if (Platform.OS !== "web") return "none";
+  const browser = globalThis.navigator as Partial<Navigator> | undefined;
+  try {
+    const probe = new File([], "picture.png", { type: "image/png" });
+    if (typeof browser?.canShare === "function" && browser.canShare({ files: [probe] })) {
+      return "share";
+    }
+  } catch {
+    // A browser without File, or one that throws on canShare, downloads.
+  }
+  return "download";
+}
+
+/** How long a picture may take to come, in milliseconds, before it is given up. */
+export const pictureWait = 20_000;
+
+/**
+ * Fetches a picture ahead of sharing or saving it: a browser opens the
+ * share window only straight after a tap, with no time to fetch then. Its
+ * file is named as the API names it (`Content-Disposition`), else `name`.
+ * Null when it could not be fetched in time, or `signal` said it is no
+ * longer wanted.
+ */
+export async function fetchPicture(
+  url: string,
+  name: string,
+  signal?: AbortSignal,
+): Promise<File | null> {
+  const controller = new AbortController();
+  const stop = () => {
+    controller.abort();
+  };
+  signal?.addEventListener("abort", stop);
+  const timer = setTimeout(stop, pictureWait);
+  try {
+    const response = await fetch(url, { signal: controller.signal });
+    if (!response.ok) return null;
+    const named = /filename="([^"]+)"/.exec(response.headers.get("content-disposition") ?? "");
+    return new File([await response.blob()], named?.[1] ?? name, { type: "image/png" });
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+    signal?.removeEventListener("abort", stop);
+  }
+}
+
+/** An address in this page for a picture fetched before, for an image to show it. */
+export function pictureAddress(file: File): string {
+  return URL.createObjectURL(file);
+}
+
+/** Lets the page forget a picture's address once nothing shows it. */
+export function forgetPictureAddress(address: string): void {
+  URL.revokeObjectURL(address);
+}
+
+/**
+ * Saves a picture fetched before as a download, named after its file, on
+ * the web. The page stays: nothing is opened that could fail.
+ */
+export function savePicture(file: File): void {
+  const address = pictureAddress(file);
+  const link = document.createElement("a");
+  link.href = address;
+  link.download = file.name;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  // Some browsers start the download only after the click has returned.
+  setTimeout(() => {
+    forgetPictureAddress(address);
+  }, 60_000);
+}
+
+/** Opens the browser's share window with a picture fetched before. */
+export async function sharePicture(file: File): Promise<ShareOutcome> {
+  const browser = globalThis.navigator as Partial<Navigator> | undefined;
+  if (typeof browser?.share !== "function") return "failed";
+  try {
+    await browser.share({ files: [file] });
+    return "shared";
+  } catch (error) {
+    return isAbort(error) ? "dismissed" : "failed";
+  }
+}
+
 /** A text, with a web address or without. */
 async function share(text: string, url: string | null, title = text): Promise<ShareOutcome> {
   if (Platform.OS !== "web") {

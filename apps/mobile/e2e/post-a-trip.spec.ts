@@ -68,6 +68,7 @@ interface Journey {
   readonly copyText: string;
   readonly textCopied: string;
   readonly post: RegExp;
+  readonly downloadPicture: string;
   readonly addEmailPrompt: string;
   readonly seeTrips: string;
   readonly publishedTrips: string;
@@ -119,6 +120,7 @@ const inEnglish: Journey = {
   published: "Your trip is published",
   shareRide: "Share this ride",
   copyText: "Copy text",
+  downloadPicture: "Download picture",
   textCopied: "Text copied. Paste it into your post.",
   post: /^Offering a ride: .+\n.+\n(Stops on the way: .+\n)?(Book|Ask for) a seat on PuffinRide: http:\/\/localhost:\d+\/trips\/[0-9a-f-]+\?from=0&to=\d+$/u,
   addEmailPrompt: "Add an email so we can reach you if your trip changes.",
@@ -177,6 +179,7 @@ const inIcelandic: Journey = {
   published: "Ferðin þín er birt",
   shareRide: "Deildu þessari ferð",
   copyText: "Afrita texta",
+  downloadPicture: "Sækja mynd",
   textCopied: "Textinn var afritaður. Límdu hann í færsluna.",
   post: /^Býð far: .+\n.+\n(Mótsstaðir á leiðinni: .+\n)?(Bókaðu|Óskaðu eftir) sæti á PuffinRide: http:\/\/localhost:\d+\/trips\/[0-9a-f-]+\?from=0&to=\d+$/u,
   addEmailPrompt: "Bættu við netfangi svo við getum látið þig vita ef ferðin breytist.",
@@ -270,6 +273,11 @@ async function postTrip(page: Page, journey: Journey) {
   await page.getByRole("button", { name: journey.copyText }).click();
   await expect(page.getByTestId("notice").filter({ hasText: journey.textCopied })).toBeVisible();
   expect(await page.evaluate(() => navigator.clipboard.readText())).toMatch(journey.post);
+  // The story picture (3.5), saved from the page under its route's name.
+  const saved = page.waitForEvent("download");
+  await page.getByRole("button", { name: journey.downloadPicture }).click();
+  expect((await saved).suggestedFilename()).toMatch(/^puffinride-[a-z0-9-]+\.png$/);
+  await expect(page.getByRole("heading", { name: journey.published })).toBeVisible();
   // No push on the web, but the account's email reaches them: no prompt
   // for one (spec 7, 3.6.2; spec 26).
   await expect(page.getByText(journey.addEmailPrompt)).toHaveCount(0);

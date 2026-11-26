@@ -146,9 +146,13 @@ From the top:
 5. **Story on Instagram** (web only for now, 3.5): a small picture of the
    story (3.5), "A picture of your ride for your story. Instagram doesn't
    take links in posts, so add the link with a link sticker.", then
-   **Share picture** where the phone can share a file (it opens the share
-   window with the picture, where Instagram is one of the apps), otherwise
-   **Download picture**; and **Copy link** for the sticker.
+   **Share picture** where the browser can share a file (it opens the share
+   window with the picture, where Instagram is one of the apps),
+   **Download picture** in every browser (a laptop's browser may share a
+   file too, and the picture is then saved to post from a phone); and
+   **Copy link** for the sticker. When the picture cannot be made, it says
+   "The picture couldn't be made just now." with Try again; when it cannot
+   be shared, "The picture couldn't be shared here. Download it instead."
 6. **Follow PuffinRide on Facebook**, a link to PuffinRide's Facebook Page
    (3.6), opening in a new tab.
 
@@ -204,9 +208,10 @@ what it shows (R23.8):
 
 - PuffinRide's icon and name at the top;
 - the route in large letters, one end under the other with an arrow down
-  between them, shrinking to fit, then shortened with "…";
-- the day and time, and the stops on the way (as many as fit, then
-  "and 2 more");
+  between them, shrinking to fit, then each end on up to two lines, then
+  shortened with "…";
+- the day and time, and the stops on the way on up to three lines (as
+  many as fit, then "and 2 more");
 - the front page's Iceland scene below: the pins, and the puffin driver in
   the yellow car with "Free seats" while the trip can be booked.
 
@@ -214,13 +219,19 @@ Words keep out of the top 270 and the bottom 340 pixels, where Instagram
 puts its own buttons. Its address is
 `/v1/trips/{id}/story.png?fromStop=…&toStop=…&lang=is`, answering as the
 preview's address does (404 where the preview is general), from the same
-pictures kept in memory and with the same limit; `&download=1` answers it
-as a file to save, named after the route, such as
-`puffinride-reykjavik-akureyri.png`.
+pictures kept in memory and with the same limit, but not kept by the
+browser (`Cache-Control: no-cache`), so a story shared after a change
+shows it; `&download=1` answers it as a file to save, named after the
+route, such as `puffinride-reykjavik-akureyri.png`. Any site may show a
+trip's pictures, the preview's and the story's
+(`Cross-Origin-Resource-Policy: cross-origin`, every other answer of the
+API keeps `same-origin`): they hold nothing about a person.
 
-On a phone's browser that can share files, the panel fetches the picture
-when it shows, so that Share picture opens the share window at once (a
-browser allows it only straight after the tap). In the apps (iOS and
+The panel fetches the picture once when it shows (giving up after 20
+seconds), so that Share picture opens the share window at once (a browser
+allows it only straight after the tap); the same picture is shown small
+and saved by Download picture, from the page, so a failed answer never
+takes the person away from it. In the apps (iOS and
 Android) the section is left out until they are in the stores: sharing a
 file there needs a package of its own (`expo-sharing`), for a later
 change.
@@ -277,7 +288,7 @@ Text for your post              (Íslenska) (English)
 Story on Instagram
 [picture]  A picture of your ride for your story. Instagram doesn't
            take links in posts, so add the link with a link sticker.
-[ Share picture ] or [ Download picture ]   [ Copy link ]
+[ Share picture ] (where it can)   Download picture   [ Copy link ]
 Follow PuffinRide on Facebook
 See the trip page
 [ See my trips ]
@@ -294,7 +305,8 @@ A result card, with the icon in its corner:
 └──────────────────────────────────────────┘
 ```
 
-As built (pictures from `apps/mobile/e2e/pictures.spec.ts`):
+As built (pictures from `apps/mobile/e2e/pictures.spec.ts`, and the stories
+from `pnpm --filter @shareride/api story-pictures`):
 
 | Screen | Picture |
 | ------ | ------- |
@@ -306,6 +318,10 @@ As built (pictures from `apps/mobile/e2e/pictures.spec.ts`):
 | A published trip in My trips, on a phone | ![A trip card in My trips with the share icon in its corner](images/share-a-ride/my-trips-card-phone.png) |
 | The driver's trip page on a phone | ![The trip's name with the share icon beside it](images/share-a-ride/trip-page-head-phone.png) |
 | The driver's trip page on a laptop | ![The page head: the trip's name, the share icon, then the trip's actions](images/share-a-ride/trip-page-head-laptop.png) |
+| Story on Instagram, in a browser that cannot share files | ![The story picture small, Download picture and Copy link](images/share-a-ride/story-section-phone.png) |
+| A story, short trip, Icelandic | ![The route Mjódd to N1 Selfossi, Föstudagur 27. nóvember kl. 09:00, a stop on the way, the scene with "Laus sæti"](images/share-a-ride/story-short-is.png) |
+| A story, long names, English, full | ![Each end of the route on two lines, no "Free seats" tag](images/share-a-ride/story-long-names-en.png) |
+| A story, many stops, Icelandic | ![Seven stops on the way on three lines](images/share-a-ride/story-many-stops-is.png) |
 
 ## 6. Data and API
 
@@ -352,6 +368,8 @@ As built (pictures from `apps/mobile/e2e/pictures.spec.ts`):
 | `shareRide.sharePicture` | Share picture | Deila mynd |
 | `shareRide.downloadPicture` | Download picture | Sækja mynd |
 | `shareRide.copyLink` | Copy link | Afrita hlekk |
+| `shareRide.pictureFailed` | The picture couldn't be made just now. | Ekki tókst að búa til myndina í bili. |
+| `shareRide.pictureNotShared` | The picture couldn't be shared here. Download it instead. | Ekki tókst að deila myndinni hér. Sæktu hana í staðinn. |
 | `shareRide.follow` | Follow PuffinRide on Facebook | Fylgdu PuffinRide á Facebook |
 | `shareRide.notShareable` | Only a published trip that hasn't left can be shared. | Aðeins er hægt að deila birtri ferð sem er ekki lögð af stað. |
 | `shareRide.backToTrip` | See the trip | Sjá ferðina |
@@ -368,7 +386,8 @@ Icelandic texts want a native read, as the ads did.
   open the trip; it copies and shows the tick without a share window; the
   driver's card and trip page open Share this ride; the panel shows Share
   only with a share window, changes the text's language, copies it, opens
-  Facebook, offers Share picture or Download picture on the web only, and
+  Facebook, offers Share picture where it can and Download picture on the
+  web only, says when the picture cannot be made or shared, and
   links to the Page; the screen of its own refuses a trip that has left.
 - API: `story.png` answers a PNG 1080 × 1920, 404 for a cancelled trip, a
   file with its name for `download=1`; long routes and many stops fit

@@ -25,6 +25,8 @@ jest.mock("@/lib/share", () => ({
   canShareWindow: () => true,
   canCopy: () => true,
   copyText: jest.fn(() => Promise.resolve("copied")),
+  // As in the apps: no story picture to share (spec 28, 3.5).
+  pictureSharing: () => "none",
 }));
 
 const mockedShare = shareLink as jest.Mock;
