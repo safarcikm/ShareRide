@@ -321,6 +321,7 @@ describe("the page's head (spec 23, 3.6)", () => {
     expect(noscript).toContain("<h1>Samferða um Ísland</h1>");
     expect(noscript).toContain("<h2>Svona virkar þetta</h2>");
     expect(noscript).toContain("<h3>Er PuffinRide leigubíll?</h3>");
+    expect(noscript).toContain("<h3>Hvað þýðir að vera samferða?</h3>");
     // Its links keep the language the address asked for.
     expect(noscript).toContain('<a href="/meeting-points?lang=is">Skoða mótsstaði</a>');
     expect(noscript).toContain('<a href="/legal/community-rules?lang=is">');

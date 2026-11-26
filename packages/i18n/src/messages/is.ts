@@ -59,6 +59,9 @@ export const is = {
   "carpool.taxiQuestion": "Er PuffinRide leigubíll?",
   "carpool.taxiAnswer":
     "Nei. Bílstjórar bjóða sæti í ferð sem þeir fara hvort sem er og PuffinRide kemur þeim í samband við fólk sem er að fara sömu leið.",
+  "carpool.wordQuestion": "Hvað þýðir að vera samferða?",
+  "carpool.wordAnswer":
+    "Að ferðast saman, í sama bílnum. Á PuffinRide finnur fólk sem fer sömu leið hvert annað, og þá eru allir samferða.",
   "carpool.languageQuestion": "Get ég notað það á ensku?",
   "carpool.languageAnswer": "Já. PuffinRide er á íslensku og ensku.",
   "carpool.accountQuestion": "Þarf ég aðgang til að skoða?",

@@ -1505,6 +1505,9 @@ releases follow [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Carpool in Iceland says what samferða means (spec 23, 3.9), with the
+  spelling without ð (samferda) in English, for people who search for the
+  word.
 - Google names us "PuffinRide" and shows a round icon (spec 23, 3.6, items
   5 and 7): the front page carries WebSite structured data with the name
   PuffinRide, where Google showed "puffinride.is"; the tab icon,

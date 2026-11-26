@@ -93,6 +93,7 @@ export const carpoolPage: {
       paragraphs: [],
       questions: [
         { question: "carpool.taxiQuestion", answer: "carpool.taxiAnswer" },
+        { question: "carpool.wordQuestion", answer: "carpool.wordAnswer" },
         { question: "carpool.languageQuestion", answer: "carpool.languageAnswer" },
         { question: "carpool.accountQuestion", answer: "carpool.accountAnswer" },
       ],

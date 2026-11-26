@@ -58,6 +58,9 @@ export const en = {
   "carpool.taxiQuestion": "Is PuffinRide a taxi?",
   "carpool.taxiAnswer":
     "No. Drivers offer seats on a trip they are making anyway, and PuffinRide puts them in touch with people going the same way.",
+  "carpool.wordQuestion": "What does samferða mean?",
+  "carpool.wordAnswer":
+    "Samferða (samferda, without the Icelandic letter ð) is Icelandic for travelling together. On PuffinRide, people going the same way find each other and travel samferða in one car.",
   "carpool.languageQuestion": "Can I use it in English?",
   "carpool.languageAnswer": "Yes. PuffinRide is in English and Icelandic.",
   "carpool.accountQuestion": "Do I need an account to look?",
