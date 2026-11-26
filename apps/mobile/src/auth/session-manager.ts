@@ -16,6 +16,7 @@ import {
   type ProviderLink,
   type RouteDefinition,
 } from "@shareride/contracts";
+import type { SignInProvider, SignInWay } from "@shareride/domain";
 import type { Locale } from "@shareride/i18n";
 
 /** Where the refresh token lives: secure storage on phones; nothing on the web (cookie). */
@@ -51,6 +52,18 @@ export interface SignInNews {
   /** Added or replaced; null once closed, or when there is nothing to say. */
   readonly emailLink: EmailLink | null;
   readonly suggestedFirstName: string | null;
+}
+
+/**
+ * How the person just signed in (spec 28, 3.2 and 3.5), for what opens
+ * next: the way, whether the account is new, and a passkey's credential ID.
+ * Kept in memory only, until taken.
+ */
+export interface JustSignedIn {
+  readonly way: SignInWay;
+  readonly isNewUser: boolean;
+  /** The passkey's, after signing in with one; otherwise null. */
+  readonly credentialId: string | null;
 }
 
 /** The outcomes of a waiting Google or Apple sign-in that the person is told about. */
@@ -111,6 +124,8 @@ export interface SessionManager {
     inviteCode: string | undefined,
     /** The waiting sign-in this phone step belongs to, as for `start`. */
     pendingSignIn: string,
+    /** The way that sign-in started: the email, Google or Apple. */
+    way: SignInWay,
   ): Promise<CallResult<typeof verifyPhoneCodeRoute>>;
   /**
    * Trades the ticket of a Google or Apple window, with the secret its start
@@ -120,7 +135,14 @@ export interface SessionManager {
   finishProviderSignIn(
     ticket: string,
     verifier: string,
+    provider: SignInProvider,
   ): Promise<CallResult<typeof finishProviderSignInRoute>>;
+  /**
+   * How the person just signed in, once: set before the state turns signed
+   * in, null after it is taken, after a session restored at start, and
+   * after signing out.
+   */
+  takeJustSignedIn(): JustSignedIn | null;
   /** What the last sign-in said; null when nothing. Changes call the listeners. */
   readonly signInNews: () => SignInNews | null;
   /** The person closed the notice about their Google or Apple account or their email. */
@@ -175,6 +197,7 @@ export function createSessionManager(options: {
   let accessToken: string | undefined;
   let refreshing: Promise<RefreshOutcome> | null = null;
   let news: SignInNews | null = null;
+  let justSignedIn: JustSignedIn | null = null;
   const listeners = new Set<() => void>();
 
   function tell(): void {
@@ -184,6 +207,16 @@ export function createSessionManager(options: {
   function set(next: SessionState): void {
     current = next;
     tell();
+  }
+
+  /** Signed in this way: kept before the signed-in state, so what opens next finds it. */
+  function signedIn(
+    way: SignInWay,
+    result: { readonly isNewUser: boolean; readonly user: Me },
+    credentialId: string | null = null,
+  ): void {
+    justSignedIn = { way, isNewUser: result.isNewUser, credentialId };
+    set({ status: "signedIn", me: result.user });
   }
 
   /** Before the signed-in state, so the screens that open next find it. */
@@ -216,6 +249,7 @@ export function createSessionManager(options: {
   async function forget(): Promise<void> {
     accessToken = undefined;
     news = null;
+    justSignedIn = null;
     try {
       await tokenStore.clear();
     } catch {
@@ -319,7 +353,7 @@ export function createSessionManager(options: {
       if (result.ok && result.data.status === "signedIn") {
         await keep(result.data);
         keepNews(result.data);
-        set({ status: "signedIn", me: result.data.user });
+        signedIn("email", result.data);
       }
       return result;
     },
@@ -331,7 +365,7 @@ export function createSessionManager(options: {
       if (result.ok) {
         await keep(result.data);
         keepNews({});
-        set({ status: "signedIn", me: result.data.user });
+        signedIn("password", result.data);
       }
       return result;
     },
@@ -343,7 +377,7 @@ export function createSessionManager(options: {
       if (result.ok) {
         await keep(result.data);
         keepNews({});
-        set({ status: "signedIn", me: result.data.user });
+        signedIn("passkey", result.data, credential.id);
       }
       return result;
     },
@@ -351,7 +385,7 @@ export function createSessionManager(options: {
     start: (phoneNumber, locale, pendingSignIn) =>
       client.call(startPhoneSignInRoute, { body: { phoneNumber, locale, pendingSignIn } }),
 
-    async verify(phoneNumber, code, locale, inviteCode, pendingSignIn) {
+    async verify(phoneNumber, code, locale, inviteCode, pendingSignIn, way) {
       const result = await client.call(verifyPhoneCodeRoute, {
         body: {
           phoneNumber,
@@ -365,21 +399,27 @@ export function createSessionManager(options: {
       if (result.ok) {
         await keep(result.data);
         keepNews(result.data);
-        set({ status: "signedIn", me: result.data.user });
+        signedIn(way, result.data);
       }
       return result;
     },
 
-    async finishProviderSignIn(ticket, verifier) {
+    async finishProviderSignIn(ticket, verifier, provider) {
       const result = await client.call(finishProviderSignInRoute, {
         body: { ticket, verifier, device },
       });
       if (result.ok && result.data.status === "signedIn") {
         await keep(result.data);
         keepNews(result.data);
-        set({ status: "signedIn", me: result.data.user });
+        signedIn(provider, result.data);
       }
       return result;
+    },
+
+    takeJustSignedIn() {
+      const taken = justSignedIn;
+      justSignedIn = null;
+      return taken;
     },
 
     signInNews: () => news,

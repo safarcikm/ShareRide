@@ -58,6 +58,7 @@ export default function InviteCodeScreen() {
       locale,
       invite,
       pending.pendingSignIn,
+      pending.provider,
     );
     if (result.ok) return;
     inFlight.current = false;

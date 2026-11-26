@@ -144,7 +144,7 @@ function ChooseHowScreen() {
       if (outcome.kind === "failed") setError(t("auth.provider.failed", { provider: name }));
       return;
     }
-    const result = await session.finishProviderSignIn(outcome.ticket, outcome.verifier);
+    const result = await session.finishProviderSignIn(outcome.ticket, outcome.verifier, provider);
     setProviderBusy(null);
     if (!result.ok) {
       autofill.resume();
