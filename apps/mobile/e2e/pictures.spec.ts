@@ -1,6 +1,8 @@
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test, type Page } from "@playwright/test";
+import { english, signUp } from "./support/account";
+import { postTripToSelfoss } from "./support/trips";
 
 // Pictures of screens for the specs (docs/specs/images), kept in git with
 // the script that makes them. Not a check: skipped unless PICTURES_DIR names
@@ -53,5 +55,33 @@ test.describe("pictures", () => {
     await icon.click();
     await expect(page.getByTestId("share-copied")).toBeVisible();
     if (wide) await page.screenshot({ path: join(folder, "link-copied-laptop.png") });
+  });
+
+  test("share this ride (spec 28)", async ({ page }, info) => {
+    test.setTimeout(120_000);
+    const folder = join(root ?? "", "share-a-ride");
+    mkdirSync(folder, { recursive: true });
+    const wide = info.project.name === "desktop";
+    if (wide) await page.setViewportSize({ width: 1280, height: 720 });
+    await signUp(page, english, "Bára");
+    const tripId = await postTripToSelfoss(page, "09:00");
+
+    // After publishing, on a phone, in English. The screen scrolls inside
+    // the page, so a tall window shows all of it.
+    if (!wide) {
+      await expect(page.getByRole("heading", { name: "Share this ride" })).toBeVisible();
+      await page.setViewportSize({ width: 412, height: 1110 });
+      await page.waitForTimeout(500);
+      await page.screenshot({ path: join(folder, "published-phone.png") });
+      return;
+    }
+    // Its own screen on a laptop, in Icelandic: the post's text in it too.
+    await page.goto(`/drive/trips/${tripId}/share`);
+    await page.getByRole("button", { name: "Change the language to Icelandic" }).click();
+    await expect(page.getByRole("heading", { name: "Deildu þessari ferð" })).toBeVisible();
+    await expect(page.getByText(/^Býð far: /u)).toBeVisible();
+    await page.setViewportSize({ width: 1280, height: 980 });
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: join(folder, "share-screen-laptop-is.png") });
   });
 });

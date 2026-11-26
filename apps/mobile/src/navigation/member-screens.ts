@@ -22,6 +22,7 @@ export const memberScreens = [
   "drive/trips/[id]/seats",
   "drive/trips/[id]/review",
   "drive/trips/[id]/published",
+  "drive/trips/[id]/share",
   "drive/trips/[id]/message",
   "drive/trips/[id]/cancel",
   "drive/trips/[id]/edit/index",

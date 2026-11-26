@@ -1499,6 +1499,15 @@ releases follow [Semantic Versioning](https://semver.org/).
   share window, or copies its link and shows a tick; it is a button of its
   own, so it never opens the trip. `Card` takes a `corner`, `IconButton`
   can be `quiet` (drawn 36 in a 44 button), and the token `iconButtonSmall`.
+- Share this ride (spec 28, 3.2 to 3.4 and 3.6): after publishing, and on
+  a screen of its own opened from the share icon on a published trip in My
+  trips and beside the name on the driver's trip page. It opens the phone's
+  or browser's share window with the post and the link (where there is
+  one), Facebook's share window for the link (no Facebook script, nothing
+  loaded before the tap), and shows the post's text ("Býð far: …", the
+  day, the stops, the link; never a price, a fee or a name) in Icelandic or
+  English to copy, with a link to follow PuffinRide's Facebook Page. It
+  replaces "Share the trip" on the published screen.
 
 - Carpool in Iceland (spec 23, 3.9): a public page at `/carpool-iceland`,
   "Samferða um Ísland" in Icelandic, that says in words what PuffinRide is
