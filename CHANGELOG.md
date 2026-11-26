@@ -1521,6 +1521,14 @@ releases follow [Semantic Versioning](https://semver.org/).
   gives each passkey's `credentialId` for it. The console's passkeys stay
   `passkey_invalid` and are never reported (R29.4). Sign-in options are
   limited to 60 per 10 minutes per address (was 20).
+- Face ID offered after another way in (spec 29, 3.2): after the email
+  code, a password, Google or Apple, a member whose account is from before
+  is asked once "Use Face ID or fingerprint next time?", where the browser
+  has a built-in lock and is not known to have a PuffinRide passkey.
+  "Set it up" uses the fresh sign-in as the proof; "Not now" waits 30 days
+  on that browser; anything kept from before signing in (a booking, Offer,
+  a link) opens instead. The browser keeps the way it last signed in with,
+  its own passkey's ID and the date of "Not now" (privacy, device storage).
 
 ### Fixed
 
