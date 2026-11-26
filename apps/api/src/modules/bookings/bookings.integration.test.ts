@@ -1723,44 +1723,83 @@ describe("reading bookings (spec 5, 3.6 and 3.7)", () => {
       if (trip === undefined) throw new Error("The trip is not listed.");
       return trip;
     };
-    const asks = async () => (await mine()).firstRequest;
+    // Who asks first, with how many ask and when the first one closes: one answer.
+    const asks = async () => {
+      const { firstRequest, openRequests, requestsCloseAt } = await mine();
+      return { firstRequest, openRequests, requestsCloseAt };
+    };
+    const closes = async (id: string) => {
+      const [row] = await api.connection.db
+        .select({ expiresAt: schema.bookings.expiresAt })
+        .from(schema.bookings)
+        .where(eq(schema.bookings.id, id));
+      const at = row?.expiresAt ?? null;
+      if (at === null) throw new Error("The request has no deadline.");
+      return at;
+    };
+    const closing = async (id: string, at: Date) => {
+      await api.connection.db
+        .update(schema.bookings)
+        .set({ expiresAt: at })
+        .where(eq(schema.bookings.id, id));
+    };
     // Nobody asks yet.
-    expect(await asks()).toBeNull();
+    expect(await asks()).toEqual({ firstRequest: null, openRequests: 0, requestsCloseAt: null });
     const places = (await mine()).stops.map((stop) => stop.meetingPoint.name);
     const first = await booked(jon.accessToken, north, { fromStop: 0, toStop: 1, seats: 2 });
-    expect(await asks()).toEqual({ firstName: "Jón", seats: 2, from: places[0], to: places[1] });
+    const jons = await closes(first.id);
+    const fromJon = { firstName: "Jón", seats: 2, from: places[0], to: places[1] };
+    expect(await asks()).toEqual({
+      firstRequest: fromJon,
+      openRequests: 1,
+      requestsCloseAt: jons.toISOString(),
+    });
     // Gunna asks an hour later, so Jón's request still closes first.
     await later(hours(1), anna, gunna);
     const second = await booked(gunna.accessToken, north, { fromStop: 1, toStop: 3 });
-    expect(await asks()).toEqual({ firstName: "Jón", seats: 2, from: places[0], to: places[1] });
+    expect(await asks()).toEqual({
+      firstRequest: fromJon,
+      openRequests: 2,
+      requestsCloseAt: jons.toISOString(),
+    });
+    // Two that close at the same minute, as requests for one stop late on
+    // do (their deadline is two hours before it): the one sent first.
+    await closing(second.id, jons);
+    expect(await asks()).toEqual({
+      firstRequest: fromJon,
+      openRequests: 2,
+      requestsCloseAt: jons.toISOString(),
+    });
     // The one whose deadline comes first, whoever asked first.
-    const [jons] = await api.connection.db
-      .select({ expiresAt: schema.bookings.expiresAt })
-      .from(schema.bookings)
-      .where(eq(schema.bookings.id, first.id));
-    const closes = jons?.expiresAt ?? null;
-    if (closes === null) throw new Error("The request has no deadline.");
-    await api.connection.db
-      .update(schema.bookings)
-      .set({ expiresAt: new Date(closes.getTime() - 60_000) })
-      .where(eq(schema.bookings.id, second.id));
-    expect(await asks()).toEqual({ firstName: "Gunna", seats: 1, from: places[1], to: places[3] });
-    // A former member has no name (spec 11).
+    const sooner = new Date(jons.getTime() - 60_000);
+    await closing(second.id, sooner);
+    const fromGunna = { firstName: "Gunna", seats: 1, from: places[1], to: places[3] };
+    expect(await asks()).toEqual({
+      firstRequest: fromGunna,
+      openRequests: 2,
+      requestsCloseAt: sooner.toISOString(),
+    });
+    // Someone without a name. An account with a request waiting cannot be
+    // deleted, so this only shows that no name is no trouble (spec 11).
     await api.connection.db
       .update(schema.users)
       .set({ firstName: null })
       .where(eq(schema.users.id, gunna.userId));
-    expect(await asks()).toEqual({ firstName: null, seats: 1, from: places[1], to: places[3] });
+    expect((await asks()).firstRequest).toEqual({ ...fromGunna, firstName: null });
     // An answered request no longer asks.
     await api.client.call(declineRequestRoute, {
       accessToken: anna.accessToken,
       params: { id: second.id },
       body: { reason: null },
     });
-    expect(await asks()).toMatchObject({ firstName: "Jón" });
+    expect(await asks()).toEqual({
+      firstRequest: fromJon,
+      openRequests: 1,
+      requestsCloseAt: jons.toISOString(),
+    });
     // Nor does one whose deadline passed, before any job runs.
     await later(hours(12), anna);
-    expect(await asks()).toBeNull();
+    expect(await asks()).toEqual({ firstRequest: null, openRequests: 0, requestsCloseAt: null });
   });
 
   it("lists My trips as upcoming or past by the trip's last stop (spec 16, section 6)", async () => {
