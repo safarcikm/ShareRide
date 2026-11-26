@@ -618,8 +618,8 @@ My rides load, named below.
   choice (decision 14): the ride gains `firstRequest`, the first name,
   the seats and the two stops of the request that closes first, which the
   driver already sees on the ride. With more than one request the card
-  says "2 requests to answer". The plan may instead load the ride's
-  requests, as the driver's ride does, when `openRequests` is above zero.
+  says "2 requests to answer". Built so: `firstRequest` is null when no
+  request waits, and its first name is null for a former member.
 - A rating to give is known from a finished booking's `review`, which My
   rides loads under Past. Find loads upcoming rides only, which is why a
   rating is not raised there (decision 9).

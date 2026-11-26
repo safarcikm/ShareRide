@@ -25,6 +25,7 @@ import {
   type PriceSettings,
 } from "@shareride/domain";
 import { and, asc, count, desc, eq, gt, inArray, isNull, lte, min, ne, or, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { lockActive } from "../account/standing.ts";
 import type { DrivingService } from "../driving/index.ts";
 import { seatsTakenNow, takingsBookings } from "../bookings/seats.ts";
@@ -33,6 +34,12 @@ import { checkInsAt, driverCheckedInAt, shownWindow } from "../trip-day/check-in
 import type { TripSettingsSource } from "../settings/trip-settings.ts";
 
 const { bookings, legs, meetingPoints, segments, trips, tripStops, users, vehicles } = schema;
+
+// The two ends of a request, for who asks first (spec 31, 3.3).
+const askFromStops = alias(tripStops, "ask_from_stops");
+const askToStops = alias(tripStops, "ask_to_stops");
+const askFromPoints = alias(meetingPoints, "ask_from_points");
+const askToPoints = alias(meetingPoints, "ask_to_points");
 
 type TripRow = typeof trips.$inferSelect;
 type Transaction = Parameters<Parameters<Database["transaction"]>[0]>[0];
@@ -169,7 +176,13 @@ export function createTripService(dependencies: {
     const ids = rows.map((row) => row.id);
     if (ids.length === 0) return [];
     const now = clock();
-    const [stopRows, segmentRows, requestRows, occupancy, takings] = await Promise.all([
+    // A request whose deadline passed reads as expired, as bookings show it.
+    const waiting = and(
+      inArray(bookings.tripId, ids),
+      eq(bookings.status, "requested"),
+      gt(bookings.expiresAt, now),
+    );
+    const [stopRows, segmentRows, requestRows, askRows, occupancy, takings] = await Promise.all([
       q
         .select({ stop: tripStops, point: meetingPoints })
         .from(tripStops)
@@ -182,18 +195,33 @@ export function createTripService(dependencies: {
         .from(segments)
         .where(inArray(segments.tripId, ids))
         .orderBy(asc(segments.position)),
-      // A request whose deadline passed reads as expired, as bookings show it.
       q
         .select({ tripId: bookings.tripId, count: count(), closesAt: min(bookings.expiresAt) })
         .from(bookings)
-        .where(
-          and(
-            inArray(bookings.tripId, ids),
-            eq(bookings.status, "requested"),
-            gt(bookings.expiresAt, now),
-          ),
-        )
+        .where(waiting)
         .groupBy(bookings.tripId),
+      // Of each trip's requests, the one that closes first (spec 31, 3.3).
+      q
+        .selectDistinctOn([bookings.tripId], {
+          tripId: bookings.tripId,
+          firstName: users.firstName,
+          seats: bookings.seats,
+          from: askFromPoints,
+          to: askToPoints,
+        })
+        .from(bookings)
+        .innerJoin(users, eq(users.id, bookings.passengerId))
+        .innerJoin(askFromStops, eq(askFromStops.id, bookings.fromStopId))
+        .innerJoin(askFromPoints, eq(askFromPoints.id, askFromStops.meetingPointId))
+        .innerJoin(askToStops, eq(askToStops.id, bookings.toStopId))
+        .innerJoin(askToPoints, eq(askToPoints.id, askToStops.meetingPointId))
+        .where(waiting)
+        .orderBy(
+          asc(bookings.tripId),
+          asc(bookings.expiresAt),
+          asc(bookings.createdAt),
+          asc(bookings.id),
+        ),
       seatsTakenNow(q, ids, now),
       takingsBookings(q, ids, now),
     ]);
@@ -222,6 +250,7 @@ export function createTripService(dependencies: {
     return rows.map((row) => {
       // The trip day is for a trip that runs, or ran (spec 8, 3.1).
       const runs = runsOrRan(row.status as MyTrip["status"]);
+      const ask = askRows.find((request) => request.tripId === row.id);
       return {
         id: row.id,
         status: row.status as MyTrip["status"],
@@ -269,6 +298,15 @@ export function createTripService(dependencies: {
         requestsCloseAt:
           requestRows.find((requests) => requests.tripId === row.id)?.closesAt?.toISOString() ??
           null,
+        firstRequest:
+          ask === undefined
+            ? null
+            : {
+                firstName: ask.firstName,
+                seats: ask.seats,
+                from: toSummary(ask.from).name,
+                to: toSummary(ask.to).name,
+              },
         cancellation:
           row.status === "cancelled" && row.cancelReason !== null
             ? {

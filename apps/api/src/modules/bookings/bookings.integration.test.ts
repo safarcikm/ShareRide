@@ -1709,6 +1709,60 @@ describe("reading bookings (spec 5, 3.6 and 3.7)", () => {
     expect(await closing()).toBeNull();
   });
 
+  it("says who asks first on each trip in My trips (spec 31, 3.3)", async () => {
+    const anna = await driverOf(north);
+    const jon = await newMember("Jón");
+    const gunna = await newMember("Gunna");
+    const mine = async () => {
+      const result = await api.client.call(myTripsRoute, {
+        accessToken: anna.accessToken,
+        query: {},
+      });
+      if (!result.ok) throw new Error(result.error.code);
+      const trip = result.data.trips.find(({ id }) => id === north);
+      if (trip === undefined) throw new Error("The trip is not listed.");
+      return trip;
+    };
+    const asks = async () => (await mine()).firstRequest;
+    // Nobody asks yet.
+    expect(await asks()).toBeNull();
+    const places = (await mine()).stops.map((stop) => stop.meetingPoint.name);
+    const first = await booked(jon.accessToken, north, { fromStop: 0, toStop: 1, seats: 2 });
+    expect(await asks()).toEqual({ firstName: "Jón", seats: 2, from: places[0], to: places[1] });
+    // Gunna asks an hour later, so Jón's request still closes first.
+    await later(hours(1), anna, gunna);
+    const second = await booked(gunna.accessToken, north, { fromStop: 1, toStop: 3 });
+    expect(await asks()).toEqual({ firstName: "Jón", seats: 2, from: places[0], to: places[1] });
+    // The one whose deadline comes first, whoever asked first.
+    const [jons] = await api.connection.db
+      .select({ expiresAt: schema.bookings.expiresAt })
+      .from(schema.bookings)
+      .where(eq(schema.bookings.id, first.id));
+    const closes = jons?.expiresAt ?? null;
+    if (closes === null) throw new Error("The request has no deadline.");
+    await api.connection.db
+      .update(schema.bookings)
+      .set({ expiresAt: new Date(closes.getTime() - 60_000) })
+      .where(eq(schema.bookings.id, second.id));
+    expect(await asks()).toEqual({ firstName: "Gunna", seats: 1, from: places[1], to: places[3] });
+    // A former member has no name (spec 11).
+    await api.connection.db
+      .update(schema.users)
+      .set({ firstName: null })
+      .where(eq(schema.users.id, gunna.userId));
+    expect(await asks()).toEqual({ firstName: null, seats: 1, from: places[1], to: places[3] });
+    // An answered request no longer asks.
+    await api.client.call(declineRequestRoute, {
+      accessToken: anna.accessToken,
+      params: { id: second.id },
+      body: { reason: null },
+    });
+    expect(await asks()).toMatchObject({ firstName: "Jón" });
+    // Nor does one whose deadline passed, before any job runs.
+    await later(hours(12), anna);
+    expect(await asks()).toBeNull();
+  });
+
   it("lists My trips as upcoming or past by the trip's last stop (spec 16, section 6)", async () => {
     const anna = await driverOf(north);
     const created = await api.client.call(createTripRoute, {

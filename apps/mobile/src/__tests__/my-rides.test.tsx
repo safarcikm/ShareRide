@@ -15,6 +15,7 @@ import {
 } from "@/testing/bookings";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
 import { searchApi } from "@/testing/search";
+import { onTheDay, tripOnTheDay } from "@/testing/trip-day";
 import { tripsApi } from "@/testing/trips";
 import { colors } from "@/theme/tokens";
 
@@ -61,6 +62,7 @@ const drivingLater: MyTrip = {
   takings: { amount: 0, currency: "ISK" },
   openRequests: 0,
   requestsCloseAt: null,
+  firstRequest: null,
 };
 /** A trip Anna drove last week. */
 const drove: MyTrip = {
@@ -131,6 +133,32 @@ describe("My rides (spec 16, 3.3)", () => {
     expect(screen.getByText("Borgarnes → Blönduós: 2 free")).toBeVisible();
     expect(screen.getAllByText("1 of 3 seats taken")).toHaveLength(2);
     expect(screen.getByText("Seats free on every stretch: 2")).toBeVisible();
+  });
+
+  it("puts a ride on its trip day under Needs you, with no button of its own (spec 31, 3.3)", async () => {
+    await renderApp("/my-rides", {
+      me: completeMe,
+      setUp: (client) => {
+        myRidesApi(client, {
+          upcoming: {
+            bookings: [onTheDay(), confirmed],
+            trips: [
+              { ...tripOnTheDay(), openRequests: 0, requestsCloseAt: null, firstRequest: null },
+            ],
+          },
+        });
+      },
+    });
+    expect(await screen.findByRole("header", { name: "Needs you" })).toBeVisible();
+    expect(screen.getByRole("header", { name: "Coming up" })).toBeVisible();
+    expect(rowNames()).toEqual([
+      expect.stringMatching(/^Driving, Sunday 15 November, .*, Trip day$/),
+      expect.stringMatching(/^Passenger, Sunday 15 November, .*, Trip day$/),
+      expect.stringMatching(/^Passenger, Monday 16 November, .*2,900 ISK$/),
+    ]);
+    expect(screen.getAllByText("Trip day")).toHaveLength(2);
+    // The row opens the ride, where "I'm here" is.
+    expect(screen.queryByRole("button", { name: /^(Pay|Answer)/ })).toBeNull();
   });
 
   it("opens the booking to pay, and the driver's trip page to answer the requests", async () => {

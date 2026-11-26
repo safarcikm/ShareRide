@@ -15,7 +15,7 @@ import { offerRide } from "@/drive/offer-ride";
 import { useLanguage } from "@/i18n/language";
 import { now } from "@/lib/clock";
 import { RideItem } from "@/my-rides/ride-row";
-import { needsYou, rideKey, type Ride, type When } from "@/my-rides/rides";
+import { needOf, rideKey, type Ride, type When } from "@/my-rides/rides";
 import { useRides } from "@/my-rides/use-rides";
 import { SignInFirst } from "@/navigation/sign-in-first";
 import { sizes, spacing } from "@/theme/tokens";
@@ -123,8 +123,8 @@ function ComingUp({ rides, wide }: { readonly rides: readonly Ride[]; readonly w
     );
     return <Instead wide={wide}>{nothing}</Instead>;
   }
-  const needing = rides.filter((ride) => needsYou(ride, at) !== null);
-  const rest = rides.filter((ride) => needsYou(ride, at) === null);
+  const needing = rides.filter((ride) => needOf(ride, at) !== null);
+  const rest = rides.filter((ride) => needOf(ride, at) === null);
   if (needing.length === 0) return <Rides rides={rest} at={at} grid={wide} />;
   return (
     <>

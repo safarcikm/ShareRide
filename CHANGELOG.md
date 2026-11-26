@@ -1573,6 +1573,13 @@ releases follow [Semantic Versioning](https://semver.org/).
   can have an icon, be red, unfold, hold a switch or only show a value;
   `Tag` can have an icon; `Avatar` has a small size; tests can count a
   screen's filled buttons.
+- What needs you is one rule (spec 31, 3.3, item 3) in `packages/domain`:
+  `bookingNeed` and `tripNeed` say whether a booked seat or a ride I drive
+  asks me to pay, to answer or is on its trip day, and by when;
+  `soonestFirst` orders them; `busiestStretch` names a ride's fullest
+  stretch. Each ride in `GET /v1/me/trips` says who asks in the request
+  that closes first (`firstRequest`: the first name, the seats and the two
+  stops' names), for "Dóra asks for 1 seat".
 
 ### Fixed
 
@@ -1655,6 +1662,10 @@ releases follow [Semantic Versioning](https://semver.org/).
   blue for a withdrawal. "Waiting for payment" stays amber. The tag of a
   cancelled ride you drive in My rides (grey) and "No-show" beside a
   passenger on the driver's trip day (red) follow.
+- In My rides, a ride on its trip day stands under "Needs you", for a
+  passenger and a driver alike, and its row says "Trip day", there and
+  under "Your next ride" on Find (spec 31, 3.3, item 3). Until now only a
+  seat to pay for and requests to answer stood under "Needs you".
 - CI skips its code jobs (bundles, unit, integration and web tests, the API
   image) for a change to docs, marketing and other files that no code reads,
   and on `main` when the pull request already tested exactly the same files

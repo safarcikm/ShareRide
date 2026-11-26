@@ -362,7 +362,9 @@ screen.
 5. **App:** `my-rides/rides.ts` loses `needsYou` for `needOf(ride, at):
    Need | null`, which calls the domain. My rides and Find keep behaving
    as today (their tests pass unchanged, a ride on its trip day now also
-   stands under Needs you).
+   stands under Needs you). Until PR 5 gives it a card, such a ride's row
+   says "Trip day" (`tripDay.title`, a text of today) and has no button of
+   its own.
 6. **Docs:** spec 16, 3.3 points to spec 31; API reference; changelog.
 
 ## PR 4: one name each
