@@ -499,7 +499,7 @@ for (const locale of ["en-GB", "is-IS"] as const) {
 const tripTexts = {
   "en-GB": {
     ...resultsTexts["en-GB"],
-    trip: "N1 Borgarnes → Olís Blönduós",
+    trip: "N1 Borgarnes to Olís Blönduós",
     request: "Send request",
     moreSeats: "One seat more",
   },
@@ -514,8 +514,8 @@ const tripTexts = {
 /** Only what is on show: screens beneath the one open stay in the page. */
 const shown = { visible: true } as const;
 
-// Trip details (spec 18, 3.7): your part and who you ride with in the main
-// column, with booking and the route beside them.
+// Ride details (spec 18, 3.7; spec 31, 3.7): your part and who you ride with
+// in the main column, with booking and the whole route beside them.
 for (const locale of ["en-GB", "is-IS"] as const) {
   const texts = tripTexts[locale];
 
@@ -554,19 +554,18 @@ for (const locale of ["en-GB", "is-IS"] as const) {
         const map = await box(side.getByTestId("iceland-map"));
         expect(map.y).toBeGreaterThan(request.y + request.height);
 
-        // Get in and Get out stand side by side where the main column has
-        // room for both, and one under the other where it has not.
-        const [getIn, getOut] = await main.getByTestId("stop-choice").all();
-        if (getIn === undefined || getOut === undefined) throw new Error("No stops to choose");
-        const inBox = await box(getIn);
-        const outBox = await box(getOut);
-        if (width >= 1280) {
-          expect(outBox.y).toBeCloseTo(inBox.y, 0);
-          expect(outBox.x).toBeGreaterThan(inBox.x + inBox.width);
-        } else {
-          expect(outBox.y).toBeGreaterThan(inBox.y + inBox.height - 1);
-          expect(outBox.x).toBeCloseTo(inBox.x, 0);
-        }
+        // Your part is one ticket across the main column, with the driver's
+        // card and the seats under it (spec 31, 3.7).
+        const ticket = await box(main.getByTestId("part-ticket"));
+        const driver = await box(main.getByTestId("driver-card"));
+        const seats = await box(main.getByTestId("where-you-sit"));
+        expect(ticket.x).toBeGreaterThanOrEqual(mainBox.x);
+        expect(ticket.x + ticket.width).toBeLessThanOrEqual(mainBox.x + mainBox.width + 1);
+        expect(driver.y).toBeGreaterThan(ticket.y + ticket.height - 1);
+        expect(seats.y).toBeGreaterThan(driver.y + driver.height - 1);
+        // The whole route is beside them, under the map.
+        const route = await box(side.getByTestId("route-stop").first());
+        expect(route.y).toBeGreaterThan(map.y + map.height - 1);
         await expectNoSidewaysScroll(page);
       });
     }

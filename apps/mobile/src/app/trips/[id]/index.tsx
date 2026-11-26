@@ -2,7 +2,13 @@ import type { CallResult } from "@shareride/api-client";
 import { tripDetailsRoute, type TripDetails } from "@shareride/contracts";
 import { capitalised, formatDay, formatDuration, formatMoney } from "@shareride/i18n";
 import { router, useLocalSearchParams } from "expo-router";
-import { Share as ShareIcon, ShieldCheck } from "lucide-react-native";
+import {
+  Flag,
+  HandCoins,
+  Share as ShareIcon,
+  ShieldCheck,
+  type LucideIcon,
+} from "lucide-react-native";
 import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { errorText, formatWait } from "@/auth/errors";
@@ -10,50 +16,53 @@ import { signUpRoute } from "@/auth/next-route";
 import { useMe, useSession } from "@/auth/session";
 import { useMaxSeats, usePayInPerson, useTimings } from "@/beta/config";
 import { bookingHref, keepPendingBooking } from "@/booking/pending-booking";
+import { ActionRows } from "@/components/action-rows";
 import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
 import { Columns, PageColumn } from "@/components/columns";
-import { Halves } from "@/components/halves";
 import { Icon } from "@/components/icon";
 import { IconButton } from "@/components/icon-button";
 import { NoIndex } from "@/components/no-index";
 import { Notice } from "@/components/notice";
+import { Row } from "@/components/row";
 import { Screen, useWideScreen } from "@/components/screen";
+import { ScreenHead } from "@/components/screen-head";
 import { ShareNotice } from "@/components/share-notice";
 import { Stepper } from "@/components/stepper";
-import { Tag } from "@/components/tag";
 import { Body, Heading } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { now } from "@/lib/clock";
 import { showsOtherTime } from "@/lib/days";
 import { shareLink, type Shared } from "@/lib/share";
-import { TripSafety } from "@/safety/trip-safety";
+import { showsWeatherAndRoads, WeatherAndRoadsRow } from "@/safety/weather-roads-row";
 import { useLoadedOnFocus } from "@/lib/use-loaded";
 import { RouteMap } from "@/maps/route-map";
+import { DriverCard } from "@/trip-details/driver-card";
+import { PartTicket } from "@/trip-details/part-ticket";
 import { RouteList } from "@/trip-details/route-list";
-import { SeatView } from "@/trip-details/seat-view";
-import { StopChoice } from "@/trip-details/stop-choice";
-import { DriverAndCar } from "@/trip-details/trip-parts";
 import { positionParam, tripWebAddress, type Part } from "@/trip-details/trip-link";
-import { controlOutline, sizes, spacing, typography } from "@/theme/tokens";
+import { WhereYouSit } from "@/trip-details/where-you-sit";
+import { sizes, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
 type Answer = CallResult<typeof tripDetailsRoute>;
 
 /**
- * Trip details (spec 4, 3.6 and 3.7; spec 15's trip board; spec 16, 3.7):
- * the passenger's part first, with how booking works, where they get in
- * and out and the seats; then who they ride with and the seat view; then
- * the route and what cancelling costs. Open to everyone by link; the part
- * and seats live in the address, so a reload or a shared link shows the
- * same part. The bottom bar books the part on screen (spec 5).
+ * A ride's details (spec 4, 3.6 and 3.7; spec 31, 3.7): the day over "A to
+ * B" with Share; the passenger's part as a ticket, with Change at each end
+ * and the seats under the tear line; the driver with the car; where you
+ * sit; the whole route on the map and as stops; and rows for what
+ * cancelling costs, the weather and the roads, and reporting. Open to
+ * everyone by link; the part and seats live in the address, so a reload or
+ * a shared link shows the same part. The bottom bar books the part on
+ * screen (spec 5).
  *
  * A wide screen (spec 18, 3.7) is a page of two columns. The main one has
- * your part, with Get in and Get out side by side, who you ride with, with
- * the seat view beside the driver, and safety. The side one has booking,
- * with the seats beside the price they change, and then the route. There
- * is no bottom bar.
+ * the ticket, the driver, where you sit and the rows. The side one has
+ * booking, with the seats beside the price they change and what
+ * cancelling costs under the button, and then the whole route. There is
+ * no bottom bar.
  */
 export default function TripScreen() {
   const { t } = useLanguage();
@@ -209,8 +218,8 @@ function Trip({
     return null;
   }
   const name = (stop: TripDetails["stops"][number]) => stop.meetingPoint.name[locale];
+  // With an arrow where it is sent or read out as one name; in words as the title.
   const route = t("search.route", { from: name(boardStop), to: name(alightStop) });
-  const whole = part.board === 0 && part.alight === trip.stops.length - 1;
   const changePart = (next: Part) => {
     setShared(null);
     router.setParams({ from: String(next.board), to: String(next.alight) });
@@ -223,73 +232,33 @@ function Trip({
   // You can choose up to the seats free, and at least one; a link can ask
   // for more, and then only fewer is offered.
   const most = Math.max(1, Math.min(trip.part.freeSeats, maxSeats));
+  const cancelled = trip.part.state === "cancelled";
 
-  const shareButton = (
-    <IconButton
-      icon={ShareIcon}
-      label={t("trip.share")}
-      onPress={() => {
-        void share();
-      }}
+  const head = (
+    <ScreenHead
+      over={capitalised(formatDay(new Date(boardStop.plannedAt), locale), locale)}
+      title={t("ride.fromTo", { from: name(boardStop), to: name(alightStop) })}
+      action={
+        <IconButton
+          icon={ShareIcon}
+          label={t("trip.share")}
+          onPress={() => {
+            void share();
+          }}
+        />
+      }
     />
-  );
-  const title = (
-    <View style={wide ? styles.grow : undefined}>
-      <Text style={[typography.small, { color: palette.textMuted }]}>
-        {capitalised(formatDay(new Date(boardStop.plannedAt), locale), locale)}
-      </Text>
-      <Text accessibilityRole="header" style={[typography.title, { color: palette.text }]}>
-        {route}
-      </Text>
-      <Text style={[typography.small, { color: palette.textMuted }]}>
-        {whole ? t("trip.wholeTrip") : t("results.partOf", { from: name(first), to: name(last) })}
-      </Text>
-    </View>
   );
   const otherTime = showsOtherTime(now()) ? (
     <Notice kind="info" message={t("results.icelandTime")} />
   ) : null;
-  const partHeader = (
-    <View style={styles.cardHeader}>
-      <Heading>{t("trip.yourPart")}</Heading>
-      <Tag
-        kind={trip.bookingMode === "instant" ? "positive" : "info"}
-        label={trip.bookingMode === "instant" ? t("results.instant") : t("results.request")}
-      />
-    </View>
-  );
-  const getIn = (
-    <StopChoice
-      getIn
-      stop={boardStop}
-      choices={trip.stops.filter((stop) => stop.position < part.alight)}
-      onChoose={(position) => {
-        changePart({ board: position, alight: part.alight });
-      }}
-    />
-  );
-  const getOut = (
-    <StopChoice
-      getIn={false}
-      stop={alightStop}
-      choices={trip.stops.filter((stop) => stop.position > part.board)}
-      onChoose={(position) => {
-        changePart({ board: part.board, alight: position });
-      }}
-    />
-  );
-  const seatsHint = t("trip.seatsHint", {
-    free: trip.part.freeSeats,
-    price:
-      trip.part.pricePerSeat.amount === 0
-        ? t("results.free")
-        : t("trip.pricePerSeat", { price: formatMoney(trip.part.pricePerSeat, locale) }),
-  });
-  // In Your part with its hint; on a wide screen beside the price in the
-  // side column, which has the hint under the two.
+  // Under the ticket's tear line with how many are free; on a wide screen
+  // beside the price in the side column, which has a line under the two.
   const seatsStepper = (inPanel: boolean) => (
     <Stepper
-      {...(inPanel ? { caption: true } : { beside: true, hint: seatsHint })}
+      {...(inPanel
+        ? { caption: true }
+        : { beside: true, hint: t("trip.freeOnPart", { count: trip.part.freeSeats }) })}
       label={t("trip.seats")}
       value={seats}
       min={1}
@@ -302,81 +271,102 @@ function Trip({
       moreLabel={t("search.moreSeats")}
     />
   );
-  const driverAndCar = (
-    <DriverAndCar
-      driver={{ ...trip.driver, standing: trip.driver }}
+  const partTicket = (
+    <PartTicket
+      trip={trip}
+      part={part}
+      onChange={changePart}
+      foot={wide ? undefined : seatsStepper(false)}
+      cancelled={cancelled}
+    />
+  );
+  const driver = (
+    <DriverCard
+      driver={trip.driver}
       car={trip.car}
       carNote={t("trip.plateLater")}
       preferences={trip.preferences}
       note={trip.note}
     />
   );
-  const seatView = (
-    <SeatView
+  const whereYouSit = (
+    <WhereYouSit
       offered={trip.seatsOffered}
       free={trip.part.freeSeats}
       yours={Math.min(seats, trip.part.freeSeats)}
       driverColour={trip.driver.colour}
     />
   );
-  const routeParts = (
-    <>
-      <RouteMap
-        label={t("trip.routeMap", {
-          trip: t("search.route", { from: name(first), to: name(last) }),
-          part: route,
-        })}
-        stops={trip.stops.map((stop) => stop.meetingPoint.position)}
-        part={part}
-      />
-      <RouteList stops={trip.stops} part={part} onChange={changePart} />
-      <Body>{t("trip.tapStop")}</Body>
-    </>
-  );
-  const freeCancellation =
-    trip.part.pricePerSeat.amount === 0 ? null : (
-      <View style={styles.row}>
-        <Icon icon={ShieldCheck} color={palette.primary} />
-        <Text style={[typography.small, styles.grow, { color: palette.text }]}>
-          {inPerson
-            ? t("booking.payInPersonShort")
-            : t("trip.freeCancellation", {
-                time: formatDuration(freeCancellationMinutes * 60, locale),
-              })}
-        </Text>
+  const wholeRoute = (
+    <Card>
+      <View testID="whole-route" style={styles.inCard}>
+        <Heading>{t("trip.wholeRoute")}</Heading>
+        <RouteMap
+          label={t("trip.routeMap", {
+            trip: t("search.route", { from: name(first), to: name(last) }),
+            part: route,
+          })}
+          stops={trip.stops.map((stop) => stop.meetingPoint.position)}
+          part={part}
+        />
+        <RouteList stops={trip.stops} part={part} onChange={changePart} />
+        <Body align="start">{t("trip.tapStop")}</Body>
       </View>
-    );
-  const safety =
-    trip.part.state === "cancelled" ? null : (
-      <TripSafety
-        regions={[boardStop.meetingPoint.region, alightStop.meetingPoint.region]}
-        share={null}
-      />
-    );
-  // Reporting needs an account; my own trip is not mine to report (spec 9, 3.1).
-  const report =
-    me === null || trip.drivenByMe ? null : (
-      <Button
-        variant="text"
-        label={t("report.trip")}
-        onPress={() => {
-          router.push({
-            pathname: "/report",
-            params: { kind: "trip", id: trip.id },
-          });
-        }}
-      />
+    </Card>
+  );
+
+  // What cancelling costs, or how the driver is paid: nothing on a free
+  // ride, or on one that was cancelled, where there is no seat to book.
+  const paying =
+    cancelled || trip.part.pricePerSeat.amount === 0
+      ? null
+      : inPerson
+        ? {
+            icon: HandCoins,
+            title: t("trip.paying"),
+            value: t("trip.payingInPerson"),
+            whole: t("booking.payInPersonShort"),
+          }
+        : {
+            icon: ShieldCheck,
+            title: t("trip.freeCancellationRow"),
+            value: t("trip.freeCancellationUntil", {
+              time: formatDuration(freeCancellationMinutes * 60, locale),
+            }),
+            whole: t("trip.freeCancellation", {
+              time: formatDuration(freeCancellationMinutes * 60, locale),
+            }),
+          };
+  const regions = [boardStop.meetingPoint.region, alightStop.meetingPoint.region];
+  const weather = !cancelled && showsWeatherAndRoads(regions);
+  // Reporting needs an account; my own ride is not mine to report (spec 9, 3.1).
+  const reports = me !== null && !trip.drivenByMe;
+  // On a wide screen what cancelling costs stands whole under the button it is about.
+  const payingRow = wide ? null : paying;
+  const rows =
+    payingRow === null && !weather && !reports ? null : (
+      <ActionRows>
+        {payingRow === null ? null : (
+          <Unfolds icon={payingRow.icon} title={payingRow.title} value={payingRow.value}>
+            <Body align="start">{payingRow.whole}</Body>
+          </Unfolds>
+        )}
+        {weather ? <WeatherAndRoadsRow regions={regions} /> : null}
+        {reports ? (
+          <Row
+            icon={Flag}
+            title={t("report.trip")}
+            href={{ pathname: "/report", params: { kind: "trip", id: trip.id } }}
+          />
+        ) : null}
+      </ActionRows>
     );
 
   if (wide) {
     return (
       <Screen siteFooter width="page">
         <NoIndex />
-        <View style={styles.wideHeader}>
-          <BackButton fallback="/" />
-          {title}
-          {shareButton}
-        </View>
+        {head}
         <ShareNotice shared={shared} />
         {otherTime}
         <Columns
@@ -386,32 +376,37 @@ function Trip({
                 <BookingBar
                   trip={trip}
                   pending={pending}
-                  panel={{ seats: seatsStepper(true), hint: seatsHint, note: freeCancellation }}
+                  panel={{
+                    seats: seatsStepper(true),
+                    hint: t("trip.seatsHint", {
+                      free: trip.part.freeSeats,
+                      price:
+                        trip.part.pricePerSeat.amount === 0
+                          ? t("results.free")
+                          : t("trip.pricePerSeat", {
+                              price: formatMoney(trip.part.pricePerSeat, locale),
+                            }),
+                    }),
+                    note:
+                      paying === null ? null : (
+                        <View style={styles.row}>
+                          <Icon icon={paying.icon} color={palette.primary} />
+                          <Text style={[typography.small, styles.grow, { color: palette.text }]}>
+                            {paying.whole}
+                          </Text>
+                        </View>
+                      ),
+                  }}
                 />
               </Card>
-              <Card>
-                <Heading>{t("trip.route")}</Heading>
-                {routeParts}
-              </Card>
+              {wholeRoute}
             </>
           }
         >
-          <Card>
-            {partHeader}
-            <Halves testID="part-stops">
-              {getIn}
-              {getOut}
-            </Halves>
-          </Card>
-          <Card>
-            <Heading>{t("trip.whoYouRideWith")}</Heading>
-            <Halves testID="ride-with">
-              {driverAndCar}
-              {seatView}
-            </Halves>
-          </Card>
-          {safety}
-          {report}
+          {partTicket}
+          {driver}
+          {whereYouSit}
+          {rows}
         </Columns>
       </Screen>
     );
@@ -420,35 +415,43 @@ function Trip({
   return (
     <Screen siteFooter footer={<BookingBar trip={trip} pending={pending} />}>
       <NoIndex />
-      <View style={styles.header}>
-        <BackButton fallback="/" />
-        {shareButton}
-      </View>
+      {head}
       <ShareNotice shared={shared} />
-      {title}
       {otherTime}
-
-      <Card>
-        {partHeader}
-        {getIn}
-        {getOut}
-        <View style={[styles.divider, { backgroundColor: palette.border }]} />
-        {seatsStepper(false)}
-      </Card>
-
-      <Card>
-        <Heading>{t("trip.whoYouRideWith")}</Heading>
-        {driverAndCar}
-        <View style={[styles.divider, { backgroundColor: palette.border }]} />
-        {seatView}
-      </Card>
-
-      <Heading>{t("trip.route")}</Heading>
-      {routeParts}
-      {freeCancellation}
-      {safety}
-      {report}
+      {partTicket}
+      {driver}
+      {whereYouSit}
+      {wholeRoute}
+      {rows}
     </Screen>
+  );
+}
+
+/** A row that unfolds what its value says in short, such as what cancelling costs. */
+function Unfolds({
+  icon,
+  title,
+  value,
+  children,
+}: {
+  readonly icon: LucideIcon;
+  readonly title: string;
+  readonly value: string;
+  readonly children: ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Row
+      icon={icon}
+      title={title}
+      value={value}
+      expanded={open}
+      onToggle={() => {
+        setOpen((was) => !was);
+      }}
+    >
+      {children}
+    </Row>
   );
 }
 
@@ -605,7 +608,13 @@ function BookingBar({
           {free ? t("results.free") : formatMoney(part.total, locale)}
         </Text>
         <Text style={[typography.small, { color: palette.textMuted }]}>
-          {t("search.seatCount", { count: part.seats })}
+          {free || part.seats === 1
+            ? t("search.seatCount", { count: part.seats })
+            : // Short, so the button keeps its place beside it on a narrow phone.
+              t("booking.seatsTimesPrice", {
+                seats: String(part.seats),
+                price: formatMoney(part.pricePerSeat, locale),
+              })}
         </Text>
       </View>
       {action}
@@ -614,16 +623,8 @@ function BookingBar({
 }
 
 const styles = StyleSheet.create({
-  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  wideHeader: { flexDirection: "row", alignItems: "center", gap: spacing.md },
-  cardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: spacing.sm,
-    flexWrap: "wrap",
-  },
-  divider: { height: controlOutline / 2 },
+  // As a card's own gap, for what a card holds in one named part.
+  inCard: { gap: spacing.ms },
   row: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   grow: { flex: 1 },
   bar: { flexDirection: "row", alignItems: "center", gap: spacing.md, flexWrap: "wrap" },

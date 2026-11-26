@@ -504,6 +504,54 @@ person sees it, in 3.5, 3.6, 3.10 and 3.16):
    Journeys: `trip-details.spec.ts`, `booking.spec.ts`.
 6. **Docs and pictures:** specs 4 and 5; `built/ride-*`, `built/book-*`.
 
+As built, what differs from the list above (spec 31 says the same where a
+person sees it, in 3.7, 3.16 and 3.19):
+
+- `RideTicket` gains three things: an end's `action` (Change, at the right
+  of the place), `unfolded` (what a Change opens, inside the ticket and
+  above the tear line) and `headed` (the caption is a heading where it
+  names a part of its screen). The ticket of this screen is
+  `trip-details/part-ticket.tsx`; `stop-choice.tsx` is gone, and so is
+  `Halves`, which only this screen used.
+- New parts of the screen: `trip-details/driver-card.tsx`,
+  `trip-details/where-you-sit.tsx` (`SeatView` loses its legend, and the
+  texts and the corner size only the legend used) and
+  `safety/weather-roads-row.tsx`, which shows when the Safety links did. `preferenceNeeds` in `trip-parts.tsx` gives the preferences to the
+  card and to a booking alike.
+- The driver's card has no number of rides and no "what is checked": a
+  ride's details do not carry them, and the spec adds no data.
+- On a phone the paying line is a row that unfolds its sentence; a laptop
+  keeps the sentence under the button. Pay in person has its own row.
+- `Row` puts a value under its title where the two have no room on one
+  line, on every screen (spec 15, 5.2). `sizes.carBeside` 176 and
+  `carBesideLeast` 120, new.
+- Room for long names, on every screen that has them: `ScreenHead` puts
+  its button over a title whose longest word has no room beside it, and a
+  ticket's end puts its `action` under its place.
+- The ticket folds its stops when the part changes from elsewhere, and
+  then no Change takes focus; Escape folds them on the web. A cancelled
+  ride has no booking tag and nothing about cancelling a booking.
+- With more than one seat the bar says what each costs ("2 × 2,900 ISK"),
+  short, so the button keeps its place beside it on a narrow phone.
+- Booking a seat's ticket shows the sum under the total for more than one
+  seat only; the keys `booking.driver`, `booking.driverAndCar` and
+  `booking.total` are gone with the lines they wrote, as are
+  `trip.yourPart`, `trip.whoYouRideWith`, `trip.route`, `trip.wholeTrip`
+  and `results.partOf`.
+- "You're booked" shows `MyRideTicket`; `rideOfBooking` in
+  `my-rides/rides.ts` makes its ride from a booking.
+- Journeys changed: `trip-details.spec.ts` (Change on the ticket, where
+  focus goes, Escape, then a stop of the route), `booking.spec.ts`,
+  `reporting.spec.ts`, `laptop.spec.ts` and `look.spec.ts` (a ride's page
+  between places with long names, 360 wide, with the text as set and
+  twice as large). Pictures: `built/ride-*`, `built/book-*` and
+  `built/booked-*`.
+- Left for PR 12's list, from the code review: the driver's card has no
+  heading, and in "Where you sit" the picture comes before the heading it
+  belongs to; on Booking a seat nothing says "driver" beside the driver's
+  name for a screen reader; a cancelled ride's page still has the seats
+  stepper and "Where you sit".
+
 ## PR 7: a booked seat and the trip day
 
 `feat(booking)`, spec 31, 3.8, 3.9, 3.16 item 2, and cancelling a booking,
@@ -671,7 +719,11 @@ and deleting the account (3.19).
    the rides on a laptop; All rides' centred title; Find on a phone moves
    down a ticket's height when my rides arrive after the rides leaving
    soon (room kept for them, or both shown together).
-7. **Docs:** spec 31 becomes Built, with what differs from the drawings;
+7. **Small things PR 6's code review named:** a heading for the driver's
+   card, and the heading before the picture in "Where you sit"; on
+   Booking a seat, "driver" beside the driver's name for a screen reader;
+   a cancelled ride's page without the seats stepper and "Where you sit".
+8. **Docs:** spec 31 becomes Built, with what differs from the drawings;
    spec 15 has the parts; the roadmap and the changelog.
 
 ## After merging

@@ -74,7 +74,7 @@ describe("a public profile (spec 1, 3.5)", () => {
         profileApi(client);
       },
     });
-    await fireEvent.press(await screen.findByRole("link", { name: "See profile: Anna" }));
+    await fireEvent.press(await screen.findByRole("link", { name: /^See profile: Anna, / }));
     expect(await screen.findByRole("header", { name: "Anna" })).toBeVisible();
     expect(screen).toHavePathname(`/people/${annaProfileId}`);
   });

@@ -286,6 +286,73 @@ describe("RideTicket", () => {
     ).toBeVisible();
   });
 
+  it("holds something to press at the right of a place, such as Change, on the place's row", async () => {
+    const change = jest.fn();
+    await render(
+      <RideTicket
+        day="Your part of the ride"
+        from={{ ...selfoss, action: <Button variant="text" label="Change" onPress={change} /> }}
+        to={vik}
+        between="1 h 35 min"
+      />,
+    );
+    const from = screen.getByTestId("ticket-from");
+    // After the place, in the same row; the other end has none.
+    const parts = within(from)
+      .getAllByTestId(/^ticket-(from-place|end-action)$/)
+      .map((part) => String(part.props.testID));
+    expect(parts).toEqual(["ticket-from-place", "ticket-end-action"]);
+    expect(within(screen.getByTestId("ticket-to")).queryByTestId("ticket-end-action")).toBeNull();
+    // With no room beside the place's longest word it goes under the place,
+    // at the right, and never squeezes the name.
+    expect(within(from).getByTestId("ticket-end-with-action")).toHaveStyle({
+      flexDirection: "row",
+      flexWrap: "wrap",
+    });
+    expect(within(from).getByTestId("ticket-end-action")).toHaveStyle({
+      flexShrink: 0,
+      marginLeft: "auto",
+    });
+    await fireEvent.press(within(from).getByRole("button", { name: "Change" }));
+    expect(change).toHaveBeenCalledTimes(1);
+  });
+
+  it("has a caption that heads a part of its screen as a heading, and a day as plain text", async () => {
+    const { rerender } = await render(
+      <RideTicket
+        headed
+        day="Your part of the ride"
+        from={selfoss}
+        to={vik}
+        between="1 h 35 min"
+      />,
+    );
+    expect(screen.getByRole("header", { name: "Your part of the ride" })).toBeVisible();
+    await rerender(<RideTicket day="Fri 27 Nov" from={selfoss} to={vik} between="1 h 35 min" />);
+    expect(screen.getByText("Fri 27 Nov")).toBeVisible();
+    expect(screen.queryByRole("header")).toBeNull();
+  });
+
+  it("unfolds something under the timetable, over the tear line, such as the stops to choose from", async () => {
+    await render(
+      <RideTicket
+        day="Your part of the ride"
+        from={selfoss}
+        to={vik}
+        between="1 h 35 min"
+        note="Jón drives BSÍ → Vík"
+        unfolded={<Text>Where you get in</Text>}
+        foot={<Text>2 free on your part</Text>}
+      />,
+    );
+    const top = within(screen.getByTestId("ticket-top"));
+    expect(top.getByText("Where you get in")).toBeVisible();
+    const order = screen
+      .getAllByTestId(/^ticket-(times|note|unfolded|tear)$/, { includeHiddenElements: true })
+      .map((part) => String(part.props.testID));
+    expect(order).toEqual(["ticket-times", "ticket-note", "ticket-unfolded", "ticket-tear"]);
+  });
+
   it("shows its tags at the right of the day", async () => {
     await render(
       <RideTicket

@@ -20,7 +20,8 @@ export type Ride =
       readonly endsAt: Date;
     };
 
-const asBooking = (booking: Booking): Ride => ({
+/** A booking of mine as a ride, for its ticket where it shows on its own. */
+export const rideOfBooking = (booking: Booking): Ride => ({
   kind: "booking",
   booking,
   startsAt: new Date(booking.board.plannedAt),
@@ -47,7 +48,7 @@ export function mergeRides(
   trips: readonly MyTrip[],
   when: When,
 ): Ride[] {
-  const rides = [...bookings.map(asBooking), ...trips.flatMap(asTrip)];
+  const rides = [...bookings.map(rideOfBooking), ...trips.flatMap(asTrip)];
   const order = when === "upcoming" ? 1 : -1;
   return rides.sort((a, b) => order * (a.startsAt.getTime() - b.startsAt.getTime()));
 }

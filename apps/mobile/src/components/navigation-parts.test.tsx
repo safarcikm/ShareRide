@@ -92,6 +92,31 @@ describe("ScreenHead (spec 31, 3.3)", () => {
     ]);
   });
 
+  it("lets that button go over a title with no room for its longest word beside it", async () => {
+    await inEnglish(
+      <ScreenHead
+        title="Keflavíkurflugvöllur to Kirkjubæjarklaustur"
+        action={<IconButton icon={Share} label="Share this ride" onPress={jest.fn()} />}
+      />,
+    );
+    // The lines wrap upwards: the button's line goes over the title's, and
+    // the title then has the whole width beside Back. A browser knows the
+    // longest word (`min-content`, which React Native lacks).
+    expect(screen.getByTestId("screen-head-titles-and-action")).toHaveStyle({
+      flexDirection: "row",
+      flexWrap: "wrap-reverse",
+      alignItems: "flex-end",
+      flex: 1,
+    });
+    expect(screen.getByTestId("screen-head-action")).toHaveStyle({ marginLeft: "auto" });
+    // Back, the title, then the button: what a keyboard and a screen reader meet, in that order.
+    const head = within(screen.getByTestId("screen-head"));
+    const order = head
+      .getAllByRole(/^(button|header)$/)
+      .map((part) => (part.props.accessibilityLabel ?? "title") as string);
+    expect(order).toEqual(["Back", "title", "Share this ride"]);
+  });
+
   it("stands a posting step's road beside Back, over the title", async () => {
     await inEnglish(
       <ScreenHead

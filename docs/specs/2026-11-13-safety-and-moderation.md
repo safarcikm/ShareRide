@@ -99,7 +99,10 @@ decision, with every operator action logged.
    the weather forecast and warnings (vedur.is), road conditions
    (umferdin.is) and SafeTravel (safetravel.is), in the user's language where
    those sites offer it. These are links only; automatic warnings come later
-   (Phase 4, [integrations](../architecture/integrations.md)).
+   (Phase 4, [integrations](../architecture/integrations.md)). Since
+   [spec 31](2026-11-26-one-ride-one-ticket.md) (3.7) a ride's details
+   have them under a row, "Weather and roads", which unfolds the line and
+   the three links; a booking and the trip day show them as before.
 3. **Share trip details:** from a booking or a trip, "Share trip" opens the
    phone's share sheet with a short text: date and time, from and to, the
    meeting point, the driver's first name, and the car's make, model, colour

@@ -1,7 +1,8 @@
 import { act, fireEvent, screen, within } from "expo-router/testing-library";
-import { Dimensions } from "react-native";
+import { AccessibilityInfo, Dimensions } from "react-native";
 import { shareLink } from "@/lib/share";
 import { renderApp, completeMe } from "@/testing/app";
+import { filledButtons } from "@/testing/buttons";
 import type * as TestApp from "@/testing/app";
 import { failure, ok } from "@/testing/fake-client";
 import { northResult, northStops, northTrip, searchApi, tripDetailsApi } from "@/testing/search";
@@ -29,6 +30,12 @@ const headings = () =>
 /** The stops offered by Change, in route order. */
 const radioNames = () =>
   screen.getAllByRole("radio").map((radio) => String(radio.props.accessibilityLabel));
+/** The screen's parts, in the order they show. */
+const parts = () =>
+  screen
+    .getAllByTestId(/^(part-ticket|driver-card|where-you-sit|whole-route|action-rows)$/)
+    .map((part) => String(part.props.testID));
+const ticket = () => within(screen.getByTestId("part-ticket"));
 const detailsCalls = (client: { calls: { path: string; input: Record<string, unknown> }[] }) =>
   client.calls.filter((call) => call.path === "/v1/trips/{id}").map((call) => call.input["query"]);
 
@@ -61,10 +68,12 @@ describe("Trip details (spec 4, 3.6)", () => {
         tripDetailsApi(client);
       },
     });
+    // A row says it in short, and unfolds the whole of it.
+    await fireEvent.press(
+      await screen.findByRole("button", { name: "Free cancellation, Up to 45 min before" }),
+    );
     expect(
-      await screen.findByText(
-        "Free cancellation, with a full refund, up to 45 min before you get in.",
-      ),
+      screen.getByText("Free cancellation, with a full refund, up to 45 min before you get in."),
     ).toBeVisible();
   });
 
@@ -81,45 +90,61 @@ describe("Trip details (spec 4, 3.6)", () => {
     await fireEvent.press(
       await screen.findByRole("button", { name: /^Leaves Borgarnes at 10:00/ }),
     );
-    expect(await screen.findByRole("header", { name: "Borgarnes → Blönduós" })).toBeVisible();
+    expect(await screen.findByRole("header", { name: "Borgarnes to Blönduós" })).toBeVisible();
     expect(screen).toHavePathname(`/trips/${id}`);
     expect(screen).toHaveSearchParams({ id, from: "1", to: "2", seats: "2" });
     expect(detailsCalls(client)).toEqual([{ seats: 2, fromStop: 1, toStop: 2 }]);
   });
 
-  it("puts your part first, then who you ride with, the route and safety (spec 16, 3.7)", async () => {
+  it("is the head, your part as a ticket, the driver, where you sit, the whole route and the rows (spec 31, 3.7)", async () => {
     await openTrip();
-    expect(await screen.findByRole("header", { name: "Borgarnes → Blönduós" })).toBeVisible();
+    expect(await screen.findByRole("header", { name: "Borgarnes to Blönduós" })).toBeVisible();
     expect(headings()).toEqual([
-      "Borgarnes → Blönduós",
-      "Your part",
-      "Who you ride with",
-      "Route",
-      "Safety",
+      "Borgarnes to Blönduós",
+      "Your part of the ride",
+      "Where you sit",
+      "The whole route",
     ]);
-    expect(screen.getByText("Sunday 15 November")).toBeVisible();
-    expect(screen.getByText("Part of BSÍ bus terminal → Hof, Akureyri")).toBeVisible();
+    expect(parts()).toEqual([
+      "part-ticket",
+      "driver-card",
+      "where-you-sit",
+      "whole-route",
+      "action-rows",
+    ]);
+    // The head: the day over the title, and Share.
+    const head = within(screen.getByTestId("screen-head"));
+    expect(head.getByText("Sunday 15 November")).toBeVisible();
+    expect(head.getByRole("button", { name: "Back" })).toBeVisible();
+    expect(head.getByRole("button", { name: "Share" })).toBeVisible();
+    // The whole route's card says what this is a part of.
+    expect(screen.queryByText(/^Part of/)).toBeNull();
 
-    // Your part: how booking works, where you get in and out, and the seats.
-    expect(screen.getByText("Driver approves")).toBeVisible();
-    const [getIn, getOut] = screen.getAllByTestId("stop-choice").map((row) => within(row));
-    expect(getIn?.getByText("Get in")).toBeVisible();
-    expect(getIn?.getByText("10:00")).toBeVisible();
-    expect(getIn?.getByText("Borgarnes")).toBeVisible();
-    expect(getIn?.getByRole("button", { name: "Change where you get in" })).toBeVisible();
-    expect(getOut?.getByText("Get out")).toBeVisible();
-    expect(getOut?.getByText("12:05")).toBeVisible();
-    expect(getOut?.getByText("Blönduós")).toBeVisible();
-    expect(getOut?.getByRole("button", { name: "Change where you get out" })).toBeVisible();
-    expect(screen.getByText("2 free on your part · 2,900 ISK per seat")).toBeVisible();
-    expect(screen.getByRole("button", { name: "One seat fewer" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "One seat more" })).toBeEnabled();
+    // Your part: a ticket with how booking works, Change at each end, and
+    // the seats under the tear line. The price is in the bar.
+    expect(within(ticket().getByTestId("ticket-day")).getByText("Driver approves")).toBeVisible();
+    const from = within(ticket().getByTestId("ticket-from"));
+    expect(from.getByText("10:00")).toBeVisible();
+    expect(from.getByText("Borgarnes")).toBeVisible();
+    expect(from.getByRole("button", { name: "Change where you get in" })).toBeVisible();
+    const to = within(ticket().getByTestId("ticket-to"));
+    expect(to.getByText("12:05")).toBeVisible();
+    expect(to.getByText("Blönduós")).toBeVisible();
+    expect(to.getByRole("button", { name: "Change where you get out" })).toBeVisible();
+    expect(ticket().getByText("2 h 5 min")).toBeVisible();
+    expect(ticket().queryByTestId("ticket-price")).toBeNull();
+    const foot = within(ticket().getByTestId("ticket-foot"));
+    expect(foot.getByText("Seats")).toBeVisible();
+    expect(foot.getByText("2 free on your part")).toBeVisible();
+    expect(foot.getByRole("button", { name: "One seat fewer" })).toBeVisible();
+    expect(foot.getByRole("button", { name: "One seat more" })).toBeEnabled();
 
-    // Who you ride with: the driver, the car, their preferences and the seats.
-    expect(screen.getByText("Anna")).toBeVisible();
-    expect(screen.getByText("New driver")).toBeVisible();
-    expect(screen.getByText("White Toyota Yaris")).toBeVisible();
-    expect(screen.getByText("Number plate shown once your seat is confirmed")).toBeVisible();
+    // The driver, and under a line the car and what they like.
+    const driver = within(screen.getByTestId("driver-card"));
+    expect(driver.getByText("Anna")).toBeVisible();
+    expect(driver.getByText("New driver")).toBeVisible();
+    expect(driver.getByText("White Toyota Yaris")).toBeVisible();
+    expect(driver.getByText("Number plate shown once your seat is confirmed")).toBeVisible();
     for (const need of [
       "Some chat",
       "One suitcase",
@@ -127,37 +152,152 @@ describe("Trip details (spec 4, 3.6)", () => {
       "No smoking",
       "No child seat",
     ]) {
-      expect(screen.getByText(need)).toBeVisible();
+      expect(driver.getByText(need)).toBeVisible();
     }
+
+    // Where you sit: the picture, and one line in place of a legend.
+    const seats = within(screen.getByTestId("where-you-sit"));
     expect(
-      screen.getByRole("image", {
+      seats.getByRole("image", {
         name: "Seats on your part: 3 offered, 1 taken, 1 yours and 1 free.",
       }),
     ).toBeVisible();
-
-    // The route, its stops and what cancelling costs.
-    expect(screen.getByRole("button", { name: "10:00, Borgarnes, getting in" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "12:05, Blönduós, getting out" })).toBeVisible();
     expect(
-      screen.getByRole("button", { name: "09:00, BSÍ bus terminal, not on your part" }),
+      seats.getByText("2 of 3 seats are free. Seats are not numbered: you agree in the car."),
+    ).toBeVisible();
+    expect(seats.queryByText("Taken")).toBeNull();
+
+    // The whole route: the map and every stop, mine marked.
+    const route = within(screen.getByTestId("whole-route"));
+    expect(route.getByRole("button", { name: "10:00, Borgarnes, getting in" })).toBeVisible();
+    expect(route.getByRole("button", { name: "12:05, Blönduós, getting out" })).toBeVisible();
+    expect(
+      route.getByRole("button", { name: "09:00, BSÍ bus terminal, not on your part" }),
     ).toBeVisible();
     expect(
-      screen.getByRole("image", {
+      route.getByRole("image", {
         name: "The ride on a map of Iceland: BSÍ bus terminal → Hof, Akureyri. Your part: Borgarnes → Blönduós.",
       }),
     ).toBeVisible();
+    expect(route.getByText("Tap a stop to get in or out somewhere else.")).toBeVisible();
+
+    // The rows: what cancelling costs, and the weather and the roads on a
+    // ride out of town. Reporting needs an account.
+    const rows = within(screen.getByTestId("action-rows"));
     expect(
-      screen.getByText("Free cancellation, with a full refund, up to 15 min before you get in."),
-    ).toBeVisible();
-    // Said once, in Your part, rather than again further down.
-    expect(screen.queryByText("The driver approves each request")).toBeNull();
-    expect(screen.queryByText(/free on your part$/)).toBeNull();
+      rows.getByRole("button", { name: "Free cancellation, Up to 15 min before" }),
+    ).not.toBeExpanded();
+    expect(rows.getByRole("button", { name: "Weather and roads" })).not.toBeExpanded();
+    expect(rows.queryByRole("link", { name: "Report this ride" })).toBeNull();
+    expect(screen.queryByText(/^Free cancellation, with a full refund/)).toBeNull();
+    expect(screen.queryByRole("header", { name: "Safety" })).toBeNull();
 
     const bar = screen.getByTestId("bottom-bar");
     expect(within(bar).getByText("2,900 ISK")).toBeVisible();
     expect(within(bar).getByText("1 seat")).toBeVisible();
     expect(within(bar).getByRole("button", { name: "Send request" })).toBeEnabled();
     expect(within(bar).getByText("You'll sign in or create an account first.")).toBeVisible();
+    // One main button (R31.1).
+    expect(filledButtons()).toBe(1);
+  });
+
+  it("unfolds the weather and the roads, with the pages to check, on a ride out of town", async () => {
+    await openTrip();
+    const row = await screen.findByRole("button", { name: "Weather and roads" });
+    expect(screen.queryByRole("link", { name: "Weather (vedur.is)" })).toBeNull();
+    await fireEvent.press(row);
+    expect(screen.getByRole("button", { name: "Weather and roads" })).toBeExpanded();
+    expect(
+      screen.getByText("Before you go: check the weather, road conditions and SafeTravel."),
+    ).toBeVisible();
+    for (const name of [
+      "Weather (vedur.is)",
+      "Road conditions (umferdin.is)",
+      "SafeTravel (safetravel.is)",
+    ]) {
+      expect(screen.getByRole("link", { name })).toBeVisible();
+    }
+  });
+
+  it("has no rows at all for a visitor on a free ride within the capital area", async () => {
+    await openTrip(`/trips/${id}?from=0&to=1`, () =>
+      ok(
+        200,
+        northTrip(
+          { board: 0, alight: 1 },
+          {
+            stops: northStops.slice(0, 2).map((stop) => ({
+              ...stop,
+              meetingPoint: { ...stop.meetingPoint, region: "capital" as const },
+            })),
+            part: {
+              pricePerSeat: { amount: 0, currency: "ISK" },
+              total: { amount: 0, currency: "ISK" },
+            },
+          },
+        ),
+      ),
+    );
+    expect(await screen.findByText("Anna")).toBeVisible();
+    expect(screen.queryByTestId("action-rows")).toBeNull();
+  });
+
+  it("gives a member a row to report the ride, last of the rows", async () => {
+    await renderApp(`/trips/${id}?from=1&to=2`, {
+      me: completeMe,
+      setUp: (client) => {
+        tripDetailsApi(client);
+      },
+    });
+    const rows = within(await screen.findByTestId("action-rows"));
+    const report = rows.getByRole("link", { name: "Report this ride" });
+    expect(rows.getAllByRole(/^(button|link)$/).at(-1)).toBe(report);
+    await fireEvent.press(report);
+    expect(screen).toHavePathname("/report");
+    expect(screen).toHaveSearchParams({ kind: "trip", id });
+  });
+
+  it("gives the ride's own driver no row to report it", async () => {
+    await renderApp(`/trips/${id}?from=1&to=2`, {
+      me: completeMe,
+      setUp: (client) => {
+        tripDetailsApi(client, () =>
+          ok(200, northTrip({ board: 1, alight: 2 }, { drivenByMe: true, part: { state: "own" } })),
+        );
+      },
+    });
+    const rows = within(await screen.findByTestId("action-rows"));
+    expect(rows.getByRole("button", { name: "Weather and roads" })).toBeVisible();
+    expect(rows.queryByRole("link", { name: "Report this ride" })).toBeNull();
+  });
+
+  it("says how the driver is paid where people pay in person, in the row's place", async () => {
+    await renderApp(`/trips/${id}?from=1&to=2`, {
+      setUp: (client) => {
+        client.answer("/v1/config", () =>
+          ok(200, {
+            beta: false,
+            paused: [],
+            maxSeats: 8,
+            freeCancellationMinutes: 15,
+            maxMoveMinutes: 120,
+            reliabilityMonths: 12,
+            signInProviders: [],
+            payInPerson: true,
+          }),
+        );
+        tripDetailsApi(client);
+      },
+    });
+    await fireEvent.press(
+      await screen.findByRole("button", { name: "Paying, Cash or bank transfer" }),
+    );
+    expect(
+      screen.getByText(
+        "Card payments are coming soon: pay the driver in cash or by bank transfer when you get in.",
+      ),
+    ).toBeVisible();
+    expect(screen.queryByRole("button", { name: /^Free cancellation/ })).toBeNull();
   });
 
   it("tags a trip people book straight away, and a free one", async () => {
@@ -176,10 +316,13 @@ describe("Trip details (spec 4, 3.6)", () => {
         ),
       ),
     );
-    expect(await screen.findByText("Book instantly")).toBeVisible();
-    expect(screen.getByText("2 free on your part · Free")).toBeVisible();
+    expect(
+      await within(ticket().getByTestId("ticket-day")).findByText("Book instantly"),
+    ).toBeVisible();
+    expect(screen.getByText("2 free on your part")).toBeVisible();
     // Nothing is paid, so there is nothing to refund.
-    expect(screen.queryByText(/^Free cancellation/)).toBeNull();
+    expect(screen.queryByRole("button", { name: /^Free cancellation/ })).toBeNull();
+    expect(within(screen.getByTestId("bottom-bar")).getByText("Free")).toBeVisible();
     expect(
       within(screen.getByTestId("bottom-bar")).getByRole("button", { name: "Book" }),
     ).toBeEnabled();
@@ -192,7 +335,7 @@ describe("Trip details (spec 4, 3.6)", () => {
     expect(screen.getByRole("radio", { name: "10:00, Borgarnes" })).toBeChecked();
     await fireEvent.press(screen.getByRole("radio", { name: "09:00, BSÍ bus terminal" }));
     expect(
-      await screen.findByRole("header", { name: "BSÍ bus terminal → Blönduós" }),
+      await screen.findByRole("header", { name: "BSÍ bus terminal to Blönduós" }),
     ).toBeVisible();
     expect(screen.queryAllByRole("radio")).toEqual([]);
     expect(screen).toHaveSearchParams({ id, from: "0", to: "2" });
@@ -202,7 +345,9 @@ describe("Trip details (spec 4, 3.6)", () => {
     expect(radioNames()).toEqual(["10:00, Borgarnes", "12:05, Blönduós", "14:00, Hof, Akureyri"]);
     expect(screen.getByRole("radio", { name: "12:05, Blönduós" })).toBeChecked();
     await fireEvent.press(screen.getByRole("radio", { name: "14:00, Hof, Akureyri" }));
-    expect(await screen.findByText("The whole ride")).toBeVisible();
+    expect(
+      await screen.findByRole("header", { name: "BSÍ bus terminal to Hof, Akureyri" }),
+    ).toBeVisible();
     expect(await within(screen.getByTestId("bottom-bar")).findByText("6,000 ISK")).toBeVisible();
     expect(detailsCalls(client)).toEqual([
       { seats: 1, fromStop: 1, toStop: 2 },
@@ -215,8 +360,8 @@ describe("Trip details (spec 4, 3.6)", () => {
     await openTrip(`/trips/${id}?from=0&to=1`, () =>
       ok(200, northTrip({ board: 0, alight: 1 }, { stops: northStops.slice(0, 2) })),
     );
-    const [getIn] = await screen.findAllByTestId("stop-choice");
-    expect(getIn).toHaveTextContent(/^Get in/);
+    expect(await ticket().findByText("BSÍ bus terminal")).toBeVisible();
+    expect(ticket().queryByTestId("ticket-end-action")).toBeNull();
     expect(screen.queryByRole("button", { name: "Change where you get in" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Change where you get out" })).toBeNull();
   });
@@ -238,6 +383,90 @@ describe("Trip details (spec 4, 3.6)", () => {
     expect(screen).toHaveSearchParams({ id, from: "1", to: "2" });
   });
 
+  it("moves focus to the stops Change unfolds, and back to Change once one is chosen", async () => {
+    await openTrip();
+    const change = await screen.findByRole("button", { name: "Change where you get in" });
+    // React Native's test set-up already mocks it, so it holds earlier tests' calls.
+    const focusMoves = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
+    focusMoves.mockClear();
+    await fireEvent.press(change);
+    // The stops stand under both ends, away from the Change that opened them.
+    expect(focusMoves).toHaveBeenCalledTimes(1);
+    await fireEvent.press(screen.getByRole("radio", { name: "09:00, BSÍ bus terminal" }));
+    expect(
+      await screen.findByRole("header", { name: "BSÍ bus terminal to Blönduós" }),
+    ).toBeVisible();
+    // The stop chosen has gone, so its Change takes focus.
+    expect(focusMoves).toHaveBeenCalledTimes(2);
+
+    // The same stop again changes nothing, and gives focus back all the same.
+    await fireEvent.press(screen.getByRole("button", { name: "Change where you get in" }));
+    expect(focusMoves).toHaveBeenCalledTimes(3);
+    await fireEvent.press(screen.getByRole("radio", { name: "09:00, BSÍ bus terminal" }));
+    expect(screen.queryAllByRole("radio")).toEqual([]);
+    expect(focusMoves).toHaveBeenCalledTimes(4);
+    focusMoves.mockRestore();
+  });
+
+  it("leaves focus where it is when the part changes from the route's stops", async () => {
+    await openTrip();
+    await fireEvent.press(await screen.findByRole("button", { name: "Change where you get in" }));
+    await fireEvent.press(screen.getByRole("radio", { name: "09:00, BSÍ bus terminal" }));
+    expect(
+      await screen.findByRole("header", { name: "BSÍ bus terminal to Blönduós" }),
+    ).toBeVisible();
+    const focusMoves = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
+    focusMoves.mockClear();
+
+    // Out at the next stop: nowhere else to get in, so that end has no Change.
+    await fireEvent.press(screen.getByRole("button", { name: "10:00, Borgarnes, on your part" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Get out here" }));
+    expect(
+      await screen.findByRole("header", { name: "BSÍ bus terminal to Borgarnes" }),
+    ).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Change where you get in" })).toBeNull();
+    // Out further on again: Change is back, and does not take focus from the route.
+    await fireEvent.press(
+      screen.getByRole("button", { name: "14:00, Hof, Akureyri, not on your part" }),
+    );
+    await fireEvent.press(screen.getByRole("button", { name: "Get out here" }));
+    expect(
+      await screen.findByRole("header", { name: "BSÍ bus terminal to Hof, Akureyri" }),
+    ).toBeVisible();
+    expect(screen.getByRole("button", { name: "Change where you get in" })).toBeVisible();
+    expect(focusMoves).not.toHaveBeenCalled();
+    focusMoves.mockRestore();
+  });
+
+  it("folds the stops Change unfolded when the part changes from the route's stops", async () => {
+    await openTrip();
+    await fireEvent.press(await screen.findByRole("button", { name: "Change where you get in" }));
+    expect(screen.getAllByRole("radio")).toHaveLength(2);
+    await fireEvent.press(
+      screen.getByRole("button", { name: "14:00, Hof, Akureyri, not on your part" }),
+    );
+    await fireEvent.press(screen.getByRole("button", { name: "Get out here" }));
+    expect(await screen.findByRole("header", { name: "Borgarnes to Hof, Akureyri" })).toBeVisible();
+    expect(screen.queryAllByRole("radio")).toEqual([]);
+    expect(screen.getByRole("button", { name: "Change where you get in" })).not.toBeExpanded();
+  });
+
+  it("says nothing of booking, cancelling or the weather on a ride that was cancelled", async () => {
+    await openTrip(undefined, () =>
+      ok(200, northTrip({ board: 1, alight: 2 }, { part: { state: "cancelled" } })),
+    );
+    expect(
+      await within(screen.getByTestId("bottom-bar")).findByText("This ride was cancelled."),
+    ).toBeVisible();
+    // The ticket still says which part, with no word on how a seat is booked.
+    expect(ticket().getByText("Your part of the ride")).toBeVisible();
+    expect(ticket().queryByText("Driver approves")).toBeNull();
+    expect(screen.queryByRole("button", { name: /^Free cancellation/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Weather and roads" })).toBeNull();
+    // A visitor has nothing to report with, so no rows are left.
+    expect(screen.queryByTestId("action-rows")).toBeNull();
+  });
+
   it("gets in or out at another stop on the route, and keeps the part in the address", async () => {
     const { client } = await openTrip();
     await fireEvent.press(
@@ -247,7 +476,7 @@ describe("Trip details (spec 4, 3.6)", () => {
     expect(screen.queryByRole("button", { name: "Get out here" })).toBeNull();
     await fireEvent.press(screen.getByRole("button", { name: "Get in here" }));
     expect(
-      await screen.findByRole("header", { name: "BSÍ bus terminal → Blönduós" }),
+      await screen.findByRole("header", { name: "BSÍ bus terminal to Blönduós" }),
     ).toBeVisible();
     expect(screen).toHaveSearchParams({ id, from: "0", to: "2" });
 
@@ -255,9 +484,10 @@ describe("Trip details (spec 4, 3.6)", () => {
       screen.getByRole("button", { name: "14:00, Hof, Akureyri, not on your part" }),
     );
     await fireEvent.press(screen.getByRole("button", { name: "Get out here" }));
-    expect(await screen.findByText("The whole ride")).toBeVisible();
+    expect(
+      await screen.findByRole("header", { name: "BSÍ bus terminal to Hof, Akureyri" }),
+    ).toBeVisible();
     expect(screen.getByRole("button", { name: "10:00, Borgarnes, on your part" })).toBeVisible();
-    expect(screen.getByRole("header", { name: "BSÍ bus terminal → Hof, Akureyri" })).toBeVisible();
     expect(within(screen.getByTestId("bottom-bar")).getByText("6,000 ISK")).toBeVisible();
     expect(detailsCalls(client)).toEqual([
       { seats: 1, fromStop: 1, toStop: 2 },
@@ -296,10 +526,11 @@ describe("Trip details (spec 4, 3.6)", () => {
       screen.getByRole("button", { name: "14:00, Hof, Akureyri, not on your part" }),
     );
     await fireEvent.press(screen.getByRole("button", { name: "Get out here" }));
-    expect(await screen.findByText("The whole ride")).toBeVisible();
+    // The title leads too, before either answer has come.
+    expect(screen.getByRole("header", { name: "BSÍ bus terminal to Hof, Akureyri" })).toBeVisible();
     release();
     expect(
-      await screen.findByRole("header", { name: "BSÍ bus terminal → Hof, Akureyri" }),
+      await screen.findByRole("header", { name: "BSÍ bus terminal to Hof, Akureyri" }),
     ).toBeVisible();
     expect(screen).toHaveSearchParams({ id, from: "0", to: "3" });
     expect(detailsCalls(client)).toEqual([
@@ -323,10 +554,11 @@ describe("Trip details (spec 4, 3.6)", () => {
     const bar = await screen.findByTestId("bottom-bar");
     expect(await within(bar).findByText("Only 1 seat is free on your part.")).toBeVisible();
     expect(within(bar).getByText("5,800 ISK")).toBeVisible();
-    expect(within(bar).getByText("2 seats")).toBeVisible();
+    expect(within(bar).getByText("2 × 2,900 ISK")).toBeVisible();
     expect(screen.getByRole("button", { name: "One seat more" })).toBeDisabled();
     await fireEvent.press(screen.getByRole("button", { name: "One seat fewer" }));
     expect(await within(bar).findByText("2,900 ISK")).toBeVisible();
+    expect(within(bar).getByText("1 seat")).toBeVisible();
     expect(within(bar).getByRole("button", { name: "Send request" })).toBeEnabled();
     expect(detailsCalls(client).at(-1)).toEqual({ seats: 1, fromStop: 1, toStop: 2 });
   });
@@ -348,7 +580,8 @@ describe("Trip details (spec 4, 3.6)", () => {
     const { client } = await openTrip();
     await fireEvent.press(await screen.findByRole("button", { name: "One seat more" }));
     expect(await within(screen.getByTestId("bottom-bar")).findByText("5,800 ISK")).toBeVisible();
-    expect(screen.getByText("2 seats")).toBeVisible();
+    // With more than one seat the bar says what each costs.
+    expect(within(screen.getByTestId("bottom-bar")).getByText("2 × 2,900 ISK")).toBeVisible();
     expect(
       screen.getByRole("image", {
         name: "Seats on your part: 3 offered, 1 taken, 2 yours and 0 free.",
@@ -458,7 +691,9 @@ describe("Trip details (spec 4, 3.6)", () => {
       await screen.findByText("This ride doesn't have the stops the link asks for."),
     ).toBeVisible();
     await fireEvent.press(screen.getByRole("button", { name: "See the whole ride" }));
-    expect(await screen.findByText("The whole ride")).toBeVisible();
+    expect(
+      await screen.findByRole("header", { name: "BSÍ bus terminal to Hof, Akureyri" }),
+    ).toBeVisible();
     expect(detailsCalls(client).at(-1)).toEqual({ seats: 1 });
   });
 
@@ -493,34 +728,44 @@ describe("Trip details on a laptop (spec 18, 3.7)", () => {
   const main = () => within(screen.getByTestId("columns-main"));
   const side = () => within(screen.getByTestId("columns-side"));
 
-  it("puts your part, who you ride with and safety in the main column, with booking and the route beside them", async () => {
+  it("puts your part, the driver, where you sit and the rows in the main column, with booking and the whole route beside them", async () => {
     await openTrip();
-    expect(await screen.findByRole("header", { name: "Borgarnes → Blönduós" })).toBeVisible();
+    expect(await screen.findByRole("header", { name: "Borgarnes to Blönduós" })).toBeVisible();
     expect(screen.getByTestId("page")).toBeVisible();
     // Read in this order: the main column, then the side column.
     expect(headings()).toEqual([
-      "Borgarnes → Blönduós",
-      "Your part",
-      "Who you ride with",
-      "Safety",
-      "Route",
+      "Borgarnes to Blönduós",
+      "Your part of the ride",
+      "Where you sit",
+      "The whole route",
     ]);
-    expect(screen.getByText("Sunday 15 November")).toBeVisible();
-    expect(screen.getByText("Part of BSÍ bus terminal → Hof, Akureyri")).toBeVisible();
-    expect(screen.getByRole("button", { name: "Share" })).toBeVisible();
+    expect(parts()).toEqual([
+      "part-ticket",
+      "driver-card",
+      "where-you-sit",
+      "action-rows",
+      "whole-route",
+    ]);
+    const head = within(screen.getByTestId("screen-head"));
+    expect(head.getByText("Sunday 15 November")).toBeVisible();
+    expect(head.getByRole("button", { name: "Share" })).toBeVisible();
 
-    expect(main().getByText("Driver approves")).toBeVisible();
-    expect(main().getAllByTestId("stop-choice")).toHaveLength(2);
-    expect(main().getByText("Anna")).toBeVisible();
+    expect(within(main().getByTestId("ticket-day")).getByText("Driver approves")).toBeVisible();
+    expect(main().getByRole("button", { name: "Change where you get in" })).toBeVisible();
+    expect(main().getByRole("button", { name: "Change where you get out" })).toBeVisible();
+    expect(within(main().getByTestId("driver-card")).getByText("Anna")).toBeVisible();
     expect(main().getByText("White Toyota Yaris")).toBeVisible();
     expect(
-      main().getByRole("image", {
+      within(main().getByTestId("where-you-sit")).getByRole("image", {
         name: "Seats on your part: 3 offered, 1 taken, 1 yours and 1 free.",
       }),
     ).toBeVisible();
+    expect(main().getByRole("button", { name: "Weather and roads" })).toBeVisible();
 
-    // The seats are beside the price they change, not in Your part.
+    // The seats are beside the price they change, not in the ticket, which
+    // has no foot here.
     expect(main().queryByRole("button", { name: "One seat more" })).toBeNull();
+    expect(main().queryByTestId("ticket-foot")).toBeNull();
     expect(side().getByText("2,900 ISK")).toBeVisible();
     expect(side().getByText("2 free on your part · 2,900 ISK per seat")).toBeVisible();
     expect(side().getByRole("adjustable", { name: "Seats" })).toHaveAccessibilityValue({
@@ -529,23 +774,28 @@ describe("Trip details on a laptop (spec 18, 3.7)", () => {
     expect(side().getByRole("button", { name: "One seat more" })).toBeEnabled();
     expect(side().getByRole("button", { name: "Send request" })).toBeEnabled();
     expect(side().getByText("You'll sign in or create an account first.")).toBeVisible();
+    // What cancelling costs stands under the button it is about, whole, and
+    // so is no row here.
     expect(
       side().getByText("Free cancellation, with a full refund, up to 15 min before you get in."),
     ).toBeVisible();
+    expect(screen.queryByRole("button", { name: /^Free cancellation/ })).toBeNull();
 
+    const route = within(side().getByTestId("whole-route"));
     expect(
-      side().getByRole("image", {
+      route.getByRole("image", {
         name: "The ride on a map of Iceland: BSÍ bus terminal → Hof, Akureyri. Your part: Borgarnes → Blönduós.",
       }),
     ).toBeVisible();
-    expect(side().getByRole("button", { name: "10:00, Borgarnes, getting in" })).toBeVisible();
-    expect(side().getByRole("button", { name: "12:05, Blönduós, getting out" })).toBeVisible();
+    expect(route.getByRole("button", { name: "10:00, Borgarnes, getting in" })).toBeVisible();
+    expect(route.getByRole("button", { name: "12:05, Blönduós, getting out" })).toBeVisible();
 
     // The side column takes the bottom bar's place, and each thing is there once.
     expect(screen.queryByTestId("bottom-bar")).toBeNull();
     expect(screen.getAllByRole("button", { name: "Send request" })).toHaveLength(1);
     expect(screen.getAllByRole("button", { name: "One seat more" })).toHaveLength(1);
     expect(screen.getAllByText("2,900 ISK")).toHaveLength(1);
+    expect(filledButtons()).toBe(1);
   });
 
   it("prices the seats chosen in the side column, up to the seats free", async () => {
@@ -564,28 +814,24 @@ describe("Trip details on a laptop (spec 18, 3.7)", () => {
     expect(detailsCalls(client).at(-1)).toEqual({ seats: 2, fromStop: 1, toStop: 2 });
   });
 
-  it("puts Get in and Get out side by side, each opening its stops under itself", async () => {
+  it("opens the stops of one end at a time, in the ticket", async () => {
     await openTrip();
-    await screen.findByRole("header", { name: "Borgarnes → Blönduós" });
-    expect(main().getByTestId("part-stops")).toHaveStyle({ flexDirection: "row" });
-    const [getIn, getOut] = main().getAllByTestId("stop-choice");
-    if (getIn === undefined || getOut === undefined) throw new Error("No stops");
-    await fireEvent.press(within(getIn).getByRole("button", { name: "Change where you get in" }));
-    expect(within(getIn).getAllByRole("radio")).toHaveLength(2);
-    expect(within(getOut).queryByRole("radio")).toBeNull();
-    await fireEvent.press(within(getIn).getByRole("radio", { name: "09:00, BSÍ bus terminal" }));
-    expect(
-      await screen.findByRole("header", { name: "BSÍ bus terminal → Blönduós" }),
-    ).toBeVisible();
-  });
-
-  it("puts the seat view beside the driver and the car", async () => {
-    await openTrip();
-    await screen.findByRole("header", { name: "Borgarnes → Blönduós" });
-    const rideWith = main().getByTestId("ride-with");
-    expect(rideWith).toHaveStyle({ flexDirection: "row" });
-    expect(within(rideWith).getByText("Anna")).toBeVisible();
-    expect(within(rideWith).getByRole("image", { name: /^Seats on your part/ })).toBeVisible();
+    await screen.findByRole("header", { name: "Borgarnes to Blönduós" });
+    const part = () => within(main().getByTestId("part-ticket"));
+    await fireEvent.press(part().getByRole("button", { name: "Change where you get in" }));
+    const unfolded = () => within(part().getByTestId("ticket-unfolded"));
+    expect(unfolded().getByLabelText("Where you get in")).toHaveProp(
+      "accessibilityRole",
+      "radiogroup",
+    );
+    expect(radioNames()).toEqual(["09:00, BSÍ bus terminal", "10:00, Borgarnes"]);
+    // The other end's Change takes its place.
+    await fireEvent.press(part().getByRole("button", { name: "Change where you get out" }));
+    expect(part().getByRole("button", { name: "Change where you get in" })).not.toBeExpanded();
+    expect(radioNames()).toEqual(["12:05, Blönduós", "14:00, Hof, Akureyri"]);
+    await fireEvent.press(unfolded().getByRole("radio", { name: "14:00, Hof, Akureyri" }));
+    expect(await screen.findByRole("header", { name: "Borgarnes to Hof, Akureyri" })).toBeVisible();
+    expect(part().queryByTestId("ticket-unfolded")).toBeNull();
   });
 
   it.each([
@@ -596,6 +842,10 @@ describe("Trip details on a laptop (spec 18, 3.7)", () => {
     expect(await side().findByText(text)).toBeVisible();
     expect(screen.queryByRole("button", { name: "Send request" })).toBeNull();
     expect(screen.queryByTestId("bottom-bar")).toBeNull();
+    // What cancelling a booking costs is for a ride that can still be booked some day.
+    const cancelling = side().queryByText(/^Free cancellation, with a full refund/);
+    if (part.state === "cancelled") expect(cancelling).toBeNull();
+    else expect(cancelling).toBeVisible();
   });
 
   it("leads someone who has booked the trip to their booking, from the side column", async () => {
@@ -619,7 +869,7 @@ describe("Trip details on a laptop (spec 18, 3.7)", () => {
 
   it("is the column again when the window turns narrow, with the bar at the bottom", async () => {
     await openTrip();
-    await screen.findByRole("header", { name: "Borgarnes → Blönduós" });
+    await screen.findByRole("header", { name: "Borgarnes to Blönduós" });
     await act(() => {
       Dimensions.set({ window: phone });
     });
@@ -632,7 +882,7 @@ describe("Trip details on a laptop (spec 18, 3.7)", () => {
     await act(() => {
       Dimensions.set({ window: laptop });
     });
-    expect(screen.getByRole("header", { name: "Borgarnes → Blönduós" })).toBeVisible();
+    expect(screen.getByRole("header", { name: "Borgarnes to Blönduós" })).toBeVisible();
     expect(side().getByRole("button", { name: "Send request" })).toBeEnabled();
     expect(screen.queryByTestId("bottom-bar")).toBeNull();
   });

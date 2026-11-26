@@ -84,7 +84,12 @@ describe("beside the driver of a trip (spec 4, 3.4 and 3.6)", () => {
     });
     expect(await screen.findByText("4.3 (3 ratings)")).toBeVisible();
     expect(screen.getByText("Reliability: 91%")).toBeVisible();
-    expect(screen.getByRole("link", { name: "See profile: Anna" })).toBeVisible();
+    // The driver's line is the link, and its name says all the line holds.
+    expect(
+      screen.getByRole("link", {
+        name: "See profile: Anna, 4.3 (3 ratings), Reliability: 91%",
+      }),
+    ).toBeVisible();
   });
 
   it("says a driver is new, with not enough trips yet for members", async () => {
@@ -112,6 +117,11 @@ describe("beside the driver of a trip (spec 4, 3.4 and 3.6)", () => {
     });
     expect(await screen.findByText("New driver")).toBeVisible();
     expect(screen.getByText("Reliability: not enough rides yet")).toBeVisible();
+    expect(
+      screen.getByRole("link", {
+        name: "See profile: Anna, New driver, Reliability: not enough rides yet",
+      }),
+    ).toBeVisible();
   });
 });
 

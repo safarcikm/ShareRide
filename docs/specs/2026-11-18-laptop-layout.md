@@ -271,6 +271,13 @@ changes on a phone.
    the price it changes.
 5. There is no bottom bar. While the trip loads, and when it cannot be
    loaded, the screen is already a page (3.2, 8).
+6. Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.7 and 3.16) the
+   main column is the ticket of my part, the driver's card, "Where you
+   sit" and the rows (Weather and roads, Report this ride), one under the
+   other. Get in and Get out are the ticket's two ends, each with Change,
+   so nothing in the main column stands in two halves any more, and
+   `Halves` is gone. The side column is the booking panel, as in item 3,
+   then "The whole route".
 
 ### 3.8 Check and pay, and a request
 
@@ -288,6 +295,9 @@ changes on a phone.
    window turns narrow or wide, and so does a payment that is open (3.2,
    7). When the trip cannot be loaded the screen is a page all the same
    (3.2, 8).
+4. Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.19) the ride in
+   the side column is a ticket: the day, the two stops, the total with the
+   seats under it, and the driver and the car in its foot.
 
 ### 3.9 A booking
 

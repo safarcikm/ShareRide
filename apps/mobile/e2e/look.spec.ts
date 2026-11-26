@@ -1,7 +1,8 @@
 import { join } from "node:path";
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { soonestTripsRoute, type TripSearchResult } from "@shareride/contracts";
+import { soonestTripsRoute, type TripDetails, type TripSearchResult } from "@shareride/contracts";
 import { ticketFit } from "./support/layout";
+import { openTrip } from "./support/trips";
 
 // The look from spec 15 in a real browser: centred buttons that fit their label, the
 // keyboard focus ring, the moss outline of a field you type in, the loaded
@@ -174,6 +175,18 @@ for (const scheme of schemes) {
   });
 }
 
+/** Text at 200% (WCAG 1.4.4), as a browser's text-only zoom sets it. */
+async function twiceAsLarge(page: Page) {
+  await page.evaluate(() => {
+    document.documentElement.style.fontSize = "200%";
+    for (const text of document.querySelectorAll<HTMLElement>("[dir]")) {
+      const style = getComputedStyle(text);
+      text.style.fontSize = `${String(parseFloat(style.fontSize) * 2)}px`;
+      text.style.lineHeight = `${String(parseFloat(style.lineHeight) * 2)}px`;
+    }
+  });
+}
+
 // Spec 31, review focus 3: a ride between places with long names, on the
 // narrowest phone the app is made for. Find's rides are given such a ride
 // first, as no sample ride has names this long.
@@ -217,17 +230,7 @@ test.describe("a ticket with long place names, 360 wide", () => {
       await page.goto("/");
       const ticket = page.getByTestId("trip-result").first();
       await expect(ticket.getByText("Kirkjubæjarklaustur, N1 við Skaftárskála")).toBeVisible();
-      if (zoom === 2) {
-        // Text at 200% (WCAG 1.4.4), as a browser's text-only zoom sets it.
-        await page.evaluate(() => {
-          document.documentElement.style.fontSize = "200%";
-          for (const text of document.querySelectorAll<HTMLElement>("[dir]")) {
-            const style = getComputedStyle(text);
-            text.style.fontSize = `${String(parseFloat(style.fontSize) * 2)}px`;
-            text.style.lineHeight = `${String(parseFloat(style.lineHeight) * 2)}px`;
-          }
-        });
-      }
+      if (zoom === 2) await twiceAsLarge(page);
       const fit = await ticketFit(page, "trip-result");
       // Nothing reaches past the ticket and no place is cut, and the ticket
       // is whole in the window.
@@ -265,6 +268,95 @@ test.describe("a ticket with long place names, 360 wide", () => {
         expect(fit.needlessly).toEqual([]);
         expect(fit.brokenWords.length).toBeGreaterThan(0);
         expect(price.y).toBeGreaterThanOrEqual(to.y + to.height - 1);
+      }
+    });
+  }
+});
+
+// The same on a ride's own page (spec 31, 3.7): the title stands between
+// Back and Share, and each end of the ticket has Change beside its place.
+// The ride from the search is given long names on the way to its page.
+test.describe("a ride's page with long place names, 360 wide", () => {
+  test.use({ locale: "en-GB" });
+
+  const getIn = "Kirkjubæjarklaustur, N1 við Skaftárskála";
+  const getOut = "Keflavíkurflugvöllur, komusalur";
+
+  for (const zoom of [1, 2] as const) {
+    test(`holds its title and its ticket, with the text ${zoom === 1 ? "as set" : "twice as large"}`, async ({
+      page,
+    }, testInfo) => {
+      test.skip(testInfo.project.name !== "phone", "A phone's column; laptops have two.");
+      await page.setViewportSize({ width: 360, height: 740 });
+      await page.route(
+        (url) => /^\/v1\/trips\/[0-9a-f-]{36}$/.test(url.pathname),
+        async (route) => {
+          const response = await route.fetch();
+          if (!response.ok()) {
+            await route.fulfill({ response });
+            return;
+          }
+          const trip = (await response.json()) as TripDetails;
+          const names = new Map([
+            [trip.part.board, getIn],
+            [trip.part.alight, getOut],
+          ]);
+          const stops = trip.stops.map((stop) => {
+            const name = names.get(stop.position);
+            return name === undefined
+              ? stop
+              : { ...stop, meetingPoint: { ...stop.meetingPoint, name: { is: name, en: name } } };
+          });
+          await route.fulfill({ response, json: { ...trip, stops } });
+        },
+      );
+      await openTrip(page, {
+        fromField: /^From: /,
+        fromLabel: "From",
+        from: "borgarn",
+        fromPoint: /^N1 Borgarnes,/,
+        toField: /^To: /,
+        toLabel: "To",
+        to: "blondu",
+        toPoint: /^Olís Blönduós,/,
+        search: "Find a ride",
+        result: /^Leaves N1 Borgarnes at \d\d:\d\d, .*Anna, New driver/,
+      });
+      const ticket = page.getByTestId("part-ticket").filter({ visible: true });
+      await expect(ticket.getByText(getIn)).toBeVisible();
+      await expect(ticket.getByRole("button", { name: "Change where you get in" })).toBeVisible();
+      await expect(ticket.getByRole("button", { name: "Change where you get out" })).toBeVisible();
+      if (zoom === 2) await twiceAsLarge(page);
+
+      // The title: whole in the window with Back and Share, and nothing past the head.
+      const head = await ticketFit(page, "screen-head", "h1");
+      expect(head.past).toEqual([]);
+      expect(head.cut).toEqual([]);
+      expect(head.beyondWindow).toBe(0);
+      // The ticket: nothing past it, no place cut, whole in the window.
+      const fit = await ticketFit(page, "part-ticket");
+      expect(fit.past).toEqual([]);
+      expect(fit.cut).toEqual([]);
+      expect(fit.beyondWindow).toBe(0);
+      // Each time stays on its place's first line.
+      const from = await box(ticket.getByTestId("ticket-from-place"));
+      const time = await box(ticket.getByTestId("ticket-time").first());
+      expect(Math.abs(time.y - from.y)).toBeLessThan(8 * zoom);
+      if (zoom === 1) {
+        // With the text as set every word is whole: Share goes over the
+        // title, and Change under its place, before either squeezes a name.
+        expect(head.brokenWords).toEqual([]);
+        expect(fit.brokenWords).toEqual([]);
+        expect(fit.screenWider).toBeLessThanOrEqual(0);
+        // Where you sit: the words stand beside the car, also this narrow.
+        const seats = page.getByTestId("where-you-sit").filter({ visible: true });
+        const car = await box(seats.getByTestId("seat-view"));
+        const words = await box(seats.getByRole("heading", { name: "Where you sit" }));
+        expect(words.x).toBeGreaterThanOrEqual(car.x + car.width);
+      } else {
+        // Twice as large, only a word longer than a whole line is broken.
+        expect(head.needlessly).toEqual([]);
+        expect(fit.needlessly).toEqual([]);
       }
     });
   }

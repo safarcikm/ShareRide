@@ -1,5 +1,5 @@
 import type { Standing, TripDetails } from "@shareride/contracts";
-import { formatClock } from "@shareride/i18n";
+import { formatClock, type Translate } from "@shareride/i18n";
 import {
   Baby,
   Car,
@@ -8,6 +8,7 @@ import {
   Luggage,
   MessageCircle,
   PawPrint,
+  type LucideIcon,
 } from "lucide-react-native";
 import { StyleSheet, Text, View } from "react-native";
 import { Avatar, avatarSize, besideAvatar } from "@/components/avatar";
@@ -27,7 +28,7 @@ import { carText, childSeatNeedKey, needKeys } from "./texts";
 type Stop = Pick<TripDetails["stops"][number], "meetingPoint" | "plannedAt">;
 
 /** A stop's time keeps one width, so the names after it line up. */
-export const partStopTime = { minWidth: spacing.xxl + spacing.md };
+const partStopTime = { minWidth: spacing.xxl + spacing.md };
 
 /** A stop of the part: its time, name and "Get in" or "Get out". */
 export function PartStop({ stop, getIn }: { readonly stop: Stop; readonly getIn: boolean }) {
@@ -46,10 +47,38 @@ export function PartStop({ stop, getIn }: { readonly stop: Stop; readonly getIn:
   );
 }
 
+/** What a driver likes on a ride, as a bubble: an icon on a people colour, and a few words. */
+export interface PreferenceBubble {
+  readonly icon: LucideIcon;
+  readonly colour: string;
+  readonly label: string;
+}
+
+/**
+ * A ride's preferences as bubbles, in the order they show: chat, luggage,
+ * pets, smoking and the child seat.
+ */
+export function preferenceNeeds(
+  t: Translate,
+  preferences: TripDetails["preferences"] | undefined,
+): readonly PreferenceBubble[] {
+  if (preferences === undefined) return [];
+  return [
+    { icon: MessageCircle, colour: people.glacier, label: t(needKeys.chat[preferences.chat]) },
+    { icon: Luggage, colour: people.sun, label: t(needKeys.luggage[preferences.luggage]) },
+    { icon: PawPrint, colour: people.lupine, label: t(needKeys.pets[preferences.pets]) },
+    {
+      icon: preferences.smoking === "no" ? CigaretteOff : Cigarette,
+      colour: people.crowberry,
+      label: t(needKeys.smoking[preferences.smoking]),
+    },
+    { icon: Baby, colour: people.mossLight, label: t(childSeatNeedKey(preferences.childSeat)) },
+  ];
+}
+
 /**
  * The driver, their car with a line under it (when the number plate shows),
- * and, on the trip's own pages, their preferences and note. The booking
- * screen puts luggage first (spec 5, 3.1).
+ * and, on the trip's own pages, their preferences and note.
  */
 export function DriverAndCar({
   driver,
@@ -57,7 +86,6 @@ export function DriverAndCar({
   carNote,
   preferences,
   note = "",
-  luggageFirst = false,
 }: {
   readonly driver: {
     readonly firstName: string;
@@ -74,38 +102,10 @@ export function DriverAndCar({
   readonly carNote?: string;
   readonly preferences?: TripDetails["preferences"];
   readonly note?: string;
-  readonly luggageFirst?: boolean;
 }) {
   const { t } = useLanguage();
   const palette = usePalette();
-  const listed =
-    preferences === undefined
-      ? []
-      : [
-          {
-            icon: MessageCircle,
-            colour: people.glacier,
-            label: t(needKeys.chat[preferences.chat]),
-          },
-          { icon: Luggage, colour: people.sun, label: t(needKeys.luggage[preferences.luggage]) },
-          { icon: PawPrint, colour: people.lupine, label: t(needKeys.pets[preferences.pets]) },
-          {
-            icon: preferences.smoking === "no" ? CigaretteOff : Cigarette,
-            colour: people.crowberry,
-            label: t(needKeys.smoking[preferences.smoking]),
-          },
-          {
-            icon: Baby,
-            colour: people.mossLight,
-            label: t(childSeatNeedKey(preferences.childSeat)),
-          },
-        ];
-  const needs = luggageFirst
-    ? [
-        ...listed.filter((need) => need.icon === Luggage),
-        ...listed.filter((need) => need.icon !== Luggage),
-      ]
-    : listed;
+  const needs = preferenceNeeds(t, preferences);
   return (
     <>
       <View style={besideAvatar.row}>

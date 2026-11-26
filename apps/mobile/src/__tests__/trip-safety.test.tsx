@@ -98,7 +98,9 @@ describe("Safety on a trip (spec 9, 3.3)", () => {
         tripDetailsApi(client);
       },
     });
-    expect(await screen.findByRole("link", { name: "Weather (vedur.is)" })).toBeVisible();
+    // A ride's details have the pages to check under a row (spec 31, 3.7).
+    await fireEvent.press(await screen.findByRole("button", { name: "Weather and roads" }));
+    expect(screen.getByRole("link", { name: "Weather (vedur.is)" })).toBeVisible();
     expect(screen.queryByRole("button", { name: call })).toBeNull();
 
     await openDriverTrip();
@@ -229,7 +231,7 @@ describe("Share trip details (spec 9, 3.3.3, R9.8)", () => {
         tripDetailsApi(client);
       },
     });
-    expect(await screen.findByRole("link", { name: "Weather (vedur.is)" })).toBeVisible();
+    expect(await screen.findByRole("button", { name: "Weather and roads" })).toBeVisible();
     expect(screen.queryByRole("button", { name: "Share the ride's details" })).toBeNull();
   });
 });

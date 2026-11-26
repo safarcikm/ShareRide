@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-deprecated -- `x` and `y` on SVG shapes are
    coordinates; the types mark the transform style of the same name as deprecated. */
-import type { ReactNode } from "react";
-import { Platform, StyleSheet, Text, useColorScheme, View } from "react-native";
+import { Platform, StyleSheet, useColorScheme, View } from "react-native";
 import Svg, { G, Path, Rect, Text as SvgText } from "react-native-svg";
 import { Puffin } from "@/components/puffin";
 import { useLanguage } from "@/i18n/language";
@@ -10,12 +9,8 @@ import {
   controlOutline,
   fontFamily,
   fonts,
-  iconSizes,
   people,
   peopleColours,
-  radii,
-  spacing,
-  typography,
 } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 import { seatLayout, type SeatSpot } from "./seat-layout";
@@ -53,8 +48,8 @@ const puffinShift = 6;
  * The car from above, front to the right, with the seats on the
  * passenger's part (spec 15, section 5.3): the driver, your seats, seats
  * others took, free seats and seats not offered. Positions are
- * illustrative. One image for screen readers, with a label in words, and a
- * legend that repeats the states.
+ * illustrative. One image for screen readers, with a label in words; the
+ * words beside the drawing say what it shows (spec 31, 3.7, item 4).
  */
 export function SeatView({
   offered,
@@ -100,169 +95,123 @@ export function SeatView({
   });
 
   return (
-    <View style={styles.view}>
-      <View
-        accessible
-        accessibilityRole="image"
-        accessibilityLabel={label}
-        {...imageRole}
-        testID="seat-view"
-        style={[styles.drawing, { maxWidth: width * scale, aspectRatio: width / height }]}
-      >
-        <Svg
-          width="100%"
-          height="100%"
-          viewBox={`0 0 ${String(width)} ${String(height)}`}
-          accessibilityElementsHidden
-          importantForAccessibility="no-hide-descendants"
-        >
-          {/* Wheels, then the body, lights, glass and the cabin floor. */}
-          {[rear - 4, frontX + seat + 48].map((x) => (
-            <G key={x}>
-              {[bodyTop - wheel.width / 2, bodyTop + bodyHeight - wheel.width / 2].map((y) => (
-                <Rect
-                  key={y}
-                  x={x}
-                  y={y}
-                  width={wheel.length}
-                  height={wheel.width}
-                  rx={wheel.width / 2}
-                  fill={car.wheel}
-                />
-              ))}
-            </G>
-          ))}
-          <Rect
-            x={4}
-            y={bodyTop}
-            width={width - 8}
-            height={bodyHeight}
-            rx={corner}
-            fill={car.body}
-          />
-          {[
-            { x: 4, fill: people.crowberry },
-            { x: width - 4 - light.width, fill: people.sun },
-          ].flatMap(({ x, fill }) =>
-            [bodyTop + light.fromSide, bodyTop + bodyHeight - light.fromSide - light.length].map(
-              (y) => (
-                <Rect
-                  key={`${String(x)}-${String(y)}`}
-                  x={x}
-                  y={y}
-                  width={light.width}
-                  height={light.length}
-                  rx={light.width / 2}
-                  fill={fill}
-                />
-              ),
-            ),
-          )}
-          <Rect
-            x={rear - 18}
-            y={bodyTop + 26}
-            width={9}
-            height={bodyHeight - 52}
-            rx={4.5}
-            fill={car.glass}
-          />
-          <Rect
-            x={frontX + seat + 30}
-            y={bodyTop + 16}
-            width={14}
-            height={bodyHeight - 32}
-            rx={7}
-            fill={car.glass}
-          />
-          <Rect
-            x={rear - 6}
-            y={bodyTop + 8}
-            width={frontX + seat + 32 - rear}
-            height={bodyHeight - 16}
-            rx={22}
-            fill={car.cabin}
-          />
-          {/* The steering wheel, seen from above, in front of the driver. */}
-          <Rect
-            x={frontX + seat + 8}
-            y={slotY(0) + seat / 2 - 12}
-            width={5}
-            height={24}
-            rx={2.5}
-            fill={car.steering}
-          />
-          {layout.seats.map((spot) => (
-            <SeatShape
-              key={`${String(spot.row)}${String(spot.slot)}`}
-              spot={spot}
-              x={xOf(spot.row)}
-              y={slotY(spot.slot)}
-              seatColour={car.seat}
-              takenColour={car.taken}
-              driverColour={peopleColours[driverColour % peopleColours.length] ?? people.glacier}
-            />
-          ))}
-          {flag === undefined ? null : (
-            <G>
-              <Rect
-                x={flag.x - 4}
-                y={flag.y}
-                width={seat + 8}
-                height={flagHeight}
-                rx={flagHeight / 2}
-                fill={palette.primary}
-              />
-              <SvgText
-                x={flag.x + seat / 2}
-                y={flag.y + 13}
-                fontSize={11}
-                fontFamily={fontFamily(fonts.bodyBold)}
-                fill={palette.onPrimary}
-                textAnchor="middle"
-              >
-                {t("trip.seatView.you")}
-              </SvgText>
-            </G>
-          )}
-        </Svg>
-      </View>
-      <View
-        style={styles.legend}
+    <View
+      accessible
+      accessibilityRole="image"
+      accessibilityLabel={label}
+      {...imageRole}
+      testID="seat-view"
+      style={[styles.drawing, { maxWidth: width * scale, aspectRatio: width / height }]}
+    >
+      <Svg
+        width="100%"
+        height="100%"
+        viewBox={`0 0 ${String(width)} ${String(height)}`}
         accessibilityElementsHidden
         importantForAccessibility="no-hide-descendants"
-        aria-hidden
       >
-        <LegendItem label={t("trip.seatView.you")}>
-          <View
-            style={[
-              styles.swatch,
-              { backgroundColor: palette.primarySoft, borderColor: palette.primary },
-            ]}
+        {/* Wheels, then the body, lights, glass and the cabin floor. */}
+        {[rear - 4, frontX + seat + 48].map((x) => (
+          <G key={x}>
+            {[bodyTop - wheel.width / 2, bodyTop + bodyHeight - wheel.width / 2].map((y) => (
+              <Rect
+                key={y}
+                x={x}
+                y={y}
+                width={wheel.length}
+                height={wheel.width}
+                rx={wheel.width / 2}
+                fill={car.wheel}
+              />
+            ))}
+          </G>
+        ))}
+        <Rect x={4} y={bodyTop} width={width - 8} height={bodyHeight} rx={corner} fill={car.body} />
+        {[
+          { x: 4, fill: people.crowberry },
+          { x: width - 4 - light.width, fill: people.sun },
+        ].flatMap(({ x, fill }) =>
+          [bodyTop + light.fromSide, bodyTop + bodyHeight - light.fromSide - light.length].map(
+            (y) => (
+              <Rect
+                key={`${String(x)}-${String(y)}`}
+                x={x}
+                y={y}
+                width={light.width}
+                height={light.length}
+                rx={light.width / 2}
+                fill={fill}
+              />
+            ),
+          ),
+        )}
+        <Rect
+          x={rear - 18}
+          y={bodyTop + 26}
+          width={9}
+          height={bodyHeight - 52}
+          rx={4.5}
+          fill={car.glass}
+        />
+        <Rect
+          x={frontX + seat + 30}
+          y={bodyTop + 16}
+          width={14}
+          height={bodyHeight - 32}
+          rx={7}
+          fill={car.glass}
+        />
+        <Rect
+          x={rear - 6}
+          y={bodyTop + 8}
+          width={frontX + seat + 32 - rear}
+          height={bodyHeight - 16}
+          rx={22}
+          fill={car.cabin}
+        />
+        {/* The steering wheel, seen from above, in front of the driver. */}
+        <Rect
+          x={frontX + seat + 8}
+          y={slotY(0) + seat / 2 - 12}
+          width={5}
+          height={24}
+          rx={2.5}
+          fill={car.steering}
+        />
+        {layout.seats.map((spot) => (
+          <SeatShape
+            key={`${String(spot.row)}${String(spot.slot)}`}
+            spot={spot}
+            x={xOf(spot.row)}
+            y={slotY(spot.slot)}
+            seatColour={car.seat}
+            takenColour={car.taken}
+            driverColour={peopleColours[driverColour % peopleColours.length] ?? people.glacier}
           />
-        </LegendItem>
-        <LegendItem label={t("trip.seatView.taken")}>
-          <View style={[styles.swatch, { backgroundColor: car.taken, borderColor: car.taken }]} />
-        </LegendItem>
-        <LegendItem label={t("trip.seatView.free")}>
-          <View
-            style={[
-              styles.swatch,
-              styles.dashed,
-              { backgroundColor: palette.surface, borderColor: palette.control },
-            ]}
-          />
-        </LegendItem>
-      </View>
-    </View>
-  );
-}
-
-function LegendItem({ label, children }: { readonly label: string; readonly children: ReactNode }) {
-  const palette = usePalette();
-  return (
-    <View style={styles.legendItem}>
-      {children}
-      <Text style={[typography.small, { color: palette.textMuted }]}>{label}</Text>
+        ))}
+        {flag === undefined ? null : (
+          <G>
+            <Rect
+              x={flag.x - 4}
+              y={flag.y}
+              width={seat + 8}
+              height={flagHeight}
+              rx={flagHeight / 2}
+              fill={palette.primary}
+            />
+            <SvgText
+              x={flag.x + seat / 2}
+              y={flag.y + 13}
+              fontSize={11}
+              fontFamily={fontFamily(fonts.bodyBold)}
+              fill={palette.onPrimary}
+              textAnchor="middle"
+            >
+              {t("trip.seatView.you")}
+            </SvgText>
+          </G>
+        )}
+      </Svg>
     </View>
   );
 }
@@ -403,16 +352,6 @@ export function YourSeat() {
 }
 
 const styles = StyleSheet.create({
-  view: { gap: spacing.sm },
   yourSeat: { alignSelf: "center" },
   drawing: { width: "100%", alignSelf: "center" },
-  legend: { flexDirection: "row", flexWrap: "wrap", gap: spacing.md },
-  legendItem: { flexDirection: "row", alignItems: "center", gap: spacing.xs },
-  swatch: {
-    width: iconSizes.tick,
-    height: iconSizes.tick,
-    borderRadius: radii.seat,
-    borderWidth: controlOutline,
-  },
-  dashed: { borderStyle: "dashed" },
 });

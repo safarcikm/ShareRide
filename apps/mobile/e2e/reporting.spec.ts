@@ -33,12 +33,12 @@ test("a person reports a trip and finds it in My reports", async ({
   const tripId = await postTripToSelfoss(driver, "17:30");
   // The driver is not offered to report their own trip.
   await driver.goto(`/trips/${tripId}?from=0&to=1`);
-  await expect(driver.getByRole("heading", { name: "Who you ride with" })).toBeVisible();
-  await expect(driver.getByRole("button", { name: "Report this ride" })).toHaveCount(0);
+  await expect(driver.getByRole("heading", { name: "Your part of the ride" })).toBeVisible();
+  await expect(driver.getByRole("link", { name: "Report this ride" })).toHaveCount(0);
 
   await signUp(reporter, english, "Dóra");
   await reporter.goto(`/trips/${tripId}?from=0&to=1`);
-  await reporter.getByRole("button", { name: "Report this ride" }).click();
+  await reporter.getByRole("link", { name: "Report this ride" }).click();
   await expect(reporter.getByRole("heading", { name: "Report this ride" })).toBeVisible();
 
   // Nothing is sent before choosing what happened.
