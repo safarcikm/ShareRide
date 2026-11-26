@@ -114,6 +114,8 @@ export function Button({
   } = look(variant, palette, disabled, hovered);
   return (
     <Pressable
+      // A screen has at most one filled button (spec 31, R31.1): tests count them.
+      testID={variant === "primary" ? "filled-button" : undefined}
       accessibilityRole={href === undefined ? "button" : "link"}
       accessibilityLabel={accessibilityLabel ?? label}
       // aria-* rather than accessibilityState, which the web build drops.

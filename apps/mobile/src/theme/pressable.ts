@@ -22,7 +22,8 @@ export function chunky(
  * The keyboard focus ring on the web, as a style sheet: `:focus-visible`
  * shows it for the keyboard and not for taps or clicks. Text fields show
  * focus with their own moss outline instead (TextField). Phones keep their
- * own focus highlight (spec 15, section 6).
+ * own focus highlight (spec 15, section 6). A part marked `ringInside`
+ * has its ring drawn inside it, as what holds it would cut the ring off.
  */
 export function focusRingCss(light: Palette, dark: Palette): string {
   const parts = ":focus-visible:not(input):not(textarea)";
@@ -30,6 +31,7 @@ export function focusRingCss(light: Palette, dark: Palette): string {
   return (
     `${parts}{outline:${ring} ${light.focus} !important;` +
     `outline-offset:${String(focusRing.offset)}px !important}` +
+    `[data-ring="inside"]${parts}{outline-offset:${String(-focusRing.width)}px !important}` +
     "input:focus,textarea:focus{outline:none !important}" +
     `@media (prefers-color-scheme: dark){${parts}{outline-color:${dark.focus} !important}}`
   );

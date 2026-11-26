@@ -16,6 +16,7 @@ import {
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
 import { searchApi } from "@/testing/search";
 import { tripsApi } from "@/testing/trips";
+import { colors } from "@/theme/tokens";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
 jest.mock("@/auth/token-store", () => {
@@ -208,6 +209,8 @@ describe("My rides (spec 16, 3.3)", () => {
     expect(String(row.props.accessibilityLabel)).toMatch(
       /Cancelled.*You cancelled this trip: Weather/,
     );
+    // A quiet tag, as on a cancelled booking: nothing is asked of anyone (spec 31, 3.3).
+    expect(within(row).getByText("Cancelled")).toHaveStyle({ color: colors.light.textMuted });
     expect(screen.queryByText(/seats? taken/)).toBeNull();
   });
 

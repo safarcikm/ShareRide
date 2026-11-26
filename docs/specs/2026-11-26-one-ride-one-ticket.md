@@ -240,6 +240,14 @@ Existing parts stay: `Card`, `Tag`, `Chip`, `BottomBar`, `SeatView`,
 `TickList`, `Columns`, `Grid`, `PuffinsInCar`, `IcelandScene`, `PuffinByPin`,
 `TopBar`, `TabBar`.
 
+As built, in the web app: on a phone
+([light](images/one-ride-one-ticket/built/parts-phone-light.webp),
+[dark](images/one-ride-one-ticket/built/parts-phone-dark.webp)) and on a
+laptop ([light](images/one-ride-one-ticket/built/parts-laptop-light.webp),
+[dark](images/one-ride-one-ticket/built/parts-laptop-dark.webp)). Their
+exact sizes and colours are in
+[spec 15](2026-11-13-visual-design-system.md), section 5.2.
+
 ### 3.4 One name each
 
 In English a member reads **ride** for what a driver offers and a passenger

@@ -5,7 +5,10 @@
 Amended by [spec 16](2026-11-15-one-home-and-simpler-flows.md): the menu's
 `TabBar` and `TopBar`, the `Logo` beside the name, and the `Row` part. On
 2026-11-22 ShareRide became PuffinRide, and logo C, the puffin pin, replaced
-logo A (decision 12, section 4.9).
+logo A (decision 12, section 4.9). Amended by
+[spec 31](2026-11-26-one-ride-one-ticket.md): the `RideTicket`, `Road`,
+`NeedsYouCard`, `ActionRows` and `ScreenHead` parts, the kinds of `Row`, two
+more kinds of `Tag`, and what the colours say.
 
 Covers the brand direction (colours, type, tone of voice) and the first
 screen designs from the [roadmap](../strategy/roadmap.md), Phase 1. Related:
@@ -106,7 +109,7 @@ WCAG 2.2 formula; text needs 4.5:1, control edges and focus rings 3:1.
 | `focus` | `#1F5F8B` | `#8FCBE6` | Keyboard focus ring | 6.1, 6.8 / 9.9, 8.8 |
 | `error` | `#B3261E` | `#FFB4AB` | Error text and error field edges | 5.8, 6.5 / 10.4, 9.2 |
 | `onError` | `#FFFFFF` | `#3B0905` | Text on an `error` fill (delete actions) | 6.5 / 10.1 |
-| `errorSoft` | `#FCE8E6` | `#3B1A17` | Error notice background | `text` on it 12.5 / 13.8 |
+| `errorSoft` | `#FCE8E6` | `#3B1A17` | Error notice background; a problem tag, and a row that cannot be undone under the pointer (spec 31, 3.3) | `text` on it 12.5 / 13.8; `error` 5.5 / 9.2 |
 | `infoSoft` | `#E1EDF6` | `#16303F` | Info notice background | `text` on it 12.3 / 12.2 |
 
 `background`, `surface`, `text`, `textMuted`, `primary`, `onPrimary`,
@@ -123,6 +126,16 @@ Tags (text on a tinted fill, all at least 5.3:1):
 | Warning | `#8A4B00` on `#FFF3DC` | `#F2C46B` on `#2E2614` | "New driver", "Leaves in 30 min" |
 | Info | `#1F5F8B` on `#E1EDF6` | `#8FCBE6` on `#16303F` | "Request to book" |
 | Women only | `#6B3FA0` on `#F1EAFB` | `#CDB6F2` on `#2E2340` | "Women only" (spec 14) |
+| Plain | `textMuted` on `background` | same | "Declined", "Cancelled", "Passenger", "You drive" (spec 31, 3.3) |
+| Problem | `error` on `errorSoft` | same | "No-show" (spec 31, 3.3) |
+
+What a tag's colour says (spec 31, 3.2, rule 6): moss is good news or what
+you can do; amber is yours and now, such as "Waiting for payment"; blue is
+waiting and information; red is a problem; a plain tag asks nothing of
+anyone. The words always say it too. The amber pair is also the face and
+the detail line of what needs you (`NeedsYouCard`, section 5.2), where
+`text` on `warningSoft` is 13.3 / 13.2. A tag can have an icon before its
+label, in the label's colour.
 
 Rating star: `#B97F0F` light, `#E9B44C` dark, always next to the number.
 
@@ -135,7 +148,9 @@ The main colour was chosen from three options drawn side by side: moss green
 
 Only for shape people, need icons and drawings; never for text and never the
 only way to show meaning. Faces are drawn in `text` light (`#1F2A30`) in both
-modes.
+modes. Sun has one use outside drawings (spec 31, 3.3): the bottom edge and
+the icon square of what needs you (`NeedsYouCard`), where the bold line
+beside it says what is asked.
 
 | Name | Hex | | Name | Hex |
 | ---- | --- | - | ---- | --- |
@@ -241,7 +256,7 @@ Two free fonts (SIL Open Font License), both with every Icelandic letter
 | Spacing | `xs` 4, `sm` 8, `ms` 12, `md` 16, `lg` 24, `xl` 32, `xxl` 48 |
 | Corners | `seat` 4 (seat legend), `checkbox` 9, `tag` 12, `control` 16 (buttons, inputs, notices), `card` 22, `pill` 999 (chips, need bubbles, icon buttons) |
 | Bottom edges | `card` 3 (`edge` colour), `buttonPrimary` 4 (`primaryEdge`), `buttonSecondary` 3 (`edge`) |
-| Sizes | `minTouchTarget` 44, `buttonHeight` 48, `mainButtonHeight` 56, `inputHeight` 52, `chipHeight` 40, `iconButton` 44, `iconButtonSmall` 36, `checkbox` 26, `row` 56, `maxContentWidth` 480; `controlOutline` 2 (inputs, tick boxes, chips); on wide screens `pageMaxWidth` 1144, `sideColumnWidth` 400, `gridCardMinWidth` 320, `halfMinWidth` 280, `listPaneWidth` 360 (section 4.8) |
+| Sizes | `minTouchTarget` 44, `buttonHeight` 48, `mainButtonHeight` 56, `inputHeight` 52, `chipHeight` 40, `iconButton` 44, `iconButtonSmall` 36, `checkbox` 26, `row` 56, `rowIcon` 36 (the soft square behind a row's icon), `avatarSmall` 28, `ticketNotch` 16, the road's `roadCar` 60, `road` 12 and `roadMark` 10 (spec 31, 3.3), `maxContentWidth` 480; `controlOutline` 2 (inputs, tick boxes, chips); on wide screens `pageMaxWidth` 1144, `sideColumnWidth` 400, `gridCardMinWidth` 320, `halfMinWidth` 280, `listPaneWidth` 360 (section 4.8) |
 
 - `ms` 12 is new; the other spacing names are unchanged.
 - Screen padding is `md`; gaps between cards are `md`; inside a card, `ms`
@@ -407,16 +422,16 @@ Built when the screens that need them are built.
 
 | Part | What it is |
 | ---- | ---------- |
-| `Card` | `surface`, corner `card`, 3 `edge` bottom edge, `md` padding. Under the pointer, the edge of a card that can be pressed turns `primary`; its fill stays, so a tag or an avatar on a tint of its own keeps its shape (spec 18, 3.4). With `fill`, a card takes the height of its place, so cards side by side in a `Grid` end level. A `marked` card keeps the `primary` edge: it is the one shown elsewhere, as on the map beside search results (spec 18, 3.6). A `corner` holds a quiet `IconButton` in its top right corner, drawn 8 from its edges, as a button of its own beside the card's; the pointer or the keyboard on it counts as on the card (spec 28, 3.1) |
+| `Card` | `surface`, corner `card`, 3 `edge` bottom edge, `md` padding. Under the pointer, the edge of a card that can be pressed turns `primary`; its fill stays, so a tag or an avatar on a tint of its own keeps its shape (spec 18, 3.4). With `fill`, a card takes the height of its place, so cards side by side in a `Grid` end level. A `marked` card keeps the `primary` edge: it is the one shown elsewhere, as on the map beside search results (spec 18, 3.6). A `corner` holds a quiet `IconButton` in its top right corner, drawn 8 from its edges, as a button of its own beside the card's; the pointer or the keyboard on it counts as on the card (spec 28, 3.1). A `flush` card has no padding: what it holds reaches its edges and is cut by its corners, as in a `RideTicket` and `ActionRows`. A card that is `mine` has a `primary` bottom edge, `primaryEdge` under the pointer (spec 31, 3.3) |
 | `Columns` | On a page (section 4.8): a main column that takes the room left and a side column 400 wide (`sideColumnWidth`) with a `lg` gap, each with `md` between its parts. The side column sits at the right, or at the left (`sideAt="start"`), and on the web stays in view while the main column scrolls. Whichever side it is on, a screen reader and the keyboard come to the main column first. Under 900 wide the two stack, main first, and a screen with nothing for the side leaves it out. The main column keeps its place in the tree at every width, so what its parts hold (a payment that is open, a question being answered) stays when the window crosses 900: a screen whose main column holds such parts passes the side only on a wide screen and shows those parts in their phone places otherwise (spec 18, 3.9) |
 | `Grid` | Cards in equal columns with `md` gaps: as many as fit at 320 wide or more each (`gridCardMinWidth`), by the room the grid has and not by the window or the text size; one column on a phone. A child that shows nothing takes no cell. Also for two cards that belong together in a main column, such as the driver and where to stand on a booking (spec 18, 3.9) |
 | `Halves` | Two parts of one card side by side, as wide as each other, with a `lg` gap, such as Get in and Get out on trip details. Where the card has no room for two parts 280 wide (`halfMinWidth`), the second goes under the first, `ms` apart. The room decides, not the window |
 | `PageColumn` | On a page, a column 480 wide (`maxContentWidth`) at the left, with `md` between its parts: for a notice and its Try again when a two-column screen cannot be loaded, so the page and Back stay where they are |
 | `Panes` | Messages on a wide screen (spec 18, 3.11): one card across the page, as tall as the window allows, with the list in a pane 360 wide (`listPaneWidth`) at the left and what is open (a `Pane`) in the rest, a `border` line between them. Each pane scrolls on its own. A `Pane` has a header and a footer on `surface` that stay, with a `border` line, and between them what scrolls, on `background`. A row of the list fills the pane's width, with a `border` line under it; under the pointer it is tinted `primarySoft`, and the open one keeps the tint and has a `primary` edge at its left. Phones show the list and what is open as screens of their own |
-| `Tag` | `caption` text on a tinted fill, corner `tag` (section 4.1) |
+| `Tag` | `caption` text on a tinted fill, corner `tag`, with a `tick` (16) icon before the text when it has one (section 4.1) |
 | `IconButton` | 44 round, like `BackButton`, for share and more; `primarySoft` under the pointer unless it is disabled. A `quiet` one is drawn `iconButtonSmall` (36) round in its 44 button (the web has no `hitSlop`), with no fill or edge, an `inline` icon in `textMuted`, and `primarySoft` under the pointer or pressed, for a card's corner (spec 28, 3.1) |
 | `Stepper` | Minus and plus as 48 square secondary buttons, the value in `figure` between them; accessible names "One seat fewer" and "One seat more"; adjustable role with a value. With the `caption` prop, as in the search row and the search card, its label is a line in `caption` `textMuted`, and the value sits `xs` from the buttons in a box `xl` wide, to leave the date beside it room |
-| `Switch` | Off: `control` track outline; on: `primary` track; label to the left |
+| `Switch` | Off: `control` track outline; on: `primary` track; label to the left. A `Row` can hold the same track and is then the switch |
 | `RadioCard` | A card with a radio, a title and a line of help; selected: `primary` 2 outline |
 | `TickList` | Rows with a tick box: done is a filled `primary` box with a tick, not done is an empty `control` box with an action button |
 | `StepProgress` | "Step 3 of 5" in `caption` above five bars 8 high; done bars `primary`, others `border` |
@@ -426,8 +441,13 @@ Built when the screens that need them are built.
 | `RouteLine` | Times, a line with stops, place in `bodyStrong` and meeting point in `small`; the part you ride is solid `primary`, the rest dotted `control` |
 | `PriceLevel` | The price level control of spec 3, as on the price step below: a track in 10% steps with the suggested level marked, a shape person as the handle, and minus and plus buttons; adjustable role whose value reads the level and the whole-route price |
 | `SeatView` | The top-down car (section 5.3) |
-| `Avatar` | The real profile photo, round; without a photo, the first letter on a people colour. Never a shape person. Beside more lines of text than it is tall, it stands at their top, with the name (spec 31, 3.18) |
-| `Row` | A row that opens a screen, in a `Card`: the title on the left in `bodyStrong`, a value such as "Confirmed" in `small` `textMuted`, then a chevron in `textMuted`; at least `row` 56 high; tinted `primarySoft` while pressed (spec 16, 3.4) and under the pointer |
+| `Avatar` | The real profile photo, round; without a photo, the first letter on a people colour. Never a shape person. Beside more lines of text than it is tall, it stands at their top, with the name (spec 31, 3.18). 48 round; a `small` one is `avatarSmall` (28) with its letter in `caption`, in a line of text such as a ticket's foot |
+| `Row` | A row in a `Card` or in `ActionRows`: an icon in a soft square when it has one (`rowIcon` 36, corner `tag`, `background`), the title in `bodyStrong`, a value such as "Confirmed" in `small` `textMuted`, and at its end what it does; at least `row` 56 high; tinted `primarySoft` while pressed (spec 16, 3.4) and under the pointer. A chevron to the right: it opens a screen (a link) or does something (a button). A chevron down, up when open: it unfolds what is under it and says whether it is open. A switch: the row is the switch. Nothing: it only shows a value and is not a button. A row that cannot be undone is `error` text with its icon on `errorSoft`, has no chevron, is tinted `errorSoft`, and comes last (spec 31, 3.3, R31.3). A row is one of these kinds and takes nothing of another |
+| `ActionRows` | A `flush` `Card` of `Row`s, each padded by `md`, with a 2 `border` line between them: what else a screen can do, in place of a column of secondary buttons and loose text links (spec 31, 3.3). The lines are the card of rows, in `border`, showing between rows that are each a `surface`, so a row that is left out leaves no line. A row's focus ring is drawn inside the row there, as the card cuts off what reaches past it (section 7) |
+| `RideTicket` | A ride, the same card wherever one shows (spec 31, 3.3), a `flush` `Card`. A day row: the day in `caption` `textMuted`, tags at the right, room for a `corner` button after them. A timetable (`Timetable`, which a card about a part of a ride can also hold on its own): each time in `heading`, a ring (12, 3 `primary`) or a filled dot, the place in `bodyStrong`; a 3 `primary` line joins them, with what lies between ("1 h 35 min") in `small` `textMuted` beside it; a place that wraps keeps its time and its dot on its first line. Fredoka has no digits of one width, so every time stands in a cell as wide as the widest time there can be ("22:22"), and the line is in the same place on every ticket of a list. The price at the right in `figure`, its unit under it in `small` `textMuted`. Then a tear line, 2 `border` dashes with a notch (`ticketNotch` 16) in each edge in `background`, and a foot of one line (`TicketFoot`: something at the left, something at the right), as tall with words only as with a small picture. No foot, no tear line. `mine` gives the moss edge; `fill` puts the foot at the bottom of a grid's row. One link or button, which then needs a name in one line. Where room runs out, on a narrow phone or with large text, nothing is squeezed: tags that do not fit go under the day, a price that would split a place's name inside a word goes under the timetable, at the right, and the foot's right part goes under its left |
+| `Road` | Where things stand (spec 31, 3.3): a lane `road` (12) high in the scene's road grey with its dashed line (section 5.3), the part behind the car in `primary`; a round mark (`roadMark` 10) at each step, `surface` when passed and ringed in `control` when to come; `PuffinsInCar` `roadCar` (60) wide on the current step; the steps' names under it in `caption`, `textMuted`, the current one in `text`, the first and the last at the road's ends. The road runs half a car past its first and last step. A picture with one line for screen readers, "Step 2 of 4: Confirmed"; the marks only repeat the names, so they need no contrast of their own. A step before the first or after the last stands the car on that end |
+| `NeedsYouCard` | What needs you now (spec 31, 3.3): `warningSoft`, corner `card`, a 3 bottom edge in Sun; an icon in a Sun square (`rowIcon` 36, corner `tag`), one line in `bodyStrong` `text`, a line of detail in `small` `warning`, and one button, filled, or outlined on a screen with a main button of its own. The button stands beside the lines where both fit and under them at the right on a phone. It can hold a whole request in place of the lines |
+| `ScreenHead` | The top of a screen (spec 31, 3.3): `BackButton`, the title at the left as the screen's heading, at most one line under it in `body` `textMuted`, small text over it when given (a ride's day), and at most one round icon button at the right. On a posting step the `Road` stands beside Back and the title has the whole width under them |
 | `PlaceDropdown` | From or To while it is being chosen: its caption and dot stay, a text field with a 2 `primary` outline takes the place of the value, with Close as a small X (18) in `textMuted` inside its end, 44 square to press; what the search finds is listed under it in a box with a 2 `border` outline and corner `control`, as rows with the name in `bodyStrong` and the type and place in `small`, tinted `primarySoft` while pressed or under the pointer. Towns and areas come first, then meeting points, each under a heading in `caption` `textMuted`; a sample point has no tag on its row, and one "Sample meeting points" tag sits under the list (spec 16, 3.8). The swap button waits until it closes |
 | Search row | The search on a page (spec 18, 3.5), in one `Card`: From, the swap button and To side by side, then the date, the seats `Stepper` and the main button. Each part is a line in `caption` `textMuted` (From and To with their dot) over a control 48 high, so the values, the buttons and the main button stand on one line. From, To and the date show their value in a field (`SearchField`): a box with `control` corners and `md` inside, filled with `background`, a shade off the card's `surface` (1.1:1, a hint and not an outline; the caption and the value say what the part is), and tinted `primarySoft` under the pointer; `textMuted` on it is 5.5:1 in light and 8.3:1 in dark, and 5.2:1 or more on the tint. The parts stand `md` apart, the swap button `sm` from the two fields it swaps. From and To take the room left and never go under 240 each; the date, the seats and the button keep their size, stay together and move as one to a second line, at the right, when the row is too narrow. From or To being chosen is the `PlaceDropdown` in its own part of the row, and the date opens "Any day", a radio like the days, and the `Calendar` under its button; the card grows downwards and nothing else moves. The date button reads "Date: Any day" and says whether it is open; Escape or Android's back closes the calendar, and focus goes back to the button |
 | Search card | The search on a phone and in a column (spec 16, 3.2), in the `Card` of From and To: under them a `border` line, then the date and the seats `Stepper` on one line, `ms` apart, and the action, such as Find a ride as the main button. The date is the search row's field and opens "Any day" and the `Calendar` under the line the same way; the calendar takes `sm` of the card's padding at each side, so its days keep 44 on a phone 360 wide. The date takes the room the seats leave, at least 136 at the text size the screen is made for, room for "Allir dagar" and its chevron (more with larger text), so the date and the seats stay on one line on a phone 360 wide and larger text takes the date onto a line of its own. The longest short day ("Mán. 30. nóv.") fits on one line in the field from 375 wide and takes two under that. Android's back closes the calendar only while the screen is in front. A missing place is a `Notice` under the card |
@@ -549,7 +569,10 @@ use `control`; body text is drawn at 16 and is 17.
   start (`apps/mobile/src/theme/focus-ring.web.ts`), so every pressable
   part and link shows the ring for the keyboard and not for clicks or taps.
   Text fields are left out of it; their outline turns `primary` instead. On phones, keep the system's own focus highlight (Android
-  keyboard navigation, iOS Full Keyboard Access).
+  keyboard navigation, iOS Full Keyboard Access). A part inside
+  something that cuts off what reaches past it, such as a row in
+  `ActionRows`, has its ring drawn inside it, at the same width
+  (`ringInside` in `theme/ring-inside`).
 - The first implementation PR updates tokens, fonts and the parts in section
   5.1. The parts in 5.2 come with the screens of specs 3 to 5.
 

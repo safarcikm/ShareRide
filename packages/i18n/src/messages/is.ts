@@ -617,6 +617,7 @@ export const is = {
   "trip.post": "Setja inn ferð",
   "trip.myTrips": "Ferðirnar mínar",
   "trip.step": "Skref {step} af {total}",
+  "road.step": "Skref {step} af {total}: {name}",
   "trip.soFar": "Ferðin þín hingað til",
   "trip.soFarLater": "Skref {step}",
   "trip.soFarStops":
