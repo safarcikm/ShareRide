@@ -100,6 +100,8 @@ async function openDeleteScreen({
         "/v1/me/trips/{id}/bookings",
         "/v1/bookings/{id}",
         "/v1/bookings/{id}/cancellation-preview",
+        // Cancelling a ride shows it as its ticket, with the car (spec 31, 3.19).
+        "/v1/me/vehicles",
       ]) {
         client.answer(path, () => failure(503, "unavailable"));
       }
