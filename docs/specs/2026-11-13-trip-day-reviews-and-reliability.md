@@ -98,6 +98,11 @@ view. It is built to be used while parked: large buttons and no typing needed.
    reliability.
 4. If the passenger contests it, the booking's payout is held (spec 13) and
    the operator decides (3.5).
+5. Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.19) the screen
+   that marks a no-show, and the one that answers it, have their title at
+   the left over the passenger's part as a ticket, and their main button
+   ("Mark as no-show", "Send answer") in the bar at the bottom, with why
+   it did nothing over it.
 
 ### 3.4 The driver doesn't come
 
@@ -116,6 +121,9 @@ view. It is built to be used while parked: large buttons and no typing needed.
 5. Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.8 and 3.9) "The
    driver didn't come" is in the bar on the trip day (3.1), and one of the
    booking's rows once the ride is over, for as long as it can be said.
+   Its screen, and the driver's answer, have the title at the left over
+   the booked seat as a ticket, and "Tell PuffinRide" or "Send answer" as
+   the main button in the bar (3.19).
 
 ### 3.5 When the two sides disagree
 
@@ -172,7 +180,11 @@ complain further.
    when it can be reviewed under it, while it can; **Rate the driver** is
    the page's main button, in the bar at the bottom. A review sent, the
    other's review and why a ride cannot be reviewed show under the title,
-   as before.
+   as before. The rating's own screen (3.19) has "How was your ride?" at
+   the left, with the day over it and the part under it; "Send review" is
+   its main button, in the bar, with "Choose a rating from 1 to 5 stars."
+   over it when none is chosen; and once sent, or when the ride cannot be
+   reviewed, the way back is the main button.
 
 ### 3.8 Reliability (G3)
 

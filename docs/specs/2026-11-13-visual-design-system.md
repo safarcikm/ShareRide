@@ -8,7 +8,8 @@ Amended by [spec 16](2026-11-15-one-home-and-simpler-flows.md): the menu's
 logo A (decision 12, section 4.9). Amended by
 [spec 31](2026-11-26-one-ride-one-ticket.md): the `RideTicket`, `Road`,
 `NeedsYouCard`, `ActionRows` and `ScreenHead` parts, the kinds of `Row`, two
-more kinds of `Tag`, and what the colours say.
+more kinds of `Tag`, the red main button (`Button` `danger`), and what the
+colours say.
 
 Covers the brand direction (colours, type, tone of voice) and the first
 screen designs from the [roadmap](../strategy/roadmap.md), Phase 1. Related:
@@ -109,6 +110,8 @@ WCAG 2.2 formula; text needs 4.5:1, control edges and focus rings 3:1.
 | `focus` | `#1F5F8B` | `#8FCBE6` | Keyboard focus ring | 6.1, 6.8 / 9.9, 8.8 |
 | `error` | `#B3261E` | `#FFB4AB` | Error text and error field edges | 5.8, 6.5 / 10.4, 9.2 |
 | `onError` | `#FFFFFF` | `#3B0905` | Text on an `error` fill (delete actions) | 6.5 / 10.1 |
+| `errorEdge` | `#7D1812` | `#C7766C` | Bottom edge of a red main button (spec 31, 3.19) | decorative |
+| `errorHover` | `#9A1F18` | `#FFC9C2` | A red main button under the pointer | `onError` on it 8.1 / 11.7 |
 | `errorSoft` | `#FCE8E6` | `#3B1A17` | Error notice background; a problem tag, and a row that cannot be undone under the pointer (spec 31, 3.3) | `text` on it 12.5 / 13.8; `error` 5.5 / 9.2 |
 | `infoSoft` | `#E1EDF6` | `#16303F` | Info notice background | `text` on it 12.3 / 12.2 |
 
@@ -384,6 +387,7 @@ and tests need no edits. Only the look changes.
 | Part | Look |
 | ---- | ---- |
 | `Button` `primary` | `primary` fill, `onPrimary` label in `button`, corner `control`, 4 bottom edge in `primaryEdge`, height 48 (56 for the main action in a bottom bar). Every button fits its label, with `lg` padding each side, and sits in the middle of the column. Under the pointer the fill is `primaryHover` |
+| `Button` `danger` | The main button of a screen that asks before taking something away ("Cancel booking", "Withdraw request", "Block Bára"; spec 31, 3.19 and R31.3): `error` fill, `onError` label, the primary button's 4 bottom edge in `errorEdge`, `errorHover` under the pointer. It is the screen's one filled button, as a primary one is. A main button that tells PuffinRide what happened (a report, an answer, a review) stays `primary` |
 | `Button` `secondary` | `surface` fill, 2 `control` outline, `text` label, 3 bottom edge in `edge`. Under the pointer the fill is `primarySoft` |
 | `Button` `text` | No fill, `primary` label in `label`, at least 44 high. Under the pointer the label is underlined |
 | `Button` `busy` | A small spinner before the label, which stays; it can't be pressed again; `accessibilityState.busy` |
@@ -392,7 +396,7 @@ and tests need no edits. Only the look changes.
 | `TimeField` | A time of day, chosen and not typed: looks like `TextField`, with the time in `bodyStrong` (or "Choose a time" in `textMuted`) and a chevron at the end; pressing it opens a wheel under it and turns the outline `primary`. The wheel sits in a box with a 2 `border` outline and corner `control`: hours 00 to 23 and minutes in 5-minute steps, side by side with a colon, in `figure`, rows 44 high (taller, and the wheels wider, as the phone's text size grows), five rows showing, the chosen row in `text` on a `primarySoft` band across both wheels and the others in `textMuted`, then a `secondary` Done button. The wheels stop on a row; tapping a row chooses it; they do not go round. Phones read each wheel as one adjustable element (swipe up or down), the web as a spin button (arrow keys, Home, End). Done, a second press on the field, Escape and Android's back close it; one wheel is open at a time |
 | `Checkbox` | 26 square, corner 9, 2 `control` outline; checked: `primary` fill, `onPrimary` tick, 2 `primaryEdge` bottom edge; the whole row is pressable |
 | `Chip` | 40 high, corner `pill`, `surface`, 2 `control` outline, `label` text; selected: `primarySoft` fill, `primary` outline and a tick before the label; one that opens choices under it, such as "Sort: Earliest", has a chevron after the label, down or up (spec 16, 3.8), and can show a shorter label than its name: "Earliest", named "Sort: Earliest"; one with an `icon`, such as Filters over the results, has it before the label where the tick would be, in `primary` when selected (spec 31, 3.6); a label in another language, such as "Íslenska", carries its language (`lang`). Under the pointer a chip that is not selected is filled `primarySoft` and keeps its `control` outline |
-| `Notice` | Corner `control`, an icon then the message in `body`; `error` on `errorSoft` with an alert icon, `info` on `infoSoft` with an info icon |
+| `Notice` | Corner `control`, an icon then the message in `body`; `error` on `errorSoft` with an alert icon, `info` on `infoSoft` with an info icon. Why a screen's main button did nothing stands over that button, in the bar, where it is seen with no scrolling, and takes focus each time it says something new (`ActionNotice`; spec 31, 3.19) |
 | `TextLink` | `primary`, Nunito 700, always underlined (moss on basalt text is only 2.3:1, so the underline is what marks a link), centred; in a settings row it starts at the left with the row's text (`align="start"`) |
 | `BackButton` | 44 round, `surface`, 3 `edge` bottom edge, chevron icon; accessible name "Back"; `primarySoft` under the pointer, as every `IconButton` |
 | `Loading` | A `primary` spinner centred on `background` |

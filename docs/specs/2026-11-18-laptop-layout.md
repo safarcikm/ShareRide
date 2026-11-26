@@ -472,7 +472,10 @@ two columns), a meeting point, a public profile, cars, the licence, edit
 profile, settings and privacy pages, the screens for changing a published
 trip, cancel, report, block and rating screens, notices and legal
 documents. They gain the lined-up top bar and
-the pointer states.
+the pointer states. Since [spec 31](2026-11-26-one-ride-one-ticket.md)
+(3.19) the screens around a booking (cancelling it, the reports and their
+answer, rating, blocking and reporting) have their main button in the bar
+at the bottom here too, as they have no side column for it.
 
 ## 4. Rules
 
