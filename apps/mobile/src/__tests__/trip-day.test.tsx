@@ -454,7 +454,7 @@ describe("the driver's trip day (spec 8, 3.1)", () => {
     const loads = loadsOf(client, "/v1/me/trips/{id}");
     await fireEvent.press(button);
     expect(
-      await screen.findByText("Something changed since you opened this. Here is your trip now."),
+      await screen.findByText("Something changed since you opened this. Here is your ride now."),
     ).toBeVisible();
     expect(loadsOf(client, "/v1/me/trips/{id}")).toBeGreaterThan(loads);
   });

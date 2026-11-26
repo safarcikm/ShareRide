@@ -210,7 +210,7 @@ describe("Edit a car", () => {
     const app = await openCars({ cars: [yaris] });
     await fireEvent.press(screen.getByRole("button", { name: /^Toyota Yaris, white/ }));
     await fireEvent.press(await screen.findByRole("button", { name: "Remove car" }));
-    expect(screen.getByText("Remove Toyota Yaris? It stays on your past trips.")).toBeVisible();
+    expect(screen.getByText("Remove Toyota Yaris? It stays on your past rides.")).toBeVisible();
     await fireEvent.press(screen.getByRole("button", { name: "Keep it" }));
     expect(screen.queryByText(/It stays on your past trips/)).toBeNull();
 
@@ -229,7 +229,7 @@ describe("Edit a car", () => {
     await fireEvent.press(screen.getByRole("button", { name: "Remove Toyota Yaris" }));
     expect(
       await screen.findByText(
-        "This car is on a trip that hasn't ended yet. You can remove it after the trip.",
+        "This car is on a ride that hasn't ended yet. You can remove it after the ride.",
       ),
     ).toBeVisible();
     expect(app.driver.cars()).toEqual([yaris]);

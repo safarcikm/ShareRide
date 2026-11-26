@@ -735,7 +735,7 @@ describe("Find on a laptop (spec 18, 3.5)", () => {
     alight: { ...northResult.alight, position: 1, meetingPoint: bsi },
   });
   const map = () => within(screen.getByTestId("columns-side")).getByTestId("iceland-map");
-  const mapOf = (route: string) => `The trip on a map of Iceland: ${route}.`;
+  const mapOf = (route: string) => `The ride on a map of Iceland: ${route}.`;
   /** The map's drawn parts, which screen readers skip: the label says them. */
   const drawn = (testID: string) =>
     within(map()).queryAllByTestId(testID, { includeHiddenElements: true });

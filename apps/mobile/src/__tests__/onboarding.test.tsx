@@ -347,7 +347,7 @@ describe("The button names what comes after step 3 (3.5 item 4)", () => {
         client.answer("/v1/trips/{id}", () => failure(0, "network_error"));
       },
     ],
-  ])("just says Create account when the trip %s", async (_case, setUp) => {
+  ])("just says Create account when the ride %s", async (_case, setUp) => {
     keepBooking();
     const app = await openAboutYou(undefined, testMe, setUp);
     await screen.findByText("Step 3 of 3");
@@ -407,7 +407,7 @@ describe("Only the part of step 3 that is left", () => {
 
 describe("On the web, step 3 asks for an email (spec 20, 3.3)", () => {
   const address = "dora@example.com";
-  const emailHelp = "We email you about your rides: requests, reminders and how your trip went.";
+  const emailHelp = "We email you about your rides: requests, reminders and how your ride went.";
   const wrongEmail = "Enter an email address, such as anna@example.com.";
 
   beforeEach(() => {

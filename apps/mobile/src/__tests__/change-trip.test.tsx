@@ -55,15 +55,15 @@ async function openTrip(
       driverApi(client, bookings);
     },
   });
-  if (api === undefined) throw new Error("No trips API");
+  if (api === undefined) throw new Error("No rides API");
   return { ...app, trips: api.trips };
 }
 
 /** The trip page, Edit trip, then Change the time. */
 async function openTime(...trip: Parameters<typeof openTrip>) {
   const app = await openTrip(...trip);
-  await fireEvent.press(await screen.findByRole("button", { name: "Edit trip" }));
-  expect(await screen.findByRole("header", { name: "Edit trip" })).toBeVisible();
+  await fireEvent.press(await screen.findByRole("button", { name: "Edit the ride" }));
+  expect(await screen.findByRole("header", { name: "Edit the ride" })).toBeVisible();
   await fireEvent.press(screen.getByRole("link", { name: "Change the time" }));
   expect(await screen.findByRole("header", { name: "Change the departure" })).toBeVisible();
   return app;
@@ -93,17 +93,17 @@ const at0945 = { kind: "departure", departsAt: "2026-11-15T09:45:00.000Z" };
 describe("The driver moves the departure (spec 6, 3.2)", () => {
   it("offers Edit trip before Cancel trip, until the trip leaves", async () => {
     await openTrip();
-    const edit = await screen.findByRole("button", { name: "Edit trip" });
+    const edit = await screen.findByRole("button", { name: "Edit the ride" });
     const buttons = screen.getAllByRole("button");
     expect(buttons.indexOf(edit)).toBe(
-      buttons.indexOf(screen.getByRole("button", { name: "Cancel trip" })) - 1,
+      buttons.indexOf(screen.getByRole("button", { name: "Cancel the ride" })) - 1,
     );
   });
 
   it("offers no Edit trip once the planned departure has come", async () => {
     await openTrip([jon], {}, { ...northMyTrip, departsAt: "2026-11-14T12:00:00.000Z" });
     expect(await screen.findByLabelText("Jón, 1 seat, Confirmed")).toBeVisible();
-    expect(screen.queryByRole("button", { name: "Edit trip" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Edit the ride" })).toBeNull();
   });
 
   it("moves every stop by 45 minutes, says who is told, then says so on the trip with focus", async () => {
@@ -142,7 +142,7 @@ describe("The driver moves the departure (spec 6, 3.2)", () => {
     const focusMoves = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
     focusMoves.mockClear();
     await fireEvent.press(screen.getByRole("button", { name: "Save the change" }));
-    expect(await screen.findByText("Trip changed. Your passengers have been told.")).toBeVisible();
+    expect(await screen.findByText("Ride changed. Your passengers have been told.")).toBeVisible();
     expect(focusMoves).toHaveBeenCalledTimes(1);
     focusMoves.mockRestore();
     expect(screen).toHavePathname(tripPage);
@@ -161,7 +161,7 @@ describe("The driver moves the departure (spec 6, 3.2)", () => {
     ).toBeVisible();
     expect(screen.queryByText(/full refund/)).toBeNull();
     await fireEvent.press(screen.getByRole("button", { name: "Save the change" }));
-    expect(await screen.findByText("Trip changed.")).toBeVisible();
+    expect(await screen.findByText("Ride changed.")).toBeVisible();
   });
 
   it("says which requests still wait, and which the move makes expire (R5.5)", async () => {
@@ -182,7 +182,7 @@ describe("The driver moves the departure (spec 6, 3.2)", () => {
     const { client } = await openTime();
     await fireEvent.press(screen.getByRole("button", { name: "Check the change" }));
     expect(
-      screen.getByText("This is the departure the trip has now. Choose another time."),
+      screen.getByText("This is the departure the ride has now. Choose another time."),
     ).toBeVisible();
     await fireEvent.press(screen.getByRole("radio", { name: "Saturday 14 November" }));
     await chooseDeparture("12:15");
@@ -231,7 +231,7 @@ describe("The driver moves the departure (spec 6, 3.2)", () => {
     });
     await chooseDeparture("10:00");
     await fireEvent.press(screen.getByRole("button", { name: "Check the change" }));
-    expect(await screen.findByText("You have another trip at that time.")).toBeVisible();
+    expect(await screen.findByText("You have another ride at that time.")).toBeVisible();
   });
 
   it("says when saving is refused after the check, and saves nothing", async () => {
@@ -247,7 +247,7 @@ describe("The driver moves the departure (spec 6, 3.2)", () => {
     await fireEvent.press(screen.getByRole("button", { name: "Check the change" }));
     await fireEvent.press(await screen.findByRole("button", { name: "Save the change" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "You have another trip at that time.",
+      "You have another ride at that time.",
     );
     expect(screen).toHavePathname(`${tripPage}/edit/check`);
     expect(trips()[0]?.departsAt).toBe("2026-11-15T09:00:00.000Z");
@@ -258,7 +258,7 @@ describe("The driver moves the departure (spec 6, 3.2)", () => {
     await chooseDeparture("10:00");
     await fireEvent.press(screen.getByRole("button", { name: "Check the change" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "This trip can no longer be changed.",
+      "This ride can no longer be changed.",
     );
   });
 
@@ -271,9 +271,9 @@ describe("The driver moves the departure (spec 6, 3.2)", () => {
         driverApi(client, [jon]);
       },
     });
-    expect(await screen.findByText("This trip can no longer be changed.")).toBeVisible();
+    expect(await screen.findByText("This ride can no longer be changed.")).toBeVisible();
     expect(screen.queryByRole("button", { name: "Save the change" })).toBeNull();
-    await fireEvent.press(screen.getByRole("button", { name: "Back to the trip" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Back to the ride" }));
     expect(screen).toHavePathname(tripPage);
   });
 
@@ -290,7 +290,7 @@ describe("The driver moves the departure (spec 6, 3.2)", () => {
         driverApi(client, []);
       },
     });
-    expect(await screen.findByText("This trip can no longer be changed.")).toBeVisible();
+    expect(await screen.findByText("This ride can no longer be changed.")).toBeVisible();
     expect(screen.queryByRole("link", { name: "Change the time" })).toBeNull();
   });
 });

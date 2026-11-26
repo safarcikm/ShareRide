@@ -46,8 +46,8 @@ async function openEdit(
       searchApi(client);
     },
   });
-  await fireEvent.press(await screen.findByRole("button", { name: "Edit trip" }));
-  expect(await screen.findByRole("header", { name: "Edit trip" })).toBeVisible();
+  await fireEvent.press(await screen.findByRole("button", { name: "Edit the ride" }));
+  expect(await screen.findByRole("header", { name: "Edit the ride" })).toBeVisible();
   return app;
 }
 
@@ -74,7 +74,7 @@ async function saveAndSeeIt() {
   const focusMoves = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
   focusMoves.mockClear();
   await fireEvent.press(screen.getByRole("button", { name: "Save the change" }));
-  expect(await screen.findByText("Trip changed.")).toBeVisible();
+  expect(await screen.findByText("Ride changed.")).toBeVisible();
   expect(screen).toHavePathname(tripPage);
   expect(focusMoves).toHaveBeenCalled();
   focusMoves.mockRestore();
@@ -118,7 +118,7 @@ describe("Edit trip: the seats, price, car, booking mode and details (spec 6, 3.
     expect(changes(client)).toEqual([
       { preview: saved, body: { kind: "priceLevel", priceLevel: 110 } },
     ]);
-    await fireEvent.press(screen.getByRole("button", { name: "Edit trip" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Edit the ride" }));
     expect(await screen.findByText("110% · the whole route 5,100 ISK")).toBeVisible();
   });
 
@@ -132,7 +132,7 @@ describe("Edit trip: the seats, price, car, booking mode and details (spec 6, 3.
     const { client } = await openPart(link);
     await fireEvent.press(screen.getByRole("button", { name: "Save the change" }));
     expect(
-      await screen.findByText("This is what the trip has now. Change something first."),
+      await screen.findByText("This is what the ride has now. Change something first."),
     ).toBeVisible();
     expect(changes(client)).toEqual([]);
   });
@@ -169,7 +169,7 @@ describe("Edit trip: the seats, price, car, booking mode and details (spec 6, 3.
         searchApi(client);
       },
     });
-    await fireEvent.press(await screen.findByRole("button", { name: "Edit trip" }));
+    await fireEvent.press(await screen.findByRole("button", { name: "Edit the ride" }));
     await fireEvent.press(await screen.findByRole("link", { name: "Change the seats" }));
     expect(await screen.findByRole("header", { name: "Change the seats" })).toBeVisible();
     await fireEvent.press(screen.getByRole("button", { name: "One seat more" }));
@@ -187,7 +187,7 @@ describe("Edit trip: the seats, price, car, booking mode and details (spec 6, 3.
       })),
     });
     expect(
-      screen.getByText("2 seats are taken on part of the trip, so you can offer no fewer."),
+      screen.getByText("2 seats are taken on part of the ride, so you can offer no fewer."),
     ).toBeVisible();
     await fireEvent.press(screen.getByRole("button", { name: "One seat fewer" }));
     expect(screen.getByRole("button", { name: "One seat fewer" })).toBeDisabled();
@@ -220,13 +220,13 @@ describe("Edit trip: the seats, price, car, booking mode and details (spec 6, 3.
     await fireEvent.press(screen.getByRole("button", { name: "One seat more" }));
     expect(
       screen.getByText(
-        "What passengers have already booked counts towards this trip's limit, so the seats left can cost at most 160%.",
+        "What passengers have already booked counts towards this ride's limit, so the seats left can cost at most 160%.",
       ),
     ).toBeVisible();
     await fireEvent.press(screen.getByRole("button", { name: "One seat more" }));
     expect(
       screen.getByText(
-        "What passengers have already booked counts towards this trip's limit, so the seats left can cost at most 120%.",
+        "What passengers have already booked counts towards this ride's limit, so the seats left can cost at most 120%.",
       ),
     ).toBeVisible();
     await saveAndSeeIt();
@@ -238,12 +238,12 @@ describe("Edit trip: the seats, price, car, booking mode and details (spec 6, 3.
     expect(screen.getByRole("button", { name: "Raise the price" })).toBeDisabled();
     expect(
       screen.getByText(
-        "What passengers have already booked counts towards this trip's limit, so the seats left can cost at most 120%.",
+        "What passengers have already booked counts towards this ride's limit, so the seats left can cost at most 120%.",
       ),
     ).toBeVisible();
     expect(
       screen.getByText(
-        "The limit is for the whole trip, so what passengers have already booked counts towards it.",
+        "The limit is for the whole ride, so what passengers have already booked counts towards it.",
       ),
     ).toBeVisible();
     await fireEvent.press(screen.getByRole("button", { name: "Lower the price" }));
@@ -259,7 +259,7 @@ describe("Edit trip: the seats, price, car, booking mode and details (spec 6, 3.
     });
     expect(
       screen.getByText(
-        "What passengers have already booked uses up this trip's limit, so the seats left are free.",
+        "What passengers have already booked uses up this ride's limit, so the seats left are free.",
       ),
     ).toBeVisible();
   });
@@ -272,12 +272,12 @@ describe("Edit trip: the seats, price, car, booking mode and details (spec 6, 3.
         }),
     });
     expect(
-      screen.getByText("1 seat is taken on part of the trip, so you can offer no fewer."),
+      screen.getByText("1 seat is taken on part of the ride, so you can offer no fewer."),
     ).toBeVisible();
     await fireEvent.press(screen.getByRole("button", { name: "One seat more" }));
     await fireEvent.press(screen.getByRole("button", { name: "Save the change" }));
     expect(
-      await screen.findByText("Passengers have taken more seats than that on part of the trip."),
+      await screen.findByText("Passengers have taken more seats than that on part of the ride."),
     ).toBeVisible();
     expect(screen).toHavePathname(`${tripPage}/edit/seats`);
   });
@@ -293,11 +293,11 @@ describe("Edit trip: the seats, price, car, booking mode and details (spec 6, 3.
     expect(screen.getByRole("radio", { name: /^Toyota Yaris, white/ })).toBeChecked();
     await fireEvent.press(screen.getByRole("radio", { name: /^Volvo XC40, red/ }));
     await fireEvent.press(screen.getByRole("button", { name: "Save the change" }));
-    expect(await screen.findByText("Trip changed. Your passengers have been told.")).toBeVisible();
+    expect(await screen.findByText("Ride changed. Your passengers have been told.")).toBeVisible();
     expect(changes(client)).toEqual([
       { preview: saved, body: { kind: "vehicle", vehicleId: volvo.id } },
     ]);
-    await fireEvent.press(screen.getByRole("button", { name: "Edit trip" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Edit the ride" }));
     expect(await screen.findByText("Volvo XC40, red")).toBeVisible();
   });
 
@@ -344,7 +344,7 @@ describe("Edit trip: the seats, price, car, booking mode and details (spec 6, 3.
     });
     await fireEvent.press(screen.getByRole("button", { name: "Save the change" }));
     expect(
-      await screen.findByText("This is what the trip has now. Change something first."),
+      await screen.findByText("This is what the ride has now. Change something first."),
     ).toBeVisible();
     expect(changes(client)).toEqual([]);
   });
@@ -352,7 +352,7 @@ describe("Edit trip: the seats, price, car, booking mode and details (spec 6, 3.
   it("changes a preference", async () => {
     const { client } = await openPart("Change the preferences and note");
     expect(
-      screen.getByText("Passengers see the change on the trip. Nobody is notified."),
+      screen.getByText("Passengers see the change on the ride. Nobody is notified."),
     ).toBeVisible();
     await fireEvent.press(screen.getByRole("radio", { name: "Pets welcome" }));
     await saveAndSeeIt();
@@ -387,7 +387,7 @@ describe("Edit trip: the seats, price, car, booking mode and details (spec 6, 3.
   });
 
   it.each(["price", "seats", "car", "booking", "details", "stop", "remove-stop"])(
-    "changes nothing on a trip that has left, opened from a link (%s)",
+    "changes nothing on a ride that has left, opened from a link (%s)",
     async (part) => {
       const left = { ...north, departsAt: "2026-11-14T12:00:00.000Z" };
       const { client } = await renderApp(`${tripPage}/edit/${part}`, {
@@ -397,7 +397,7 @@ describe("Edit trip: the seats, price, car, booking mode and details (spec 6, 3.
           driverApi(fake, []);
         },
       });
-      expect(await screen.findByText("This trip can no longer be changed.")).toBeVisible();
+      expect(await screen.findByText("This ride can no longer be changed.")).toBeVisible();
       expect(screen.queryByRole("button", { name: "Save the change" })).toBeNull();
       expect(changes(client)).toEqual([]);
     },
@@ -442,12 +442,12 @@ describe("Edit trip: adding a stop (spec 6, 3.2; milestone 6 plan, decision 2)",
 
     const focusMoves = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
     await fireEvent.press(screen.getByRole("button", { name: "Save the change" }));
-    expect(await screen.findByText("Trip changed. Your passengers have been told.")).toBeVisible();
+    expect(await screen.findByText("Ride changed. Your passengers have been told.")).toBeVisible();
     expect(screen).toHavePathname(tripPage);
     expect(focusMoves).toHaveBeenCalled();
     focusMoves.mockRestore();
     expect(changes(client).at(-1)).toEqual({ preview: saved, body: addMosfellsbaer });
-    await fireEvent.press(screen.getByRole("button", { name: "Edit trip" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Edit the ride" }));
     expect(
       await screen.findByText(
         "BSÍ bus terminal → Mosfellsbær → Borgarnes → Blönduós → Hof, Akureyri",
@@ -461,7 +461,7 @@ describe("Edit trip: adding a stop (spec 6, 3.2; milestone 6 plan, decision 2)",
     });
     expect(
       await screen.findByText(
-        "What passengers have already booked counts towards this trip's limit, so the seats left can cost at most 90%.",
+        "What passengers have already booked counts towards this ride's limit, so the seats left can cost at most 90%.",
       ),
     ).toBeVisible();
     expect(screen.getByText(lowersAll)).toBeVisible();
@@ -543,7 +543,7 @@ describe("Edit trip: removing a stop (spec 6, 3.2; R6.5)", () => {
     });
     expect(
       await screen.findByText(
-        "What passengers have already booked uses up this trip's limit, so the seats left are free.",
+        "What passengers have already booked uses up this ride's limit, so the seats left are free.",
       ),
     ).toBeVisible();
     expect(screen.getByText(lowersAll)).toBeVisible();
@@ -581,12 +581,12 @@ describe("Edit trip: removing a stop (spec 6, 3.2; R6.5)", () => {
 
     const focusMoves = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
     await fireEvent.press(screen.getByRole("button", { name: "Save the change" }));
-    expect(await screen.findByText("Trip changed. Your passengers have been told.")).toBeVisible();
+    expect(await screen.findByText("Ride changed. Your passengers have been told.")).toBeVisible();
     expect(screen).toHavePathname(tripPage);
     expect(focusMoves).toHaveBeenCalled();
     focusMoves.mockRestore();
     expect(changes(client).at(-1)).toEqual({ preview: saved, body: removeBlonduos });
-    await fireEvent.press(screen.getByRole("button", { name: "Edit trip" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Edit the ride" }));
     expect(await screen.findByText("BSÍ bus terminal → Borgarnes → Hof, Akureyri")).toBeVisible();
   });
 
@@ -607,19 +607,19 @@ describe("Edit trip: removing a stop (spec 6, 3.2; R6.5)", () => {
   it.each([
     [
       { bookingsAtStop: 2, details: [{ path: "meetingPointId", issue: "stop_in_use" }] },
-      "2 passengers get in or out at Blönduós. Cancel or decline their bookings from the trip first, or ask them to cancel.",
+      "2 passengers get in or out at Blönduós. Cancel or decline their bookings on this ride first, or ask them to cancel.",
     ],
     [
       { details: [{ path: "meetingPointId", issue: "stop_in_use" }] },
-      "Passengers get in or out at Blönduós. Cancel or decline their bookings from the trip first, or ask them to cancel.",
+      "Passengers get in or out at Blönduós. Cancel or decline their bookings on this ride first, or ask them to cancel.",
     ],
     [
       { details: [{ path: "segments.1", issue: "stretch_too_fast" }] },
-      "Without Blönduós, the drive from Borgarnes to Hof, Akureyri needs more time than the trip leaves between them.",
+      "Without Blönduós, the drive from Borgarnes to Hof, Akureyri needs more time than the ride leaves between them.",
     ],
     [
       { details: [{ path: "meetingPointId", issue: "stop_at_end" }] },
-      "The first and last stops make the trip. To change them, cancel the trip and post a new one.",
+      "The first and last stops make the ride. To change them, cancel the ride and offer a new one.",
     ],
   ])("says why the server refused: %o", async (extras, text) => {
     await check("Blönduós", north, {

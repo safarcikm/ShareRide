@@ -228,7 +228,7 @@ describe("pausing a meeting point (spec 2, 3.6.4)", () => {
         to: "ExponentPushToken[jon]",
         title: "Meeting point not in use for now: N1 Fitjar",
         body: expect.stringMatching(
-          /^Road works at the entrance\.\nBack in use: 20 November 2026\nChoose another stop for your trip: Saturday 14 November at \d\d:\d\d\.$/,
+          /^Road works at the entrance\.\nBack in use: 20 November 2026\nChoose another stop for your ride: Saturday 14 November at \d\d:\d\d\.$/,
         ) as unknown,
         data: { path: `/drive/trips/${airport}` },
       },
@@ -262,8 +262,8 @@ describe("pausing a meeting point (spec 2, 3.6.4)", () => {
     );
     // Both board within 24 hours, so the passengers also get an SMS (spec 7, 3.4).
     expect(sms.outbox.map((message) => message.text)).toEqual([
-      "PuffinRide: the meeting point for your trip on Saturday 14 November has changed. Details in the app.",
-      "PuffinRide: the meeting point for your trip on Saturday 14 November has changed. Details in the app.",
+      "PuffinRide: the meeting point for your ride on Saturday 14 November has changed. Details in the app.",
+      "PuffinRide: the meeting point for your ride on Saturday 14 November has changed. Details in the app.",
     ]);
   });
 
@@ -470,7 +470,7 @@ describe("retiring a meeting point (spec 2, 3.6.5)", () => {
         to: "ExponentPushToken[jon]",
         title: "Meeting point no longer in use: N1 Fitjar",
         body: expect.stringMatching(
-          /^Road works at the entrance\.\nChoose another stop for your trip: Saturday 14 November at \d\d:\d\d\.$/,
+          /^Road works at the entrance\.\nChoose another stop for your ride: Saturday 14 November at \d\d:\d\d\.$/,
         ) as unknown,
         data: { path: `/drive/trips/${airport}` },
       },

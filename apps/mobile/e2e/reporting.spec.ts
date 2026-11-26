@@ -34,17 +34,17 @@ test("a person reports a trip and finds it in My reports", async ({
   // The driver is not offered to report their own trip.
   await driver.goto(`/trips/${tripId}?from=0&to=1`);
   await expect(driver.getByRole("heading", { name: "Who you ride with" })).toBeVisible();
-  await expect(driver.getByRole("button", { name: "Report this trip" })).toHaveCount(0);
+  await expect(driver.getByRole("button", { name: "Report this ride" })).toHaveCount(0);
 
   await signUp(reporter, english, "Dóra");
   await reporter.goto(`/trips/${tripId}?from=0&to=1`);
-  await reporter.getByRole("button", { name: "Report this trip" }).click();
-  await expect(reporter.getByRole("heading", { name: "Report this trip" })).toBeVisible();
+  await reporter.getByRole("button", { name: "Report this ride" }).click();
+  await expect(reporter.getByRole("heading", { name: "Report this ride" })).toBeVisible();
 
   // Nothing is sent before choosing what happened.
   await reporter.getByRole("button", { name: "Send report" }).click();
   await expect(reporter.getByText("Choose what happened.").filter(visible)).toBeVisible();
-  await reporter.getByRole("radio", { name: "The trip wasn't as listed" }).click();
+  await reporter.getByRole("radio", { name: "The ride wasn't as listed" }).click();
   await reporter.getByLabel("Tell us more (optional)").fill("The car was not the one listed.");
   await reporter.getByRole("button", { name: "Send report" }).click();
   await expect(
@@ -53,9 +53,9 @@ test("a person reports a trip and finds it in My reports", async ({
 
   await reporter.goto("/settings");
   await reporter.getByRole("button", { name: "My reports" }).click();
-  await expect(reporter.getByText("Trip: Bára", { exact: true }).filter(visible)).toBeVisible();
+  await expect(reporter.getByText("Ride: Bára", { exact: true }).filter(visible)).toBeVisible();
   await expect(
-    reporter.getByText(/^The trip wasn't as listed · Sent /).filter(visible),
+    reporter.getByText(/^The ride wasn't as listed · Sent /).filter(visible),
   ).toBeVisible();
   await expect(
     reporter.getByText("We look at every report within 24 hours.").filter(visible),

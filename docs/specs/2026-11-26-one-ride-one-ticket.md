@@ -258,6 +258,13 @@ ride**. "Post a trip", "Publish trip", "My trips" and "Search" (as a
 button) go. Icelandic keeps "far" in "Finna far" and "Bjóða far" and "ferð"
 for the ride itself.
 
+As built: the console, the legal documents, and the marketing pages and
+About keep "trip" (section 10); there "a trip you are making anyway" is
+the drive itself. Notices, emails and text messages say "ride", as they
+share their words with the app. A booking's row reads "Share the ride's
+details": "Share ride" is the product's old name, kept out of every text
+(ADR 0039).
+
 ### 3.5 Find
 
 1. Signed out, a phone's Find stays as it is (spec 16, 3.2), with the rides
@@ -326,8 +333,8 @@ for the ride itself.
    its description, "Open in maps".
 6. A notice for paying, as today (the deadline with Pay, or the line about
    paying the driver in person).
-7. Rows: Share trip details, Weather and roads, Report a problem, and
-   **Cancel booking**, red and last.
+7. Rows: Share the ride's details, Weather and roads, Report a problem,
+   and **Cancel booking**, red and last.
 8. Everything a booking shows today stays, in this order: reports and
    changes to the ride come directly under the title.
 9. This screen is the passenger's. What a driver does with a passenger's

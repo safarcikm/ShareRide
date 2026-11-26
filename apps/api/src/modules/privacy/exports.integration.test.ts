@@ -485,7 +485,7 @@ describe("download my data (spec 11, 3.2)", () => {
     ]);
     expect(unlabelledFields(mine.data)).toEqual([]);
     expect(mine.html).toContain("<h2>Reports you sent</h2>");
-    expect(mine.html).toContain("<dd>The trip wasn&#39;t as listed</dd>");
+    expect(mine.html).toContain("<dd>The ride wasn&#39;t as listed</dd>");
     expect(mine.text).not.toContain(anna.userId);
 
     const theirs = await exportOf(anna);

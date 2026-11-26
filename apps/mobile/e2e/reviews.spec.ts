@@ -52,7 +52,7 @@ test("after the trip, both review the other, and then each sees the other's revi
   await driver.getByRole("radio", { name: "4 stars" }).click();
   await driver.getByRole("button", { name: "Send review" }).click();
   await expect(text(driver, "You have both reviewed, so both reviews show now.")).toBeVisible();
-  await driver.getByRole("button", { name: "Back to the trip" }).click();
+  await driver.getByRole("button", { name: "Back to the ride" }).click();
   await expect(text(driver, "Review of you")).toBeVisible();
   await expect(text(driver, "Lovely drive, right on time.")).toBeVisible();
   await expect(driver.getByLabel("5 stars out of 5").filter(visible)).toBeVisible();
@@ -70,7 +70,7 @@ test("after the trip, both review the other, and then each sees the other's revi
   await expect(text(passenger, "5.0 (1 rating)")).toBeVisible();
   await expect(text(passenger, "Lovely drive, right on time.")).toBeVisible();
   await passenger
-    .getByRole("button", { name: "Reliability: not enough trips yet" })
+    .getByRole("button", { name: "Reliability: not enough rides yet" })
     .filter(visible)
     .click();
   await expect(text(passenger, "As a driver: kept 1 of 1")).toBeVisible();

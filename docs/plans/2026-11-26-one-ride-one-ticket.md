@@ -374,16 +374,26 @@ changes on a screen.
 
 `feat(texts)`, spec 31, 3.4. Values only; no key is renamed.
 
-1. **A test first** in `packages/i18n`: no English value says "trip" or
-   "trips" as a word except in "Trip day", for every key outside the
-   emails and the legal texts (section 10 leaves emails out; the list of
-   key prefixes left out is in the test).
-2. **English:** "Offer a ride", "Publish ride", "Find a ride", "Edit the
-   ride", "Cancel the ride", "Share ride details", "Post it again", "Post
-   the way back", "My rides". The drawings say "Share trip details" on a
-   booking; the rule of 3.4 wins and it reads "Share ride details".
+1. **A test first** in `packages/i18n` (`one-name.test.ts`): no English
+   value says "trip" or "trips" as a word except in "Trip day". Left out,
+   by key prefix, are the console (`admin.`) and the marketing pages and
+   About (`seo.`, `carpool.`, `about.`; section 10), where "a trip you are
+   making anyway" is the drive itself. The legal documents are not text
+   keys and keep their words. Emails and text messages follow the rule
+   after all: nearly all their words are the app's notices, so leaving one
+   subject line out would only make them disagree.
+2. **English:** "Offer a ride", "Publish ride", "Find a ride" (also the
+   search button, which said "Search"), "Edit the ride", "Cancel the
+   ride", "Post it again", "Post the way back", "My rides", "Check your
+   ride". The drawings say "Share trip details" on a booking; the rule of
+   3.4 wins. It reads "Share the ride's details", as "Share ride" is the
+   product's old name, which a test keeps out of the texts (ADR 0039).
+   "Why prices have a ceiling" says "a drive you're making anyway", since
+   nobody makes a ride.
 3. **Icelandic:** "far" in "Finna far" and "Bjóða far", "ferð" for the ride
-   itself; only what is inconsistent today changes.
+   itself; only what is inconsistent today changes: the search button
+   ("Leita") and the title of offering ("Setja inn ferð") say "Finna far"
+   and "Bjóða far".
 4. **Tests and journeys** follow the new words.
 5. **Docs:** glossary (ride and trip), changelog.
 

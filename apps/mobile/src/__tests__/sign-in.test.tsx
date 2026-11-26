@@ -467,8 +467,8 @@ describe("Signing in with a ride kept (spec 16, 3.5)", () => {
   });
 
   it.each([
-    ["full", "Full on your part of the trip"],
-    ["cancelled", "This trip was cancelled."],
+    ["full", "Full on your part of the ride"],
+    ["cancelled", "This ride was cancelled."],
   ] as const)("says when the ride kept is %s now", async (state, text) => {
     keepBooking();
     await openSignIn((client) => {

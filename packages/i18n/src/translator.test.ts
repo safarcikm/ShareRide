@@ -17,12 +17,12 @@ describe("createTranslator", () => {
 
   it("applies English plural rules", () => {
     const t = createTranslator("en");
-    expect(t("search.tripCount", { count: 1 })).toBe("1 trip");
-    expect(t("search.tripCount", { count: 21 })).toBe("21 trips");
+    expect(t("search.tripCount", { count: 1 })).toBe("1 ride");
+    expect(t("search.tripCount", { count: 21 })).toBe("21 rides");
   });
 
   it("formats numbers in a message with the language's separators", () => {
     expect(createTranslator("is")("search.tripCount", { count: 1200 })).toBe("1.200 ferðir");
-    expect(createTranslator("en")("search.tripCount", { count: 1200 })).toBe("1,200 trips");
+    expect(createTranslator("en")("search.tripCount", { count: 1200 })).toBe("1,200 rides");
   });
 });

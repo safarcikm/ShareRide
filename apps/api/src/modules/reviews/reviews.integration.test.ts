@@ -252,7 +252,7 @@ async function toldTo(member: Member) {
   return rows.map((row) => row.kind);
 }
 
-const reviewTitles = ["How was your trip?", "A review about you is now visible"];
+const reviewTitles = ["How was your ride?", "A review about you is now visible"];
 
 /** What push sent to the member about reviews: title, body and the page it opens. */
 function pushedTo(member: Member) {
@@ -546,14 +546,14 @@ describe("asking for reviews (spec 8, 3.7.6 and 3.9)", () => {
     expect(await toldTo(jon)).toEqual(["rate_trip_driver"]);
     expect(pushedTo(gunna)).toEqual([
       {
-        title: "How was your trip?",
+        title: "How was your ride?",
         body: "Rate the driver: Jón. Hlemmur – Fjörður shopping centre · Saturday 14 November at 05:30.",
         path: `/bookings/${bookingId}/rate`,
       },
     ]);
     expect(pushedTo(jon)).toEqual([
       {
-        title: "How was your trip?",
+        title: "How was your ride?",
         body: "Rate your passengers. It helps other drivers choose.",
         path: `/drive/trips/${airport}`,
       },
@@ -610,11 +610,11 @@ describe("asking for reviews (spec 8, 3.7.6 and 3.9)", () => {
     await minuteJob();
     await worker().runOnce();
     const asked = {
-      subject: "How was your trip?",
+      subject: "How was your ride?",
       link: `Open in PuffinRide: ${webAppUrl}/bookings/${bookingId}/rate`,
     };
     const askedDriver = {
-      subject: "How was your trip?",
+      subject: "How was your ride?",
       link: `Open in PuffinRide: ${webAppUrl}/drive/trips/${airport}`,
     };
     expect(emailedTo("gunna-reviews@example.com")).toEqual([asked]);

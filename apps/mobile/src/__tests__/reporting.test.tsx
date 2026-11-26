@@ -77,8 +77,8 @@ async function openTrip(changes: Parameters<typeof northTrip>[1] = {}, signedIn 
 describe("Reporting a trip (spec 9, 3.1)", () => {
   it("asks what happened, sends it, and thanks", async () => {
     const { client } = await openTrip();
-    await fireEvent.press(screen.getByRole("button", { name: "Report this trip" }));
-    expect(await screen.findByRole("header", { name: "Report this trip" })).toBeVisible();
+    await fireEvent.press(screen.getByRole("button", { name: "Report this ride" }));
+    expect(await screen.findByRole("header", { name: "Report this ride" })).toBeVisible();
     expect(screen).toHaveSearchParams({ kind: "trip", id: northResult.tripId });
 
     // Nothing is sent before choosing what happened.
@@ -86,7 +86,7 @@ describe("Reporting a trip (spec 9, 3.1)", () => {
     expect(await screen.findByText("Choose what happened.")).toBeVisible();
     expect(reportsSent(client)).toEqual([]);
 
-    await fireEvent.press(screen.getByRole("radio", { name: "The trip wasn't as listed" }));
+    await fireEvent.press(screen.getByRole("radio", { name: "The ride wasn't as listed" }));
     await fireEvent.changeText(
       screen.getByLabelText("Tell us more (optional)"),
       "  The car was not the one listed.  ",
@@ -111,22 +111,22 @@ describe("Reporting a trip (spec 9, 3.1)", () => {
 
   it("is not offered for my own trip", async () => {
     await openTrip({ part: { state: "own" }, drivenByMe: true });
-    expect(screen.queryByRole("button", { name: "Report this trip" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Report this ride" })).toBeNull();
   });
 
   it("is not offered to its driver once it has left, or been cancelled", async () => {
     await openTrip({ part: { state: "departed" }, drivenByMe: true });
-    expect(screen.queryByRole("button", { name: "Report this trip" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Report this ride" })).toBeNull();
   });
 
   it("is not offered signed out", async () => {
     await openTrip({}, false);
-    expect(screen.queryByRole("button", { name: "Report this trip" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Report this ride" })).toBeNull();
   });
 
   it("says nothing of 112 on a safety report: people dial it themselves (decision 5)", async () => {
     await openTrip();
-    await fireEvent.press(screen.getByRole("button", { name: "Report this trip" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Report this ride" }));
 
     await fireEvent.press(
       await screen.findByRole("radio", { name: "Safety: dangerous driving, threats or violence" }),
@@ -138,7 +138,7 @@ describe("Reporting a trip (spec 9, 3.1)", () => {
 
   it("asks for a shorter description over 1 000 characters, and sends nothing", async () => {
     const { client } = await openTrip();
-    await fireEvent.press(screen.getByRole("button", { name: "Report this trip" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Report this ride" }));
     await fireEvent.press(await screen.findByRole("radio", { name: "Something else" }));
     await fireEvent.changeText(screen.getByLabelText("Tell us more (optional)"), "a".repeat(1001));
     expect(screen.getByText("Shorten it to 1000 characters or fewer.")).toBeVisible();
@@ -158,7 +158,7 @@ describe("Reporting a trip (spec 9, 3.1)", () => {
         reportsApi(client, () => failure(status, code));
       },
     });
-    await fireEvent.press(await screen.findByRole("button", { name: "Report this trip" }));
+    await fireEvent.press(await screen.findByRole("button", { name: "Report this ride" }));
     await fireEvent.press(await screen.findByRole("radio", { name: "Something else" }));
     await fireEvent.press(screen.getByRole("button", { name: "Send report" }));
     expect(await screen.findByText(text)).toBeVisible();
@@ -253,17 +253,17 @@ describe("Reporting a problem with a booking (spec 9, 3.1.1; R9.1)", () => {
   it("is offered on a confirmed booking, about the booking", async () => {
     await openBooking(paidBooking);
     await fireEvent.press(
-      await screen.findByRole("button", { name: "Report a problem with this trip" }),
+      await screen.findByRole("button", { name: "Report a problem with this ride" }),
     );
     expect(
-      await screen.findByRole("header", { name: "Report a problem with this trip" }),
+      await screen.findByRole("header", { name: "Report a problem with this ride" }),
     ).toBeVisible();
   });
 
   it("is not offered once the time to report has passed", async () => {
     await openBooking({ ...paidBooking, status: "completed", problemReportable: false });
     expect(await screen.findByRole("button", { name: "Message Anna" })).toBeVisible();
-    expect(screen.queryByRole("button", { name: "Report a problem with this trip" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Report a problem with this ride" })).toBeNull();
   });
 
   it("is not offered for a request", async () => {
@@ -275,7 +275,7 @@ describe("Reporting a problem with a booking (spec 9, 3.1.1; R9.1)", () => {
       problemReportable: false,
     });
     expect(await screen.findByRole("button", { name: "Withdraw request" })).toBeVisible();
-    expect(screen.queryByRole("button", { name: "Report a problem with this trip" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Report a problem with this ride" })).toBeNull();
   });
 });
 
@@ -360,8 +360,8 @@ describe("My reports in Settings (spec 9, 3.1.7)", () => {
         ],
       }),
     );
-    expect(await screen.findByText("Trip: Anna")).toBeVisible();
-    expect(screen.getByText("The trip wasn't as listed · Sent 12 November 2026")).toBeVisible();
+    expect(await screen.findByText("Ride: Anna")).toBeVisible();
+    expect(screen.getByText("The ride wasn't as listed · Sent 12 November 2026")).toBeVisible();
     expect(screen.getByText("We look at every report within 24 hours.")).toBeVisible();
     expect(screen.getByText("Message: a former member")).toBeVisible();
     expect(screen.getByText("We've looked into your report and taken action.")).toBeVisible();

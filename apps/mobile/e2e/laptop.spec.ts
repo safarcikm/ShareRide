@@ -99,7 +99,7 @@ const findTexts = {
     from: /^From: /,
     date: /^Date: /,
     find: "Find a ride",
-    rideOnMap: /^The trip on a map of Iceland: .+ → .+\.$/,
+    rideOnMap: /^The ride on a map of Iceland: .+ → .+\.$/,
     meetingPoints: "See the meeting points",
     offer: "Offer a ride",
   },
@@ -310,7 +310,7 @@ test.describe("Find's search row", () => {
       const name = (await cards.nth(place).getAttribute("aria-label")) ?? "";
       const [, from, to] =
         /Leaves (.+) at \d\d:\d\d, arrives at (.+) at \d\d:\d\d,/.exec(name) ?? [];
-      return `The trip on a map of Iceland: ${from ?? "?"} → ${to ?? "?"}.`;
+      return `The ride on a map of Iceland: ${from ?? "?"} → ${to ?? "?"}.`;
     };
     await expect(map).toHaveAccessibleName(await onMap(0));
     // A ride that goes elsewhere than the first, so the map has to change.
@@ -347,7 +347,7 @@ const resultsTexts = {
     toLabel: "To",
     borgarnes: /^N1 Borgarnes,/,
     blonduos: /^Olís Blönduós,/,
-    map: "The trip on a map of Iceland: N1 Borgarnes → Olís Blönduós.",
+    map: "The ride on a map of Iceland: N1 Borgarnes → Olís Blönduós.",
   },
   "is-IS": {
     ...findTexts["is-IS"],
@@ -450,7 +450,7 @@ const shown = { visible: true } as const;
 for (const locale of ["en-GB", "is-IS"] as const) {
   const texts = tripTexts[locale];
 
-  test.describe(`trip details, ${locale}`, () => {
+  test.describe(`ride details, ${locale}`, () => {
     test.use({ locale });
 
     for (const width of widths) {
@@ -504,7 +504,7 @@ for (const locale of ["en-GB", "is-IS"] as const) {
   });
 }
 
-test.describe("trip details and a request", () => {
+test.describe("ride details and a request", () => {
   test.use({ viewport: laptop(1280), locale: "en-GB" });
 
   test("prices the seats chosen beside the price, and asks for them in two columns", async ({
@@ -860,11 +860,11 @@ test.describe("My rides, a booking and Profile", () => {
         }).toPass({ timeout: 5_000 });
       }
       const ride = await box(side.getByText("Get in", { exact: true }));
-      for (const name of ["Message Bára", "Cancel booking", "Report a problem with this trip"]) {
+      for (const name of ["Message Bára", "Cancel booking", "Report a problem with this ride"]) {
         const button = await box(side.getByRole("button", { name, exact: true }));
         expect(button.y).toBeGreaterThan(ride.y);
       }
-      await expect(main.getByRole("button", { name: "Share trip details" })).toBeVisible();
+      await expect(main.getByRole("button", { name: "Share the ride's details" })).toBeVisible();
       await expectButtonsInside(side, 3);
       await expectButtonsInside(main, 4);
       await expectNoSidewaysScroll(dora);
@@ -877,7 +877,7 @@ test.describe("My rides, a booking and Profile", () => {
       expect(await side.evaluate((part) => part.scrollHeight - part.clientHeight)).toBe(0);
     }).toPass({ timeout: 5_000 });
     const sideBox = await box(side);
-    const last = await box(side.getByRole("button", { name: "Report a problem with this trip" }));
+    const last = await box(side.getByRole("button", { name: "Report a problem with this ride" }));
     expect(last.y + last.height).toBeLessThanOrEqual(sideBox.y + sideBox.height);
     expect(sideBox.y + sideBox.height).toBeLessThanOrEqual(720);
 
@@ -932,7 +932,7 @@ test.describe("My rides, a booking and Profile", () => {
 // Offer a ride and the driver's trip (spec 18, 3.13 and 3.14): each step in
 // a column with "Your trip so far" and its button beside it, and the
 // driver's trip with the seats on each stretch beside its lists.
-test.describe("Offer a ride and the driver's trip", () => {
+test.describe("Offer a ride and the driver's ride", () => {
   test.use({ viewport: laptop(1280), locale: "en-GB" });
 
   test("post a trip step by step in two columns, then answer a request beside the seats on each stretch", async ({
@@ -1065,11 +1065,11 @@ test.describe("Offer a ride and the driver's trip", () => {
     await main.getByRole("button", { name: "Raise the price" }).click();
     await expect(soFar.getByLabel(/^Price: 110% · the whole route [\d,]+ ISK$/)).toBeVisible();
     await expectTwoColumns();
-    await side.getByRole("button", { name: "Review your trip" }).click();
+    await side.getByRole("button", { name: "Check your ride" }).click();
 
     // Step 5: Publish and what it waits for beside the summary.
     await expect(main.getByRole("heading", { name: "Check and publish" })).toBeVisible();
-    const publish = side.getByRole("button", { name: "Publish trip" });
+    const publish = side.getByRole("button", { name: "Publish ride" });
     await expect(publish).toBeDisabled();
     await expect(
       side.getByText(/^Add a profile photo and your car, and confirm your licence to publish\./),
@@ -1091,7 +1091,7 @@ test.describe("Offer a ride and the driver's trip", () => {
     await driver.getByRole("button", { name: "Confirm", exact: true }).click();
     await expect(publish).toBeEnabled();
     await publish.click();
-    await expect(driver.getByRole("heading", { name: "Your trip is published" })).toBeVisible();
+    await expect(driver.getByRole("heading", { name: "Your ride is published" })).toBeVisible();
     const [, tripId = ""] = /\/drive\/trips\/([0-9a-f-]+)\/published/.exec(driver.url()) ?? [];
 
     // The driver's trip: Edit trip and Cancel trip beside its name, the
@@ -1104,8 +1104,8 @@ test.describe("Offer a ride and the driver's trip", () => {
     await expect(
       side.getByLabel("Mjódd bus terminal to N1 Hveragerði, 1 of 3 seats taken"),
     ).toBeVisible();
-    const edit = head.getByRole("button", { name: "Edit trip" });
-    const cancel = head.getByRole("button", { name: "Cancel trip" });
+    const edit = head.getByRole("button", { name: "Edit the ride" });
+    const cancel = head.getByRole("button", { name: "Cancel the ride" });
     for (const width of widths) {
       await driver.setViewportSize(laptop(width));
       const mainBox = await box(main);
@@ -1142,7 +1142,7 @@ test.describe("Offer a ride and the driver's trip", () => {
     expect((await box(post)).width).toBeLessThanOrEqual(maxContentWidth);
     await expectNoSidewaysScroll(driver);
     await driver.goBack();
-    await expect(head.getByRole("button", { name: "Edit trip" })).toBeVisible();
+    await expect(head.getByRole("button", { name: "Edit the ride" })).toBeVisible();
 
     await main.getByRole("button", { name: "Accept", exact: true }).click();
     await expect(main.getByLabel("Dóra, 1 seat, Waiting for payment")).toBeVisible();

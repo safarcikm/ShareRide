@@ -143,7 +143,7 @@ describe("Trip details (spec 4, 3.6)", () => {
     ).toBeVisible();
     expect(
       screen.getByRole("image", {
-        name: "The trip on a map of Iceland: BSÍ bus terminal → Hof, Akureyri. Your part: Borgarnes → Blönduós.",
+        name: "The ride on a map of Iceland: BSÍ bus terminal → Hof, Akureyri. Your part: Borgarnes → Blönduós.",
       }),
     ).toBeVisible();
     expect(
@@ -202,7 +202,7 @@ describe("Trip details (spec 4, 3.6)", () => {
     expect(radioNames()).toEqual(["10:00, Borgarnes", "12:05, Blönduós", "14:00, Hof, Akureyri"]);
     expect(screen.getByRole("radio", { name: "12:05, Blönduós" })).toBeChecked();
     await fireEvent.press(screen.getByRole("radio", { name: "14:00, Hof, Akureyri" }));
-    expect(await screen.findByText("The whole trip")).toBeVisible();
+    expect(await screen.findByText("The whole ride")).toBeVisible();
     expect(await within(screen.getByTestId("bottom-bar")).findByText("6,000 ISK")).toBeVisible();
     expect(detailsCalls(client)).toEqual([
       { seats: 1, fromStop: 1, toStop: 2 },
@@ -255,7 +255,7 @@ describe("Trip details (spec 4, 3.6)", () => {
       screen.getByRole("button", { name: "14:00, Hof, Akureyri, not on your part" }),
     );
     await fireEvent.press(screen.getByRole("button", { name: "Get out here" }));
-    expect(await screen.findByText("The whole trip")).toBeVisible();
+    expect(await screen.findByText("The whole ride")).toBeVisible();
     expect(screen.getByRole("button", { name: "10:00, Borgarnes, on your part" })).toBeVisible();
     expect(screen.getByRole("header", { name: "BSÍ bus terminal → Hof, Akureyri" })).toBeVisible();
     expect(within(screen.getByTestId("bottom-bar")).getByText("6,000 ISK")).toBeVisible();
@@ -296,7 +296,7 @@ describe("Trip details (spec 4, 3.6)", () => {
       screen.getByRole("button", { name: "14:00, Hof, Akureyri, not on your part" }),
     );
     await fireEvent.press(screen.getByRole("button", { name: "Get out here" }));
-    expect(await screen.findByText("The whole trip")).toBeVisible();
+    expect(await screen.findByText("The whole ride")).toBeVisible();
     release();
     expect(
       await screen.findByRole("header", { name: "BSÍ bus terminal → Hof, Akureyri" }),
@@ -340,7 +340,7 @@ describe("Trip details (spec 4, 3.6)", () => {
   it("asks to wait when too many trips were opened in a short time", async () => {
     await openTrip(undefined, () => failure(429, "rate_limited", { retryAfterSeconds: 120 }));
     expect(
-      await screen.findByText("Too many trips opened in a short time. Try again in 2 minutes."),
+      await screen.findByText("Too many rides opened in a short time. Try again in 2 minutes."),
     ).toBeVisible();
   });
 
@@ -359,18 +359,18 @@ describe("Trip details (spec 4, 3.6)", () => {
   });
 
   it.each([
-    [{ freeSeats: 0, state: "full" as const }, "Full on your part of the trip"],
+    [{ freeSeats: 0, state: "full" as const }, "Full on your part of the ride"],
     [{ freeSeats: 1, state: "full" as const }, "Only 1 seat is free on your part."],
     [{ state: "closed" as const }, "Booking for this part has closed."],
-    [{ state: "departed" as const }, "This trip has left."],
-    [{ state: "cancelled" as const }, "This trip was cancelled."],
-    [{ state: "own" as const }, "This is your trip."],
+    [{ state: "departed" as const }, "This ride has left."],
+    [{ state: "cancelled" as const }, "This ride was cancelled."],
+    [{ state: "own" as const }, "This is your ride."],
   ])("says plainly when the part cannot be booked: %o", async (part, text) => {
     await openTrip(undefined, () => ok(200, northTrip({ board: 1, alight: 2 }, { part })));
     const bar = await screen.findByTestId("bottom-bar");
     expect(await within(bar).findByText(text)).toBeVisible();
     expect(within(bar).queryByRole("button", { name: "Send request" })).toBeNull();
-    const tryAnother = within(bar).queryByText("Try another part of the trip.");
+    const tryAnother = within(bar).queryByText("Try another part of the ride.");
     if (part.state === "full") expect(tryAnother).toBeVisible();
     // The departed part here leaves a later stop ahead; see the next tests.
     else if (part.state !== "departed") expect(tryAnother).toBeNull();
@@ -390,8 +390,8 @@ describe("Trip details (spec 4, 3.6)", () => {
       ),
     );
     const bar = await screen.findByTestId("bottom-bar");
-    expect(await within(bar).findByText("This trip has left.")).toBeVisible();
-    expect(within(bar).getByText("Try another part of the trip.")).toBeVisible();
+    expect(await within(bar).findByText("This ride has left.")).toBeVisible();
+    expect(within(bar).getByText("Try another part of the ride.")).toBeVisible();
   });
 
   it("points nowhere once the trip has passed every stop to get in at", async () => {
@@ -402,8 +402,8 @@ describe("Trip details (spec 4, 3.6)", () => {
       ),
     );
     const bar = await screen.findByTestId("bottom-bar");
-    expect(await within(bar).findByText("This trip has left.")).toBeVisible();
-    expect(within(bar).queryByText("Try another part of the trip.")).toBeNull();
+    expect(await within(bar).findByText("This ride has left.")).toBeVisible();
+    expect(within(bar).queryByText("Try another part of the ride.")).toBeNull();
   });
 
   it("shares the trip's web address for the part", async () => {
@@ -440,25 +440,25 @@ describe("Trip details (spec 4, 3.6)", () => {
   });
 
   it.each([
-    ["no trip has", "0190a1d6-0000-7000-8000-0000000000ff"],
-    ["is not a trip's", "not-a-trip"],
-  ])("says when the trip cannot be found: an id %s", async (_, missing) => {
+    ["no ride has", "0190a1d6-0000-7000-8000-0000000000ff"],
+    ["is not a ride's", "not-a-trip"],
+  ])("says when the ride cannot be found: an id %s", async (_, missing) => {
     await renderApp(`/trips/${missing}`, {
       setUp: (client) => {
         tripDetailsApi(client);
       },
     });
-    expect(await screen.findByText(/^This trip can't be found/)).toBeVisible();
-    expect(screen.queryByRole("button", { name: "See the whole trip" })).toBeNull();
+    expect(await screen.findByText(/^This ride can't be found/)).toBeVisible();
+    expect(screen.queryByRole("button", { name: "See the whole ride" })).toBeNull();
   });
 
   it("offers the whole trip when the link asks for stops it does not have", async () => {
     const { client } = await openTrip(`/trips/${id}?from=2&to=1`);
     expect(
-      await screen.findByText("This trip doesn't have the stops the link asks for."),
+      await screen.findByText("This ride doesn't have the stops the link asks for."),
     ).toBeVisible();
-    await fireEvent.press(screen.getByRole("button", { name: "See the whole trip" }));
-    expect(await screen.findByText("The whole trip")).toBeVisible();
+    await fireEvent.press(screen.getByRole("button", { name: "See the whole ride" }));
+    expect(await screen.findByText("The whole ride")).toBeVisible();
     expect(detailsCalls(client).at(-1)).toEqual({ seats: 1 });
   });
 
@@ -535,7 +535,7 @@ describe("Trip details on a laptop (spec 18, 3.7)", () => {
 
     expect(
       side().getByRole("image", {
-        name: "The trip on a map of Iceland: BSÍ bus terminal → Hof, Akureyri. Your part: Borgarnes → Blönduós.",
+        name: "The ride on a map of Iceland: BSÍ bus terminal → Hof, Akureyri. Your part: Borgarnes → Blönduós.",
       }),
     ).toBeVisible();
     expect(side().getByRole("button", { name: "10:00, Borgarnes, getting in" })).toBeVisible();
@@ -589,8 +589,8 @@ describe("Trip details on a laptop (spec 18, 3.7)", () => {
   });
 
   it.each([
-    [{ freeSeats: 0, state: "full" as const }, "Full on your part of the trip"],
-    [{ state: "cancelled" as const }, "This trip was cancelled."],
+    [{ freeSeats: 0, state: "full" as const }, "Full on your part of the ride"],
+    [{ state: "cancelled" as const }, "This ride was cancelled."],
   ])("says in the side column when the part cannot be booked: %o", async (part, text) => {
     await openTrip(undefined, () => ok(200, northTrip({ board: 1, alight: 2 }, { part })));
     expect(await side().findByText(text)).toBeVisible();
@@ -639,7 +639,7 @@ describe("Trip details on a laptop (spec 18, 3.7)", () => {
 
   it("keeps the page, with Back in its place, when the trip cannot be loaded", async () => {
     await openTrip(undefined, () => failure(500, "internal_error"));
-    expect(await screen.findByText("The trip could not be loaded.")).toBeVisible();
+    expect(await screen.findByText("The ride could not be loaded.")).toBeVisible();
     expect(screen.getByTestId("page")).toBeVisible();
     // What went wrong keeps the width of a column, at the page's left.
     const column = screen.getByTestId("page-column");

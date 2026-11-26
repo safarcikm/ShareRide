@@ -235,7 +235,7 @@ describe("My rides (spec 16, 3.3)", () => {
     });
     const row = await screen.findByRole("button", { name: /^Driving, / });
     expect(String(row.props.accessibilityLabel)).toMatch(
-      /Cancelled.*You cancelled this trip: Weather/,
+      /Cancelled.*You cancelled this ride: Weather/,
     );
     // A quiet tag, as on a cancelled booking: nothing is asked of anyone (spec 31, 3.3).
     expect(within(row).getByText("Cancelled")).toHaveStyle({ color: colors.light.textMuted });

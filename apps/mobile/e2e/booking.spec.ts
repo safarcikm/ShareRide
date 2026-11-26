@@ -61,7 +61,7 @@ const inEnglish: Journey = {
   toField: /^To: /,
   fromLabel: "From",
   toLabel: "To",
-  search: "Search",
+  search: "Find a ride",
   result: /^Leaves N1 Selfoss at \d\d:\d\d, .*Jón, New driver/,
   getIn: "N1 Selfoss",
   book: "Book",
@@ -78,11 +78,11 @@ const inEnglish: Journey = {
   confirmed: "Your seat is confirmed",
   whereToStand: "Where to stand",
   openInMaps: "Open in maps",
-  yours: "You have a booking on this trip.",
+  yours: "You have a booking on this ride.",
   see: "See your booking",
   weather: "Weather (vedur.is)",
-  share: "Share trip details",
-  addEmailPrompt: "Add an email so we can reach you if your trip changes.",
+  share: "Share the ride's details",
+  addEmailPrompt: "Add an email so we can reach you if your ride changes.",
 };
 
 const inIcelandic: Journey = {
@@ -97,7 +97,7 @@ const inIcelandic: Journey = {
   toField: /^Til: /,
   fromLabel: "Frá",
   toLabel: "Til",
-  search: "Leita",
+  search: "Finna far",
   result: /^N1 Hvolsvelli, brottför kl\. \d\d:\d\d, .*Jón, Nýr ökumaður/,
   getIn: "N1 Hvolsvelli",
   book: "Bóka",

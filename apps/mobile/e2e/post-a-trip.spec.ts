@@ -104,7 +104,7 @@ const inEnglish: Journey = {
   reviewPrice: "80% · the whole route 4,600 ISK",
   toSeats: "Choose seats",
   pets: "Pets welcome",
-  toReview: "Review your trip",
+  toReview: "Check your ride",
   reviewTitle: "Check and publish",
   missing: "Three things before you publish",
   photo: englishPhoto,
@@ -116,15 +116,15 @@ const inEnglish: Journey = {
   confirmLicence: "Confirm your licence",
   declaration: "I declare that I hold a valid driving licence for the cars I drive on PuffinRide",
   confirm: "Confirm",
-  publish: "Publish trip",
-  published: "Your trip is published",
+  publish: "Publish ride",
+  published: "Your ride is published",
   shareRide: "Share this ride",
   copyText: "Copy text",
   downloadPicture: "Download picture",
   textCopied: "Text copied. Paste it into your post.",
   post: /^Offering a ride: .+\n.+\n(Stops on the way: .+\n)?(Book|Ask for) a seat on PuffinRide: http:\/\/localhost:\d+\/trips\/[0-9a-f-]+\?from=0&to=\d+$/u,
-  addEmailPrompt: "Add an email so we can reach you if your trip changes.",
-  seeTrips: "See my trips",
+  addEmailPrompt: "Add an email so we can reach you if your ride changes.",
+  seeTrips: "See my rides",
   publishedTrips: "Published",
 };
 
@@ -285,7 +285,7 @@ async function postTrip(page: Page, journey: Journey) {
   await expect(page.getByRole("heading", { name: journey.publishedTrips })).toBeVisible();
 }
 
-test.describe("posting a trip on the web, in English", () => {
+test.describe("posting a ride on the web, in English", () => {
   test.use({ locale: "en-GB", permissions: ["clipboard-read", "clipboard-write"] });
 
   test("a first-time driver posts Reykjavík to Akureyri", async ({ page }) => {
@@ -293,7 +293,7 @@ test.describe("posting a trip on the web, in English", () => {
   });
 });
 
-test.describe("posting a trip on the web, in Icelandic", () => {
+test.describe("posting a ride on the web, in Icelandic", () => {
   test.use({ locale: "is-IS", permissions: ["clipboard-read", "clipboard-write"] });
 
   test("a first-time driver posts Reykjavík to Akureyri", async ({ page }) => {

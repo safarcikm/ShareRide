@@ -32,7 +32,7 @@ async function openTrip(
       driverApi(client, []);
     },
   });
-  if (api === undefined) throw new Error("The trips API was not set up.");
+  if (api === undefined) throw new Error("The rides API was not set up.");
   return { ...app, api };
 }
 
@@ -44,7 +44,7 @@ const copies = (client: FakeClient) =>
 describe("Post again and Post the return (spec 6, 3.6)", () => {
   it("posts the trip again: a draft with its choices, at the date and times", async () => {
     const { client, api } = await openTrip();
-    await fireEvent.press(await screen.findByRole("button", { name: "Post again" }));
+    await fireEvent.press(await screen.findByRole("button", { name: "Post it again" }));
 
     expect(await screen.findByRole("header", { name: "When are you leaving?" })).toBeVisible();
     expect(screen.getByLabelText(/^Leaving BSÍ bus terminal at/)).toBeVisible();
@@ -64,7 +64,7 @@ describe("Post again and Post the return (spec 6, 3.6)", () => {
 
   it("posts the return with the stops the other way", async () => {
     const { client, api } = await openTrip();
-    await fireEvent.press(await screen.findByRole("button", { name: "Post the return trip" }));
+    await fireEvent.press(await screen.findByRole("button", { name: "Post the way back" }));
 
     expect(await screen.findByRole("header", { name: "When are you leaving?" })).toBeVisible();
     expect(screen.getByLabelText(/^Leaving Hof, Akureyri at/)).toBeVisible();
@@ -77,18 +77,18 @@ describe("Post again and Post the return (spec 6, 3.6)", () => {
 
   it("names the meeting points left out as no longer in use", async () => {
     await openTrip({ dropped: [blonduos] });
-    await fireEvent.press(await screen.findByRole("button", { name: "Post the return trip" }));
+    await fireEvent.press(await screen.findByRole("button", { name: "Post the way back" }));
 
     expect(await screen.findByText("No longer in use, so left out: Blönduós.")).toBeVisible();
   });
 
   it("says when too few of the meeting points are still in use, and stays on the trip", async () => {
     await openTrip({ copy: () => failure(422, "too_few_stops") });
-    await fireEvent.press(await screen.findByRole("button", { name: "Post again" }));
+    await fireEvent.press(await screen.findByRole("button", { name: "Post it again" }));
 
     expect(
       await screen.findByText(
-        "Fewer than two of this trip's meeting points are still in use. Post a new trip instead.",
+        "Fewer than two of this ride's meeting points are still in use. Offer a new ride instead.",
       ),
     ).toBeVisible();
     expect(screen.queryByRole("header", { name: "When are you leaving?" })).toBeNull();
@@ -100,10 +100,10 @@ describe("Post again and Post the return (spec 6, 3.6)", () => {
       release = resolve;
     });
     const { client } = await openTrip({ copyAfter });
-    const again = await screen.findByRole("button", { name: "Post again" });
+    const again = await screen.findByRole("button", { name: "Post it again" });
     await fireEvent.press(again);
     await fireEvent.press(again);
-    await fireEvent.press(screen.getByRole("button", { name: "Post the return trip" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Post the way back" }));
     expect(copies(client)).toEqual([{ reverse: false }]);
     await act(async () => {
       release();
@@ -112,7 +112,7 @@ describe("Post again and Post the return (spec 6, 3.6)", () => {
     expect(await screen.findByRole("header", { name: "When are you leaving?" })).toBeVisible();
 
     await fireEvent.press(screen.getByRole("button", { name: "Back" }));
-    await fireEvent.press(await screen.findByRole("button", { name: "Post the return trip" }));
+    await fireEvent.press(await screen.findByRole("button", { name: "Post the way back" }));
     expect(await screen.findByLabelText(/^Leaving Hof, Akureyri at/)).toBeVisible();
     expect(copies(client)).toEqual([{ reverse: false }, { reverse: true }]);
   });
@@ -126,7 +126,7 @@ describe("Post again and Post the return (spec 6, 3.6)", () => {
         cancellation: { reason: "weather", note: "", countsOnReliability: false },
       },
     );
-    expect(await screen.findByRole("button", { name: "Post again" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Post the return trip" })).toBeVisible();
+    expect(await screen.findByRole("button", { name: "Post it again" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Post the way back" })).toBeVisible();
   });
 });

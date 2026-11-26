@@ -156,14 +156,14 @@ describe("Posting a trip (spec 3)", () => {
     // Why there is a limit, and that it is for the whole trip (spec 17, section 9).
     expect(
       screen.getByText(
-        "The limit is for the whole trip, so what passengers have already booked counts towards it.",
+        "The limit is for the whole ride, so what passengers have already booked counts towards it.",
       ),
     ).toBeVisible();
     await fireEvent.press(screen.getByRole("button", { name: "Raise the price" }));
     expect(await screen.findByText("3,400 ISK")).toBeVisible();
     expect(screen.queryByText("Suggested price")).toBeNull();
     expect(screen.getByTestId("price-level-value")).toHaveTextContent("110%");
-    await fireEvent.press(screen.getByRole("button", { name: "Review your trip" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Check your ride" }));
     expect(await screen.findByRole("header", { name: "Check and publish" })).toBeVisible();
     expect(bodiesOf(client, "/v1/trips/{id}").at(-1)).toEqual({ priceLevel: 110 });
 
@@ -173,8 +173,8 @@ describe("Posting a trip (spec 3)", () => {
     expect(screen.getByText("Instant booking")).toBeVisible();
     expect(screen.getByText("Pets welcome")).toBeVisible();
     expect(screen.getByText("Toyota Yaris, white")).toBeVisible();
-    await fireEvent.press(screen.getByRole("button", { name: "Publish trip" }));
-    expect(await screen.findByRole("header", { name: "Your trip is published" })).toBeVisible();
+    await fireEvent.press(screen.getByRole("button", { name: "Publish ride" }));
+    expect(await screen.findByRole("header", { name: "Your ride is published" })).toBeVisible();
     expect(screen).toHavePathname(`/drive/trips/${id}/published`);
     expect(screen.getByText("People can now find it and book a seat.")).toBeVisible();
 
@@ -187,7 +187,7 @@ describe("Posting a trip (spec 3)", () => {
       "BSÍ bus terminal → Hof, Akureyri on PuffinRide",
     );
     expect(await screen.findByText("Link copied. Paste it wherever you like.")).toBeVisible();
-    expect(screen.getByRole("link", { name: "See the trip page" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "See your ride" })).toBeVisible();
   });
 
   it("keeps the new draft's route when the driver goes back to it", async () => {
@@ -627,7 +627,7 @@ describe("Posting a trip (spec 3)", () => {
       { path: "segments.1", issue: "stretch_too_fast" },
       { path: "stops.1", issue: "stop_unavailable" },
     ]);
-    await fireEvent.press(await screen.findByRole("button", { name: "Publish trip" }));
+    await fireEvent.press(await screen.findByRole("button", { name: "Publish ride" }));
     const problems = await screen.findByTestId("publish-problems");
     expect(within(problems).getByText("Fix these before you publish:")).toBeVisible();
     expect(within(problems).getByText("• Leave at least 30 minutes from now.")).toBeVisible();
@@ -669,11 +669,11 @@ describe("Posting a trip (spec 3)", () => {
     expect(screen.getByRole("button", { name: "Confirm your licence" })).toBeVisible();
     expect(screen.queryByText("Profile photo")).toBeNull();
     expect(screen.queryByRole("header", { name: "Before you publish" })).toBeNull();
-    const publish = screen.getByRole("button", { name: "Publish trip" });
+    const publish = screen.getByRole("button", { name: "Publish ride" });
     expect(publish).toBeDisabled();
     expect(
       screen.getByText(
-        "Add your car and confirm your licence to publish. Your trip is saved as a draft until then.",
+        "Add your car and confirm your licence to publish. Your ride is saved as a draft until then.",
       ),
     ).toBeVisible();
     await fireEvent.press(publish);
@@ -705,7 +705,7 @@ describe("Posting a trip (spec 3)", () => {
     expect(screen.queryByRole("button", { name: "Add a car" })).toBeNull();
     expect(
       screen.getByText(
-        "Confirm your licence to publish. Your trip is saved as a draft until then.",
+        "Confirm your licence to publish. Your ride is saved as a draft until then.",
       ),
     ).toBeVisible();
     await fireEvent.press(screen.getByRole("button", { name: "Confirm your licence" }));
@@ -734,9 +734,9 @@ describe("Posting a trip (spec 3)", () => {
     ).toBeVisible();
     expect(screen.getByText("Profile photo")).toBeVisible();
     expect(screen.getByText("So passengers know who to look for")).toBeVisible();
-    expect(screen.getByRole("button", { name: "Publish trip" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Publish ride" })).toBeDisabled();
     expect(
-      screen.getByText("Add a profile photo to publish. Your trip is saved as a draft until then."),
+      screen.getByText("Add a profile photo to publish. Your ride is saved as a draft until then."),
     ).toBeVisible();
 
     await fireEvent.press(screen.getByRole("button", { name: "Add a photo" }));
@@ -754,7 +754,7 @@ describe("Posting a trip (spec 3)", () => {
       "put",
     );
     await fireEvent.press(screen.getByRole("button", { name: "Add a photo" }));
-    expect(await screen.findByRole("button", { name: "Publish trip" })).toBeEnabled();
+    expect(await screen.findByRole("button", { name: "Publish ride" })).toBeEnabled();
     expect(screen.queryByRole("header", { name: /before you publish$/ })).toBeNull();
   });
 
@@ -783,17 +783,17 @@ describe("Posting a trip (spec 3)", () => {
     expect(screen.getByRole("button", { name: "Confirm your licence" })).toBeVisible();
     expect(
       screen.getByText(
-        "Add a profile photo and your car, and confirm your licence to publish. Your trip is saved as a draft until then.",
+        "Add a profile photo and your car, and confirm your licence to publish. Your ride is saved as a draft until then.",
       ),
     ).toBeVisible();
   });
 
   it("has nothing in the way once the car and licence are done", async () => {
     await open(`/drive/trips/${plannedDraft().id}/review`, [plannedDraft()]);
-    expect(await screen.findByRole("button", { name: "Publish trip" })).toBeEnabled();
+    expect(await screen.findByRole("button", { name: "Publish ride" })).toBeEnabled();
     expect(screen.queryByRole("header", { name: /before you publish$/ })).toBeNull();
     expect(
-      screen.queryByText(/to publish\. Your trip is saved as a draft until then\.$/),
+      screen.queryByText(/to publish\. Your ride is saved as a draft until then\.$/),
     ).toBeNull();
   });
 
@@ -801,8 +801,8 @@ describe("Posting a trip (spec 3)", () => {
     const draft = plannedDraft({ vehicleId: null });
     const { client, api } = await open(`/drive/trips/${draft.id}/review`, [draft]);
     expect(await screen.findByText("Toyota Yaris, white")).toBeVisible();
-    await fireEvent.press(screen.getByRole("button", { name: "Publish trip" }));
-    expect(await screen.findByRole("header", { name: "Your trip is published" })).toBeVisible();
+    await fireEvent.press(screen.getByRole("button", { name: "Publish ride" }));
+    expect(await screen.findByRole("header", { name: "Your ride is published" })).toBeVisible();
     expect(bodiesOf(client, "/v1/trips/{id}")).toEqual([{ vehicleId: yaris.id }]);
     expect(api.trips()[0]).toMatchObject({ status: "published", vehicleId: yaris.id });
   });
@@ -811,7 +811,7 @@ describe("Posting a trip (spec 3)", () => {
     const draft = plannedDraft();
     const { api } = await open(`/drive/trips/${draft.id}/price`, [draft]);
     expect(await screen.findByText("3,000 ISK")).toBeVisible();
-    await fireEvent.press(screen.getByRole("button", { name: "Review your trip" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Check your ride" }));
     await fireEvent.press(await screen.findByRole("link", { name: "Edit: Price" }));
     await fireEvent.press(await screen.findByRole("button", { name: "Raise the price" }));
     expect(await screen.findByText("3,400 ISK")).toBeVisible();
@@ -821,7 +821,7 @@ describe("Posting a trip (spec 3)", () => {
     await fireEvent.press(screen.getByRole("button", { name: "Back" }));
     expect(await screen.findByRole("header", { name: "Set your price" })).toBeVisible();
     expect(await screen.findByText("3,400 ISK")).toBeVisible();
-    await fireEvent.press(await screen.findByRole("button", { name: "Review your trip" }));
+    await fireEvent.press(await screen.findByRole("button", { name: "Check your ride" }));
     expect(await screen.findByText("110% · the whole route 3,400 ISK")).toBeVisible();
     expect(api.trips()[0]?.priceLevel).toBe(110);
   });
@@ -830,10 +830,10 @@ describe("Posting a trip (spec 3)", () => {
     const draft = plannedDraft();
     await open(`/drive/trips/${draft.id}/price`, [draft]);
     expect(await screen.findByText("3,000 ISK")).toBeVisible();
-    await fireEvent.press(screen.getByRole("button", { name: "Review your trip" }));
-    await fireEvent.press(await screen.findByRole("button", { name: "Publish trip" }));
-    await fireEvent.press(await screen.findByRole("button", { name: "See my trips" }));
-    expect(await screen.findByRole("header", { name: "My trips" })).toBeVisible();
+    await fireEvent.press(screen.getByRole("button", { name: "Check your ride" }));
+    await fireEvent.press(await screen.findByRole("button", { name: "Publish ride" }));
+    await fireEvent.press(await screen.findByRole("button", { name: "See my rides" }));
+    expect(await screen.findByRole("header", { name: "My rides" })).toBeVisible();
     await fireEvent.press(screen.getByRole("button", { name: "Back" }));
     expect(screen).toHavePathname("/offer");
   });
@@ -841,7 +841,7 @@ describe("Posting a trip (spec 3)", () => {
   it("clears what to fix once the driver changes the trip", async () => {
     const { api } = await open(`/drive/trips/${plannedDraft().id}/review`, [plannedDraft()]);
     api.refuse([{ path: "plannedTimes", issue: "departure_too_soon" }]);
-    await fireEvent.press(await screen.findByRole("button", { name: "Publish trip" }));
+    await fireEvent.press(await screen.findByRole("button", { name: "Publish ride" }));
     expect(await screen.findByTestId("publish-problems")).toBeVisible();
     await fireEvent.press(screen.getByRole("link", { name: "Edit: Date and times" }));
     await chooseTime("Leaving BSÍ bus terminal at", "10:00");
@@ -864,7 +864,7 @@ describe("Posting a trip (spec 3)", () => {
     await fireEvent.press(await screen.findByRole("button", { name: "Delete draft" }));
     expect(screen.getByText("Delete this draft? You can't undo this.")).toBeVisible();
     await fireEvent.press(screen.getByRole("button", { name: "Delete draft" }));
-    expect(await screen.findByText("You have no trips yet.")).toBeVisible();
+    expect(await screen.findByText("You have no rides yet.")).toBeVisible();
     // One puffin for My trips; Offer's first step, open behind it, has its
     // own with its sentence.
     const hidden = { includeHiddenElements: true };
@@ -913,7 +913,7 @@ describe("My trips (spec 3, 3.8.4)", () => {
 
   it("starts a trip from Post a trip", async () => {
     await open("/drive/trips");
-    await fireEvent.press(await screen.findByRole("button", { name: "Post a trip" }));
+    await fireEvent.press(await screen.findByRole("button", { name: "Offer a ride" }));
     expect(await screen.findByRole("header", { name: "Where are you driving?" })).toBeVisible();
   });
 });
@@ -1067,7 +1067,7 @@ describe("Posting a trip on a laptop (spec 18, 3.13)", () => {
     });
     expect(main().getByRole("button", { name: "From: Choose a meeting point" })).toBeVisible();
 
-    expect(soFar().getByRole("header", { name: "Your trip so far" })).toBeVisible();
+    expect(soFar().getByRole("header", { name: "Your ride so far" })).toBeVisible();
     expect(soFar().getByLabelText("Route: Step 1")).toBeVisible();
     expect(soFar().getByLabelText("Date and times: Step 2")).toBeVisible();
     expect(soFar().getByLabelText("Seats and booking: Step 3")).toBeVisible();
@@ -1185,7 +1185,7 @@ describe("Posting a trip on a laptop (spec 18, 3.13)", () => {
     expect(await soFar().findByLabelText("Price: 100% · the whole route 3,000 ISK")).toBeVisible();
     await fireEvent.press(main().getByRole("button", { name: "Raise the price" }));
     expect(await soFar().findByLabelText("Price: 110% · the whole route 3,400 ISK")).toBeVisible();
-    expect(side().getByRole("button", { name: "Review your trip" })).toBeVisible();
+    expect(side().getByRole("button", { name: "Check your ride" })).toBeVisible();
   });
 
   it("shows everything the trip has when a step is opened from the review", async () => {
@@ -1250,10 +1250,10 @@ describe("Posting a trip on a laptop (spec 18, 3.13)", () => {
     expect(main().getByText("Step 5 of 5")).toBeVisible();
     expect(main().getByRole("link", { name: "Edit: Route" })).toBeVisible();
     expect(main().getByRole("button", { name: "Delete draft" })).toBeVisible();
-    expect(side().getByRole("button", { name: "Publish trip" })).toBeDisabled();
+    expect(side().getByRole("button", { name: "Publish ride" })).toBeDisabled();
     expect(
       side().getByText(
-        "Confirm your licence to publish. Your trip is saved as a draft until then.",
+        "Confirm your licence to publish. Your ride is saved as a draft until then.",
       ),
     ).toBeVisible();
     // The review is the trip so far.

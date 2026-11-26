@@ -18,7 +18,7 @@ test("asks about my data, answered at the account's email", async ({ page }) => 
   await expect(page.getByRole("heading", { name: "Ask about my data" })).toBeVisible();
   await expect(page.getByText(`We answer at ${address}.`).filter(visible)).toBeVisible();
   await page.getByRole("radio", { name: /^Ask a question/ }).click();
-  await page.getByLabel("Your message").fill("How long do you keep my trips?");
+  await page.getByLabel("Your message").fill("How long do you keep my rides?");
   await page.getByRole("button", { name: "Send", exact: true }).click();
 
   await expect(

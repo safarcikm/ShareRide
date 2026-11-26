@@ -12,7 +12,7 @@ async function choose(page: Page, end: "From" | "To", typed: string, name: RegEx
   await page.getByRole("button", { name }).click();
 }
 
-test.describe("trip details without an account", () => {
+test.describe("ride details without an account", () => {
   test.use({ locale: "en-GB", permissions: ["clipboard-read", "clipboard-write"] });
 
   test("opens a trip from the search, changes where to get in and shares it", async ({
@@ -22,7 +22,7 @@ test.describe("trip details without an account", () => {
     await page.goto("/search");
     await choose(page, "From", "borgarn", /^N1 Borgarnes,/);
     await choose(page, "To", "blondu", /^Olís Blönduós,/);
-    await page.getByRole("button", { name: "Search", exact: true }).click();
+    await page.getByRole("button", { name: "Find a ride", exact: true }).click();
     // The icon in a result's corner copies the part's link, and the results stay (spec 28, 3.1).
     await page
       .getByRole("button", { name: "Share the ride N1 Borgarnes → Olís Blönduós" })
@@ -49,7 +49,7 @@ test.describe("trip details without an account", () => {
     await expect(page.getByText(/^3 free on your part · [\d,]+ ISK per seat$/)).toBeVisible();
     await expect(
       page.getByRole("img", {
-        name: /^The trip on a map of Iceland: .+\. Your part: N1 Borgarnes → Olís Blönduós\.$/,
+        name: /^The ride on a map of Iceland: .+\. Your part: N1 Borgarnes → Olís Blönduós\.$/,
       }),
     ).toBeVisible();
     // A stop off the part is no taller than one on it: the dotted line fits its row.

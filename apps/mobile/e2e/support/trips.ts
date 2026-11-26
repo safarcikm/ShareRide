@@ -131,7 +131,7 @@ export async function postTripToSelfoss(
   await chooseTime(page, "Leaving Mjódd bus terminal at", departure);
   await page.getByRole("button", { name: "Choose seats" }).click();
   await page.getByRole("button", { name: "Set your price" }).click();
-  await page.getByRole("button", { name: "Review your trip" }).click();
+  await page.getByRole("button", { name: "Check your ride" }).click();
   if (ready) return publish(page);
   await addPhotoBeforePublishing(page);
   await page.getByRole("button", { name: "Add a car" }).click();
@@ -151,8 +151,8 @@ export async function postTripToSelfoss(
 
 /** Publishes the trip under review; its ID. */
 async function publish(page: Page) {
-  await page.getByRole("button", { name: "Publish trip" }).click();
-  await expect(page.getByRole("heading", { name: "Your trip is published" })).toBeVisible();
+  await page.getByRole("button", { name: "Publish ride" }).click();
+  await expect(page.getByRole("heading", { name: "Your ride is published" })).toBeVisible();
   const [, id] = /\/drive\/trips\/([0-9a-f-]+)\/published/.exec(page.url()) ?? [];
   return id ?? "";
 }

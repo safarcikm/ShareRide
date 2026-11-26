@@ -179,7 +179,7 @@ describe("The driver didn't come (spec 8, 3.4; R8.5)", () => {
     ],
     [
       failure(409, "report_too_late"),
-      "It's too late to report this: more than 24 hours have passed since the trip completed.",
+      "It's too late to report this: more than 24 hours have passed since the ride completed.",
     ],
     [
       failure(0, "network_error"),
@@ -569,7 +569,7 @@ describe("Marking a no-show (spec 8, 3.3; R8.4)", () => {
     [failure(409, "driver_not_checked_in"), "To mark a no-show here, press “I'm here” first."],
     [
       failure(409, "trip_completed"),
-      "The trip has completed, so a no-show can no longer be marked.",
+      "The ride has completed, so a no-show can no longer be marked.",
     ],
   ])("says why it could not mark them (%#)", async (answer, said) => {
     await openDriverTrip(tripOnTheDay([0, 1]), riders(), { mark: () => answer });
@@ -579,13 +579,13 @@ describe("Marking a no-show (spec 8, 3.3; R8.4)", () => {
   });
 
   it.each(["already_reported", "not_confirmed"])(
-    "says the booking changed, with the way back to the trip (%s)",
+    "says the booking changed, with the way back to the ride (%s)",
     async (code) => {
       await openDriverTrip(tripOnTheDay([0, 1]), riders(), { mark: () => failure(409, code) });
       await fireEvent.press(await screen.findByRole("button", markGunna));
       await fireEvent.press(await screen.findByRole("button", { name: "Mark as no-show" }));
       expect(await screen.findByText("This booking changed since you opened it.")).toBeVisible();
-      await fireEvent.press(screen.getByRole("button", { name: "Back to the trip" }));
+      await fireEvent.press(screen.getByRole("button", { name: "Back to the ride" }));
       expect(screen).toHavePathname(`/drive/trips/${tripId}`);
     },
   );

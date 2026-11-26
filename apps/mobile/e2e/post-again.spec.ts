@@ -16,7 +16,7 @@ test("a driver posts the return of a trip from its page", async ({ page }) => {
   const tripId = await postTripToSelfoss(page, "08:00");
 
   await page.goto(`/drive/trips/${tripId}`);
-  await page.getByRole("button", { name: "Post the return trip" }).click();
+  await page.getByRole("button", { name: "Post the way back" }).click();
   await expect(page.getByRole("heading", { name: "When are you leaving?" })).toBeVisible();
   const [, returnId] = /\/drive\/trips\/([0-9a-f-]+)\/time/.exec(page.url()) ?? [];
   expect(returnId).toBeDefined();
@@ -28,9 +28,9 @@ test("a driver posts the return of a trip from its page", async ({ page }) => {
   await chooseTime(page, "Leaving N1 Selfoss at", "18:00");
   await page.getByRole("button", { name: "Choose seats" }).click();
   await page.getByRole("button", { name: "Set your price" }).click();
-  await page.getByRole("button", { name: "Review your trip" }).click();
-  await page.getByRole("button", { name: "Publish trip" }).click();
-  await expect(page.getByRole("heading", { name: "Your trip is published" })).toBeVisible();
+  await page.getByRole("button", { name: "Check your ride" }).click();
+  await page.getByRole("button", { name: "Publish ride" }).click();
+  await expect(page.getByRole("heading", { name: "Your ride is published" })).toBeVisible();
 
   await page.goto(`/drive/trips/${returnId ?? ""}`);
   await expect(

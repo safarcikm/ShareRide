@@ -37,7 +37,7 @@ test("a passenger requests a seat, the driver accepts, the passenger pays", asyn
   await passenger.goto(`/trips/${tripId}?from=0&to=1`);
   // The driver's picture stands with her name, over the lines about her (spec 31, 3.18).
   await expect(
-    passenger.getByText("Reliability: not enough trips yet").filter(visible),
+    passenger.getByText("Reliability: not enough rides yet").filter(visible),
   ).toBeVisible();
   expect(await picturesUnderTheirText(passenger)).toEqual({ pictures: 1, under: [] });
   await passenger.getByRole("button", { name: "Send request", exact: true }).click();
@@ -77,7 +77,7 @@ test("a passenger requests a seat, the driver accepts, the passenger pays", asyn
   ).toBeVisible();
   // Accepted: the account's email reaches the passenger on the web, so no
   // email is asked for (spec 7, 3.6.2; spec 26).
-  const addEmail = passenger.getByText("Add an email so we can reach you if your trip changes.");
+  const addEmail = passenger.getByText("Add an email so we can reach you if your ride changes.");
   await expect(addEmail).toHaveCount(0);
   await passenger.getByRole("button", { name: /^Pay [\d,]+ ISK$/ }).click();
   await expect(

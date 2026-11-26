@@ -8,7 +8,7 @@ to be confirmed by a native speaker before they appear in the app.
 | ---------------- | -------------------- | ------- |
 | Meeting point (`MeetingPoint`) | Mótsstaður | A curated, public place where passengers board or leave a trip |
 | Leg (`Leg`) | Leggur | A precomputed connection between two meeting points, with road distance and typical driving time |
-| Trip (`Trip`) | Ferð | One journey a driver offers, on a date and time, through an ordered list of stops |
+| Trip (`Trip`) | Ferð | One journey a driver offers, on a date and time, through an ordered list of stops. A member reads **ride** for it in English ("Offer a ride", "Your ride is published"): `trip` is the word of the code, the text keys and the docs, and of "Trip day" ([spec 31](specs/2026-11-26-one-ride-one-ticket.md), 3.4). Icelandic says "far" for finding and offering one ("Finna far", "Bjóða far") and "ferð" for the ride itself |
 | Stop (`TripStop`) | Viðkomustaður | A meeting point on a specific trip, with its planned time and position |
 | Segment (`Segment`) | Áfangi | The stretch between two consecutive stops of a trip; it has its own price |
 | Capacity (`capacity`) | Sætaframboð | Number of seats the driver offers on a trip |

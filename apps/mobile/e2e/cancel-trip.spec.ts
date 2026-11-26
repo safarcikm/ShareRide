@@ -28,9 +28,9 @@ test("a driver cancels a trip with three passengers, who each read why", async (
 
   // Cancel trip, under the seats on each stretch, opens its own screen.
   await driver.reload();
-  await driver.getByRole("button", { name: "Cancel trip", exact: true }).click();
+  await driver.getByRole("button", { name: "Cancel the ride", exact: true }).click();
   await expect(driver).toHaveURL(new RegExp(`/drive/trips/${tripId}/cancel$`));
-  await expect(driver.getByRole("heading", { name: "Cancel your trip" })).toBeVisible();
+  await expect(driver.getByRole("heading", { name: "Cancel your ride" })).toBeVisible();
   await expect(
     driver
       .getByText("1 passenger gets a full refund and will be told now.", { exact: true })
@@ -47,21 +47,21 @@ test("a driver cancels a trip with three passengers, who each read why", async (
   await driver.getByRole("radio", { name: "Car problem" }).click();
   await expect(counts.filter(visible)).toBeVisible();
   await driver.getByLabel("Note to passengers (optional)").fill("Sorry, the clutch went.");
-  await driver.getByRole("button", { name: "Cancel trip", exact: true }).click();
+  await driver.getByRole("button", { name: "Cancel the ride", exact: true }).click();
 
   // Back on the trip, it says so with focus, and offers nothing more.
   await expect(driver).toHaveURL(new RegExp(`/drive/trips/${tripId}\\?tripCancelled=1$`));
-  const outcome = "You cancelled this trip: Car problem";
+  const outcome = "You cancelled this ride: Car problem";
   await expect(driver.getByText(outcome, { exact: true }).filter(visible)).toBeVisible();
   await expect.poll(() => focused(driver)).toContain(outcome);
   await expect(
     driver.getByText("Your note: Sorry, the clutch went.", { exact: true }).filter(visible),
   ).toBeVisible();
-  await expect(driver.getByRole("button", { name: "Cancel trip", exact: true })).toBeHidden();
+  await expect(driver.getByRole("button", { name: "Cancel the ride", exact: true })).toBeHidden();
   await expect(driver.getByLabel(/^Dóra, /)).toBeHidden();
 
   // Each passenger reads why, with the note; only Dóra had paid.
-  const said = "Bára cancelled the trip: Car problem";
+  const said = "Bára cancelled the ride: Car problem";
   const refund = /^Full refund of [\d,]+ ISK, back to the card you paid with\.$/;
   for (const [person, booking] of [
     [dora, paid],
