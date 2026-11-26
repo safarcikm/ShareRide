@@ -1,6 +1,6 @@
 import { Redirect, router, useIsFocused } from "expo-router";
 import { TabList, TabSlot, TabTrigger, Tabs } from "expo-router/ui";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { StyleSheet } from "react-native";
 import { nextRoute } from "@/auth/next-route";
 import { useSessionState } from "@/auth/session";
@@ -14,6 +14,7 @@ import { keepPendingLink, linkNeedingAccount } from "@/navigation/kept-link";
 import { menuTabs } from "@/navigation/menu";
 import { takeOpenedPath } from "@/navigation/opened-link";
 import { TabBar, TabButton } from "@/navigation/tab-bar";
+import { useAfterSignIn } from "@/sign-in/after-sign-in";
 
 /**
  * The places of the menu (spec 16, 3.1, and Messages). Phones show them as a tab bar
@@ -21,7 +22,8 @@ import { TabBar, TabButton } from "@/navigation/tab-bar";
  * without it. Wide screens show the top bar of the root layout instead.
  * Each place keeps its state while another is shown. An account with
  * sign-up steps left goes on to the next one, and once it is ready, to the
- * choice it kept through sign-up. A link to a screen that needs an account,
+ * choice it kept through sign-up, or to the offer of Face ID or
+ * fingerprint (spec 29, 3.2). A link to a screen that needs an account,
  * opened before the account was ready, lands here and is kept too.
  */
 export default function MenuLayout() {
@@ -31,7 +33,7 @@ export default function MenuLayout() {
   const me = state.status === "signedIn" ? state.me : null;
   const next = me === null ? null : nextRoute(me);
   useOpenedLink(state);
-  useKeptChoice(me !== null && next === null);
+  useAfterSignIn(me !== null && next === null);
   if (next !== null) return <Redirect href={next} />;
   return (
     <Tabs style={styles.tabs}>
@@ -54,27 +56,6 @@ export default function MenuLayout() {
 /** The tab bar pads the bottom edge; on wide screens the top bar pads the top. */
 const aboveBar = ["top", "right", "left"] as const;
 const sideEdges = ["right", "left", "bottom"] as const;
-
-/**
- * Once the account is ready, opens the booking or Offer kept through
- * sign-up, once. Only while the menu is on screen: a redirect from a screen
- * underneath, while sign-up is still on top, would be lost.
- */
-function useKeptChoice(ready: boolean) {
-  const focused = useIsFocused();
-  const taken = useRef(false);
-  useEffect(() => {
-    if (!ready) {
-      taken.current = false;
-      return;
-    }
-    if (!focused || taken.current) return;
-    taken.current = true;
-    void takeKeptChoice(now()).then((href) => {
-      if (href !== null) router.navigate(href);
-    });
-  }, [focused, ready]);
-}
 
 /**
  * The app opened at a link to a screen that needs an account (spec 20,

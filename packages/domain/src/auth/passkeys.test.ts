@@ -54,7 +54,7 @@ describe("deviceName (spec 27, 3.6)", () => {
   });
 });
 
-describe("passkeyOfferDue (spec 28, 3.2, R28.2)", () => {
+describe("passkeyOfferDue (spec 29, 3.2, R29.2)", () => {
   const now = new Date("2026-11-26T12:00:00.000Z");
   const daysAgo = (days: number) => new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
   const capable: PasskeyOfferInput = {

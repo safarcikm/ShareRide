@@ -187,6 +187,10 @@ export const en = {
   "signUp.faster.title": "Sign in faster next time",
   "signUp.faster.password": "Add a password",
   "signUp.faster.help": "Your email code always works too.",
+  "passkeyOffer.title": "Use Face ID or fingerprint next time?",
+  "passkeyOffer.body":
+    "Sign in with a glance or a touch on this device. Your email code always works too.",
+  "passkeyOffer.setUp": "Set it up",
   "signUp.faster.passkey": "Use Face ID or fingerprint",
   "auth.provider.phoneTitle": "Add your phone number",
   "auth.provider.phoneHelp":

@@ -16,17 +16,17 @@ export const memberPasskeyRules = {
   signInOptionsLimits: [{ limit: 60, windowSeconds: 10 * 60 }] satisfies readonly RateLimitRule[],
 } as const;
 
-/** The ways in (spec 28, 3.2 and 3.5): Google, Apple, a passkey, a password or the email code. */
+/** The ways in (spec 29, 3.2 and 3.5): Google, Apple, a passkey, a password or the email code. */
 export const signInWays = ["google", "apple", "passkey", "password", "email"] as const;
 export type SignInWay = (typeof signInWays)[number];
 
-/** "Use Face ID or fingerprint next time?" after another way in (spec 28, 3.2). */
+/** "Use Face ID or fingerprint next time?" after another way in (spec 29, 3.2). */
 export const passkeyOfferRules = {
   /** After "Not now", this browser is asked again this many days later. */
   askAgainAfterDays: 30,
 } as const;
 
-/** What decides whether a sign-in is followed by the offer (R28.2). */
+/** What decides whether a sign-in is followed by the offer (R29.2). */
 export interface PasskeyOfferInput {
   readonly isNewUser: boolean;
   readonly way: SignInWay;
@@ -34,7 +34,7 @@ export interface PasskeyOfferInput {
   readonly deviceHasLock: boolean;
   /** `passkeySignIn` in the server's config. */
   readonly serverHasPasskeys: boolean;
-  /** This browser is known to have a PuffinRide passkey (spec 28, 3.2, item 5). */
+  /** This browser is known to have a PuffinRide passkey (spec 29, 3.2, item 5). */
   readonly passkeyHere: boolean;
   /** When "Not now" was last pressed on this browser. */
   readonly declinedAt: Date | null;
@@ -44,7 +44,7 @@ export interface PasskeyOfferInput {
 }
 
 /**
- * Whether to ask "Use Face ID or fingerprint next time?" (R28.2): an
+ * Whether to ask "Use Face ID or fingerprint next time?" (R29.2): an
  * account from before this sign-in, in by any way but a passkey, on a
  * browser that can keep one and is not known to have one, not declined
  * there in 30 days, and with nothing kept to open first.

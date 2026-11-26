@@ -55,7 +55,7 @@ export interface SignInNews {
 }
 
 /**
- * How the person just signed in (spec 28, 3.2 and 3.5), for what opens
+ * How the person just signed in (spec 29, 3.2 and 3.5), for what opens
  * next: the way, whether the account is new, and a passkey's credential ID.
  * Kept in memory only, until taken.
  */

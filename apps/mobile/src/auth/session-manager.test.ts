@@ -415,7 +415,7 @@ describe("createSessionManager", () => {
     expect(session.state()).toMatchObject({ me: { firstName: "Anna" } });
   });
 
-  describe("what the last sign-in was (spec 28, 3.2 and 3.5)", () => {
+  describe("what the last sign-in was (spec 29, 3.2 and 3.5)", () => {
     const passkeyAnswer = {
       id: "credential-one",
       rawId: "credential-one",

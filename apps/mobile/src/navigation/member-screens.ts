@@ -43,6 +43,7 @@ export const memberScreens = [
   "bookings/[id]/answer",
   "bookings/[id]/rate",
   "onboarding/faster",
+  "onboarding/face-id",
 ] as const;
 
 /**
