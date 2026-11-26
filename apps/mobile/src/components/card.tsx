@@ -1,8 +1,8 @@
-import type { ReactNode } from "react";
+import { createContext, useContext, useMemo, type ReactNode } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { useHover } from "@/theme/hover";
 import { chunky } from "@/theme/pressable";
-import { edges, radii, spacing } from "@/theme/tokens";
+import { edges, radii, sizes, spacing } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 import { linkProps, type AppPath } from "@/navigation/link-props";
 
@@ -33,6 +33,39 @@ interface CardProps {
    * are as tall as the tallest; what it holds decides where the room goes.
    */
   readonly fill?: boolean;
+  /**
+   * A button of its own in the top right corner, such as Share (spec 28,
+   * 3.1): drawn over the card but outside its pressable part, after it, so a
+   * screen reader and the keyboard reach it and pressing it does not press
+   * the card. What the card holds leaves it `cardCornerRoom` at the end of
+   * its first line.
+   */
+  readonly corner?: ReactNode;
+}
+
+/**
+ * The room a card's first line leaves at its end for a `corner`: a quiet
+ * icon button, drawn 36 round 8 from the card's edge, whose 44 tap area
+ * reaches 48 in, past the face's 16 padding.
+ */
+export const cardCornerRoom = sizes.iconButton + spacing.xs - spacing.md;
+
+/** What a card's corner tells the card: the pointer or the keyboard came to it. */
+export interface CardCornerEvents {
+  readonly onHoverIn: () => void;
+  readonly onHoverOut: () => void;
+  readonly onFocus: () => void;
+}
+
+const CardCorner = createContext<CardCornerEvents | null>(null);
+
+/**
+ * For the button in a card's `corner`: the pointer over it, or the keyboard
+ * on it, counts as on the card, so the card keeps its edge and a map beside
+ * it shows its trip. Null outside a card's corner.
+ */
+export function useCardCorner(): CardCornerEvents | null {
+  return useContext(CardCorner);
 }
 
 /**
@@ -51,7 +84,56 @@ export function Card({
   onFocus,
   marked = false,
   fill = false,
+  corner,
 }: CardProps) {
+  const [cornerHovered, cornerHover] = useHover();
+  const events = useMemo<CardCornerEvents>(
+    () => ({
+      onHoverIn: () => {
+        cornerHover.onHoverIn();
+        onHoverIn?.();
+      },
+      onHoverOut: cornerHover.onHoverOut,
+      onFocus: () => {
+        onFocus?.();
+      },
+    }),
+    [cornerHover, onHoverIn, onFocus],
+  );
+  const card = (
+    <PlainCard
+      onPress={onPress}
+      href={href}
+      accessibilityLabel={accessibilityLabel}
+      onHoverIn={onHoverIn}
+      onFocus={onFocus}
+      marked={marked || cornerHovered}
+      fill={fill}
+    >
+      {children}
+    </PlainCard>
+  );
+  if (corner === undefined) return card;
+  return (
+    <View testID="card-with-corner" style={fill && styles.fill}>
+      {card}
+      <View testID="card-corner" style={styles.corner}>
+        <CardCorner.Provider value={events}>{corner}</CardCorner.Provider>
+      </View>
+    </View>
+  );
+}
+
+function PlainCard({
+  children,
+  onPress,
+  href,
+  accessibilityLabel,
+  onHoverIn,
+  onFocus,
+  marked = false,
+  fill = false,
+}: Omit<CardProps, "corner">) {
   const palette = usePalette();
   const [hovered, hover] = useHover();
   const edgeColor = hovered || marked ? palette.primary : palette.edge;
@@ -105,4 +187,6 @@ const styles = StyleSheet.create({
   outer: { borderRadius: radii.card },
   fill: { flexGrow: 1 },
   face: { borderRadius: radii.card, padding: spacing.md, gap: spacing.ms },
+  // The tap area's corner: the button it holds is drawn 4 further in.
+  corner: { position: "absolute", top: spacing.xs, right: spacing.xs },
 });

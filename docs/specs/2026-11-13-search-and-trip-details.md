@@ -164,6 +164,10 @@ by link until a week after the last stop's planned time; after that the link
 says the trip can't be found (decision 4). Opening a trip's page counts towards
 the same limit as searching (section 7).
 
+Every ride card in a list has a share icon in its corner that shares its
+part's link the same way, and a driver gets more ways to share a published
+trip ([spec 28](2026-11-25-share-a-ride.md), added 2026-11-25).
+
 ### 3.8 Rides leaving soon
 
 The front page (spec 1, screen 1) shows people without an account what is on

@@ -275,6 +275,8 @@ export const sizes = {
   inputHeight: 52,
   chipHeight: 40,
   iconButton: 44,
+  /** The round of a quiet icon button, drawn inside its 44 button (spec 28, 3.1). */
+  iconButtonSmall: 36,
   checkbox: 26,
   /** The round mark of a radio card. */
   radio: 24,

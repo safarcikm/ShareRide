@@ -1493,6 +1493,12 @@ releases follow [Semantic Versioning](https://semver.org/).
   (at most two drawn at once, with a request limit of its own), with resvg and the app's
   fonts kept in `apps/api/assets/trip-preview/` (copied there by
   `export-icons.ts`). New API package `@resvg/resvg-js`.
+- A share icon on ride result cards (spec 28, 3.1): search results, the
+  front page's rides leaving soon and All rides have a quiet icon in the
+  top right corner that shares the card's part in the phone's or browser's
+  share window, or copies its link and shows a tick; it is a button of its
+  own, so it never opens the trip. `Card` takes a `corner`, `IconButton`
+  can be `quiet` (drawn 36 in a 44 button), and the token `iconButtonSmall`.
 
 - Carpool in Iceland (spec 23, 3.9): a public page at `/carpool-iceland`,
   "Samferða um Ísland" in Icelandic, that says in words what PuffinRide is

@@ -16,8 +16,8 @@ migration, no new dependency.
 
 `feat(search)`, spec 28, 3.1 items 1 to 4.
 
-1. **A quiet icon button:** `IconButton` gets `quiet`: 36 round with
-   `hitSlop` to 44, no fill or edge, the icon in `textMuted`,
+1. **A quiet icon button:** `IconButton` gets `quiet`: drawn 36 round
+   inside its 44 button (the web has no `hitSlop`), no fill or edge, the icon in `textMuted`,
    `primarySoft` under the pointer or pressed. Spec 15's component table
    says so. Test first in `display-parts.test.tsx` or a new test.
 2. **A card's corner:** `Card` gets `corner`, a node drawn in its top

@@ -1163,6 +1163,7 @@ export const is = {
   "trip.notFound": "Þessi ferð finnst ekki. Hlekkurinn gæti verið rangur eða ferðinni eytt.",
   "trip.partInvalid": "Þessi ferð er ekki með stoppin sem hlekkurinn vísar á.",
   "trip.seeWholeTrip": "Sjá alla ferðina",
+  "shareRide.cardLabel": "Deila ferðinni {route}",
   "trip.published.share": "Deila ferðinni",
   "trip.published.see": "Sjá síðu ferðarinnar",
   "trip.failed": "Ekki tókst að sækja ferðina.",

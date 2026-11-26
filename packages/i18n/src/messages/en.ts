@@ -1148,6 +1148,7 @@ export const en = {
   "trip.notFound": "This trip can't be found. The link may be wrong, or the trip removed.",
   "trip.partInvalid": "This trip doesn't have the stops the link asks for.",
   "trip.seeWholeTrip": "See the whole trip",
+  "shareRide.cardLabel": "Share the ride {route}",
   "trip.published.share": "Share the trip",
   "trip.published.see": "See the trip page",
   "trip.failed": "The trip could not be loaded.",

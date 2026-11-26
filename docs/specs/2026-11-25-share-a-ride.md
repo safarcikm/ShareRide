@@ -82,11 +82,13 @@ is added (Martin asked, 2026-11-25).
 1. **Where:** every result card (`ResultCard`): search results, the front
    page's "Leaving soon", All rides. And the driver's cards in My trips,
    for a published trip that has not left (status `published`).
-2. **How it looks:** a quiet icon button, 36 round with a 44 tap area
-   (spec 15, 5: `hitSlop`), the Share icon in `textMuted`, no fill or edge;
-   `primarySoft` behind it under the pointer or pressed. It sits in the
-   card's top right corner; the card's own content leaves it room, so on a
-   result card the price stands just left of it.
+2. **How it looks:** a quiet icon button, drawn 36 round inside a 44
+   button (the web has no `hitSlop`), the Share icon in `textMuted`, no
+   fill or edge; `primarySoft` behind it under the pointer or pressed. It
+   sits in the card's top right corner; the card's own content leaves it
+   room, so on a result card the price stands just left of it. The pointer
+   or the keyboard on it counts as on the card: the card keeps its edge,
+   and the map beside search results shows its trip.
 3. **It is its own button**, not part of the card: pressing it does not
    open the trip, and on the web it is a separate button after the card
    (a button inside a button cannot be reached by screen readers). Its
@@ -284,6 +286,14 @@ A result card, with the icon in its corner:
 │ ...                                       │
 └──────────────────────────────────────────┘
 ```
+
+As built (pictures from `apps/mobile/e2e/pictures.spec.ts`):
+
+| Screen | Picture |
+| ------ | ------- |
+| A result card on a phone | ![A result card with the share icon in its corner](images/share-a-ride/result-card-phone.png) |
+| The front page on a laptop | ![Rides leaving soon, each with the share icon](images/share-a-ride/front-page-laptop.png) |
+| A result's link copied, on a laptop | ![The icon turned into a tick](images/share-a-ride/link-copied-laptop.png) |
 
 ## 6. Data and API
 
