@@ -32,7 +32,7 @@ test("the passenger rates the driver from the email, signing in on the way", asy
   await move(driver, tripId, -36 * 60);
 
   // The email opens the rating screen of her booking.
-  const asked = await emailTo(passengerEmail, /^How was your trip\?$/);
+  const asked = await emailTo(passengerEmail, /^How was your ride\?$/);
   expect(asked.text).toContain("Rate the driver: Bára.");
   const link = linkIn(asked, "Open in PuffinRide");
   expect(link).toBe(`${booking}/rate`);

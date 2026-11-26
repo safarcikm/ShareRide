@@ -540,7 +540,7 @@ describe("notification texts", () => {
   it("never say why PuffinRide cancelled a trip or booking (spec 9, 3.6.2)", () => {
     expect(text({ kind: "trip_cancelled", role: "passenger", cancelReason: null })).toEqual({
       title: "PuffinRide cancelled the ride",
-      body: "BSÍ – Hof, Akureyri · Saturday 14 November at 09:00. Search for another ride.",
+      body: "BSÍ – Hof, Akureyri · Saturday 14 November at 09:00. Find another ride.",
       path: "/bookings/booking-1",
     });
     expect(

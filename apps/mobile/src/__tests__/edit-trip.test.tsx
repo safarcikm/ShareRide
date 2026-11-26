@@ -352,7 +352,7 @@ describe("Edit trip: the seats, price, car, booking mode and details (spec 6, 3.
   it("changes a preference", async () => {
     const { client } = await openPart("Change the preferences and note");
     expect(
-      screen.getByText("Passengers see the change on the ride. Nobody is notified."),
+      screen.getByText("Passengers see the change when they open the ride. Nobody is notified."),
     ).toBeVisible();
     await fireEvent.press(screen.getByRole("radio", { name: "Pets welcome" }));
     await saveAndSeeIt();

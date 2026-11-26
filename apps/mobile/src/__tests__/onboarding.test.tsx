@@ -407,7 +407,7 @@ describe("Only the part of step 3 that is left", () => {
 
 describe("On the web, step 3 asks for an email (spec 20, 3.3)", () => {
   const address = "dora@example.com";
-  const emailHelp = "We email you about your rides: requests, reminders and how your ride went.";
+  const emailHelp = "We email you about your rides: requests, reminders and how each one went.";
   const wrongEmail = "Enter an email address, such as anna@example.com.";
 
   beforeEach(() => {

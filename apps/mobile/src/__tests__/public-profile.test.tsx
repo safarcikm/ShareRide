@@ -178,7 +178,7 @@ describe("the reliability figure (spec 8, 3.8)", () => {
     });
     await fireEvent.press(screen.getByRole("button", { name: "Reliability: 91%" }));
     expect(
-      await screen.findByText("Kept 11 of 12 rides and bookings in the last 6 months."),
+      await screen.findByText("Kept 11 of 12 rides offered and seats booked in the last 6 months."),
     ).toBeVisible();
   });
 
@@ -190,7 +190,7 @@ describe("the reliability figure (spec 8, 3.8)", () => {
 
     await fireEvent.press(figure);
     expect(
-      screen.getByText("Kept 11 of 12 rides and bookings in the last 12 months."),
+      screen.getByText("Kept 11 of 12 rides offered and seats booked in the last 12 months."),
     ).toBeVisible();
     expect(screen.getByText("As a driver: kept 10 of 10")).toBeVisible();
     expect(screen.getByText("As a passenger: kept 1 of 2")).toBeVisible();
@@ -214,7 +214,7 @@ describe("the reliability figure (spec 8, 3.8)", () => {
     await fireEvent.press(
       screen.getByRole("button", { name: "Reliability: not enough rides yet" }),
     );
-    expect(screen.getByText("Kept 3 of 4 rides and bookings in the last 12 months.")).toBeVisible();
+    expect(screen.getByText("Kept 3 of 4 rides offered and seats booked in the last 12 months.")).toBeVisible();
   });
 });
 

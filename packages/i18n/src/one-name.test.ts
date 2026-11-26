@@ -3,11 +3,15 @@ import { en } from "./messages/en.ts";
 import { is } from "./messages/is.ts";
 
 /**
- * Texts spec 31 leaves as they are (section 10): the console, and the
- * marketing pages and About, where "a trip you are making anyway" is the
- * drive itself and not what PuffinRide lists.
+ * Texts spec 31 leaves as they are (section 10): the console's own, and
+ * three on the marketing pages and About where "a trip you are making
+ * anyway" is the drive itself and not what PuffinRide lists.
  */
-const leftOut = ["admin.", "seo.", "carpool.", "about."];
+const ofTheConsole = "admin.";
+const theDriveItself = ["seo.findDescription", "carpool.taxiAnswer", "about.intro"];
+const forMembers = Object.entries(en).filter(
+  ([key]) => !key.startsWith(ofTheConsole) && !theDriveItself.includes(key),
+);
 
 /** "Trip day" keeps its name (decision 5), and a placeholder is not a word. */
 const saysTrip = (value: string) =>
@@ -15,12 +19,20 @@ const saysTrip = (value: string) =>
 
 describe("one name each (spec 31, 3.4)", () => {
   it('says "ride" in every English text a member reads, and "trip" only in "Trip day"', () => {
-    const said = Object.entries(en)
-      .filter(([key]) => !leftOut.some((prefix) => key.startsWith(prefix)))
-      .filter(([, value]) => saysTrip(value))
-      .map(([key]) => key);
+    const said = forMembers.filter(([, value]) => saysTrip(value)).map(([key]) => key);
     expect(said).toEqual([]);
     expect(en["tripDay.title"]).toBe("Trip day");
+    // The three that keep the word still say it, or they need no exception.
+    for (const key of theDriveItself) expect(saysTrip(en[key as keyof typeof en])).toBe(true);
+  });
+
+  it("has no button named Search, and posts no ride or trip", () => {
+    const old = forMembers
+      .filter(
+        ([, value]) => value === "Search" || /\bpost (a|your|new) (ride|trip)s?\b/i.test(value),
+      )
+      .map(([key]) => key);
+    expect(old).toEqual([]);
   });
 
   it("names the three actions the same wherever they stand", () => {

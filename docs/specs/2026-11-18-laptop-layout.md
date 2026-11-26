@@ -16,6 +16,12 @@ table changes. Phones keep every layout they have.
 Source: a walk through the web build at 1440 by 900 on 2026-11-18, 57
 screens, kept in the project files under `laptop-web/audit-today`.
 
+Amended by [spec 31](2026-11-26-one-ride-one-ticket.md) (3.4): in English
+a member now reads "ride" where the texts quoted here say "trip" (which
+stays in "Trip day"), and the actions are named "Find a ride", "Offer a
+ride" and "Publish ride". The keys keep their names;
+`packages/i18n/src/messages/en.ts` has the words as they are.
+
 ## 1. Problem and goal
 
 On a laptop the app is a phone screen in the middle of the window:

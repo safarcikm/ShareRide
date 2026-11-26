@@ -793,7 +793,7 @@ export const is = {
   "trip.problem.stop_out_of_season": "{name} er ekki opinn á þeim degi.",
   "trip.problem.times_missing": "Veldu dag og tíma.",
   "trip.problem.departure_too_soon": "Brottför þarf að vera að minnsta kosti 30 mínútum frá núna.",
-  "trip.problem.departure_too_far": "Þú getur sett inn ferðir allt að 60 daga fram í tímann.",
+  "trip.problem.departure_too_far": "Þú getur boðið far allt að 60 daga fram í tímann.",
   "trip.problem.times_not_increasing":
     "Tíminn á {name} verður að vera seinna en á viðkomustaðnum á undan.",
   "trip.problem.stretch_too_fast": "Tíminn á {name} gefur of lítinn tíma til að keyra þangað.",

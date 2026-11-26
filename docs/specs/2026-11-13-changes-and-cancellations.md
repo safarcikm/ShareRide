@@ -9,6 +9,12 @@ after bookings exist, rules M2 and S5), [spec 3](2026-11-13-post-a-trip.md)
 (posting), [spec 5](2026-11-13-booking-and-requests.md) (booking),
 [spec 13](2026-11-13-payments.md) (refunds).
 
+Amended by [spec 31](2026-11-26-one-ride-one-ticket.md) (3.4): in English
+a member now reads "ride" where the texts quoted here say "trip" (which
+stays in "Trip day"), and the actions are named "Find a ride", "Offer a
+ride" and "Publish ride". The keys keep their names;
+`packages/i18n/src/messages/en.ts` has the words as they are.
+
 ## 1. Problem and goal
 
 Plans change: a driver leaves later, adds a stop or cannot go at all; a

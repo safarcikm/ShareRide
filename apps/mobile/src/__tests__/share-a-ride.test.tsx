@@ -167,8 +167,8 @@ describe("Share this ride, after publishing (spec 28, 3.2)", () => {
       screen.getByText("Post it where people look for rides, such as carpool groups on Facebook."),
     ).toBeVisible();
     expect(screen.getByLabelText("Text for your post")).toHaveTextContent(englishPost);
-    // It replaces the old button.
-    expect(screen.queryByRole("button", { name: "Share the ride" })).toBeNull();
+    // It replaces the old button, by the name it had.
+    expect(screen.queryByRole("button", { name: "Share the trip" })).toBeNull();
     expect(screen.getByRole("link", { name: "See your ride" })).toBeVisible();
   });
 

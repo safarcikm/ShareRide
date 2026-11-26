@@ -28,6 +28,12 @@ for prices and seats), [domain model](../architecture/domain-model.md),
 [spec 1](2026-11-13-sign-in-and-profile.md),
 [spec 2](2026-11-13-meeting-points.md).
 
+Amended by [spec 31](2026-11-26-one-ride-one-ticket.md) (3.4): in English
+a member now reads "ride" where the texts quoted here say "trip" (which
+stays in "Trip day"), and the actions are named "Find a ride", "Offer a
+ride" and "Publish ride". The keys keep their names;
+`packages/i18n/src/messages/en.ts` has the words as they are.
+
 ## 1. Problem and goal
 
 Passengers only find rides if drivers post them, and drivers only post if it

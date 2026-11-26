@@ -258,10 +258,12 @@ ride**. "Post a trip", "Publish trip", "My trips" and "Search" (as a
 button) go. Icelandic keeps "far" in "Finna far" and "Bjóða far" and "ferð"
 for the ride itself.
 
-As built: the console, the legal documents, and the marketing pages and
-About keep "trip" (section 10); there "a trip you are making anyway" is
-the drive itself. Notices, emails and text messages say "ride", as they
-share their words with the app. A booking's row reads "Share the ride's
+As built: the console and the legal documents keep "trip" (section 10),
+and so do three texts on the marketing pages and About, where "a trip you
+are making anyway" is the drive itself. Notices, emails and text messages
+say "ride", as they share their words with the app. Where "ride" alone
+would read as a passenger's seat, a text says whose it is ("You're the
+driver of this ride"). A booking's row reads "Share the ride's
 details": "Share ride" is the product's old name, kept out of every text
 (ADR 0039).
 

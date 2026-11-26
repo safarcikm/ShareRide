@@ -1665,11 +1665,13 @@ releases follow [Semantic Versioning](https://semver.org/).
 - One name each (spec 31, 3.4): every English text a member reads says
   "ride" for what a driver offers and a passenger books, in the app, in
   notices, emails and text messages; "trip" stays in "Trip day", in the
-  console, the legal documents and the marketing pages. "Post a trip" is
+  console and the legal documents, and where the marketing pages and About
+  mean the drive itself ("a trip you are making anyway"). "Post a trip" is
   "Offer a ride", "Publish trip" is "Publish ride", the search button says
-  "Find a ride", "Post again" and "Post the return trip" are "Post it
-  again" and "Post the way back". In Icelandic the search button and the
-  title of offering say "Finna far" and "Bjóða far". No text key changed.
+  "Find a ride", "Search again" is "Find another ride", "Post again" and
+  "Post the return trip" are "Post it again" and "Post the way back". In
+  Icelandic the search button says "Finna far" and the button that starts
+  a ride on the driver's list "Bjóða far". No text key changed.
 - In My rides, a ride on its trip day stands under "Needs you", for a
   passenger and a driver alike, and its row says "Trip day", there and
   under "Your next ride" on Find (spec 31, 3.3, item 3). Until now only a

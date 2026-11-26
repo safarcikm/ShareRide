@@ -27,7 +27,7 @@ export const en = {
   "seo.shareImage": "Two PuffinRide puffins driving in a little car",
   "seo.tripTitle": "{route} · {when}",
   "seo.tripDescription":
-    "A shared ride on PuffinRide, carpooling across Iceland. See the trip and book a seat.",
+    "A shared ride on PuffinRide, carpooling across Iceland. See the ride and book a seat.",
   "seo.tripImage": "{route}, {when}, on PuffinRide",
   "seo.tripStops": "Stops on the way: {stops}",
   "seo.tripMoreStops": "{stops} and {count} more",
@@ -45,7 +45,7 @@ export const en = {
   "carpool.howMeet":
     "Meet and go: you get in at a meeting point at the time the ride shows, and out at the one you chose.",
   "carpool.howOffer":
-    "Offer a ride: driving somewhere with empty seats? Post your trip with its meeting points, and passengers book the seats.",
+    "Offer a ride: driving somewhere with empty seats? Add your ride with its meeting points, and passengers book the seats.",
   "carpool.pointsTitle": "Meeting points",
   "carpool.points":
     "Passengers get in and out only at public places, such as fuel stations, bus stops and shopping centres, in towns and villages all around Iceland and at well-known sights.",
@@ -54,7 +54,7 @@ export const en = {
     "Rides go where drivers are heading: for example from Reykjavík to Akureyri, Selfoss, Borgarnes, Vík or Egilsstaðir, or between Keflavík Airport and Reykjavík.",
   "carpool.trustTitle": "Who you travel with",
   "carpool.trust":
-    "Every member has a checked phone number. Drivers show a profile photo, and after each trip drivers and passengers review each other. Everyone agrees to our community rules.",
+    "Every member has a checked phone number. Drivers show a profile photo, and after each ride drivers and passengers review each other. Everyone agrees to our community rules.",
   "carpool.rules": "Read the community rules",
   "carpool.questionsTitle": "Questions",
   "carpool.taxiQuestion": "Is PuffinRide a taxi?",
@@ -335,7 +335,7 @@ export const en = {
   "legal.documentVersion": "{title}, version {version}",
   "onboarding.aboutYou": "Last step: about you",
   "onboarding.emailHelp":
-    "We email you about your rides: requests, reminders and how your ride went.",
+    "We email you about your rides: requests, reminders and how each one went.",
   "profile.addAbout": "Add a few words about you (optional)",
   "onboarding.create": "Create account",
   "onboarding.createAndBook": "Create account and book",
@@ -360,7 +360,7 @@ export const en = {
   "profile.licenceConfirmed": "Confirmed",
   "profile.licenceNotYet": "Not confirmed yet",
   "profile.welcome":
-    "Sign in to book seats, offer rides and keep your rides and messages in one place.",
+    "Sign in to book seats and offer rides, with your rides and messages in one place.",
   "profile.inSettings": "Phone number, language and signing out on all devices are in Settings.",
   "profile.noCars": "No cars yet. Add the car you drive.",
   "profile.photo.add": "Add a photo",
@@ -785,7 +785,7 @@ export const en = {
   "trip.problem.departure_too_far": "You can offer rides up to 60 days ahead.",
   "trip.problem.times_not_increasing": "The time at {name} must be later than at the stop before.",
   "trip.problem.stretch_too_fast": "The time at {name} leaves too little time to drive there.",
-  "trip.problem.overlaps_trip": "You have another ride at that time.",
+  "trip.problem.overlaps_trip": "You're already driving another ride at that time.",
   "trip.problem.seats_below_taken":
     "Passengers have taken more seats than that on part of the ride.",
   "trip.published.title": "Your ride is published",
@@ -794,7 +794,7 @@ export const en = {
   "trip.published.seeTrips": "See my rides",
   "trip.mine.drafts": "Drafts",
   "trip.mine.published": "Published",
-  "trip.mine.empty": "You have no rides yet.",
+  "trip.mine.empty": "You haven't offered a ride yet.",
   "trip.mine.draftLine": "Not published yet",
   "trip.mine.when": "{day} at {time}",
   "trip.mine.requests": "{count, plural, one {# request} other {# requests}}",
@@ -998,7 +998,7 @@ export const en = {
   "trip.editCarHelp": "Passengers who have booked are told about the new car when you save.",
   "trip.editDetails": "Preferences and note",
   "trip.editDetailsAction": "Change the preferences and note",
-  "trip.editDetailsHelp": "Passengers see the change on the ride. Nobody is notified.",
+  "trip.editDetailsHelp": "Passengers see the change when they open the ride. Nobody is notified.",
   "trip.notChangeable": "This ride can no longer be changed.",
   "trip.moveTooFar": "With bookings, the departure can be between {earliest} and {latest}.",
   "trip.changed": "Departure changed from {old} to {new}",
@@ -1045,7 +1045,7 @@ export const en = {
     "Through {name} the route would be more than 1.5 times as long as the direct way.",
   "trip.keepBooking": "Keep my booking",
   "trip.cancelWithRefund": "Cancel with full refund",
-  "trip.own": "This is your ride.",
+  "trip.own": "You're the driver of this ride.",
   "trip.share": "Share",
   "trip.shareText": "{route} on PuffinRide",
   "safety.title": "Safety",
@@ -1358,7 +1358,7 @@ export const en = {
   "cancelReason.foundAnother": "Found another ride",
   "cancelReason.tripChanged": "The ride changed",
   "cancelReason.driverAbsent": "The driver didn't come",
-  "booking.searchAgain": "Search again",
+  "booking.searchAgain": "Find another ride",
   "booking.notFound": "This booking can't be found.",
   "booking.failed": "The booking could not be loaded.",
   "myRides.which": "Which rides",
@@ -1408,7 +1408,7 @@ export const en = {
   "people.reliability": "Reliability: {percent}%",
   "people.reliabilityNew": "Reliability: not enough rides yet",
   "people.reliabilityCounts":
-    "Kept {kept} of {total} rides and bookings in the last {months, plural, one {# month} other {# months}}.",
+    "Kept {kept} of {total} rides offered and seats booked in the last {months, plural, one {# month} other {# months}}.",
   "people.reliabilityAsDriver": "As a driver: kept {kept} of {total}",
   "people.reliabilityAsPassenger": "As a passenger: kept {kept} of {total}",
   "people.reviews": "Reviews",
@@ -1665,7 +1665,7 @@ export const en = {
     "You asked us about your data on {date}. Here is our answer:",
   "notify.when": "{date} at {time}",
   "notify.part": "{seats, plural, one {# seat} other {# seats}} · {from} – {to} · {when}",
-  "notify.searchAgain": "{from} – {to} · {when}. Search for another ride.",
+  "notify.searchAgain": "{from} – {to} · {when}. Find another ride.",
   "notify.payBy": "Pay {total} by {time} to confirm your seat.",
   "notify.requestNew": "New request: {name}",
   "notify.requestHalfway": "Request still waiting: {name}",

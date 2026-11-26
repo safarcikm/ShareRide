@@ -56,7 +56,7 @@ const journeys: readonly Journey[] = [
     passenger: "Passenger",
     past: "Past",
     nothing: "Nothing coming up. Book a seat on a ride, or offer the empty seats in your car.",
-    searchAgain: "Search again",
+    searchAgain: "Find another ride",
   },
   {
     locale: "is-IS",

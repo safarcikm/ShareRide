@@ -9,6 +9,12 @@ cancellations), [spec 13](2026-11-13-payments.md) (receipts and payouts),
 [spec 2](2026-11-13-meeting-points.md) (meeting points),
 [integrations](../architecture/integrations.md) (push, email and SMS).
 
+Amended by [spec 31](2026-11-26-one-ride-one-ticket.md) (3.4): in English
+a member now reads "ride" where the texts quoted here say "trip" (which
+stays in "Trip day"), and the actions are named "Find a ride", "Offer a
+ride" and "Publish ride". The keys keep their names;
+`packages/i18n/src/messages/en.ts` has the words as they are.
+
 ## 1. Problem and goal
 
 A shared ride works only if the two people can find each other and hear at

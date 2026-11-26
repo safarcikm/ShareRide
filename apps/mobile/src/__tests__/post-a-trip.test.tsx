@@ -864,7 +864,7 @@ describe("Posting a trip (spec 3)", () => {
     await fireEvent.press(await screen.findByRole("button", { name: "Delete draft" }));
     expect(screen.getByText("Delete this draft? You can't undo this.")).toBeVisible();
     await fireEvent.press(screen.getByRole("button", { name: "Delete draft" }));
-    expect(await screen.findByText("You have no rides yet.")).toBeVisible();
+    expect(await screen.findByText("You haven't offered a ride yet.")).toBeVisible();
     // One puffin for My trips; Offer's first step, open behind it, has its
     // own with its sentence.
     const hidden = { includeHiddenElements: true };

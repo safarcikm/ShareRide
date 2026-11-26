@@ -364,7 +364,7 @@ describe("Trip details (spec 4, 3.6)", () => {
     [{ state: "closed" as const }, "Booking for this part has closed."],
     [{ state: "departed" as const }, "This ride has left."],
     [{ state: "cancelled" as const }, "This ride was cancelled."],
-    [{ state: "own" as const }, "This is your ride."],
+    [{ state: "own" as const }, "You're the driver of this ride."],
   ])("says plainly when the part cannot be booked: %o", async (part, text) => {
     await openTrip(undefined, () => ok(200, northTrip({ board: 1, alight: 2 }, { part })));
     const bar = await screen.findByTestId("bottom-bar");

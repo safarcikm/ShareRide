@@ -18,6 +18,12 @@ Martin approved all six proposals on 2026-11-15. He also asked for times on a
 wheel in 5-minute steps and a small X inside text fields; those are built
 already (spec 3, 3.5 item 5; spec 15, `TimeField` and `PlaceDropdown`).
 
+Amended by [spec 31](2026-11-26-one-ride-one-ticket.md) (3.4): in English
+a member now reads "ride" where the texts quoted here say "trip" (which
+stays in "Trip day"), and the actions are named "Find a ride", "Offer a
+ride" and "Publish ride". The keys keep their names;
+`packages/i18n/src/messages/en.ts` has the words as they are.
+
 ## 1. Problem and goal
 
 Walking through the app on 2026-11-15 found these problems:
