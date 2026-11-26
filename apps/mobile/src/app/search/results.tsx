@@ -28,7 +28,7 @@ import { failureText } from "@/search/failure-text";
 import type { SearchQuery } from "@/search/recent-searches";
 import { resultsParams } from "@/search/results-href";
 import { useRouteSearch } from "@/search/route-search";
-import { ResultCard, type SearchedNames } from "@/search/result-card";
+import { ResultTicket, type SearchedNames } from "@/search/result-ticket";
 import { ResultsMap } from "@/search/results-map";
 import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
@@ -474,7 +474,7 @@ function Found({
   const palette = usePalette();
   if (!grouped) {
     return results.map((result) => (
-      <ResultCard
+      <ResultTicket
         key={result.tripId}
         result={result}
         searched={searched}
@@ -504,7 +504,7 @@ function Found({
         </Text>
       </View>
       {onDay.map((result) => (
-        <ResultCard
+        <ResultTicket
           key={result.tripId}
           result={result}
           searched={searched}
@@ -588,7 +588,7 @@ function NothingMatches({
         <>
           <Heading>{t("results.nearbyPoints")}</Heading>
           {nearby.map((result) => (
-            <ResultCard
+            <ResultTicket
               key={result.tripId}
               result={result}
               searched={searched}

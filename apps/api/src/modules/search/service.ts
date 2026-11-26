@@ -4,6 +4,7 @@ import {
   err,
   matchTrip,
   ok,
+  peopleColourOf,
   searchDaysAround,
   type CalendarDay,
   type CoveredPoint,
@@ -332,7 +333,7 @@ export function createSearchService(dependencies: {
       pricePerSeat: found.pricePerSeat,
       total: found.total,
       freeSeats: found.freeSeats,
-      driver: { firstName: candidate.firstName },
+      driver: { firstName: candidate.firstName, colour: peopleColourOf(searchable.driverId) },
       bookingMode: candidate.bookingMode,
     };
     const boardsAt = searchable.stops[found.board]?.plannedAt ?? new Date(0);

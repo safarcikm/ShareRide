@@ -12,7 +12,7 @@ import { offerRide } from "@/drive/offer-ride";
 import { useLanguage } from "@/i18n/language";
 import { useLoaded } from "@/lib/use-loaded";
 import { failureText } from "@/search/failure-text";
-import { ResultCard } from "@/search/result-card";
+import { ResultTicket } from "@/search/result-ticket";
 import { sizes } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
@@ -58,7 +58,7 @@ export default function Rides() {
       ) : (
         <>
           {answer.data.results.map((ride) => (
-            <ResultCard
+            <ResultTicket
               key={ride.tripId}
               result={ride}
               searched={{ from: "", to: "" }}

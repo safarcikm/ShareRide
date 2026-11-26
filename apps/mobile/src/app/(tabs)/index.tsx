@@ -35,7 +35,7 @@ import { RideItem } from "@/my-rides/ride-row";
 import { SuspendedAccount, suspensionNow } from "@/safety/suspended-account";
 import { useRides } from "@/my-rides/use-rides";
 import { FindMap } from "@/search/find-map";
-import { ResultCard } from "@/search/result-card";
+import { ResultTicket } from "@/search/result-ticket";
 import { openSearch, useRouteSearch } from "@/search/route-search";
 import { icelandScene, minTouchTarget, sizes, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
@@ -382,7 +382,7 @@ function LeavingSoon({
   }
   if (rides.length === 0) return null;
   const cards = rides.slice(0, shown).map((ride) => (
-    <ResultCard
+    <ResultTicket
       key={ride.tripId}
       result={ride}
       searched={{ from: "", to: "" }}
