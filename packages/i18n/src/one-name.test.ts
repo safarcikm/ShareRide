@@ -9,7 +9,8 @@ import { is } from "./messages/is.ts";
  */
 const ofTheConsole = "admin.";
 const theDriveItself = ["seo.findDescription", "carpool.taxiAnswer", "about.intro"];
-const forMembers = Object.entries(en).filter(
+/** As plain strings: a text is compared with words it must no longer be. */
+const forMembers: readonly (readonly [string, string])[] = Object.entries(en).filter(
   ([key]) => !key.startsWith(ofTheConsole) && !theDriveItself.includes(key),
 );
 
