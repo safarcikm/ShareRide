@@ -13,13 +13,12 @@ import { useCallback, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { errorText } from "@/auth/errors";
 import { useSession } from "@/auth/session";
-import { BookingTicket } from "@/booking/booking-ticket";
 import { refundText } from "@/booking/texts";
 import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
 import { Chip } from "@/components/chip";
-import { ActionNotice, Notice } from "@/components/notice";
+import { ActionNotice, Notice, useSaid } from "@/components/notice";
 import { Screen } from "@/components/screen";
 import { ScreenHead } from "@/components/screen-head";
 import { TakesFocus } from "@/components/takes-focus";
@@ -30,6 +29,7 @@ import { useLoaded } from "@/lib/use-loaded";
 import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 import { firstNameOf } from "@/people/texts";
+import { BookingHead } from "@/trip-day/report-screen";
 
 /**
  * Cancelling a booking (spec 6, 3.4 and 3.5; screen 6), by its passenger
@@ -37,8 +37,8 @@ import { firstNameOf } from "@/people/texts";
  * 3.19), the reasons, the refund (rule M2) and, for the reason chosen,
  * whether it shows on the canceller's profile (R6.7, R6.8), all from the
  * server's preview. The driver can add a note to the passenger.
- * "Cancel booking" cannot be undone, so it is the red main button, in the
- * bar; why it did nothing stands over it. It sends the terms shown; if they
+ * "Cancel booking" takes the seat away, so it is the red main button, in
+ * the bar (decision 17); why it did nothing stands over it. It sends the terms shown; if they
  * changed meanwhile, such as the last 15 minutes before boarding starting,
  * the new ones show to confirm again. Done, it goes back where the canceller came from, the
  * booking or the driver's trip, where focus moves to the outcome. `reason`
@@ -200,7 +200,7 @@ function CancelForm({
   const palette = usePalette();
   const session = useSession();
   const [busy, setBusy] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, say] = useSaid();
   const driver = booking.viewer === "driver";
   const passengerName = firstNameOf(t, booking.passenger);
   // Checked as typed, as the server checks it: no contact details (R3.10).
@@ -218,14 +218,14 @@ function CancelForm({
 
   const cancel = async () => {
     if (noteError !== undefined) {
-      setNotice(noteError);
+      say(noteError);
       return;
     }
     if (chosen === null) {
-      setNotice(t("booking.cancelChooseReason"));
+      say(t("booking.cancelChooseReason"));
       return;
     }
-    setNotice(null);
+    say(null);
     setBusy(true);
     const answer = await session.call(cancelBookingRoute, {
       params: { id: booking.id },
@@ -245,7 +245,7 @@ function CancelForm({
       onTermsChanged();
       return;
     }
-    setNotice(
+    say(
       answer.error.code === "booking_not_cancellable"
         ? t("booking.notCancellable")
         : errorText(t, answer),
@@ -256,7 +256,7 @@ function CancelForm({
     <Screen
       footer={
         <>
-          <ActionNotice message={notice} />
+          <ActionNotice says={notice} />
           <Button
             main
             variant="danger"
@@ -278,8 +278,7 @@ function CancelForm({
         </>
       }
     >
-      <ScreenHead title={titleOf(t, booking)} back={backTo(booking)} />
-      <BookingTicket booking={booking} />
+      <BookingHead booking={booking} title={titleOf(t, booking)} />
 
       {changed === null ? null : (
         <TakesFocus key={changed}>
@@ -301,7 +300,7 @@ function CancelForm({
               label={cancelReasonText(t, option.reason)}
               selected={option.reason === chosen?.reason}
               onToggle={() => {
-                setNotice(null);
+                say(null);
                 onChoose(option.reason);
               }}
             />
@@ -333,7 +332,7 @@ function CancelForm({
           label={t("booking.cancelNote")}
           value={note}
           onChangeText={(text) => {
-            setNotice(null);
+            say(null);
             onNote(text);
           }}
           multiline

@@ -9,7 +9,7 @@ import { otherPerson } from "@/chat/texts";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
 import { Chip } from "@/components/chip";
-import { ActionNotice, Notice } from "@/components/notice";
+import { ActionNotice, Notice, useSaid } from "@/components/notice";
 import { Screen } from "@/components/screen";
 import { TakesFocus } from "@/components/takes-focus";
 import { TextField } from "@/components/text-field";
@@ -88,7 +88,7 @@ function AnswerForm({
   const [chosen, setChosen] = useState<DisputeAnswer | null>(given);
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, say] = useSaid();
   const [changed, setChanged] = useState(false);
   const name = firstNameOf(t, otherPerson(booking));
   const noShow = dispute.kind === "no_show";
@@ -98,14 +98,14 @@ function AnswerForm({
 
   const send = async () => {
     if (chosen === null) {
-      setNotice(t("dispute.chooseAnswer"));
+      say(t("dispute.chooseAnswer"));
       return;
     }
     if (problem !== undefined) {
-      setNotice(problem);
+      say(problem);
       return;
     }
-    setNotice(null);
+    say(null);
     setBusy(true);
     const answer = await session.call(answerDisputeRoute, {
       params: { id: dispute.id },
@@ -118,7 +118,7 @@ function AnswerForm({
     }
     switch (answer.error.code) {
       case "answer_window_closed":
-        setNotice(t("dispute.windowClosed"));
+        say(t("dispute.windowClosed"));
         return;
       case "already_answered":
       case "already_decided":
@@ -126,10 +126,10 @@ function AnswerForm({
         setChanged(true);
         return;
       case "validation_failed":
-        setNotice(t("trip.note.tooLong", { max: disputeNoteMaxLength }));
+        say(t("trip.note.tooLong", { max: disputeNoteMaxLength }));
         return;
       default:
-        setNotice(errorText(t, answer));
+        say(errorText(t, answer));
     }
   };
 
@@ -153,7 +153,7 @@ function AnswerForm({
     <Screen
       footer={
         <>
-          <ActionNotice message={notice} />
+          <ActionNotice says={notice} />
           <Button
             main
             busy={busy}
@@ -181,7 +181,7 @@ function AnswerForm({
             label={option.label}
             selected={chosen === option.answer}
             onToggle={() => {
-              setNotice(null);
+              say(null);
               setChosen(option.answer);
             }}
           />
@@ -204,7 +204,7 @@ function AnswerForm({
         label={t("dispute.answerNote")}
         value={note}
         onChangeText={(text) => {
-          setNotice(null);
+          say(null);
           setNote(text);
         }}
         multiline

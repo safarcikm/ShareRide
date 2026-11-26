@@ -1,5 +1,5 @@
 import type { Booking, CancelBookingBody } from "@shareride/contracts";
-import { fireEvent, screen, within } from "expo-router/testing-library";
+import { act, fireEvent, screen, within } from "expo-router/testing-library";
 import { AccessibilityInfo } from "react-native";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
@@ -244,6 +244,32 @@ describe("Cancelling a booking (spec 6, 3.5)", () => {
     expect(within(screen.getByTestId("bottom-bar")).getByRole("alert")).toHaveTextContent(
       "Choose a reason.",
     );
+  });
+
+  it("holds both buttons while the booking is being cancelled", async () => {
+    let release: () => void = () => undefined;
+    await openCancel(paidBooking, {
+      answers: [
+        new Promise((resolve) => {
+          release = () => {
+            resolve(failure(500, "internal_error"));
+          };
+        }),
+      ],
+    });
+    await choose("Plans changed");
+    await fireEvent.press(screen.getByRole("button", { name: "Cancel booking" }));
+    const bar = within(screen.getByTestId("bottom-bar"));
+    expect(await bar.findByRole("button", { name: "Cancel booking", busy: true })).toBeVisible();
+    expect(bar.getByRole("button", { name: "Keep my booking" })).toBeDisabled();
+    await act(async () => {
+      release();
+      await Promise.resolve();
+    });
+    // It was not cancelled: why is over the buttons, and both can be pressed.
+    expect(await bar.findByRole("alert")).toBeVisible();
+    expect(bar.getByRole("button", { name: "Keep my booking" })).toBeEnabled();
+    expect(bar.getByRole("button", { name: "Cancel booking", busy: false })).toBeVisible();
   });
 
   it("asks for a reason before cancelling", async () => {

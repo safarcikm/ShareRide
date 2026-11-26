@@ -12,6 +12,7 @@ import {
 } from "@shareride/domain";
 import { reportCategoryText, type MessageKey } from "@shareride/i18n";
 import { router, useLocalSearchParams, type Href } from "expo-router";
+import { Ban, BookOpen } from "lucide-react-native";
 import { useCallback, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { errorText } from "@/auth/errors";
@@ -20,7 +21,7 @@ import { otherPerson } from "@/chat/texts";
 import { ActionRows } from "@/components/action-rows";
 import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
-import { ActionNotice, Notice } from "@/components/notice";
+import { ActionNotice, Notice, useSaid } from "@/components/notice";
 import { RadioCard } from "@/components/radio-card";
 import { Row } from "@/components/row";
 import { Screen } from "@/components/screen";
@@ -203,18 +204,21 @@ function Report({
   const [category, setCategory] = useState<ReportCategory | null>(null);
   const [description, setDescription] = useState("");
   const [busy, setBusy] = useState(false);
-  const [missing, setMissing] = useState(false);
-  const [failed, setFailed] = useState<string | null>(null);
+  const [notice, say] = useSaid();
   const [sent, setSent] = useState(false);
   const tooLong = characterCount(description.trim()) > maxLength;
 
   async function send() {
-    setFailed(null);
     if (category === null) {
-      setMissing(true);
+      say(t("report.choose"));
       return;
     }
-    if (tooLong) return;
+    if (tooLong) {
+      // The field says so too, further up: here it is seen and heard.
+      say(t("report.tooLong", { max: maxLength }));
+      return;
+    }
+    say(null);
     setBusy(true);
     const result = await session.call(fileReportRoute, {
       body: { about, category, description: description.trim() },
@@ -232,7 +236,7 @@ function Report({
       too_many_reports: "report.tooMany",
     };
     const key = failures[result.error.code];
-    setFailed(key === undefined ? errorText(t, result) : t(key));
+    say(key === undefined ? errorText(t, result) : t(key));
   }
 
   if (sent) {
@@ -258,6 +262,7 @@ function Report({
           <ActionRows>
             <Row
               danger
+              icon={Ban}
               title={t("report.blockToo", { name: person.name })}
               onPress={() => {
                 router.replace(person.block);
@@ -273,7 +278,7 @@ function Report({
     <Screen
       footer={
         <>
-          <ActionNotice message={missing ? t("report.choose") : failed} />
+          <ActionNotice says={notice} />
           <Button main label={t("report.send")} busy={busy} onPress={() => void send()} />
         </>
       }
@@ -293,7 +298,7 @@ function Report({
               title={reportCategoryText(t, option)}
               selected={option === category}
               onSelect={() => {
-                setMissing(false);
+                say(null);
                 setCategory(option);
               }}
             />
@@ -304,7 +309,7 @@ function Report({
         label={t("report.description")}
         value={description}
         onChangeText={(text) => {
-          setFailed(null);
+          say(null);
           setDescription(text);
         }}
         multiline
@@ -313,7 +318,7 @@ function Report({
         error={tooLong ? t("report.tooLong", { max: maxLength }) : undefined}
       />
       <ActionRows>
-        <Row title={t("report.rules")} href="/legal/community-rules" />
+        <Row icon={BookOpen} title={t("report.rules")} href="/legal/community-rules" />
       </ActionRows>
     </Screen>
   );

@@ -128,7 +128,7 @@ Opened from trip details (spec 4) with the chosen part and seats.
 - Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.8) the page's title
   is "Request sent", with "Anna has until 22:00 to answer." under it, and
   "Withdraw request" is its last row, in red. It asks first, in the bar at
-  the bottom, with "Keep my request" beside it; the button that withdraws
+  the bottom, with "Keep my request" under it; the button that withdraws
   is red there too (3.19).
 
 ### 3.5 Paying

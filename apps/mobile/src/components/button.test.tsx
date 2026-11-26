@@ -19,7 +19,7 @@ describe("Button", () => {
     });
   });
 
-  it("is a red button with a darker edge where it cannot be undone (spec 31, 3.19)", async () => {
+  it("is a red button with a darker edge where it takes something away (spec 31, 3.19)", async () => {
     await render(<Button label="Cancel booking" variant="danger" onPress={jest.fn()} />);
     expect(screen.getByRole("button", { name: "Cancel booking" })).toHaveStyle({
       borderBottomWidth: 4,

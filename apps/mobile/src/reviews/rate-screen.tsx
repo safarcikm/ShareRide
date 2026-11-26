@@ -15,7 +15,7 @@ import { useSession } from "@/auth/session";
 import { otherPerson } from "@/chat/texts";
 import { Avatar } from "@/components/avatar";
 import { Button } from "@/components/button";
-import { ActionNotice, Notice } from "@/components/notice";
+import { ActionNotice, Notice, useSaid } from "@/components/notice";
 import { Screen } from "@/components/screen";
 import { ScreenHead } from "@/components/screen-head";
 import { TakesFocus } from "@/components/takes-focus";
@@ -138,7 +138,7 @@ function commentError(t: Translate, comment: string): string | undefined {
 function refusal(
   t: Translate,
   failure: CallFailure,
-): { readonly stop: string } | { readonly notice: string } {
+): { readonly stop: string } | { readonly changed: true } | { readonly notice: string } {
   switch (failure.error.code) {
     case "review_window_closed":
       return { stop: t("review.windowClosed") };
@@ -150,7 +150,7 @@ function refusal(
       return { stop: t("review.already") };
     case "not_completed":
     case "not_found":
-      return { stop: t("report.changed") };
+      return { changed: true };
     case "validation_failed": {
       const detail = failure.error.details?.[0];
       if (detail?.path === "rating") return { notice: t("review.chooseRating") };
@@ -174,9 +174,10 @@ function RateForm({ booking }: { readonly booking: Booking }) {
   const [rating, setRating] = useState<number | null>(null);
   const [comment, setComment] = useState("");
   const [busy, setBusy] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, say] = useSaid();
   const [sent, setSent] = useState<BookingReview | null>(null);
   const [stopped, setStopped] = useState<string | null>(null);
+  const [changed, setChanged] = useState(false);
   const person = otherPerson(booking);
   const name = firstNameOf(t, person);
   const question = booking.viewer === "driver" ? t("review.ratePassenger") : t("review.rateDriver");
@@ -185,14 +186,14 @@ function RateForm({ booking }: { readonly booking: Booking }) {
   const send = async () => {
     if (busy) return;
     if (rating === null) {
-      setNotice(t("review.chooseRating"));
+      say(t("review.chooseRating"));
       return;
     }
     if (problem !== undefined) {
-      setNotice(problem);
+      say(problem);
       return;
     }
-    setNotice(null);
+    say(null);
     setBusy(true);
     const tidy = tidyReviewComment(comment);
     const answer = await session.call(reviewBookingRoute, {
@@ -206,8 +207,20 @@ function RateForm({ booking }: { readonly booking: Booking }) {
     }
     const refused = refusal(t, answer);
     if ("stop" in refused) setStopped(refused.stop);
-    else setNotice(refused.notice);
+    else if ("changed" in refused) setChanged(true);
+    else say(refused.notice);
   };
+
+  if (changed) {
+    // As when it shows on opening: why, and an outlined way back.
+    return (
+      <Stopped booking={booking}>
+        <TakesFocus>
+          <Changed booking={booking} />
+        </TakesFocus>
+      </Stopped>
+    );
+  }
 
   if (sent !== null || stopped !== null) {
     return (
@@ -237,7 +250,7 @@ function RateForm({ booking }: { readonly booking: Booking }) {
     <Screen
       footer={
         <>
-          <ActionNotice message={notice} />
+          <ActionNotice says={notice} />
           <Button
             main
             busy={busy}
@@ -261,7 +274,7 @@ function RateForm({ booking }: { readonly booking: Booking }) {
         label={question}
         value={rating}
         onChange={(chosen) => {
-          setNotice(null);
+          say(null);
           setRating(chosen);
         }}
       />
@@ -270,7 +283,7 @@ function RateForm({ booking }: { readonly booking: Booking }) {
         label={t("review.comment")}
         value={comment}
         onChangeText={(text) => {
-          setNotice(null);
+          say(null);
           setComment(text);
         }}
         multiline

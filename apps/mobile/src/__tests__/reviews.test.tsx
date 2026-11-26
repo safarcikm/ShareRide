@@ -1,5 +1,6 @@
 import { fireEvent, screen, within } from "expo-router/testing-library";
 import type { Booking, BookingReview, MyTrip, ReviewBody } from "@shareride/contracts";
+import { AccessibilityInfo } from "react-native";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
 import { bookingApi, driverApi } from "@/testing/bookings";
@@ -8,6 +9,7 @@ import { failure, ok, type FakeClient } from "@/testing/fake-client";
 import { aReview, completedBooking, completedRider, reviewsCloseAt } from "@/testing/reviews";
 import { dispute, tripOnTheDay } from "@/testing/trip-day";
 import { tripsApi } from "@/testing/trips";
+import { colors } from "@/theme/tokens";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
 jest.mock("@/auth/token-store", () => {
@@ -202,10 +204,17 @@ describe("the rate screen (spec 8, screen 6; R8.8)", () => {
     // The day over the title and the part under it, each on a line of its own.
     expect(head.getByText("Sunday 15 November")).toBeVisible();
     expect(head.getByText("Borgarnes → Blönduós")).toBeVisible();
+    expect(screen.getByTestId("screen-head")).toHaveTextContent(
+      /Sunday 15 November.*How was your ride\?.*Borgarnes → Blönduós/,
+    );
     const sendReview = within(screen.getByTestId("bottom-bar")).getByRole("button", send);
     expect(sendReview).toHaveStyle({ minHeight: 56 });
     expect(filledButtons()).toBe(1);
     expect(screen.getByTestId("filled-button")).toBe(sendReview);
+    // A review takes nothing away: the moss button, not the red one (decision 17).
+    expect(within(sendReview).getByTestId("button-face")).toHaveStyle({
+      backgroundColor: colors.light.primary,
+    });
   });
 
   it("leaves out an empty comment", async () => {
@@ -267,7 +276,6 @@ describe("the rate screen (spec 8, screen 6; R8.8)", () => {
     ["report_open", reportOpen],
     ["person_left", personLeft],
     ["already_reviewed", "You have already reviewed this ride."],
-    ["not_completed", "This booking changed since you opened it."],
   ])("says why a review was not taken, and stops: %s", async (code, said) => {
     await open(completedBooking(), ratePage(completedBooking()), {
       review: () => failure(409, code),
@@ -276,17 +284,35 @@ describe("the rate screen (spec 8, screen 6; R8.8)", () => {
     await fireEvent.press(screen.getByRole("button", send));
     expect(await screen.findByText(said)).toBeVisible();
     expect(screen.queryByRole("button", send)).toBeNull();
+    // The way back is then the one thing to do.
+    expect(
+      within(screen.getByTestId("bottom-bar")).getByRole("button", { name: "Back to the booking" }),
+    ).toBe(screen.getByTestId("filled-button"));
   });
 
-  it("stops when the booking is no longer there", async () => {
-    await open(completedBooking(), ratePage(completedBooking()), {
-      review: () => failure(404, "not_found"),
-    });
-    await fireEvent.press(await screen.findByRole("radio", { name: "2 stars" }));
-    await fireEvent.press(screen.getByRole("button", send));
-    expect(await screen.findByText("This booking changed since you opened it.")).toBeVisible();
-    expect(screen.queryByRole("button", send)).toBeNull();
-  });
+  it.each([
+    [409, "not_completed"],
+    [404, "not_found"],
+  ] as const)(
+    "stops when the booking changed meanwhile, as when that shows on opening: %i %s",
+    async (status, code) => {
+      const focus = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
+      await open(completedBooking(), ratePage(completedBooking()), {
+        review: () => failure(status, code),
+      });
+      await fireEvent.press(await screen.findByRole("radio", { name: "2 stars" }));
+      focus.mockClear();
+      await fireEvent.press(screen.getByRole("button", send));
+      expect(await screen.findByText("This booking changed since you opened it.")).toBeVisible();
+      expect(focus).toHaveBeenCalledTimes(1);
+      expect(screen.queryByRole("button", send)).toBeNull();
+      // A screen that only says the booking changed keeps an outlined way
+      // back and no bar (spec 31, 3.19), whenever it finds out.
+      expect(screen.getByRole("button", { name: "Back to the booking" })).toBeVisible();
+      expect(screen.queryByTestId("bottom-bar")).toBeNull();
+      expect(filledButtons()).toBe(0);
+    },
+  );
 
   it.each([
     ["rating", "invalid", "Choose a rating from 1 to 5 stars."],

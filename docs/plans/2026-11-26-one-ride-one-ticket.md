@@ -672,9 +672,13 @@ R31.3 and decision 17):
   "Send review" and "Send report" stay moss. PR 8 looks at the no-show
   screen again with the driver's ride, and takes cancelling a ride.
 - `ActionNotice` in `components/notice.tsx`: why the main button did
-  nothing, over that button in the bar, with focus each time it says
-  something new. The six screens use it; the notice at the end of their
-  column is gone.
+  nothing, over that button in the bar, with focus when it appears and
+  when it says something new. A form keeps what it says with `useSaid`,
+  which counts the presses, so the same words after another press take
+  focus again. The six screens and the question about withdrawing use it;
+  the notice at the end of their column is gone. Reporting has one notice
+  for nothing chosen, a description that is too long (it said so only at
+  the field) and what the server refused.
 - `BookingHead` in `trip-day/report-screen.tsx` (`ScreenHead` over the
   `BookingTicket`) is the top of "The driver didn't come", "Mark as
   no-show" and answering a report; cancelling a booking builds the same
@@ -686,12 +690,21 @@ R31.3 and decision 17):
 - After the outcome the way back is the main button in the bar on the
   three screens that stay open: blocking ("Back to the conversation" or
   "Back to the profile"), reporting ("Back") and rating ("Back to the
-  booking" or "Back to the trip"). Blocking's and reporting's outcome is
+  booking" or "Back to the ride"). Blocking's and reporting's outcome is
   `ScreenHead`'s title with `outcome`, with no Back in the head.
-  `BlockPerson` takes `back` as an address for its head.
+  `BlockPerson` takes `back` as an address for its head. A rating whose
+  booking changed meanwhile shows `Changed`, with its outlined button and
+  no bar, on sending as on opening.
 - Blocked with rides still shared: each is a `BookingTicket` with its
   outlined button under it. Reporting: the community rules are a `Row` in
-  `ActionRows`, and "Block {name} too" a red row.
+  `ActionRows`, and "Block {name} too" a red row, each with an icon.
+- From the code review, mended here: the report's silent main button
+  with a long description; the same words after a second press; rating's
+  two screens for a booking that changed; comments that gave the old rule
+  for red; tests that pin the moss of the five buttons that tell
+  PuffinRide, the order of the rating's head, and "Keep my booking"
+  waiting while the booking is cancelled. Left for the last pass (PR 12):
+  see its item 9.
 - No text key is new or gone. Two colours are new: `errorEdge` and
   `errorHover`.
 - Tests: the head, the ticket and the one filled button in the bar on
@@ -857,8 +870,21 @@ and deleting the account (3.19).
    on a phone 360 wide the road's four labels run into each other
    (`look.spec.ts` measures the booked seat's head, ticket, driver and
    where to stand there, not the road).
-9. **Docs:** spec 31 becomes Built, with what differs from the drawings;
-   spec 15 has the parts; the roadmap and the changelog.
+9. **Small things PR 7b's code review named:** after an outcome the way
+   back is the main button where the button just pressed was (blocking,
+   reporting, rating, and "Find another ride" after withdrawing, from
+   7a), so a second press meant for that one leaves the screen before
+   the outcome is read: the bar ignores a press for a moment after its
+   main button changes. On a short window (a phone on its side, or a
+   laptop zoomed until the window is 320 by 256) the bar takes much of
+   the height, about 88 with one button and 148 with two, more with a
+   notice: under a height to be chosen the bar joins the end of the page.
+   After blocking, "You still have a booking together" stays the title's
+   line once that booking is cancelled. `BookingHead`, `bookingWords`,
+   `backTo` and `leave` serve bookings, reviews and blocking from
+   `trip-day/report-screen.tsx`: `@/booking/` is their home.
+10. **Docs:** spec 31 becomes Built, with what differs from the drawings;
+    spec 15 has the parts; the roadmap and the changelog.
 
 ## After merging
 

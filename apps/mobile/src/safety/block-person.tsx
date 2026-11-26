@@ -7,7 +7,6 @@ import {
   type Booking,
 } from "@shareride/contracts";
 import { holdsSeats } from "@shareride/domain";
-import { capitalised, formatDay } from "@shareride/i18n";
 import { router, useFocusEffect, type Href } from "expo-router";
 import { useCallback, useRef, useState, type ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
@@ -24,6 +23,7 @@ import { Body } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { now } from "@/lib/clock";
 import { spacing } from "@/theme/tokens";
+import { bookingWords } from "@/trip-day/report-screen";
 
 /** What blocking answers, from a booking or from a profile: the same. */
 type Blocked = CallResult<typeof blockFromBookingRoute>;
@@ -92,7 +92,7 @@ export function BlockPerson({
     return (
       <Screen>
         {head}
-        <ActionNotice message={gone} />
+        <ActionNotice says={gone} />
       </Screen>
     );
   }
@@ -100,7 +100,7 @@ export function BlockPerson({
     <Screen
       footer={
         <>
-          <ActionNotice message={state === "failed" ? t("block.failed") : null} />
+          <ActionNotice says={state === "failed" ? t("block.failed") : null} />
           <Button
             main
             variant="danger"
@@ -141,11 +141,7 @@ function Together({ booking }: { readonly booking: Booking }) {
       });
     }, [session, booking.id]),
   );
-  const day = capitalised(formatDay(new Date(current.board.plannedAt), locale), locale);
-  const route = t("search.route", {
-    from: current.board.meetingPoint.name[locale],
-    to: current.alight.meetingPoint.name[locale],
-  });
+  const { day, part: route } = bookingWords(t, locale, current);
   const passenger = current.viewer === "passenger";
 
   async function answer() {

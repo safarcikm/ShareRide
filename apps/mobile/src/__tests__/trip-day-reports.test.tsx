@@ -88,7 +88,9 @@ const driverAbsent = { name: "The driver didn't come" } as const;
 /**
  * The shape of a screen around a booking (spec 31, 3.19): Back and the
  * title at the left, the ride as the booked seat's ticket under them in
- * place of a line of small text, and the one main button in the bar.
+ * place of a line of small text, and the one main button in the bar. It
+ * tells PuffinRide what happened and takes nothing away: the moss button,
+ * not the red one (decision 17).
  */
 function expectHeadTicketAndBar(title: string, main: string) {
   const head = within(screen.getByTestId("screen-head"));
@@ -103,7 +105,9 @@ function expectHeadTicketAndBar(title: string, main: string) {
   expect(button).toHaveStyle({ minHeight: 56 });
   expect(filledButtons()).toBe(1);
   expect(screen.getByTestId("filled-button")).toBe(button);
-  return button;
+  expect(within(button).getByTestId("button-face")).toHaveStyle({
+    backgroundColor: colors.light.primary,
+  });
 }
 
 const inBar = () => within(screen.getByTestId("bottom-bar"));
@@ -181,11 +185,7 @@ describe("The driver didn't come (spec 8, 3.4; R8.5)", () => {
     await openBooking(onTheDay());
     await fireEvent.press(await screen.findByRole("link", driverAbsent));
     await screen.findByRole("header", driverAbsent);
-    const tell = expectHeadTicketAndBar("The driver didn't come", "Tell PuffinRide");
-    // It sends a report and takes nothing away: the moss button, not the red one.
-    expect(within(tell).getByTestId("button-face")).toHaveStyle({
-      backgroundColor: colors.light.primary,
-    });
+    expectHeadTicketAndBar("The driver didn't come", "Tell PuffinRide");
   });
 
   it("sends no note when none was written, and says nothing of a refund for a free ride", async () => {

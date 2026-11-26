@@ -24,7 +24,7 @@ import { otherPerson } from "@/chat/texts";
 import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
-import { ActionNotice, Notice } from "@/components/notice";
+import { ActionNotice, Notice, useSaid } from "@/components/notice";
 import { Screen } from "@/components/screen";
 import { ScreenHead } from "@/components/screen-head";
 import { TakesFocus } from "@/components/takes-focus";
@@ -243,7 +243,7 @@ function ReportForm({
   const session = useSession();
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, say] = useSaid();
   const [changed, setChanged] = useState(false);
   const noShow = kind === "no_show";
   // Paid to the driver in person (rule M6): no refund either way.
@@ -256,10 +256,10 @@ function ReportForm({
 
   const send = async () => {
     if (problem !== undefined) {
-      setNotice(problem);
+      say(problem);
       return;
     }
-    setNotice(null);
+    say(null);
     setBusy(true);
     const input = { params: { id: booking.id }, body: noteBody(note) };
     const answer: CallResult<typeof markNoShowRoute> | CallResult<typeof reportDriverAbsentRoute> =
@@ -273,7 +273,7 @@ function ReportForm({
     }
     const why = problemOf(t, answer);
     if (why === null) setChanged(true);
-    else setNotice(why);
+    else say(why);
   };
 
   if (changed) {
@@ -291,7 +291,7 @@ function ReportForm({
     <Screen
       footer={
         <>
-          <ActionNotice message={notice} />
+          <ActionNotice says={notice} />
           <Button
             main
             busy={busy}
@@ -328,7 +328,7 @@ function ReportForm({
         label={t("report.note")}
         value={note}
         onChangeText={(text) => {
-          setNotice(null);
+          say(null);
           setNote(text);
         }}
         multiline

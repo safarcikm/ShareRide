@@ -124,6 +124,10 @@ describe("Reporting a trip (spec 9, 3.1)", () => {
     expect(send).toHaveStyle({ minHeight: 56 });
     expect(filledButtons()).toBe(1);
     expect(screen.getByTestId("filled-button")).toBe(send);
+    // A report takes nothing away: the moss button, not the red one (decision 17).
+    expect(within(send).getByTestId("button-face")).toHaveStyle({
+      backgroundColor: colors.light.primary,
+    });
     // Why nothing was sent stands over the button, where it is seen.
     await fireEvent.press(send);
     expect(await bar.findByText("Choose what happened.")).toBeVisible();
@@ -193,8 +197,16 @@ describe("Reporting a trip (spec 9, 3.1)", () => {
     await fireEvent.press(await screen.findByRole("radio", { name: "Something else" }));
     await fireEvent.changeText(screen.getByLabelText("Tell us more (optional)"), "a".repeat(1001));
     expect(screen.getByText("Shorten it to 1000 characters or fewer.")).toBeVisible();
+    expect(screen.queryByRole("alert")).toBeNull();
     await fireEvent.press(screen.getByRole("button", { name: "Send report" }));
     expect(reportsSent(client)).toEqual([]);
+    // Why nothing was sent stands over the button, where it was pressed:
+    // the field is further up, out of sight on a phone (spec 31, 3.19).
+    const bar = within(screen.getByTestId("bottom-bar"));
+    expect(bar.getByRole("alert")).toHaveTextContent("Shorten it to 1000 characters or fewer.");
+    // Typing mends it, and the notice goes.
+    await fireEvent.changeText(screen.getByLabelText("Tell us more (optional)"), "Too fast.");
+    expect(screen.queryByRole("alert")).toBeNull();
   });
 
   it.each([

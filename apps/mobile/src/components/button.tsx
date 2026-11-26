@@ -14,9 +14,11 @@ import { usePalette } from "@/theme/use-palette";
 import { linkProps, type AppPath } from "@/navigation/link-props";
 
 /**
- * `danger` is the filled button of what cannot be undone, such as
- * "Cancel booking" on the screen that asks first (spec 31, 3.19): red where
- * `primary` is moss, and a screen's one filled button as that is (R31.1).
+ * `danger` is the main button that takes something away, such as "Cancel
+ * booking" on the screen that asks first (spec 31, 3.19 and decision 17):
+ * red where `primary` is moss, and a screen's one filled button as that is
+ * (R31.1). A button that tells PuffinRide what happened stays `primary`,
+ * though it cannot be undone either.
  */
 type Variant = "primary" | "danger" | "secondary" | "text";
 
