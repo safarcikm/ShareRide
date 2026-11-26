@@ -60,12 +60,12 @@ async function openTrip(
   return { ...app, trips: api.trips };
 }
 
-/** The trip page, Edit trip, then Change the time. */
+/** The trip page, Edit trip, then the row of its time. */
 async function openTime(...trip: Parameters<typeof openTrip>) {
   const app = await openTrip(...trip);
   await fireEvent.press(await screen.findByRole("link", { name: "Edit the ride" }));
   expect(await screen.findByRole("header", { name: "Edit the ride" })).toBeVisible();
-  await fireEvent.press(screen.getByRole("link", { name: "Change the time" }));
+  await fireEvent.press(screen.getByRole("link", { name: /^Time, / }));
   expect(await screen.findByRole("header", { name: "Change the departure" })).toBeVisible();
   return app;
 }
@@ -247,7 +247,9 @@ describe("The driver moves the departure (spec 6, 3.2)", () => {
     await chooseDeparture("10:00");
     await fireEvent.press(screen.getByRole("button", { name: "Check the change" }));
     await fireEvent.press(await screen.findByRole("button", { name: "Save the change" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent(
+    expect(await screen.findByRole("alert")).toBeVisible();
+    // Over the button, where it is seen without scrolling (spec 31, 3.19).
+    expect(within(screen.getByTestId("bottom-bar")).getByRole("alert")).toHaveTextContent(
       "You're already driving another ride at that time.",
     );
     expect(screen).toHavePathname(`${tripPage}/edit/check`);
@@ -258,7 +260,9 @@ describe("The driver moves the departure (spec 6, 3.2)", () => {
     await openTime([jon], { change: () => failure(409, "trip_not_changeable") });
     await chooseDeparture("10:00");
     await fireEvent.press(screen.getByRole("button", { name: "Check the change" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent(
+    expect(await screen.findByRole("alert")).toBeVisible();
+    // Not about the time itself, so not at its field: over the button.
+    expect(within(screen.getByTestId("bottom-bar")).getByRole("alert")).toHaveTextContent(
       "This ride can no longer be changed.",
     );
   });
@@ -292,6 +296,8 @@ describe("The driver moves the departure (spec 6, 3.2)", () => {
       },
     });
     expect(await screen.findByText("This ride can no longer be changed.")).toBeVisible();
-    expect(screen.queryByRole("link", { name: "Change the time" })).toBeNull();
+    // None of Edit the ride's rows: neither the card nor the row of the time.
+    expect(screen.queryByTestId("action-rows")).toBeNull();
+    expect(screen.queryByRole("link", { name: /^Time, / })).toBeNull();
   });
 });

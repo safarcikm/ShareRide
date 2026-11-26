@@ -34,6 +34,25 @@ async function showWhole(page: Page, width: number) {
   await page.waitForTimeout(500);
 }
 
+/**
+ * The top of the driver's ride, down to the foot of its ticket, which has
+ * the share icon in its corner (spec 28, 3.1; spec 31, 3.12).
+ */
+async function shootTopOfRide(page: Page, path: string, width: number) {
+  await expect(page.getByRole("button", { name: "Share this ride" })).toBeVisible();
+  await page.waitForTimeout(500);
+  const ticket = await page
+    .getByTestId("card-with-corner")
+    .filter({ visible: true })
+    .first()
+    .boundingBox();
+  if (ticket === null) throw new Error("The ride has no ticket");
+  await page.screenshot({
+    path,
+    clip: { x: 0, y: 0, width, height: Math.ceil(ticket.y + ticket.height) + 16 },
+  });
+}
+
 test.describe("pictures", () => {
   test.skip(root === undefined, "PICTURES_DIR is not set");
   test.use({
@@ -98,16 +117,11 @@ test.describe("pictures", () => {
         path: join(folder, "story-section-phone.png"),
         clip: { x: 0, y: top.y - 16, width: 412, height: end.y + end.height - top.y + 32 },
       });
-      // The icon beside the trip's name on the driver's trip page, and in
-      // the corner of the trip in My trips.
+      // The icon in the corner of the ticket on the driver's ride (spec 31,
+      // 3.12), and in the corner of the trip in My trips.
       await page.setViewportSize({ width: 412, height: 839 });
       await page.goto(`/drive/trips/${tripId}`);
-      await expect(page.getByRole("button", { name: "Share this ride" })).toBeVisible();
-      await page.waitForTimeout(500);
-      await page.screenshot({
-        path: join(folder, "trip-page-head-phone.png"),
-        clip: { x: 0, y: 0, width: 412, height: 260 },
-      });
+      await shootTopOfRide(page, join(folder, "trip-page-head-phone.png"), 412);
       await page.goto("/drive/trips");
       const mine = page.getByRole("button", { name: /^Mjódd bus terminal → N1 Selfoss, / });
       await expect(mine).toBeVisible();
@@ -119,16 +133,9 @@ test.describe("pictures", () => {
         .screenshot({ path: join(folder, "my-trips-card-phone.png") });
       return;
     }
-    // The driver's trip page on a laptop: the icon between the name and Edit trip.
+    // The driver's ride on a laptop: the icon in the corner of the ticket beside the page.
     await page.goto(`/drive/trips/${tripId}`);
-    await expect(page.getByRole("button", { name: "Share this ride" })).toBeVisible();
-    await page.waitForTimeout(500);
-    const head = await page.getByTestId("page-head").filter({ visible: true }).boundingBox();
-    if (head === null) throw new Error("The ride page has no head");
-    await page.screenshot({
-      path: join(folder, "trip-page-head-laptop.png"),
-      clip: { x: head.x - 16, y: head.y - 16, width: head.width + 32, height: head.height + 26 },
-    });
+    await shootTopOfRide(page, join(folder, "trip-page-head-laptop.png"), 1280);
     // Its own screen on a laptop, in Icelandic: the post's text in it too.
     await page.goto(`/drive/trips/${tripId}/share`);
     await page.getByRole("button", { name: "Change the language to Icelandic" }).click();
@@ -548,5 +555,73 @@ test.describe("pictures", () => {
     await shoot("driver-trip-day", "light");
     await dora.close();
     await einar.close();
+  });
+
+  // What the driver's ride opens, as built (spec 31, 3.19): Edit the ride
+  // as rows with what is set now; then, on a phone, cancelling the ride and
+  // sharing it, each with its title at the left over the ride's ticket.
+  test("editing, cancelling and sharing a ride I drive (spec 31)", async ({
+    page,
+    browser,
+  }, info) => {
+    test.setTimeout(300_000);
+    const folder = join(root ?? "", "one-ride-one-ticket", "built");
+    mkdirSync(folder, { recursive: true });
+    const wide = info.project.name === "desktop";
+    const window = wide ? { width: 1280, height: 720 } : (page.viewportSize() ?? null);
+    if (window === null) throw new Error("The page has no size");
+
+    // Bára offers a ride for tomorrow, and Dóra has a seat on it.
+    await page.setViewportSize(window);
+    const dora = await secondPage(browser, info);
+    const { tripId } = await confirmedBooking(page, dora.page, [], 3);
+
+    const visible = { visible: true };
+    const kind = wide ? "laptop" : "phone";
+    const shoot = async (name: string, scheme: "light" | "dark") => {
+      await showWhole(page, window.width);
+      await page.screenshot({
+        path: join(folder, `${name}-${kind}-${scheme}.png`),
+        scale: wide ? "css" : "device",
+      });
+      await page.setViewportSize(window);
+    };
+    const open = async (screen: string, title: string) => {
+      await page.goto(`/drive/trips/${tripId}/${screen}`);
+      await expect(page.getByRole("heading", { name: title }).filter(visible)).toBeVisible();
+    };
+
+    await open("edit", "Edit the ride");
+    await expect(page.getByRole("link", { name: /^Time, / }).filter(visible)).toBeVisible();
+    await shoot("edit-ride", "light");
+    if (wide) {
+      await dora.close();
+      return;
+    }
+    await page.emulateMedia({ colorScheme: "dark" });
+    await page.goto("/");
+    await page.getByRole("button", { name: "Change the language to Icelandic" }).click();
+    await expect(page.getByRole("button", { name: "Skipta yfir í ensku" })).toBeVisible();
+    await open("edit", "Breyta ferð");
+    await expect(page.getByRole("link", { name: /^Tími, / }).filter(visible)).toBeVisible();
+    await shoot("edit-ride", "dark");
+    await page.emulateMedia({ colorScheme: "light" });
+    await page.goto("/");
+    await page.getByRole("button", { name: "Skipta yfir í ensku" }).click();
+    await expect(
+      page.getByRole("button", { name: "Change the language to Icelandic" }),
+    ).toBeVisible();
+
+    // Cancelling it: a reason chosen, who is told, and the red button in the bar.
+    await open("cancel", "Cancel your ride");
+    await expect(page.getByTestId("driver-ride-ticket").filter(visible)).toBeVisible();
+    await page.getByRole("radio", { name: "Car problem" }).click();
+    await shoot("cancel-ride", "light");
+
+    await open("share", "Share this ride");
+    await expect(page.getByTestId("driver-ride-ticket").filter(visible)).toBeVisible();
+    await expect(page.getByLabel("Text for your post").filter(visible)).toBeVisible();
+    await shoot("share-ride", "light");
+    await dora.close();
   });
 });

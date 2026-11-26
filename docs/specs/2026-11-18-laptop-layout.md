@@ -486,7 +486,9 @@ documents. They gain the lined-up top bar and
 the pointer states. Since [spec 31](2026-11-26-one-ride-one-ticket.md)
 (3.19) the screens around a booking (cancelling it, the reports and their
 answer, rating, blocking and reporting) have their main button in the bar
-at the bottom here too, as they have no side column for it.
+at the bottom here too, as they have no side column for it; so have
+cancelling a ride and the screens for changing a published trip, whose
+Edit trip is one card of rows in that column.
 
 ## 4. Rules
 

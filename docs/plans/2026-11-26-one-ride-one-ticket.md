@@ -723,10 +723,11 @@ R31.3 and decision 17):
 
 `feat(drive)`, spec 31, 3.10, 3.12, 3.16 items 3 and 4, and Edit trip,
 cancelling a ride, sharing and messaging all passengers (3.19). Built as
-two pull requests, as PR 7 was: **8a**, the driver's ride page and its
-trip day (items 1 and 2), and **8b**, My rides, My trips, Edit trip,
-cancelling a ride and the heads of sharing and messaging all passengers
-(items 3 to 5), so each can be looked at whole.
+three pull requests, so each can be looked at whole: **8a**, the driver's
+ride page and its trip day (items 1 and 2); **8b**, the screens that page
+opens: Edit trip, cancelling a ride and the heads of sharing and
+messaging all passengers (item 5); and **8c**, My rides and My trips
+(items 3 and 4), which is the one that changes what the API gives.
 
 1. **The driver's ride:** head "Your ride to Vík" with what it needs; the
    ticket with the price for the whole way and the car; each request as a
@@ -855,6 +856,64 @@ As built in 8a (spec 31 says the same where a person sees it, in 3.9,
   day too: the side column is whole in a window 800 high and 51 too high
   for one 720 high, where "I'm here" is still whole and first. That and
   three smaller things are on PR 12's list.
+
+As built in 8b (spec 31 says the same where a person sees it, in 3.19):
+
+- **Edit trip** (`app/drive/trips/[id]/edit/index.tsx`) is `ActionRows`
+  of `Row`s with their `value`: Time, Stops (a row that only `shows`, its
+  value the stops' lines from `timeLines`, one under the other), "Add a
+  stop", "Remove a stop" (with a stop between the ends), Price, Seats,
+  Car, How people book (`Zap` or `UserCheck`, as the tickets have it) and
+  Preferences and note (the labels of `preferenceNeeds`, as a passenger
+  reads them, in one line; then the note). `SummarySection` stays for the
+  last step of posting and loses `more`, which only Edit trip used.
+- **The head of every screen that changes a trip** is `TripHead` in
+  `driver-trip/changes.tsx`: `ScreenHead` with the trip's day, time and
+  route `over` the title. It takes the place of `BackButton` over
+  `TripHeading` on Edit trip, the five screens of `ChangePartScreen`, the
+  time, its check, adding and removing a stop, and `NotChangeable`.
+- **Why nothing was saved** is `ActionNotice` over the main button, in
+  the footer, on `ChangePartScreen`, the time, its check, and adding and
+  removing a stop.
+- **Cancelling a ride** (`app/drive/trips/[id]/cancel.tsx`): `ScreenHead`,
+  `DriverRideTicket` with no corner (the cars are loaded for it; the
+  screen stands without them), and in the footer `ActionNotice`, the red
+  main button and "Keep the ride" outlined, both waiting while it is
+  cancelled (`useSaid`).
+- **Sharing** shows `DriverRideTicket` under `ScreenHead`; `TripSummary`
+  stays for "Your ride is published" until PR 9. **Messaging all
+  passengers** gives its help as the head's `line`.
+- **The no-show screen's main button stays moss** (decision 17; why is in
+  spec 31, 3.19).
+- **Texts:** none new and none gone: the links' texts ("Change the time")
+  are still the titles of the parts' screens, and "Change the time" the
+  button on a check that was refused.
+- **Tests:** Edit trip's rows by what a screen reader hears, in order,
+  with no filled button; a part's head and its notice in the bar;
+  cancelling a ride's head, ticket, red main button over "Keep the ride",
+  the notice in the bar and both buttons waiting; the heads of sharing
+  (with the ticket) and of messaging all passengers. Journeys changed:
+  `change-trip.spec.ts` (the rows by their names; at 360 wide nine rows,
+  and no words past the card). Pictures: `built/edit-ride-*`,
+  `built/cancel-ride-phone-light` and `built/share-ride-phone-light`.
+- **From the code review** (nothing critical), mended in the same PR: a
+  second press of "Save the change" with nothing changed, or of "Check
+  the change" with no stop chosen, said nothing new, as the notice held
+  plain words (`useSaid` in `ChangePartScreen` and where a stop is
+  chosen); "This is what the ride has now" stayed after something was
+  changed (the notice goes once what it is about is mended, and comes
+  back only with a press); a note with contact details or too long made
+  "Save the change" do nothing without a word (`ChangePartScreen` takes
+  what the field says as `blocked`, from `noteProblem`, and says it over
+  the button). Tests added for those; the refusals of the time's check,
+  of adding and of removing a stop are now looked for in the bar; that
+  cancelling and sharing stand without the cars; that a cancelled ride
+  has no rows (the test looked for a link that no longer exists); and
+  that each stop has a line of its own (a match takes line ends as
+  spaces). The preferences' one line is `inOneLine` in
+  `packages/i18n`, with a test in both languages; `stopsText`, which
+  nothing used, is gone. Spec 28's picture of sharing on a laptop is
+  taken again. Four smaller things are on PR 12's list.
 
 ## PR 9: offering a ride
 
@@ -986,7 +1045,17 @@ and deleting the account (3.19).
     `trip-day/passenger.tsx`, which hold components, by the two `title.ts`
     files: a home of its own without them. A cancelled ride's page has no
     pull to refresh, as before.
-11. **Docs:** spec 31 becomes Built, with what differs from the drawings;
+11. **Small things PR 8b's code review named:** choosing the meeting
+    point of a new stop keeps the picker's own top (a Cancel cross and a
+    centred title, no ride over it), which goes with posting's heads (PR
+    9, item 2 here); `cancel-trip.spec.ts` does not read the bar's notice
+    or where focus goes, as `cancel-booking.spec.ts` does, and
+    `look.spec.ts` opens none of Edit the ride's screens with long names
+    or large text; "day at time" is written out on Edit the ride and in
+    `TripHead`; an `ActionNotice` given plain words does not say them
+    again on another press, which is easy to get wrong: `useSaid`
+    everywhere, or a rule for it.
+12. **Docs:** spec 31 becomes Built, with what differs from the drawings;
     spec 15 has the parts; the roadmap and the changelog.
 
 ## After merging

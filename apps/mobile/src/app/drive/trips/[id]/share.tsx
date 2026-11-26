@@ -1,15 +1,17 @@
-import type { MyTrip } from "@shareride/contracts";
+import { listVehiclesRoute, type MyTrip, type Vehicle } from "@shareride/contracts";
 import { useLocalSearchParams } from "expo-router";
-import { BackButton } from "@/components/back-button";
+import { useCallback } from "react";
+import { useSession } from "@/auth/session";
 import { Notice } from "@/components/notice";
 import { Screen } from "@/components/screen";
-import { Title } from "@/components/text";
+import { ScreenHead } from "@/components/screen-head";
 import { TextLink } from "@/components/text-link";
 import { isChangeable } from "@/driver-trip/changes";
+import { DriverRideTicket } from "@/driver-trip/ride-ticket";
 import { useLanguage } from "@/i18n/language";
 import { now } from "@/lib/clock";
+import { useLoaded } from "@/lib/use-loaded";
 import { ShareRidePanel } from "@/sharing/share-ride-panel";
-import { TripSummary } from "@/trips/trip-summary";
 import { Loading, useDraft } from "@/trips/use-draft";
 
 /** The driver's trip page, as a link's address. */
@@ -20,19 +22,23 @@ type TripPage = {
 
 /**
  * Share this ride (spec 28, 3.2), from My trips and the driver's trip
- * page: the trip and the panel, for a published trip that has not left
- * (R28.4). Any other says it cannot be shared, with a link to the trip; one
- * that is not the driver's, or not there, says so and links to My trips.
+ * page: the title at the left over the ride as its ticket (spec 31, 3.19;
+ * R31.2), then the panel, for a published trip that has not left (R28.4).
+ * Any other says it cannot be shared, with a link to the trip; one that is
+ * not the driver's, or not there, says so and links to My trips.
  */
 export default function ShareRideScreen() {
   const { t } = useLanguage();
+  const session = useSession();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { value: result, reload } = useDraft(id);
+  // For the car on the ticket; the screen stands without it.
+  const loadCars = useCallback(() => session.call(listVehiclesRoute, {}), [session]);
+  const { value: cars } = useLoaded(loadCars);
   const tripPage: TripPage = { pathname: "/drive/trips/[id]", params: { id } };
   return (
     <Screen>
-      <BackButton fallback={tripPage} />
-      <Title>{t("shareRide.heading")}</Title>
+      <ScreenHead title={t("shareRide.heading")} back={tripPage} />
       {result?.ok === false && result.status === 404 ? (
         <>
           <Notice message={t("trip.notFound")} />
@@ -40,14 +46,32 @@ export default function ShareRideScreen() {
         </>
       ) : result === undefined || !result.ok ? (
         <Loading failure={result} onRetry={reload} />
+      ) : cars === undefined ? (
+        <Loading />
       ) : (
-        <Shareable trip={result.data} tripPage={tripPage} />
+        <Shareable
+          trip={result.data}
+          car={
+            cars.ok
+              ? (cars.data.vehicles.find((known) => known.id === result.data.vehicleId) ?? null)
+              : null
+          }
+          tripPage={tripPage}
+        />
       )}
     </Screen>
   );
 }
 
-function Shareable({ trip, tripPage }: { readonly trip: MyTrip; readonly tripPage: TripPage }) {
+function Shareable({
+  trip,
+  car,
+  tripPage,
+}: {
+  readonly trip: MyTrip;
+  readonly car: Vehicle | null;
+  readonly tripPage: TripPage;
+}) {
   const { t } = useLanguage();
   if (!isChangeable(trip, now())) {
     return (
@@ -59,7 +83,7 @@ function Shareable({ trip, tripPage }: { readonly trip: MyTrip; readonly tripPag
   }
   return (
     <>
-      <TripSummary trip={trip} />
+      <DriverRideTicket trip={trip} car={car} />
       <ShareRidePanel trip={trip} heading={false} />
     </>
   );

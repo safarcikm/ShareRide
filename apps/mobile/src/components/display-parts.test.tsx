@@ -399,6 +399,16 @@ describe("Row", () => {
     expect(within(words).getByText("Up to 15 min before")).toBeOnTheScreen();
   });
 
+  it("keeps a value of several lines under its title, wherever it is shown", async () => {
+    const stops = "09:00  BSÍ bus terminal\n10:00  Borgarnes";
+    await render(<Row shows stacked title="Stops" value={stops} />);
+    // One under the other, from the left: not beside the title on a wide screen.
+    expect(hidden("row-words")).toHaveStyle({ flexDirection: "column", alignItems: "flex-start" });
+    expect(screen.getByText(stops)).toBeVisible();
+    // The line ends are kept: a match takes any run of spaces and line ends as one space.
+    expect(screen.getByText(stops).props.children).toBe(stops);
+  });
+
   it("only shows a value when that is all it does: no button, no chevron", async () => {
     await render(<Row shows title="Phone" value="Confirmed" />);
     expect(screen.queryByRole("button")).toBeNull();

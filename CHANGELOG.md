@@ -1755,6 +1755,17 @@ releases follow [Semantic Versioning](https://semver.org/).
   trip day "I'm here at Mjódd" is the main button, in the bar at the
   bottom (3.9). On a laptop the ticket, the seats and the rows stand
   beside the requests and the passengers (3.16).
+- The screens a ride you drive opens take the same rules (spec 31, 3.19).
+  Edit the ride is one card of rows, each with what is set now ("Time,
+  Sunday 15 November at 09:00"; the stops with their times, and "Add a
+  stop" and "Remove a stop" under them), in place of headings with a link
+  beside each. Each part's screen has its title at the left, and why
+  nothing was saved stands over the main button and is read out, where it
+  was at the end of the page; a note that cannot be saved is said there
+  too, where the button did nothing. Cancelling a ride has the ride as
+  its ticket and "Cancel the ride" as a red main button over "Keep the
+  ride". Sharing a ride shows it as its ticket, and messaging all
+  passengers has its title at the left.
 - The web journeys never give two test accounts the same phone number: a
   run in ten did, and a sign-in journey then failed.
 - CI skips its code jobs (bundles, unit, integration and web tests, the API

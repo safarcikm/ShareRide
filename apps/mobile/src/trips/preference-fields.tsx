@@ -9,7 +9,7 @@ import {
   smokingOptions,
   type TripPreferences,
 } from "@shareride/domain";
-import type { MessageKey } from "@shareride/i18n";
+import type { MessageKey, Translate } from "@shareride/i18n";
 import { StyleSheet, Text, View } from "react-native";
 import { Chip } from "@/components/chip";
 import { TextField } from "@/components/text-field";
@@ -90,7 +90,6 @@ export function NoteField({
   readonly onChange: (note: string) => void;
 }) {
   const { t } = useLanguage();
-  const problem = checkNote(note)[0];
   return (
     <TextField
       label={t("trip.note.label")}
@@ -99,9 +98,19 @@ export function NoteField({
       multiline
       maxLength={noteMaxLength * 2}
       help={t("trip.note.help", { max: noteMaxLength })}
-      error={problem === undefined ? undefined : problemText(t, problem.code, "")}
+      error={noteProblem(t, note)}
     />
   );
+}
+
+/**
+ * What is wrong with a ride's note as typed, in words: too long, or with
+ * contact details (R3.10). The note's field says it, and so does a screen
+ * whose main button will not save it.
+ */
+export function noteProblem(t: Translate, note: string): string | undefined {
+  const problem = checkNote(note)[0];
+  return problem === undefined ? undefined : problemText(t, problem.code, "");
 }
 
 /** One preference: its name and a chip for each choice, one of them selected. */
