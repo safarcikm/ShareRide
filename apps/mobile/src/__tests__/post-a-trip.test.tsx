@@ -130,6 +130,16 @@ const changeRows = () =>
 /** The row of "Check and publish" that opens a part's step. */
 const changeRow = (part: string) => screen.findByRole("link", { name: new RegExp(`^${part}, `) });
 
+// The first render in a file loads every screen of the app, and with no
+// cache (as in CI) compiles them too. Jest runs the largest files first,
+// this one among them, while every package's checks run at once, and that
+// took the first test, the longest walk here, past its 15 s. Load the app
+// here, with time of its own, as the booking tests do.
+beforeAll(async () => {
+  const { unmount } = await renderApp("/");
+  await unmount();
+}, 120_000);
+
 describe("Posting a trip (spec 3)", () => {
   it("goes from the route to a published trip", async () => {
     const { client, api } = await open("/drive/trips/new");
