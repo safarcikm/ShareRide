@@ -608,8 +608,13 @@ where a person sees it, in 3.8, 3.9 and 3.16):
 - `DriverCard` gains `action` (Message, in the chevron's place), `plate`
   (the tag beside the car), `standing` (off for someone who has left) and
   `fill`. `DriverAndCar` in `trip-parts.tsx` is gone: nothing uses it.
-- `ScreenHead` gains `outcome`: the title takes focus when it is the
-  outcome of an action, as the status line did.
+- `ScreenHead` gains `outcome`: the title and its line take focus when
+  they are the outcome of an action, as the status line did. For a
+  booking that ended the line is why (`endedText` in `booking/texts.ts`),
+  in the place of the notice that said so, so a screen reader hears "You
+  cancelled this booking: Plans changed" with "Cancelled" (the journeys
+  `cancel-booking.spec.ts` and `my-rides.spec.ts` check that focus holds
+  the sentence).
 - The page has one tree for a phone and a wide screen, as before, and
   what must survive the breakpoint lives in the page: the payment, the
   question about withdrawing, and that "I'm here" was said (`ImHere`

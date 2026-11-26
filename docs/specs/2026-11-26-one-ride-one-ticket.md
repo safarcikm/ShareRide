@@ -459,9 +459,13 @@ and on a laptop
   "Sunday 15 November. Anna picks you up at 10:00 at Borgarnes."; the trip
   day's titles (3.9); "How was your ride?" with until when it can be
   reviewed, while it can; and how a booking ended, "Completed",
-  "Declined", "Expired", "Cancelled", "Withdrawn" or "No-show", with the
-  notice that says why under it, as before. When an action here changes
-  the state, focus moves to the title, which says the outcome.
+  "Declined", "Expired", "Cancelled", "Withdrawn" or "No-show", with why
+  as the line under it ("You withdrew this request. That never counts
+  against you.", "You cancelled this booking: Plans changed"), in the
+  place of the notice that said so. What else a cancellation says, the
+  driver's note, the refund and whether it shows on the profile, stays
+  under the title. When an action here changes the state, focus moves to
+  the title and its line, which say the outcome.
 - The road has three steps for a ride booked instantly (Confirmed, Trip
   day, Done) and none before it is paid: nothing is confirmed yet. A
   request the driver said yes to stays at Asked until it is paid.

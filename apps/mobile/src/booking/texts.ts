@@ -11,6 +11,7 @@ import {
 import { errorText } from "@/auth/errors";
 import { compareDays, dayOf } from "@/lib/days";
 import { firstNameOf } from "@/people/texts";
+import { isWithdrawn } from "./status";
 
 // Booking texts that depend on the answer or the clock (spec 5, section 8).
 
@@ -113,6 +114,41 @@ export function refundText(
     : t("booking.noRefund", {
         time: formatDuration(booking.cancellationRules.freeUntilMinutes * 60, locale),
       });
+}
+
+/**
+ * Why a booking ended, for its passenger, in one sentence under the title
+ * that says how (spec 31, 3.8): the driver could not take it, nobody
+ * answered or paid in time, who cancelled and why, or a no-show. Null where
+ * there is no more to say: nobody gave a reason, or a no-show's report is
+ * open and says where it stands (spec 8, 3.3).
+ */
+export function endedText(t: Translate, locale: Locale, booking: Booking): string | null {
+  switch (booking.status) {
+    case "declined":
+      // Declined because the driver cancelled the trip, it says so and why (spec 6, 3.3).
+      return booking.cancellation === null
+        ? t("booking.declined")
+        : (cancellationTexts(t, locale, booking)?.said ?? null);
+    case "expired":
+      // An expired booking keeps the deadline that passed: the driver's to
+      // answer, or the passenger's to pay.
+      return t(
+        booking.paymentDueAt === null && booking.requestExpiresAt !== null
+          ? "booking.expired"
+          : "booking.unpaidExpired",
+      );
+    case "cancelled":
+      return isWithdrawn(booking)
+        ? t("booking.withdrawn")
+        : (cancellationTexts(t, locale, booking)?.said ?? null);
+    case "no_show":
+      return booking.dispute !== null && booking.dispute.outcome === null
+        ? null
+        : t(booking.payment === "in_person" ? "booking.noShowInPerson" : "booking.noShow");
+    default:
+      return null;
+  }
 }
 
 /**

@@ -329,8 +329,8 @@ changes on a phone.
 5. Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.8, 3.9 and 3.16,
    item 2) the two columns hold other things. Across the top, at the left:
    Back and the title, which says where the booking stands, with one line
-   under it. **Main column:** a report about it, how it ended, changes to
-   the ride, the review and the prompt, as before; then the road, and the
+   under it. **Main column:** a report about it, what else a cancellation
+   says (the note, the refund), changes to the ride, the review and the prompt, as before; then the road, and the
    driver (with Message) and where to stand in their row, where to stand
    first on the trip day. **Side column:** the page's main button first,
    where there is one (Pay and the payment, the question about

@@ -248,9 +248,13 @@ describe("a booked seat on a phone (spec 31, 3.8)", () => {
       await fireEvent.press(await screen.findByRole("button", { name: "Withdraw request" }));
       await fireEvent.press(screen.getByRole("button", { name: "Withdraw request" }));
       expect(await screen.findByRole("header", { name: "Withdrawn" })).toBeVisible();
+      // Why, as the line under the title: the two take focus together.
       expect(
-        screen.getByText("You withdrew this request. That never counts against you."),
+        within(screen.getByTestId("screen-head")).getByText(
+          "You withdrew this request. That never counts against you.",
+        ),
       ).toBeVisible();
+      expect(screen.queryByTestId("booking-ended")).toBeNull();
       expect(
         client.calls.filter((call) => call.path === "/v1/bookings/{id}/withdraw"),
       ).toHaveLength(1);

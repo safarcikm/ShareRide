@@ -183,8 +183,11 @@ describe("Cancelling a booking (spec 6, 3.5)", () => {
     expect(cancels(client)).toEqual([
       { reason: "plans_changed", terms: { refund: full, countsOnReliability: true } },
     ]);
-    expect(await screen.findByText("You cancelled this booking: Plans changed")).toBeVisible();
-    // The outcome takes focus, as the screen with the button pressed has gone.
+    // The outcome is the title with why under it, and takes focus, as the
+    // screen with the button pressed has gone.
+    const head = within(await screen.findByTestId("screen-head"));
+    expect(head.getByRole("header", { name: "Cancelled" })).toBeVisible();
+    expect(head.getByText("You cancelled this booking: Plans changed")).toBeVisible();
     expect(focusMoves).toHaveBeenCalledTimes(1);
     focusMoves.mockRestore();
     expect(screen).toHavePathname(`/bookings/${bookingId}`);

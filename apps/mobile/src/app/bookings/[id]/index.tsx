@@ -551,69 +551,24 @@ function BookingDetails({
 }
 
 /**
- * Why a booking ended, for its passenger, under the title that says how:
- * the driver could not take it, nobody answered or paid in time, who
- * cancelled and why, or a no-show.
+ * What else a cancellation says to the passenger, under the title that
+ * says how the booking ended and why (spec 6): the driver's note, the
+ * refund, and whether it shows on their profile.
  */
 function Ended({ booking }: { readonly booking: Booking }) {
-  const { t } = useLanguage();
-  const message = ((): ReactNode => {
-    switch (booking.status) {
-      case "declined":
-        // Declined because the driver cancelled the trip, it says so and why (spec 6, 3.3).
-        return booking.cancellation === null ? (
-          <Notice kind="info" message={t("booking.declined")} />
-        ) : (
-          <Cancelled booking={booking} />
-        );
-      case "expired":
-        // An expired booking keeps the deadline that passed: the driver's to
-        // answer, or the passenger's to pay.
-        return (
-          <Notice
-            kind="info"
-            message={
-              booking.paymentDueAt === null && booking.requestExpiresAt !== null
-                ? t("booking.expired")
-                : t("booking.unpaidExpired")
-            }
-          />
-        );
-      case "cancelled":
-        return isWithdrawn(booking) ? (
-          <Notice kind="info" message={t("booking.withdrawn")} />
-        ) : (
-          <Cancelled booking={booking} />
-        );
-      case "no_show":
-        // While its report is open, the report says where it stands (spec 8, 3.3).
-        return booking.dispute !== null && booking.dispute.outcome === null ? null : (
-          <Notice
-            kind="info"
-            message={t(
-              booking.payment === "in_person" ? "booking.noShowInPerson" : "booking.noShow",
-            )}
-          />
-        );
-      default:
-        return null;
-    }
-  })();
-  return message === null ? null : <View style={styles.ended}>{message}</View>;
-}
-
-/** Who cancelled and why, the refund, and whether it shows on the passenger's profile (spec 6). */
-function Cancelled({ booking }: { readonly booking: Booking }) {
   const { locale, t } = useLanguage();
-  const texts = cancellationTexts(t, locale, booking);
-  if (texts === null) return null;
+  const cancelled =
+    (booking.status === "cancelled" && !isWithdrawn(booking)) || booking.status === "declined";
+  const texts = cancelled ? cancellationTexts(t, locale, booking) : null;
+  if (texts === null || (texts.note === null && texts.refund === null && !texts.counts)) {
+    return null;
+  }
   return (
-    <>
-      {texts.said === null ? null : <Notice kind="info" message={texts.said} />}
+    <View testID="booking-ended" style={styles.ended}>
       {texts.note === null ? null : <Body align="start">{texts.note}</Body>}
       {texts.refund === null ? null : <Body align="start">{texts.refund}</Body>}
       {texts.counts ? <Body align="start">{t("booking.countsOnReliability")}</Body> : null}
-    </>
+    </View>
   );
 }
 

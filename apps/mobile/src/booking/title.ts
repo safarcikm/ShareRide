@@ -13,7 +13,7 @@ import { firstNameOf } from "@/people/texts";
 import { heldBack } from "@/reviews/held-back";
 import { onTripDay } from "@/trip-day/passenger";
 import { statusKey } from "./status";
-import { answerUntilText, seatHeldText } from "./texts";
+import { answerUntilText, endedText, seatHeldText } from "./texts";
 
 // The head of a booked seat (spec 31, 3.8 items 1 and 2, and 3.9 item 1):
 // its title says where the booking stands, one line under it says what
@@ -42,7 +42,7 @@ export function reviewOpen(t: Translate, booking: Booking, at: Date): boolean {
  * The title of a booking's page. For its passenger it is the state: a
  * request sent, a seat to pay for, a seat confirmed, the trip day counting
  * down and then following what the driver says, a ride to review, or how
- * it ended. The page is the passenger's (3.8, item 9); a driver who opens
+ * it ended, with why under it. The page is the passenger's (3.8, item 9); a driver who opens
  * a passenger's booking reads the day and the part, with the status under
  * them.
  */
@@ -119,7 +119,8 @@ export function bookingTitle(
       );
     }
     default:
-      return said(state);
+      // How it ended, and why.
+      return said(state, endedText(t, locale, booking));
   }
 }
 

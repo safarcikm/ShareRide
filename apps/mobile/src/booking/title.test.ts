@@ -151,30 +151,112 @@ describe("the title of a booked seat", () => {
     });
   });
 
-  it.each([
-    ["declined", northBooking({ status: "declined" }), "Declined", "Hafnað"],
-    ["expired", northBooking({ status: "expired" }), "Expired", "Útrunnin"],
-    ["cancelled", cancelledBooking, "Cancelled", "Afbókuð"],
-    [
-      "withdrawn",
-      northBooking({ status: "cancelled", withdrawn: true }),
-      "Withdrawn",
-      "Dregin til baka",
-    ],
-    [
-      "declined with its ride cancelled",
-      northBooking({ status: "declined", cancellation: cancelledBooking.cancellation }),
-      "Cancelled",
-      "Afbókuð",
-    ],
-    ["a no-show", onTheDay({}, { status: "no_show" }), "No-show", "Mætti ekki"],
-  ] as const)(
-    "says a booking that ended %s is that, and no more",
-    (_, booking, english, icelandic) => {
-      expect(title(booking)).toEqual({ over: null, title: english, line: null });
-      expect(titill(booking).title).toBe(icelandic);
-    },
-  );
+  describe("once it ended", () => {
+    const rideCancelled = northBooking({
+      status: "declined",
+      cancellation: {
+        by: "driver",
+        reason: "weather",
+        note: "",
+        wholeTrip: true,
+        refund: { amount: 0, currency: "ISK" },
+        countsOnReliability: null,
+      },
+    });
+
+    it.each([
+      [
+        "declined",
+        northBooking({ status: "declined" }),
+        "Declined",
+        "The driver couldn't take this request",
+        "Hafnað",
+      ],
+      [
+        "expired with no answer",
+        northBooking({ status: "expired" }),
+        "Expired",
+        "The driver didn't answer in time",
+        "Útrunnin",
+      ],
+      [
+        "expired with nothing paid",
+        northBooking({
+          status: "expired",
+          requestExpiresAt: null,
+          paymentDueAt: "2026-11-14T12:30:00.000Z",
+        }),
+        "Expired",
+        "The time to pay ran out, so the seat was freed.",
+        "Útrunnin",
+      ],
+      [
+        "cancelled",
+        cancelledBooking,
+        "Cancelled",
+        "You cancelled this booking: Plans changed",
+        "Afbókuð",
+      ],
+      [
+        "withdrawn",
+        northBooking({ status: "cancelled", withdrawn: true }),
+        "Withdrawn",
+        "You withdrew this request. That never counts against you.",
+        "Dregin til baka",
+      ],
+      [
+        "declined with its ride cancelled",
+        rideCancelled,
+        "Cancelled",
+        "Anna cancelled the ride: Weather",
+        "Afbókuð",
+      ],
+      [
+        "a no-show",
+        onTheDay({}, { status: "no_show" }),
+        "No-show",
+        "Marked as a no-show: no refund, and it shows on your profile.",
+        "Mætti ekki",
+      ],
+      [
+        "a no-show on a ride paid in person",
+        onTheDay({}, { status: "no_show", payment: "in_person" }),
+        "No-show",
+        "Marked as a no-show. It shows on your profile.",
+        "Mætti ekki",
+      ],
+    ] as const)(
+      "says a booking that ended %s is that, and why under it",
+      (_, booking, english, why, icelandic) => {
+        expect(title(booking)).toEqual({ over: null, title: english, line: why });
+        expect(titill(booking).title).toBe(icelandic);
+      },
+    );
+
+    it("says why in Icelandic too", () => {
+      expect(titill(cancelledBooking).line).toBe("Þú afbókaðir þessa bókun: Breyttar áætlanir");
+    });
+
+    it("leaves why to the report while a no-show's report is open", () => {
+      const reported = { ...onTheDay({}, { status: "no_show" }), dispute: dispute() };
+      expect(title(reported)).toEqual({ over: null, title: "No-show", line: null });
+    });
+
+    it("says no more where the one who cancelled gave no reason", () => {
+      const noReason = northBooking({
+        ...cancelledBooking,
+        cancellation: {
+          by: "driver",
+          reason: null,
+          note: "",
+          wholeTrip: false,
+          refund: paidBooking.total,
+          countsOnReliability: null,
+        },
+      });
+      expect(title(noReason)).toEqual({ over: null, title: "Cancelled", line: null });
+    });
+  });
 
   it("names the day and the part for the driver, with where the booking stands", () => {
     expect(title({ ...paidBooking, viewer: "driver" })).toEqual({

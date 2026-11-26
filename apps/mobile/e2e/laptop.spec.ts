@@ -1006,9 +1006,11 @@ test.describe("My rides, a booking and Profile", () => {
     await expectButtonsInside(rows, 6);
     await expectNoSidewaysScroll(dora);
     await dora.goto(booking);
-    await expect(side.getByText("Inn", { exact: true })).toBeVisible();
-    await expectButtonsInside(side, 3);
-    await expectButtonsInside(main, 4);
+    await expect(dora.getByRole("heading", { name: "Sætið þitt er staðfest" })).toBeVisible();
+    await expect(side.getByTestId("booking-ticket")).toBeVisible();
+    await expect(side.getByRole("button", { name: "Afbóka", exact: true })).toBeVisible();
+    await expectButtonsInside(side, 4);
+    await expectButtonsInside(main, 3);
     await expectNoSidewaysScroll(dora);
     await dora.goto("/my-rides");
     await expect(hers).toHaveCount(1);
