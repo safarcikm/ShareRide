@@ -21,14 +21,14 @@ async function signUpToFaster(page: Page, firstName: string): Promise<string> {
   return email;
 }
 
-/** On Choose a password: types it once, saves it, and is told. */
-async function choosePassword(page: Page, password: string) {
+/** On Choose a password: types it once, saves it, and is told; Find then greets by name. */
+async function choosePassword(page: Page, password: string, firstName: string) {
   await expect(page.getByRole("heading", { name: "Choose a password" })).toBeVisible();
   await page.getByLabel("New password").fill(password);
   await page.getByRole("button", { name: "Save password" }).click();
   await expect(page.getByText("Your password is saved.").filter(visible)).toBeVisible();
   await page.getByRole("button", { name: "Done" }).click();
-  await expect(page.getByRole("heading", { name: english.findTitle })).toBeVisible();
+  await expect(page.getByRole("heading", { name: english.hi(firstName) })).toBeVisible();
 }
 
 async function signOut(page: Page) {
@@ -47,7 +47,7 @@ async function openSignIn(page: Page) {
 test("a new member adds a password after signing up, then signs in with it", async ({ page }) => {
   const email = await signUpToFaster(page, "Birta");
   await page.getByRole("button", { name: "Add a password" }).click();
-  await choosePassword(page, "puffins fly north in May");
+  await choosePassword(page, "puffins fly north in May", "Birta");
   const told = await emailTo(email, /^A password was added to your PuffinRide account$/);
   expect(told.text).toContain("If that was you, there's nothing to do.");
 
@@ -63,7 +63,7 @@ test("a new member adds a password after signing up, then signs in with it", asy
   ).toBeVisible();
   await page.getByLabel("Password", { exact: true }).fill("puffins fly north in May");
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
-  await expect(page.getByRole("heading", { name: english.findTitle })).toBeVisible();
+  await expect(page.getByRole("heading", { name: english.hi("Birta") })).toBeVisible();
   await menuLink(page, english.profileTab).click();
   await expect(page.getByText("Birta", { exact: true }).filter(visible)).toBeVisible();
 
@@ -79,7 +79,7 @@ test("a new member adds a password after signing up, then signs in with it", asy
 test("a forgotten password is chosen again after the email code", async ({ page }) => {
   const email = await signUpToFaster(page, "Dagný");
   await page.getByRole("button", { name: "Not now" }).click();
-  await expect(page.getByRole("heading", { name: english.findTitle })).toBeVisible();
+  await expect(page.getByRole("heading", { name: english.hi("Dagný") })).toBeVisible();
 
   await signOut(page);
   await openSignIn(page);
@@ -88,12 +88,12 @@ test("a forgotten password is chosen again after the email code", async ({ page 
     page.getByRole("button", { name: "Forgot your password?" }).click(),
   );
   await page.getByLabel(english.codeLabel).fill(code);
-  await choosePassword(page, "kaffi og kleinur á sunnudögum");
+  await choosePassword(page, "kaffi og kleinur á sunnudögum", "Dagný");
 
   await signOut(page);
   await openSignIn(page);
   await page.getByLabel("Email", { exact: true }).fill(email.toUpperCase());
   await page.getByLabel("Password", { exact: true }).fill("kaffi og kleinur á sunnudögum");
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
-  await expect(page.getByRole("heading", { name: english.findTitle })).toBeVisible();
+  await expect(page.getByRole("heading", { name: english.hi("Dagný") })).toBeVisible();
 });

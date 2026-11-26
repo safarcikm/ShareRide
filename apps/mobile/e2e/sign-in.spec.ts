@@ -25,7 +25,7 @@ test.describe("sign up in English", () => {
     const { text } = await signUp(page, english, "Anna");
     expect(text).toContain("is your PuffinRide code");
     await page.reload();
-    await expect(page.getByRole("heading", { name: english.findTitle })).toBeVisible();
+    await expect(page.getByRole("heading", { name: english.hi("Anna") })).toBeVisible();
     await menuLink(page, english.profileTab).click();
     await expect(page.getByRole("heading", { name: english.myProfile })).toBeVisible();
   });
@@ -50,8 +50,8 @@ test.describe("sign out on all devices", () => {
     const otherDevice = await browser.newContext({ locale: "en-GB" });
     const other = await otherDevice.newPage();
     await signIn(other, english, email);
-    // Signing in leads to Find, with the menu as it was.
-    await expect(other.getByRole("heading", { name: english.findTitle })).toBeVisible();
+    // Signing in leads to Find, which greets her, with the menu as it was.
+    await expect(other.getByRole("heading", { name: english.hi("Sigga") })).toBeVisible();
     await menuLink(other, english.profileTab).click();
     await expect(other.getByRole("heading", { name: english.myProfile })).toBeVisible();
     expect(sentCount(phone.e164)).toBe(1);

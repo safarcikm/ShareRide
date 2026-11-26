@@ -1,4 +1,5 @@
-import { act, fireEvent, screen, within } from "expo-router/testing-library";
+import { getLocales } from "expo-localization";
+import { act, fireEvent, screen, waitFor, within } from "expo-router/testing-library";
 import { AccessibilityInfo, Dimensions } from "react-native";
 import type * as Days from "@/lib/days";
 import { showsOtherTime } from "@/lib/days";
@@ -6,17 +7,18 @@ import { readAppData, writeAppData } from "@/lib/app-data";
 import { writePreference } from "@/lib/preferences";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
+import { filledButtons } from "@/testing/buttons";
 import { failure, ok } from "@/testing/fake-client";
 import { bsi, hof, thorlakshofn } from "@/testing/meeting-points";
 import { northResult, resultOn, searchApi, searchesOf, type SearchAnswers } from "@/testing/search";
 import { blonduos, borgarnes, tripsApi } from "@/testing/trips";
-import { colors } from "@/theme/tokens";
+import { colors, typography } from "@/theme/tokens";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
 jest.mock("@/auth/token-store", () => {
   return jest.requireActual<typeof TestApp>("@/testing/app").mockTokenStoreModule;
 });
-jest.mock("expo-localization", () => ({ getLocales: () => [{ languageTag: "en-GB" }] }));
+jest.mock("expo-localization", () => ({ getLocales: jest.fn() }));
 jest.mock("@/lib/preferences", () => ({
   readPreference: jest.fn(() => Promise.resolve(null)),
   writePreference: jest.fn(() => Promise.resolve()),
@@ -37,11 +39,16 @@ jest.mock("@/lib/days", () => ({
 const mockedRead = readAppData as jest.Mock;
 const mockedWrite = writeAppData as jest.Mock;
 const mockedShowsOtherTime = showsOtherTime as jest.Mock;
+const mockedGetLocales = getLocales as jest.Mock;
 
 beforeEach(() => {
   mockedRead.mockImplementation(() => Promise.resolve(null));
   mockedWrite.mockClear();
+  mockedGetLocales.mockReturnValue([{ languageTag: "en-GB" }]);
 });
+
+/** A second ride, on the Monday after `northResult`'s Sunday. */
+const mondayRide = resultOn("2026-11-16", { tripId: "0190a1d6-0000-7000-8000-0000000611b6" });
 
 const resultsUrl = (extra = "") =>
   `/search/results?from=${borgarnes.id}&to=${blonduos.id}&fromName=Borgarnes&toName=Bl%C3%B6ndu%C3%B3s&seats=1${extra}`;
@@ -59,6 +66,14 @@ async function sortBy(name: "Earliest" | "Cheapest") {
   await fireEvent.press(screen.getByRole("button", { name: /^Sort: / }));
   await fireEvent.press(screen.getByRole("radio", { name }));
 }
+
+/** Opens the filters under the one Filters chip (spec 31, 3.6 item 2). */
+async function openFilters() {
+  await fireEvent.press(screen.getByRole("button", { name: /^Filters/ }));
+}
+
+/** The one row over the rides: the order, Filters and how many rides there are. */
+const resultsRow = () => within(screen.getByTestId("results-row"));
 
 /** The results header, one button that opens the search form in place (spec 16, 3.8). */
 const changeSearch = (route: string, summary: string) =>
@@ -78,7 +93,21 @@ describe("Searching for a ride (spec 4)", () => {
         searchApi(fake);
       },
     });
-    expect(await screen.findByRole("header", { name: "Find a ride" })).toBeVisible();
+    // The title at the left beside Back, and the front page's search card
+    // with its one button in it: no bar at the bottom (spec 31, 3.5 item 3).
+    const head = within(await screen.findByTestId("screen-head"));
+    expect(head.getByRole("header", { name: "Find a ride" })).not.toHaveStyle({
+      textAlign: "center",
+    });
+    expect(head.getByRole("button", { name: "Back" })).toBeVisible();
+    const form = screen
+      .getAllByTestId("card")
+      .find((found) => within(found).queryByRole("button", { name: /^From: / }) !== null);
+    if (form === undefined) throw new Error("No card with From");
+    expect(within(form).getByRole("button", { name: "Find a ride" })).toBeVisible();
+    expect(within(form).getByTestId("search-when")).toBeVisible();
+    expect(screen.queryByTestId("bottom-bar")).toBeNull();
+    expect(filledButtons()).toBe(1);
     await fireEvent.press(screen.getByRole("button", { name: "Find a ride" }));
     expect(
       await screen.findByText("Choose where you're leaving from and where you're going."),
@@ -105,7 +134,8 @@ describe("Searching for a ride (spec 4)", () => {
     expect(within(card).getByText("2,900 ISK")).toBeVisible();
     expect(within(card).getByText("Anna drives BSÍ bus terminal → Hof, Akureyri")).toBeVisible();
     expect(screen.getByRole("header", { name: "Sunday 15 November" })).toBeVisible();
-    expect(screen.getByText("That's every ride found.")).toBeVisible();
+    expect(resultsRow().getByText("1 ride")).toBeVisible();
+    expect(screen.getByText("That's every ride found")).toBeVisible();
 
     // The search is kept on this device, with its names, in the app's own
     // storage rather than the secure storage, which iOS can keep after the
@@ -331,8 +361,84 @@ describe("Results header and chips (spec 16, 3.8)", () => {
     expect(await screen.findByRole("button", { name: "Sort: Cheapest" })).toBeVisible();
     expect(screen.queryByRole("radio", { name: "Earliest" })).toBeNull();
     expect(searchesOf(client).at(-1)).toMatchObject({ sort: "price" });
-    // Filtering is its own chip, on or off.
-    expect(screen.getByRole("checkbox", { name: "Book instantly only" })).not.toBeChecked();
+    // Filtering is its own chip, which keeps the filters until it is pressed.
+    expect(screen.getByRole("button", { name: "Filters" })).toBeCollapsed();
+    expect(screen.queryByRole("checkbox", { name: "Book instantly only" })).toBeNull();
+  });
+
+  it("puts the order, one Filters chip and the number of rides in one row (spec 31, 3.6)", async () => {
+    await openResults("", { results: () => [northResult, mondayRide] });
+    await screen.findAllByTestId("trip-result");
+    const row = screen.getByTestId("results-row");
+    expect(row).toHaveStyle({ flexDirection: "row", flexWrap: "wrap", alignItems: "center" });
+    // The order says only what is chosen; its name says what it is.
+    const sort = resultsRow().getByRole("button", { name: "Sort: Earliest" });
+    expect(within(sort).getByText("Earliest")).toBeVisible();
+    expect(within(sort).queryByText(/Sort/)).toBeNull();
+    const filters = resultsRow().getByRole("button", { name: "Filters" });
+    expect(within(filters).getByTestId("chip-icon", { includeHiddenElements: true })).toBeTruthy();
+    expect(filters).toHaveStyle({ backgroundColor: colors.light.surface });
+    // How many rides there are, at the right, said when it changes.
+    const count = resultsRow().getByText("2 rides");
+    expect(count).toHaveStyle({ color: colors.light.textMuted });
+    expect(count.props.accessibilityLiveRegion).toBe("polite");
+    expect(count).toHaveProp("testID", "results-count");
+    expect(
+      resultsRow()
+        .getAllByRole("button")
+        .map((chip) => String(chip.props.accessibilityLabel)),
+    ).toEqual(["Sort: Earliest", "Filters"]);
+  });
+
+  it("opens today's filters under Filters, which says how many are on", async () => {
+    const { client } = await openResults();
+    await screen.findByTestId("trip-result");
+    await openFilters();
+    expect(screen.getByRole("button", { name: "Filters" })).toBeExpanded();
+    // A group of its own, named for screen readers, under the row.
+    expect(screen.getByTestId("results-filters")).toHaveProp("aria-label", "Filters");
+    const filters = within(screen.getByTestId("results-filters"));
+    expect(
+      filters.getAllByRole("checkbox").map((chip) => String(chip.props.accessibilityLabel)),
+    ).toEqual(["Book instantly only", "Morning", "Afternoon", "Evening"]);
+    await fireEvent.press(filters.getByRole("checkbox", { name: "Book instantly only" }));
+    // They stay open, to choose another; the chip counts them, in moss.
+    const one = await screen.findByRole("button", { name: "Filters: 1 on" });
+    expect(one).toBeExpanded();
+    expect(one).toHaveStyle({
+      backgroundColor: colors.light.primarySoft,
+      borderColor: colors.light.primary,
+    });
+    await fireEvent.press(screen.getByRole("checkbox", { name: "Evening" }));
+    expect(await screen.findByRole("button", { name: "Filters: 2 on" })).toBeVisible();
+    expect(searchesOf(client).at(-1)).toMatchObject({ instant: true, timeOfDay: "evening" });
+    // Closed, the chip still says so.
+    await fireEvent.press(screen.getByRole("button", { name: "Filters: 2 on" }));
+    expect(screen.getByRole("button", { name: "Filters: 2 on" })).toBeCollapsed();
+    expect(screen.queryByRole("checkbox", { name: "Evening" })).toBeNull();
+    // One thing opens at a time: the orders close the filters.
+    await openFilters();
+    await fireEvent.press(screen.getByRole("button", { name: "Sort: Earliest" }));
+    expect(screen.getByRole("radio", { name: "Cheapest" })).toBeVisible();
+    expect(screen.queryByRole("checkbox", { name: "Evening" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Filters: 2 on" })).toBeCollapsed();
+  });
+
+  it("says it all in Icelandic", async () => {
+    mockedGetLocales.mockReturnValue([{ languageTag: "is-IS" }]);
+    await openResults("", { results: () => [northResult, mondayRide] });
+    await screen.findAllByTestId("trip-result");
+    expect(resultsRow().getByRole("button", { name: "Röðun: Fyrst" })).toBeVisible();
+    expect(resultsRow().getByText("2 ferðir")).toBeVisible();
+    await fireEvent.press(resultsRow().getByRole("button", { name: "Síur" }));
+    await fireEvent.press(screen.getByRole("checkbox", { name: "Aðeins bókun strax" }));
+    expect(await screen.findByRole("button", { name: "Síur: 1 virk" })).toBeVisible();
+    await fireEvent.press(screen.getByRole("checkbox", { name: "Kvöld" }));
+    expect(await screen.findByRole("button", { name: "Síur: 2 virkar" })).toBeVisible();
+    const end = within(screen.getByTestId("results-end"));
+    expect(end.getByText("Ekki fundust fleiri ferðir")).toBeVisible();
+    expect(end.getByText("Þú getur líka skoðað allar ferðir á næstunni.")).toBeVisible();
+    expect(end.getByRole("link", { name: "Allar ferðir" })).toBeVisible();
   });
 });
 
@@ -341,6 +447,7 @@ describe("Search results (spec 4, 3.4)", () => {
     const { client } = await openResults();
     await screen.findByTestId("trip-result");
     await sortBy("Cheapest");
+    await openFilters();
     await fireEvent.press(screen.getByRole("checkbox", { name: "Book instantly only" }));
     await fireEvent.press(screen.getByRole("checkbox", { name: "Evening" }));
     await fireEvent.press(screen.getByRole("checkbox", { name: "Morning" }));
@@ -365,11 +472,55 @@ describe("Search results (spec 4, 3.4)", () => {
     await openResults("", { results: () => results });
     expect(await screen.findByRole("header", { name: "Sunday 15 November" })).toBeVisible();
     expect(screen.getByRole("header", { name: "Monday 16 November" })).toBeVisible();
-    expect(screen.getByText("1 ride")).toBeVisible();
-    expect(screen.getByText("2 rides")).toBeVisible();
+    // The rides are counted once, in the row over them, not day by day.
+    expect(resultsRow().getByText("3 rides")).toBeVisible();
+    expect(screen.queryByText("1 ride")).toBeNull();
+    expect(screen.queryByText("2 rides")).toBeNull();
     await sortBy("Cheapest");
-    expect(await screen.findByText("Sun 15 Nov")).toBeVisible();
-    expect(screen.queryByRole("header", { name: "Sunday 15 November" })).toBeNull();
+    await waitFor(() => {
+      expect(screen.queryByRole("header", { name: "Sunday 15 November" })).toBeNull();
+    });
+    // Each ticket says its day, as it does under a day's heading.
+    expect(screen.getByText("Sun 15 Nov")).toBeVisible();
+    expect(screen.getAllByText("Mon 16 Nov")).toHaveLength(2);
+  });
+
+  it("ends the list with a card: the puffin, that this is every ride, and All rides (spec 31, 3.6)", async () => {
+    await openResults("", { results: () => [northResult] });
+    await screen.findByTestId("trip-result");
+    const card = screen.getByTestId("results-end");
+    const end = within(card);
+    expect(end.getByTestId("puffin-by-pin", { includeHiddenElements: true })).toBeTruthy();
+    expect(end.getByText("That's every ride found")).toHaveStyle(typography.bodyStrong);
+    // Any day was searched: there is no other day to try.
+    expect(end.getByText("You can also see every ride leaving soon.")).toHaveStyle({
+      color: colors.light.textMuted,
+    });
+    expect(screen.queryByText(/^Try another day/)).toBeNull();
+    // It follows the last ride, and is no main button (R31.1).
+    expect(
+      screen.getAllByTestId(/^(trip-result|results-end)$/).map((part) => String(part.props.testID)),
+    ).toEqual(["trip-result", "results-end"]);
+    expect(filledButtons()).toBe(0);
+    await fireEvent.press(end.getByRole("link", { name: "All rides" }));
+    expect(await screen.findByRole("header", { name: "Rides leaving soon" })).toBeVisible();
+    expect(screen).toHavePathname("/rides");
+  });
+
+  it("says to try another day at the end of a day's rides, over the other days", async () => {
+    await openResults("&date=2026-11-15", {
+      results: (query) => [resultOn(String(query["date"]))],
+      days: [{ date: "2026-11-16", count: 2 }],
+    });
+    await screen.findByTestId("trip-result");
+    const end = within(screen.getByTestId("results-end"));
+    expect(end.getByText("Try another day, or see every ride leaving soon.")).toBeVisible();
+    await screen.findByRole("button", { name: "Mon 16 Nov, 2 rides" });
+    expect(
+      screen
+        .getAllByTestId(/^(trip-result|results-end|other-days)$/)
+        .map((part) => String(part.props.testID)),
+    ).toEqual(["trip-result", "results-end", "other-days"]);
   });
 
   it("shows a nearby stop's distance from the place searched, and free trips", async () => {
@@ -427,9 +578,12 @@ describe("Search results (spec 4, 3.4)", () => {
       }),
     );
     await openResults("", { results: () => many });
-    expect(
-      await screen.findByText("These are the first 50 rides. Choose a day to see others."),
-    ).toBeVisible();
+    const end = within(await screen.findByTestId("results-end"));
+    expect(end.getByText("These are the first 50 rides")).toBeVisible();
+    expect(end.getByText("Choose a day to see others.")).toBeVisible();
+    expect(end.getByRole("link", { name: "All rides" })).toBeVisible();
+    expect(screen.queryByText("That's every ride found")).toBeNull();
+    expect(resultsRow().getByText("50 rides")).toBeVisible();
   });
 
   it("says the times are Iceland's on a device set to another time zone", async () => {
@@ -499,13 +653,18 @@ describe("Nothing matches (spec 4, 3.5)", () => {
       results: (query) => (query["instant"] === true ? [] : [northResult]),
     });
     await screen.findByTestId("trip-result");
+    await openFilters();
     await fireEvent.press(screen.getByRole("checkbox", { name: "Book instantly only" }));
     expect(
       await screen.findByRole("header", { name: "No rides match these filters." }),
     ).toBeVisible();
+    // Nothing is counted, and nothing ends, where there is no ride.
+    expect(screen.queryByTestId("results-count")).toBeNull();
+    expect(screen.queryByTestId("results-end")).toBeNull();
     await fireEvent.press(screen.getByRole("button", { name: "Show all rides" }));
     expect(await screen.findByTestId("trip-result")).toBeVisible();
     expect(screen.getByRole("checkbox", { name: "Book instantly only" })).not.toBeChecked();
+    expect(screen.getByRole("button", { name: "Filters" })).toBeExpanded();
     // Filters do not look for alternatives.
     expect(searchesOf(client, "/v1/trips/search/alternatives")).toEqual([]);
   });
@@ -676,6 +835,7 @@ describe("Search results on a laptop (spec 18, 3.6)", () => {
     await screen.findAllByTestId("trip-result");
     await fireEvent(card(1), "focus");
     expect(map()).toHaveProp("accessibilityLabel", mapOf("BSÍ bus terminal → Hof, Akureyri"));
+    await openFilters();
     await fireEvent.press(screen.getByRole("checkbox", { name: "Book instantly only" }));
     await screen.findByText("1 ride");
     expect(screen.getAllByTestId("trip-result")).toHaveLength(1);
@@ -734,6 +894,7 @@ describe("Search results on a laptop (spec 18, 3.6)", () => {
     // Choosing an order gives focus back to the Sort chip, once.
     await sortBy("Cheapest");
     await screen.findByText("Sun 15 Nov");
+    await openFilters();
     const focusMoves = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
     try {
       focusMoves.mockClear();
@@ -759,14 +920,14 @@ describe("Search results on a laptop (spec 18, 3.6)", () => {
     expect(map()).toHaveProp("accessibilityLabel", mapOf("BSÍ bus terminal → Hof, Akureyri"));
   });
 
-  it("wraps the chips instead of scrolling them sideways", async () => {
+  it("wraps the filters instead of scrolling them sideways", async () => {
     await openResults();
     await screen.findByTestId("trip-result");
-    const chips = within(screen.getByTestId("chips-wrap"));
-    expect(screen.getByTestId("chips-wrap")).toHaveStyle({ flexWrap: "wrap" });
-    expect(chips.getByRole("button", { name: /^Sort: / })).toBeVisible();
-    expect(chips.getByRole("checkbox", { name: "Evening" })).toBeVisible();
-    expect(screen.queryByTestId("chips-scroll")).toBeNull();
+    expect(screen.getByTestId("results-row")).toHaveStyle({ flexWrap: "wrap" });
+    await openFilters();
+    const filters = screen.getByTestId("results-filters");
+    expect(filters).toHaveStyle({ flexDirection: "row", flexWrap: "wrap" });
+    expect(within(filters).getByRole("checkbox", { name: "Evening" })).toBeVisible();
   });
 
   it("opens the search form in the list's column, with the map still beside it", async () => {
@@ -781,7 +942,7 @@ describe("Search results on a laptop (spec 18, 3.6)", () => {
     expect(await screen.findByTestId("trip-result")).toBeVisible();
   });
 
-  it("has no map and no mark on a phone, where the chips scroll", async () => {
+  it("has no map and no mark on a phone, with the same one row over the rides", async () => {
     await act(() => {
       Dimensions.set({ window: phone });
     });
@@ -790,7 +951,9 @@ describe("Search results on a laptop (spec 18, 3.6)", () => {
     expect(screen.queryByTestId("aside")).toBeNull();
     expect(screen.queryByTestId("iceland-map")).toBeNull();
     expect(card(0)).not.toHaveStyle(marked);
-    expect(screen.getByTestId("chips-scroll")).toBeVisible();
-    expect(screen.queryByTestId("chips-wrap")).toBeNull();
+    // Nothing scrolls sideways: two chips and the count fit a phone.
+    expect(resultsRow().getByRole("button", { name: "Sort: Earliest" })).toBeVisible();
+    expect(resultsRow().getByRole("button", { name: "Filters" })).toBeVisible();
+    expect(resultsRow().getByText("2 rides")).toBeVisible();
   });
 });

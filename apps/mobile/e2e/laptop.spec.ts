@@ -102,6 +102,8 @@ const findTexts = {
     rideOnMap: /^The ride on a map of Iceland: .+ → .+\.$/,
     meetingPoints: "See the meeting points",
     offer: "Offer a ride",
+    how: "How it works",
+    filters: "Filters",
   },
   "is-IS": {
     title: "Verum samferða",
@@ -111,11 +113,14 @@ const findTexts = {
     rideOnMap: /^Ferðin á korti af Íslandi: .+ → .+\.$/,
     meetingPoints: "Skoða mótsstaði",
     offer: "Bjóða far",
+    how: "Svona virkar þetta",
+    filters: "Síur",
   },
 } as const;
 
-// Find (spec 18, 3.5): the search in one row across the page, the rides in a
-// grid closed by the offer, and the map beside them.
+// Find (spec 18, 3.5; spec 31, 3.16): the title at the left of the scene with
+// the car at its right, the search in one row across the page, the rides in
+// a grid, and beside them "How it works" with the offer, then the map.
 for (const locale of ["en-GB", "is-IS"] as const) {
   const texts = findTexts[locale];
 
@@ -158,7 +163,7 @@ for (const locale of ["en-GB", "is-IS"] as const) {
         await expectNoSidewaysScroll(page);
       });
 
-      test(`has the map beside the rides and the offer under them, ${String(width)} wide`, async ({
+      test(`has How it works and the map beside the rides, ${String(width)} wide`, async ({
         page,
       }) => {
         await page.setViewportSize(laptop(width));
@@ -166,6 +171,17 @@ for (const locale of ["en-GB", "is-IS"] as const) {
         const main = page.getByTestId("columns-main");
         const side = page.getByTestId("columns-side");
         await expect(main.getByTestId("trip-result").first()).toBeVisible();
+        // The title and its line stand at the left of the scene, clear of
+        // the car that drives at its right.
+        const line = page.getByTestId("title-line");
+        const car = await box(line.getByTestId("car-on-hills"));
+        const scene = await box(line);
+        expect(car.x + car.width).toBeLessThanOrEqual(scene.x + scene.width);
+        for (const text of await line.locator("[dir]").all()) {
+          const words = await box(text);
+          expect(words.x).toBeGreaterThanOrEqual(scene.x);
+          expect(words.x + words.width).toBeLessThanOrEqual(car.x);
+        }
         // The map shows a ride from the start, whole in its column, which
         // starts level with the rides'.
         const map = side.getByTestId("iceland-map");
@@ -178,24 +194,34 @@ for (const locale of ["en-GB", "is-IS"] as const) {
         expect(drawn.x).toBeGreaterThanOrEqual(column.x);
         expect(drawn.x + drawn.width).toBeLessThanOrEqual(column.x + column.width + 1);
         expect(drawn.width).toBeGreaterThan(300);
-        // It starts where the first row of cards does, under the headings' row.
+        // "How it works" stands over it: its card starts where the first row
+        // of tickets does, under the headings' row, and no word in it is cut.
+        const how = side.getByTestId("how-it-works");
+        await expect(how.getByRole("heading", { name: texts.how })).toBeVisible();
         const firstCard = await box(main.getByTestId("card").first());
-        expect(drawn.y).toBeCloseTo(firstCard.y, 0);
+        const steps = await box(how.getByTestId("card"));
+        expect(steps.y).toBeCloseTo(firstCard.y, 0);
+        expect(steps.x).toBeCloseTo(column.x, 0);
+        expect(drawn.y).toBeGreaterThan(steps.y + steps.height);
+        const cut = await how.evaluate((part) =>
+          [...part.querySelectorAll<HTMLElement>("[dir]")]
+            .filter((text) => text.scrollWidth > text.clientWidth + 1)
+            .map((text) => text.textContent),
+        );
+        expect(cut).toEqual([]);
         // Every meeting point is a dot on it: far more than a ride's two ends.
         await expect.poll(() => map.locator("circle").count()).toBeGreaterThan(10);
         const points = await box(side.getByRole("link", { name: texts.meetingPoints }));
         expect(points.y).toBeGreaterThan(drawn.y + drawn.height - 1);
         expect(points.x + points.width).toBeLessThanOrEqual(column.x + column.width);
 
-        // The offer closes the rides, in their column; none stands beside them.
-        const offer = main.getByRole("button", { name: texts.offer, exact: true });
-        await offer.scrollIntoViewIfNeeded();
-        const line = await box(offer);
-        const last = await box(main.getByTestId("trip-result").last());
-        expect(line.y).toBeGreaterThan(last.y + last.height);
-        expect(line.x).toBeGreaterThanOrEqual(rides.x - 8);
-        expect(line.x + line.width).toBeLessThanOrEqual(rides.x + rides.width);
-        await expect(side.getByRole("button", { name: texts.offer, exact: true })).toHaveCount(0);
+        // The offer is in that card, for someone new, and said once: no line
+        // closes the rides with it.
+        const offer = await box(how.getByRole("button", { name: texts.offer, exact: true }));
+        expect(offer.x).toBeGreaterThanOrEqual(steps.x);
+        expect(offer.x + offer.width).toBeLessThanOrEqual(steps.x + steps.width);
+        expect(offer.y + offer.height).toBeLessThanOrEqual(steps.y + steps.height);
+        await expect(main.getByRole("button", { name: texts.offer, exact: true })).toHaveCount(0);
         await expectNoSidewaysScroll(page);
       });
     }
@@ -330,12 +356,11 @@ test.describe("Find's search row", () => {
     await cards.nth(0).focus();
     await expect(map).toHaveAccessibleName(names[0] ?? "");
     await expect(cards.nth(0)).toHaveCSS("border-bottom-color", primary);
-    // The map is whole in a window 720 high, with the link under it.
+    // "How it works" is whole in a window 720 high, the offer in it; the map
+    // follows under it (spec 31, 3.16).
     await page.setViewportSize({ width: 1280, height: 720 });
-    const link = await box(
-      page.getByTestId("columns-side").getByRole("link", { name: "See the meeting points" }),
-    );
-    expect(link.y + link.height).toBeLessThanOrEqual(720);
+    const how = await box(page.getByTestId("columns-side").getByTestId("how-it-works"));
+    expect(how.y + how.height).toBeLessThanOrEqual(720);
   });
 });
 
@@ -387,8 +412,8 @@ async function searchNorth(page: Page, texts: (typeof resultsTexts)["en-GB" | "i
   return trip;
 }
 
-// Search results (spec 18, 3.6): the trip on our map beside the list, and
-// chips that wrap.
+// Search results (spec 18, 3.6; spec 31, 3.6): the ride on our map beside
+// the list, one row over the rides, and filters that wrap.
 for (const locale of ["en-GB", "is-IS"] as const) {
   const texts = resultsTexts[locale];
 
@@ -409,12 +434,21 @@ for (const locale of ["en-GB", "is-IS"] as const) {
         expect(drawn.y).toBeCloseTo(back.y, 0);
         expect(drawn.width).toBeGreaterThan(300);
 
-        // Every chip is whole and inside the list's column: none is reached
-        // by scrolling sideways.
-        const chips = page.getByTestId("chips-wrap");
-        const within = await box(chips);
-        const all = await chips.locator('[role="button"], [role="checkbox"]').all();
-        expect(all).toHaveLength(5);
+        // The order, Filters and the count are one row in the list's column,
+        // the count at its right. The filters open under it, each whole and
+        // inside the column: none is reached by scrolling sideways.
+        const results = page
+          .getByTestId("screen-scroll")
+          .filter({ has: page.getByTestId("results-heading") });
+        const row = results.getByTestId("results-row");
+        const within = await box(row);
+        const count = await box(row.getByTestId("results-count"));
+        expect(count.x + count.width).toBeCloseTo(within.x + within.width, 0);
+        const sort = await box(row.getByRole("button").first());
+        expect(count.y).toBeLessThan(sort.y + sort.height);
+        await row.getByRole("button", { name: texts.filters, exact: true }).click();
+        const all = await results.getByTestId("results-filters").getByRole("checkbox").all();
+        expect(all).toHaveLength(4);
         for (const chip of all) {
           const one = await box(chip);
           expect(one.x).toBeGreaterThanOrEqual(within.x);

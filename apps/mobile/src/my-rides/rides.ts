@@ -1,5 +1,5 @@
 import type { Booking, MyTrip } from "@shareride/contracts";
-import { bookingNeed, freeSeats, tripNeed, type Need } from "@shareride/domain";
+import { bookingNeed, freeSeats, soonestFirst, tripNeed, type Need } from "@shareride/domain";
 
 // My rides puts my bookings and the trips I drive in one list (spec 16, 3.3).
 
@@ -81,6 +81,23 @@ export function needOf(ride: Ride, at: Date): Need | null {
   );
 }
 
+/**
+ * The rides that need me at `at`, each with what it needs, the soonest
+ * need first: by the deadline to answer or pay, or by the time to get in
+ * or leave, whenever the rides themselves start.
+ */
+export function needing(
+  rides: readonly Ride[],
+  at: Date,
+): { readonly ride: Ride; readonly need: Need }[] {
+  return soonestFirst(
+    rides.flatMap((ride) => {
+      const need = needOf(ride, at);
+      return need === null ? [] : [{ ride, need }];
+    }),
+  );
+}
+
 const taken = (trip: MyTrip) => trip.segments.map((segment) => segment.seatsTaken);
 
 /**
@@ -89,10 +106,6 @@ const taken = (trip: MyTrip) => trip.segments.map((segment) => segment.seatsTake
  */
 export const seatsTaken = (trip: MyTrip): number =>
   trip.seats - freeSeats(trip.seats, taken(trip), 0, trip.segments.length);
-
-/** The seats still free on each stretch, in the trip's order (rule S3). */
-export const seatsFree = (trip: MyTrip): number[] =>
-  trip.segments.map((_, position) => freeSeats(trip.seats, taken(trip), position, position + 1));
 
 /** A key for a ride in a list: a booking and a trip never share one. */
 export const rideKey = (ride: Ride): string =>

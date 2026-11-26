@@ -31,13 +31,22 @@ import { useSaveLanguage } from "@/i18n/use-save-language";
 import { now } from "@/lib/clock";
 import { useLoaded } from "@/lib/use-loaded";
 import { refreshFrontPage, useFrontPageRefreshes } from "@/navigation/front-page-refresh";
-import { RideItem } from "@/my-rides/ride-row";
+import { MyRideTicket } from "@/my-rides/my-ride-ticket";
+import { NeedsMeCard } from "@/my-rides/needs-me-card";
+import { needing, rideKey, type Ride } from "@/my-rides/rides";
 import { SuspendedAccount, suspensionNow } from "@/safety/suspended-account";
 import { useRides } from "@/my-rides/use-rides";
 import { FindMap } from "@/search/find-map";
 import { ResultTicket } from "@/search/result-ticket";
 import { openSearch, useRouteSearch } from "@/search/route-search";
-import { icelandScene, minTouchTarget, sizes, spacing, typography } from "@/theme/tokens";
+import {
+  controlOutline,
+  icelandScene,
+  minTouchTarget,
+  sizes,
+  spacing,
+  typography,
+} from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
 /**
@@ -54,25 +63,34 @@ const shownRidesWide = 6;
  */
 const sceneBand = minTouchTarget + spacing.lg + carHeight(sizes.sceneCar);
 
+/** How far the car on a wide page's scene stands from the panel's right edge. */
+const carFromEdge = spacing.xxl * 2;
+
 /** The search row's card down to the middle of its fields: the panel ends there. */
 const searchRowTop =
   spacing.md + (typography.caption.lineHeight + spacing.xs + sizes.buttonHeight) / 2;
 
 /**
- * Find, the home of the app for everyone, signed in or not (spec 16, 3.2):
- * the logo and the language (in the top bar on wide screens), Your next
- * ride when signed in, two puffins in a round car over the title (spec 15,
- * 5.3), "Share your ride" with a line under it that says what PuffinRide
- * is, a route search with the seats, the rides leaving soon (spec 4, 3.8)
+ * Find, the home of the app for everyone, signed in or not (spec 16, 3.2;
+ * spec 31, 3.5): the logo and the language (in the top bar on wide
+ * screens), two puffins in a round car (spec 15, 5.3), the title, a route
+ * search with the seats, the rides leaving soon as tickets (spec 4, 3.8)
  * and "Offer a ride". Signing in is in the menu.
  *
- * A wide screen (spec 18, 3.5) has the search in one row across the page,
- * then the rides in a grid, closed by the offer as one line, with Your
- * next ride and our map in a column beside them. The map shows the meeting
- * points and one ride's road: the first ride, or the one the pointer or
- * the keyboard came to last. The column is there from the start, so
- * nothing moves when the rides come; with no rides the offer is a card
- * where they would be.
+ * Signed out, the title is "Share your ride" with a line under it that
+ * says what PuffinRide is. Signed in, it greets by name at the left, and
+ * under it stands what needs me, in the yellow card, or else my next ride;
+ * when the card is about another ride than my next one, that ride follows
+ * the search.
+ *
+ * A wide screen (spec 18, 3.5; spec 31, 3.16) has the title at the left of
+ * the scene with the car at its right, the search in one row across the
+ * page, then the rides in a grid with a column beside them: what needs me
+ * and my next ride when signed in, "How it works" with the offer when
+ * signed out, then our map. The map shows the meeting points and one
+ * ride's road: the first ride, or the one the pointer or the keyboard came
+ * to last. The column is there from the start, so nothing moves when the
+ * rides come; with no rides the offer is a card where they would be.
  *
  * Pulling down, or pressing the logo, loads the rides and Your next ride
  * again (spec 16, 3.9).
@@ -142,31 +160,43 @@ function FrontPage() {
   const scheme = useColorScheme() === "dark" ? "dark" : "light";
   const [band, setBand] = useState(sceneBand);
   const [line, setLine] = useState<number>(sizes.sceneLine);
-  const title = (
-    <View
-      testID="title-line"
-      onLayout={
-        wide
-          ? (event) => {
-              setLine(event.nativeEvent.layout.height);
-            }
-          : undefined
-      }
-      style={wide ? styles.introScene : styles.sceneTitle}
-    >
-      {wide ? (
-        <View testID="car-on-hills" style={styles.carOnHills}>
-          <PuffinsInCar width={sizes.sceneCarWide} />
-        </View>
-      ) : null}
-      <View style={wide ? [styles.intro, styles.introClearOfCar] : styles.intro}>
-        <Title>{t("home.title")}</Title>
-        <Text style={[typography.body, styles.introText, { color: palette.text }]}>
+  // Someone signed in is greeted by name (spec 31, 3.5); what PuffinRide
+  // is, is said to someone new, and until the account has a first name.
+  const firstName = me?.firstName ?? null;
+  const titles =
+    firstName === null ? (
+      <>
+        <Title large={wide} align={wide ? "start" : "center"}>
+          {t("home.title")}
+        </Title>
+        <Text style={[typography.body, !wide && styles.introText, { color: palette.text }]}>
           {t("home.intro")}
         </Text>
+      </>
+    ) : (
+      <Title large={wide} align="start">
+        {t("home.hi", { name: firstName })}
+      </Title>
+    );
+  const title = wide ? (
+    <View
+      testID="title-line"
+      onLayout={(event) => {
+        setLine(event.nativeEvent.layout.height);
+      }}
+      style={styles.introScene}
+    >
+      <View style={styles.intro}>{titles}</View>
+      <View testID="car-on-hills" style={styles.carOnHills}>
+        <PuffinsInCar width={sizes.sceneCarWide} />
       </View>
     </View>
+  ) : (
+    <View testID="title-line" style={styles.sceneTitle}>
+      <View style={styles.intro}>{titles}</View>
+    </View>
   );
+  const at = now();
   const offer = (
     <Button
       variant="secondary"
@@ -187,9 +217,12 @@ function FrontPage() {
     const onMap = listed.find((ride) => ride.tripId === shownId) ?? listed[0];
     const headed = value === undefined || rides.length > 0;
     // Beside "Leaving soon", a row as high: the map then starts where the
-    // cards do, as the ride under "Your next ride" does. Without the
+    // tickets do, as what stands under "Your next ride" does. Without the
     // heading, the map starts with the offer card.
     const level = headed ? <View testID="map-level" style={styles.head} /> : null;
+    const offerRideNow = () => {
+      offerRide(me);
+    };
     return (
       <Screen
         siteFooter
@@ -207,7 +240,15 @@ function FrontPage() {
         <Columns
           side={
             <>
-              {me === null ? level : <NextRide rides={mine} beside otherwise={level} />}
+              {me === null ? (
+                // With no rides the offer is the main column's card already.
+                <HowItWorks onOffer={headed ? offerRideNow : null} />
+              ) : (
+                <>
+                  <MineFirst rides={mine} at={at} beside otherwise={level} />
+                  <MineNext rides={mine} at={at} beside />
+                </>
+              )}
               <FindMap shown={onMap} />
             </>
           }
@@ -221,19 +262,14 @@ function FrontPage() {
                 loading={value === undefined}
                 onMap={{ shown: onMap?.tripId, onShow: setShownId }}
               />
-              {/* Once the rides are there, so it does not move when they come. */}
-              {value === undefined ? null : (
+              {/* Once the rides are there, so it does not move when they come.
+                  Signed out, the offer is beside the rides, under "How it works". */}
+              {value === undefined || me === null ? null : (
                 <View testID="offer-line" style={styles.offerLine}>
                   <View style={styles.offerText}>
                     <Body align="start">{t("nav.offerSignedOut")}</Body>
                   </View>
-                  <Button
-                    variant="text"
-                    label={t("driver.offerRide")}
-                    onPress={() => {
-                      offerRide(me);
-                    }}
-                  />
+                  <Button variant="text" label={t("driver.offerRide")} onPress={offerRideNow} />
                 </View>
               )}
             </>
@@ -281,9 +317,10 @@ function FrontPage() {
         </View>
         <PuffinsInCar width={sizes.sceneCar} />
       </View>
-      {me === null ? null : <NextRide rides={mine} />}
       {title}
+      {me === null ? null : <MineFirst rides={mine} at={at} />}
       {route.fields(findRide(true))}
+      {me === null ? null : <MineNext rides={mine} at={at} />}
       <LeavingSoon rides={rides} shown={shown} />
       <View style={styles.actions}>
         <Body>{t("nav.offerSignedOut")}</Body>
@@ -296,38 +333,102 @@ function FrontPage() {
 }
 
 /**
- * Your next ride, signed in (spec 16, 3.2 item 2): the soonest of My rides
- * coming up, a ride under way included, as My rides shows it. Left out when
- * nothing is coming up; one notice with a retry when it can't be loaded.
- * `beside`: in the side column of a wide page, its heading level with
- * "Leaving soon" in the main column. `otherwise` stands in its place while
- * it has no ride to show, so what follows keeps its level.
+ * What Find shows of my own rides, signed in (spec 31, 3.5): what needs me,
+ * the soonest need first, and my next ride, the soonest of My rides coming
+ * up, a ride under way included. Null while they load and when they could
+ * not be loaded.
  */
-function NextRide({
-  rides,
-  beside = false,
-  otherwise = null,
-}: {
+function mineOf(rides: ReturnType<typeof useRides>, at: Date) {
+  const { loaded } = rides;
+  if (loaded === undefined || "failure" in loaded) return null;
+  const needs = needing(loaded.rides, at);
+  const [first] = needs;
+  const [next] = loaded.rides;
+  return {
+    need: first === undefined ? null : { first, more: needs.length - 1 },
+    next: next ?? null,
+    /** The card is about another ride than my next one, which then shows apart. */
+    nextApart: first !== undefined && next !== undefined && rideKey(next) !== rideKey(first.ride),
+  };
+}
+
+interface MineProps {
   /** My rides coming up, which the front page loads, to load them again too. */
   readonly rides: ReturnType<typeof useRides>;
+  readonly at: Date;
+  /**
+   * In the side column of a wide page: under a heading whose row is level
+   * with "Leaving soon" in the main column.
+   */
   readonly beside?: boolean;
-  readonly otherwise?: ReactNode;
-}) {
+}
+
+/**
+ * Under the greeting, one of (spec 31, 3.5 item 2): what needs me, as the
+ * yellow card, or else my next ride as a ticket. Left out when nothing is
+ * coming up; one notice with a retry when my rides can't be loaded.
+ * `otherwise` stands in its place while it has nothing to show, so what
+ * follows in a side column keeps its level.
+ */
+function MineFirst({
+  rides,
+  at,
+  beside = false,
+  otherwise = null,
+}: MineProps & { readonly otherwise?: ReactNode }) {
   const { t } = useLanguage();
   const { loaded, reload } = rides;
-  if (loaded === undefined) return otherwise;
-  if ("failure" in loaded) {
+  if (loaded !== undefined && "failure" in loaded) {
     return (
-      <View style={beside ? styles.nextBeside : styles.next}>
+      <View style={beside ? styles.mineBeside : styles.mine}>
         <Notice message={t("home.nextRideFailed")} />
         <Button variant="secondary" label={t("common.retry")} onPress={reload} />
       </View>
     );
   }
-  const [next] = loaded.rides;
-  if (next === undefined) return otherwise;
+  const mine = mineOf(rides, at);
+  const need = mine?.need ?? null;
+  if (need !== null) {
+    const card = <NeedsMeCard first={need.first} more={need.more} at={at} />;
+    // On a phone the card stands right under the greeting, which says whose it is.
+    if (!beside) return card;
+    return (
+      <View style={styles.mineBeside}>
+        <View style={styles.head}>
+          <Heading>{t("myRides.needsYou")}</Heading>
+        </View>
+        {card}
+      </View>
+    );
+  }
+  const next = mine?.next ?? null;
+  if (next === null) return otherwise;
+  return <NextRide ride={next} at={at} beside={beside} />;
+}
+
+/**
+ * "Your next ride" a second time round: only when the yellow card stands
+ * above and is about another ride than my next one (spec 31, 3.5 item 2).
+ */
+function MineNext({ rides, at, beside = false }: MineProps) {
+  const mine = mineOf(rides, at);
+  if (mine === null || !mine.nextApart || mine.next === null) return null;
+  return <NextRide ride={mine.next} at={at} beside={beside} />;
+}
+
+/** "Your next ride" over the ride as a ticket, as My rides shows it. */
+function NextRide({
+  ride,
+  at,
+  beside,
+}: {
+  readonly ride: Ride;
+  readonly at: Date;
+  readonly beside: boolean;
+}) {
+  const { t } = useLanguage();
   return (
-    <View style={beside ? styles.nextBeside : styles.next}>
+    <View style={beside ? styles.mineBeside : styles.mine}>
       {beside ? (
         <View style={styles.head}>
           <Heading>{t("home.nextRide")}</Heading>
@@ -335,21 +436,73 @@ function NextRide({
       ) : (
         <Heading>{t("home.nextRide")}</Heading>
       )}
-      <RideItem ride={next} at={now()} />
+      <MyRideTicket ride={ride} at={at} />
     </View>
   );
 }
 
 /**
- * The rides leaving soonest, each for its whole route (spec 4, 3.8): five,
- * or six in a `grid` on a wide page, with "See all rides" when there are
- * more, under the rides or, in a grid, at the right of the heading. Left
- * out when there are none and when they can't be loaded: the page works
- * without them. While `loading`, a wide page shows the heading and that
- * they are on their way; a phone leaves them out until they are there.
- * With `onMap`, beside the map of a wide page, a card tells when the
- * pointer or the keyboard comes to it, and the one whose ride the map
- * shows is marked.
+ * For someone new, beside the rides on a wide page (spec 31, 3.16 item 1):
+ * what one does here in three steps, each a number, a name and a line, and
+ * under a line the offer with "Offer a ride", unless the page says it
+ * elsewhere already (`onOffer` null).
+ */
+function HowItWorks({ onOffer }: { readonly onOffer: (() => void) | null }) {
+  const { t } = useLanguage();
+  const palette = usePalette();
+  const steps = [
+    { title: t("welcome.findRide"), text: t("home.how.find") },
+    { title: t("home.how.bookTitle"), text: t("home.how.book") },
+    { title: t("home.how.meetTitle"), text: t("home.how.meet") },
+  ];
+  const strong = [typography.bodyStrong, { color: palette.text }];
+  const muted = [typography.small, { color: palette.textMuted }];
+  return (
+    <View testID="how-it-works" style={styles.mineBeside}>
+      <View style={styles.head}>
+        <Heading>{t("home.how.title")}</Heading>
+      </View>
+      <Card>
+        {steps.map((step, index) => (
+          <View key={step.title} style={styles.step}>
+            <View style={[styles.stepNumber, { backgroundColor: palette.primarySoft }]}>
+              <Text style={[typography.caption, { color: palette.primary }]}>
+                {String(index + 1)}
+              </Text>
+            </View>
+            <View style={styles.stepText}>
+              <Text style={strong}>{step.title}</Text>
+              <Text style={muted}>{step.text}</Text>
+            </View>
+          </View>
+        ))}
+        {onOffer === null ? null : (
+          <>
+            <View style={[styles.stepLine, { backgroundColor: palette.border }]} />
+            <View style={styles.stepOffer}>
+              <View style={styles.stepOfferText}>
+                <Text style={strong}>{t("home.how.driving")}</Text>
+                <Text style={muted}>{t("home.how.offer")}</Text>
+              </View>
+              <Button variant="secondary" label={t("driver.offerRide")} onPress={onOffer} />
+            </View>
+          </>
+        )}
+      </Card>
+    </View>
+  );
+}
+
+/**
+ * The rides leaving soonest as tickets, each for its whole route (spec 4,
+ * 3.8): five, or six in a `grid` on a wide page, with "See all rides" at
+ * the right of the heading when there are more (under the heading where
+ * the two do not fit on one line). Left out when there are none and when
+ * they can't be loaded: the page works without them. While `loading`, a
+ * wide page shows the heading and that they are on their way; a phone
+ * leaves them out until they are there. With `onMap`, beside the map of a
+ * wide page, a ticket tells when the pointer or the keyboard comes to it,
+ * and the one whose ride the map shows is marked.
  */
 function LeavingSoon({
   rides,
@@ -409,23 +562,14 @@ function LeavingSoon({
         }}
       />
     ) : null;
-  if (grid) {
-    return (
-      <NoSnippet style={styles.rides}>
-        <View style={[styles.head, styles.headWithLink]}>
-          <Heading>{t("welcome.soon")}</Heading>
-          {all}
-        </View>
-        <Grid>{cards}</Grid>
-      </NoSnippet>
-    );
-  }
   // Drivers' first names: kept out of search engines' snippets (spec 23, 3.4).
   return (
     <NoSnippet style={styles.rides}>
-      <Heading>{t("welcome.soon")}</Heading>
-      {cards}
-      {all}
+      <View style={[styles.head, styles.headWithLink]}>
+        <Heading>{t("welcome.soon")}</Heading>
+        {all}
+      </View>
+      {grid ? <Grid>{cards}</Grid> : cards}
     </NoSnippet>
   );
 }
@@ -443,37 +587,53 @@ const styles = StyleSheet.create({
   // the title on the screen under it.
   sceneTop: { gap: spacing.lg },
   sceneTitle: { paddingVertical: spacing.sm },
-  // On a wide page the title's line is taller than the title alone, for the
-  // mountains to show, and still leaves the map beside the rides whole in a
-  // window 720 high (spec 18). The car drives on the hills at its start,
-  // its wheels a little under the line, where the land is.
+  // On a wide page the title's line is the scene (spec 31, 3.16): the title
+  // and its line at the left, kept clear of the car, which drives on the
+  // hills at the right, its wheels a little under the line, where the land
+  // is. A narrow wide page puts the line under the title on two lines.
   introScene: {
     flexDirection: "row",
-    justifyContent: "center",
     alignItems: "center",
     minHeight: sizes.sceneLine,
+    paddingLeft: spacing.xl,
+    paddingRight: carFromEdge + sizes.sceneCarWide + spacing.lg,
   },
-  carOnHills: { position: "absolute", left: spacing.xl, bottom: -(spacing.sm + spacing.xs) },
+  carOnHills: { position: "absolute", right: carFromEdge, bottom: -(spacing.sm + spacing.xs) },
   // The title, and under it what PuffinRide is, for someone new. In the
   // text's own colour: on a wide page it stands on the mountains, where the
-  // muted one is too faint. Kept clear of the car on both sides, so it stays
-  // in the middle; a narrow wide page puts it on two lines, still within
-  // the title's line.
-  // Both texts stretch across the column, centred within it.
-  intro: { gap: spacing.xs },
-  introClearOfCar: {
-    flexShrink: 1,
-    paddingHorizontal: spacing.xl + sizes.sceneCarWide + spacing.md,
-  },
+  // muted one is too faint.
+  intro: { flexShrink: 1, gap: spacing.xs },
+  // On a phone both texts stretch across the screen, centred within it.
   introText: { textAlign: "center" },
   // Where the page's own room is, so the panel lines up with the page.
   panelRoom: { paddingTop: spacing.md, paddingHorizontal: spacing.md, alignItems: "center" },
-  next: { gap: spacing.sm, paddingTop: spacing.md },
-  nextBeside: { gap: spacing.md },
+  mine: { gap: spacing.sm },
+  mineBeside: { gap: spacing.md },
   rides: { gap: spacing.md },
   // As high as a text button, so a heading with a link and one without are level.
   head: { minHeight: minTouchTarget, justifyContent: "center" },
-  headWithLink: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  // The link goes under the heading where large text leaves no room beside it.
+  headWithLink: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    alignItems: "center",
+    columnGap: spacing.sm,
+  },
+  // A step of "How it works": its number in a round of its own, then its name over its line.
+  step: { flexDirection: "row", alignItems: "flex-start", gap: spacing.ms },
+  stepNumber: {
+    width: sizes.avatarSmall,
+    height: sizes.avatarSmall,
+    borderRadius: sizes.avatarSmall / 2,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  stepText: { flex: 1 },
+  stepLine: { height: controlOutline },
+  // The button goes under the words where they do not fit beside it.
+  stepOffer: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: spacing.ms },
+  stepOfferText: { flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: spacing.xxl * 3 },
   actions: { gap: spacing.sm, paddingTop: spacing.lg },
   offerAction: { flexDirection: "row" },
   // The sentence, then the link right after it; a narrow column puts the

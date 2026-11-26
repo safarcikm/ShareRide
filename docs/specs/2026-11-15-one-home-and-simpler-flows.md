@@ -24,6 +24,11 @@ stays in "Trip day"), and the actions are named "Find a ride", "Offer a
 ride" and "Publish ride". The keys keep their names;
 `packages/i18n/src/messages/en.ts` has the words as they are.
 
+Amended by spec 31 (3.5, 3.6 and 3.10) too: signed in, Find greets by
+name with what needs me first (3.2, item 7); a ride of mine is a ticket
+that says in yellow what it needs, with no button under it (3.3, item 8);
+and the results' chips are one row with one Filters chip (3.8, item 2).
+
 ## 1. Problem and goal
 
 Walking through the app on 2026-11-15 found these problems:
@@ -136,6 +141,20 @@ Find replaces both the front page and My profile as the place the app opens.
      further than your part, for example "Anna drives BSÍ → Akureyri".
 6. **Bottom:** "Driving somewhere? Share the empty seats in your car." with
    Offer a ride (a secondary button), and the meeting points link.
+7. Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.5), **signed
+   in**: the title is "Hi Bára" (Icelandic "Hæ Bára"), at the left, and
+   the line that says what PuffinRide is shows only to someone signed out
+   (and until an account has a first name). Under the title stands one
+   of: what needs me, as the yellow card ("Dóra asks for 1 seat", "2
+   requests to answer", "Bára said yes: pay to keep your seat", "Leaves in
+   40 minutes"), the soonest need first, whose button opens that ride,
+   with "and 2 more" under it opening My rides; or else my next ride, as
+   a ticket under "Your next ride". Then the search card. When the yellow
+   card is about another ride than my next one, "Your next ride" follows
+   the search. Then "Leaving soon", with "See all rides" at the right of
+   its heading. With nothing coming up the greeting stands alone over the
+   search. Rides are tickets (spec 4, 3.4, item 6), and the next ride is
+   the ticket My rides shows (3.3, item 8).
 
 ### 3.3 My rides (proposal 2)
 
@@ -168,6 +187,22 @@ Find replaces both the front page and My profile as the place the app opens.
 6. **Nothing coming up:** "Nothing coming up", with Find a ride and Offer a
    ride.
 7. Drafts are not rides, so they stay in Offer (3.6, item 2).
+8. Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.3, 3.5 item 4 and
+   3.10) a ride of mine is a **ticket**, in both lists and on Find. Beside
+   the day it says "Passenger" or "You drive". A seat of mine shows my
+   part, the price for my seats ("Free" where there is none) and, under
+   the tear line, the driver's picture and name with the seat's state:
+   "Waiting for Bára's answer" (blue), "Seat confirmed" (moss, with a moss
+   edge on the ticket), or the status of items 2 and 3. A ride I drive
+   shows the whole way as two ends with the stops between counted ("5 h, 2
+   stops"), no price, and "1 of 3 seats taken"; the seats free on each
+   stretch are on the ride's own page. A ride I cancelled says "Cancelled"
+   and why. What a ride needs from me is a **yellow tag** in the foot
+   ("Pay by 12:30", "Answer Dóra's request", "2 requests to answer",
+   "Leaves at 10:00", "Leaves in 40 minutes" within the hour before, "Trip
+   day" once the time has come), and takes the place of the state. The
+   ticket opens the ride, where that is done: no Pay or Answer requests
+   button stands under it. "Needs you" lists the soonest need first.
 
 ### 3.4 Profile (proposal 2)
 
@@ -354,7 +389,11 @@ Find replaces both the front page and My profile as the place the app opens.
 2. **Sorting and filtering apart:** "Sort: Earliest ▾" is one chip that opens
    Earliest and Cheapest under the chips, and "Book instantly only" is a
    separate filter chip, before the times of day. Choosing an order closes
-   them and gives focus back to the Sort chip.
+   them and gives focus back to the Sort chip. Since
+   [spec 31](2026-11-26-one-ride-one-ticket.md) (3.6) the chip shows
+   "Earliest ▾" and keeps "Sort: Earliest" as its name, and the filters
+   are under one **Filters** chip beside it, in one row with the number of
+   rides (spec 4, 3.4, item 7).
 3. **From and To list:** towns and areas come first, then meeting points, each
    under a small heading ("Towns and areas", "Meeting points"). The
    sample-data tag ("Sample meeting points") shows once under the list

@@ -63,7 +63,8 @@ request goes to `main` and so to staging; production waits for him.
 
 ## Checked against the API (spec 31, section 6)
 
-Everything the screens need is there today except one field.
+Everything the screens need is there today except two fields; the second
+was found while building PR 5.
 
 | Needed | Where it comes from | State |
 | ------ | ------------------- | ----- |
@@ -75,6 +76,7 @@ Everything the screens need is there today except one field.
 | Seats taken on each stretch | `MyTrip.segments[].seatsTaken` | There |
 | A request's own deadline | `Booking.requestExpiresAt` | There |
 | A conversation's ride, role and car | `Conversation.booking` | There |
+| The colour of a driver's circle in the results | nothing in a ride found | **Missing:** `TripSearchResult.driver.colour`, PR 5 |
 
 ## Review focus
 
@@ -94,7 +96,9 @@ its test in the pull request named.
    wide, and text at 200%: the place wraps under its own first line, its
    time stays on that first line, and the price stays inside the ticket (PR
    2 ticket test; PR 5 web journey measures that nothing in a ticket
-   reaches past it).
+   reaches past it). At 200% a word longer than a whole line of its place
+   is broken inside the word, the only way it stays in the ticket; the
+   journey lets that through and no other broken word.
 4. **Several things at once.** Two rides need me: Find shows the soonest
    with "and 1 more", My rides lists both under Needs you, and a ride with
    two requests says "2 requests to answer", not a name (PR 5, PR 8).
@@ -445,6 +449,23 @@ a meeting point (3.19).
 10. **Docs and pictures:** specs 4, 16 and 18; `built/find-*`,
     `built/results-*`.
 
+As built, what differs from the list above (spec 31 says the same where a
+person sees it, in 3.5, 3.6, 3.10 and 3.16):
+
+- A ride found gains its driver's `colour` in the API (the table above),
+  as the foot of its ticket shows the driver's circle.
+- `RideTicket` gains a `note` (the driver's whole ride, where the ticket
+  is a part of it) and a `testID`; `Chip` gains an `icon` and a `name`.
+- `my-rides/ride-row.tsx` and the texts only it used are gone
+  (`myRides.answerBy`, `myRides.answer`, `myRides.freeEverywhere`,
+  `myRides.freeOnStretch`, `myBookings.driverAndCar`, `search.submit`).
+  My rides shows `MyRideTicket` from this pull request on; the rest of
+  3.10 stays with PR 8.
+- Sizes: `sceneLine` 132 (was 96), `sceneCarWide` 170 (was 116) and
+  `scenePuffinSmall` 60, new.
+- The journeys greet by name ("Hi Anna") where they looked for "Find a
+  ride" after signing in.
+
 ## PR 6: a ride's details and booking a seat
 
 `feat(booking)`, spec 31, 3.7, and Booking a seat and "You're booked"
@@ -614,7 +635,11 @@ and deleting the account (3.19).
 3. **Laptop, dark, Icelandic:** each rebuilt screen looked at in the three
    pictures and against its drawing; what differs is fixed or named.
 4. **Accessibility:** focus order follows the reading order on each
-   rebuilt screen; the road and the tear line are skipped.
+   rebuilt screen; the road and the tear line are skipped. With text at
+   200% on a phone 360 wide, the labels of the tab bar are wider than their
+   tabs and the page scrolls 4 px sideways (found by PR 5's `look.spec.ts`,
+   which measures the sideways scroll with the text as set only): the
+   labels fit their tabs, and that journey measures it at 200% too.
 5. **Sign-in** (3.15): if spec 29's screen has landed by then, the ride
    someone was about to book shows over the form as a ticket; if not, it
    is named as left for that spec's thread.

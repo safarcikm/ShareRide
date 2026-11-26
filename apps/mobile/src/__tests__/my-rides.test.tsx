@@ -13,6 +13,7 @@ import {
   requestToDrive,
   unpaidBooking,
 } from "@/testing/bookings";
+import { filledButtons } from "@/testing/buttons";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
 import { searchApi } from "@/testing/search";
 import { onTheDay, tripOnTheDay } from "@/testing/trip-day";
@@ -84,14 +85,14 @@ function myRidesApi(client: FakeClient, lists: Lists = {}) {
   client.answer("/v1/me/trips", (input) => ok(200, { trips: listOf(input).trips ?? [] }));
 }
 
-/** The rows of My rides in order, by what their names start with. */
+/** The tickets of My rides in order, by what their names start with. */
 const rowNames = () =>
   screen
-    .getAllByRole("button", { name: /^(Passenger|Driving), / })
+    .getAllByRole("button", { name: /^(Passenger|You drive), / })
     .map((row) => String(row.props.accessibilityLabel));
 
 describe("My rides (spec 16, 3.3)", () => {
-  it("puts what needs you first, then every ride marked Passenger or Driving, soonest first", async () => {
+  it("puts what needs you first, the soonest need first, then every ride as a ticket marked Passenger or You drive", async () => {
     await renderApp("/", {
       me: completeMe,
       setUp: (client) => {
@@ -108,34 +109,41 @@ describe("My rides (spec 16, 3.3)", () => {
     expect(screen.getByRole("radio", { name: "Coming up" })).toBeChecked();
     expect(await screen.findByRole("header", { name: "Needs you" })).toBeVisible();
     expect(screen.getByRole("header", { name: "Coming up" })).toBeVisible();
+    // To pay by 12:30 today comes before a request to answer by 08:10 tomorrow,
+    // though the ride with the request leaves first.
     expect(rowNames()).toEqual([
-      expect.stringMatching(/^Driving, Sunday 15 November, /),
-      expect.stringMatching(/^Passenger, Sunday 15 November, .*Waiting for payment/),
-      expect.stringMatching(/^Passenger, Sunday 15 November, .*Request sent/),
-      expect.stringMatching(/^Passenger, Monday 16 November, /),
-      expect.stringMatching(/^Driving, Tuesday 17 November, /),
+      expect.stringMatching(/^Passenger, Sunday 15 November, .*, Pay by 12:30$/),
+      expect.stringMatching(/^You drive, Sunday 15 November, .*, Answer Gunna's request, /),
+      expect.stringMatching(/^Passenger, Sunday 15 November, .*Waiting for Anna's answer$/),
+      expect.stringMatching(/^Passenger, Monday 16 November, .*Seat confirmed$/),
+      expect.stringMatching(/^You drive, Tuesday 17 November, /),
     ]);
-    expect(screen.getByText("Pay by 12:30 to keep your seat")).toBeVisible();
-    expect(screen.getByRole("button", { name: "Pay 2,900 ISK" })).toBeVisible();
-    expect(screen.getByText("Answer by 08:10 tomorrow, or the requests close")).toBeVisible();
-    expect(screen.getByRole("button", { name: "Answer requests" })).toBeVisible();
-    // A booking says its driver, car and price; a trip its seats taken and free.
+    // Each ride is a ticket (R31.2), and what it needs is in its foot, in yellow:
+    // the ticket opens where that is done, so no button stands under it.
+    expect(screen.getAllByTestId("my-ride")).toHaveLength(5);
+    expect(screen.getByText("Pay by 12:30")).toHaveStyle({ color: colors.light.warning });
+    expect(screen.getByText("Answer Gunna's request")).toHaveStyle({
+      color: colors.light.warning,
+    });
+    expect(screen.queryByRole("button", { name: /^(Pay|Answer) / })).toBeNull();
+    expect(filledButtons()).toBe(0);
+    // A seat says its driver and price; a ride I drive its seats taken.
     expect(
       screen.getByRole("button", {
-        name: "Passenger, Sunday 15 November, Borgarnes → Blönduós, 10:00 to 12:05, Request sent, Anna, White Toyota Yaris, 1 seat, 2,900 ISK",
+        name: "Passenger, Sunday 15 November, Leaves Borgarnes at 10:00, arrives at Blönduós at 12:05, 2 h 5 min, 1 seat, 2,900 ISK, Anna, Waiting for Anna's answer",
       }),
     ).toBeVisible();
     expect(
       screen.getByRole("button", {
-        name: "Driving, Sunday 15 November, BSÍ bus terminal → Hof, Akureyri, 09:00 to 14:00, 1 request, 1 of 3 seats taken, BSÍ bus terminal → Borgarnes: 3 free, Borgarnes → Blönduós: 2 free, Blönduós → Hof, Akureyri: 3 free, Answer by 08:10 tomorrow, or the requests close",
+        name: "You drive, Sunday 15 November, Leaves BSÍ bus terminal at 09:00, arrives at Hof, Akureyri at 14:00, 5 h, 2 stops, Answer Gunna's request, 1 of 3 seats taken",
       }),
     ).toBeVisible();
-    expect(screen.getByText("Borgarnes → Blönduós: 2 free")).toBeVisible();
     expect(screen.getAllByText("1 of 3 seats taken")).toHaveLength(2);
-    expect(screen.getByText("Seats free on every stretch: 2")).toBeVisible();
+    // The seats free on each stretch are on the ride's own page (spec 31, 3.5 item 4).
+    expect(screen.queryByText(/free/)).toBeNull();
   });
 
-  it("puts a ride on its trip day under Needs you, with no button of its own (spec 31, 3.3)", async () => {
+  it("puts a ride on its trip day under Needs you, saying when it leaves (spec 31, 3.3)", async () => {
     await renderApp("/my-rides", {
       me: completeMe,
       setUp: (client) => {
@@ -152,12 +160,15 @@ describe("My rides (spec 16, 3.3)", () => {
     expect(await screen.findByRole("header", { name: "Needs you" })).toBeVisible();
     expect(screen.getByRole("header", { name: "Coming up" })).toBeVisible();
     expect(rowNames()).toEqual([
-      expect.stringMatching(/^Driving, Sunday 15 November, .*, Trip day$/),
-      expect.stringMatching(/^Passenger, Sunday 15 November, .*, Trip day$/),
-      expect.stringMatching(/^Passenger, Monday 16 November, .*2,900 ISK$/),
+      expect.stringMatching(
+        /^You drive, Sunday 15 November, .*, Leaves at 09:00, 1 of 3 seats taken$/,
+      ),
+      expect.stringMatching(/^Passenger, Sunday 15 November, .*, Anna, Leaves at 10:00$/),
+      expect.stringMatching(/^Passenger, Monday 16 November, .*, Seat confirmed$/),
     ]);
-    expect(screen.getAllByText("Trip day")).toHaveLength(2);
-    // The row opens the ride, where "I'm here" is.
+    expect(screen.getByText("Leaves at 09:00")).toHaveStyle({ color: colors.light.warning });
+    expect(screen.getByText("Leaves at 10:00")).toBeVisible();
+    // The ticket opens the ride, where "I'm here" is.
     expect(screen.queryByRole("button", { name: /^(Pay|Answer)/ })).toBeNull();
   });
 
@@ -171,16 +182,20 @@ describe("My rides (spec 16, 3.3)", () => {
         myRidesApi(client, { upcoming: { bookings: [unpaid], trips: [driving] } });
       },
     });
-    await fireEvent.press(await screen.findByRole("button", { name: "Pay 2,900 ISK" }));
+    await fireEvent.press(
+      await screen.findByRole("button", { name: /^Passenger, .*, Pay by 12:30$/ }),
+    );
     expect(await screen.findByText("Pay 2,900 ISK to confirm your seat")).toBeVisible();
     expect(screen).toHavePathname(`/bookings/${unpaid.id}`);
     await fireEvent.press(screen.getByRole("button", { name: "Back" }));
-    await fireEvent.press(await screen.findByRole("button", { name: "Answer requests" }));
+    await fireEvent.press(
+      await screen.findByRole("button", { name: /^You drive, .*, Answer Gunna's request, / }),
+    );
     expect(await screen.findByText("One small bag.")).toBeVisible();
     expect(screen).toHavePathname(`/drive/trips/${driving.id}`);
   });
 
-  it("opens a ride from its row", async () => {
+  it("opens a ride from its ticket", async () => {
     await renderApp("/my-rides", {
       me: completeMe,
       setUp: (client) => {
@@ -216,7 +231,7 @@ describe("My rides (spec 16, 3.3)", () => {
     expect(screen.queryByRole("header", { name: "Needs you" })).toBeNull();
     expect(rowNames()).toEqual([
       expect.stringMatching(/^Passenger, Sunday 15 November, .*Withdrawn/),
-      expect.stringMatching(/^Driving, Saturday 7 November, /),
+      expect.stringMatching(/^You drive, Saturday 7 November, /),
       expect.stringMatching(/^Passenger, Sunday 1 November, .*Declined/),
     ]);
   });
@@ -233,7 +248,7 @@ describe("My rides (spec 16, 3.3)", () => {
         myRidesApi(client, { past: { trips: [cancelled] } });
       },
     });
-    const row = await screen.findByRole("button", { name: /^Driving, / });
+    const row = await screen.findByRole("button", { name: /^You drive, / });
     expect(String(row.props.accessibilityLabel)).toMatch(
       /Cancelled.*You cancelled this ride: Weather/,
     );
@@ -446,7 +461,7 @@ describe("My rides on a laptop (spec 18, 3.10)", () => {
     });
   });
 
-  it("shows the rides as grids on a page, what needs you first, each Pay with its ride", async () => {
+  it("shows the rides as grids of tickets on a page, what needs you first, each saying what it needs", async () => {
     await renderApp("/my-rides", {
       me: completeMe,
       setUp: (client) => {
@@ -468,11 +483,11 @@ describe("My rides on a laptop (spec 18, 3.10)", () => {
 
     // The order is the phone's: what needs you, then the rest, soonest first.
     expect(rowNames()).toEqual([
-      expect.stringMatching(/^Driving, Sunday 15 November, /),
-      expect.stringMatching(/^Passenger, Sunday 15 November, .*Waiting for payment/),
-      expect.stringMatching(/^Passenger, Sunday 15 November, .*Request sent/),
+      expect.stringMatching(/^Passenger, Sunday 15 November, .*Pay by 12:30$/),
+      expect.stringMatching(/^You drive, Sunday 15 November, /),
+      expect.stringMatching(/^Passenger, Sunday 15 November, .*Waiting for Anna's answer$/),
       expect.stringMatching(/^Passenger, Monday 16 November, /),
-      expect.stringMatching(/^Driving, Tuesday 17 November, /),
+      expect.stringMatching(/^You drive, Tuesday 17 November, /),
     ]);
     // A grid under each heading, a ride to a cell.
     const [needing, rest, ...more] = screen.getAllByTestId("grid");
@@ -481,14 +496,15 @@ describe("My rides on a laptop (spec 18, 3.10)", () => {
     const cells = within(needing).getAllByTestId("grid-cell");
     expect(cells).toHaveLength(2);
     expect(within(rest).getAllByTestId("grid-cell")).toHaveLength(3);
-    // What a ride needs stays with it: the button is under its card, in its cell.
-    const [answer, pay] = cells;
+    // What a ride needs is in its own ticket's foot, and the cell holds nothing else.
+    const [pay, answer] = cells;
     if (answer === undefined || pay === undefined) throw new Error("Two cells expected");
-    expect(within(answer).getByRole("button", { name: /^Driving, Sunday/ })).toBeVisible();
-    expect(within(answer).getByRole("button", { name: "Answer requests" })).toBeVisible();
-    expect(within(pay).getByRole("button", { name: /Waiting for payment/ })).toBeVisible();
-    expect(within(pay).getByRole("button", { name: "Pay 2,900 ISK" })).toBeVisible();
-    // The cards of a row are as tall as the tallest.
+    expect(within(pay).getByRole("button", { name: /^Passenger, Sunday/ })).toBeVisible();
+    expect(within(pay).getByText("Pay by 12:30")).toBeVisible();
+    expect(within(answer).getByRole("button", { name: /^You drive, Sunday/ })).toBeVisible();
+    expect(within(answer).getByText("Answer Gunna's request")).toBeVisible();
+    expect(within(needing).getAllByRole("button")).toHaveLength(2);
+    // The tickets of a row are as tall as the tallest.
     for (const card of screen.getAllByTestId("card")) expect(card).toHaveStyle({ flexGrow: 1 });
   });
 
@@ -500,7 +516,7 @@ describe("My rides on a laptop (spec 18, 3.10)", () => {
       },
     });
     expect(
-      await screen.findByRole("button", { name: /^Driving, Saturday 7 November/ }),
+      await screen.findByRole("button", { name: /^You drive, Saturday 7 November/ }),
     ).toBeVisible();
     expect(within(screen.getByTestId("grid")).getAllByTestId("grid-cell")).toHaveLength(3);
     expect(screen.queryByRole("header", { name: "Needs you" })).toBeNull();
@@ -509,7 +525,7 @@ describe("My rides on a laptop (spec 18, 3.10)", () => {
       Dimensions.set({ window: phone });
     });
     expect(screen.getByRole("radio", { name: "Past" })).toBeChecked();
-    expect(screen.getByRole("button", { name: /^Driving, Saturday 7 November/ })).toBeVisible();
+    expect(screen.getByRole("button", { name: /^You drive, Saturday 7 November/ })).toBeVisible();
     expect(screen.queryByTestId("grid")).toBeNull();
     expect(screen.queryByTestId("page")).toBeNull();
     for (const card of screen.getAllByTestId("card")) {

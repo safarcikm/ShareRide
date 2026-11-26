@@ -289,6 +289,30 @@ details": "Share ride" is the product's old name, kept out of every text
 ![Find now](images/one-ride-one-ticket/proposal/img/now-find-first.webp)
 ![Find proposed](images/one-ride-one-ticket/proposal/img/new-find-first.webp)
 
+As built, on a phone
+([light](images/one-ride-one-ticket/built/find-phone-light.webp),
+[dark, in Icelandic](images/one-ride-one-ticket/built/find-phone-dark.webp))
+and on a laptop
+([light](images/one-ride-one-ticket/built/find-laptop-light.webp)). What
+differs from the drawing, or was left open by it:
+
+- My next ride has the heading "Your next ride" over its ticket in both
+  places, over the search when nothing needs me and under it when
+  something does.
+- A ticket always says its day, in a list under a day's heading too: the
+  same ticket shows on Find, where no heading says it.
+- A ride found that is a part of a driver's ride says the whole ride in
+  one muted line over the tear line: "Anna drives BSÍ → Akureyri".
+- A ride that costs nothing says "Free", with no "per seat" under it.
+- A seat I asked for has no moss edge until the driver says yes; its foot
+  says whose answer it waits for ("Waiting for Sigga's answer").
+- A ride I drive that needs me has the yellow tag at the start of its foot
+  and the seats taken, muted, at its end; the drawing had them the other
+  way round, and what is asked reads first.
+- With text at twice its size on a phone 360 wide, a word longer than a
+  whole line of its place ("Kirkjubæjarklaustur,") is broken inside the
+  word. Nothing else is, and nothing reaches past the ticket.
+
 ### 3.6 Search results
 
 1. The head stays: Back, and the search as a card with Change.
@@ -299,6 +323,25 @@ details": "Share ride" is the product's old name, kept out of every text
 4. The list ends with a card, the puffin by its pin beside "That's every
    ride found" and "All rides". The sections for other days and nearby
    meeting points stay as they are.
+
+As built, on a phone
+([light](images/one-ride-one-ticket/built/results-phone-light.webp),
+[dark, in Icelandic](images/one-ride-one-ticket/built/results-phone-dark.webp))
+and on a laptop
+([light](images/one-ride-one-ticket/built/results-laptop-light.webp)):
+
+- The sorting chip shows the order alone ("Earliest") and is named "Sort:
+  Earliest" for a screen reader. The Filters chip says how many are on
+  ("Filters: 1 on") and is then filled. One of the two is open at a time,
+  under the row.
+- A day's heading no longer counts its rides: the row counts them all.
+- The end card says "That's every ride found", or "These are the first 50
+  rides" with "Choose a day to see others." when there are more than the
+  list holds. Its second line depends on the search: "Try another day, or
+  see every ride leaving soon." for a search on one day, "You can also see
+  every ride leaving soon." for any day.
+- `/search` has the title at the left (`ScreenHead`) and Find a ride
+  inside the card, as on Find; the bar at the bottom is gone.
 
 ### 3.7 A ride's details
 
@@ -370,6 +413,12 @@ details": "Share ride" is the product's old name, kept out of every text
    are listed on Offer (3.11, item 6; spec 16, decision 6), and what led
    to My trips today (Back from a posting step opened by its address,
    and deleting a draft) leads to Offer.
+
+As built so far (the tickets; the title's button, the rating under Past
+and My trips follow with the driver's ride): a ticket of My rides holds no
+button of its own. What it needs is the yellow tag in its foot, and
+pressing the ticket opens where that is done. "Needs you" lists the ride
+whose deadline or leaving time is soonest first, as Find does.
 
 ### 3.11 Offering a ride
 
@@ -479,7 +528,12 @@ changes:
    the car on the road at the right; the search row overlaps the scene's
    lower edge as today. Main column: the rides as tickets. Side column:
    signed in, what needs me or my next ride; signed out, "How it works"
-   in three lines with **Offer a ride**; then the map, as today.
+   in three lines with **Offer a ride**; then the map, as today. As
+   built: the scene behind the title is 132 high and the car 170 wide,
+   two `xxl` in from the right; signed in, "Offer a ride" is a line under
+   the rides, as before. "How it works" stands whole in a window 1280 by
+   720; the map under it is then partly below the fold for someone signed
+   out (spec 18, 3.5).
 2. **A booked seat:** main column: the title, the road, where to stand and
    the driver; side column: the ticket, then the rows. On the trip day
    "I'm here" is the main button at the top of the side column.
@@ -645,6 +699,13 @@ My rides load, named below.
 - The plan checks each of these against the API before the first pull
   request; a field that turns out to be missing is added there, and named
   in the plan.
+- Found while building the result ticket: a ride found carried its
+  driver's name, photo and rating, but not the `colour` of the circle
+  that stands in for a photo (spec 15, 4.2), which a booking and a
+  conversation already carry. `TripSearchResult.driver` gains `colour`,
+  so the same driver has the same circle in the results as on their ride.
+  It says nothing new about anyone: the colour is worked out from the
+  account, as everywhere else.
 
 ## 7. Privacy and safety
 

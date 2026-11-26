@@ -244,7 +244,7 @@ describe("A suspended account (spec 9, 3.6.2)", () => {
         client.answer("/v1/trips/soonest", () => ok(200, { results: [] }));
       },
     });
-    expect(await screen.findByRole("header", { name: "Share your ride" })).toBeVisible();
+    expect(await screen.findByRole("header", { name: "Hi Anna" })).toBeVisible();
     expect(screen.queryByRole("header", { name: "Your account is suspended" })).toBeNull();
   });
 

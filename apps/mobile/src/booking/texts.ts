@@ -41,16 +41,16 @@ export function payByText(t: Translate, deadline: Date, at: Date): string {
   return t(tomorrow ? "booking.payByTomorrow" : "booking.payBy", { time });
 }
 
+/** "Pay by 12:30", or "Pay by 08:10 tomorrow": the deadline alone, as in a tag (spec 31, 3.10). */
+export function payByShortText(t: Translate, deadline: Date, at: Date): string {
+  const { time, tomorrow } = onDay(deadline, at);
+  return t(tomorrow ? "needs.payByTomorrow" : "needs.payBy", { time });
+}
+
 /** "Not paid yet. Your seat is held until 12:30.", after a payment that did not finish (spec 16, 3.7). */
 export function heldUntilText(t: Translate, deadline: Date, at: Date): string {
   const { time, tomorrow } = onDay(deadline, at);
   return t(tomorrow ? "booking.heldUntilTomorrow" : "booking.heldUntil", { time });
-}
-
-/** "Answer by 08:10 tomorrow, or the requests close", for a driver (spec 16, 3.3). */
-export function answerByText(t: Translate, deadline: Date, at: Date): string {
-  const { time, tomorrow } = onDay(deadline, at);
-  return t(tomorrow ? "myRides.answerByTomorrow" : "myRides.answerBy", { time });
 }
 
 /**

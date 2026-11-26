@@ -10,7 +10,7 @@ in the app or runs in CI.
 | `mock/` | The proposed screens as drawings: `kit.cjs` (the app's colours, fonts, icons and drawings, and the new parts) and `build.cjs` (the screens) |
 | `mock/assets/` | Drawings copied out of the running app: the scene, the car, the puffin, the seat view and the maps |
 | `page/` | The proposal page: `page.html` (its text and look) and `make.py` (puts the pictures in) |
-| `built/` | The parts as built: `parts-screen.tsx` (a screen that shows them all) and `shoot.cjs` (takes its picture on a phone and a laptop, light and dark) |
+| `built/` | The parts as built: `parts-screen.tsx` (a screen that shows them all) and `shoot.cjs` (takes its picture on a phone and a laptop, light and dark). The screens as built are taken by the app's own `e2e/pictures.spec.ts` (below) |
 
 ## The "now" pictures
 
@@ -82,3 +82,21 @@ The pictures land in `/tmp/built/parts-<phone|laptop>-<light|dark>.png`; no
 API has to run, as `shoot.cjs` answers the app's first calls itself. They
 are saved here as `.webp` (Pillow, quality 82). The people in them are made
 up.
+
+## The screens as built
+
+The pictures in `../built/find-*.webp` and `../built/results-*.webp` show
+the screens in the web app, to compare with the drawings. They are taken
+by a journey that is kept with the others and skipped unless it is told
+where to write (`apps/mobile/e2e/pictures.spec.ts`); it needs what the web
+journeys need. From `apps/mobile`:
+
+```sh
+PICTURES_DIR=/tmp/pictures npx playwright test e2e/pictures.spec.ts -g "spec 31" --trace off
+```
+
+The pictures land in `/tmp/pictures/one-ride-one-ticket/built/` as
+`<screen>-<phone|laptop>-<light|dark>.png`: a phone in English by day and
+in Icelandic at night, a laptop in English by day. They are saved here as
+`.webp` (Pillow, quality 82). The people in them are made up by the
+journey and the test server.

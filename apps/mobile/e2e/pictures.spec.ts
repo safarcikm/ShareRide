@@ -2,6 +2,7 @@ import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test, type Page } from "@playwright/test";
 import { english, signUp } from "./support/account";
+import { requestSeat, secondPage } from "./support/cancelling";
 import { postTripToSelfoss } from "./support/trips";
 
 // Pictures of screens for the specs (docs/specs/images), kept in git with
@@ -133,5 +134,69 @@ test.describe("pictures", () => {
     await expect(page.locator('[style*="blob:"]')).toBeVisible();
     await showWhole(page, 1280);
     await page.screenshot({ path: join(folder, "share-screen-laptop-is.png") });
+  });
+
+  // Find and the search results as built (spec 31, 3.5, 3.6 and 3.16): on a
+  // phone in English by day and in Icelandic at night, and on a laptop. They
+  // are kept as .webp (docs/specs/images/one-ride-one-ticket/src/README.md).
+  test("Find and the results (spec 31)", async ({ page, browser }, info) => {
+    test.setTimeout(180_000);
+    const folder = join(root ?? "", "one-ride-one-ticket", "built");
+    mkdirSync(folder, { recursive: true });
+    const wide = info.project.name === "desktop";
+    const window = wide ? { width: 1280, height: 720 } : (page.viewportSize() ?? null);
+    if (window === null) throw new Error("The page has no size");
+
+    // Bára offers a ride and Dóra asks for a seat on it, so Find has
+    // something that needs Bára, and Dóra a next ride.
+    await page.setViewportSize(window);
+    await signUp(page, english, "Bára");
+    const tripId = await postTripToSelfoss(page, "09:00");
+    const { page: dora, close } = await secondPage(browser, info);
+    await dora.setViewportSize(window);
+    await requestSeat(dora, "Dóra", tripId);
+
+    const shoot = async (of: Page, name: string, scheme: "light" | "dark") => {
+      await showWhole(of, window.width);
+      const kind = wide ? "laptop" : "phone";
+      await of.screenshot({ path: join(folder, `${name}-${kind}-${scheme}.png`) });
+      await of.setViewportSize(window);
+    };
+    const find = async (greeting: string, needs: string) => {
+      await page.goto("/");
+      await expect(page.getByRole("heading", { name: greeting })).toBeVisible();
+      await expect(page.getByText(needs, { exact: true })).toBeVisible();
+      await expect(page.getByTestId("trip-result").first()).toBeVisible();
+    };
+    const results = async (address: string) => {
+      await dora.goto(address);
+      await expect(dora.getByTestId("results-end").filter({ visible: true })).toBeVisible();
+    };
+
+    await find("Hi Bára", "Dóra asks for 1 seat");
+    await shoot(page, "find", "light");
+    // What Dóra finds between Mjódd and Selfoss: Bára's ride and a sample one.
+    await dora.goto("/search");
+    await choose(dora, "From", "mjód", /^Mjódd bus terminal,/);
+    await choose(dora, "To", "selfo", /^N1 Selfoss,/);
+    await dora.getByRole("button", { name: "Find a ride", exact: true }).click();
+    await expect(dora).toHaveURL(/\/search\/results\?/);
+    const found = dora.url();
+    await results(found);
+    await shoot(dora, "results", "light");
+
+    if (!wide) {
+      for (const person of [page, dora]) {
+        await person.emulateMedia({ colorScheme: "dark" });
+        await person.goto("/");
+        await person.getByRole("button", { name: "Change the language to Icelandic" }).click();
+        await expect(person.getByRole("button", { name: "Skipta yfir í ensku" })).toBeVisible();
+      }
+      await find("Hæ Bára", "Dóra biður um 1 sæti");
+      await shoot(page, "find", "dark");
+      await results(found);
+      await shoot(dora, "results", "dark");
+    }
+    await close();
   });
 });

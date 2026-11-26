@@ -2,7 +2,8 @@ import { expect, test } from "@playwright/test";
 import { english, icelandic, signUp, type Texts } from "./support/account";
 import { focused, openTrip, type TripSearch } from "./support/trips";
 
-// Spec 5's requests and My rides (spec 16, 3.3) on the web build, against the sample
+// Spec 5's requests, My rides (spec 16, 3.3) and what Find shows of my own
+// rides (spec 31, 3.5) on the web build, against the sample
 // trips the e2e API seeds: Sigga drives Mjódd → N1 Hveragerði → N1 Selfoss
 // tomorrow at 17:15, with 4 seats, and answers requests herself. Each run
 // requests one seat, finds it in My rides and withdraws it again. Screens left behind stay in the
@@ -16,6 +17,9 @@ interface Journey extends TripSearch {
   readonly message: string;
   readonly requestSent: string;
   readonly answerBy: RegExp;
+  /** A requested seat's ticket says whose answer it waits for (spec 31, 3.10). */
+  readonly waiting: string;
+  readonly nextRide: string;
   readonly seeInMyRides: string;
   readonly withdraw: string;
   readonly withdrawAsk: RegExp;
@@ -47,6 +51,8 @@ const journeys: readonly Journey[] = [
     message: "Message to the driver (optional)",
     requestSent: "Request sent",
     answerBy: /^Sigga has until \d\d:\d\d( tomorrow)? to answer\.$/,
+    waiting: "Waiting for Sigga's answer",
+    nextRide: "Your next ride",
     seeInMyRides: "See it in My rides",
     withdraw: "Withdraw request",
     withdrawAsk: /^Withdraw your request\? Sigga won't see it any more/,
@@ -76,6 +82,8 @@ const journeys: readonly Journey[] = [
     message: "Skilaboð til ökumanns (valfrjálst)",
     requestSent: "Beiðni send",
     answerBy: /^Sigga hefur til \d\d:\d\d( á morgun)? til að svara\.$/,
+    waiting: "Sigga á eftir að svara",
+    nextRide: "Næsta ferðin þín",
     seeInMyRides: "Sjá í Ferðunum mínum",
     withdraw: "Draga beiðni til baka",
     withdrawAsk: /^Draga beiðnina til baka\? Sigga sér hana ekki lengur/,
@@ -89,11 +97,14 @@ const journeys: readonly Journey[] = [
   },
 ];
 
+/** A screen under the one open stays in the page, hidden. */
+const shown = { visible: true } as const;
+
 for (const journey of journeys) {
   test.describe(`requests and my rides (${journey.locale})`, () => {
     test.use({ locale: journey.locale });
 
-    test("withdraws a request and finds it under Past", async ({ page }) => {
+    test("withdraws a request and finds it under Past", async ({ page }, testInfo) => {
       await signUp(page, journey.account, journey.name);
       await openTrip(page, journey);
       await page.getByRole("button", { name: journey.sendRequest, exact: true }).click();
@@ -105,14 +116,26 @@ for (const journey of journeys) {
       await expect(page.getByRole("heading", { name: journey.requestSent })).toBeVisible();
       await expect(page.getByText(journey.answerBy).filter({ visible: true })).toBeVisible();
 
-      // My rides lists it; the row opens the booking.
+      // My rides lists it as a ticket, which says whose answer it waits for.
       await page.getByRole("button", { name: journey.seeInMyRides }).click();
       await expect(page).toHaveURL(/\/my-rides$/);
-      await page
-        .getByRole("button", {
-          name: new RegExp(`^${journey.passenger}, .*, ${journey.requestSent}, Sigga, `),
-        })
-        .click();
+      const ticket = new RegExp(`^${journey.passenger}, .*, Sigga, ${journey.waiting}$`);
+      await expect(page.getByRole("button", { name: ticket }).filter(shown)).toBeVisible();
+
+      // Find greets by name, with the request as the next ride over the
+      // search (spec 31, 3.5); the ticket opens the booking.
+      await page.goto("/");
+      await expect(
+        page.getByRole("heading", { name: journey.account.hi(journey.name) }),
+      ).toBeVisible();
+      await expect(page.getByRole("heading", { name: journey.nextRide })).toBeVisible();
+      const next = page.getByTestId("my-ride");
+      await expect(next).toHaveCount(1);
+      if (testInfo.project.name === "phone") {
+        const search = await page.getByRole("button", { name: journey.fromField }).boundingBox();
+        expect((await next.boundingBox())?.y).toBeLessThan(search?.y ?? 0);
+      }
+      await page.getByRole("button", { name: ticket }).click();
       await expect(page).toHaveURL(/\/bookings\/[0-9a-f-]+$/);
       const booking = page.url();
 
@@ -135,7 +158,7 @@ for (const journey of journeys) {
       await page.getByRole("radio", { name: journey.past }).click();
       await expect(page).toHaveURL(/\/my-rides\?when=past$/);
       const card = page.getByRole("button", {
-        name: new RegExp(`^${journey.passenger}, .*, ${journey.withdrawnTag}, Sigga, `),
+        name: new RegExp(`^${journey.passenger}, .*, Sigga, ${journey.withdrawnTag}$`),
       });
       await expect(card).toBeVisible();
       await card.click();

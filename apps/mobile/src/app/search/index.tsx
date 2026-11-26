@@ -1,11 +1,11 @@
 import { capitalised, formatShortDay } from "@shareride/i18n";
 import { useEffect, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
-import { BackButton } from "@/components/back-button";
+import { Text, View } from "react-native";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
 import { Screen } from "@/components/screen";
-import { Heading, Title } from "@/components/text";
+import { ScreenHead } from "@/components/screen-head";
+import { Heading } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { now } from "@/lib/clock";
 import { dayOf, isoDay } from "@/lib/days";
@@ -19,8 +19,9 @@ import { typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
 /**
- * The search form (spec 4, 3.1): from, to, an optional date and the seats,
- * with the last five searches for one-tap repeat. Anyone can search.
+ * Find a ride (spec 4, 3.1; spec 31, 3.5 item 3): the front page's search
+ * card, with its button in it, under the title, and the last five searches
+ * for one-tap repeat. There is one search form. Anyone can search.
  */
 export default function SearchForm() {
   const { locale, t } = useLanguage();
@@ -44,22 +45,9 @@ export default function SearchForm() {
   });
 
   return (
-    <Screen
-      footer={
-        <Button
-          main
-          label={t("search.submit")}
-          onPress={() => {
-            route.submit();
-          }}
-        />
-      }
-    >
-      <View style={styles.header}>
-        <BackButton />
-      </View>
-      <Title>{t("search.title")}</Title>
-      {route.fields()}
+    <Screen>
+      <ScreenHead title={t("search.title")} />
+      {route.fields(<Button main label={t("welcome.findRide")} onPress={route.submit} />)}
       {recent.length === 0 ? null : (
         <>
           <Heading>{t("search.recent")}</Heading>
@@ -112,7 +100,3 @@ function RecentSearch({
     </Card>
   );
 }
-
-const styles = StyleSheet.create({
-  header: { flexDirection: "row" },
-});

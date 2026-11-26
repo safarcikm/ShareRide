@@ -1676,6 +1676,20 @@ releases follow [Semantic Versioning](https://semver.org/).
   passenger and a driver alike, and its row says "Trip day", there and
   under "Your next ride" on Find (spec 31, 3.3, item 3). Until now only a
   seat to pay for and requests to answer stood under "Needs you".
+- A ride is a ticket wherever one is listed (spec 31, 3.5, 3.6 and 3.16):
+  on Find, in the search results, on All rides, a place and a meeting
+  point, and in My rides. A ride found shows its day, how it is booked,
+  the two times and places, the price, and under the tear line the driver
+  and the seats left; a ride of mine says "Passenger" or "You drive", and
+  what it needs from me in a yellow tag. Signed in, Find greets you by
+  name ("Hi Bára") with what needs you in the yellow card, or your next
+  ride, over the search. On a laptop the title stands at the left of the
+  scene with the car at the right, and someone new reads "How it works"
+  in three lines beside the rides. The search results have one row (the
+  order, one Filters chip that says how many are on, and the number of
+  rides) and end with a card that leads to All rides. `/search` is the
+  same search card as Find's. A ride found says its driver's `colour` in
+  the API, so the circle in place of a photo is the same everywhere.
 - CI skips its code jobs (bundles, unit, integration and web tests, the API
   image) for a change to docs, marketing and other files that no code reads,
   and on `main` when the pull request already tested exactly the same files
