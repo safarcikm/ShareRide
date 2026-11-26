@@ -20,7 +20,7 @@ export default function CookiesScreen() {
   const { t } = useLanguage();
   const { available, choice, choose } = useAnalytics();
   return (
-    <Screen>
+    <Screen siteFooter>
       <PageHead
         title={t("seo.title", { page: t("cookies.title") })}
         description={t("seo.cookiesDescription")}

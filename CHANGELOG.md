@@ -1555,6 +1555,11 @@ releases follow [Semantic Versioning](https://semver.org/).
   answers with a permanent redirect to `/about`. About has its own title, is
   in the sitemap in place of `/legal`, and its words are in the first
   answer's `<noscript>` for search engines.
+- A footer on the website's public pages (spec 30, 3.3): About, Carpool in
+  Iceland, Meeting points, the three documents, Cookies, our email and our
+  Facebook Page, as real links. On a laptop, four groups under a line as
+  wide as the page; on a phone's browser, small links in a few lines. Not
+  on signing in, forms, My rides, Messages, Profile or in the phone apps.
 
 ### Fixed
 

@@ -91,7 +91,7 @@ export default function TripScreen() {
   // does not move on a wide screen.
   if (answer === undefined || (!current && !answer.ok)) {
     return (
-      <Screen width="page">
+      <Screen siteFooter width="page">
         <NoIndex />
         <BackButton fallback="/" />
         <ActivityIndicator accessibilityLabel={t("common.loading")} color={palette.primary} />
@@ -100,7 +100,7 @@ export default function TripScreen() {
   }
   if (!answer.ok) {
     return (
-      <Screen width="page">
+      <Screen siteFooter width="page">
         <NoIndex />
         <BackButton fallback="/" />
         <PageColumn>
@@ -370,7 +370,7 @@ function Trip({
 
   if (wide) {
     return (
-      <Screen width="page">
+      <Screen siteFooter width="page">
         <NoIndex />
         <View style={styles.wideHeader}>
           <BackButton fallback="/" />
@@ -418,7 +418,7 @@ function Trip({
   }
 
   return (
-    <Screen footer={<BookingBar trip={trip} pending={pending} />}>
+    <Screen siteFooter footer={<BookingBar trip={trip} pending={pending} />}>
       <NoIndex />
       <View style={styles.header}>
         <BackButton fallback="/" />

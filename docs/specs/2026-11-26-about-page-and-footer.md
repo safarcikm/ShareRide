@@ -101,10 +101,12 @@ on its own.
    scroll, never fixed on the screen. On a page shorter than the window it
    sits at the window's bottom edge. A bar at the bottom of the screen, such
    as Book on a trip, stays over it, as it stays over the content.
-3. **Wide screens (900 and wider).** A band across the window in the
-   `surface` colour with a `border` line above it, as the top bar is at the
-   top. What it holds lines up with the page (spec 18, 3.3), in four
-   groups side by side:
+3. **Wide screens (900 and wider).** Under a `border` line as wide as the
+   page, in the page's own colour, lined up with the page as the top bar's
+   content is (spec 18, 3.3), four groups side by side. (A band of its own
+   colour across the window was tried; where the browser keeps room for its
+   scrollbar, as on Windows, it stopped short of the window's edges, so the
+   footer keeps the page's colour.)
    - the logo and **PuffinRide**, with "Carpooling across Iceland" under it;
    - **PuffinRide:** About PuffinRide, Carpool in Iceland, Meeting points;
    - **Terms:** Terms of Service, Community Rules, Privacy Policy, Cookies;
@@ -146,13 +148,12 @@ on its own.
 
 ```text
 Wide (1440), end of the front page
-───────────────────────────────────────────────────────────────────────
+      ─────────────────────────────────────────────────────────────── (page wide)
  [pin] PuffinRide             PuffinRide          Terms                Contact
  Carpooling across Iceland    About PuffinRide    Terms of Service     admin@puffinride.is
                               Carpool in Iceland  Community Rules      PuffinRide on Facebook
                               Meeting points      Privacy Policy
                                                   Cookies
-───────────────────────────────────────────────────────────────────────
 
 Phone's browser (390), end of the page
  ─────────────────────────────────────
@@ -243,7 +244,8 @@ The footer's other links use the texts they have: `legal.terms`,
 - Web journey (Playwright): open the front page, follow About in the
   footer, open the Privacy Policy.
 - Look: screenshots of the end of the front page and About, at 1440 and
-  390, light and dark, in both languages, for Martin.
+  390, light and dark, in both languages, for Martin
+  ([pictures](images/about-page-and-footer/)).
 
 ## 10. Out of scope
 
@@ -261,8 +263,8 @@ Working choices, for Martin to change ("accept" keeps them all):
    goes, and `/legal` leads to About (3.2).
 2. The footer is on the website's **public pages** only, not on forms,
    signed-in places or in the phone apps (3.3, item 1).
-3. On a laptop, a band of four groups; on a phone's browser, a quiet list
-   of small links (3.3, items 3 and 4).
+3. On a laptop, four groups under a line as wide as the page; on a
+   phone's browser, a quiet list of small links (3.3, items 3 and 4).
 4. The contact address is `admin@puffinride.is`, the one the Terms give
    (3.1, item 4).
 

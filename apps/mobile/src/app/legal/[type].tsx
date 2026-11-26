@@ -35,7 +35,7 @@ export default function LegalDocumentScreen() {
   const { value: result, reload } = useLoaded(load);
 
   return (
-    <Screen>
+    <Screen siteFooter>
       <BackButton fallback="/about" />
       {result === undefined ? (
         <Loading />

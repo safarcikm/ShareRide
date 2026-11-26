@@ -32,18 +32,20 @@ requests, one after the other, each with its tests first.
 
 ## PR 2: the footer (`feat(about)`)
 
-- [ ] **The part.** `apps/mobile/src/components/site-footer.tsx`: the wide
-  band of four groups and the phone's quiet links (spec 30, 3.3), the
-  `contentinfo` landmark, real links. Test first:
-  `apps/mobile/src/components/site-footer.test.tsx`.
-- [ ] **On the public pages.** `Screen` gets `siteFooter`, shown on the web
-  only, after the content and across the window. Set on Find, About,
-  Carpool in Iceland, the meeting points, a meeting point, a place, All
-  rides, search results, a trip, the documents and Cookies. Test:
-  `apps/mobile/src/__tests__/site-footer.test.tsx` (on those pages on the
-  web, not on My rides, Profile or sign-in, not in the apps).
-- [ ] **Journey.** `apps/mobile/e2e/about.spec.ts`: the front page's footer
-  to About, then the Privacy Policy.
-- [ ] **Look.** Screenshots at 1440 and 390, light and dark, IS and EN, in
+- [x] **The part.** `apps/mobile/src/components/site-footer.tsx`: four
+  groups under a line as wide as the page on a laptop, and the phone's
+  quiet links (spec 30, 3.3), the `contentinfo` landmark, real links.
+- [x] **On the public pages.** `Screen` gets `siteFooter`, shown on the
+  website only (`apps/mobile/src/lib/on-website.ts`), after the content.
+  Set on Find, About, Carpool in Iceland, the meeting points, a meeting
+  point, a place, All rides, search results, a trip, the documents and
+  Cookies. Test first: `apps/mobile/src/__tests__/site-footer.test.tsx`
+  (the links, a phone and a laptop, Icelandic, on those pages on the web,
+  not on Profile, signing in or My rides, not in the apps).
+- [x] **Journey.** `apps/mobile/e2e/about.spec.ts`: the front page's footer
+  to About, then the Privacy Policy; real links; the old address; no footer
+  on signing in; lined up with the page at 900, 1280 and 1440.
+- [x] **Look.** Pictures at 1440 and 390, light and dark, IS and EN, in
   `docs/specs/images/about-page-and-footer/` and the project files.
-- [ ] **Docs.** Spec 18, 3.2 notes the footer under public pages; plans index.
+- [x] **Docs.** Spec 18, 3.2 notes the footer under public pages; spec 30
+  says why the footer keeps the page's colour; CHANGELOG.

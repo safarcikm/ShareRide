@@ -192,6 +192,7 @@ function FrontPage() {
     const level = headed ? <View testID="map-level" style={styles.head} /> : null;
     return (
       <Screen
+        siteFooter
         width="page"
         refresh={refresh}
         refreshAsked={refreshAsked}
@@ -249,6 +250,7 @@ function FrontPage() {
   }
   return (
     <Screen
+      siteFooter
       refresh={refresh}
       refreshAsked={refreshAsked}
       backdrop={<IcelandScene width={windowWidth} height={spacing.md + band + spacing.sm} />}

@@ -80,6 +80,11 @@ export const is = {
   "about.contactTitle": "Hafðu samband",
   "about.contact": "Spurningar eða hugmyndir? Skrifaðu okkur, á íslensku eða ensku.",
   "about.facebook": "PuffinRide á Facebook",
+  "footer.label": "Um PuffinRide og skilmálana okkar",
+  "footer.tagline": "Samakstur um allt Ísland",
+  "footer.terms": "Skilmálar",
+  "footer.contact": "Samband",
+  "footer.facebook": "Facebook",
   "consent.title": "Vafrakökur",
   "consent.text":
     "Megum við telja heimsókn þína með Google Analytics? Það notar vafrakökur og segir Google hvaða síður þú opnar, aldrei nafnið þitt.",

@@ -346,7 +346,7 @@ export default function SearchResults() {
     </>
   );
   return (
-    <Screen aside={map} refresh={refresh}>
+    <Screen siteFooter aside={map} refresh={refresh}>
       <View style={styles.header}>
         <BackButton fallback="/" />
         {/* The screen's heading, with the button inside it as in an

@@ -27,7 +27,7 @@ export default function AboutScreen() {
     <Text style={[typography.body, { color: palette.text }]}>{text}</Text>
   );
   return (
-    <Screen>
+    <Screen siteFooter>
       <PageHead {...pageText(t, { kind: "about" })} />
       <BackButton fallback="/profile" />
       <Title>{t(aboutPage.title)}</Title>
