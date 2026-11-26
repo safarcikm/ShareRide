@@ -214,7 +214,9 @@ describe("the reliability figure (spec 8, 3.8)", () => {
     await fireEvent.press(
       screen.getByRole("button", { name: "Reliability: not enough rides yet" }),
     );
-    expect(screen.getByText("Kept 3 of 4 rides offered and seats booked in the last 12 months.")).toBeVisible();
+    expect(
+      screen.getByText("Kept 3 of 4 rides offered and seats booked in the last 12 months."),
+    ).toBeVisible();
   });
 });
 

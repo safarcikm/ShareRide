@@ -231,7 +231,9 @@ describe("The driver moves the departure (spec 6, 3.2)", () => {
     });
     await chooseDeparture("10:00");
     await fireEvent.press(screen.getByRole("button", { name: "Check the change" }));
-    expect(await screen.findByText("You're already driving another ride at that time.")).toBeVisible();
+    expect(
+      await screen.findByText("You're already driving another ride at that time."),
+    ).toBeVisible();
   });
 
   it("says when saving is refused after the check, and saves nothing", async () => {
