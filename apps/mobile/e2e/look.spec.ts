@@ -36,9 +36,12 @@ const schemes = [
   },
 ] as const;
 
-/** Presses Tab until `target` has keyboard focus. */
+/**
+ * Presses Tab until `target` has keyboard focus. On Find each ride leaving
+ * soon is two stops, the card and its share icon (spec 28, 3.1).
+ */
 async function tabTo(page: Page, target: Locator) {
-  for (let presses = 0; presses < 20; presses += 1) {
+  for (let presses = 0; presses < 40; presses += 1) {
     await page.keyboard.press("Tab");
     if (await target.evaluate((element) => element === document.activeElement)) return;
   }
