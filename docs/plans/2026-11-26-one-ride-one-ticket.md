@@ -555,7 +555,9 @@ person sees it, in 3.7, 3.16 and 3.19):
 ## PR 7: a booked seat and the trip day
 
 `feat(booking)`, spec 31, 3.8, 3.9, 3.16 item 2, and cancelling a booking,
-the reports, rating and blocking (3.19).
+the reports, rating and blocking (3.19). Built as two pull requests: **7a**,
+the booked seat's own page and its trip day (items 1 to 4, 6 and 7), and
+**7b**, the screens around it (item 5), so each can be looked at whole.
 
 1. **`booking/title.ts`:** `bookingTitle(t, locale, booking, at): { title,
    line }`, one for each state of today's `Status`: "Request sent", "Bára
@@ -574,16 +576,87 @@ the reports, rating and blocking (3.19).
    plate as a tag; "I'm here" in the bar at the bottom, and at the top of
    the side column on a laptop; "The driver didn't come" takes its place
    when offered.
-5. **The screens around it:** `ScreenHead`, the ride as a ticket where
-   one shows, the main button in the bar and red when it cannot be undone.
-   A red main button carries `testID="filled-button"` as a primary one
-   does, so `filledButtons` counts it.
+5. **The screens around it (7b):** `ScreenHead`, the ride as a ticket
+   where one shows, the main button in the bar and red when it cannot be
+   undone. A red main button carries `testID="filled-button"` as a primary
+   one does, so `filledButtons` counts it. The screens: cancelling a
+   booking, "The driver didn't come", answering a report, rating, blocking
+   and reporting. The question about withdrawing a request, which 7a put
+   in the bar, gets the red button here.
 6. Tests: the title for each state on the screen; the road's step; the
    rows' order; one filled button. A new journey in `trip-day.spec.ts`
    reads the trip day's first screen on a phone and finds "I'm here"
    inside it.
 7. **Docs and pictures:** specs 5, 6, 8 and 9; `built/booking-*`,
    `built/trip-day-*`.
+
+As built in 7a, what differs from the list above (spec 31 says the same
+where a person sees it, in 3.8, 3.9 and 3.16):
+
+- `bookingTitle` also gives `over`, the day, for a driver who opens a
+  passenger's booking: their title is the part ("Borgarnes to Blönduós")
+  with the status as its line. `bookingRoad(t, booking)` gives the steps
+  and where the booking stands, or null; `reviewOpen` says whether the
+  passenger can review now. The title of a seat to pay for comes from
+  the texts "What needs me" already has (`needs.saidYes`,
+  `needs.payToKeep`), and the trip day's from `leavesText`.
+- New parts: `booking/booking-ticket.tsx` (a `RideTicket` that is not
+  pressed), `booking/withdraw.tsx` (`useWithdraw` and `WithdrawQuestion`,
+  which the page keeps so the question stays open across the breakpoint).
+  `WhereToStand` is drawn again, with the small map; "You're booked" shows
+  it too.
+- `DriverCard` gains `action` (Message, in the chevron's place), `plate`
+  (the tag beside the car), `standing` (off for someone who has left) and
+  `fill`. `DriverAndCar` in `trip-parts.tsx` is gone: nothing uses it.
+- `ScreenHead` gains `outcome`: the title and its line take focus when
+  they are the outcome of an action, as the status line did. For a
+  booking that ended the line is why (`endedText` in `booking/texts.ts`),
+  in the place of the notice that said so, and `more` holds what else a
+  cancellation says (`endedLines`), so a screen reader hears "You
+  cancelled this booking: Plans changed" and the refund with "Cancelled"
+  (the journeys `cancel-booking.spec.ts` and `my-rides.spec.ts` check
+  that focus holds them).
+- From the code review, mended here: the question about withdrawing is
+  only open on a request (it stayed in the bar, over Pay, when the driver
+  answered meanwhile); a payment that did not go through says so over
+  Pay, not at the top of the page; a seat still confirmed once its ride
+  is over, which it is while a report that the driver didn't come is
+  open, has that as its title and no road, in the place of "Anna picks
+  you up at 10:00"; and focus goes back to the Withdraw row, and to what
+  "I'm here" told, once, not each time the window crosses the breakpoint.
+  Left for the last pass (PR 12): a ticket that is not pressed reads its
+  two ends to a screen reader as times and places, with nothing that
+  says which is where I get in; "Find another ride" is "Leita aftur" in
+  Icelandic; and an Icelandic reader should look at the status words now
+  that they are titles ("Afbókuð", "Útrunnin", "Dregin til baka").
+- The page has one tree for a phone and a wide screen, as before, and
+  what must survive the breakpoint lives in the page: the payment, the
+  question about withdrawing, and that "I'm here" was said (`ImHere`
+  takes `said` from a screen that moves it).
+- No paying card: the deadline is the title's line and Pay is the bar's
+  button. `ReviewSection` takes `offer`, off on this page, where the bar
+  has "Rate the driver" and the title's line says until when.
+- "The driver didn't come" is a link in the bar on the trip day, under
+  "I'm here" while that can be pressed, and a row once the ride is over.
+- The driver's view reads "Gunna pays you … when they get in." for a
+  ride paid in person: the text was there since ADR 0038, in a branch of
+  the old status that a driver never reached.
+- The notifications prompt's buttons are outlined on every screen that
+  shows it, so a screen's filled button is its main one.
+- Texts: `road.asked`, `road.confirmed`, `road.tripDay`, `road.done`,
+  `booking.seatHeldUntil`, `booking.seatHeldUntilTomorrow`,
+  `booking.todayFrom` and `booking.timeFrom`, new; `booking.requestSent`,
+  `booking.requestSentTomorrow`, `booking.payBy`, `booking.payByTomorrow`
+  and `booking.payNow`, gone with the lines they wrote. One new size,
+  `mapBeside` 104.
+- Journeys changed: `trip-day.spec.ts` (the first screen holds the
+  title, where to stand and "I'm here" with no scrolling, on a phone and
+  on a laptop), `laptop.spec.ts` (Pay over the ticket in the side column,
+  the rows in their order, the side column whole at 1280 by 720),
+  `booking.spec.ts`, `driver-requests.spec.ts`, `reviews.spec.ts`,
+  `trip-day-reports.spec.ts`, `chat.spec.ts` and `blocking.spec.ts`
+  (Message, "Rate the driver", "The driver didn't come" and "Open in
+  maps" are links). Pictures: `built/booking-*` and `built/trip-day-*`.
 
 ## PR 8: the driver's ride and My rides
 
@@ -723,7 +796,16 @@ and deleting the account (3.19).
    card, and the heading before the picture in "Where you sit"; on
    Booking a seat, "driver" beside the driver's name for a screen reader;
    a cancelled ride's page without the seats stepper and "Where you sit".
-8. **Docs:** spec 31 becomes Built, with what differs from the drawings;
+8. **Small things PR 7a's code review named:** a ticket that is not
+   pressed says which end is where I get in and where I get out, for a
+   screen reader; "Find another ride" in Icelandic ("Leita aftur" today,
+   and spec 5's table says "Search again"); an Icelandic reader looks at
+   the status words as titles ("Afbókuð", "Útrunnin", "Dregin til baka",
+   "Mætti ekki"), and at "bílstjóri" beside "ökumaður"; with text at 200%
+   on a phone 360 wide the road's four labels run into each other
+   (`look.spec.ts` measures the booked seat's head, ticket, driver and
+   where to stand there, not the road).
+9. **Docs:** spec 31 becomes Built, with what differs from the drawings;
    spec 15 has the parts; the roadmap and the changelog.
 
 ## After merging

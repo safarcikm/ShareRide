@@ -28,12 +28,21 @@ export interface CheckInState {
  * asks the API; `onSaid` loads the page again with what it stored. When the
  * booking or trip changed meanwhile (cancelled, or no longer confirmed),
  * trying again cannot work, so `onStale` says why and loads it again.
+ *
+ * It remembers that it was said until the page has loaded again. A screen
+ * that moves it, as between a phone's bar and a wide screen's side column,
+ * remembers that itself and gives it as `said`; it also hears through
+ * `onSaidFocused` that focus went to what was told, and then gives
+ * `focusSaid` false, so moving it does not take focus again.
  */
 export function ImHere({
   state,
   told,
   accessibilityLabel,
   send,
+  said,
+  focusSaid = true,
+  onSaidFocused,
   onSaid,
   onStale,
 }: {
@@ -44,20 +53,29 @@ export function ImHere({
   readonly send: () => Promise<
     { readonly ok: true; readonly data: { checkedInAt: string } } | CallFailure
   >;
-  readonly onSaid: () => void;
+  /** When it was said on this screen, where the screen keeps that; null before. */
+  readonly said?: string | null;
+  /** Whether what was said here still takes focus as it appears. */
+  readonly focusSaid?: boolean;
+  readonly onSaidFocused?: () => void;
+  readonly onSaid: (checkedInAt: string) => void;
   readonly onStale: () => void;
 }) {
   const { t } = useLanguage();
   const palette = usePalette();
   const [sending, setSending] = useState(false);
   // Said here, before the page loads again with it.
-  const [saidAt, setSaidAt] = useState<string | null>(null);
+  const [saidHere, setSaidHere] = useState<string | null>(null);
+  const saidAt = said === undefined ? saidHere : said;
   const [problem, setProblem] = useState<string | null>(null);
 
   if (state.at !== null || saidAt !== null) {
     // Said on this screen, the button just pressed is gone: focus moves here.
     return (
-      <TakesFocus when={saidAt !== null}>
+      <TakesFocus
+        when={saidAt !== null && focusSaid}
+        {...(onSaidFocused === undefined ? {} : { onFocused: onSaidFocused })}
+      >
         <View style={styles.row} accessible accessibilityLiveRegion="polite">
           <Icon icon={CircleCheck} color={palette.primary} />
           <Text style={[typography.bodyStrong, styles.grow, { color: palette.text }]}>{told}</Text>
@@ -85,8 +103,8 @@ export function ImHere({
           void send().then((answer) => {
             setSending(false);
             if (answer.ok) {
-              setSaidAt(answer.data.checkedInAt);
-              onSaid();
+              setSaidHere(answer.data.checkedInAt);
+              onSaid(answer.data.checkedInAt);
               return;
             }
             const { code, opensAt: opens } = answer.error;

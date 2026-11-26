@@ -53,6 +53,8 @@ test("a passenger cancels a paid booking the day before, with a full refund", as
       .getByText(/^Full refund of [\d,]+ ISK, back to the card you paid with\.$/)
       .filter(visible),
   ).toBeVisible();
+  // The refund is part of the outcome: a screen reader hears it with it.
+  expect(await focused(passenger)).toMatch(/Full refund of [\d,]+ ISK, back to the card/);
   await expect(counts.filter(visible)).toBeVisible();
   await expect(passenger.getByRole("button", { name: "Cancel booking" })).toBeHidden();
 

@@ -102,12 +102,15 @@ decision, with every operator action logged.
    (Phase 4, [integrations](../architecture/integrations.md)). Since
    [spec 31](2026-11-26-one-ride-one-ticket.md) (3.7) a ride's details
    have them under a row, "Weather and roads", which unfolds the line and
-   the three links; a booking and the trip day show them as before.
+   the three links; so do a booking and its trip day (3.8 and 3.9), where
+   the Safety card became rows. The driver's ride shows them as before.
 3. **Share trip details:** from a booking or a trip, "Share trip" opens the
    phone's share sheet with a short text: date and time, from and to, the
    meeting point, the driver's first name, and the car's make, model, colour
    and number plate. Nothing is stored and no link is created; the person
-   chooses whom to send it to.
+   chooses whom to send it to. Since spec 31 (3.8) it is a row of a
+   booking, "Share the ride's details", and "Report a problem with this
+   ride" (3.1) is the row after the weather and the roads.
 4. The community rules (spec 1) are one tap away from the report screen and
    the profile.
 

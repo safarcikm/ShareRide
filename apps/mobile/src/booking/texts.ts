@@ -11,6 +11,7 @@ import {
 import { errorText } from "@/auth/errors";
 import { compareDays, dayOf } from "@/lib/days";
 import { firstNameOf } from "@/people/texts";
+import { isWithdrawn } from "./status";
 
 // Booking texts that depend on the answer or the clock (spec 5, section 8).
 
@@ -23,22 +24,16 @@ function onDay(deadline: Date, at: Date): { readonly time: string; readonly tomo
   return { time: formatClock(deadline), tomorrow: compareDays(dayOf(deadline), dayOf(at)) > 0 };
 }
 
-/** "Request sent. Anna has until 22:00 to answer." */
-export function requestSentText(t: Translate, driver: string, deadline: Date, at: Date): string {
-  const { time, tomorrow } = onDay(deadline, at);
-  return t(tomorrow ? "booking.requestSentTomorrow" : "booking.requestSent", { driver, time });
-}
-
 /** "Anna has until 22:00 to answer.", under Request sent (spec 16, 3.7, item 5). */
 export function answerUntilText(t: Translate, driver: string, deadline: Date, at: Date): string {
   const { time, tomorrow } = onDay(deadline, at);
   return t(tomorrow ? "booking.answerByTomorrow" : "booking.answerBy", { driver, time });
 }
 
-/** "Pay by 12:30 to keep your seat." */
-export function payByText(t: Translate, deadline: Date, at: Date): string {
+/** "Your seat is held until 12:30.", under the title of a seat to pay for (spec 31, 3.8). */
+export function seatHeldText(t: Translate, deadline: Date, at: Date): string {
   const { time, tomorrow } = onDay(deadline, at);
-  return t(tomorrow ? "booking.payByTomorrow" : "booking.payBy", { time });
+  return t(tomorrow ? "booking.seatHeldUntilTomorrow" : "booking.seatHeldUntil", { time });
 }
 
 /** "Pay by 12:30", or "Pay by 08:10 tomorrow": the deadline alone, as in a tag (spec 31, 3.10). */
@@ -119,6 +114,56 @@ export function refundText(
     : t("booking.noRefund", {
         time: formatDuration(booking.cancellationRules.freeUntilMinutes * 60, locale),
       });
+}
+
+/**
+ * Why a booking ended, for its passenger, in one sentence under the title
+ * that says how (spec 31, 3.8): the driver could not take it, nobody
+ * answered or paid in time, who cancelled and why, or a no-show. Null where
+ * there is no more to say: nobody gave a reason, or a no-show's report is
+ * open and says where it stands (spec 8, 3.3).
+ */
+export function endedText(t: Translate, locale: Locale, booking: Booking): string | null {
+  switch (booking.status) {
+    case "declined":
+      // Declined because the driver cancelled the trip, it says so and why (spec 6, 3.3).
+      return booking.cancellation === null
+        ? t("booking.declined")
+        : (cancellationTexts(t, locale, booking)?.said ?? null);
+    case "expired":
+      // An expired booking keeps the deadline that passed: the driver's to
+      // answer, or the passenger's to pay.
+      return t(
+        booking.paymentDueAt === null && booking.requestExpiresAt !== null
+          ? "booking.expired"
+          : "booking.unpaidExpired",
+      );
+    case "cancelled":
+      return isWithdrawn(booking)
+        ? t("booking.withdrawn")
+        : (cancellationTexts(t, locale, booking)?.said ?? null);
+    case "no_show":
+      return booking.dispute !== null && booking.dispute.outcome === null
+        ? null
+        : t(booking.payment === "in_person" ? "booking.noShowInPerson" : "booking.noShow");
+    default:
+      return null;
+  }
+}
+
+/**
+ * What else a cancellation says to the passenger, under why the booking
+ * ended (spec 6): the driver's note, the refund, and that it shows on
+ * their profile. None for a booking that ended another way.
+ */
+export function endedLines(t: Translate, locale: Locale, booking: Booking): readonly string[] {
+  const cancelled =
+    (booking.status === "cancelled" && !isWithdrawn(booking)) || booking.status === "declined";
+  const texts = cancelled ? cancellationTexts(t, locale, booking) : null;
+  if (texts === null) return [];
+  return [texts.note, texts.refund, texts.counts ? t("booking.countsOnReliability") : null].filter(
+    (line) => line !== null,
+  );
 }
 
 /**

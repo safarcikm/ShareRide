@@ -73,7 +73,10 @@ test("a passenger requests a seat, the driver accepts, the passenger pays", asyn
   await passenger.reload();
   await expect(passenger).toHaveURL(/\/bookings\/[0-9a-f-]+$/);
   await expect(
-    passenger.getByText(/^Pay [\d,]+ ISK to confirm your seat$/).filter(visible),
+    passenger.getByRole("heading", { name: "Bára said yes: pay to keep your seat" }),
+  ).toBeVisible();
+  await expect(
+    passenger.getByText(/^Your seat is held until \d\d:\d\d( tomorrow)?\.$/).filter(visible),
   ).toBeVisible();
   // Accepted: the account's email reaches the passenger on the web, so no
   // email is asked for (spec 7, 3.6.2; spec 26).

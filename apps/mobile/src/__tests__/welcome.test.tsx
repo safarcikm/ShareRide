@@ -629,7 +629,7 @@ describe("Find, signed in (spec 31, 3.5)", () => {
     expect(screen.queryByTestId("needs-you-card")).toBeNull();
     expect(filledButtons()).toBe(1);
     await fireEvent.press(ride);
-    expect(await screen.findByText("Request sent. Anna has until 22:00 to answer.")).toBeVisible();
+    expect(await screen.findByText("Anna has until 22:00 to answer.")).toBeVisible();
     expect(screen).toHavePathname(`/bookings/${northBooking().id}`);
   });
 
@@ -651,7 +651,7 @@ describe("Find, signed in (spec 31, 3.5)", () => {
     // One filled button outside the card (R31.1): Find a ride.
     expect(filledButtons()).toBe(1);
     await fireEvent.press(card.getByRole("link", { name: "Pay 2,900 ISK" }));
-    expect(await screen.findByText("Pay 2,900 ISK to confirm your seat")).toBeVisible();
+    expect(await screen.findByRole("header", { name: "Pay to keep your seat" })).toBeVisible();
     expect(screen).toHavePathname(`/bookings/${unpaidBooking.id}`);
   });
 

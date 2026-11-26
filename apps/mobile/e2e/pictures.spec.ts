@@ -1,8 +1,9 @@
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test, type Page } from "@playwright/test";
+import { apiUrl } from "../playwright.config";
 import { english, signUp } from "./support/account";
-import { requestSeat } from "./support/cancelling";
+import { confirmedBooking, requestSeat } from "./support/cancelling";
 import { postTripToSelfoss } from "./support/trips";
 
 // Pictures of screens for the specs (docs/specs/images), kept in git with
@@ -286,6 +287,82 @@ test.describe("pictures", () => {
     await dora.getByRole("button", { name: "Send request", exact: true }).click();
     await expect(dora.getByRole("heading", { name: "Request sent" }).filter(visible)).toBeVisible();
     await shoot("booked", "light");
+    await other.close();
+  });
+
+  // A booked seat and its trip day as built (spec 31, 3.8, 3.9 and 3.16).
+  test("a booked seat and the trip day (spec 31)", async ({ page, browser }, info) => {
+    test.setTimeout(240_000);
+    const folder = join(root ?? "", "one-ride-one-ticket", "built");
+    mkdirSync(folder, { recursive: true });
+    const wide = info.project.name === "desktop";
+    const window = wide ? { width: 1280, height: 720 } : (page.viewportSize() ?? null);
+    if (window === null) throw new Error("The page has no size");
+
+    // Bára offers a ride for tomorrow; Dóra asks, Bára says yes and Dóra pays.
+    await page.setViewportSize(window);
+    const { userAgent, isMobile, hasTouch, baseURL } = info.project.use;
+    const other = await browser.newContext({
+      viewport: window,
+      deviceScaleFactor: 2,
+      userAgent,
+      isMobile,
+      hasTouch,
+      baseURL,
+      locale: "en-GB",
+    });
+    const dora = await other.newPage();
+    // The whole ride, to N1 Selfoss, which leaves the capital area.
+    const { tripId, booking } = await confirmedBooking(page, dora, [], 3);
+
+    const visible = { visible: true };
+    const shoot = async (name: string, scheme: "light" | "dark") => {
+      await showWhole(dora, window.width);
+      const kind = wide ? "laptop" : "phone";
+      await dora.screenshot({
+        path: join(folder, `${name}-${kind}-${scheme}.png`),
+        scale: wide ? "css" : "device",
+      });
+      await dora.setViewportSize(window);
+    };
+    const speak = async (to: "Icelandic" | "English") => {
+      await dora.emulateMedia({ colorScheme: to === "Icelandic" ? "dark" : "light" });
+      await dora.goto("/");
+      const [press, then] =
+        to === "Icelandic"
+          ? ["Change the language to Icelandic", "Skipta yfir í ensku"]
+          : ["Skipta yfir í ensku", "Change the language to Icelandic"];
+      await dora.getByRole("button", { name: press }).click();
+      await expect(dora.getByRole("button", { name: then })).toBeVisible();
+    };
+    const open = async (title: string | RegExp) => {
+      await dora.goto(booking);
+      await expect(dora.getByRole("heading", { name: title }).filter(visible)).toBeVisible();
+      await expect(dora.getByTestId("where-to-stand").filter(visible)).toBeVisible();
+    };
+
+    await open("Your seat is confirmed");
+    await shoot("booking", "light");
+    if (!wide) {
+      await speak("Icelandic");
+      await open("Sætið þitt er staðfest");
+      await shoot("booking", "dark");
+      await speak("English");
+    }
+
+    // The ride now leaves in 20 minutes: the trip day, with "I'm here" open.
+    const moved = await page.request.post(`${apiUrl}/e2e/trips/${tripId}/move`, {
+      data: { minutes: 20 },
+    });
+    expect(moved.status()).toBe(204);
+    await open(/^Leaves in \d+ minutes$/);
+    await expect(dora.getByRole("button", { name: "I'm here", exact: true })).toBeVisible();
+    await shoot("trip-day", "light");
+    if (!wide) {
+      await speak("Icelandic");
+      await open(/^Brottför eftir \d+ mínútur$/);
+      await shoot("trip-day", "dark");
+    }
     await other.close();
   });
 });

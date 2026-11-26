@@ -136,7 +136,12 @@ describe("on a booking (spec 5)", () => {
     });
     expect(await screen.findByText("4.3 (3 ratings)")).toBeVisible();
     expect(screen.getByText("Reliability: 91%")).toBeVisible();
-    await fireEvent.press(screen.getByRole("link", { name: "See profile: Anna" }));
+    // The whole line about her is the link, and says all of it (spec 31, 3.7).
+    await fireEvent.press(
+      screen.getByRole("link", {
+        name: "See profile: Anna, 4.3 (3 ratings), Reliability: 91%",
+      }),
+    );
     expect(await screen.findByRole("header", { name: "Anna" })).toBeVisible();
     expect(screen).toHavePathname(`/people/${annaProfileId}`);
   });

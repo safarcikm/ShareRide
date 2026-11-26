@@ -1,5 +1,5 @@
 import type { Booking, CancelBookingBody } from "@shareride/contracts";
-import { fireEvent, screen } from "expo-router/testing-library";
+import { fireEvent, screen, within } from "expo-router/testing-library";
 import { AccessibilityInfo } from "react-native";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
@@ -11,8 +11,10 @@ import {
   paidBooking,
   unpaidBooking,
 } from "@/testing/bookings";
+import { filledButtons } from "@/testing/buttons";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
 import { searchApi } from "@/testing/search";
+import { colors } from "@/theme/tokens";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
 jest.mock("@/auth/token-store", () => {
@@ -98,24 +100,29 @@ const choose = async (reason: string) => {
 };
 
 describe("Cancelling a booking (spec 6, 3.5)", () => {
-  it("offers Cancel booking after the booking's facts and the chat", async () => {
+  it("offers Cancel booking as the last row, in red, after the booking's facts and the chat (R31.3)", async () => {
     await openBooking(paidBooking);
     const cancel = await screen.findByRole("button", { name: "Cancel booking" });
-    const message = screen.getByRole("button", { name: "Message Anna" });
-    const buttons = screen.getAllByRole("button");
-    expect(buttons.indexOf(cancel)).toBeGreaterThan(buttons.indexOf(message));
+    expect(screen.getByRole("link", { name: "Message Anna" })).toBeVisible();
+    // What cannot be undone is the last thing on the page, and never filled.
+    const rows = within(screen.getByTestId("action-rows")).getAllByTestId("row-words");
+    const last = rows.at(-1);
+    if (last === undefined) throw new Error("No rows");
+    expect(within(last).getByText("Cancel booking")).toHaveStyle({ color: colors.light.error });
+    expect(within(cancel).queryByTestId("row-chevron")).toBeNull();
+    expect(filledButtons()).toBe(0);
   });
 
   it("is not offered to the driver here (spec 6, 3.4 comes on the driver's trip page)", async () => {
     await openBooking({ ...paidBooking, viewer: "driver" });
-    expect(await screen.findByRole("button", { name: "Message Gunna" })).toBeVisible();
+    expect(await screen.findByRole("link", { name: "Message Gunna" })).toBeVisible();
     expect(screen.queryByRole("button", { name: "Cancel booking" })).toBeNull();
   });
 
   it("is no longer offered once the time to get in has come: the trip day takes over (spec 8)", async () => {
     const board = { ...paidBooking.board, plannedAt: "2026-11-14T12:00:00.000Z" };
     await openBooking({ ...paidBooking, board });
-    expect(await screen.findByRole("button", { name: "Message Anna" })).toBeVisible();
+    expect(await screen.findByRole("link", { name: "Message Anna" })).toBeVisible();
     expect(screen.queryByRole("button", { name: "Cancel booking" })).toBeNull();
   });
 
@@ -176,8 +183,17 @@ describe("Cancelling a booking (spec 6, 3.5)", () => {
     expect(cancels(client)).toEqual([
       { reason: "plans_changed", terms: { refund: full, countsOnReliability: true } },
     ]);
-    expect(await screen.findByText("You cancelled this booking: Plans changed")).toBeVisible();
-    // The outcome takes focus, as the screen with the button pressed has gone.
+    // The outcome is the title with why under it, and takes focus, as the
+    // screen with the button pressed has gone.
+    const head = within(await screen.findByTestId("screen-head"));
+    expect(head.getByRole("header", { name: "Cancelled" })).toBeVisible();
+    expect(head.getByText("You cancelled this booking: Plans changed")).toBeVisible();
+    // With the refund and whether it shows on the profile, heard with it.
+    const outcome = within(head.getByTestId("screen-head-outcome"));
+    expect(
+      outcome.getByText("Full refund of 2,900 ISK, back to the card you paid with."),
+    ).toBeVisible();
+    expect(outcome.getByText("This cancellation shows on your profile")).toBeVisible();
     expect(focusMoves).toHaveBeenCalledTimes(1);
     focusMoves.mockRestore();
     expect(screen).toHavePathname(`/bookings/${bookingId}`);

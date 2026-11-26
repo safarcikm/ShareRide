@@ -84,6 +84,10 @@ afterEach(() => {
   (getLocales as jest.Mock).mockReturnValue([{ languageTag: "en-GB" }]);
 });
 
+// On a booked seat these are rows (spec 31, 3.8, item 7).
+const weatherAndRoads = { name: "Weather and roads" } as const;
+const shareDetails = { name: "Share the ride's details" } as const;
+
 describe("Safety on a trip (spec 9, 3.3)", () => {
   // People dial 112 themselves: the app has no button for it (Martin, 2026-11-18).
   const call = /112/;
@@ -112,6 +116,8 @@ describe("Safety on a trip (spec 9, 3.3)", () => {
     // Within the capital area, and a request has no trip details to share yet.
     await openBooking({ ...inTown, status: "requested" });
     expect(await screen.findByText("Request sent")).toBeVisible();
+    expect(screen.queryByRole("button", weatherAndRoads)).toBeNull();
+    expect(screen.queryByRole("button", shareDetails)).toBeNull();
     expect(screen.queryByRole("header", { name: "Safety" })).toBeNull();
   });
 
@@ -120,7 +126,8 @@ describe("Safety on a trip (spec 9, 3.3)", () => {
     mockNow = new Date("2026-11-16T12:00:00Z");
     await openBooking(paidBooking);
     expect(await screen.findByText("Your seat is confirmed")).toBeVisible();
-    expect(screen.queryByRole("header", { name: "Safety" })).toBeNull();
+    expect(screen.queryByRole("button", weatherAndRoads)).toBeNull();
+    expect(screen.queryByRole("button", shareDetails)).toBeNull();
   });
 
   it("leaves the driver's trip page once the trip has arrived", async () => {
@@ -134,8 +141,12 @@ describe("Safety on a trip (spec 9, 3.3)", () => {
 describe("Before you go (spec 9, 3.3.2)", () => {
   it("links to the weather, road conditions and SafeTravel on a trip out of the capital area", async () => {
     await openBooking(paidBooking);
+    // Folded until asked for: a row among the booking's rows.
+    const row = await screen.findByRole("button", weatherAndRoads);
+    expect(screen.queryByRole("link", { name: "Weather (vedur.is)" })).toBeNull();
+    await fireEvent.press(row);
     expect(
-      await screen.findByText("Before you go: check the weather, road conditions and SafeTravel."),
+      screen.getByText("Before you go: check the weather, road conditions and SafeTravel."),
     ).toBeVisible();
     for (const [name, url] of [
       ["Weather (vedur.is)", "https://en.vedur.is/"],
@@ -150,7 +161,8 @@ describe("Before you go (spec 9, 3.3.2)", () => {
   it("opens the Icelandic pages in Icelandic", async () => {
     (getLocales as jest.Mock).mockReturnValue([{ languageTag: "is-IS" }]);
     await openBooking(paidBooking);
-    await fireEvent.press(await screen.findByRole("link", { name: "Veður (vedur.is)" }));
+    await fireEvent.press(await screen.findByRole("button", { name: "Veður og færð" }));
+    await fireEvent.press(screen.getByRole("link", { name: "Veður (vedur.is)" }));
     expect(open).toHaveBeenLastCalledWith("https://www.vedur.is/");
     await fireEvent.press(screen.getByRole("link", { name: "Færð á vegum (umferdin.is)" }));
     expect(open).toHaveBeenLastCalledWith("https://umferdin.is/");
@@ -164,13 +176,15 @@ describe("Before you go (spec 9, 3.3.2)", () => {
   it("says so when a page cannot be opened", async () => {
     open.mockRejectedValueOnce(new Error("No browser"));
     await openBooking(paidBooking);
-    await fireEvent.press(await screen.findByRole("link", { name: "Weather (vedur.is)" }));
+    await fireEvent.press(await screen.findByRole("button", weatherAndRoads));
+    await fireEvent.press(screen.getByRole("link", { name: "Weather (vedur.is)" }));
     expect(await screen.findByText("We couldn't open that page on this device.")).toBeVisible();
   });
 
   it("leaves them out of a trip within the capital area", async () => {
     await openBooking(inTown);
-    expect(await screen.findByRole("button", { name: "Share the ride's details" })).toBeVisible();
+    expect(await screen.findByRole("button", shareDetails)).toBeVisible();
+    expect(screen.queryByRole("button", weatherAndRoads)).toBeNull();
     expect(screen.queryByRole("link", { name: "Weather (vedur.is)" })).toBeNull();
   });
 });
@@ -211,8 +225,8 @@ describe("Share trip details (spec 9, 3.3.3, R9.8)", () => {
 
   it("waits for the booking to be confirmed", async () => {
     await openBooking(northBooking());
-    expect(await screen.findByRole("link", { name: "Weather (vedur.is)" })).toBeVisible();
-    expect(screen.queryByRole("button", { name: "Share the ride's details" })).toBeNull();
+    expect(await screen.findByRole("button", weatherAndRoads)).toBeVisible();
+    expect(screen.queryByRole("button", shareDetails)).toBeNull();
   });
 
   it("shares the driver's trip without the passengers' names", async () => {

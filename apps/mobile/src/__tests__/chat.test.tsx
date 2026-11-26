@@ -728,7 +728,7 @@ describe("Where a chat starts (spec 7, 3.1 and 3.2)", () => {
         chatServer(client);
       },
     });
-    await fireEvent.press(await screen.findByRole("button", { name: "Message Anna" }));
+    await fireEvent.press(await screen.findByRole("link", { name: "Message Anna" }));
     expect(await screen.findByRole("header", { name: "Anna" })).toBeVisible();
     expect(screen).toHavePathname(conversationPage);
   });
@@ -741,7 +741,7 @@ describe("Where a chat starts (spec 7, 3.1 and 3.2)", () => {
         chatServer(client);
       },
     });
-    expect(await screen.findByRole("button", { name: "Message Anna" })).toBeVisible();
+    expect(await screen.findByRole("link", { name: "Message Anna" })).toBeVisible();
     expect(screen.queryByText("Where to stand")).toBeNull();
   });
 
@@ -753,7 +753,7 @@ describe("Where a chat starts (spec 7, 3.1 and 3.2)", () => {
       },
     });
     expect(await screen.findByRole("button", { name: "Withdraw request" })).toBeVisible();
-    expect(screen.queryByRole("button", { name: "Message Anna" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Message Anna" })).toBeNull();
   });
 
   const jon = northBooking({
@@ -1080,7 +1080,7 @@ describe("Messages on a laptop (spec 18, 3.11)", () => {
     await openApp(`/bookings/${bookingId}`, (client) => {
       bookingApi(client, () => paidBooking);
     });
-    await fireEvent.press(await screen.findByRole("button", { name: "Message Anna" }));
+    await fireEvent.press(await screen.findByRole("link", { name: "Message Anna" }));
     const open = await screen.findByTestId("panes-open");
     expect(await within(open).findByRole("header", { name: "Anna" })).toBeVisible();
     expect(
@@ -1090,7 +1090,7 @@ describe("Messages on a laptop (spec 18, 3.11)", () => {
       }),
     ).toBeVisible();
     await fireEvent.press(within(open).getByRole("button", { name: "Back" }));
-    expect(await screen.findByRole("button", { name: "Message Anna" })).toBeVisible();
+    expect(await screen.findByRole("link", { name: "Message Anna" })).toBeVisible();
     expect(screen).toHavePathname(`/bookings/${bookingId}`);
   });
 

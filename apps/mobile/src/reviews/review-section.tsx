@@ -21,14 +21,17 @@ import { Stars } from "./stars";
  * other's review of the viewer, once it shows. Nothing before the booking
  * completes. `framed` puts each review on a card, as on the booking page;
  * under a passenger on the driver's trip, which is a card already, they sit
- * in it.
+ * in it. Without `offer`, the page itself has the button and until when,
+ * as a booked seat has them in its bar and under its title (spec 31, 3.8).
  */
 export function ReviewSection({
   booking,
   framed,
+  offer = true,
 }: {
   readonly booking: Booking;
   readonly framed: boolean;
+  readonly offer?: boolean;
 }) {
   const { locale, t } = useLanguage();
   const palette = usePalette();
@@ -43,7 +46,7 @@ export function ReviewSection({
       : t("review.rateDriver");
   return (
     <>
-      {open && held === null ? (
+      {offer && open && held === null ? (
         <View style={styles.offer}>
           <Button
             variant="secondary"

@@ -679,7 +679,7 @@ async function bookAndWrite(
   await accept(driver, tripId, name);
   await passenger.reload();
   await payInSheet(passenger);
-  await passenger.getByRole("button", { name: "Message Bára" }).click();
+  await passenger.getByRole("link", { name: "Message Bára" }).click();
   const open = passenger.getByTestId("panes-open");
   await open.getByLabel("Write a message").fill(text);
   await open.getByRole("button", { name: "Send", exact: true }).click();
@@ -869,28 +869,34 @@ test.describe("My rides, a booking and Profile", () => {
     }
     await driver.setViewportSize(laptop(1280));
 
-    // A request for the whole trip, out of the capital area, so Safety has
-    // all it can have: the ride with its price beside where the booking
-    // stands, and the button no wider than a phone's column.
+    // A request for the whole trip, out of the capital area, so the rows
+    // have all they can have (spec 31, 3.16, item 2): the ride as a ticket
+    // beside the road and the driver, and "Withdraw request" the last row
+    // under it.
     const dora = await askForSeat(browser, baseURL, tripId, "Dóra", 3);
     const booking = dora.url().replace(/\/booked$/, "");
     await dora.goto(booking);
     const main = dora.getByTestId("columns-main").filter(shown);
     const side = dora.getByTestId("columns-side").filter(shown);
-    const withdraw = main.getByRole("button", { name: "Withdraw request" });
+    const ticket = side.getByTestId("booking-ticket");
+    const withdraw = side.getByRole("button", { name: "Withdraw request" });
     await expect(withdraw).toBeVisible();
-    await expect(side.getByText("Get in", { exact: true })).toBeVisible();
-    expect((await box(withdraw)).width).toBeLessThanOrEqual(480);
+    await expect(ticket).toBeVisible();
+    await expect(main.getByLabel("Step 1 of 4: Asked")).toBeVisible();
     // The driver's card has a cell of its own while there is no place to
     // stand at yet.
     await expect(main.getByTestId("grid-cell")).toHaveCount(1);
 
-    // Accepted: paying is in the main column at every width, with the ride
-    // and "Cancel booking" beside it and no bar at the window's bottom.
+    // Accepted: Pay is at the top of the side column at every width, over
+    // the ride, with "Cancel booking" the last row and no bar at the
+    // window's bottom.
     await accept(driver, tripId, "Dóra");
     await dora.reload();
-    const pay = main.getByRole("button", { name: /^Pay [\d,]+ ISK$/ });
+    const pay = side.getByRole("button", { name: /^Pay [\d,]+ ISK$/ });
     await expect(pay).toBeVisible();
+    await expect(
+      dora.getByRole("heading", { name: "Bára said yes: pay to keep your seat" }),
+    ).toBeVisible();
     for (const width of widths) {
       await dora.setViewportSize(laptop(width));
       const mainBox = await box(main);
@@ -898,22 +904,25 @@ test.describe("My rides, a booking and Profile", () => {
       expect(sideBox.x).toBeGreaterThan(mainBox.x + mainBox.width);
       expect(sideBox.y).toBeCloseTo(mainBox.y, 0);
       const payBox = await box(pay);
-      expect(payBox.width).toBeLessThanOrEqual(480);
-      expect(payBox.x).toBeCloseTo(mainBox.x, 0);
-      expect(payBox.x + payBox.width).toBeLessThanOrEqual(mainBox.x + mainBox.width + 1);
-      await expect(side.getByRole("button", { name: "Cancel booking" })).toBeVisible();
+      const ticketBox = await box(ticket);
+      expect(payBox.x).toBeGreaterThanOrEqual(sideBox.x);
+      expect(payBox.x + payBox.width).toBeLessThanOrEqual(sideBox.x + sideBox.width + 1);
+      expect(payBox.y + payBox.height).toBeLessThanOrEqual(ticketBox.y);
+      const cancel = await box(side.getByRole("button", { name: "Cancel booking" }));
+      expect(cancel.y).toBeGreaterThan(ticketBox.y + ticketBox.height - 1);
       await expect(dora.getByTestId("bottom-bar").filter(shown)).toHaveCount(0);
       await expectNoSidewaysScroll(dora);
     }
 
-    // Paid: the driver and where to stand share a row where the main
-    // column has room for both, with Safety under them; writing to the
-    // driver, cancelling and reporting are beside them, under the ride.
+    // Paid: the driver, with Message, and where to stand share a row where
+    // the main column has room for both; sharing, the weather, reporting
+    // and cancelling are rows beside them, under the ride.
     await dora.setViewportSize(laptop(1280));
     await payInSheet(dora);
     const cells = main.getByTestId("grid-cell");
     await expect(cells).toHaveCount(2);
     await expect(cells.nth(0).getByText("Bára", { exact: true })).toBeVisible();
+    await expect(cells.nth(0).getByRole("link", { name: "Message Bára" })).toBeVisible();
     await expect(cells.nth(1).getByRole("heading", { name: "Where to stand" })).toBeVisible();
     for (const width of widths) {
       await dora.setViewportSize(laptop(width));
@@ -927,14 +936,25 @@ test.describe("My rides, a booking and Profile", () => {
           expect(standBox.y).toBeGreaterThan(driverBox.y + driverBox.height - 1);
         }).toPass({ timeout: 5_000 });
       }
-      const ride = await box(side.getByText("Get in", { exact: true }));
-      for (const name of ["Message Bára", "Cancel booking", "Report a problem with this ride"]) {
-        const button = await box(side.getByRole("button", { name, exact: true }));
-        expect(button.y).toBeGreaterThan(ride.y);
+      // The rows in their order, what cannot be undone last (R31.3).
+      let above = await box(ticket);
+      for (const name of [
+        "Share the ride's details",
+        "Weather and roads",
+        "Report a problem with this ride",
+        "Cancel booking",
+      ]) {
+        const row = await box(
+          side
+            .getByRole("button", { name, exact: true })
+            .or(side.getByRole("link", { name, exact: true })),
+        );
+        expect(row.y).toBeGreaterThan(above.y + above.height - 1);
+        above = row;
       }
-      await expect(main.getByRole("button", { name: "Share the ride's details" })).toBeVisible();
-      await expectButtonsInside(side, 3);
-      await expectButtonsInside(main, 4);
+      await expectButtonsInside(side, 4);
+      // Message, the driver's profile and "Open in maps".
+      await expectButtonsInside(main, 3);
       await expectNoSidewaysScroll(dora);
     }
 
@@ -945,7 +965,7 @@ test.describe("My rides, a booking and Profile", () => {
       expect(await side.evaluate((part) => part.scrollHeight - part.clientHeight)).toBe(0);
     }).toPass({ timeout: 5_000 });
     const sideBox = await box(side);
-    const last = await box(side.getByRole("button", { name: "Report a problem with this ride" }));
+    const last = await box(side.getByRole("button", { name: "Cancel booking" }));
     expect(last.y + last.height).toBeLessThanOrEqual(sideBox.y + sideBox.height);
     expect(sideBox.y + sideBox.height).toBeLessThanOrEqual(720);
 
@@ -986,9 +1006,11 @@ test.describe("My rides, a booking and Profile", () => {
     await expectButtonsInside(rows, 6);
     await expectNoSidewaysScroll(dora);
     await dora.goto(booking);
-    await expect(side.getByText("Inn", { exact: true })).toBeVisible();
-    await expectButtonsInside(side, 3);
-    await expectButtonsInside(main, 4);
+    await expect(dora.getByRole("heading", { name: "Sætið þitt er staðfest" })).toBeVisible();
+    await expect(side.getByTestId("booking-ticket")).toBeVisible();
+    await expect(side.getByRole("button", { name: "Afbóka", exact: true })).toBeVisible();
+    await expectButtonsInside(side, 4);
+    await expectButtonsInside(main, 3);
     await expectNoSidewaysScroll(dora);
     await dora.goto("/my-rides");
     await expect(hers).toHaveCount(1);

@@ -252,18 +252,20 @@ describe("Reporting a problem with a booking (spec 9, 3.1.1; R9.1)", () => {
 
   it("is offered on a confirmed booking, about the booking", async () => {
     await openBooking(paidBooking);
+    // A row that leads to its own screen (spec 31, 3.8, item 7).
     await fireEvent.press(
-      await screen.findByRole("button", { name: "Report a problem with this ride" }),
+      await screen.findByRole("link", { name: "Report a problem with this ride" }),
     );
     expect(
       await screen.findByRole("header", { name: "Report a problem with this ride" }),
     ).toBeVisible();
+    expect(screen).toHavePathname("/report");
   });
 
   it("is not offered once the time to report has passed", async () => {
     await openBooking({ ...paidBooking, status: "completed", problemReportable: false });
-    expect(await screen.findByRole("button", { name: "Message Anna" })).toBeVisible();
-    expect(screen.queryByRole("button", { name: "Report a problem with this ride" })).toBeNull();
+    expect(await screen.findByRole("link", { name: "Message Anna" })).toBeVisible();
+    expect(screen.queryByRole("link", { name: "Report a problem with this ride" })).toBeNull();
   });
 
   it("is not offered for a request", async () => {
@@ -275,7 +277,7 @@ describe("Reporting a problem with a booking (spec 9, 3.1.1; R9.1)", () => {
       problemReportable: false,
     });
     expect(await screen.findByRole("button", { name: "Withdraw request" })).toBeVisible();
-    expect(screen.queryByRole("button", { name: "Report a problem with this ride" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Report a problem with this ride" })).toBeNull();
   });
 });
 
