@@ -1,4 +1,5 @@
 import { act, fireEvent, screen } from "expo-router/testing-library";
+import { Dimensions } from "react-native";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
 import { driverApi, northMyTrip } from "@/testing/bookings";
@@ -115,6 +116,37 @@ describe("Post again and Post the return (spec 6, 3.6)", () => {
     await fireEvent.press(await screen.findByRole("button", { name: "Post the way back" }));
     expect(await screen.findByLabelText(/^Leaving Hof, Akureyri at/)).toBeVisible();
     expect(copies(client)).toEqual([{ reverse: false }, { reverse: true }]);
+  });
+
+  it("says the row pressed is at work and that the other waits, also when the window turns wide", async () => {
+    let release = () => {};
+    const copyAfter = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await openTrip({ copyAfter });
+    await fireEvent.press(await screen.findByRole("button", { name: "Post it again" }));
+    expect(screen.getByRole("button", { name: "Post it again, Loading" })).toBeVisible();
+    // Nothing comes of pressing the other until this draft is made, and it says so.
+    expect(screen.getByRole("button", { name: "Post the way back" })).toBeDisabled();
+    try {
+      // The two rows move from the rows at the page's end to the main column.
+      await act(() => {
+        Dimensions.set({ window: { width: 1280, height: 800, scale: 1, fontScale: 1 } });
+      });
+      expect(screen.getByRole("header", { name: "Drive it again" })).toBeVisible();
+      expect(screen.getByRole("button", { name: "Post it again, Loading" })).toBeVisible();
+      expect(screen.getByRole("button", { name: "Post the way back" })).toBeDisabled();
+    } finally {
+      await act(() => {
+        Dimensions.set({ window: { width: 750, height: 1334, scale: 2, fontScale: 2 } });
+      });
+    }
+    expect(screen.getByRole("button", { name: "Post it again, Loading" })).toBeVisible();
+    await act(async () => {
+      release();
+      await copyAfter;
+    });
+    expect(await screen.findByRole("header", { name: "When are you leaving?" })).toBeVisible();
   });
 
   it("is offered on a cancelled trip too", async () => {

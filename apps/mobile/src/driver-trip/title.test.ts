@@ -32,6 +32,10 @@ describe("the title of a ride I drive", () => {
     expect(title(northMyTrip).line).toBe("Sunday 15 November at 09:00");
   });
 
+  it("has no line for a ride without a time, rather than an empty one", () => {
+    expect(title({ ...northMyTrip, departsAt: null }).line).toBeUndefined();
+  });
+
   it("says when and where from on the trip day", () => {
     const today: MyTrip = { ...northMyTrip, phase: "trip_day" };
     expect(title(today, 0, new Date("2026-11-15T07:00:00Z")).line).toBe(

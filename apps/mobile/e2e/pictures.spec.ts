@@ -520,7 +520,7 @@ test.describe("pictures", () => {
     await open("Your ride to N1 Selfoss");
     await passengerRow(page, "Dóra", "Confirmed").click();
     const passengers = page.getByTestId("passengers").filter(visible);
-    await expect(passengers.getByRole("button", { name: "Cancel booking: Dóra" })).toBeVisible();
+    await expect(passengers.getByRole("link", { name: "Cancel booking: Dóra" })).toBeVisible();
     await passengers.scrollIntoViewIfNeeded();
     // As a finger leaves it: no pointer stays over the row.
     await page.mouse.move(0, 0);

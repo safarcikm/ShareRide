@@ -99,12 +99,14 @@ export default function DriverTripScreen() {
       Promise.all([
         session.call(myTripRoute, { params: { id } }),
         session.call(tripBookingsRoute, { params: { id } }),
-        // For the car on the ticket; the page stands without it.
-        session.call(listVehiclesRoute, {}),
       ]),
     [session, id],
   );
   const { value: loaded, reload, refresh, pull } = useLoadedOnFocus(load);
+  // For the car on the ticket; the page stands without it. It loads when
+  // the page comes into view, not each time the trip day refreshes.
+  const loadCars = useCallback(() => session.call(listVehiclesRoute, {}), [session]);
+  const { value: cars } = useLoadedOnFocus(loadCars);
   useTripDayRefresh(loaded?.[0].ok === true && onTripDay(loaded[0].data), refresh);
   // The report made or answered before coming back, once focus has moved
   // to it: not again when it changes later.
@@ -130,7 +132,7 @@ export default function DriverTripScreen() {
   const [shared, setShared] = useState<ShareOutcome | null>(null);
   const again = usePostAgain(id);
 
-  if (loaded === undefined) {
+  if (loaded === undefined || cars === undefined) {
     return (
       <Screen width="page">
         <BackButton fallback={back} />
@@ -140,7 +142,7 @@ export default function DriverTripScreen() {
       </Screen>
     );
   }
-  const [trip, onTrip, cars] = loaded;
+  const [trip, onTrip] = loaded;
   // Pulling down loads them again (spec 16, 3.9).
   const pullBoth = () => pull(([trip, onTrip]) => trip.ok && onTrip.ok);
   if (!trip.ok || !onTrip.ok) {
@@ -265,7 +267,9 @@ export default function DriverTripScreen() {
     />
   );
 
-  // Safety stays until the last stop's time, the trip day included (spec 9, 3.3).
+  // The weather and the roads stay until the last stop's time, the trip day
+  // included; the ride's details can be shared until it leaves, as
+  // `tripShareText` has none for a ride that has (spec 9, 3.3).
   const arrived = trip.data.arrivesAt !== null && new Date(trip.data.arrivesAt) <= now();
   const regions = trip.data.stops.map((stop) => stop.meetingPoint.region);
   const details = arrived ? null : tripShareText(t, locale, trip.data);

@@ -16,7 +16,8 @@ import { onTripDay } from "@/trip-day/driver";
 
 export interface DriverTitle {
   readonly title: string;
-  readonly line: string;
+  /** Undefined for a ride with no time yet, which has nothing to say. */
+  readonly line: string | undefined;
 }
 
 /**
@@ -35,7 +36,7 @@ export function driverTitle(
   const from = trip.stops[0]?.meetingPoint.name[locale] ?? "";
   const to = trip.stops.at(-1)?.meetingPoint.name[locale] ?? "";
   const title = t("driverTrip.title", { from, to });
-  const said = (line: string): DriverTitle => ({ title, line });
+  const said = (line: string | undefined): DriverTitle => ({ title, line });
   if (trip.status === "cancelled") {
     return said(
       trip.cancellation === null
@@ -47,7 +48,7 @@ export function driverTitle(
   }
   if (requests > 0) return said(t("driverTrip.needsAnswer", { count: requests }));
   const departs = trip.departsAt === null ? null : new Date(trip.departsAt);
-  if (departs === null) return said("");
+  if (departs === null) return said(undefined);
   const time = formatClock(departs);
   if (onTripDay(trip)) {
     const today = compareDays(dayOf(departs), dayOf(at)) === 0;

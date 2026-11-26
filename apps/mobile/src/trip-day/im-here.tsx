@@ -45,7 +45,6 @@ export function ImHere({
   label,
   opens,
   outlined = false,
-  accessibilityLabel,
   send,
   said,
   focusSaid = true,
@@ -62,7 +61,6 @@ export function ImHere({
   readonly opens?: (time: string) => string;
   /** Not the screen's main button: another one stands over it. */
   readonly outlined?: boolean;
-  readonly accessibilityLabel?: string;
   readonly send: () => Promise<
     { readonly ok: true; readonly data: { checkedInAt: string } } | CallFailure
   >;
@@ -115,7 +113,6 @@ export function ImHere({
         fill={outlined}
         variant={outlined ? "secondary" : "primary"}
         label={label ?? t("tripDay.imHere")}
-        {...(accessibilityLabel === undefined ? {} : { accessibilityLabel })}
         busy={sending}
         onPress={() => {
           setSending(true);

@@ -575,7 +575,8 @@ As built, for the driver, on a phone
   an outlined button under it. Before a stop opens the bar says from
   when: "At Mjódd bus terminal you can say you're here from 19:14." Once
   said, "We've told your passengers you're here." stands in the button's
-  place, with focus, and the stop's card says the same.
+  place, with focus, and the stop's card says the same; the next stop's
+  button, or from when it can be said there, stands under it.
 - "Mark as no-show" stays a quiet button under the passenger at their
   stop, once it can be said, and opens its screen.
 
@@ -701,9 +702,13 @@ PR 8b).
   a confirmed booking, named "Message Dóra". Pressing the row unfolds it
   in place: their part as a timetable, with the times they get in and
   out, then "See profile" and "Report Dóra" as links, and "Cancel
-  booking", red and last, until the time to get in. The order is not the
-  one first written (decision 11): what cannot be undone comes last
-  (R31.3). Someone leaving PuffinRide has no profile row.
+  booking", red and last, until the time to get in; it opens the screen
+  that asks, so it is a link too. The order is not the one first written
+  (decision 11): what cannot be undone comes last (R31.3). Someone
+  leaving PuffinRide has no profile row. The whole row unfolds it and
+  tints under the pointer and while pressed. Once the ride is done the
+  reviews stand under the row while there is one to give or to read, and
+  nothing does once the 14 days are over with none written.
 - **Seats:** a square for each seat, the taken ones filled, with "2 of 3
   taken" beside them and "at the busiest, Mjódd bus terminal to Olís
   Norðlingaholt" under that; the words go under the squares where a car
@@ -712,11 +717,13 @@ PR 8b).
 - **Rows:** Edit the ride, Share this ride, "Share the ride's details",
   "Weather and roads", Post it again, Post the way back, and Cancel the
   ride, red and last. The two in the middle are what the Safety card held
-  (spec 9, 3.3), which is gone: they stay until the last stop's time, the
-  others until the ride leaves. "Share the ride's details" has a shield
-  here, to tell it from "Share this ride" beside it; a booked seat, which
-  has only the one, keeps the sharing icon. A row that makes a draft says
-  "Loading" at its right while it does.
+  (spec 9, 3.3), which is gone. "Weather and roads" stays until the last
+  stop's time; the two that post the ride again always; the others,
+  "Share the ride's details" among them, until the ride leaves. "Share
+  the ride's details" has a shield here, to tell it from "Share this
+  ride" beside it; a booked seat, which has only the one, keeps the
+  sharing icon. A row that makes a draft says "Loading" at its right
+  while it does, and the other of the two waits, muted, until it has.
 - **What an action did** ("Request declined.", "Booking cancelled. The
   passenger has been told.", "Ride changed. Your passengers have been
   told.") stands over the page's parts as a notice, with focus, as
@@ -813,9 +820,12 @@ changes:
    ride" is not a row there: the ticket, with sharing in its corner,
    stands right over the rows, and with five rows the column was 37 too
    high for that window. On the trip day "I'm here" leads the side
-   column, as on a booked seat. Whether each stretch shows, what "I'm
-   here" told and a draft being made stay when the window turns narrow
-   and wide again.
+   column, as on a booked seat, whole in that window; until the ride
+   leaves the column under it is then whole in a window 800 high, and in
+   one 720 high its last row is reached by scrolling the column (51 more
+   than fit; PR 12 looks at it again). Whether each stretch shows, what
+   "I'm here" told and a draft being made stay when the window turns
+   narrow and wide again.
 4. **My rides:** a grid of tickets, as today.
 5. **Profile:** the person's card in the side column, the groups in the
    main column.

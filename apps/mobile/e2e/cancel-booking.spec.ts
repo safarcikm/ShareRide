@@ -90,7 +90,7 @@ test("a driver cancels a paid booking with a note the passenger reads", async ({
   // opens its own screen.
   await driver.reload();
   await passengerRow(driver, "Dóra", "Confirmed").click();
-  await driver.getByRole("button", { name: "Cancel booking: Dóra" }).click();
+  await driver.getByRole("link", { name: "Cancel booking: Dóra" }).click();
   await expect(driver).toHaveURL(/\/bookings\/[0-9a-f-]+\/cancel$/);
   await expect(driver.getByRole("heading", { name: "Cancel booking: Dóra" })).toBeVisible();
   await expect(

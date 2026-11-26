@@ -116,9 +116,9 @@ export interface SaidHere {
 /**
  * The stops the driver's "I'm here" is about at this moment (spec 31, 3.9,
  * item 4), in the order they show: the stop where it was just said here,
- * which then says what that told; each stop where it is open now, as the
- * windows overlap and the driver picks where they are (spec 8, 3.2); or,
- * with none of those, the next stop, which says when it opens. Empty when
+ * which then says what that told; then each stop where it is open now, as
+ * the windows overlap and the driver picks where they are (spec 8, 3.2),
+ * or, with none open, the next stop, which says when it opens. Empty when
  * there is nothing to say, and then the page has no bar.
  */
 export function driverImHereStops(
@@ -130,8 +130,8 @@ export function driverImHereStops(
   if (!onTripDay(trip)) return [];
   const { open, next } = imHereStops(trip, bookings, at);
   const rest = open.filter((position) => position !== said?.position);
-  if (said !== null) return [said.position, ...rest];
-  return rest.length > 0 ? rest : next === null ? [] : [next];
+  const ahead = rest.length > 0 || next === null || next === said?.position ? rest : [next];
+  return said === null ? ahead : [said.position, ...ahead];
 }
 
 /**

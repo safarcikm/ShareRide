@@ -43,8 +43,8 @@ type Only<Own extends keyof Kinds> = Pick<Kinds, Own> & {
 };
 
 type RowKind =
-  /** Does something: a button. */
-  | Only<"onPress">
+  /** Does something: a button. `disabled` while it has to wait for something else. */
+  | (Only<"onPress"> & { readonly disabled?: boolean })
   /** Opens a screen: a link, an `<a href>` on the web. */
   | Only<"href">
   /** Unfolds what is under it. */
@@ -66,14 +66,18 @@ type RowKind =
  * link with `href`, as a document on About is, spec 30, 3.1) or does
  * something; a chevron down unfolds its `children` under it; a switch turns
  * something on and off; a row that only `shows` a value has nothing there
- * and is not a button. A `danger` row is red and has no chevron.
+ * and is not a button. A `danger` row is red and has no chevron. A row
+ * that does something can be `disabled` while it has to wait: muted, with
+ * no tint, and it says so to a screen reader.
  */
 export function Row(props: RowLook & RowKind) {
   const { title, value, icon, danger = false, accessibilityLabel } = props;
   const palette = usePalette();
   const inRows = useInActionRows();
-  const [hovered, hover] = useHover();
-  const ink = danger ? palette.error : palette.text;
+  // Only a row that does something can wait.
+  const disabled = props.onPress !== undefined && props.disabled === true;
+  const [hovered, hover] = useHover(disabled);
+  const ink = disabled ? palette.textMuted : danger ? palette.error : palette.text;
   const face = (
     <>
       {icon === undefined ? null : (
@@ -166,7 +170,9 @@ export function Row(props: RowLook & RowKind) {
     <Pressable
       accessibilityRole={props.href === undefined ? "button" : "link"}
       accessibilityLabel={label}
-      {...(props.href === undefined ? { onPress: props.onPress } : linkProps(props.href))}
+      {...(props.href === undefined
+        ? { onPress: props.onPress, disabled, "aria-disabled": disabled }
+        : linkProps(props.href))}
       {...hover}
       {...ring}
       style={tinted}

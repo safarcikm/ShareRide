@@ -14,6 +14,18 @@ import { heldBack } from "./held-back";
 import { Stars } from "./stars";
 
 /**
+ * Whether `ReviewSection` has anything to show for a booking at `at`: a
+ * review to offer or one held back while the 14 days last, or one written
+ * by either side. A part that frames the section leaves its frame out
+ * otherwise, as under a passenger nobody reviewed in time.
+ */
+export function showsReviews(booking: Booking, at: Date): boolean {
+  const { review } = booking;
+  if (review === null) return false;
+  return review.mine !== null || review.theirs !== null || at < new Date(review.closesAt);
+}
+
+/**
  * A completed booking's reviews, for whoever sees it (spec 8, 3.7): "Rate
  * the driver" or "Rate your passenger" while the 14 days last and nothing
  * is sent, with until when, or why not yet (`heldBack`); then the review

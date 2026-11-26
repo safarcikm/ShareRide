@@ -833,6 +833,28 @@ As built in 8a (spec 31 says the same where a person sees it, in 3.9,
   `look.spec.ts` opens the page with long names on a phone 360 wide, with
   the text as set and twice as large. Pictures: `built/driver-ride-*` and
   `built/driver-trip-day-*`.
+- **From the code review** (nothing critical), mended in the same PR: a
+  finished ride's passenger nobody reviewed in time had an empty band
+  under their row (`showsReviews` beside `ReviewSection` says whether
+  there is anything to frame); once "I'm here" was said the bar no longer
+  said when the next stop opens (`driverImHereStops` keeps it under what
+  was told); a passenger's row had no tint while pressed, and its padding
+  did not unfold it; "Cancel booking" under a passenger was a button that
+  opens a screen, now a link; "1 of 1 seats" in what accepting holds, now
+  counted on the car's seats in both languages; while one of "Post it
+  again" and "Post the way back" makes its draft the other neither looked
+  nor read as waiting (`Row` takes `disabled` for a row that does
+  something); the page asked for the cars on each 30-second refresh of
+  the trip day (they load when the page comes into view); a ride without
+  a time had an empty line under its title; "Share the ride's details"
+  goes when the ride leaves, which the spec had as the last stop's time;
+  `PartStop` and `ImHere`'s `accessibilityLabel` were left with no user.
+  Tests added for those, for someone whose account is gone on a row and
+  on a request, and for what "I'm here" told and a draft being made when
+  the window crosses the breakpoint. `laptop.spec.ts` now walks the trip
+  day too: the side column is whole in a window 800 high and 51 too high
+  for one 720 high, where "I'm here" is still whole and first. That and
+  three smaller things are on PR 12's list.
 
 ## PR 9: offering a ride
 
@@ -953,7 +975,18 @@ and deleting the account (3.19).
    line once that booking is cancelled. `BookingHead`, `bookingWords`,
    `backTo` and `leave` serve bookings, reviews and blocking from
    `trip-day/report-screen.tsx`: `@/booking/` is their home.
-10. **Docs:** spec 31 becomes Built, with what differs from the drawings;
+10. **Small things PR 8a's code review named:** on the driver's trip
+    day, until the ride leaves, a laptop's side column is 51 higher than a
+    window 1280 by 720 shows ("I'm here" over the ticket, the seats and
+    four rows), so its last row is reached by scrolling the column: a
+    row fewer there, or the seats under the passengers. Crossing the
+    breakpoint folds "Weather and roads" again and drops why "I'm here"
+    could not be said, as those live in their parts and not in the page.
+    `onTripDay` is asked of `trip-day/driver.tsx` and
+    `trip-day/passenger.tsx`, which hold components, by the two `title.ts`
+    files: a home of its own without them. A cancelled ride's page has no
+    pull to refresh, as before.
+11. **Docs:** spec 31 becomes Built, with what differs from the drawings;
     spec 15 has the parts; the roadmap and the changelog.
 
 ## After merging

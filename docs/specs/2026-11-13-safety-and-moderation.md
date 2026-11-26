@@ -117,7 +117,8 @@ decision, with every operator action logged.
    the three links; so do a booking and its trip day (3.8 and 3.9), where
    the Safety card became rows. So it did on the driver's ride (3.12):
    "Share the ride's details", with a shield, and "Weather and roads" are
-   two of the ride's rows, until the last stop's time.
+   two of the ride's rows: the first until the ride leaves, as before, the
+   second until the last stop's time.
 3. **Share trip details:** from a booking or a trip, "Share trip" opens the
    phone's share sheet with a short text: date and time, from and to, the
    meeting point, the driver's first name, and the car's make, model, colour

@@ -331,6 +331,24 @@ describe("Row", () => {
     expect(onPress).toHaveBeenCalledTimes(1);
   });
 
+  it("waits while it is disabled: muted, with no tint, saying so, and doing nothing", async () => {
+    const onPress = jest.fn();
+    await render(<Row disabled icon={Pencil} title="Post the way back" onPress={onPress} />);
+    const row = screen.getByRole("button", { name: "Post the way back" });
+    expect(row).toBeDisabled();
+    expect(screen.getByText("Post the way back")).toHaveStyle({
+      color: colors.light.textMuted,
+    });
+    await fireEvent(row, "hoverIn");
+    expect(row).not.toHaveStyle({ backgroundColor: colors.light.primarySoft });
+    await fireEvent.press(row);
+    expect(onPress).not.toHaveBeenCalled();
+    // Its turn comes: it is a row like any other again.
+    await screen.rerender(<Row icon={Pencil} title="Post the way back" onPress={onPress} />);
+    expect(screen.getByRole("button", { name: "Post the way back" })).toBeEnabled();
+    expect(screen.getByText("Post the way back")).toHaveStyle({ color: colors.light.text });
+  });
+
   it("unfolds what is under it, and says whether it is open", async () => {
     const onToggle = jest.fn();
     const row = (expanded: boolean) => (

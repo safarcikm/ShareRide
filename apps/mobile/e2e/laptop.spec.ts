@@ -5,6 +5,7 @@ import {
   type TripSearchResult,
 } from "@shareride/contracts";
 import { maxContentWidth } from "@shareride/ui";
+import { apiUrl } from "../playwright.config";
 import { english, signUp } from "./support/account";
 import { passengerRow } from "./support/driver-ride";
 import { expectNoSidewaysScroll, laptop, widths } from "./support/laptop";
@@ -1279,6 +1280,36 @@ test.describe("Offer a ride and the driver's ride", () => {
     await expectButtonsInside(side, 6);
     // Dóra's row, and posting it again and the way back.
     await expectButtonsInside(main, 3);
+    await expectNoSidewaysScroll(driver);
+
+    // The trip day (spec 31, 3.9, item 4, and 3.16, item 3): Dóra pays, and
+    // the ride leaves in 20 minutes. "I'm here" leads the side column, the
+    // screen's main button, over the ticket, the seats and the rows.
+    await dora.reload();
+    await payInSheet(dora);
+    const moved = await driver.request.post(`${apiUrl}/e2e/trips/${tripId}/move`, {
+      data: { minutes: 20 },
+    });
+    expect(moved.status()).toBe(204);
+    await driver.setViewportSize({ width: 1280, height: 800 });
+    await driver.reload();
+    const here = side.getByTestId("driver-im-here").getByRole("button");
+    await expect(here).toBeVisible();
+    await expect(driver.getByTestId("bottom-bar").filter(shown)).toHaveCount(0);
+    const hereBox = await box(here);
+    expect(hereBox.y).toBeGreaterThanOrEqual((await box(side)).y);
+    expect((await box(ticket)).y).toBeGreaterThan(hereBox.y + hereBox.height - 1);
+    // With the button over it the column is whole in a window 800 high.
+    await expect(async () => {
+      expect(await side.evaluate((part) => part.scrollHeight - part.clientHeight)).toBe(0);
+    }).toPass({ timeout: 5_000 });
+    // In one 720 high the button is still whole and first; the column's
+    // last row is then reached by scrolling the column itself.
+    await driver.setViewportSize({ width: 1280, height: 720 });
+    await expect(here).toBeInViewport({ ratio: 1 });
+    const lastRow = rows.getByRole("link").last();
+    await lastRow.scrollIntoViewIfNeeded();
+    await expect(lastRow).toBeInViewport({ ratio: 1 });
     await expectNoSidewaysScroll(driver);
     await dora.context().close();
   });

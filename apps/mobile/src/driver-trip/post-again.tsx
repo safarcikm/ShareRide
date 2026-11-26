@@ -16,8 +16,8 @@ import { rememberDropped } from "@/trips/copied";
  * ride, its stops reversed for the way back, and opens it at the date and
  * times, which the driver chooses again. Meeting points no longer in use
  * are left out, and the date and times step names them. One draft per
- * press: both rows wait while one is made, and the one pressed says so,
- * until the ride's page is back in view.
+ * press: both rows wait while one is made, the one pressed says so and the
+ * other is disabled, until the ride's page is back in view.
  *
  * The page places the `rows` in a card of rows and the `notice`, why no
  * draft was made, under that card; what is going on stays here, so it
@@ -70,6 +70,7 @@ export function usePostAgain(tripId: string): {
           icon={Repeat}
           title={t("trip.postAgain")}
           value={busy === "again" ? t("common.loading") : undefined}
+          disabled={busy === "return"}
           onPress={() => {
             void post(false);
           }}
@@ -78,6 +79,7 @@ export function usePostAgain(tripId: string): {
           icon={Undo2}
           title={t("trip.postReturn")}
           value={busy === "return" ? t("common.loading") : undefined}
+          disabled={busy === "again"}
           onPress={() => {
             void post(true);
           }}

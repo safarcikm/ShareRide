@@ -4,6 +4,7 @@ import type { Booking, MyTrip } from "@shareride/contracts";
 import { renderApp, completeMe } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
 import { bookingApi, driverApi, northBooking, northMyTrip, paidBooking } from "@/testing/bookings";
+import { filledButtons } from "@/testing/buttons";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
 import { onTheDay, rider, tripOnTheDay } from "@/testing/trip-day";
 import { tripsApi } from "@/testing/trips";
@@ -408,9 +409,8 @@ describe("the driver's trip day (spec 8, 3.1)", () => {
     const button = await bar.findByRole("button", { name: "I'm here at BSÍ bus terminal" });
     expect(button).toHaveStyle({ minHeight: 56 });
     expect(within(button).getByText("I'm here at BSÍ bus terminal")).toBeVisible();
-    expect(
-      screen.getAllByTestId("filled-button").filter((filled) => filled === button),
-    ).toHaveLength(1);
+    expect(bar.getByTestId("filled-button")).toBe(button);
+    expect(filledButtons()).toBe(1);
     expect(screen.queryByTestId("said-here")).toBeNull();
     const focusMoves = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
     focusMoves.mockClear();
@@ -499,6 +499,45 @@ describe("the driver's trip day (spec 8, 3.1)", () => {
     expect(screen.queryByRole("button", { name: /^I'm here at/ })).toBeNull();
   });
 
+  it("says when the next stop opens under what it told, once said where the next is not open yet", async () => {
+    // 08:45: said at BSÍ; Borgarnes opens at 09:30.
+    await openDriverTrip(tripOnTheDay());
+    const bar = within(await screen.findByTestId("bottom-bar"));
+    await fireEvent.press(await bar.findByRole("button", { name: "I'm here at BSÍ bus terminal" }));
+    expect(await bar.findByText("We've told your passengers you're here.")).toBeVisible();
+    expect(await bar.findByText("At Borgarnes you can say you're here from 09:30.")).toBeVisible();
+    expect(bar.queryByRole("button", { name: /^I'm here at/ })).toBeNull();
+  });
+
+  it("keeps what I'm here told when the window turns wide and narrow again, without taking focus again", async () => {
+    const told = "We've told your passengers you're here.";
+    // The ride loads again as it was: only the page knows it was said.
+    await openDriverTrip(tripOnTheDay(), () => ok(200, { checkedInAt: mockNow.toISOString() }));
+    const bar = within(await screen.findByTestId("bottom-bar"));
+    await fireEvent.press(await bar.findByRole("button", { name: "I'm here at BSÍ bus terminal" }));
+    expect(await bar.findByText(told)).toBeVisible();
+    const focusMoves = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
+    focusMoves.mockClear();
+    try {
+      await act(() => {
+        Dimensions.set({ window: { width: 1280, height: 800, scale: 1, fontScale: 1 } });
+      });
+      expect(screen.queryByTestId("bottom-bar")).toBeNull();
+      const side = within(screen.getByTestId("columns-side"));
+      expect(within(side.getByTestId("driver-im-here")).getByText(told)).toBeVisible();
+      expect(side.queryByRole("button", { name: "I'm here at BSÍ bus terminal" })).toBeNull();
+    } finally {
+      await act(() => {
+        Dimensions.set({ window: { width: 750, height: 1334, scale: 2, fontScale: 2 } });
+      });
+    }
+    expect(within(screen.getByTestId("bottom-bar")).getByText(told)).toBeVisible();
+    expect(screen.queryByRole("button", { name: "I'm here at BSÍ bus terminal" })).toBeNull();
+    // It was heard once, where the button was pressed; moving it says nothing again.
+    expect(focusMoves).not.toHaveBeenCalled();
+    focusMoves.mockRestore();
+  });
+
   it("has I'm here at the top of the side column on a laptop, over the ride's ticket", async () => {
     Dimensions.set({ window: { width: 1280, height: 800, scale: 1, fontScale: 1 } });
     try {
@@ -520,6 +559,25 @@ describe("the driver's trip day (spec 8, 3.1)", () => {
       await act(() => {
         Dimensions.set({ window: { width: 750, height: 1334, scale: 2, fontScale: 2 } });
       });
+    }
+  });
+
+  it("keeps itself up to date while open, without asking for the cars again", async () => {
+    jest.useFakeTimers();
+    try {
+      const { client } = await openDriverTrip(tripOnTheDay());
+      expect(await screen.findByText("Use this only when parked.")).toBeVisible();
+      const rides = loadsOf(client, "/v1/me/trips/{id}");
+      const lists = loadsOf(client, "/v1/me/trips/{id}/bookings");
+      const cars = loadsOf(client, "/v1/me/vehicles");
+      expect(cars).toBeGreaterThan(0);
+      await act(() => jest.advanceTimersByTimeAsync(30_000));
+      expect(loadsOf(client, "/v1/me/trips/{id}")).toBeGreaterThan(rides);
+      expect(loadsOf(client, "/v1/me/trips/{id}/bookings")).toBeGreaterThan(lists);
+      // The car on the ticket does not change while the ride is on.
+      expect(loadsOf(client, "/v1/me/vehicles")).toBe(cars);
+    } finally {
+      jest.useRealTimers();
     }
   });
 

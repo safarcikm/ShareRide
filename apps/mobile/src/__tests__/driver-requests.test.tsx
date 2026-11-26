@@ -510,10 +510,61 @@ describe("The driver's ride (spec 31, 3.12; spec 5, 3.3 and 3.7)", () => {
         .getAllByRole(/^(button|link)$/)
         .map((part) => (part.props as { accessibilityLabel: string }).accessibilityLabel),
     ).toEqual(["See profile: Jón", "Report Jón", "Cancel booking: Jón"]);
-    const cancel = under.getByRole("button", { name: "Cancel booking: Jón" });
+    // It opens the screen that asks; a link, as "Cancel the ride" is.
+    const cancel = under.getByRole("link", { name: "Cancel booking: Jón" });
     expect(within(cancel).getByText("Cancel booking")).toHaveStyle({ color: colors.light.error });
     await fireEvent.press(cancel);
     expect(screen).toHavePathname(`/bookings/${jon.id}/cancel`);
+  });
+
+  it("tints a passenger's row under the pointer and while it is pressed, as any row", async () => {
+    await openAsDriver(tripPage, [jon]);
+    const toggle = await screen.findByRole("button", { name: jonRow });
+    const face = screen.getByTestId("passenger-face");
+    expect(face).toHaveStyle({ backgroundColor: colors.light.surface });
+    await fireEvent(toggle, "pressIn");
+    expect(face).toHaveStyle({ backgroundColor: colors.light.primarySoft });
+    await fireEvent(toggle, "pressOut");
+    expect(face).toHaveStyle({ backgroundColor: colors.light.surface });
+    await fireEvent(toggle, "hoverIn");
+    expect(face).toHaveStyle({ backgroundColor: colors.light.primarySoft });
+    await fireEvent(toggle, "hoverOut");
+    expect(face).toHaveStyle({ backgroundColor: colors.light.surface });
+  });
+
+  it("shows a passenger whose account is gone without a name or a profile, and can still report and cancel", async () => {
+    await openAsDriver(tripPage, [
+      { ...jon, passenger: { ...jon.passenger, firstName: null, profileId: null } },
+    ]);
+    const formerRow =
+      "A former member, BSÍ bus terminal to Blönduós, 2 seats, 8,000 ISK, Confirmed";
+    await fireEvent.press(await screen.findByRole("button", { name: formerRow }));
+    expect(screen.getByRole("button", { name: "Message A former member" })).toBeVisible();
+    const under = within(screen.getByTestId("passenger-under"));
+    expect(
+      under
+        .getAllByRole(/^(button|link)$/)
+        .map((part) => (part.props as { accessibilityLabel: string }).accessibilityLabel),
+    ).toEqual(["Report A former member", "Cancel booking: A former member"]);
+    expect(screen.queryByRole("link", { name: /^See profile/ })).toBeNull();
+  });
+
+  it("shows a request from someone whose account is gone without a name, a link or how they stand", async () => {
+    await openAsDriver(tripPage, [
+      {
+        ...requestToDrive,
+        passenger: { ...requestToDrive.passenger, firstName: null, profileId: null },
+      },
+    ]);
+    const card = within(await screen.findByTestId("needs-you-card"));
+    expect(card.getByText("A former member")).toBeVisible();
+    expect(card.queryByRole("link")).toBeNull();
+    expect(card.queryByText("No reviews yet")).toBeNull();
+    expect(card.queryByText(/^Reliability/)).toBeNull();
+    // Their part and the answer are as for anyone.
+    expect(card.getByText("1 seat, 2,900 ISK")).toBeVisible();
+    expect(pressedIn("request-answer")).toEqual(["Decline", "Accept"]);
+    expect(card.getByRole("button", { name: "Report A former member" })).toBeVisible();
   });
 
   it("folds a row again, and keeps another one open meanwhile", async () => {

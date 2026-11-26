@@ -1486,7 +1486,7 @@ export const is = {
   "request.noReviews": "Engar umsagnir enn",
   "request.message": "Skilaboð",
   "request.ifAcceptedBusiest":
-    "Ef þú samþykkir {taken, plural, one {er # af {seats} sætum upptekið} other {eru # af {seats} sætum upptekin}}: {from} → {to}.",
+    "Ef þú samþykkir {taken, plural, one {er} other {eru}} {taken} af {seats, plural, one {# sæti} other {# sætum}} {taken, plural, one {upptekið} other {upptekin}}: {from} → {to}.",
   "request.quoted": "„{message}“",
   "request.why": "Hvers vegna? (valfrjálst)",
   "request.reason.plans_changed": "Áætlanir mínar breyttust",

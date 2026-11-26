@@ -76,7 +76,7 @@ async function openTrip(
 /** Cancel booking under one passenger's row, once it is unfolded. */
 async function pressCancel(name: string) {
   await unfoldPassenger(name);
-  await fireEvent.press(await screen.findByRole("button", { name: `Cancel booking: ${name}` }));
+  await fireEvent.press(await screen.findByRole("link", { name: `Cancel booking: ${name}` }));
 }
 
 /** The trip page, then Cancel booking for one passenger. */
@@ -114,17 +114,17 @@ describe("The driver cancels one booking (spec 6, 3.4)", () => {
     await openTrip([jon, gunna, aboard]);
     // Their chat is one press away on the row; cancelling is under it, last (R31.3).
     expect(await screen.findByRole("button", { name: "Message Jón" })).toBeVisible();
-    expect(screen.queryByRole("button", { name: "Cancel booking: Jón" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Cancel booking: Jón" })).toBeNull();
     await unfoldPassenger("Jón");
     const under = within(screen.getByTestId("passenger-under")).getAllByRole(/^(button|link)$/);
-    expect(under.at(-1)).toBe(screen.getByRole("button", { name: "Cancel booking: Jón" }));
+    expect(under.at(-1)).toBe(screen.getByRole("link", { name: "Cancel booking: Jón" }));
     // Waiting for payment can be cancelled too: there is nothing to refund.
     await unfoldPassenger("Gunna");
-    expect(screen.getByRole("button", { name: "Cancel booking: Gunna" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Cancel booking: Gunna" })).toBeVisible();
     // From the time to get in, the trip day takes over (spec 8).
     await unfoldPassenger("Siggi");
     expect(screen.getByRole("link", { name: "See profile: Siggi" })).toBeVisible();
-    expect(screen.queryByRole("button", { name: "Cancel booking: Siggi" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Cancel booking: Siggi" })).toBeNull();
   });
 
   it("cancels a paid booking with a reason and a note, then says so on the trip, with focus", async () => {

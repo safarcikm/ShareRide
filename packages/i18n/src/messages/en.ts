@@ -1468,7 +1468,7 @@ export const en = {
   "request.noReviews": "No reviews yet",
   "request.message": "Message",
   "request.ifAcceptedBusiest":
-    "If you accept, {taken} of {seats} seats {taken, plural, one {is} other {are}} taken from {from} to {to}.",
+    "If you accept, {taken} of {seats, plural, one {# seat} other {# seats}} {taken, plural, one {is} other {are}} taken from {from} to {to}.",
   "request.quoted": "“{message}”",
   "request.why": "Why? (optional)",
   "request.reason.plans_changed": "My plans changed",
