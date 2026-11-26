@@ -1,27 +1,23 @@
 import type { MyTrip } from "@shareride/contracts";
-import { capitalised, formatClock, formatDay } from "@shareride/i18n";
 import { router, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
-import { Text } from "react-native";
 import { Button } from "@/components/button";
-import { Card } from "@/components/card";
 import { Screen } from "@/components/screen";
-import { ShareNotice } from "@/components/share-notice";
 import { Body, Title } from "@/components/text";
 import { TextLink } from "@/components/text-link";
+import { isChangeable } from "@/driver-trip/changes";
 import { useLanguage } from "@/i18n/language";
-import { shareLink, type Shared } from "@/lib/share";
+import { now } from "@/lib/clock";
 import { NotificationsPrompt } from "@/notifications/notifications-prompt";
-import { typography } from "@/theme/tokens";
-import { usePalette } from "@/theme/use-palette";
-import { tripHref, tripWebAddress } from "@/trip-details/trip-link";
-import { routeText } from "@/trips/texts";
+import { ShareRidePanel } from "@/sharing/share-ride-panel";
+import { tripHref } from "@/trip-details/trip-link";
+import { TripSummary } from "@/trips/trip-summary";
 import { Loading, useDraft } from "@/trips/use-draft";
 
 /**
- * Published (spec 3, screen 10): share the trip's page, or see it as
- * passengers do, and the prompt to turn on notifications (spec 7, 3.6.2).
- * Posting the return trip comes with changes to trips (spec 6).
+ * Published (spec 3, screen 10): Share this ride right after the trip
+ * (spec 28, 3.2), the prompt to turn on notifications (spec 7, 3.6.2), and
+ * the trip's page as passengers see it. Posting the return trip comes with
+ * changes to trips (spec 6).
  */
 export default function PublishedScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -38,19 +34,8 @@ export default function PublishedScreen() {
 }
 
 function Published({ trip }: { readonly trip: MyTrip }) {
-  const { locale, t } = useLanguage();
-  const palette = usePalette();
-  const [shared, setShared] = useState<Shared | null>(null);
-  const departure = trip.departsAt === null ? null : new Date(trip.departsAt);
+  const { t } = useLanguage();
   const whole = { board: 0, alight: trip.stops.length - 1 };
-  const share = async () => {
-    const url = tripWebAddress(trip.id, whole);
-    const outcome = await shareLink(
-      url,
-      t("trip.shareText", { route: routeText(t, locale, trip) }),
-    );
-    setShared({ outcome, url });
-  };
   return (
     <>
       <Title>{t("trip.published.title")}</Title>
@@ -59,31 +44,10 @@ function Published({ trip }: { readonly trip: MyTrip }) {
           ? t("trip.published.approval")
           : t("trip.published.instant")}
       </Body>
-      <Card>
-        <Text style={[typography.heading, { color: palette.text }]}>
-          {routeText(t, locale, trip)}
-        </Text>
-        {departure === null ? null : (
-          <Text style={[typography.body, { color: palette.textMuted }]}>
-            {capitalised(
-              t("trip.mine.when", {
-                day: formatDay(departure, locale),
-                time: formatClock(departure),
-              }),
-              locale,
-            )}
-          </Text>
-        )}
-      </Card>
+      <TripSummary trip={trip} />
+      {/* Opened again once the trip has left, there is nothing to share (R28.4). */}
+      {isChangeable(trip, now()) ? <ShareRidePanel trip={trip} /> : null}
       <NotificationsPrompt occasion={`posted:${trip.id}`} />
-      <Button
-        variant="secondary"
-        label={t("trip.published.share")}
-        onPress={() => {
-          void share();
-        }}
-      />
-      <ShareNotice shared={shared} />
       <TextLink label={t("trip.published.see")} href={tripHref(trip.id, whole)} />
       <Button
         label={t("trip.published.seeTrips")}

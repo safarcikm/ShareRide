@@ -191,6 +191,11 @@ agreements below are still to sign
   anyone with the link: the route, its meeting points, the day and the
   time; never a name, a photo, the car, a price or a seat count, since
   Facebook and other sites keep a copy of the card (spec 23, 3.10, R23.8).
+  Sharing a ride on Facebook opens Facebook's own share window with the
+  link only, after the person taps it: no Facebook script, SDK or pixel,
+  and the post's text that PuffinRide writes holds no name, car, price or
+  seat count ([spec 28](../specs/2026-11-25-share-a-ride.md), R28.2,
+  R28.3).
 - Production data never copied to staging or development.
 - Privacy impact is a checkbox in every PR template.
 - Retention jobs are tested like any other feature.

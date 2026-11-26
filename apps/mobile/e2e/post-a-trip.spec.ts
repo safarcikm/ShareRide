@@ -64,6 +64,10 @@ interface Journey {
   readonly confirm: string;
   readonly publish: string;
   readonly published: string;
+  readonly shareRide: string;
+  readonly copyText: string;
+  readonly textCopied: string;
+  readonly post: RegExp;
   readonly addEmailPrompt: string;
   readonly seeTrips: string;
   readonly publishedTrips: string;
@@ -113,6 +117,10 @@ const inEnglish: Journey = {
   confirm: "Confirm",
   publish: "Publish trip",
   published: "Your trip is published",
+  shareRide: "Share this ride",
+  copyText: "Copy text",
+  textCopied: "Text copied. Paste it into your post.",
+  post: /^Offering a ride: .+\n.+\n(Stops on the way: .+\n)?(Book|Ask for) a seat on PuffinRide: http:\/\/localhost:\d+\/trips\/[0-9a-f-]+\?from=0&to=\d+$/u,
   addEmailPrompt: "Add an email so we can reach you if your trip changes.",
   seeTrips: "See my trips",
   publishedTrips: "Published",
@@ -167,6 +175,10 @@ const inIcelandic: Journey = {
   confirm: "Staðfesta",
   publish: "Birta ferð",
   published: "Ferðin þín er birt",
+  shareRide: "Deildu þessari ferð",
+  copyText: "Afrita texta",
+  textCopied: "Textinn var afritaður. Límdu hann í færsluna.",
+  post: /^Býð far: .+\n.+\n(Mótsstaðir á leiðinni: .+\n)?(Bókaðu|Óskaðu eftir) sæti á PuffinRide: http:\/\/localhost:\d+\/trips\/[0-9a-f-]+\?from=0&to=\d+$/u,
   addEmailPrompt: "Bættu við netfangi svo við getum látið þig vita ef ferðin breytist.",
   seeTrips: "Sjá ferðirnar mínar",
   publishedTrips: "Birtar",
@@ -253,6 +265,11 @@ async function postTrip(page: Page, journey: Journey) {
 
   await page.getByRole("button", { name: journey.publish }).click();
   await expect(page.getByRole("heading", { name: journey.published })).toBeVisible();
+  // Share this ride (spec 28, 3.2): the post's text, in the app's language, copied.
+  await expect(page.getByRole("heading", { name: journey.shareRide })).toBeVisible();
+  await page.getByRole("button", { name: journey.copyText }).click();
+  await expect(page.getByTestId("notice").filter({ hasText: journey.textCopied })).toBeVisible();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toMatch(journey.post);
   // No push on the web, but the account's email reaches them: no prompt
   // for one (spec 7, 3.6.2; spec 26).
   await expect(page.getByText(journey.addEmailPrompt)).toHaveCount(0);
@@ -261,7 +278,7 @@ async function postTrip(page: Page, journey: Journey) {
 }
 
 test.describe("posting a trip on the web, in English", () => {
-  test.use({ locale: "en-GB" });
+  test.use({ locale: "en-GB", permissions: ["clipboard-read", "clipboard-write"] });
 
   test("a first-time driver posts Reykjavík to Akureyri", async ({ page }) => {
     await postTrip(page, inEnglish);
@@ -269,7 +286,7 @@ test.describe("posting a trip on the web, in English", () => {
 });
 
 test.describe("posting a trip on the web, in Icelandic", () => {
-  test.use({ locale: "is-IS" });
+  test.use({ locale: "is-IS", permissions: ["clipboard-read", "clipboard-write"] });
 
   test("a first-time driver posts Reykjavík to Akureyri", async ({ page }) => {
     await postTrip(page, inIcelandic);

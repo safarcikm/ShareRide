@@ -152,7 +152,9 @@ Opened from trip details (spec 4) with the chosen part and seats.
 
 On their trip, the driver sees every request and booking, grouped by where
 passengers get in and out, with seats per segment. Changing and cancelling a
-trip with bookings is spec 6.
+trip with bookings is spec 6. Until it leaves, a share icon beside the
+trip's name opens Share this ride
+([spec 28](2026-11-25-share-a-ride.md), 3.1 and 3.2).
 
 ## 4. Rules
 

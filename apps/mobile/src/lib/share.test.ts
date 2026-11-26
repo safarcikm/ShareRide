@@ -1,5 +1,5 @@
 import { Platform, Share } from "react-native";
-import { shareLink, shareText } from "./share";
+import { canCopy, canShareWindow, copyText, shareLink, shareText } from "./share";
 
 const url = "https://shareride.is/trips/0190a1d6-0000-7000-8000-0000000000d1?from=1&to=2";
 const text = "Borgarnes → Blönduós on PuffinRide";
@@ -109,5 +109,63 @@ describe("Sharing a text, such as a trip's details (spec 9, 3.3.3)", () => {
     browserWith({ clipboard: { writeText } as unknown as Clipboard });
     await expect(shareText(details)).resolves.toBe("copied");
     expect(writeText).toHaveBeenCalledWith(details);
+  });
+});
+
+describe("A share window's title, apart from its text (spec 28, 3.2)", () => {
+  it("gives the browser the title, the text and the link", async () => {
+    const share = jest.fn(() => Promise.resolve());
+    browserWith({ share });
+    await expect(shareLink(url, "Offering a ride: …", text)).resolves.toBe("shared");
+    expect(share).toHaveBeenCalledWith({ title: text, text: "Offering a ride: …", url });
+  });
+});
+
+describe("Whether there is a share window (spec 28, 3.2)", () => {
+  it.each(["ios", "android"] as const)("there is on %s", (os) => {
+    jest.replaceProperty(Platform, "OS", os);
+    expect(canShareWindow()).toBe(true);
+  });
+
+  it("there is in a browser that has one", () => {
+    browserWith({ share: jest.fn() });
+    expect(canShareWindow()).toBe(true);
+  });
+
+  it("there is not in most laptop browsers", () => {
+    browserWith({});
+    expect(canShareWindow()).toBe(false);
+  });
+});
+
+describe("Copying a text (spec 28, 3.2)", () => {
+  it("can in a browser with a clipboard, and not on a phone or without one", () => {
+    browserWith({ clipboard: { writeText: jest.fn() } as unknown as Clipboard });
+    expect(canCopy()).toBe(true);
+    browserWith({});
+    expect(canCopy()).toBe(false);
+    jest.replaceProperty(Platform, "OS", "android");
+    expect(canCopy()).toBe(false);
+  });
+
+  it("copies it in a browser", async () => {
+    const writeText = jest.fn(() => Promise.resolve());
+    browserWith({ clipboard: { writeText } as unknown as Clipboard });
+    await expect(copyText("Býð far")).resolves.toBe("copied");
+    expect(writeText).toHaveBeenCalledWith("Býð far");
+  });
+
+  it("fails where it cannot, so the screen says to select it", async () => {
+    browserWith({
+      clipboard: { writeText: () => Promise.reject(new Error("Denied")) } as unknown as Clipboard,
+    });
+    await expect(copyText("Býð far")).resolves.toBe("failed");
+    browserWith({});
+    await expect(copyText("Býð far")).resolves.toBe("failed");
+  });
+
+  it("fails on a phone, which shares instead", async () => {
+    jest.replaceProperty(Platform, "OS", "ios");
+    await expect(copyText("Býð far")).resolves.toBe("failed");
   });
 });
