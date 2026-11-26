@@ -508,24 +508,30 @@ describe("Face ID in the email field (spec 29, 3.1)", () => {
     });
   });
 
-  it("tells the browser after the button's passkey is unknown too", async () => {
+  it("tells the browser after the button's passkey is unknown too, and this browser has none", async () => {
     quietRequests();
+    // Removed from another device's Settings since this browser signed in with it.
+    mockPreferences.set("passkey-here", "credential-one");
     await openSignIn((client) => {
       client.answer("/v1/auth/passkey", () => failure(400, "passkey_unknown"));
     });
     await fireEvent.press(await screen.findByRole("button", { name: "Face ID or fingerprint" }));
     expect(await screen.findByText(notSetUp)).toBeVisible();
     expect(mockDevice.forget).toHaveBeenCalledWith("credential-one");
+    // So Face ID can be offered here again (spec 29, 3.2, item 5).
+    expect(mockPreferences.get("passkey-here")).toBe("");
   });
 
   it("keeps the console's passkey with the browser (R29.4)", async () => {
     quietRequests();
+    mockPreferences.set("passkey-here", "credential-one");
     await openSignIn((client) => {
       client.answer("/v1/auth/passkey", () => failure(400, "passkey_invalid"));
     });
     await fireEvent.press(await screen.findByRole("button", { name: "Face ID or fingerprint" }));
     expect(await screen.findByText(notSetUp)).toBeVisible();
     expect(mockDevice.forget).not.toHaveBeenCalled();
+    expect(mockPreferences.get("passkey-here")).toBe("credential-one");
   });
 });
 
@@ -791,6 +797,7 @@ describe("Face ID offered after another way in (spec 29, 3.2)", () => {
     expect(mockPreferences.get("passkey-here")).toBe(mac.credentialId);
     await fireEvent.press(screen.getByRole("button", { name: "Done" }));
     expect(await screen.findByRole("tab", { name: "Find", selected: true })).toBeVisible();
+    expect(mockPreferences.get("passkey-offer-declined")).toBeUndefined();
   });
 
   it("says a device set up already, then goes on after Done", async () => {

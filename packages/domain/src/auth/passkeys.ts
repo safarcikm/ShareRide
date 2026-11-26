@@ -52,7 +52,9 @@ export interface PasskeyOfferInput {
 export function passkeyOfferDue(input: PasskeyOfferInput): boolean {
   const { declinedAt, now } = input;
   const askAgainMs = passkeyOfferRules.askAgainAfterDays * 24 * 60 * 60 * 1000;
-  const declinedLately = declinedAt !== null && now.getTime() - declinedAt.getTime() < askAgainMs;
+  // A date still to come, as from a clock that was wrong, is no answer.
+  const since = declinedAt === null ? null : now.getTime() - declinedAt.getTime();
+  const declinedLately = since !== null && since >= 0 && since < askAgainMs;
   return (
     !input.isNewUser &&
     input.way !== "passkey" &&

@@ -35,6 +35,7 @@ import { pendingExpiredText, phoneStepHelp } from "@/sign-in/pending";
 import { ProviderButtons } from "@/sign-in/provider-buttons";
 import { providerNames, useProviderWindow } from "@/sign-in/provider-window";
 import { SignUpProgress } from "@/sign-in/sign-up-progress";
+import { forgetPasskeyHere } from "@/sign-in/this-browser";
 import { usePasskeyAutofill } from "@/sign-in/use-passkey-autofill";
 import { usePasskeysOffered } from "@/sign-in/use-passkeys";
 import { spacing, typography } from "@/theme/tokens";
@@ -169,8 +170,12 @@ function ChooseHowScreen() {
     // Signed in: sign-in closes by itself.
     if (signedIn.ok) return true;
     setError(passkeyErrorText(t, signedIn));
-    // Before the field offers its passkeys again, so it does not offer this one.
-    if (signedIn.error.code === "passkey_unknown") await devicePasskeys.forget(credential.id);
+    // Before the field offers its passkeys again, so it does not offer this
+    // one; and this browser may be offered Face ID again (3.2, item 5).
+    if (signedIn.error.code === "passkey_unknown") {
+      await devicePasskeys.forget(credential.id);
+      await forgetPasskeyHere(credential.id);
+    }
     return false;
   }
 

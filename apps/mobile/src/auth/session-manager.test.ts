@@ -464,6 +464,21 @@ describe("createSessionManager", () => {
       });
     });
 
+    it("says a passkey from a phone nearby, but not as this browser's own", async () => {
+      const client = createFakeClient();
+      client.answer("/v1/auth/passkey", () => signedIn(false));
+      const session = createSessionManager({ client, tokenStore: memoryStore(), device });
+      await session.signInWithPasskey({
+        ...passkeyAnswer,
+        authenticatorAttachment: "cross-platform",
+      });
+      expect(session.takeJustSignedIn()).toEqual({
+        way: "passkey",
+        isNewUser: false,
+        credentialId: null,
+      });
+    });
+
     it("says Google or Apple, as the window was", async () => {
       const client = createFakeClient();
       client.answer("/v1/auth/oauth/finish", () =>

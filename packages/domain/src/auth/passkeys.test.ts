@@ -95,4 +95,8 @@ describe("passkeyOfferDue (spec 29, 3.2, R29.2)", () => {
   it("offers it again 30 days after Not now", () => {
     expect(passkeyOfferDue({ ...capable, declinedAt: daysAgo(30) })).toBe(true);
   });
+
+  it("offers it when Not now has a date still to come, as from a clock that was wrong", () => {
+    expect(passkeyOfferDue({ ...capable, declinedAt: daysAgo(-1) })).toBe(true);
+  });
 });

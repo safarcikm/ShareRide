@@ -377,7 +377,9 @@ export function createSessionManager(options: {
       if (result.ok) {
         await keep(result.data);
         keepNews({});
-        signedIn("passkey", result.data, credential.id);
+        // A phone's passkey, used by its QR code, is not this browser's own.
+        const own = credential.authenticatorAttachment !== "cross-platform";
+        signedIn("passkey", result.data, own ? credential.id : null);
       }
       return result;
     },
