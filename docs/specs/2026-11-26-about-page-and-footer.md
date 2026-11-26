@@ -43,7 +43,7 @@ text; and the end of each public page links to the same.
 - As a member, I open the Terms or the Privacy Policy from Profile or from
   the end of any public page.
 - As someone asked to check us out by a friend, I follow PuffinRide on
-  Facebook from the website.
+  Facebook or Instagram from the website.
 - As a search engine, I find About and the legal pages linked from every
   public page.
 
@@ -67,8 +67,10 @@ column (spec 18, 3.2), as the legal documents are:
    this line changes in the same pull request (ADR 0043, Consequences).
 4. **Contact us:** a line inviting questions and ideas, the address
    `admin@puffinride.is` as a link that opens an email to it, and
-   "PuffinRide on Facebook", a link to our Page (spec 28, 3.6) that opens
-   in a new tab on the website and in the browser in the apps.
+   "PuffinRide on Facebook", a link to our Page (spec 28, 3.6), and
+   "PuffinRide on Instagram", a link to @puffinride.is
+   (`https://www.instagram.com/puffinride.is/`, Martin, 2026-11-26). Both
+   open in a new tab on the website and in the browser in the apps.
 
 `admin@puffinride.is` is the address the Terms, the Privacy Policy and the
 Facebook Page give. `hello@puffinride.is` only sends: it refuses mail by
@@ -110,15 +112,17 @@ on its own.
    - the logo and **PuffinRide**, with "Carpooling across Iceland" under it;
    - **PuffinRide:** About PuffinRide, Carpool in Iceland, Meeting points;
    - **Terms:** Terms of Service, Community Rules, Privacy Policy, Cookies;
-   - **Contact:** `admin@puffinride.is` and PuffinRide on Facebook.
+   - **Contact:** `admin@puffinride.is`, PuffinRide on Facebook and
+     PuffinRide on Instagram.
 4. **Phones' browsers (under 900).** Quiet: no band colour, a `border` line
    above, the same links in small text, wrapping, centred, without the
    group headings: About PuffinRide, Carpool in Iceland, Meeting points,
    Terms of Service, Community Rules, Privacy Policy, Cookies, then the
-   email address and Facebook. Each link is at least a touch target high.
+   email address, Facebook and Instagram. Each link is at least a touch
+   target high.
 5. Every link to a page of the app is a real `<a href>` (spec 23, 3.6,
-   item 6). The email is a `mailto:` link; Facebook opens in a new tab with
-   `rel="noopener"`, and nothing from Facebook loads before it is clicked
+   item 6). The email is a `mailto:` link; Facebook and Instagram open in a
+   new tab with `rel="noopener"`, and nothing from them loads before one is clicked
    (R28.3).
 6. For screen readers the footer is the page's `contentinfo` landmark
    (`<footer>`), after the main content in reading and Tab order; each
@@ -152,7 +156,7 @@ Wide (1440), end of the front page
  [pin] PuffinRide             PuffinRide          Terms                Contact
  Carpooling across Iceland    About PuffinRide    Terms of Service     admin@puffinride.is
                               Carpool in Iceland  Community Rules      PuffinRide on Facebook
-                              Meeting points      Privacy Policy
+                              Meeting points      Privacy Policy       PuffinRide on Instagram
                                                   Cookies
 
 Phone's browser (390), end of the page
@@ -161,7 +165,7 @@ Phone's browser (390), end of the page
      Meeting points · Terms of Service
    Community Rules · Privacy Policy
               Cookies
-  admin@puffinride.is · Facebook
+  admin@puffinride.is · Facebook · Instagram
 
 About (one column)
  ← Back
@@ -182,6 +186,7 @@ About (one column)
  Questions or ideas? Write to us, in English or Icelandic.
  admin@puffinride.is
  PuffinRide on Facebook
+ PuffinRide on Instagram
 ```
 
 ## 6. Data and API
@@ -191,8 +196,8 @@ sitemap, `/legal` answered with a 301 to `/about`, About's title,
 description and `<noscript>` words in the first answer. The page's texts,
 its documents and our contact address are in one place, `aboutPage` in
 `packages/i18n/src/seo.ts`, for the page, the footer and the server, as
-`carpoolPage` is. The Facebook Page's address stays in its own place
-(`apps/mobile/src/sharing/links.ts`, spec 28, 3.6).
+`carpoolPage` is. The Facebook Page's and Instagram's addresses stay in
+their own place (`apps/mobile/src/sharing/links.ts`, spec 28, 3.6).
 
 ## 7. Privacy and safety
 
@@ -200,7 +205,8 @@ its documents and our contact address are in one place, `aboutPage` in
   published Terms and Privacy Policy already show to everyone. No other
   personal data. Martin chose to be named as the operator until the company
   is registered (ADR 0043).
-- No Facebook script, pixel or widget: the Page is a plain link (R28.3).
+- No Facebook or Instagram script, pixel or widget: each is a plain link
+  (R28.3).
 - The footer adds no cookie, no tracking and no call to the API.
 
 ## 8. Texts
@@ -216,11 +222,13 @@ its documents and our contact address are in one place, `aboutPage` in
 | `about.contactTitle` | Contact us | Hafðu samband |
 | `about.contact` | Questions or ideas? Write to us, in English or Icelandic. | Spurningar eða hugmyndir? Skrifaðu okkur, á íslensku eða ensku. |
 | `about.facebook` | PuffinRide on Facebook | PuffinRide á Facebook |
+| `about.instagram` | PuffinRide on Instagram | PuffinRide á Instagram |
 | `footer.label` | About PuffinRide and our terms | Um PuffinRide og skilmálana okkar |
 | `footer.tagline` | Carpooling across Iceland | Samakstur um allt Ísland |
 | `footer.terms` | Terms | Skilmálar |
 | `footer.contact` | Contact | Samband |
 | `footer.facebook` | Facebook | Facebook |
+| `footer.instagram` | Instagram | Instagram |
 | `seo.aboutDescription` | Who runs PuffinRide, how to reach us, and PuffinRide's Terms of Service, Community Rules and Privacy Policy. | Hver rekur PuffinRide, hvernig þú nærð í okkur, og notendaskilmálar, samfélagsreglur og persónuverndarstefna PuffinRide. |
 
 The footer's other links use the texts they have: `legal.terms`,
@@ -234,7 +242,7 @@ The footer's other links use the texts they have: `legal.terms`,
 - Unit (i18n): every key in both languages; `pageText` for About; no money
   words in About's texts, as for Carpool in Iceland.
 - Screen tests (`renderApp`): About shows the four documents and opens
-  each; the email and Facebook links; Profile's About row, signed in and
+  each; the email, Facebook and Instagram links; Profile's About row, signed in and
   out; `/legal` lands on `/about`; the footer is on Find, About, Carpool in
   Iceland and a legal document on the web and not on My rides, Profile or
   sign-in; it is not in the phone apps; its links are `<a href>`.

@@ -58,14 +58,14 @@ describe("the footer on a phone's browser", () => {
   it("ends the front page with every link, and no group headings", async () => {
     await renderApp("/");
     const end = await footer();
-    for (const name of [...links, "Facebook"]) {
+    for (const name of [...links, "Facebook", "Instagram"]) {
       expect(end.getByRole("link", { name })).toBeVisible();
     }
     expect(end.queryByText("Contact")).toBeNull();
     expect(end.queryByText("Carpooling across Iceland")).toBeNull();
   });
 
-  it("opens each page within the app, an email and our Facebook Page", async () => {
+  it("opens each page within the app, an email, our Facebook Page and Instagram", async () => {
     await renderApp("/carpool-iceland");
     await fireEvent.press((await footer()).getByRole("link", { name: "Privacy Policy" }));
     await waitFor(() => {
@@ -78,6 +78,8 @@ describe("the footer on a phone's browser", () => {
     expect(openURL).toHaveBeenCalledWith("mailto:admin@puffinride.is");
     await fireEvent.press(end.getByRole("link", { name: "Facebook" }));
     expect(openURL).toHaveBeenCalledWith("https://www.facebook.com/profile.php?id=61597055066444");
+    await fireEvent.press(end.getByRole("link", { name: "Instagram" }));
+    expect(openURL).toHaveBeenCalledWith("https://www.instagram.com/puffinride.is/");
   });
 
   it("is in Icelandic for an Icelandic device", async () => {
@@ -113,7 +115,7 @@ describe("the footer on a laptop", () => {
       expect(end.getByText(group)).toBeVisible();
     }
     expect(end.getAllByText("PuffinRide")).toHaveLength(2);
-    for (const name of [...links, "PuffinRide on Facebook"]) {
+    for (const name of [...links, "PuffinRide on Facebook", "PuffinRide on Instagram"]) {
       expect(end.getByRole("link", { name })).toBeVisible();
     }
     // Group headings are not the page's: its own stay in order.

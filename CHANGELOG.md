@@ -1550,14 +1550,14 @@ releases follow [Semantic Versioning](https://semver.org/).
 - About PuffinRide (spec 30), a public page at `/about`: what PuffinRide is,
   the Terms of Service, Community Rules, Privacy Policy and Cookies, who
   runs PuffinRide (as the Terms say it) and how to reach us
-  (`admin@puffinride.is`, our Facebook Page). It takes the place of "Terms,
+  (`admin@puffinride.is`, our Facebook Page and Instagram). It takes the place of "Terms,
   rules and privacy": Profile's row is "About PuffinRide", and `/legal`
   answers with a permanent redirect to `/about`. About has its own title, is
   in the sitemap in place of `/legal`, and its words are in the first
   answer's `<noscript>` for search engines.
 - A footer on the website's public pages (spec 30, 3.3): About, Carpool in
-  Iceland, Meeting points, the three documents, Cookies, our email and our
-  Facebook Page, as real links. On a laptop, four groups under a line as
+  Iceland, Meeting points, the three documents, Cookies, our email, our
+  Facebook Page and Instagram (@puffinride.is), as real links. On a laptop, four groups under a line as
   wide as the page; on a phone's browser, small links in a few lines. Not
   on signing in, forms, My rides, Messages, Profile or in the phone apps.
 

@@ -11,7 +11,7 @@ requests, one after the other, each with its tests first.
 - [x] **One page's words.** `packages/i18n/src/seo.ts`: `PublicPage` kind
   `about`, and `aboutPage` (path, title, texts, documents and the contact
   address) for the screen, the footer and the server's `<noscript>`, as
-  `carpoolPage` is. The Facebook Page's address comes from
+  `carpoolPage` is. The Facebook Page's and Instagram's addresses come from
   `apps/mobile/src/sharing/links.ts` (spec 28).
 - [x] **Links outside the app.** `externalLinkProps` in
   `apps/mobile/src/navigation/link-props.ts`, `TextLink`'s `url`, and

@@ -28,7 +28,7 @@ test.describe("About and the footer", () => {
     await expect(page).toHaveURL(/\/legal\/privacy$/);
   });
 
-  test("its links are real ones: pages in the app, an email, and Facebook in a new tab", async ({
+  test("its links are real ones: pages in the app, an email, Facebook and Instagram in a new tab", async ({
     page,
   }) => {
     await page.goto("/carpool-iceland");
@@ -41,9 +41,15 @@ test.describe("About and the footer", () => {
       "href",
       "mailto:admin@puffinride.is",
     );
-    const facebook = footer.getByRole("link", { name: /Facebook$/ });
-    await expect(facebook).toHaveAttribute("target", "_blank");
-    await expect(facebook).toHaveAttribute("rel", "noopener noreferrer");
+    for (const name of [/Facebook$/, /Instagram$/]) {
+      const page = footer.getByRole("link", { name });
+      await expect(page).toHaveAttribute("target", "_blank");
+      await expect(page).toHaveAttribute("rel", "noopener noreferrer");
+    }
+    await expect(footer.getByRole("link", { name: /Instagram$/ })).toHaveAttribute(
+      "href",
+      "https://www.instagram.com/puffinride.is/",
+    );
   });
 
   test("the old address leads to About", async ({ page }) => {

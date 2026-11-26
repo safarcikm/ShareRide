@@ -2,7 +2,7 @@ import { aboutPage, carpoolPage, type MessageKey } from "@shareride/i18n";
 import { Platform, Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { useLanguage } from "@/i18n/language";
 import { externalLinkProps, linkProps } from "@/navigation/link-props";
-import { puffinRideFacebookPage } from "@/sharing/links";
+import { puffinRideFacebookPage, puffinRideInstagram } from "@/sharing/links";
 import { useHover } from "@/theme/hover";
 import {
   controlOutline,
@@ -21,8 +21,8 @@ type FooterLink =
   | { readonly text: string; readonly href: string; readonly url?: never }
   | { readonly text: string; readonly url: string; readonly href?: never };
 
-/** The links of the footer, by group. */
-function useFooterLinks(facebook: MessageKey) {
+/** The links of the footer, by group; on a wide screen our pages are named in full. */
+function useFooterLinks(wide: boolean) {
   const { t } = useLanguage();
   const page = (label: MessageKey, href: string): FooterLink => ({ text: t(label), href });
   return {
@@ -32,10 +32,11 @@ function useFooterLinks(facebook: MessageKey) {
       page("meetingPoints.title", "/meeting-points"),
     ],
     documents: aboutPage.documents.map((document) => page(document.label, document.href)),
-    // Our address, written as it is, and our Facebook Page.
+    // Our address, written as it is, our Facebook Page and Instagram.
     contact: [
       { text: aboutPage.email, url: `mailto:${aboutPage.email}` },
-      { text: t(facebook), url: puffinRideFacebookPage },
+      { text: t(wide ? "about.facebook" : "footer.facebook"), url: puffinRideFacebookPage },
+      { text: t(wide ? "about.instagram" : "footer.instagram"), url: puffinRideInstagram },
     ] satisfies FooterLink[],
   };
 }
@@ -56,7 +57,7 @@ export function SiteFooter() {
   const palette = usePalette();
   // Wide as `Screen` counts it (`useWideScreen`), which shows this footer.
   const wide = useWindowDimensions().width >= sidePanelFrom;
-  const links = useFooterLinks(wide ? "about.facebook" : "footer.facebook");
+  const links = useFooterLinks(wide);
   const landmark: object =
     Platform.OS === "web" ? { role: "contentinfo", "aria-label": t("footer.label") } : {};
   if (!wide) {
