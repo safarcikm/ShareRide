@@ -190,9 +190,7 @@ test("a driver offers fewer seats and a higher price, each saved from Edit trip"
 
   await edit();
   await expect(driver.getByText("1 seat", { exact: true }).filter(visible)).toBeVisible();
-  await expect(
-    driver.getByText(/^100% · the whole route [\d,]+ ISK$/).filter(visible),
-  ).toBeVisible();
+  await expect(driver.getByText(/^[\d,]+ ISK the whole way · 100%$/).filter(visible)).toBeVisible();
   await driver.getByRole("link", { name: /^Price, / }).click();
   await expect(
     driver
@@ -206,9 +204,7 @@ test("a driver offers fewer seats and a higher price, each saved from Edit trip"
   await saved();
 
   await edit();
-  await expect(
-    driver.getByText(/^110% · the whole route [\d,]+ ISK$/).filter(visible),
-  ).toBeVisible();
+  await expect(driver.getByText(/^[\d,]+ ISK the whole way · 110%$/).filter(visible)).toBeVisible();
   await close();
 });
 

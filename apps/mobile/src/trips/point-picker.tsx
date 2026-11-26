@@ -5,15 +5,14 @@ import {
   type PlaceSearchResult,
 } from "@shareride/contracts";
 import { formatDistance } from "@shareride/i18n";
-import { X } from "lucide-react-native";
 import { useCallback, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { useSession } from "@/auth/session";
 import { Button } from "@/components/button";
-import { IconButton } from "@/components/icon-button";
 import { Notice } from "@/components/notice";
 import { Screen } from "@/components/screen";
-import { Body, Heading, Title } from "@/components/text";
+import { ScreenHead } from "@/components/screen-head";
+import { Body, Heading } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { useLoaded } from "@/lib/use-loaded";
 import { PlaceDropdown } from "@/meeting-points/place-dropdown";
@@ -86,18 +85,23 @@ export function PointDropdown({
  * Adding a meeting point to a trip's route (spec 3, 3.4.2), on a screen of
  * its own: the place search of spec 2. A meeting point is chosen at once; a
  * town shows its nearest points to choose from. Paused points cannot be
- * chosen.
+ * chosen. Its head is a step's (spec 31, 3.17): Back, which closes it, and
+ * the title at the left, with the ride `over` it where one is changed.
  */
 export function PointPicker({
   title,
+  over,
   intro,
   onChoose,
   onCancel,
 }: {
   readonly title: string;
+  /** The ride the point is added to, in small text over the title. */
+  readonly over?: string | undefined;
   /** What choosing a point does, under the title. */
-  readonly intro?: string;
+  readonly intro?: string | undefined;
   readonly onChoose: (point: MeetingPointSummary) => void;
+  /** Back: the picker closes with nothing chosen. */
   readonly onCancel: () => void;
 }) {
   const { t } = useLanguage();
@@ -110,15 +114,11 @@ export function PointPicker({
 
   return (
     <Screen>
-      <View style={styles.header}>
-        <IconButton icon={X} label={t("common.cancel")} onPress={onCancel} />
-      </View>
-      <Title>{title}</Title>
-      {intro === undefined ? null : <Body>{intro}</Body>}
+      <ScreenHead title={title} over={over} line={intro} onBack={onCancel} />
       <Notice message={paused ? t("trip.route.pointPaused") : null} />
       {place === null ? (
         <>
-          <Body>{t("trip.route.pickHelp")}</Body>
+          <Body align="start">{t("trip.route.pickHelp")}</Body>
           <PlaceSearch
             onChoose={(result: PlaceSearchResult) => {
               setPaused(false);
@@ -187,7 +187,6 @@ function Nearby({
 }
 
 const styles = StyleSheet.create({
-  header: { flexDirection: "row" },
   // In line with the text of the dropdown's rows.
   idle: { paddingHorizontal: spacing.ms, paddingVertical: spacing.xs },
 });

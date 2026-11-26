@@ -3,10 +3,12 @@ import { AccessibilityInfo, Dimensions } from "react-native";
 import { shareLink } from "@/lib/share";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
+import { filledButtons } from "@/testing/buttons";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
 import { photoSizeIs, resetManipulator } from "@/testing/image-manipulator";
 import { photoPickedIs } from "@/testing/image-picker";
 import { bsi, fitjar, hof, kef, thorlakshofn } from "@/testing/meeting-points";
+import { colors } from "@/theme/tokens";
 import { blonduos, borgarnes, plannedDraft, quoteFor, tripsApi, yaris } from "@/testing/trips";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
@@ -39,6 +41,8 @@ async function open(url: string, start: Parameters<typeof tripsApi>[1] = []) {
       api = tripsApi(client, start);
       // My rides, where a published ride is listed, loads my bookings too.
       client.answer("/v1/me/bookings", () => ok(200, { bookings: [] }));
+      // A ride's own page, which its ticket opens, lists its passengers.
+      client.answer("/v1/me/trips/{id}/bookings", () => ok(200, { bookings: [] }));
     },
   });
   if (api === undefined) throw new Error("The fake API was not set up.");
@@ -79,11 +83,51 @@ async function changeStopTimes() {
 /** The time a field shows, from its name: "Time at Borgarnes: 10:00". */
 const timeOf = (label: string) => screen.getByRole("button", { name: new RegExp(`^${label}: `) });
 
+/** The test IDs, spoken labels and texts on screen, in reading order. */
+function marksInOrder(): string[] {
+  const marks: string[] = [];
+  const walk = (node: unknown) => {
+    if (typeof node === "string") marks.push(node);
+    else if (Array.isArray(node)) node.forEach(walk);
+    else if (typeof node === "object" && node !== null) {
+      if ("props" in node && typeof node.props === "object" && node.props !== null) {
+        const props = node.props as { testID?: unknown; accessibilityLabel?: unknown };
+        if (typeof props.testID === "string") marks.push(props.testID);
+        if (typeof props.accessibilityLabel === "string") marks.push(props.accessibilityLabel);
+      }
+      if ("children" in node) walk(node.children);
+    }
+  };
+  walk(screen.toJSON());
+  return marks;
+}
+
+/**
+ * Those of `wanted` that are on screen, in reading order; a label that is
+ * also the text shown, as a row's is, counts once.
+ */
+const marksOf = (wanted: readonly string[]) =>
+  marksInOrder()
+    .filter((mark) => wanted.includes(mark))
+    .filter((mark, index, marks) => mark !== marks[index - 1]);
+
+/** The rows of "Check and publish" on show, by what a screen reader hears. */
+const changeRows = () =>
+  screen
+    .getAllByRole("link", { name: /, Change$/ })
+    .map((row) => row.props.accessibilityLabel as string);
+
+/** The row of "Check and publish" that opens a part's step. */
+const changeRow = (part: string) => screen.findByRole("link", { name: new RegExp(`^${part}, `) });
+
 describe("Posting a trip (spec 3)", () => {
   it("goes from the route to a published trip", async () => {
     const { client, api } = await open("/drive/trips/new");
     expect(await screen.findByRole("header", { name: "Where are you driving?" })).toBeVisible();
-    expect(screen.getByText("Step 1 of 5")).toBeVisible();
+    // The road stands where "Step 1 of 5" and its bars stood (spec 31, 3.11).
+    expect(screen.getByRole("image", { name: "Step 1 of 5: Route" })).toBeVisible();
+    expect(screen.queryByText("Step 1 of 5")).toBeNull();
+    expect(filledButtons()).toBe(1);
 
     await choosePoint("From", "bs", "BSÍ bus terminal");
     await choosePoint("To", "hof", "Hof, Akureyri");
@@ -103,6 +147,7 @@ describe("Posting a trip (spec 3)", () => {
 
     await fireEvent.press(screen.getByRole("button", { name: "Choose date and time" }));
     expect(await screen.findByRole("header", { name: "When are you leaving?" })).toBeVisible();
+    expect(screen.getByRole("image", { name: "Step 2 of 5: Time" })).toBeVisible();
     expect(bodiesOf(client, "/v1/trips")).toEqual([{ stops: [bsi.id, borgarnes.id, hof.id] }]);
 
     await fireEvent.press(screen.getByRole("radio", { name: "Sunday 15 November" }));
@@ -124,7 +169,7 @@ describe("Posting a trip (spec 3)", () => {
     ]);
 
     // The seats come before the price, which depends on them (spec 3, 3.6).
-    expect(screen.getByText("Step 3 of 5")).toBeVisible();
+    expect(screen.getByRole("image", { name: "Step 3 of 5: Seats" })).toBeVisible();
     await fireEvent.press(screen.getByRole("button", { name: "One seat more" }));
     expect(screen.getByTestId("stepper-value")).toHaveTextContent("4");
     await fireEvent.press(screen.getByRole("radio", { name: /^Instant booking/ }));
@@ -150,7 +195,7 @@ describe("Posting a trip (spec 3)", () => {
     });
 
     // The price step works its limit out for the seats just chosen.
-    expect(screen.getByText("Step 4 of 5")).toBeVisible();
+    expect(screen.getByRole("image", { name: "Step 4 of 5: Price" })).toBeVisible();
     expect(await screen.findByText("3,000 ISK")).toBeVisible();
     expect(bodiesOf(client, "/v1/routes/quote").at(-1)).toMatchObject({ seats: 4 });
     expect(screen.getByText("Suggested price")).toBeVisible();
@@ -169,16 +214,41 @@ describe("Posting a trip (spec 3)", () => {
     expect(await screen.findByRole("header", { name: "Check and publish" })).toBeVisible();
     expect(bodiesOf(client, "/v1/trips/{id}").at(-1)).toEqual({ priceLevel: 110 });
 
-    expect(screen.getByText("Sunday 15 November")).toBeVisible();
-    expect(screen.getByText("09:00  BSÍ bus terminal")).toBeVisible();
-    expect(screen.getByText("4 seats")).toBeVisible();
-    expect(screen.getByText("Instant booking")).toBeVisible();
-    expect(screen.getByText("Pets welcome")).toBeVisible();
-    expect(screen.getByText("Toyota Yaris, white")).toBeVisible();
+    expect(screen.getByRole("image", { name: "Step 5 of 5: Check" })).toBeVisible();
+    expect(screen.getByText("This is how people will see your ride.")).toBeVisible();
+    // The ride as its ticket in the results (spec 31, 3.11, item 3).
+    const preview = within(await screen.findByTestId("preview-ticket"));
+    expect(preview.getByText("Sun 15 Nov")).toBeVisible();
+    expect(preview.getByText("Book instantly")).toBeVisible();
+    expect(preview.getByText("09:00")).toBeVisible();
+    expect(preview.getByText("BSÍ bus terminal")).toBeVisible();
+    expect(preview.getByText("2 h, 1 stop")).toBeVisible();
+    expect(preview.getByText("11:00")).toBeVisible();
+    expect(preview.getByText("Hof, Akureyri")).toBeVisible();
+    expect(await preview.findByText("3,400 ISK")).toBeVisible();
+    expect(preview.getByText("the whole way")).toBeVisible();
+    expect(preview.getByText("4 seats left")).toBeVisible();
+    // Every part in one card of rows, each with what is set and Change.
+    expect(changeRows()).toEqual([
+      "Route, BSÍ bus terminal to Hof, Akureyri, with 1 stop on the way, Change",
+      "Time, Sunday 15 November, 09:00 to 11:00, Change",
+      "Price, 3,400 ISK the whole way, Change",
+      "Seats and booking, 4 seats, Instant booking, Change",
+      "Car, Toyota Yaris, white, Change",
+      "Preferences and note, Some chat, one suitcase, pets welcome, no smoking, no child seat, Room for skis on the roof., Change",
+    ]);
+    expect(filledButtons()).toBe(1);
     await fireEvent.press(screen.getByRole("button", { name: "Publish ride" }));
     expect(await screen.findByRole("header", { name: "Your ride is published" })).toBeVisible();
     expect(screen).toHavePathname(`/drive/trips/${id}/published`);
     expect(screen.getByText("People can now find it and book a seat.")).toBeVisible();
+    // The ride as the ticket it is in My rides (spec 31, 3.19).
+    expect(
+      screen.getByRole("button", {
+        name: /^You drive, Sunday 15 November, Leaves BSÍ bus terminal at 09:00, arrives at Hof, Akureyri at 11:00, /,
+      }),
+    ).toBeVisible();
+    expect(filledButtons()).toBe(1);
 
     // The driver shares the trip's page (spec 28, 3.2), or sees it as passengers do.
     expect(screen.getByRole("header", { name: "Share this ride" })).toBeVisible();
@@ -286,6 +356,26 @@ describe("Posting a trip (spec 3)", () => {
     await fireEvent.changeText(await screen.findByLabelText("Town or meeting point"), "bor");
     await fireEvent.press(await screen.findByRole("button", { name: /^Borgarnes/ }));
     expect(await screen.findByText("Borgarnes is already on your route.")).toBeVisible();
+  });
+
+  it("gives Add a meeting point the head of a step: Back, the title at the left, and no cross", async () => {
+    await open("/drive/trips/new");
+    await choosePoint("From", "bs", "BSÍ bus terminal");
+    await choosePoint("To", "hof", "Hof, Akureyri");
+    await screen.findByRole("switch", { name: "Borgarnes" });
+    await fireEvent.press(screen.getByRole("button", { name: "Add a meeting point" }));
+    const title = await screen.findByRole("header", { name: "Add a meeting point" });
+    expect(title).not.toHaveStyle({ textAlign: "center" });
+    expect(within(screen.getByTestId("screen-head")).getByRole("button", { name: "Back" })).toBe(
+      screen.getByRole("button", { name: "Back" }),
+    );
+    expect(screen.queryByRole("button", { name: "Cancel" })).toBeNull();
+    // Back closes the picker: the step is there again, with the route as it was.
+    await fireEvent.press(screen.getByRole("button", { name: "Back" }));
+    expect(await screen.findByRole("header", { name: "Where are you driving?" })).toBeVisible();
+    expect(screen.queryByRole("header", { name: "Add a meeting point" })).toBeNull();
+    expect(screen.getByRole("button", { name: /^From: BSÍ bus terminal/ })).toBeVisible();
+    expect(screen.getByRole("switch", { name: "Borgarnes" })).toBeVisible();
   });
 
   it("says what meeting points are for until both ends are chosen", async () => {
@@ -501,6 +591,26 @@ describe("Posting a trip (spec 3)", () => {
     expect(screen.queryByText("Choose the time you're leaving.")).toBeNull();
   });
 
+  it("starts the departure of another day at 08:00, not at the present time (spec 31, 3.11)", async () => {
+    const draft = plannedDraft({
+      stops: plannedDraft().stops.map((stop) => ({ ...stop, plannedAt: null })),
+      departsAt: null,
+      arrivesAt: null,
+    });
+    await open(`/drive/trips/${draft.id}/time`, [draft]);
+    await fireEvent.press(await screen.findByRole("radio", { name: "Sunday 15 November" }));
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Leaving BSÍ bus terminal at: Choose a time" }),
+    );
+    expect(screen.getByRole("adjustable", { name: "Hour" })).toHaveAccessibilityValue({
+      text: "08",
+    });
+    expect(timeOf("Leaving BSÍ bus terminal at")).toHaveAccessibleName(
+      "Leaving BSÍ bus terminal at: 08:00",
+    );
+    expect(screen.getByText("09:00  Borgarnes")).toBeVisible();
+  });
+
   it("rounds times that are not on 5 minutes up to the next 5 minutes", async () => {
     const odd = plannedDraft({
       stops: plannedDraft().stops.map((stop, index) => ({
@@ -579,7 +689,7 @@ describe("Posting a trip (spec 3)", () => {
   it("tells the driver when more seats, changed from the review, lower the price chosen", async () => {
     const draft = plannedDraft({ priceLevel: 150 });
     const { client } = await open(`/drive/trips/${draft.id}/review`, [draft]);
-    await fireEvent.press(await screen.findByRole("link", { name: "Edit: Seats and booking" }));
+    await fireEvent.press(await changeRow("Seats and booking"));
     await fireEvent.press(await screen.findByRole("button", { name: "One seat more" }));
     expect(
       await screen.findByText(
@@ -617,9 +727,9 @@ describe("Posting a trip (spec 3)", () => {
     await open(`/drive/trips/${draft.id}/review`, [
       plannedDraft({ stops, arrivesAt: "2026-11-16T01:00:00.000Z" }),
     ]);
-    expect(await screen.findByText("Sunday 15 November")).toBeVisible();
-    expect(screen.getByText("10:00  Borgarnes")).toBeVisible();
-    expect(screen.getByText("01:00  Hof, Akureyri, Monday 16 November")).toBeVisible();
+    expect(await changeRow("Time")).toHaveAccessibleName(
+      "Time, Sunday 15 November at 09:00 to Monday 16 November at 01:00, Change",
+    );
   });
 
   it("lists what to fix when the server refuses to publish", async () => {
@@ -644,7 +754,7 @@ describe("Posting a trip (spec 3)", () => {
     expect(api.trips()[0]?.status).toBe("draft");
   });
 
-  it("asks first for what is missing, and Publish waits until it is done", async () => {
+  it("asks for what is missing in one card, with the button for the next one, and Publish waits", async () => {
     const draft = plannedDraft({ vehicleId: null });
     const { client } = await open(`/drive/trips/${draft.id}/review`, [draft]);
     client.answer("/v1/me/vehicles", () => ok(200, { vehicles: [] }));
@@ -660,17 +770,26 @@ describe("Posting a trip (spec 3)", () => {
       }),
     );
     // Back on the review from another step, it loads the driver again.
-    await fireEvent.press(await screen.findByRole("link", { name: "Edit: Route" }));
+    await fireEvent.press(await changeRow("Route"));
     await fireEvent.press(await screen.findByRole("button", { name: "Back" }));
+    const card = within(await screen.findByTestId("needs-you-card"));
+    expect(card.getByText("Two things before you publish")).toBeVisible();
+    // The photo is not asked for while photos are off, so it is not named.
+    expect(card.getByText("Your car and your driving licence are left.")).toBeVisible();
+    // One button, for the next one; the licence comes after the car.
     expect(
-      await screen.findByRole("header", { name: "Two things before you publish" }),
-    ).toBeVisible();
-    expect(screen.getByText("Make, model and colour")).toBeVisible();
-    expect(screen.getByRole("button", { name: "Add a car" })).toBeVisible();
-    expect(screen.getByText("One tick, no upload")).toBeVisible();
-    expect(screen.getByRole("button", { name: "Confirm your licence" })).toBeVisible();
-    expect(screen.queryByText("Profile photo")).toBeNull();
-    expect(screen.queryByRole("header", { name: "Before you publish" })).toBeNull();
+      card.getAllByRole("button").map((button) => button.props.accessibilityLabel as string),
+    ).toEqual(["Add a car"]);
+    // It stands under the rows, over Delete draft, and is not the main button.
+    expect(marksOf(["action-rows", "needs-you-card", "Delete draft"])).toEqual([
+      "action-rows",
+      "needs-you-card",
+      "action-rows",
+      "Delete draft",
+    ]);
+    // Outlined: Publish, which waits, stays the one filled button (R31.1).
+    expect(card.queryByTestId("filled-button")).toBeNull();
+    expect(filledButtons()).toBe(1);
     const publish = screen.getByRole("button", { name: "Publish ride" });
     expect(publish).toBeDisabled();
     expect(
@@ -699,11 +818,11 @@ describe("Posting a trip (spec 3)", () => {
         licenceDeclaredAt: null,
       }),
     );
-    await fireEvent.press(await screen.findByRole("link", { name: "Edit: Route" }));
+    await fireEvent.press(await changeRow("Route"));
     await fireEvent.press(await screen.findByRole("button", { name: "Back" }));
-    expect(
-      await screen.findByRole("header", { name: "One thing before you publish" }),
-    ).toBeVisible();
+    const card = within(await screen.findByTestId("needs-you-card"));
+    expect(card.getByText("One thing before you publish")).toBeVisible();
+    expect(card.getByText("Your car is done. Your driving licence is left.")).toBeVisible();
     expect(screen.queryByRole("button", { name: "Add a car" })).toBeNull();
     expect(
       screen.getByText(
@@ -729,13 +848,13 @@ describe("Posting a trip (spec 3)", () => {
         licenceDeclaredAt: "2026-11-14T12:00:00.000Z",
       }),
     );
-    await fireEvent.press(await screen.findByRole("link", { name: "Edit: Route" }));
+    await fireEvent.press(await changeRow("Route"));
     await fireEvent.press(await screen.findByRole("button", { name: "Back" }));
+    const card = within(await screen.findByTestId("needs-you-card"));
+    expect(card.getByText("One thing before you publish")).toBeVisible();
     expect(
-      await screen.findByRole("header", { name: "One thing before you publish" }),
+      card.getByText("Car and driving licence are done. Your profile photo is left."),
     ).toBeVisible();
-    expect(screen.getByText("Profile photo")).toBeVisible();
-    expect(screen.getByText("So passengers know who to look for")).toBeVisible();
     expect(screen.getByRole("button", { name: "Publish ride" })).toBeDisabled();
     expect(
       screen.getByText("Add a profile photo to publish. Your ride is saved as a draft until then."),
@@ -757,7 +876,7 @@ describe("Posting a trip (spec 3)", () => {
     );
     await fireEvent.press(screen.getByRole("button", { name: "Add a photo" }));
     expect(await screen.findByRole("button", { name: "Publish ride" })).toBeEnabled();
-    expect(screen.queryByRole("header", { name: /before you publish$/ })).toBeNull();
+    expect(screen.queryByTestId("needs-you-card")).toBeNull();
   });
 
   it("names all three when the photo, the car and the licence are missing", async () => {
@@ -775,14 +894,17 @@ describe("Posting a trip (spec 3)", () => {
         licenceDeclaredAt: null,
       }),
     );
-    await fireEvent.press(await screen.findByRole("link", { name: "Edit: Route" }));
+    await fireEvent.press(await changeRow("Route"));
     await fireEvent.press(await screen.findByRole("button", { name: "Back" }));
+    const card = within(await screen.findByTestId("needs-you-card"));
+    expect(card.getByText("Three things before you publish")).toBeVisible();
     expect(
-      await screen.findByRole("header", { name: "Three things before you publish" }),
+      card.getByText("Your profile photo, your car and your driving licence are left."),
     ).toBeVisible();
-    expect(screen.getByRole("button", { name: "Add a photo" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Add a car" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Confirm your licence" })).toBeVisible();
+    // The photo is first; the car and the licence get their turn after it.
+    expect(
+      card.getAllByRole("button").map((button) => button.props.accessibilityLabel as string),
+    ).toEqual(["Add a photo"]);
     expect(
       screen.getByText(
         "Add a profile photo and your car, and confirm your licence to publish. Your ride is saved as a draft until then.",
@@ -793,7 +915,8 @@ describe("Posting a trip (spec 3)", () => {
   it("has nothing in the way once the car and licence are done", async () => {
     await open(`/drive/trips/${plannedDraft().id}/review`, [plannedDraft()]);
     expect(await screen.findByRole("button", { name: "Publish ride" })).toBeEnabled();
-    expect(screen.queryByRole("header", { name: /before you publish$/ })).toBeNull();
+    expect(screen.queryByTestId("needs-you-card")).toBeNull();
+    expect(screen.queryByText(/before you publish$/)).toBeNull();
     expect(
       screen.queryByText(/to publish\. Your ride is saved as a draft until then\.$/),
     ).toBeNull();
@@ -814,18 +937,39 @@ describe("Posting a trip (spec 3)", () => {
     const { api } = await open(`/drive/trips/${draft.id}/price`, [draft]);
     expect(await screen.findByText("3,000 ISK")).toBeVisible();
     await fireEvent.press(screen.getByRole("button", { name: "Check your ride" }));
-    await fireEvent.press(await screen.findByRole("link", { name: "Edit: Price" }));
+    await fireEvent.press(await changeRow("Price"));
     await fireEvent.press(await screen.findByRole("button", { name: "Raise the price" }));
     expect(await screen.findByText("3,400 ISK")).toBeVisible();
     await fireEvent.press(screen.getByRole("button", { name: "Save changes" }));
-    expect(await screen.findByText("110% · the whole route 3,400 ISK")).toBeVisible();
+    expect(await screen.findByText("3,400 ISK the whole way")).toBeVisible();
     // Back from the review is the price step the driver came through, at 100% then.
     await fireEvent.press(screen.getByRole("button", { name: "Back" }));
     expect(await screen.findByRole("header", { name: "Set your price" })).toBeVisible();
     expect(await screen.findByText("3,400 ISK")).toBeVisible();
     await fireEvent.press(await screen.findByRole("button", { name: "Check your ride" }));
-    expect(await screen.findByText("110% · the whole route 3,400 ISK")).toBeVisible();
+    expect(await screen.findByText("3,400 ISK the whole way")).toBeVisible();
     expect(api.trips()[0]?.priceLevel).toBe(110);
+  });
+
+  it("says a ride is published only when it is", async () => {
+    // A draft opens where it was left; a cancelled ride opens its own page.
+    const draft = plannedDraft();
+    await open(`/drive/trips/${draft.id}/published`, [draft]);
+    expect(await screen.findByRole("header", { name: "Check and publish" })).toBeVisible();
+    expect(screen).toHavePathname(`/drive/trips/${draft.id}/review`);
+    expect(screen.queryByRole("header", { name: "Your ride is published" })).toBeNull();
+  });
+
+  it("opens a cancelled ride's page in place of Your ride is published", async () => {
+    const cancelled = plannedDraft({
+      status: "cancelled",
+      publishedAt: "2026-11-14T11:00:00.000Z",
+    });
+    await open(`/drive/trips/${cancelled.id}/published`, [cancelled]);
+    await waitFor(() => {
+      expect(screen).toHavePathname(`/drive/trips/${cancelled.id}`);
+    });
+    expect(screen.queryByRole("header", { name: "Your ride is published" })).toBeNull();
   });
 
   it("leaves the posting steps behind once the trip is published", async () => {
@@ -849,26 +993,36 @@ describe("Posting a trip (spec 3)", () => {
     api.refuse([{ path: "plannedTimes", issue: "departure_too_soon" }]);
     await fireEvent.press(await screen.findByRole("button", { name: "Publish ride" }));
     expect(await screen.findByTestId("publish-problems")).toBeVisible();
-    await fireEvent.press(screen.getByRole("link", { name: "Edit: Date and times" }));
+    await fireEvent.press(await changeRow("Time"));
     await chooseTime("Leaving BSÍ bus terminal at", "10:00");
     await fireEvent.press(screen.getByRole("button", { name: "Save changes" }));
-    expect(await screen.findByText("10:00  BSÍ bus terminal")).toBeVisible();
+    expect(await screen.findByText("Sunday 15 November, 10:00 to 12:00")).toBeVisible();
     expect(screen.queryByTestId("publish-problems")).toBeNull();
   });
 
   it("opens a step from the review and comes back to it", async () => {
     await open(`/drive/trips/${plannedDraft().id}/review`, [plannedDraft()]);
-    await fireEvent.press(await screen.findByRole("link", { name: "Edit: Seats and booking" }));
+    await fireEvent.press(await changeRow("Seats and booking"));
     await fireEvent.press(await screen.findByRole("button", { name: "One seat fewer" }));
     await fireEvent.press(screen.getByRole("button", { name: "Save changes" }));
     expect(await screen.findByText("2 seats")).toBeVisible();
     expect(screen.getByRole("header", { name: "Check and publish" })).toBeVisible();
   });
 
-  it("deletes a draft after asking", async () => {
+  it("deletes a draft after asking: a red row, last, as it cannot be undone (R31.3)", async () => {
     const { api } = await open(`/drive/trips/${plannedDraft().id}/review`, [plannedDraft()]);
-    await fireEvent.press(await screen.findByRole("button", { name: "Delete draft" }));
+    const row = await screen.findByRole("button", { name: "Delete draft" });
+    expect(within(row).getByText("Delete draft")).toHaveStyle({ color: colors.light.error });
+    // The last thing on the screen, under the rows that change the ride.
+    expect(marksOf(["action-rows", "Delete draft"]).at(-1)).toBe("Delete draft");
+    await fireEvent.press(row);
     expect(screen.getByText("Delete this draft? You can't undo this.")).toBeVisible();
+    // Asked first: keeping it brings the row back, and nothing was deleted.
+    await fireEvent.press(screen.getByRole("button", { name: "Keep it" }));
+    expect(screen.queryByText("Delete this draft? You can't undo this.")).toBeNull();
+    expect(api.trips()).toHaveLength(1);
+    await fireEvent.press(screen.getByRole("button", { name: "Delete draft" }));
+    expect(filledButtons()).toBe(1);
     await fireEvent.press(screen.getByRole("button", { name: "Delete draft" }));
     // Offer, with the draft gone from over its form (spec 31, 3.10, item 4).
     expect(await screen.findByRole("header", { name: "Where are you driving?" })).toBeVisible();
@@ -932,7 +1086,7 @@ describe("Offer opens the form (spec 16, 3.6; spec 31, 3.11, item 6)", () => {
   it("opens Where are you driving? straight away, with no Back on a place of the menu", async () => {
     await open("/offer");
     expect(await screen.findByRole("header", { name: "Where are you driving?" })).toBeVisible();
-    expect(screen.getByText("Step 1 of 5")).toBeVisible();
+    expect(screen.getByRole("image", { name: "Step 1 of 5: Route" })).toBeVisible();
     expect(screen.queryByRole("button", { name: "Back" })).toBeNull();
     expect(screen.queryByRole("header", { name: "Drafts" })).toBeNull();
     expect(screen.queryByTestId("draft-rows")).toBeNull();
@@ -1098,25 +1252,6 @@ describe("Posting a trip on a laptop (spec 18, 3.13)", () => {
   const side = () => within(onShow("columns-side"));
   const soFar = () => within(onShow("trip-so-far"));
 
-  /** The test IDs, spoken labels and texts on screen, in reading order. */
-  function marksInOrder(): string[] {
-    const marks: string[] = [];
-    const walk = (node: unknown) => {
-      if (typeof node === "string") marks.push(node);
-      else if (Array.isArray(node)) node.forEach(walk);
-      else if (typeof node === "object" && node !== null) {
-        if ("props" in node && typeof node.props === "object" && node.props !== null) {
-          const props = node.props as { testID?: unknown; accessibilityLabel?: unknown };
-          if (typeof props.testID === "string") marks.push(props.testID);
-          if (typeof props.accessibilityLabel === "string") marks.push(props.accessibilityLabel);
-        }
-        if ("children" in node) walk(node.children);
-      }
-    };
-    walk(screen.toJSON());
-    return marks;
-  }
-
   /** A draft with a route and nothing else chosen yet. */
   const unplanned = () =>
     plannedDraft({
@@ -1130,7 +1265,7 @@ describe("Posting a trip on a laptop (spec 18, 3.13)", () => {
     expect(await screen.findByRole("header", { name: "Where are you driving?" })).toBeVisible();
     expect(screen.getByTestId("page")).toBeVisible();
     expect(main().getByRole("button", { name: "Back" })).toBeVisible();
-    expect(main().getByText("Step 1 of 5")).toBeVisible();
+    expect(main().getByRole("image", { name: "Step 1 of 5: Route" })).toBeVisible();
     expect(main().getByRole("header", { name: "Where are you driving?" })).not.toHaveStyle({
       textAlign: "center",
     });
@@ -1251,15 +1386,15 @@ describe("Posting a trip on a laptop (spec 18, 3.13)", () => {
     expect(
       await soFar().findByLabelText("Seats and booking: 4 seats, Instant booking"),
     ).toBeVisible();
-    expect(await soFar().findByLabelText("Price: 100% · the whole route 3,000 ISK")).toBeVisible();
+    expect(await soFar().findByLabelText("Price: 3,000 ISK the whole way · 100%")).toBeVisible();
     await fireEvent.press(main().getByRole("button", { name: "Raise the price" }));
-    expect(await soFar().findByLabelText("Price: 110% · the whole route 3,400 ISK")).toBeVisible();
+    expect(await soFar().findByLabelText("Price: 3,400 ISK the whole way · 110%")).toBeVisible();
     expect(side().getByRole("button", { name: "Check your ride" })).toBeVisible();
   });
 
   it("shows everything the trip has when a step is opened from the review", async () => {
     await open(`/drive/trips/${plannedDraft().id}/review`, [plannedDraft()]);
-    await fireEvent.press(await screen.findByRole("link", { name: "Edit: Route" }));
+    await fireEvent.press(await changeRow("Route"));
     expect(await screen.findByRole("header", { name: "Where are you driving?" })).toBeVisible();
     expect(
       soFar().getByLabelText("Route: BSÍ bus terminal to Hof, Akureyri, 1 stop on the way"),
@@ -1267,7 +1402,7 @@ describe("Posting a trip on a laptop (spec 18, 3.13)", () => {
     expect(
       soFar().getByLabelText("Date and times: Sunday 15 November, 09:00 to 11:00"),
     ).toBeVisible();
-    expect(await soFar().findByLabelText("Price: 100% · the whole route 3,000 ISK")).toBeVisible();
+    expect(await soFar().findByLabelText("Price: 3,000 ISK the whole way · 100%")).toBeVisible();
     expect(
       soFar().getByLabelText("Seats and booking: 3 seats, I approve each passenger"),
     ).toBeVisible();
@@ -1277,7 +1412,7 @@ describe("Posting a trip on a laptop (spec 18, 3.13)", () => {
 
   it("names the times' step again while the route is not the saved one", async () => {
     await open(`/drive/trips/${plannedDraft().id}/review`, [plannedDraft()]);
-    await fireEvent.press(await screen.findByRole("link", { name: "Edit: Route" }));
+    await fireEvent.press(await changeRow("Route"));
     expect(
       await soFar().findByLabelText("Date and times: Sunday 15 November, 09:00 to 11:00"),
     ).toBeVisible();
@@ -1312,12 +1447,11 @@ describe("Posting a trip on a laptop (spec 18, 3.13)", () => {
         );
       },
     });
-    expect(
-      await main().findByRole("header", { name: "One thing before you publish" }),
-    ).toBeVisible();
+    expect(await main().findByText("One thing before you publish")).toBeVisible();
     expect(screen.getByTestId("page")).toBeVisible();
-    expect(main().getByText("Step 5 of 5")).toBeVisible();
-    expect(main().getByRole("link", { name: "Edit: Route" })).toBeVisible();
+    expect(main().getByRole("image", { name: "Step 5 of 5: Check" })).toBeVisible();
+    expect(main().getByTestId("preview-ticket")).toBeVisible();
+    expect(main().getByRole("link", { name: /^Route, / })).toBeVisible();
     expect(main().getByRole("button", { name: "Delete draft" })).toBeVisible();
     expect(side().getByRole("button", { name: "Publish ride" })).toBeDisabled();
     expect(
@@ -1337,7 +1471,7 @@ describe("Posting a trip on a laptop (spec 18, 3.13)", () => {
         name: "Continue your draft: BSÍ bus terminal → Hof, Akureyri, Sunday 15 November at 09:00",
       }),
     ).toBeVisible();
-    expect(main().getByText("Step 1 of 5")).toBeVisible();
+    expect(main().getByRole("image", { name: "Step 1 of 5: Route" })).toBeVisible();
     expect(screen.queryByRole("button", { name: "Back" })).toBeNull();
     expect(soFar().getByLabelText("Route: Step 1")).toBeVisible();
     expect(side().getByRole("button", { name: "Choose date and time" })).toBeVisible();
@@ -1349,11 +1483,11 @@ describe("Posting a trip on a laptop (spec 18, 3.13)", () => {
     expect(await main().findByRole("button", { name: "Try again" })).toBeVisible();
     expect(screen.getByTestId("page")).toBeVisible();
     expect(main().getByRole("button", { name: "Back" })).toBeVisible();
-    expect(main().getByText("Step 4 of 5")).toBeVisible();
+    expect(main().getByRole("image", { name: "Step 4 of 5: Price" })).toBeVisible();
     expect(screen.queryByTestId("trip-so-far")).toBeNull();
   });
 
-  it("leaves a phone as it was: one column, the map under the ends, the button in the bottom bar", async () => {
+  it("keeps a phone to one column: the map under the ends, the button in the bottom bar", async () => {
     Dimensions.set({ window: phone });
     await open("/drive/trips/new");
     await choosePoint("From", "bs", "BSÍ bus terminal");
@@ -1362,7 +1496,8 @@ describe("Posting a trip on a laptop (spec 18, 3.13)", () => {
     expect(screen.queryByTestId("page")).toBeNull();
     expect(screen.queryByTestId("columns-side")).toBeNull();
     expect(screen.queryByTestId("trip-so-far")).toBeNull();
-    expect(screen.getByRole("header", { name: "Where are you driving?" })).toHaveStyle({
+    // A step's title is at the left on a phone too (spec 31, 3.17).
+    expect(screen.getByRole("header", { name: "Where are you driving?" })).not.toHaveStyle({
       textAlign: "center",
     });
     expect(

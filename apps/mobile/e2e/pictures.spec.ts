@@ -5,6 +5,7 @@ import { apiUrl } from "../playwright.config";
 import { english, signUp } from "./support/account";
 import { confirmedBooking, requestSeat, secondPage } from "./support/cancelling";
 import { passengerRow } from "./support/driver-ride";
+import { addPhotoBeforePublishing } from "./support/photo";
 import { chooseTime, postTripToSelfoss, tomorrow } from "./support/trips";
 
 // Pictures of screens for the specs (docs/specs/images), kept in git with
@@ -727,5 +728,99 @@ test.describe("pictures", () => {
     });
     await dora.close();
     await einar.close();
+  });
+
+  test("offering a ride (spec 31)", async ({ page }, info) => {
+    test.setTimeout(300_000);
+    const folder = join(root ?? "", "one-ride-one-ticket", "built");
+    mkdirSync(folder, { recursive: true });
+    const wide = info.project.name === "desktop";
+    const window = wide ? { width: 1280, height: 720 } : (page.viewportSize() ?? null);
+    if (window === null) throw new Error("The page has no size");
+    await page.setViewportSize(window);
+    const visible = { visible: true };
+    const kind = wide ? "laptop" : "phone";
+    const shoot = async (name: string, scheme: "light" | "dark") => {
+      await showWhole(page, window.width);
+      // Away from the rows: one under the pointer would show as hovered.
+      await page.mouse.move(0, 0);
+      await page.screenshot({
+        path: join(folder, `${name}-${kind}-${scheme}.png`),
+        scale: wide ? "css" : "device",
+      });
+      await page.setViewportSize(window);
+    };
+    const heading = (name: string) => page.getByRole("heading", { name }).filter(visible);
+
+    // A first-time driver: the photo, the car and the licence are asked on
+    // the last step.
+    await signUp(page, english, "Anna");
+    await page.goto("/offer");
+    await choose(page, "From", "mjódd", /^Mjódd bus terminal,/);
+    await choose(page, "To", "selfo", /^N1 Selfoss,/);
+    await expect(page.getByRole("switch", { name: "Olís Norðlingaholt" })).toBeVisible();
+    await shoot("offer-route", "light");
+    if (!wide) {
+      // Another meeting point, with the head of a step.
+      await page.getByRole("button", { name: "Add a meeting point" }).click();
+      await expect(heading("Add a meeting point")).toBeVisible();
+      await shoot("offer-add-point", "light");
+      await page.getByRole("button", { name: "Back" }).filter(visible).click();
+    }
+    await page.getByRole("button", { name: "Choose date and time" }).click();
+    const day = tomorrow("en");
+    if (day.nextMonth) await page.getByRole("button", { name: "Next month" }).click();
+    await page.getByRole("radio", { name: day.name }).click();
+    await chooseTime(page, "Leaving Mjódd bus terminal at", "17:45");
+    await page.getByRole("button", { name: "Choose seats" }).click();
+    await page.getByRole("button", { name: "Set your price" }).click();
+    await expect(heading("Set your price")).toBeVisible();
+    if (!wide) await shoot("offer-price", "light");
+    await page.getByRole("button", { name: "Check your ride" }).click();
+    await expect(heading("Check and publish")).toBeVisible();
+    await expect(page.getByTestId("preview-ticket").filter(visible)).toBeVisible();
+    const review = page.url();
+    if (!wide) await shoot("offer-check-missing", "light");
+
+    await addPhotoBeforePublishing(page);
+    await page.getByRole("button", { name: "Add a car" }).click();
+    await page.getByLabel("Make").fill("Toyota");
+    await page.getByLabel("Model").fill("Yaris");
+    await page.getByRole("radio", { name: "White" }).click();
+    await page.getByRole("button", { name: "Save car" }).click();
+    await page.getByRole("button", { name: "Confirm your licence" }).click();
+    await page
+      .getByRole("checkbox", {
+        name: "I declare that I hold a valid driving licence for the cars I drive on PuffinRide",
+      })
+      .click();
+    await page.getByRole("button", { name: "Confirm", exact: true }).click();
+    await expect(heading("Check and publish")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Publish ride" }).filter(visible)).toBeEnabled();
+    await expect(page.getByTestId("needs-you-card").filter(visible)).toHaveCount(0);
+    await shoot("offer-check", "light");
+    if (wide) return;
+
+    // In Icelandic, at night.
+    await page.emulateMedia({ colorScheme: "dark" });
+    await page.goto("/");
+    await page.getByRole("button", { name: "Change the language to Icelandic" }).click();
+    await expect(page.getByRole("button", { name: "Skipta yfir í ensku" })).toBeVisible();
+    await page.goto(review);
+    await expect(heading("Yfirfara og birta")).toBeVisible();
+    await expect(page.getByTestId("preview-ticket").filter(visible)).toBeVisible();
+    await shoot("offer-check", "dark");
+    await page.emulateMedia({ colorScheme: "light" });
+    await page.goto("/");
+    await page.getByRole("button", { name: "Skipta yfir í ensku" }).click();
+    await expect(
+      page.getByRole("button", { name: "Change the language to Icelandic" }),
+    ).toBeVisible();
+
+    await page.goto(review);
+    await page.getByRole("button", { name: "Publish ride" }).filter(visible).click();
+    await expect(heading("Your ride is published")).toBeVisible();
+    await expect(page.getByRole("button", { name: /^You drive, / }).filter(visible)).toBeVisible();
+    await shoot("offer-published", "light");
   });
 });

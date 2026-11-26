@@ -11,7 +11,7 @@ import { ActionNotice } from "@/components/notice";
 import { Screen } from "@/components/screen";
 import { Heading } from "@/components/text";
 import { editHref, WithTripToChange, type TripToChange } from "@/driver-trip/change-screen";
-import { refusalText, timeLines, TripHead, tripHref } from "@/driver-trip/changes";
+import { refusalText, timeLines, TripHead, tripHref, tripOver } from "@/driver-trip/changes";
 import { ForPassengers, LevelLowered, Lines, Refused } from "@/driver-trip/stop-parts";
 import { useLanguage } from "@/i18n/language";
 import { useLoaded } from "@/lib/use-loaded";
@@ -29,7 +29,7 @@ import { PointPicker } from "@/trips/point-picker";
  * checks, and goes back to the trip, which says so with focus.
  */
 export default function AddStopScreen() {
-  const { t } = useLanguage();
+  const { locale, t } = useLanguage();
   const [point, setPoint] = useState<MeetingPointSummary | null>(null);
   return (
     <WithTripToChange title={t("trip.editAddStopAction")}>
@@ -37,6 +37,7 @@ export default function AddStopScreen() {
         point === null ? (
           <PointPicker
             title={t("trip.editAddStopAction")}
+            over={tripOver(t, locale, trip)}
             intro={t("trip.editAddStopHelp")}
             onChoose={setPoint}
             onCancel={() => {
