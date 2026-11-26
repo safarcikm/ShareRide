@@ -19,6 +19,13 @@ const { bookings, checkIns, disputes, trips, tripStops } = schema;
  * here" and reports already made on it. Then runs the booking deadlines and
  * the trip day job once, as the server does every minute, so a trip moved
  * far enough into the past completes and a report nobody answered stands.
+ *
+ * Those jobs leave a trip that another transaction holds for their next
+ * run, and the test API has no next run. Its notification worker holds a
+ * trip for a moment whenever it writes that trip's notifications (a row
+ * that points at a trip shares the trip's key), as it does just after a
+ * seat is confirmed. So they run here inside the transaction that holds
+ * this trip, where they cannot pass it by.
  */
 export async function moveTripForTests(
   db: Database,
@@ -63,8 +70,8 @@ export async function moveTripForTests(
         decidedAt: sql`${disputes.decidedAt} + ${by}`,
       })
       .where(inArray(disputes.bookingId, booked));
+    await expireAllDueBookings(tx, now);
+    await moveTripsOn(tx, now, defaultTripDaySettings);
+    await settleUnansweredReports(tx, now, defaultTripDaySettings);
   });
-  await expireAllDueBookings(db, now);
-  await moveTripsOn(db, now, defaultTripDaySettings);
-  await settleUnansweredReports(db, now, defaultTripDaySettings);
 }

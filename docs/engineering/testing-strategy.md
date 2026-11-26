@@ -65,7 +65,12 @@ On the web, Playwright runs these journeys against the real API with a test
 database (`apps/api/src/e2e-server.ts`). That server writes text messages to a
 file the tests read the codes from, and moves its clock 31 seconds on with
 each code, so a test can sign in to the same account again at once. It writes
-emails to another file, and runs the notification worker every second. Journey 1
+emails to another file, and runs the notification worker every second. The
+journeys of the trip day and of reviews move one trip's times
+(`POST /e2e/trips/{id}/move`), never the clock the others share; the server
+then runs the minute jobs inside the transaction that holds that trip, as it
+has no next run to pick up a trip those jobs found held (the worker holds a
+trip while it writes that trip's notifications). Journey 1
 runs in English and Icelandic, with "sign out on all devices"
 (`apps/mobile/e2e/sign-in.spec.ts`). Journey 3 books part of an instant
 trip and pays with the test provider's sheet after a failed payment, in both
