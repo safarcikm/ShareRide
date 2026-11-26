@@ -332,6 +332,28 @@ describe("the page's head (spec 23, 3.6)", () => {
     expect(front).toContain("<noscript>JS</noscript>");
   });
 
+  it("names the site PuffinRide for Google on the front page, which the app keeps (3.6, item 7)", () => {
+    const website =
+      '<script type="application/ld+json">' +
+      `{"@context":"https://schema.org","@type":"WebSite","name":"PuffinRide","url":"${site}/"}` +
+      "</script>";
+    for (const lang of [null, "is", "en"]) {
+      const page = fillPage(
+        exportedPage,
+        pageHead({ path: "/", lang, acceptLanguage: null }, production),
+      );
+      expect(page, String(lang)).toContain(website);
+    }
+    // Only the front page: Google reads a site's name from its home page.
+    for (const path of ["/meeting-points", "/carpool-iceland", "/legal/terms"]) {
+      const page = fillPage(
+        exportedPage,
+        pageHead({ path, lang: null, acceptLanguage: null }, production),
+      );
+      expect(page, path).not.toContain("application/ld+json");
+    }
+  });
+
   it("escapes what it writes into the page", () => {
     const head = pageHead(
       { path: '/meeting-points/"><script>$&', lang: null, acceptLanguage: null },

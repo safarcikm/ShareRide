@@ -338,7 +338,9 @@ and the pin keeps the puffin a travel sign rather than a souvenir.
   edges, so Android's round mask never cuts the corners. It shows only
   while the app starts; the fonts and your session then load behind the
   usual loading view.
-- **Browser tab:** the icon with rounded corners, 48 pixels.
+- **Browser tab:** the icon as a disc, the moss square cut to a circle, 48
+  pixels. Changed 2026-11-25 (was rounded corners): Google shows a site's
+  icon in a round frame, which a disc fills (spec 23, 3.6, item 5).
 - **In emails:** the same icon, 40 pixels, with the name, at the top of
   every email, sent inside the email
   ([spec 24](2026-11-22-branded-emails.md)). Its picture,
