@@ -1,0 +1,326 @@
+<title>PuffinRide redesign proposal</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Nunito:wght@400;600;700&display=swap">
+<style>
+/* Layout: one reading column at the left of a 1040 measure. Pictures lie on a
+   basalt table as wide as the measure. The page opens as a ride ticket. */
+:root {
+  --bg: #EEF3F4; --surface: #FFFFFF; --ink: #1F2A30; --muted: #56636B;
+  --moss: #2F6B4F; --moss-soft: #E2EFE7;
+  --sun: #F4C04E; --sun-soft: #FFF3DC; --sun-ink: #8A4B00;
+  --rule: #C5D2D7; --edge: #D2DDE1;
+  --table: #26323A; --on-table: #ECF2F4; --on-table-muted: #A6B4BB; --table-line: #3A4850;
+  --display: "Fredoka", "Trebuchet MS", "Segoe UI", sans-serif;
+  --text: "Nunito", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121A1E; --surface: #1B252B; --ink: #ECF2F4; --muted: #A6B4BB;
+    --moss: #7CC49E; --moss-soft: #203A2D;
+    --sun: #F4C04E; --sun-soft: #2E2614; --sun-ink: #F2C46B;
+    --rule: #2C3940; --edge: #0B1013;
+    --table: #0B1013; --on-table: #ECF2F4; --on-table-muted: #A6B4BB; --table-line: #2C3940;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121A1E; --surface: #1B252B; --ink: #ECF2F4; --muted: #A6B4BB;
+  --moss: #7CC49E; --moss-soft: #203A2D;
+  --sun: #F4C04E; --sun-soft: #2E2614; --sun-ink: #F2C46B;
+  --rule: #2C3940; --edge: #0B1013;
+  --table: #0B1013; --on-table: #ECF2F4; --on-table-muted: #A6B4BB; --table-line: #2C3940;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--text); font-size: 17px; line-height: 1.55; }
+.wrap { max-width: 1072px; margin: 0 auto; padding-block: 32px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: flex; flex-direction: column; gap: 64px; }
+h1, h2, h3, .num, .tag, .seg button { font-family: var(--display); font-weight: 600; font-kerning: none; word-spacing: 0.06em; }
+h1, h2, h3, p, ul, ol, dl, dd, figure { margin: 0; }
+h1 { font-size: clamp(36px, 6vw, 52px); line-height: 1.08; text-wrap: balance; }
+h2 { font-size: clamp(26px, 3.6vw, 32px); line-height: 1.15; text-wrap: balance; }
+h3 { font-size: 21px; line-height: 1.25; text-wrap: balance; }
+p, li, dd { max-width: 66ch; }
+.muted { color: var(--muted); }
+section { display: flex; flex-direction: column; gap: 20px; }
+section > .lead { font-size: 19px; }
+a { color: var(--moss); font-weight: 700; text-underline-offset: 3px; }
+a:focus-visible, button:focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; }
+
+/* The opening: the proposal as a ride ticket. */
+.ticket { background: var(--surface); border-radius: 22px; border-bottom: 3px solid var(--moss); }
+.ticket .top { padding: clamp(20px, 4vw, 36px); display: flex; flex-direction: column; gap: 14px; }
+.ticket .top p { font-size: 19px; }
+.cut { position: relative; height: 2px; margin: 0 14px; background-image: linear-gradient(to right, var(--rule) 60%, transparent 0); background-size: 10px 2px; }
+.cut::before, .cut::after { content: ""; position: absolute; top: -8px; width: 16px; height: 16px; border-radius: 50%; background: var(--bg); }
+.cut::before { left: -22px; } .cut::after { right: -22px; }
+.ticket .foot { padding: 12px clamp(20px, 4vw, 36px) 14px; display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; font-size: 15px; color: var(--muted); }
+
+.tag { display: inline-flex; align-items: center; height: 26px; padding: 0 10px; border-radius: 13px; font-size: 14px; line-height: 1; white-space: nowrap; font-weight: 500; }
+.tag.now { background: var(--bg); color: var(--muted); box-shadow: inset 0 0 0 2px var(--rule); }
+.tag.new { background: var(--moss); color: var(--surface); }
+.tag.sun { background: var(--sun-soft); color: var(--sun-ink); }
+
+/* Pictures on the table. */
+.stage { background: var(--table); color: var(--on-table); border-radius: 22px; padding: clamp(14px, 2.4vw, 24px); display: flex; gap: clamp(14px, 2.4vw, 24px); align-items: flex-start; }
+.stage.wide { flex-direction: column; align-items: stretch; }
+.shot { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.stage.phones { justify-content: center; }
+.stage.phones .shot { flex: 0 1 390px; }
+.shot .tag.now { background: transparent; color: var(--on-table-muted); box-shadow: inset 0 0 0 2px var(--table-line); }
+.shot .tag.new { background: var(--sun); color: #1F2A30; }
+.frame { position: relative; line-height: 0; }
+.frame img { width: 100%; height: auto; display: block; }
+.fold { position: absolute; left: -6px; right: -6px; border-top: 2px dashed var(--sun); pointer-events: none; }
+.fold i { position: absolute; right: 6px; top: 4px; font: 700 12px/1 var(--text); font-style: normal; background: var(--sun); color: #1F2A30; padding: 4px 7px; border-radius: 8px; }
+.stage[data-size="first"] .whole, .stage[data-size="first"] .fold, .stage[data-size="whole"] .first { display: none; }
+.more { align-self: flex-start; height: 40px; padding: 0 16px; border-radius: 20px; border: 0; background: var(--surface); box-shadow: inset 0 0 0 2px var(--rule); color: var(--ink); font: 700 15px/1 var(--text); cursor: pointer; }
+.more:hover { box-shadow: inset 0 0 0 2px var(--moss); }
+.stage.wide .frame { overflow-x: auto; border-radius: 10px; }
+.stage.wide .frame img { min-width: 640px; }
+
+.seg { display: none; }
+@media (max-width: 719px) {
+  .stage.phones { flex-direction: column; align-items: center; }
+  .stage.phones .shot { flex: none; width: 100%; max-width: 390px; }
+  .stage.phones[data-view] .seg { display: flex; align-self: stretch; background: var(--table-line); border-radius: 14px; padding: 4px; gap: 4px; }
+  .seg button { flex: 1; height: 40px; border: 0; border-radius: 11px; background: transparent; color: var(--on-table-muted); font-size: 16px; cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: var(--sun); color: #1F2A30; }
+  .stage[data-view="new"] .shot.now, .stage[data-view="now"] .shot.new { display: none; }
+}
+
+/* The opening row: three proposed screens, cut at the end of the first screen. */
+.hero { display: grid; grid-template-columns: repeat(3, minmax(0, 320px)); justify-content: space-between; }
+.hero figure { display: flex; flex-direction: column; gap: 10px; }
+.hero img { width: 100%; height: auto; display: block; }
+.hero figcaption { font-size: 15px; color: var(--on-table-muted); }
+@media (max-width: 719px) {
+  .hero { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hero figure:nth-child(3) { display: none; }
+}
+
+/* What gets in the way. */
+.groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 32px 48px; }
+.groups > div { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+ul { padding-left: 1.15em; display: flex; flex-direction: column; gap: 8px; }
+li::marker { color: var(--moss); }
+
+/* The six rules. */
+.rules { list-style: none; padding: 0; counter-reset: rule; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 24px 48px; }
+.rules li { counter-increment: rule; display: grid; grid-template-columns: 36px 1fr; column-gap: 14px; align-items: start; }
+.rules li::before { content: counter(rule); font-family: var(--display); font-weight: 600; width: 36px; height: 36px; border-radius: 50%; background: var(--sun); color: #1F2A30; display: flex; align-items: center; justify-content: center; }
+.rules b { font-family: var(--display); font-weight: 600; font-size: 19px; display: block; }
+.board { background: var(--table); border-radius: 22px; padding: clamp(10px, 2vw, 20px); line-height: 0; }
+.board img { width: 100%; height: auto; max-width: 760px; display: block; margin: 0 auto; }
+
+/* Screen by screen. */
+.pairs { gap: 56px; }
+.pair { gap: 14px; scroll-margin-top: 16px; }
+.was { display: grid; grid-template-columns: max-content minmax(0, 66ch); gap: 8px 14px; align-items: baseline; }
+.was dt { justify-self: start; }
+@media (max-width: 480px) { .was { grid-template-columns: 1fr; gap: 4px; } .was dd { margin-bottom: 8px; } }
+.jump { display: flex; flex-direction: row; flex-wrap: wrap; gap: 8px; padding: 0; list-style: none; }
+.jump a { display: inline-flex; align-items: center; height: 36px; padding: 0 14px; border-radius: 18px; background: var(--surface); box-shadow: inset 0 0 0 2px var(--rule); text-decoration: none; font-size: 15px; color: var(--ink); }
+.jump li { max-width: none; }
+.single { display: grid; grid-template-columns: minmax(0, 320px) minmax(0, 1fr); gap: 24px; align-items: center; }
+@media (max-width: 719px) { .single { grid-template-columns: 1fr; justify-items: center; } }
+.single p { color: var(--on-table); }
+
+/* The three ways. */
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; min-width: 620px; }
+th, td { text-align: left; vertical-align: top; padding: 14px 16px 14px 0; border-bottom: 2px solid var(--rule); }
+th { font-size: 15px; color: var(--muted); font-weight: 700; }
+td:first-child { font-family: var(--display); font-weight: 600; font-size: 19px; white-space: nowrap; }
+td:first-child .tag { margin-top: 6px; display: flex; width: max-content; }
+tr.pick td { background: var(--moss-soft); }
+tr.pick td:first-child { padding-left: 14px; border-radius: 14px 0 0 14px; }
+tr.pick td:last-child { border-radius: 0 14px 14px 0; }
+
+.steps { padding-left: 1.4em; display: flex; flex-direction: column; gap: 8px; }
+.steps li::marker { font-family: var(--display); font-weight: 600; color: var(--moss); }
+.note { background: var(--sun-soft); color: var(--sun-ink); border-radius: 16px; border-bottom: 3px solid var(--sun); padding: 14px 18px; max-width: 66ch; }
+.note b { color: var(--ink); }
+</style>
+
+<div class="wrap">
+  <header class="ticket">
+    <div class="top">
+      <h1>One ride, one ticket</h1>
+      <p>A proposal for a PuffinRide that is more organized and easier to use. The colours, the fonts, the puffins, the yellow car and the Iceland scene all stay. What changes is that every screen follows the same six rules.</p>
+    </div>
+    <div class="cut"></div>
+    <div class="foot"><span>For Martin, 26 November 2026</span><span class="tag sun">Nothing is built yet</span></div>
+  </header>
+
+  <section>
+    <div class="stage hero">{{HERO}}</div>
+    <p class="muted">Three of the proposed screens. Everything on this page is a drawing made from the app's own colours, fonts, icons and pictures, so it can be built as shown.</p>
+  </section>
+
+  <section>
+    <h2>How I looked</h2>
+    <p>I used the website the way a member does. I joined as a driver and as a passenger, offered a ride, asked for a seat, accepted it, chatted, went through trip day and left a rating, on a phone and on a laptop. That made about 300 pictures. I did not start from any screen that had been named to me.</p>
+  </section>
+
+  <section>
+    <h2>What gets in the way today</h2>
+    <p class="lead">The style is good. What is missing is a system. Each screen was designed on its own, so the same thing has a different name, shape and place from one screen to the next.</p>
+    <div class="groups">
+      <div>
+        <h3>One thing, several names and shapes</h3>
+        <ul>
+          <li>The menu says My rides. A second page for drivers is called My trips and lists the same rides as a different card. Offering is called Offer a ride, Post a trip and Publish trip. Finding is Find, Find a ride and Search.</li>
+          <li>There are two search forms: one on the front page and another on a screen of its own.</li>
+          <li>A ride is a different card in the results, in My rides, in My trips and in a request.</li>
+          <li>Profile and Settings overlap. Send feedback is on both.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Everything has the same weight</h3>
+        <ul>
+          <li>Nearly every block is a white card of the same kind, so nothing says where to look first.</li>
+          <li>The driver's ride ends in a column of five equal buttons: Edit, Cancel, Share, Post again, Post the return.</li>
+          <li>Titles are centred on some screens and at the left on others.</li>
+          <li>The car's yellow and the Iceland scene live only in the drawings. The screens themselves are green, white and grey, which is why it reads as dull.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>What needs you is easy to miss</h3>
+        <ul>
+          <li>On Find and in My rides, a request waiting for your answer is a small blue tag on a tall white card, with the button under the card.</li>
+          <li>On trip day, I'm here comes just under the first screen on a phone.</li>
+          <li>A booking's title is its route. Its state is a small tag and a line under it.</li>
+          <li>At the top of a conversation the two most visible things are Report and Block.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Long screens that list everything</h3>
+        <ul>
+          <li>The last step of offering a ride opens with three unticked boxes and three buttons, then lists the route twice.</li>
+          <li>The driver's ride gives most of its room to six seat bars and little to the person asking for a seat.</li>
+          <li>A ride's details put your part, the driver, the car, the seats and the route in cards of equal weight.</li>
+          <li>Settings is one long page of text, chips, switches and cards.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="groups">
+      <div>
+        <h3>Plain defects, to fix whatever you choose</h3>
+        <ul>
+          <li>Titles run words together: N1 Vík reads as N1Vík. The title font's space is narrow and the letters around it are pulled closer.</li>
+          <li>On Edit trip a link runs out of its card.</li>
+          <li>Profile pictures float at mid-height beside tall blocks of text.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Six rules for every screen</h2>
+    <ol class="rules">
+      <li><div><b>One ride, one ticket</b>A ride is the same card everywhere: the day, the two times and places as a timetable, the price. Under the tear line it says what that place needs: the driver in the results, your seat in My rides, the request to answer for a driver.</div></li>
+      <li><div><b>The road shows where things stand</b>A booking goes Asked, Confirmed, Trip day, Done. Offering a ride goes Route, Time, Seats, Price, Check. The car stands at the step you are on.</div></li>
+      <li><div><b>What needs you comes first, in the car's yellow</b>A request to answer, a seat to pay for, a ride on its trip day. One yellow card with one button, at the top of Find and of My rides.</div></li>
+      <li><div><b>One main button</b>At the bottom of the screen on a phone, at the top of the side column on a laptop. Everything else is a row with an icon. What cannot be undone is red and last.</div></li>
+      <li><div><b>The title says what is going on</b>Your seat is confirmed. Leaves in 10 minutes. Your ride to Vík. Once, at the left, in place of a tag and a line that repeat each other.</div></li>
+      <li><div><b>Colour means something</b>Green is what you can do. Yellow is yours and now. Blue is waiting and information. Red is a problem.</div></li>
+    </ol>
+    <div class="board"><img src="img/parts.webp" width="{{PARTS_W}}" height="{{PARTS_H}}" alt="The proposed parts: two ride tickets, the road with the car for a booking and for offering a ride, the yellow card for what needs you, action rows and the bar with one main button" loading="lazy"></div>
+  </section>
+
+  <section class="pairs">
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <h2>Screen by screen</h2>
+      <p>Each pair shows a screen as it is today and as proposed, with the same kind of ride. You see the first screen of each, as a phone or a small laptop shows it before any scrolling. A button under a pair shows the screens whole.</p>
+      <ul class="jump">
+        <li><a href="#find">Find</a></li><li><a href="#results">Results</a></li><li><a href="#trip">A ride</a></li><li><a href="#booking">A booked seat</a></li><li><a href="#trip-day">Trip day</a></li><li><a href="#offer">Offering</a></li><li><a href="#driver-ride">The driver's ride</a></li><li><a href="#my-rides">My rides</a></li><li><a href="#chat">A conversation</a></li><li><a href="#profile">Profile</a></li><li><a href="#laptop-find">Laptop</a></li>
+      </ul>
+    </div>
+{{PAIRS}}
+    <section class="pair" id="icelandic-dark">
+      <h3>In Icelandic, in the dark</h3>
+      <div class="stage single">
+        <div class="frame"><img src="img/new-home-is-dark.webp" width="{{DARK_W}}" height="{{DARK_H}}" alt="Proposed front page in Icelandic and dark mode" loading="lazy"></div>
+        <p>Every part is drawn from the colours the design system already has for light and for dark, and the Icelandic texts fit: Allir dagar, Sjá beiðnina, Næsta ferð þín.</p>
+      </div>
+    </section>
+  </section>
+
+  <section>
+    <h2>What stays</h2>
+    <ul>
+      <li>The colours, Fredoka and Nunito, the chunky buttons and the round cards.</li>
+      <li>The puffins, the yellow car, the Iceland scene and the logo.</li>
+      <li>The seat picture, the map of Iceland and the meeting points.</li>
+      <li>Every rule about booking, prices, seats and cancelling. This changes how screens are arranged, not what PuffinRide does.</li>
+      <li>Sign-in. The easier sign-in you approved on 25 November is already changing that screen, and this proposal leaves it to that work.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Three ways to go</h2>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Way</th><th>What it is</th><th>What you get</th><th>Size</th></tr></thead>
+        <tbody>
+          <tr><td>A. Tidy up</td><td>Every screen stays as it is. Fix the defects, give every page the same head, turn the button columns into rows.</td><td>Fewer rough edges within days. It will still feel like many separate screens, and still dull.</td><td>3 or 4 pull requests</td></tr>
+          <tr class="pick"><td>B. One ride, one ticket<span class="tag new">Recommended</span></td><td>The six rules on every flow. The same style, with the screens rearranged as drawn above.</td><td>One system that a new screen can follow. The yellow and the road bring the drawings' character into the screens.</td><td>About 12 pull requests, flow by flow</td></tr>
+          <tr><td>C. A new look</td><td>New colours, fonts and drawings.</td><td>You said you like the style, and what is wrong is the order, not the style.</td><td>Not recommended</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Where this changes something you chose before</h2>
+    <ul>
+      <li>Titles move to the left on the screens where you do something: a ride, a booking, a step, a list. On 14 November you chose centred titles. The front page on a phone, the empty screens and About would keep them centred.</li>
+      <li>Profile and Settings become one page.</li>
+      <li>My trips goes. The rides you drive and the seats you booked are both on My rides. Each other thing keeps one name: Find a ride, Offer a ride, Messages, Profile.</li>
+      <li>The five bars over the steps of offering a ride become the road with the car.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>How it would be built</h2>
+    <ol class="steps">
+      <li>The plain defects, straight away, on their own.</li>
+      <li>The shared parts: the ticket, the road, the yellow card, the rows, the page head. They join the design system.</li>
+      <li>Find and the search results.</li>
+      <li>A ride's details and booking a seat.</li>
+      <li>A booked seat and trip day.</li>
+      <li>The driver's ride and My rides.</li>
+      <li>Offering a ride.</li>
+      <li>Messages.</li>
+      <li>Profile and settings.</li>
+      <li>A last pass over laptop, dark mode and Icelandic on every changed screen.</li>
+    </ol>
+    <p class="note"><b>Nothing reaches puffinride.is without your go.</b> Each step is its own pull request with tests, in Icelandic and English, light and dark, and goes to staging first.</p>
+  </section>
+</div>
+
+<script>
+document.querySelectorAll(".stage.phones").forEach((stage) => {
+  const seg = stage.querySelector(".seg");
+  if (!seg) return;
+  const buttons = seg.querySelectorAll("button");
+  const show = (view) => {
+    stage.dataset.view = view;
+    buttons.forEach((button) => button.setAttribute("aria-pressed", String(button.dataset.view === view)));
+  };
+  buttons.forEach((button) => button.addEventListener("click", () => show(button.dataset.view)));
+  seg.hidden = false;
+  show("new");
+});
+document.querySelectorAll(".pair .more").forEach((button) => {
+  const stage = button.closest(".pair").querySelector(".stage");
+  button.hidden = false;
+  button.addEventListener("click", () => {
+    const whole = stage.dataset.size !== "whole";
+    stage.dataset.size = whole ? "whole" : "first";
+    button.setAttribute("aria-pressed", String(whole));
+    button.textContent = whole ? "Show the first screen only" : "Show the whole screens";
+  });
+});
+</script>
