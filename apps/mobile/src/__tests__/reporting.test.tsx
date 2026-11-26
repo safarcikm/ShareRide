@@ -1,5 +1,6 @@
-import { fireEvent, screen } from "expo-router/testing-library";
+import { fireEvent, screen, within } from "expo-router/testing-library";
 import type { Booking, MyReport, FileReportBody } from "@shareride/contracts";
+import { AccessibilityInfo } from "react-native";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
 import {
@@ -12,11 +13,13 @@ import {
   paidBooking,
   requestToDrive,
 } from "@/testing/bookings";
+import { filledButtons } from "@/testing/buttons";
 import { callsTo, chatMessage, chatServer, messageId, openedLine } from "@/testing/chat";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
 import { newcomer } from "@/testing/people";
 import { northResult, northTrip, tripDetailsApi } from "@/testing/search";
 import { tripsApi } from "@/testing/trips";
+import { colors } from "@/theme/tokens";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
 jest.mock("@/auth/token-store", () => {
@@ -107,6 +110,54 @@ describe("Reporting a trip (spec 9, 3.1)", () => {
     expect(screen.queryByRole("button", { name: "Block Anna too" })).toBeNull();
     await fireEvent.press(screen.getByRole("button", { name: "Back" }));
     expect(screen).toHavePathname(`/trips/${northResult.tripId}`);
+  });
+
+  it("has its title at the left and Send report as the one main button in the bar (spec 31, 3.19)", async () => {
+    await openTrip();
+    await fireEvent.press(screen.getByRole("link", { name: "Report this ride" }));
+    await screen.findByRole("radio", { name: "Something else" });
+    const head = within(screen.getByTestId("screen-head"));
+    expect(head.getByRole("header", { name: "Report this ride" })).toBeVisible();
+    expect(head.getByRole("button", { name: "Back" })).toBeVisible();
+    const bar = within(screen.getByTestId("bottom-bar"));
+    const send = bar.getByRole("button", { name: "Send report" });
+    expect(send).toHaveStyle({ minHeight: 56 });
+    expect(filledButtons()).toBe(1);
+    expect(screen.getByTestId("filled-button")).toBe(send);
+    // Why nothing was sent stands over the button, where it is seen.
+    await fireEvent.press(send);
+    expect(await bar.findByText("Choose what happened.")).toBeVisible();
+    await fireEvent.press(screen.getByRole("radio", { name: "Something else" }));
+    expect(screen.queryByText("Choose what happened.")).toBeNull();
+  });
+
+  it("offers the community rules as a row that opens them, not a loose link", async () => {
+    await openTrip();
+    await fireEvent.press(screen.getByRole("link", { name: "Report this ride" }));
+    await screen.findByRole("radio", { name: "Something else" });
+    const rules = within(screen.getByTestId("action-rows")).getByRole("link", {
+      name: "Read the community rules",
+    });
+    await fireEvent.press(rules);
+    expect(screen).toHavePathname("/legal/community-rules");
+  });
+
+  it("thanks as the title, at the left and with focus, once the report is sent", async () => {
+    const focus = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
+    await openTrip();
+    await fireEvent.press(screen.getByRole("link", { name: "Report this ride" }));
+    await fireEvent.press(await screen.findByRole("radio", { name: "Something else" }));
+    focus.mockClear();
+    await fireEvent.press(screen.getByRole("button", { name: "Send report" }));
+    await screen.findByRole("header", { name: "Thank you. We look at every report." });
+    const head = within(screen.getByTestId("screen-head"));
+    expect(head.getByRole("header", { name: "Thank you. We look at every report." })).toBeVisible();
+    expect(focus).toHaveBeenCalledTimes(1);
+    // The way back is the one thing to do: the main button, in the bar.
+    const back = within(screen.getByTestId("bottom-bar")).getByRole("button", { name: "Back" });
+    expect(back).toHaveStyle({ minHeight: 56 });
+    expect(filledButtons()).toBe(1);
+    expect(screen.getByTestId("filled-button")).toBe(back);
   });
 
   it("is not offered for my own trip", async () => {
@@ -214,7 +265,14 @@ describe("Reporting from a conversation (spec 9, 3.1.1)", () => {
         description: "",
       },
     ]);
-    await fireEvent.press(screen.getByRole("button", { name: "Block Anna too" }));
+    // Blocking is a red row, as what it leads to is (R31.3); Back is the main button.
+    const block = screen.getByRole("button", { name: "Block Anna too" });
+    expect(within(screen.getByTestId("action-rows")).getByText("Block Anna too")).toHaveStyle({
+      color: colors.light.error,
+    });
+    expect(filledButtons()).toBe(1);
+    expect(screen.getByTestId("filled-button")).toBe(screen.getByRole("button", { name: "Back" }));
+    await fireEvent.press(block);
     expect(screen).toHavePathname(`/bookings/${paidBooking.id}/block`);
   });
 

@@ -14,13 +14,13 @@ import { errorText } from "@/auth/errors";
 import { useSession } from "@/auth/session";
 import { otherPerson } from "@/chat/texts";
 import { Avatar } from "@/components/avatar";
-import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
-import { Notice } from "@/components/notice";
+import { ActionNotice, Notice } from "@/components/notice";
 import { Screen } from "@/components/screen";
+import { ScreenHead } from "@/components/screen-head";
 import { TakesFocus } from "@/components/takes-focus";
 import { TextField } from "@/components/text-field";
-import { Body, Title } from "@/components/text";
+import { Body } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { now } from "@/lib/clock";
 import { firstNameOf } from "@/people/texts";
@@ -28,7 +28,7 @@ import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 import {
   backTo,
-  BookingLine,
+  bookingWords,
   Changed,
   leave,
   NotLoaded,
@@ -40,7 +40,10 @@ import { StarPicker } from "./stars";
 /**
  * Rate and review (spec 8, screen 6; R8.8): the passenger rates the driver,
  * the driver each passenger, with 1 to 5 stars and a comment of up to 500
- * characters without contact details, checked as typed. Sent, it says the
+ * characters without contact details, checked as typed. The title is at
+ * the left, with the day over it and the part under it, and "Send review"
+ * is the main button, in the bar, with why it sent nothing over it (spec
+ * 31, 3.19). Sent, it says the
  * review shows once the other person has reviewed too or after 14 days, or
  * that both show now; it cannot be changed, so it is not offered again.
  * A rating of 1 or 2 asks "Did something go wrong?" and offers a report,
@@ -69,46 +72,56 @@ export function RateScreen() {
         : heldBack(t, booking);
   if (said !== null) {
     return (
-      <Stopped booking={booking}>
+      <Stopped booking={booking} back>
         <Notice kind="info" message={said} />
-        <BackTo booking={booking} />
       </Stopped>
     );
   }
   return <RateForm booking={booking} />;
 }
 
-/** The screen when the booking cannot be reviewed: why, and the way back. */
+/** Back and "How was your ride?" at the left, between the day and the part. */
+function RateHead({ booking }: { readonly booking: Booking }) {
+  const { locale, t } = useLanguage();
+  const { day, part } = bookingWords(t, locale, booking);
+  return <ScreenHead over={day} title={t("review.title")} line={part} back={backTo(booking)} />;
+}
+
+/**
+ * The screen when the booking cannot be reviewed, or once it is: why, and
+ * with `back` the way back as its main button, the one thing left to do.
+ */
 function Stopped({
   booking,
+  back = false,
   children,
 }: {
   readonly booking: Booking;
+  readonly back?: boolean;
   readonly children: ReactNode;
 }) {
   const { t } = useLanguage();
   return (
-    <Screen>
-      <BackButton fallback={backTo(booking)} />
-      <View>
-        <BookingLine booking={booking} />
-        <Title align="start">{t("review.title")}</Title>
-      </View>
+    <Screen
+      {...(back
+        ? {
+            footer: (
+              <Button
+                main
+                label={
+                  booking.viewer === "driver" ? t("booking.backToTrip") : t("booking.backToBooking")
+                }
+                onPress={() => {
+                  leave(backTo(booking));
+                }}
+              />
+            ),
+          }
+        : {})}
+    >
+      <RateHead booking={booking} />
       {children}
     </Screen>
-  );
-}
-
-function BackTo({ booking }: { readonly booking: Booking }) {
-  const { t } = useLanguage();
-  return (
-    <Button
-      variant="secondary"
-      label={booking.viewer === "driver" ? t("booking.backToTrip") : t("booking.backToBooking")}
-      onPress={() => {
-        leave(backTo(booking));
-      }}
-    />
   );
 }
 
@@ -198,7 +211,7 @@ function RateForm({ booking }: { readonly booking: Booking }) {
 
   if (sent !== null || stopped !== null) {
     return (
-      <Stopped booking={booking}>
+      <Stopped booking={booking} back>
         {sent === null ? (
           <TakesFocus>
             <Notice kind="info" message={stopped} />
@@ -216,7 +229,6 @@ function RateForm({ booking }: { readonly booking: Booking }) {
             ) : null}
           </>
         )}
-        <BackTo booking={booking} />
       </Stopped>
     );
   }
@@ -224,21 +236,20 @@ function RateForm({ booking }: { readonly booking: Booking }) {
   return (
     <Screen
       footer={
-        <Button
-          main
-          busy={busy}
-          label={t("review.send")}
-          onPress={() => {
-            void send();
-          }}
-        />
+        <>
+          <ActionNotice message={notice} />
+          <Button
+            main
+            busy={busy}
+            label={t("review.send")}
+            onPress={() => {
+              void send();
+            }}
+          />
+        </>
       }
     >
-      <BackButton fallback={backTo(booking)} />
-      <View>
-        <BookingLine booking={booking} />
-        <Title align="start">{t("review.title")}</Title>
-      </View>
+      <RateHead booking={booking} />
       <View style={styles.person}>
         <Avatar firstName={name} colour={person.colour} photo={person.photo} />
         <View style={styles.grow}>
@@ -268,11 +279,6 @@ function RateForm({ booking }: { readonly booking: Booking }) {
         error={problem}
       />
       <Body align="start">{t("review.hiddenUntil")}</Body>
-      {notice === null ? null : (
-        <TakesFocus key={notice}>
-          <Notice message={notice} />
-        </TakesFocus>
-      )}
     </Screen>
   );
 }

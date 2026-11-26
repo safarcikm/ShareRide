@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { english, signUp } from "./support/account";
-import { postTripToSelfoss } from "./support/trips";
+import { focused, postTripToSelfoss } from "./support/trips";
 
 // Spec 9's reporting on the web build, in two browsers: a driver posts a
 // trip, another person reports it as not as listed, is thanked, and finds
@@ -41,15 +41,24 @@ test("a person reports a trip and finds it in My reports", async ({
   await reporter.getByRole("link", { name: "Report this ride" }).click();
   await expect(reporter.getByRole("heading", { name: "Report this ride" })).toBeVisible();
 
-  // Nothing is sent before choosing what happened.
-  await reporter.getByRole("button", { name: "Send report" }).click();
-  await expect(reporter.getByText("Choose what happened.").filter(visible)).toBeVisible();
+  // Nothing is sent before choosing what happened: why stands over the
+  // button, in the bar, and takes focus (spec 31, 3.19).
+  const bar = reporter.getByTestId("bottom-bar").filter(visible);
+  await bar.getByRole("button", { name: "Send report" }).click();
+  await expect(bar.getByRole("alert")).toHaveText("Choose what happened.");
+  await expect(bar.getByRole("alert")).toBeInViewport();
+  await expect.poll(() => focused(reporter)).toContain("Choose what happened.");
   await reporter.getByRole("radio", { name: "The ride wasn't as listed" }).click();
   await reporter.getByLabel("Tell us more (optional)").fill("The car was not the one listed.");
   await reporter.getByRole("button", { name: "Send report" }).click();
   await expect(
     reporter.getByRole("heading", { name: "Thank you. We look at every report." }),
   ).toBeVisible();
+  // The thanks are the title, with focus; the way back is the main button.
+  await expect.poll(() => focused(reporter)).toContain("Thank you. We look at every report.");
+  await expect(
+    reporter.getByTestId("bottom-bar").filter(visible).getByRole("button", { name: "Back" }),
+  ).toBeInViewport();
 
   await reporter.goto("/settings");
   await reporter.getByRole("button", { name: "My reports" }).click();

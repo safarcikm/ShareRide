@@ -101,8 +101,9 @@ export function useWithdraw({
 
 /**
  * The question itself, where the page has its main button: "Withdraw your
- * request to Anna for 1 seat?", with the button that does it and the one
- * that keeps the request. It takes focus as it opens.
+ * request to Anna for 1 seat?", with the button that does it, red as it
+ * cannot be undone (spec 31, 3.19), and the one that keeps the request. It
+ * takes focus as it opens.
  */
 export function WithdrawQuestion({
   booking,
@@ -124,6 +125,7 @@ export function WithdrawQuestion({
         )}
         <Button
           main
+          variant="danger"
           busy={withdrawing.busy}
           label={t("booking.withdraw")}
           onPress={() => {

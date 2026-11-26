@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { iconSizes, radii, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 import { Icon } from "./icon";
+import { TakesFocus } from "./takes-focus";
 
 /**
  * A message about the last action, read out by screen readers when it
@@ -45,6 +46,20 @@ export function Notice({
         {message}
       </Text>
     </View>
+  );
+}
+
+/**
+ * Why a screen's main button did not do what it says, over that button: in
+ * the bar it is seen without scrolling, on a phone too (spec 31, 3.8 and
+ * 3.19). It takes focus when it appears and each time it says something new.
+ */
+export function ActionNotice({ message }: { readonly message: string | null }) {
+  if (message === null) return null;
+  return (
+    <TakesFocus key={message}>
+      <Notice message={message} />
+    </TakesFocus>
   );
 }
 

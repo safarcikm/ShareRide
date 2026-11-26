@@ -13,7 +13,12 @@ import {
 import { usePalette } from "@/theme/use-palette";
 import { linkProps, type AppPath } from "@/navigation/link-props";
 
-type Variant = "primary" | "secondary" | "text";
+/**
+ * `danger` is the filled button of what cannot be undone, such as
+ * "Cancel booking" on the screen that asks first (spec 31, 3.19): red where
+ * `primary` is moss, and a screen's one filled button as that is (R31.1).
+ */
+type Variant = "primary" | "danger" | "secondary" | "text";
 
 type ButtonProps = ButtonLook &
   (
@@ -67,6 +72,14 @@ function look(variant: Variant, palette: Palette, disabled: boolean, hovered: bo
         edge: edges.buttonPrimary,
         edgeColor: palette.primaryEdge,
       };
+    case "danger":
+      return {
+        face: { backgroundColor: hovered ? palette.errorHover : palette.error },
+        label: palette.onError,
+        underlined: false,
+        edge: edges.buttonPrimary,
+        edgeColor: palette.errorEdge,
+      };
     case "secondary":
       return {
         face: {
@@ -115,7 +128,7 @@ export function Button({
   return (
     <Pressable
       // A screen has at most one filled button (spec 31, R31.1): tests count them.
-      testID={variant === "primary" ? "filled-button" : undefined}
+      testID={variant === "primary" || variant === "danger" ? "filled-button" : undefined}
       accessibilityRole={href === undefined ? "button" : "link"}
       accessibilityLabel={accessibilityLabel ?? label}
       // aria-* rather than accessibilityState, which the web build drops.

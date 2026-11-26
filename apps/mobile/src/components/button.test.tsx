@@ -19,6 +19,33 @@ describe("Button", () => {
     });
   });
 
+  it("is a red button with a darker edge where it cannot be undone (spec 31, 3.19)", async () => {
+    await render(<Button label="Cancel booking" variant="danger" onPress={jest.fn()} />);
+    expect(screen.getByRole("button", { name: "Cancel booking" })).toHaveStyle({
+      borderBottomWidth: 4,
+      borderBottomColor: colors.light.errorEdge,
+    });
+    expect(face()).toHaveStyle({ backgroundColor: colors.light.error });
+    expect(screen.getByText("Cancel booking")).toHaveStyle({ color: colors.light.onError });
+  });
+
+  it.each(["primary", "danger"] as const)(
+    "counts a %s button as filled, and no other (R31.1)",
+    async (variant) => {
+      await render(
+        <>
+          <Button label="Do it" variant={variant} onPress={jest.fn()} />
+          <Button label="Keep" variant="secondary" onPress={jest.fn()} />
+          <Button label="Back" variant="text" onPress={jest.fn()} />
+        </>,
+      );
+      expect(screen.getAllByTestId("filled-button")).toHaveLength(1);
+      expect(screen.getByTestId("filled-button")).toBe(
+        screen.getByRole("button", { name: "Do it" }),
+      );
+    },
+  );
+
   it("outlines a secondary button in the control colour", async () => {
     await render(<Button label="Íslenska" variant="secondary" onPress={jest.fn()} />);
     expect(face()).toHaveStyle({ borderColor: colors.light.control, borderWidth: 2 });
@@ -48,7 +75,7 @@ describe("Button", () => {
     expect(StyleSheet.flatten(button.props.style)).not.toHaveProperty("height");
   });
 
-  it.each(["primary", "secondary", "text"] as const)(
+  it.each(["primary", "danger", "secondary", "text"] as const)(
     "fits a %s button to its label, in the middle of the column",
     async (variant) => {
       await render(<Button label="Send code" variant={variant} onPress={jest.fn()} />);
@@ -69,6 +96,15 @@ describe("Button", () => {
       expect(screen.getByText("Continue")).toHaveStyle({ color: colors.light.onPrimary });
       await fireEvent(screen.getByRole("button"), "hoverOut");
       expect(face()).toHaveStyle({ backgroundColor: colors.light.primary });
+    });
+
+    it("turns a red button a step darker, and back", async () => {
+      await render(<Button label="Cancel booking" variant="danger" onPress={jest.fn()} />);
+      await fireEvent(screen.getByRole("button"), "hoverIn");
+      expect(face()).toHaveStyle({ backgroundColor: colors.light.errorHover });
+      expect(screen.getByText("Cancel booking")).toHaveStyle({ color: colors.light.onError });
+      await fireEvent(screen.getByRole("button"), "hoverOut");
+      expect(face()).toHaveStyle({ backgroundColor: colors.light.error });
     });
 
     it("tints a secondary button", async () => {

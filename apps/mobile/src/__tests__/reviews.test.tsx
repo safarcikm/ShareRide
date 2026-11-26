@@ -3,6 +3,7 @@ import type { Booking, BookingReview, MyTrip, ReviewBody } from "@shareride/cont
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
 import { bookingApi, driverApi } from "@/testing/bookings";
+import { filledButtons } from "@/testing/buttons";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
 import { aReview, completedBooking, completedRider, reviewsCloseAt } from "@/testing/reviews";
 import { dispute, tripOnTheDay } from "@/testing/trip-day";
@@ -183,7 +184,28 @@ describe("the rate screen (spec 8, screen 6; R8.8)", () => {
       ),
     ).toBeVisible();
     expect(bodiesOf(client)).toEqual([{ rating: 4, comment: "Smooth drive." }]);
-    expect(screen.getByRole("button", { name: "Back to the booking" })).toBeVisible();
+    // The way back is the one thing to do: the main button, in the bar.
+    const back = within(screen.getByTestId("bottom-bar")).getByRole("button", {
+      name: "Back to the booking",
+    });
+    expect(back).toHaveStyle({ minHeight: 56 });
+    expect(filledButtons()).toBe(1);
+    expect(screen.getByTestId("filled-button")).toBe(back);
+  });
+
+  it("has its title at the left, between the day and the part, and Send review as the main button in the bar (spec 31, 3.19)", async () => {
+    await open(completedBooking(), ratePage(completedBooking()));
+    await screen.findByRole("radio", { name: "5 stars" });
+    const head = within(screen.getByTestId("screen-head"));
+    expect(head.getByRole("header", { name: "How was your ride?" })).toBeVisible();
+    expect(head.getByRole("button", { name: "Back" })).toBeVisible();
+    // The day over the title and the part under it, each on a line of its own.
+    expect(head.getByText("Sunday 15 November")).toBeVisible();
+    expect(head.getByText("Borgarnes → Blönduós")).toBeVisible();
+    const sendReview = within(screen.getByTestId("bottom-bar")).getByRole("button", send);
+    expect(sendReview).toHaveStyle({ minHeight: 56 });
+    expect(filledButtons()).toBe(1);
+    expect(screen.getByTestId("filled-button")).toBe(sendReview);
   });
 
   it("leaves out an empty comment", async () => {
@@ -214,7 +236,12 @@ describe("the rate screen (spec 8, screen 6; R8.8)", () => {
   it("asks for the stars first", async () => {
     const { client } = await open(completedBooking(), ratePage(completedBooking()));
     await fireEvent.press(await screen.findByRole("button", { name: "Send review" }));
-    expect(await screen.findByText("Choose a rating from 1 to 5 stars.")).toBeVisible();
+    // Over the button, where it is seen.
+    expect(
+      await within(screen.getByTestId("bottom-bar")).findByText(
+        "Choose a rating from 1 to 5 stars.",
+      ),
+    ).toBeVisible();
     expect(bodiesOf(client)).toEqual([]);
   });
 

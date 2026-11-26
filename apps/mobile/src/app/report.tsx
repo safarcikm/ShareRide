@@ -17,15 +17,16 @@ import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { errorText } from "@/auth/errors";
 import { useMe, useSession } from "@/auth/session";
 import { otherPerson } from "@/chat/texts";
+import { ActionRows } from "@/components/action-rows";
 import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
-import { Notice } from "@/components/notice";
+import { ActionNotice, Notice } from "@/components/notice";
 import { RadioCard } from "@/components/radio-card";
+import { Row } from "@/components/row";
 import { Screen } from "@/components/screen";
-import { TakesFocus } from "@/components/takes-focus";
+import { ScreenHead } from "@/components/screen-head";
 import { TextField } from "@/components/text-field";
-import { TextLink } from "@/components/text-link";
-import { Body, Title } from "@/components/text";
+import { Body } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { useLoaded } from "@/lib/use-loaded";
 import { BackToMenu } from "@/navigation/back-to-menu";
@@ -55,8 +56,11 @@ const maxLength = defaultSafetySettings.textMaxLength;
 
 /**
  * Reporting (spec 9, 3.1): what is reported comes from where the report
- * started, then what happened. Nothing is sent until "Send report".
- * Thanks, and for a person, Block them too. The
+ * started, then what happened. Nothing is sent until "Send report", the
+ * main button, in the bar, with why nothing was sent over it (spec 31,
+ * 3.19); the community rules are a row. Then the title thanks, with focus,
+ * Back is the main button, and for a person there is Block them too, a
+ * red row. The
  * address names only what is reported, never a person's user ID: their
  * first name comes from the booking the two share, or from the profile.
  * A review names nobody: its author has no profile reference on it.
@@ -234,36 +238,47 @@ function Report({
   if (sent) {
     // Blocking needs the person: through a booking the two share, or a profile.
     return (
-      <Screen>
-        <TakesFocus>
-          <Title>{t("report.thanks")}</Title>
-        </TakesFocus>
-        <Body>{t("report.thanksHelp")}</Body>
-        {person === null ? null : (
+      <Screen
+        footer={
+          // The way back is the one thing left to do: the main button.
           <Button
-            variant="secondary"
-            label={t("report.blockToo", { name: person.name })}
+            main
+            label={t("common.back")}
             onPress={() => {
-              router.replace(person.block);
+              if (router.canGoBack()) router.back();
+              else router.replace("/");
             }}
           />
+        }
+      >
+        {/* The button pressed is gone: focus moves to what it did. */}
+        <ScreenHead title={t("report.thanks")} back={null} outcome={{ of: "sent", focus: true }} />
+        <Body align="start">{t("report.thanksHelp")}</Body>
+        {person === null ? null : (
+          <ActionRows>
+            <Row
+              danger
+              title={t("report.blockToo", { name: person.name })}
+              onPress={() => {
+                router.replace(person.block);
+              }}
+            />
+          </ActionRows>
         )}
-        <Button
-          variant={person === null ? "secondary" : "text"}
-          label={t("common.back")}
-          onPress={() => {
-            if (router.canGoBack()) router.back();
-            else router.replace("/");
-          }}
-        />
       </Screen>
     );
   }
 
   return (
-    <Screen>
-      <BackButton fallback="/" />
-      <Title>{t(titles[about.kind], { name: person?.name ?? "" })}</Title>
+    <Screen
+      footer={
+        <>
+          <ActionNotice message={missing ? t("report.choose") : failed} />
+          <Button main label={t("report.send")} busy={busy} onPress={() => void send()} />
+        </>
+      }
+    >
+      <ScreenHead title={t(titles[about.kind], { name: person?.name ?? "" })} />
       {about.kind === "user" ? <Body align="start">{t("report.personHint")}</Body> : null}
       <View style={styles.group}>
         <Text style={[typography.label, { color: palette.text }]}>{t("report.what")}</Text>
@@ -284,7 +299,6 @@ function Report({
             />
           ))}
         </View>
-        <Notice message={missing ? t("report.choose") : null} />
       </View>
       <TextField
         label={t("report.description")}
@@ -298,14 +312,9 @@ function Report({
         help={t("report.descriptionHelp", { max: maxLength })}
         error={tooLong ? t("report.tooLong", { max: maxLength }) : undefined}
       />
-      <TextLink
-        label={t("report.rules")}
-        onPress={() => {
-          router.push("/legal/community-rules");
-        }}
-      />
-      <Button label={t("report.send")} busy={busy} onPress={() => void send()} />
-      <Notice message={failed} />
+      <ActionRows>
+        <Row title={t("report.rules")} href="/legal/community-rules" />
+      </ActionRows>
     </Screen>
   );
 }

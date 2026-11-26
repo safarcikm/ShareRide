@@ -365,4 +365,93 @@ test.describe("pictures", () => {
     }
     await other.close();
   });
+
+  // The screens around a booking as built (spec 31, 3.19): cancelling on a
+  // phone and a laptop; reporting, blocking, "The driver didn't come" and
+  // rating on a phone.
+  test("the screens around a booking (spec 31)", async ({ page, browser }, info) => {
+    test.setTimeout(300_000);
+    const folder = join(root ?? "", "one-ride-one-ticket", "built");
+    mkdirSync(folder, { recursive: true });
+    const wide = info.project.name === "desktop";
+    const window = wide ? { width: 1280, height: 720 } : (page.viewportSize() ?? null);
+    if (window === null) throw new Error("The page has no size");
+
+    await page.setViewportSize(window);
+    const { userAgent, isMobile, hasTouch, baseURL } = info.project.use;
+    const other = await browser.newContext({
+      viewport: window,
+      deviceScaleFactor: 2,
+      userAgent,
+      isMobile,
+      hasTouch,
+      baseURL,
+      locale: "en-GB",
+    });
+    const dora = await other.newPage();
+    const { tripId, booking } = await confirmedBooking(page, dora, [], 3);
+    const bookingId = booking.split("/").at(-1) ?? "";
+
+    const visible = { visible: true };
+    const shoot = async (name: string, scheme: "light" | "dark") => {
+      await showWhole(dora, window.width);
+      const kind = wide ? "laptop" : "phone";
+      await dora.screenshot({
+        path: join(folder, `${name}-${kind}-${scheme}.png`),
+        scale: wide ? "css" : "device",
+      });
+      await dora.setViewportSize(window);
+    };
+    const open = async (path: string, title: string) => {
+      await dora.goto(path);
+      await expect(dora.getByRole("heading", { name: title }).filter(visible)).toBeVisible();
+    };
+    const move = async (minutes: number) => {
+      const moved = await page.request.post(`${apiUrl}/e2e/trips/${tripId}/move`, {
+        data: { minutes },
+      });
+      expect(moved.status()).toBe(204);
+    };
+
+    // Cancelling, with a reason chosen so all it says shows.
+    await open(`${booking}/cancel`, "Cancel your booking");
+    await dora.getByRole("radio", { name: "Plans changed" }).click();
+    await shoot("cancel", "light");
+    if (wide) {
+      await other.close();
+      return;
+    }
+    await dora.emulateMedia({ colorScheme: "dark" });
+    await dora.goto("/");
+    await dora.getByRole("button", { name: "Change the language to Icelandic" }).click();
+    await expect(dora.getByRole("button", { name: "Skipta yfir í ensku" })).toBeVisible();
+    await open(`${booking}/cancel`, "Afbóka bókunina");
+    await dora.getByRole("radio", { name: "Breyttar áætlanir" }).click();
+    await shoot("cancel", "dark");
+    await dora.emulateMedia({ colorScheme: "light" });
+    await dora.goto("/");
+    await dora.getByRole("button", { name: "Skipta yfir í ensku" }).click();
+    await expect(
+      dora.getByRole("button", { name: "Change the language to Icelandic" }),
+    ).toBeVisible();
+
+    // Reporting a problem with the ride, and blocking the driver.
+    await open(`/report?kind=booking&id=${bookingId}`, "Report a problem with this ride");
+    await dora.getByRole("radio", { name: "The ride wasn't as listed" }).click();
+    await shoot("report", "light");
+    await open(`${booking}/block`, "Block Bára?");
+    await shoot("block", "light");
+
+    // A quarter of an hour after the time to get in: the driver didn't come.
+    await move(-15);
+    await open(`${booking}/driver-absent`, "The driver didn't come");
+    await shoot("driver-absent", "light");
+
+    // A day and a half later the ride is done: rating the driver.
+    await move(-36 * 60);
+    await open(`${booking}/rate`, "How was your ride?");
+    await dora.getByRole("radio", { name: "5 stars" }).click();
+    await shoot("rate", "light");
+    await other.close();
+  });
 });

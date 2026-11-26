@@ -23,6 +23,9 @@ export const colors = {
     focus: "#1F5F8B",
     error: "#B3261E",
     onError: "#FFFFFF",
+    // A red main button's bottom edge, and its fill under the pointer (spec 31, 3.19).
+    errorEdge: "#7D1812",
+    errorHover: "#9A1F18",
     errorSoft: "#FCE8E6",
     infoSoft: "#E1EDF6",
     // Tag text on its tinted fill (spec 15, section 4.1). Info tags use infoSoft.
@@ -50,6 +53,8 @@ export const colors = {
     focus: "#8FCBE6",
     error: "#FFB4AB",
     onError: "#3B0905",
+    errorEdge: "#C7766C",
+    errorHover: "#FFC9C2",
     errorSoft: "#3B1A17",
     infoSoft: "#16303F",
     warning: "#F2C46B",

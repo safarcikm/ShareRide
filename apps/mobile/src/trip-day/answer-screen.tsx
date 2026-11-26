@@ -6,15 +6,14 @@ import { StyleSheet, Text, View } from "react-native";
 import { errorText } from "@/auth/errors";
 import { useSession } from "@/auth/session";
 import { otherPerson } from "@/chat/texts";
-import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
 import { Chip } from "@/components/chip";
-import { Notice } from "@/components/notice";
+import { ActionNotice, Notice } from "@/components/notice";
 import { Screen } from "@/components/screen";
 import { TakesFocus } from "@/components/takes-focus";
 import { TextField } from "@/components/text-field";
-import { Body, Title } from "@/components/text";
+import { Body } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { now } from "@/lib/clock";
 import { spacing, typography } from "@/theme/tokens";
@@ -22,7 +21,7 @@ import { usePalette } from "@/theme/use-palette";
 import { firstNameOf } from "@/people/texts";
 import {
   backTo,
-  BookingLine,
+  BookingHead,
   Changed,
   NotLoaded,
   noteBody,
@@ -35,11 +34,13 @@ const isAnswer = (value: string | undefined): value is DisputeAnswer =>
   value === "agreed" || value === "contested";
 
 /**
- * Answering a report about you (spec 8, screen 5): "That's right" or
- * "That's not right", chosen on the booking or the trip and changeable
- * here, with what each does and an optional note only ShareRide reads.
- * Done, it goes back to the booking or the trip, where focus moves to
- * what the answer did.
+ * Answering a report about you (spec 8, screen 5): the title over the ride
+ * as a ticket (spec 31, 3.19), then "That's right" or "That's not right",
+ * chosen on the booking or the trip and changeable here, with what each
+ * does and an optional note only ShareRide reads. "Send answer" is the
+ * main button, in the bar, with why it sent nothing over it. Done, it goes
+ * back to the booking or the trip, where focus moves to what the answer
+ * did.
  */
 export function AnswerScreen() {
   const { t } = useLanguage();
@@ -53,8 +54,7 @@ export function AnswerScreen() {
   if (booking.dispute === null || report?.state !== "to_answer") {
     return (
       <Screen>
-        <BackButton fallback={backTo(booking)} />
-        <Title>{t("dispute.question")}</Title>
+        <BookingHead booking={booking} title={t("dispute.question")} />
         {report?.state === "too_late" ? (
           <Notice message={t("dispute.windowClosed")} />
         ) : (
@@ -133,15 +133,7 @@ function AnswerForm({
     }
   };
 
-  const head = (
-    <>
-      <BackButton fallback={backTo(booking)} />
-      <View>
-        <BookingLine booking={booking} />
-        <Title align="start">{t("dispute.question")}</Title>
-      </View>
-    </>
-  );
+  const head = <BookingHead booking={booking} title={t("dispute.question")} />;
   if (changed) {
     return (
       <Screen>
@@ -160,14 +152,17 @@ function AnswerForm({
   return (
     <Screen
       footer={
-        <Button
-          main
-          busy={busy}
-          label={t("dispute.send")}
-          onPress={() => {
-            void send();
-          }}
-        />
+        <>
+          <ActionNotice message={notice} />
+          <Button
+            main
+            busy={busy}
+            label={t("dispute.send")}
+            onPress={() => {
+              void send();
+            }}
+          />
+        </>
       }
     >
       {head}
@@ -217,11 +212,6 @@ function AnswerForm({
         help={t("report.noteHelp", { max: disputeNoteMaxLength })}
         error={problem}
       />
-      {notice === null ? null : (
-        <TakesFocus key={notice}>
-          <Notice message={notice} />
-        </TakesFocus>
-      )}
     </Screen>
   );
 }
