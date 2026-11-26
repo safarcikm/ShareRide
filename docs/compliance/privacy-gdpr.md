@@ -139,7 +139,7 @@ agreements below are still to sign
 | Rectification | Edit profile; contact support for other data |
 | Erasure | "Delete my account": after any open bookings are resolved and a 7-day waiting period, the hourly clean-up removes the profile and everything that was the person's alone (sessions, settings, drafts, cars no trip used, exports). Their trips, bookings and the cars those used move to one shared "former member", without free text or number plates, so the people they rode with keep their history; their messages read "Message deleted" (in a conversation a report covers, the operator can still read them until the report's time is over, A47); reviews written stay as by "a former member" ([spec 11](../specs/2026-11-13-privacy-self-service.md#35-what-is-erased-and-what-is-kept)). The audit log keeps the IDs it names. After a database restore, `privacy reapply-erasures` erases them again |
 | Objection and restriction | Contact form routed to the operator; answered within one month |
-| Withdraw consent | Google Analytics: the switch on the Cookies page (`/cookies`, under Terms, rules and privacy), which stops it at once and removes Google's cookies (spec 23, R23.4); later, settings for marketing, optional verification and women-only trips |
+| Withdraw consent | Google Analytics: the switch on the Cookies page (`/cookies`, on About and in the website's footer), which stops it at once and removes Google's cookies (spec 23, R23.4); later, settings for marketing, optional verification and women-only trips |
 
 ## Required documents before the beta
 

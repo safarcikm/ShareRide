@@ -107,11 +107,11 @@ describe("The question about cookies", () => {
 
   it("counts each screen opened after, by its pattern, never its address", async () => {
     mockPreferences.set(consentKey, consentRecord("accepted", daysAgo(1)));
-    await renderApp("/legal", withAnalytics);
-    await fireEvent.press(await screen.findByRole("button", { name: "Privacy Policy" }));
+    await renderApp("/about", withAnalytics);
+    await fireEvent.press(await screen.findByRole("link", { name: "Privacy Policy" }));
     expect(await screen.findByText("Draft text.")).toBeVisible();
     await waitFor(() => {
-      expect(page.pageViews()).toEqual(["/legal", "/legal/[type]"]);
+      expect(page.pageViews()).toEqual(["/about", "/legal/[type]"]);
     });
     expect(JSON.stringify(page.commands())).not.toContain("privacy");
   });
@@ -216,9 +216,9 @@ describe("The Cookies page", () => {
     expect(screen.getByRole("link", { name: "Read the Privacy Policy" })).toBeVisible();
   });
 
-  it("opens from Terms, rules and privacy", async () => {
-    await renderApp("/legal", withAnalytics);
-    await fireEvent.press(await screen.findByRole("button", { name: "Cookies" }));
+  it("opens from About", async () => {
+    await renderApp("/about", withAnalytics);
+    await fireEvent.press(await screen.findByRole("link", { name: "Cookies" }));
     expect(await theSwitch()).toBeVisible();
   });
 });

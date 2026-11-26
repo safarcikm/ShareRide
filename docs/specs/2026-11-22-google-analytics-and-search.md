@@ -82,7 +82,9 @@ page, which asks with its switch:
 ### 3.2 The Cookies page
 
 `/cookies`, open to everyone, linked from Terms, rules and privacy
-(`/legal`) and from the bar's Read more.
+(`/legal`) and from the bar's Read more. Since 2026-11-26 About
+(`/about`, [spec 30](2026-11-26-about-page-and-footer.md)) links to it in
+place of `/legal`.
 
 1. Says what the site keeps on the device to work (signing in, the
    language, the last searches and the like): needed, so no choice.
@@ -129,7 +131,8 @@ Only production's public pages that hold no person's data (R23.6):
 | Meeting points                 | `/meeting-points`                                                    |
 | A meeting point                | `/meeting-points/<id>`, each active one                              |
 | A place and its nearest points | `/places/<id>`, each place                                           |
-| Terms, rules and privacy       | `/legal`, `/legal/terms`, `/legal/community-rules`, `/legal/privacy` |
+| About (spec 30)                | `/about`                                                             |
+| The legal documents            | `/legal/terms`, `/legal/community-rules`, `/legal/privacy`           |
 | Cookies                        | `/cookies`                                                           |
 
 Every other address of the web app answers with `X-Robots-Tag: noindex,
@@ -367,7 +370,8 @@ title only (the same picture) and no change.
    the [visual design system](2026-11-13-visual-design-system.md); both
    buttons in the secondary style.
 2. The Cookies page (3.2), in the narrow column, as Settings' pages.
-3. A row **Cookies** on Terms, rules and privacy (`/legal`).
+3. A row **Cookies** on Terms, rules and privacy (`/legal`), on About
+   (`/about`) since spec 30.
 4. The share picture (3.6), made from the front page's puffins in their car and the logo.
 
 ## 6. Data and API

@@ -74,14 +74,14 @@ function sampleRide(): Ride {
 }
 
 describe("which pages search engines may index (spec 23, 3.4)", () => {
-  it("lists Find, Carpool in Iceland, the meeting points, the places, the legal texts and Cookies", () => {
+  it("lists Find, Carpool in Iceland, About, the meeting points, the places, the legal texts and Cookies", () => {
     for (const path of [
       "/",
       "/carpool-iceland",
+      "/about",
       "/meeting-points",
       "/meeting-points/0190a1d6-0000-7000-8000-0000000000d1",
       "/places/0190a1d6-0000-7000-8000-0000000000e1",
-      "/legal",
       "/legal/terms",
       "/legal/community-rules",
       "/legal/privacy",
@@ -103,6 +103,8 @@ describe("which pages search engines may index (spec 23, 3.4)", () => {
       "/my-rides",
       "/meeting-points/abc/problem",
       "/legal/unknown",
+      // About's old address, which answers with a redirect (spec 30, 3.2).
+      "/legal",
       "/admin",
       "/v1/meeting-points",
     ]) {
@@ -331,6 +333,35 @@ describe("the page's head (spec 23, 3.6)", () => {
       pageHead({ path: "/", lang: "en", acceptLanguage: null }, production),
     );
     expect(front).toContain("<noscript>JS</noscript>");
+  });
+
+  it("gives About its own title and canonical address (spec 30, 3.4)", () => {
+    const head = pageHead({ path: "/about", lang: "en", acceptLanguage: null }, production);
+    expect(head.title).toBe("About PuffinRide · PuffinRide");
+    expect(head.tags).toContain(
+      `<meta data-rh="true" name="description" content="Who runs PuffinRide, how to reach us, and PuffinRide's Terms of Service, Community Rules and Privacy Policy.">`,
+    );
+    expect(head.tags).toContain(
+      `<link data-rh="true" rel="canonical" href="${site}/about?lang=en">`,
+    );
+  });
+
+  it("writes About's text for search engines that do not run the app (spec 30, 3.4)", () => {
+    const head = pageHead({ path: "/about", lang: "is", acceptLanguage: null }, production);
+    const page = fillPage(
+      exportedPage.replace('<div id="root">', '<noscript>JS</noscript><div id="root">'),
+      head,
+    );
+    const noscript = /<noscript>([\s\S]*)<\/noscript>/.exec(page)?.[1] ?? "";
+    expect(noscript).toContain("<h1>Um PuffinRide</h1>");
+    expect(noscript).toContain("<h2>Skilmálar og reglur</h2>");
+    expect(noscript).toContain('<a href="/legal/terms?lang=is">Notendaskilmálar</a>');
+    expect(noscript).toContain('<a href="/cookies?lang=is">Vafrakökur</a>');
+    expect(noscript).toContain('<a href="/carpool-iceland?lang=is">');
+    expect(noscript).toContain(
+      "<p>PuffinRide er rekið af Martin Safarcik, Skinnar, 851 Hella, Íslandi.</p>",
+    );
+    expect(noscript).toContain('<a href="mailto:admin@puffinride.is">admin@puffinride.is</a>');
   });
 
   it("names the site PuffinRide for Google on the front page, which the app keeps (3.6, item 7)", () => {

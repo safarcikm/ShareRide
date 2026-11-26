@@ -1521,6 +1521,14 @@ releases follow [Semantic Versioning](https://semver.org/).
   gives each passkey's `credentialId` for it. The console's passkeys stay
   `passkey_invalid` and are never reported (R29.4). Sign-in options are
   limited to 60 per 10 minutes per address (was 20).
+- About PuffinRide (spec 30), a public page at `/about`: what PuffinRide is,
+  the Terms of Service, Community Rules, Privacy Policy and Cookies, who
+  runs PuffinRide (as the Terms say it) and how to reach us
+  (`admin@puffinride.is`, our Facebook Page). It takes the place of "Terms,
+  rules and privacy": Profile's row is "About PuffinRide", and `/legal`
+  answers with a permanent redirect to `/about`. About has its own title, is
+  in the sitemap in place of `/legal`, and its words are in the first
+  answer's `<noscript>` for search engines.
 
 ### Fixed
 

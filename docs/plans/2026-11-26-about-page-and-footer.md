@@ -5,29 +5,30 @@ requests, one after the other, each with its tests first.
 
 ## PR 1: the About page (`feat(about)`)
 
-- [ ] **Texts.** `packages/i18n/src/messages/en.ts` and `is.ts`: the keys of
-  spec 30, section 8; remove `profile.legal` and `seo.legalDescription`.
+- [x] **Texts.** `packages/i18n/src/messages/en.ts` and `is.ts`: the keys of
+  spec 30, section 8; remove `profile.legal`.
   Test first: `seo.test.ts` (About's `pageText`, no money words in About).
-- [ ] **One page's words.** `packages/i18n/src/seo.ts`: `PublicPage` kind
-  `about`, and `aboutPage` (path, title, sections) for the screen and the
-  server's `<noscript>`, as `carpoolPage` is.
-- [ ] **The contact address.** `apps/mobile/src/about/contact.ts`:
-  `contactEmail`; and the Facebook Page's address from
-  `apps/mobile/src/sharing/links.ts` (spec 28), added there if that file is
-  not on `main` yet.
-- [ ] **The screen.** `apps/mobile/src/app/about.tsx`, in the root stack.
+- [x] **One page's words.** `packages/i18n/src/seo.ts`: `PublicPage` kind
+  `about`, and `aboutPage` (path, title, texts, documents and the contact
+  address) for the screen, the footer and the server's `<noscript>`, as
+  `carpoolPage` is. The Facebook Page's address comes from
+  `apps/mobile/src/sharing/links.ts` (spec 28).
+- [x] **Links outside the app.** `externalLinkProps` in
+  `apps/mobile/src/navigation/link-props.ts`, `TextLink`'s `url`, and
+  `Row`'s `href` for a row that is a link.
+- [x] **The screen.** `apps/mobile/src/app/about.tsx`, in the root stack.
   Test first: `apps/mobile/src/__tests__/about.test.tsx` (the documents open,
   the email and Facebook links, Back to Profile).
-- [ ] **In place of "Terms, rules and privacy".** Profile's two rows open
+- [x] **In place of "Terms, rules and privacy".** Profile's two rows open
   `/about` (`about.title`); `app/legal/index.tsx` redirects to `/about`;
-  Cookies' and the documents' Back fall back to `/about`. Tests: `menu.test.tsx`
-  and `profile-safety.test.tsx` as they are, changed to About.
-- [ ] **The server.** `apps/api/src/search-engines.ts`: `/about` indexable
+  Cookies' and the documents' Back fall back to `/about`. Tests: `menu.test.tsx`,
+  `profile-and-settings.test.tsx` and `cookies.test.tsx`, changed to About.
+- [x] **The server.** `apps/api/src/search-engines.ts`: `/about` indexable
   and in the sitemap in place of `/legal`; its title and `<noscript>`.
   `apps/api/src/web-app.ts`: `/legal` answers 301 to `/about`, query kept.
   Tests first in `search-engines.test.ts` and `web-app.test.ts`.
-- [ ] **Docs.** Spec 16, 3.4 item 2 and spec 23, 3.4 point at spec 30; the
-  glossary if a word is new; CHANGELOG.
+- [x] **Docs.** Spec 16, 3.4 item 2 and spec 23, 3.2 and 3.4 point at spec
+  30; the privacy register's Cookies line; CHANGELOG.
 
 ## PR 2: the footer (`feat(about)`)
 

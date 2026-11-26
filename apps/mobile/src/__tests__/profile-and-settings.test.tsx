@@ -67,7 +67,7 @@ describe("My profile (spec 16, 3.4)", () => {
     // The phone number is private, so it is in Settings.
     expect(screen.queryByText("+354 690 0000")).toBeNull();
     expect(await screen.findByRole("button", { name: "Driving licence, Confirmed" })).toBeVisible();
-    for (const row of ["My cars", "Meeting points", "Settings", "Terms, rules and privacy"]) {
+    for (const row of ["My cars", "Meeting points", "Settings", "About PuffinRide"]) {
       expect(screen.getByRole("button", { name: row })).toBeVisible();
     }
     expect(
@@ -117,13 +117,13 @@ describe("My profile (spec 16, 3.4)", () => {
     expect(screen).toHavePathname("/meeting-points");
   });
 
-  it("opens the terms, the rules and the privacy policy from one row", async () => {
+  it("opens the terms, the rules and the privacy policy on About, from one row", async () => {
     await openProfile();
-    await fireEvent.press(screen.getByRole("button", { name: "Terms, rules and privacy" }));
-    expect(await screen.findByRole("header", { name: "Terms, rules and privacy" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Terms of Service" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Community Rules" })).toBeVisible();
-    await fireEvent.press(screen.getByRole("button", { name: "Privacy Policy" }));
+    await fireEvent.press(screen.getByRole("button", { name: "About PuffinRide" }));
+    expect(await screen.findByRole("header", { name: "About PuffinRide" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Terms of Service" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Community Rules" })).toBeVisible();
+    await fireEvent.press(screen.getByRole("link", { name: "Privacy Policy" }));
     expect(screen).toHavePathname("/legal/privacy");
   });
 
@@ -251,7 +251,7 @@ describe("My profile on a laptop (spec 18, 3.12)", () => {
       "My cars",
       "Meeting points",
       "Settings",
-      "Terms, rules and privacy",
+      "About PuffinRide",
       "Send feedback",
       "Notices",
     ]) {

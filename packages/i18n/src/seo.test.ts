@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { carpoolPage, pageText } from "./seo.ts";
+import { aboutPage, carpoolPage, pageText } from "./seo.ts";
 import { createTranslator } from "./translator.ts";
 
 const en = createTranslator("en");
@@ -79,6 +79,63 @@ describe("the Carpool in Iceland page (spec 23, 3.9)", () => {
           ...section.paragraphs.map((paragraph) => t(paragraph)),
           ...(section.questions ?? []).flatMap(({ question, answer }) => [t(question), t(answer)]),
         ]),
+      ].join(" ");
+      expect(text).not.toMatch(
+        /\b(pay|paid|payment|price|fee|fees|cost|costs|cheap|money|ISK|kr|greiða|greiðsl\w*|verð\w*|gjald\w*|kostnað\w*|ódýr\w*|krónu\w*)\b/iu,
+      );
+    }
+  });
+});
+
+describe("the About page (spec 30, 3.1 and 3.4)", () => {
+  it("has its own title and description", () => {
+    expect(pageText(en, { kind: "about" })).toEqual({
+      title: "About PuffinRide · PuffinRide",
+      description:
+        "Who runs PuffinRide, how to reach us, and PuffinRide's Terms of Service, Community Rules and Privacy Policy.",
+    });
+    expect(pageText(is, { kind: "about" }).title).toBe("Um PuffinRide · PuffinRide");
+  });
+
+  it("lists the three documents and Cookies, and links to Carpool in Iceland", () => {
+    expect(aboutPage.path).toBe("/about");
+    expect(aboutPage.documents.map((document) => document.href)).toEqual([
+      "/legal/terms",
+      "/legal/community-rules",
+      "/legal/privacy",
+      "/cookies",
+    ]);
+    expect(aboutPage.documents.map((document) => en(document.label))).toEqual([
+      "Terms of Service",
+      "Community Rules",
+      "Privacy Policy",
+      "Cookies",
+    ]);
+    expect(aboutPage.howItWorks.href).toBe("/carpool-iceland");
+  });
+
+  it("names who runs PuffinRide as the Terms do, and an address that receives mail (R30.2)", () => {
+    expect(en(aboutPage.operator)).toBe(
+      "PuffinRide is run by Martin Safarcik, Skinnar, 851 Hella, Iceland.",
+    );
+    expect(is(aboutPage.operator)).toBe(
+      "PuffinRide er rekið af Martin Safarcik, Skinnar, 851 Hella, Íslandi.",
+    );
+    expect(aboutPage.email).toBe("admin@puffinride.is");
+  });
+
+  it("says nothing about money, in either language (R30.3)", () => {
+    for (const t of [en, is]) {
+      const text = [
+        t(aboutPage.title),
+        ...aboutPage.intro.map((key) => t(key)),
+        t(aboutPage.howItWorks.label),
+        t(aboutPage.documentsTitle),
+        t(aboutPage.operatorTitle),
+        t(aboutPage.operator),
+        t(aboutPage.contactTitle),
+        t(aboutPage.contact),
+        pageText(t, { kind: "about" }).description,
       ].join(" ");
       expect(text).not.toMatch(
         /\b(pay|paid|payment|price|fee|fees|cost|costs|cheap|money|ISK|kr|greiða|greiðsl\w*|verð\w*|gjald\w*|kostnað\w*|ódýr\w*|krónu\w*)\b/iu,

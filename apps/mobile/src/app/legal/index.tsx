@@ -1,49 +1,9 @@
-import { router } from "expo-router";
-import { BackButton } from "@/components/back-button";
-import { Card } from "@/components/card";
-import { PageHead } from "@/components/page-head";
-import { Row } from "@/components/row";
-import { Screen } from "@/components/screen";
-import { Title } from "@/components/text";
-import { useLanguage } from "@/i18n/language";
-
-const documents = [
-  { type: "terms", title: "legal.terms" },
-  { type: "community-rules", title: "legal.rules" },
-  { type: "privacy", title: "legal.privacy" },
-] as const;
+import { Redirect } from "expo-router";
 
 /**
- * Terms, rules and privacy (spec 16, 3.4 item 2): the three legal documents,
- * and Cookies (spec 23, 3.2). Open to everyone.
+ * The old "Terms, rules and privacy" page: About holds the documents now
+ * (spec 30, 3.2), so a saved or shared link to it opens About.
  */
 export default function LegalDocumentsScreen() {
-  const { t } = useLanguage();
-  return (
-    <Screen>
-      <PageHead
-        title={t("seo.title", { page: t("profile.legal") })}
-        description={t("seo.legalDescription")}
-      />
-      <BackButton fallback="/profile" />
-      <Title>{t("profile.legal")}</Title>
-      <Card>
-        {documents.map((document) => (
-          <Row
-            key={document.type}
-            title={t(document.title)}
-            onPress={() => {
-              router.push({ pathname: "/legal/[type]", params: { type: document.type } });
-            }}
-          />
-        ))}
-        <Row
-          title={t("cookies.title")}
-          onPress={() => {
-            router.push("/cookies");
-          }}
-        />
-      </Card>
-    </Screen>
-  );
+  return <Redirect href="/about" />;
 }

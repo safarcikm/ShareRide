@@ -31,11 +31,11 @@ import { usePalette } from "@/theme/use-palette";
 /**
  * Profile, a place of the menu (spec 16, 3.1). Signed in, my profile
  * (spec 16, 3.4): who I am, then rows for my cars, my licence, the meeting
- * points, Settings and the legal documents, and Sign out, which signs out
- * of this device and returns to Find, as Settings does. Signed out: what an
- * account is for and Sign in, then the rows for the meeting points and the
- * legal documents, as signed in, and the language, in one column on any
- * screen.
+ * points, Settings and About with the legal documents (spec 30, 3.2), and
+ * Sign out, which signs out of this device and returns to Find, as
+ * Settings does. Signed out: what an account is for and Sign in, then the
+ * rows for the meeting points and About, as signed in, and the language,
+ * in one column on any screen.
  */
 export default function ProfileScreen() {
   const me = useMe();
@@ -56,9 +56,9 @@ function SignedOut() {
             }}
           />
           <Row
-            title={t("profile.legal")}
+            title={t("about.title")}
             onPress={() => {
-              router.push("/legal");
+              router.push("/about");
             }}
           />
         </Card>
@@ -136,9 +136,9 @@ function MyProfile({ me }: { readonly me: Me }) {
           }}
         />
         <Row
-          title={t("profile.legal")}
+          title={t("about.title")}
           onPress={() => {
-            router.push("/legal");
+            router.push("/about");
           }}
         />
         <Row title={t("feedback.title")} onPress={openFeedback} />

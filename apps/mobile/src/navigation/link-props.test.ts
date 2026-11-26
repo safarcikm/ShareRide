@@ -1,6 +1,6 @@
 import { router } from "expo-router";
-import { Platform } from "react-native";
-import { addressOf, linkProps } from "./link-props";
+import { Linking, Platform } from "react-native";
+import { addressOf, externalLinkProps, linkProps } from "./link-props";
 
 jest.mock("expo-router", () => ({ router: { push: jest.fn() } }));
 
@@ -37,6 +37,29 @@ describe("a link to a screen (spec 23, 3.6)", () => {
     expect(link.href).toBeUndefined();
     link.onPress();
     expect(push).toHaveBeenCalledWith("/meeting-points");
+  });
+});
+
+describe("a link outside the app (spec 30, 3.1)", () => {
+  it("is an address the browser opens on the web: a web page in a new tab, told nothing", () => {
+    jest.replaceProperty(Platform, "OS", "web");
+    expect(externalLinkProps("https://www.facebook.com/profile.php?id=1")).toEqual({
+      href: "https://www.facebook.com/profile.php?id=1",
+      hrefAttrs: { target: "_blank", rel: "noopener noreferrer" },
+    });
+    expect(externalLinkProps("mailto:admin@puffinride.is")).toEqual({
+      href: "mailto:admin@puffinride.is",
+    });
+  });
+
+  it("is a press that opens the browser or the mail app on a phone", () => {
+    jest.replaceProperty(Platform, "OS", "ios");
+    const openURL = jest.spyOn(Linking, "openURL").mockRejectedValue(new Error("No mail app"));
+    const link = externalLinkProps("mailto:admin@puffinride.is");
+    expect(link.href).toBeUndefined();
+    link.onPress?.();
+    expect(openURL).toHaveBeenCalledWith("mailto:admin@puffinride.is");
+    openURL.mockRestore();
   });
 });
 

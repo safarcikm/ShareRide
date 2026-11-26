@@ -1,5 +1,6 @@
 import { ChevronRight } from "lucide-react-native";
 import { Pressable, StyleSheet, Text } from "react-native";
+import { linkProps, type AppPath } from "@/navigation/link-props";
 import { useHover } from "@/theme/hover";
 import { radii, sizes, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
@@ -10,23 +11,28 @@ import { Icon } from "./icon";
  * 5.2): the title on the left in `bodyStrong`, a value such as "Confirmed"
  * in `small` `textMuted`, and a chevron; at least 56 high, tinted
  * `primarySoft` while pressed and under the pointer. Rows go in a `Card`.
+ * With `href` it is a link to the screen, an `<a href>` on the web, as a
+ * document on About is (spec 30, 3.1); otherwise a button.
  */
 export function Row({
   title,
   value,
   onPress,
+  href,
 }: {
   readonly title: string;
   readonly value?: string;
-  readonly onPress: () => void;
-}) {
+} & (
+  | { readonly onPress: () => void; readonly href?: never }
+  | { readonly href: AppPath; readonly onPress?: never }
+)) {
   const palette = usePalette();
   const [hovered, hover] = useHover();
   return (
     <Pressable
-      accessibilityRole="button"
+      accessibilityRole={href === undefined ? "button" : "link"}
       accessibilityLabel={value === undefined ? title : `${title}, ${value}`}
-      onPress={onPress}
+      {...(href === undefined ? { onPress } : linkProps(href))}
       {...hover}
       style={({ pressed }) => [
         styles.row,

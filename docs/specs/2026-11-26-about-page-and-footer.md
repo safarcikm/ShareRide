@@ -187,11 +187,11 @@ About (one column)
 
 No new data or endpoint. The server: `/about` in the public pages and the
 sitemap, `/legal` answered with a 301 to `/about`, About's title,
-description and `<noscript>` words in the first answer. The Facebook
-Page's address stays in one place (`apps/mobile/src/sharing/links.ts`,
-spec 28, 3.6), and our contact address in one more
-(`apps/mobile/src/about/contact.ts`), for the page, the footer and the
-server.
+description and `<noscript>` words in the first answer. The page's texts,
+its documents and our contact address are in one place, `aboutPage` in
+`packages/i18n/src/seo.ts`, for the page, the footer and the server, as
+`carpoolPage` is. The Facebook Page's address stays in its own place
+(`apps/mobile/src/sharing/links.ts`, spec 28, 3.6).
 
 ## 7. Privacy and safety
 
@@ -224,7 +224,9 @@ server.
 
 The footer's other links use the texts they have: `legal.terms`,
 `legal.rules`, `legal.privacy`, `cookies.title`, `carpool.title`,
-`meetingPoints.title`. `profile.legal` and `seo.legalDescription` go.
+`meetingPoints.title`; About's link to Carpool in Iceland is
+`home.howItWorks`. `profile.legal` goes; the documents keep
+`seo.legalDescription`.
 
 ## 9. Testing
 
@@ -246,7 +248,7 @@ The footer's other links use the texts they have: `legal.terms`,
 ## 10. Out of scope
 
 - The company name and kennitala: when the ehf. is registered (a new
-  version of the Terms, ADR 0043), and Q30 below.
+  version of the Terms, ADR 0043; A57).
 - Instagram in the footer, until the profile exists.
 - A footer in the phone apps, a language switch in the footer (the top bar
   and the front page have it), and press or careers pages.
@@ -264,6 +266,7 @@ Working choices, for Martin to change ("accept" keeps them all):
 4. The contact address is `admin@puffinride.is`, the one the Terms give
    (3.1, item 4).
 
-Open, for Martin ([Q30](../strategy/open-questions.md)): the act asks for a
-kennitala where there is one. The page gives the name, address and email
-the Terms give, and no kennitala until Martin answers.
+Answered ([A57](../strategy/open-questions.md#answered)): the act asks for a
+kennitala where there is one. Martin chose to leave his own out until the
+ehf. is registered (decision card, 2026-11-26); the page gives the name,
+address and email the Terms give.
