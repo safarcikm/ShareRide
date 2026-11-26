@@ -22,6 +22,7 @@ import {
   messageId,
   openedLine,
 } from "@/testing/chat";
+import { passengerRow } from "@/testing/driver-trip";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
 import { tripsApi } from "@/testing/trips";
 import { aProfileId, newcomer } from "@/testing/people";
@@ -789,10 +790,13 @@ describe("Where a chat starts (spec 7, 3.1 and 3.2)", () => {
         chatServer(client, { booking: jon });
       },
     });
-    expect(await screen.findByLabelText("Jón, 1 seat, Confirmed")).toBeVisible();
+    expect(await screen.findByRole("button", { name: passengerRow("Jón") })).toBeVisible();
     // Gunna has not paid, so there is no chat with her yet.
     expect(screen.queryByRole("button", { name: "Message Gunna" })).toBeNull();
-    expect(screen.getByRole("button", { name: "Message all passengers" })).toBeVisible();
+    // Messaging all of them is the last row of the passengers' card.
+    const rows = within(screen.getByTestId("passengers")).getAllByRole(/^(button|link)$/);
+    expect(rows.at(-1)).toBe(screen.getByRole("link", { name: "Message all passengers" }));
+    // Each chat is one press away, on the passenger's row (spec 31, 3.12, item 4).
     await fireEvent.press(screen.getByRole("button", { name: "Message Jón" }));
     expect(await screen.findByRole("header", { name: "Jón" })).toBeVisible();
     expect(screen).toHavePathname(`/messages/${jon.id}`);
@@ -807,9 +811,9 @@ describe("Where a chat starts (spec 7, 3.1 and 3.2)", () => {
         chatServer(client, { booking: jon });
       },
     });
-    expect(await screen.findByLabelText("Jón, 1 seat, Completed")).toBeVisible();
+    expect(await screen.findByRole("button", { name: passengerRow("Jón") })).toBeVisible();
     expect(screen.getByRole("button", { name: "Message Jón" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Message all passengers" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Message all passengers" })).toBeVisible();
   });
 
   it("offers no message to all before a passenger is confirmed", async () => {
@@ -820,8 +824,8 @@ describe("Where a chat starts (spec 7, 3.1 and 3.2)", () => {
         driverApi(client, [gunnaPaying]);
       },
     });
-    expect(await screen.findByLabelText("Gunna, 1 seat, Waiting for payment")).toBeVisible();
-    expect(screen.queryByRole("button", { name: "Message all passengers" })).toBeNull();
+    expect(await screen.findByRole("button", { name: passengerRow("Gunna") })).toBeVisible();
+    expect(screen.queryByRole("link", { name: "Message all passengers" })).toBeNull();
   });
 
   it("sends the driver's message to all passengers; a retry after a failure sends it once", async () => {

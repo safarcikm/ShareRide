@@ -4,6 +4,7 @@ import { fireEvent, screen, within } from "expo-router/testing-library";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
 import { driverApi, northBooking, northMyTrip, northSegments, northStop } from "@/testing/bookings";
+import { passengerRow } from "@/testing/driver-trip";
 import { failure, type FakeClient } from "@/testing/fake-client";
 import { tripsApi } from "@/testing/trips";
 import { aProfileId, newcomer } from "@/testing/people";
@@ -62,7 +63,7 @@ async function openTrip(
 /** The trip page, Edit trip, then Change the time. */
 async function openTime(...trip: Parameters<typeof openTrip>) {
   const app = await openTrip(...trip);
-  await fireEvent.press(await screen.findByRole("button", { name: "Edit the ride" }));
+  await fireEvent.press(await screen.findByRole("link", { name: "Edit the ride" }));
   expect(await screen.findByRole("header", { name: "Edit the ride" })).toBeVisible();
   await fireEvent.press(screen.getByRole("link", { name: "Change the time" }));
   expect(await screen.findByRole("header", { name: "Change the departure" })).toBeVisible();
@@ -91,19 +92,17 @@ const preview = { preview: true };
 const at0945 = { kind: "departure", departsAt: "2026-11-15T09:45:00.000Z" };
 
 describe("The driver moves the departure (spec 6, 3.2)", () => {
-  it("offers Edit trip before Cancel trip, until the trip leaves", async () => {
+  it("offers Edit the ride first of the ride's rows, until the ride leaves", async () => {
     await openTrip();
-    const edit = await screen.findByRole("button", { name: "Edit the ride" });
-    const buttons = screen.getAllByRole("button");
-    expect(buttons.indexOf(edit)).toBe(
-      buttons.indexOf(screen.getByRole("button", { name: "Cancel the ride" })) - 1,
-    );
+    const edit = await screen.findByRole("link", { name: "Edit the ride" });
+    const rows = within(screen.getByTestId("ride-rows")).getAllByRole(/^(button|link)$/);
+    expect(rows[0]).toBe(edit);
   });
 
   it("offers no Edit trip once the planned departure has come", async () => {
     await openTrip([jon], {}, { ...northMyTrip, departsAt: "2026-11-14T12:00:00.000Z" });
-    expect(await screen.findByLabelText("Jón, 1 seat, Confirmed")).toBeVisible();
-    expect(screen.queryByRole("button", { name: "Edit the ride" })).toBeNull();
+    expect(await screen.findByRole("button", { name: passengerRow("Jón") })).toBeVisible();
+    expect(screen.queryByRole("link", { name: "Edit the ride" })).toBeNull();
   });
 
   it("moves every stop by 45 minutes, says who is told, then says so on the trip with focus", async () => {

@@ -57,6 +57,18 @@ describe("Tag", () => {
     });
   });
 
+  // On a card in the tag's own tint its fill would not show: there it
+  // stands on the white of a surface, as a ticket does (spec 31, 3.12).
+  it.each(["light", "dark"] as const)(
+    "stands on the surface where the card under it has its tint, in %s",
+    async (scheme) => {
+      mockScheme = scheme;
+      await render(<Tag kind="warning" label="No reviews yet" onTint />);
+      expect(screen.getByTestId("tag")).toHaveStyle({ backgroundColor: colors[scheme].surface });
+      expect(screen.getByText("No reviews yet")).toHaveStyle({ color: colors[scheme].warning });
+    },
+  );
+
   it("puts an icon before its label, in the label's colour", async () => {
     await render(<Tag kind="positive" label="Book instantly" icon={Zap} />);
     const tag = screen.getByTestId("tag");

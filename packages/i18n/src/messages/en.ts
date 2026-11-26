@@ -1107,7 +1107,6 @@ export const en = {
   "report.reviewLabel": "Report review: {name}, {month} {year}",
   "report.message": "Report message",
   "report.problem": "Report a problem with this ride",
-  "report.short": "Report",
   "report.messageHint": "Press and hold a message to report it.",
   "report.messageHintWeb": "Press and hold a message, or right-click it, to report it.",
   "report.personHint":
@@ -1411,9 +1410,7 @@ export const en = {
     "Rides show here once they're over, and requests once they're declined, run out or are withdrawn.",
   "myRides.failed": "Your rides could not be loaded.",
   "myBookings.times": "{from} to {to}",
-  "driverTrip.requests": "Requests",
   "driverTrip.passengers": "Passengers",
-  "driverTrip.stretches": "Seats on each stretch",
   "driverTrip.taken": "{taken} of {capacity, plural, one {# seat} other {# seats}} taken",
   "driverTrip.none": "No requests or bookings yet.",
   "driverTrip.failed": "The ride's requests and bookings could not be loaded.",
@@ -1423,6 +1420,19 @@ export const en = {
   "driverTrip.changed": "Ride changed. Your passengers have been told.",
   "driverTrip.changedNobody": "Ride changed.",
   "driverTrip.yourNote": "Your note: {note}",
+  // English names where the ride ends; Icelandic names both ends, as a place
+  // after "til" changes form (spec 31, section 8). The empty select keeps
+  // the arguments the same in both.
+  "driverTrip.title": "Your ride to {to}{from, select, other {}}",
+  "driverTrip.needsAnswer":
+    "{count, plural, one {# request needs your answer.} other {# requests need your answer.}}",
+  "driverTrip.wholeWay": "the whole way",
+  "driverTrip.confirmedCount": "{count} confirmed",
+  "driverTrip.seats": "Seats",
+  "driverTrip.seatsTaken": "{taken} of {seats} taken",
+  "driverTrip.atBusiest": "at the busiest, {from} to {to}",
+  "driverTrip.eachStretch": "Each stretch",
+  "driverTrip.driveAgain": "Drive it again",
   "request.accept": "Accept",
   "request.decline": "Decline",
   "request.timeLeft": "{time} left to answer",
@@ -1457,8 +1467,9 @@ export const en = {
   "people.reviewsFailed": "The reviews could not be loaded.",
   "request.noReviews": "No reviews yet",
   "request.message": "Message",
-  "request.ifAccepted":
-    "{taken} of {capacity, plural, one {# seat} other {# seats}} taken, {after} if you accept",
+  "request.ifAcceptedBusiest":
+    "If you accept, {taken} of {seats} seats {taken, plural, one {is} other {are}} taken from {from} to {to}.",
+  "request.quoted": "“{message}”",
   "request.why": "Why? (optional)",
   "request.reason.plans_changed": "My plans changed",
   "request.reason.luggage": "The luggage won't fit",
@@ -1537,6 +1548,7 @@ export const en = {
   "tripDay.toldPassengers": "We've told your passengers you're here.",
   "tripDay.otherHere": "{name} is at the meeting point",
   "tripDay.opensAt": "You can say you're here from {time}.",
+  "tripDay.opensAtStop": "At {stop} you can say you're here from {time}.",
   "tripDay.closed": "It's too late to say you're here at this stop.",
   "tripDay.imHereFailed": "We couldn't tell them you're here. Try again.",
   "tripDay.bookingChanged": "Something changed since you opened this. Here is your booking now.",

@@ -1119,7 +1119,6 @@ export const is = {
   "report.reviewLabel": "Tilkynna umsögn: {name}, {month} {year}",
   "report.message": "Tilkynna skilaboð",
   "report.problem": "Tilkynna vandamál með ferðina",
-  "report.short": "Tilkynna",
   "report.messageHint": "Haltu fingri á skilaboðum til að tilkynna þau.",
   "report.messageHintWeb":
     "Haltu fingri á skilaboðum, eða hægrismelltu á þau, til að tilkynna þau.",
@@ -1430,9 +1429,7 @@ export const is = {
     "Ferðir birtast hér þegar þær eru liðnar, og beiðnir þegar þeim er hafnað, þær renna út eða eru dregnar til baka.",
   "myRides.failed": "Ekki tókst að sækja ferðirnar þínar.",
   "myBookings.times": "{from} til {to}",
-  "driverTrip.requests": "Beiðnir",
   "driverTrip.passengers": "Farþegar",
-  "driverTrip.stretches": "Sæti á hverjum legg",
   "driverTrip.taken":
     "{taken} af {capacity, plural, one {# sæti} other {# sætum}} {taken, plural, one {upptekið} other {upptekin}}",
   "driverTrip.none": "Engar beiðnir eða bókanir enn.",
@@ -1443,6 +1440,16 @@ export const is = {
   "driverTrip.changed": "Ferðinni var breytt. Farþegarnir hafa fengið að vita það.",
   "driverTrip.changedNobody": "Ferðinni var breytt.",
   "driverTrip.yourNote": "Skilaboðin þín: {note}",
+  "driverTrip.title": "Ferðin þín: {from} → {to}",
+  "driverTrip.needsAnswer":
+    "{count, plural, one {# beiðni bíður svars.} other {# beiðnir bíða svars.}}",
+  "driverTrip.wholeWay": "alla leið",
+  "driverTrip.confirmedCount": "{count, plural, one {# staðfest} other {# staðfestar}}",
+  "driverTrip.seats": "Sæti",
+  "driverTrip.seatsTaken": "{taken} af {seats} {taken, plural, one {upptekið} other {upptekin}}",
+  "driverTrip.atBusiest": "þar sem mest er, {from} → {to}",
+  "driverTrip.eachStretch": "Hver leggur",
+  "driverTrip.driveAgain": "Aka aftur",
   "request.accept": "Samþykkja",
   "request.decline": "Hafna",
   "request.timeLeft": "{time} eftir til að svara",
@@ -1478,8 +1485,9 @@ export const is = {
   "people.reviewsFailed": "Ekki tókst að sækja umsagnirnar.",
   "request.noReviews": "Engar umsagnir enn",
   "request.message": "Skilaboð",
-  "request.ifAccepted":
-    "{taken} af {capacity, plural, one {# sæti} other {# sætum}} {taken, plural, one {upptekið} other {upptekin}}, {after} ef þú samþykkir",
+  "request.ifAcceptedBusiest":
+    "Ef þú samþykkir {taken, plural, one {er # af {seats} sætum upptekið} other {eru # af {seats} sætum upptekin}}: {from} → {to}.",
+  "request.quoted": "„{message}“",
   "request.why": "Hvers vegna? (valfrjálst)",
   "request.reason.plans_changed": "Áætlanir mínar breyttust",
   "request.reason.luggage": "Farangurinn kemst ekki fyrir",
@@ -1559,6 +1567,7 @@ export const is = {
   "tripDay.toldPassengers": "Við létum farþegana vita að þú sért á staðnum.",
   "tripDay.otherHere": "{name} er á mótsstaðnum",
   "tripDay.opensAt": "Þú getur sagt að þú sért á staðnum frá kl. {time}.",
+  "tripDay.opensAtStop": "{stop}: þú getur sagt að þú sért á staðnum frá kl. {time}.",
   "tripDay.closed": "Það er orðið of seint að segja að þú sért á þessum stað.",
   "tripDay.imHereFailed": "Ekki tókst að láta vita að þú sért á staðnum. Reyndu aftur.",
   "tripDay.bookingChanged":

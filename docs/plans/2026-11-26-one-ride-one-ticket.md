@@ -722,7 +722,11 @@ R31.3 and decision 17):
 ## PR 8: the driver's ride and My rides
 
 `feat(drive)`, spec 31, 3.10, 3.12, 3.16 items 3 and 4, and Edit trip,
-cancelling a ride, sharing and messaging all passengers (3.19).
+cancelling a ride, sharing and messaging all passengers (3.19). Built as
+two pull requests, as PR 7 was: **8a**, the driver's ride page and its
+trip day (items 1 and 2), and **8b**, My rides, My trips, Edit trip,
+cancelling a ride and the heads of sharing and messaging all passengers
+(items 3 to 5), so each can be looked at whole.
 
 1. **The driver's ride:** head "Your ride to Vík" with what it needs; the
    ticket with the price for the whole way and the car; each request as a
@@ -763,6 +767,72 @@ cancelling a ride, sharing and messaging all passengers (3.19).
    by 720).
 7. **Docs and pictures:** specs 5, 6, 16 and 18; `built/driver-ride-*`,
    `built/my-rides-*`.
+
+As built in 8a (spec 31 says the same where a person sees it, in 3.9,
+3.12 and 3.16, item 3):
+
+- **The page** (`app/drive/trips/[id]/index.tsx`) is one tree for a phone
+  and a wide screen, as a booked seat's: `ScreenHead` with `driverTitle`
+  (`driver-trip/title.ts`: the title and the one line under it), then
+  `Columns`. What must survive the breakpoint lives in the page: whether
+  each stretch shows, where "I'm here" was said and whether focus went to
+  what that told, what sharing the details did, and a draft being made
+  (`usePostAgain` in `driver-trip/post-again.tsx` gives the two rows and
+  their notice).
+- **New parts**, all in `driver-trip/`: `ride-ticket.tsx`
+  (`DriverRideTicket`, a `RideTicket` that is not pressed, with sharing
+  as its `corner`), `request-card.tsx` (a whole request inside
+  `NeedsYouCard`, which takes `children` for it), `passenger-row.tsx`
+  (`PassengerRow` and `inRideOrder`; the plan named `drive/`, and the
+  folder the page's parts already had is `driver-trip/`), `seats-card.tsx`
+  (`SeatsCard`, over `Stretches` in `parts.tsx`). `people/profile-link.tsx`
+  (`ProfileLink`) is the person's line as a link, for the driver's card of
+  a ride's details and for who asks here.
+- **Shared parts changed:** `Row` takes `accessibilityLabel`, for a row
+  whose title needs a name to be understood out of its place ("See
+  profile: Dóra"). `Tag` takes `onTint`, for a tag on a card in its own
+  tint: "No reviews yet" on a request stands on white. `statusTag` learns
+  who looks: "Waiting for payment" is `info` for the driver. One new
+  size, `sizes.seat` (28), the square of a seat in the seats card.
+- **The trip day** (`trip-day/driver.tsx`): `driverImHereStops` gives the
+  stops the bar names, `DriverImHere` is the bar (the first open stop
+  filled, the others outlined, what was said in a button's place with
+  focus), and `DriverTripDay` keeps the stops, with `testID="said-here"`
+  where the passengers were told. `ImHere` takes `label`, `opens` and
+  `outlined`.
+- **Rows:** safety's "Share the ride's details" and "Weather and roads"
+  are rows of the ride's rows, and the Safety card is gone from this
+  page. On a wide screen "Share this ride" is left out of the side
+  column's rows, which keeps that column whole at 1280 by 720.
+- **Someone leaving PuffinRide** (no `profileId`) shows no rating, no "No
+  reviews yet", no reliability figure and no link, on a request and on a
+  passenger's row.
+- **Texts:** new `driverTrip.title`, `driverTrip.needsAnswer`,
+  `driverTrip.wholeWay`, `driverTrip.confirmedCount`, `driverTrip.seats`,
+  `driverTrip.seatsTaken`, `driverTrip.atBusiest`,
+  `driverTrip.eachStretch`, `driverTrip.driveAgain`,
+  `request.ifAcceptedBusiest`, `request.quoted` and `tripDay.opensAtStop`;
+  gone with what they headed or named: `driverTrip.requests`,
+  `driverTrip.stretches`, `request.ifAccepted` and `report.short`.
+- **Gone, as nothing uses them:** the Safety card (`safety/trip-safety.tsx`;
+  its links live with `WeatherAndRoadsRow`), `StandingLines` in
+  `people/standing.tsx`, and `PassengersByPart` and `PostAgain`, which the
+  page's new parts replace.
+- **Tests:** the head's line for each state; the ticket; a request's
+  parts, its answers and someone leaving; a passenger's row and what it
+  unfolds to, with Cancel booking last; the seats line and each stretch;
+  the rows and their order on a phone and a wide screen; the bar's
+  buttons, what it says before and after, and focus. Helpers:
+  `testing/driver-trip.ts` (`passengerRow`, `unfoldPassenger`) and
+  `e2e/support/driver-ride.ts` (`passengerRow`). Journeys changed:
+  `driver-requests.spec.ts`, `cancel-booking.spec.ts`,
+  `cancel-trip.spec.ts`, `change-trip.spec.ts`, `chat.spec.ts`,
+  `blocking.spec.ts`, `post-again.spec.ts`, `trip-day.spec.ts`,
+  `trip-day-reports.spec.ts` and `laptop.spec.ts` (the side column whole
+  at 1280 by 720, its rows in order, sharing from the ticket's corner);
+  `look.spec.ts` opens the page with long names on a phone 360 wide, with
+  the text as set and twice as large. Pictures: `built/driver-ride-*` and
+  `built/driver-trip-day-*`.
 
 ## PR 9: offering a ride
 

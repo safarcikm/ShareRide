@@ -40,8 +40,15 @@ const statusTags: Record<Booking["status"], TagKind> = {
   no_show: "problem",
 };
 
-/** The status tag's look. */
-export const statusTag = (booking: Booking): TagKind => statusTags[booking.status];
+/**
+ * The status tag's look. Amber is for the one who has to do something: a
+ * seat waiting for payment waits for its passenger, so its driver reads
+ * it in blue, as something that waits (spec 31, 3.10).
+ */
+export const statusTag = (booking: Booking): TagKind =>
+  booking.status === "accepted" && booking.viewer === "driver"
+    ? "info"
+    : statusTags[booking.status];
 
 /**
  * When the booking's own page asks its passenger to turn on notifications or

@@ -19,6 +19,11 @@ interface RowLook {
   readonly icon?: LucideIcon | undefined;
   /** Cannot be undone: red, no chevron, and last in its card (R31.3). */
   readonly danger?: boolean;
+  /**
+   * Its name for a screen reader, where the title alone does not say whose
+   * it is, as "Cancel booking" under one passenger of several.
+   */
+  readonly accessibilityLabel?: string | undefined;
 }
 
 /** What each kind of row takes; a row is one kind and takes nothing of another. */
@@ -64,7 +69,7 @@ type RowKind =
  * and is not a button. A `danger` row is red and has no chevron.
  */
 export function Row(props: RowLook & RowKind) {
-  const { title, value, icon, danger = false } = props;
+  const { title, value, icon, danger = false, accessibilityLabel } = props;
   const palette = usePalette();
   const inRows = useInActionRows();
   const [hovered, hover] = useHover();
@@ -103,7 +108,7 @@ export function Row(props: RowLook & RowKind) {
   // Its focus ring is drawn inside it there, where the card would cut it off.
   const ring = inRows ? ringInside : null;
 
-  const label = value === undefined ? title : `${title}, ${value}`;
+  const label = accessibilityLabel ?? (value === undefined ? title : `${title}, ${value}`);
   const tinted = ({ pressed }: { readonly pressed: boolean }) => [
     ...shape,
     pressed || hovered

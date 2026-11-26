@@ -21,4 +21,11 @@ describe("statusTag", () => {
   it("shows a request its passenger withdrew as a quiet tag", () => {
     expect(statusTag(northBooking({ status: "cancelled", withdrawn: true }))).toBe("plain");
   });
+
+  it("shows a seat still to pay for as waiting to its driver, who has nothing to do", () => {
+    // Amber is yours and now: paying is the passenger's (spec 31, 3.10).
+    expect(statusTag(northBooking({ status: "accepted", viewer: "driver" }))).toBe("info");
+    expect(statusTag(northBooking({ status: "accepted", viewer: "passenger" }))).toBe("warning");
+    expect(statusTag(northBooking({ status: "confirmed", viewer: "driver" }))).toBe("positive");
+  });
 });

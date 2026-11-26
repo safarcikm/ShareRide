@@ -328,6 +328,8 @@ export const sizes = {
   ticketNotch: 16,
   /** A small picture of a person, as in a ride ticket's foot (spec 31, 3.3). */
   avatarSmall: 28,
+  /** The square of one seat in the driver's line about the seats (spec 31, 3.12). */
+  seat: 28,
   /** A place of the menu's tab bar, and the pill behind its icon when chosen. */
   tab: 56,
   tabPill: 56,

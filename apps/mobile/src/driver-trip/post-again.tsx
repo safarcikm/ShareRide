@@ -1,28 +1,37 @@
 import { copyTripRoute } from "@shareride/contracts";
 import { router, useFocusEffect } from "expo-router";
-import { useCallback, useRef, useState } from "react";
+import { Repeat, Undo2 } from "lucide-react-native";
+import { useCallback, useRef, useState, type ReactNode } from "react";
 import { errorText } from "@/auth/errors";
 import { useSession } from "@/auth/session";
-import { Button } from "@/components/button";
 import { Notice } from "@/components/notice";
+import { Row } from "@/components/row";
 import { TakesFocus } from "@/components/takes-focus";
 import { useLanguage } from "@/i18n/language";
 import { rememberDropped } from "@/trips/copied";
 
 /**
- * "Post again" and "Post the return" (spec 6, 3.6): each makes a new draft
- * from the trip, its stops reversed for the return, and opens it at the
- * date and times, which the driver chooses again. Meeting points no longer
- * in use are left out, and the date and times step names them. One draft
- * per tap: both buttons wait while one is made, until the trip page is
- * back in view.
+ * "Post it again" and "Post the way back" (spec 6, 3.6), as two rows of
+ * the ride's rows (spec 31, 3.12, item 6): each makes a new draft from the
+ * ride, its stops reversed for the way back, and opens it at the date and
+ * times, which the driver chooses again. Meeting points no longer in use
+ * are left out, and the date and times step names them. One draft per
+ * press: both rows wait while one is made, and the one pressed says so,
+ * until the ride's page is back in view.
+ *
+ * The page places the `rows` in a card of rows and the `notice`, why no
+ * draft was made, under that card; what is going on stays here, so it
+ * lasts when the rows move between a phone's column and a wide screen's.
  */
-export function PostAgain({ tripId }: { readonly tripId: string }) {
+export function usePostAgain(tripId: string): {
+  readonly rows: ReactNode;
+  readonly notice: ReactNode;
+} {
   const { t } = useLanguage();
   const session = useSession();
   const [busy, setBusy] = useState<"again" | "return" | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  // Set at once, before the buttons show they wait, so a second tap makes nothing.
+  // Set at once, before the rows show they wait, so a second press makes nothing.
   const making = useRef(false);
   useFocusEffect(
     useCallback(() => {
@@ -54,31 +63,32 @@ export function PostAgain({ tripId }: { readonly tripId: string }) {
     router.push({ pathname: "/drive/trips/[id]/time", params: { id: trip.id } });
   };
 
-  return (
-    <>
-      <Button
-        variant="secondary"
-        busy={busy === "again"}
-        disabled={busy !== null}
-        label={t("trip.postAgain")}
-        onPress={() => {
-          void post(false);
-        }}
-      />
-      <Button
-        variant="secondary"
-        busy={busy === "return"}
-        disabled={busy !== null}
-        label={t("trip.postReturn")}
-        onPress={() => {
-          void post(true);
-        }}
-      />
-      {notice === null ? null : (
+  return {
+    rows: (
+      <>
+        <Row
+          icon={Repeat}
+          title={t("trip.postAgain")}
+          value={busy === "again" ? t("common.loading") : undefined}
+          onPress={() => {
+            void post(false);
+          }}
+        />
+        <Row
+          icon={Undo2}
+          title={t("trip.postReturn")}
+          value={busy === "return" ? t("common.loading") : undefined}
+          onPress={() => {
+            void post(true);
+          }}
+        />
+      </>
+    ),
+    notice:
+      notice === null ? null : (
         <TakesFocus key={notice}>
           <Notice message={notice} />
         </TakesFocus>
-      )}
-    </>
-  );
+      ),
+  };
 }

@@ -281,6 +281,8 @@ As built (milestone 6, PR 4):
    the passenger (decision 3, confirmed for the driver by Martin on
    2026-11-16). A booking accepted and waiting for payment
    can be cancelled too: there is nothing to refund and it never counts.
+   Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.12) it is the last
+   row under a passenger's row, in red, once that row is unfolded.
 2. The driver's own screen gives the reasons, the refund in the passenger's
    name, whether it shows on the driver's profile for the reason chosen
    (never for weather or a road closure), and an optional note to the
@@ -351,6 +353,12 @@ As built (milestone 6, PR 7):
    step says so: "No longer in use, so left out: N1 Fitjar." With fewer
    than two left, nothing is made, and the trip page says to post a new
    trip instead (`too_few_stops`).
+4. Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.12) "Edit the ride",
+   "Post it again", "Post the way back" and "Cancel the ride" are rows of
+   one card at the end of the driver's ride, Edit first and Cancel red
+   and last; on a laptop the two that post it again stand in the main
+   column under "Drive it again". A row says "Loading" while its draft is
+   made.
 
 ## 4. Rules
 

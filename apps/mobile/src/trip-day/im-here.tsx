@@ -34,10 +34,17 @@ export interface CheckInState {
  * remembers that itself and gives it as `said`; it also hears through
  * `onSaidFocused` that focus went to what was told, and then gives
  * `focusSaid` false, so moving it does not take focus again.
+ *
+ * A driver's bar can hold more than one stop (spec 31, 3.9, item 4): each
+ * names its stop in its `label` and in when it `opens`, and only the first
+ * is the screen's main button; the others are `outlined` (R31.1).
  */
 export function ImHere({
   state,
   told,
+  label,
+  opens,
+  outlined = false,
   accessibilityLabel,
   send,
   said,
@@ -49,6 +56,12 @@ export function ImHere({
   readonly state: CheckInState;
   /** What saying it did: the driver, or the passengers getting in there, were told. */
   readonly told: string;
+  /** On the button, in place of "I'm here": with the stop, where there are several. */
+  readonly label?: string;
+  /** When it opens, in words, in place of "You can say you're here from 08:45." */
+  readonly opens?: (time: string) => string;
+  /** Not the screen's main button: another one stands over it. */
+  readonly outlined?: boolean;
   readonly accessibilityLabel?: string;
   readonly send: () => Promise<
     { readonly ok: true; readonly data: { checkedInAt: string } } | CallFailure
@@ -88,13 +101,20 @@ export function ImHere({
   if (time > new Date(state.closesAt))
     return problem === null ? null : <Notice message={problem} />;
   if (time < opensAt && problem === null) {
-    return <Body align="start">{t("tripDay.opensAt", { time: formatClock(opensAt) })}</Body>;
+    const clock = formatClock(opensAt);
+    return (
+      <Body align="start">
+        {opens === undefined ? t("tripDay.opensAt", { time: clock }) : opens(clock)}
+      </Body>
+    );
   }
   return (
     <>
       <Button
-        main
-        label={t("tripDay.imHere")}
+        main={!outlined}
+        fill={outlined}
+        variant={outlined ? "secondary" : "primary"}
+        label={label ?? t("tripDay.imHere")}
         {...(accessibilityLabel === undefined ? {} : { accessibilityLabel })}
         busy={sending}
         onPress={() => {

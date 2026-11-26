@@ -1,6 +1,6 @@
 import type { Booking } from "@shareride/contracts";
 import { AccessibilityInfo } from "react-native";
-import { fireEvent, screen } from "expo-router/testing-library";
+import { fireEvent, screen, within } from "expo-router/testing-library";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
 import {
@@ -10,9 +10,11 @@ import {
   northStop,
   requestToDrive,
 } from "@/testing/bookings";
+import { passengerRow } from "@/testing/driver-trip";
 import { failure, type FakeClient } from "@/testing/fake-client";
 import { tripsApi } from "@/testing/trips";
 import { aProfileId, newcomer } from "@/testing/people";
+import { colors } from "@/theme/tokens";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
 jest.mock("@/auth/token-store", () => {
@@ -82,7 +84,7 @@ async function openTrip(
 /** The trip page, then Cancel trip. */
 async function openCancel(...trip: Parameters<typeof openTrip>) {
   const app = await openTrip(...trip);
-  await fireEvent.press(await screen.findByRole("button", { name: "Cancel the ride" }));
+  await fireEvent.press(await screen.findByRole("link", { name: "Cancel the ride" }));
   expect(await screen.findByRole("header", { name: "Cancel your ride" })).toBeVisible();
   return app;
 }
@@ -99,20 +101,19 @@ const choose = async (reason: string) => {
 const counts = "This cancellation shows on your profile";
 
 describe("The driver cancels the trip (spec 6, 3.3)", () => {
-  it("offers Cancel trip until the trip leaves, after the seats on each stretch", async () => {
+  it("offers Cancel the ride until the ride leaves, red and last of its rows (R31.3)", async () => {
     await openTrip();
-    const cancel = await screen.findByRole("button", { name: "Cancel the ride" });
-    const buttons = screen.getAllByRole("button");
-    expect(buttons.indexOf(cancel)).toBeGreaterThan(
-      buttons.indexOf(screen.getByRole("button", { name: "Cancel booking: Jón" })),
-    );
+    const cancel = await screen.findByRole("link", { name: "Cancel the ride" });
+    const rows = within(screen.getByTestId("ride-rows")).getAllByRole(/^(button|link)$/);
+    expect(rows.at(-1)).toBe(cancel);
+    expect(within(cancel).getByText("Cancel the ride")).toHaveStyle({ color: colors.light.error });
   });
 
   it("offers no Cancel trip once the planned departure has come", async () => {
     const left = { ...northMyTrip, departsAt: "2026-11-14T12:00:00.000Z" };
     await openTrip([jon], { trip: left });
-    expect(await screen.findByLabelText("Jón, 2 seats, Confirmed")).toBeVisible();
-    expect(screen.queryByRole("button", { name: "Cancel the ride" })).toBeNull();
+    expect(await screen.findByRole("button", { name: passengerRow("Jón") })).toBeVisible();
+    expect(screen.queryByRole("link", { name: "Cancel the ride" })).toBeNull();
   });
 
   it("cancels with a reason and a note, then says so on the trip, with focus", async () => {
@@ -145,10 +146,10 @@ describe("The driver cancels the trip (spec 6, 3.3)", () => {
     expect(screen).toHavePathname(tripPage);
     expect(screen.getByText("Your note: Sorry, the clutch went.")).toBeVisible();
     // Nothing left to answer, cancel or message.
-    expect(screen.queryByRole("button", { name: "Cancel the ride" })).toBeNull();
-    expect(screen.queryByRole("button", { name: /^Cancel booking/ })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Cancel the ride" })).toBeNull();
+    expect(screen.queryByRole("button", { name: passengerRow("Jón") })).toBeNull();
     expect(screen.queryByRole("button", { name: "Accept" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Message all passengers" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Message all passengers" })).toBeNull();
   });
 
   it("says nobody is told when nobody booked, and sends no note when none is written", async () => {
@@ -237,9 +238,9 @@ describe("The driver cancels the trip (spec 6, 3.3)", () => {
     const { client } = await openCancel();
     await choose("Illness");
     await fireEvent.press(screen.getByRole("button", { name: "Keep the ride" }));
-    expect(await screen.findByLabelText("Jón, 2 seats, Confirmed")).toBeVisible();
+    expect(await screen.findByRole("button", { name: passengerRow("Jón") })).toBeVisible();
     expect(screen).toHavePathname(tripPage);
-    expect(screen.getByRole("button", { name: "Cancel the ride" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Cancel the ride" })).toBeVisible();
     expect(cancels(client)).toEqual([]);
   });
 
@@ -271,7 +272,7 @@ describe("The driver cancels the trip (spec 6, 3.3)", () => {
     expect(await screen.findByText("You cancelled this ride: Weather")).toBeVisible();
     expect(focusMoves).not.toHaveBeenCalled();
     focusMoves.mockRestore();
-    expect(screen.queryByRole("button", { name: "Cancel the ride" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Cancel the ride" })).toBeNull();
     expect(screen.queryByText("No requests or bookings yet.")).toBeNull();
   });
 });

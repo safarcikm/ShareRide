@@ -669,7 +669,7 @@ describe("Find, signed in (spec 31, 3.5)", () => {
     expect(card.getByText("Gunna asks for 1 seat")).toBeVisible();
     expect(card.getByText("Borgarnes to Blönduós, Sun 15 Nov. 10 h left to answer.")).toBeVisible();
     await fireEvent.press(card.getByRole("link", { name: "See the request" }));
-    expect(await screen.findByText("One small bag.")).toBeVisible();
+    expect(await screen.findByText("“One small bag.”")).toBeVisible();
     expect(screen).toHavePathname(`/drive/trips/${northMyTrip.id}`);
   });
 

@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { english, signUp } from "./support/account";
+import { passengerRow } from "./support/driver-ride";
 import { openConversation } from "./support/laptop";
 import { postTripToSelfoss } from "./support/trips";
 
@@ -46,9 +47,10 @@ test("the driver and passenger of a confirmed booking message each other", async
   await expect(passenger).toHaveURL(/\/bookings\/[0-9a-f-]+\/booked$/);
   await driver.goto(`/drive/trips/${tripId}`);
   await driver.getByRole("button", { name: "Accept", exact: true }).click();
-  await expect(driver.getByLabel("Dóra, 1 seat, Waiting for payment")).toBeVisible();
+  await expect(passengerRow(driver, "Dóra", "Waiting for payment")).toBeVisible();
   // No chat until the seat is paid for.
-  await expect(driver.getByRole("button", { name: "Message all passengers" })).toBeHidden();
+  await expect(driver.getByRole("button", { name: "Message Dóra" })).toHaveCount(0);
+  await expect(driver.getByRole("link", { name: "Message all passengers" })).toHaveCount(0);
   await passenger.reload();
   await passenger.getByRole("button", { name: /^Pay [\d,]+ ISK$/ }).click();
   await passenger.getByRole("button", { name: /^Pay [\d,]+ ISK$/ }).click();

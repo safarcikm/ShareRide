@@ -3,7 +3,8 @@ import { join } from "node:path";
 import { expect, test, type Page } from "@playwright/test";
 import { apiUrl } from "../playwright.config";
 import { english, signUp } from "./support/account";
-import { confirmedBooking, requestSeat } from "./support/cancelling";
+import { confirmedBooking, requestSeat, secondPage } from "./support/cancelling";
+import { passengerRow } from "./support/driver-ride";
 import { postTripToSelfoss } from "./support/trips";
 
 // Pictures of screens for the specs (docs/specs/images), kept in git with
@@ -453,5 +454,99 @@ test.describe("pictures", () => {
     await dora.getByRole("radio", { name: "5 stars" }).click();
     await shoot("rate", "light");
     await other.close();
+  });
+
+  // The driver's ride as built (spec 31, 3.12 and 3.16): a request to
+  // answer, a passenger, the seats and the ride's rows; then, on a phone, a
+  // passenger's row unfolded and the trip day with "I'm here" in the bar.
+  test("the driver's ride (spec 31)", async ({ page, browser }, info) => {
+    test.setTimeout(300_000);
+    const folder = join(root ?? "", "one-ride-one-ticket", "built");
+    mkdirSync(folder, { recursive: true });
+    const wide = info.project.name === "desktop";
+    const window = wide ? { width: 1280, height: 720 } : (page.viewportSize() ?? null);
+    if (window === null) throw new Error("The page has no size");
+
+    // Bára offers a ride for tomorrow. Dóra rides the whole way, and Einar
+    // asks for a seat on its first stretch.
+    await page.setViewportSize(window);
+    const dora = await secondPage(browser, info);
+    const einar = await secondPage(browser, info);
+    const { tripId } = await confirmedBooking(page, dora.page, [], 3);
+    await requestSeat(einar.page, "Einar", tripId);
+
+    const visible = { visible: true };
+    const kind = wide ? "laptop" : "phone";
+    const shoot = async (name: string, scheme: "light" | "dark") => {
+      await showWhole(page, window.width);
+      await page.screenshot({
+        path: join(folder, `${name}-${kind}-${scheme}.png`),
+        scale: wide ? "css" : "device",
+      });
+      await page.setViewportSize(window);
+    };
+    const speak = async (to: "Icelandic" | "English") => {
+      await page.emulateMedia({ colorScheme: to === "Icelandic" ? "dark" : "light" });
+      await page.goto("/");
+      const [press, then] =
+        to === "Icelandic"
+          ? ["Change the language to Icelandic", "Skipta yfir í ensku"]
+          : ["Skipta yfir í ensku", "Change the language to Icelandic"];
+      await page.getByRole("button", { name: press }).click();
+      await expect(page.getByRole("button", { name: then })).toBeVisible();
+    };
+    const open = async (title: string | RegExp) => {
+      await page.goto(`/drive/trips/${tripId}`);
+      await expect(page.getByRole("heading", { name: title }).filter(visible)).toBeVisible();
+      await expect(page.getByTestId("seats-card").filter(visible)).toBeVisible();
+      await expect(page.getByTestId("passenger-row").filter(visible).first()).toBeVisible();
+    };
+
+    await open("Your ride to N1 Selfoss");
+    await expect(page.getByTestId("request").filter(visible)).toBeVisible();
+    await shoot("driver-ride", "light");
+    if (wide) {
+      await dora.close();
+      await einar.close();
+      return;
+    }
+    await speak("Icelandic");
+    await open(/^Ferðin þín: .+ → N1 Selfossi$/);
+    await shoot("driver-ride", "dark");
+    await speak("English");
+
+    // A passenger's row unfolded: their part, their profile, reporting
+    // them, and cancelling their booking, red and last.
+    await open("Your ride to N1 Selfoss");
+    await passengerRow(page, "Dóra", "Confirmed").click();
+    const passengers = page.getByTestId("passengers").filter(visible);
+    await expect(passengers.getByRole("button", { name: "Cancel booking: Dóra" })).toBeVisible();
+    await passengers.scrollIntoViewIfNeeded();
+    // As a finger leaves it: no pointer stays over the row.
+    await page.mouse.move(0, 0);
+    await passengers.screenshot({ path: join(folder, "driver-ride-passenger-phone-light.png") });
+
+    // Bára says yes to Einar, and he pays: two passengers get in at the first stop.
+    await page.getByRole("button", { name: "Accept", exact: true }).click();
+    await expect(passengerRow(page, "Einar", "Waiting for payment")).toBeVisible();
+    await einar.page.reload();
+    await einar.page.getByRole("button", { name: /^Pay [\d,]+ ISK$/ }).click();
+    await einar.page.getByRole("button", { name: /^Pay [\d,]+ ISK$/ }).click();
+    await expect(
+      einar.page.getByText("Your seat is confirmed", { exact: true }).filter(visible),
+    ).toBeVisible();
+
+    // The ride now leaves in 20 minutes: the trip day, with "I'm here" in the bar.
+    const moved = await page.request.post(`${apiUrl}/e2e/trips/${tripId}/move`, {
+      data: { minutes: 20 },
+    });
+    expect(moved.status()).toBe(204);
+    await open("Your ride to N1 Selfoss");
+    await expect(
+      page.getByTestId("driver-im-here").getByRole("button", { name: /^I'm here at / }),
+    ).toBeVisible();
+    await shoot("driver-trip-day", "light");
+    await dora.close();
+    await einar.close();
   });
 });

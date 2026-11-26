@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { confirmedBooking, requestSeat, secondPage, visible } from "./support/cancelling";
+import { passengerRow } from "./support/driver-ride";
 import { focused } from "./support/trips";
 
 // Spec 6, 3.3, on the web build: a driver posts Mjódd to N1 Selfoss for
@@ -23,12 +24,12 @@ test("a driver cancels a trip with three passengers, who each read why", async (
   const unpaid = await requestSeat(oli.page, "Óli", tripId);
   await driver.reload();
   await driver.getByRole("button", { name: "Accept", exact: true }).click();
-  await expect(driver.getByLabel("Óli, 1 seat, Waiting for payment")).toBeVisible();
+  await expect(passengerRow(driver, "Óli", "Waiting for payment")).toBeVisible();
   const request = await requestSeat(siggi.page, "Siggi", tripId);
 
-  // Cancel trip, under the seats on each stretch, opens its own screen.
+  // Cancel the ride, the last and red row of the ride's rows, opens its own screen.
   await driver.reload();
-  await driver.getByRole("button", { name: "Cancel the ride", exact: true }).click();
+  await driver.getByRole("link", { name: "Cancel the ride", exact: true }).click();
   await expect(driver).toHaveURL(new RegExp(`/drive/trips/${tripId}/cancel$`));
   await expect(driver.getByRole("heading", { name: "Cancel your ride" })).toBeVisible();
   await expect(
@@ -57,8 +58,10 @@ test("a driver cancels a trip with three passengers, who each read why", async (
   await expect(
     driver.getByText("Your note: Sorry, the clutch went.", { exact: true }).filter(visible),
   ).toBeVisible();
-  await expect(driver.getByRole("button", { name: "Cancel the ride", exact: true })).toBeHidden();
-  await expect(driver.getByLabel(/^Dóra, /)).toBeHidden();
+  await expect(
+    driver.getByRole("link", { name: "Cancel the ride", exact: true }).filter(visible),
+  ).toHaveCount(0);
+  await expect(driver.getByLabel(/^Dóra, /).filter(visible)).toHaveCount(0);
 
   // Each passenger reads why, with the note; only Dóra had paid.
   const said = "Bára cancelled the ride: Car problem";

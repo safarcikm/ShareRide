@@ -2,11 +2,13 @@ import { driverCheckInRoute, type Booking, type MyTrip } from "@shareride/contra
 import { driverCheckInStops, type Arrival } from "@shareride/domain";
 import { formatClock, type Translate } from "@shareride/i18n";
 import { router } from "expo-router";
+import { CircleCheck } from "lucide-react-native";
 import { StyleSheet, Text, View } from "react-native";
 import { useSession } from "@/auth/session";
 import { Avatar } from "@/components/avatar";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
+import { Icon } from "@/components/icon";
 import { Notice } from "@/components/notice";
 import { Tag, type TagKind } from "@/components/tag";
 import { Heading } from "@/components/text";
@@ -77,35 +79,16 @@ function Rider({
   );
 }
 
+/** Only passengers who board: confirmed, or since a no-show or completed. */
+const boardingOf = (bookings: readonly Booking[]) =>
+  bookings.filter((booking) => booking.tripDay !== null);
+
 /**
- * The driver's trip day (spec 8, 3.1): "Use this only when parked." at the
- * top, then the stops in order with their times, who gets in at each, with
- * seats and whether they are here, and who gets out. "I'm here" shows at
- * each stop where it is open now, after the last one where it was said and
- * where someone gets in (`driverCheckInStops`), or when it opens at the
- * next; saying it tells everyone getting in there (3.2). Once the wait
- * after a stop's time has passed, and "I'm here" was said there, each
- * passenger getting in there can be marked as a no-show, which opens its
- * own screen; before "I'm here", the stop says to say it first (3.3).
+ * Where the driver can say "I'm here" at this moment, by stop position,
+ * and with none open the next stop where it will open (`driverCheckInStops`).
  */
-export function DriverTripDay({
-  trip,
-  bookings,
-  onSaid,
-  onStale,
-}: {
-  readonly trip: MyTrip;
-  readonly bookings: readonly Booking[];
-  readonly onSaid: () => void;
-  /** The trip or a booking changed meanwhile: say so and load it again. */
-  readonly onStale: () => void;
-}) {
-  const { locale, t } = useLanguage();
-  const palette = usePalette();
-  const session = useSession();
-  // Only passengers who board: confirmed, or since a no-show or completed.
-  const boarding = bookings.filter((booking) => booking.tripDay !== null);
-  const { open, next } = driverCheckInStops(
+function imHereStops(trip: MyTrip, bookings: readonly Booking[], at: Date) {
+  return driverCheckInStops(
     trip.stops.map(({ checkIn }) =>
       checkIn === null
         ? null
@@ -116,12 +99,131 @@ export function DriverTripDay({
           },
     ),
     new Set(
-      boarding
+      boardingOf(bookings)
         .filter((booking) => booking.status === "confirmed")
         .map((booking) => booking.board.position),
     ),
-    now(),
+    at,
   );
+}
+
+/** The stop where the driver said "I'm here" on this screen, and when. */
+export interface SaidHere {
+  readonly position: number;
+  readonly at: string;
+}
+
+/**
+ * The stops the driver's "I'm here" is about at this moment (spec 31, 3.9,
+ * item 4), in the order they show: the stop where it was just said here,
+ * which then says what that told; each stop where it is open now, as the
+ * windows overlap and the driver picks where they are (spec 8, 3.2); or,
+ * with none of those, the next stop, which says when it opens. Empty when
+ * there is nothing to say, and then the page has no bar.
+ */
+export function driverImHereStops(
+  trip: MyTrip,
+  bookings: readonly Booking[],
+  said: SaidHere | null,
+  at: Date,
+): readonly number[] {
+  if (!onTripDay(trip)) return [];
+  const { open, next } = imHereStops(trip, bookings, at);
+  const rest = open.filter((position) => position !== said?.position);
+  if (said !== null) return [said.position, ...rest];
+  return rest.length > 0 ? rest : next === null ? [] : [next];
+}
+
+/**
+ * The driver's "I'm here" (spec 8, 3.2; R8.3), in the bar at the bottom of
+ * a phone and at the top of a wide screen's side column (spec 31, 3.9,
+ * item 4): one large button naming the stop, which tells everyone getting
+ * in there. With more than one stop open, the first is the main button and
+ * the others are outlined under it. Before any opens, it says from when;
+ * once said, what that told, with focus. The page keeps where it was
+ * `said`, and whether focus went to what that told (`focusSaid`,
+ * `onSaidFocused`), as it moves this between its bar and its side column.
+ */
+export function DriverImHere({
+  trip,
+  stops,
+  said,
+  focusSaid,
+  onSaidFocused,
+  onSaid,
+  onStale,
+}: {
+  readonly trip: MyTrip;
+  /** From `driverImHereStops`. */
+  readonly stops: readonly number[];
+  readonly said: SaidHere | null;
+  readonly focusSaid: boolean;
+  readonly onSaidFocused: () => void;
+  readonly onSaid: (said: SaidHere) => void;
+  /** The trip or a booking changed meanwhile: say so and load it again. */
+  readonly onStale: () => void;
+}) {
+  const { locale, t } = useLanguage();
+  const session = useSession();
+  // The first button is the main one; what was said is not a button.
+  const main = stops.find((position) => position !== said?.position);
+  return (
+    <View testID="driver-im-here" style={styles.bar}>
+      {stops.map((position) => {
+        const stop = trip.stops[position];
+        if (stop === undefined || stop.checkIn === null) return null;
+        const name = stop.meetingPoint.name[locale];
+        const saidHere = said?.position === position;
+        return (
+          <ImHere
+            // What was said takes the place of its button, and takes focus as it does.
+            key={saidHere ? `said-${stop.id}` : stop.id}
+            state={stop.checkIn}
+            told={t("tripDay.toldPassengers")}
+            label={t("tripDay.imHereAt", { stop: name })}
+            opens={(time) => t("tripDay.opensAtStop", { stop: name, time })}
+            outlined={position !== main}
+            said={saidHere ? said.at : null}
+            focusSaid={focusSaid}
+            onSaidFocused={onSaidFocused}
+            send={() =>
+              session.call(driverCheckInRoute, {
+                params: { id: trip.id, stopId: stop.id },
+                body: {},
+              })
+            }
+            onSaid={(checkedInAt) => {
+              onSaid({ position, at: checkedInAt });
+            }}
+            onStale={onStale}
+          />
+        );
+      })}
+    </View>
+  );
+}
+
+/**
+ * The driver's trip day (spec 8, 3.1): "Use this only when parked." at the
+ * top, then the stops in order with their times, who gets in at each, with
+ * seats and whether they are here, and who gets out. A stop where the
+ * driver said "I'm here" says that the passengers were told; the button
+ * itself is in the page's bar (`DriverImHere`; spec 31, 3.9, item 4). Once
+ * the wait after a stop's time has passed, and "I'm here" was said there,
+ * each passenger getting in there can be marked as a no-show, which opens
+ * its own screen; before "I'm here", the stop says to say it first (3.3).
+ */
+export function DriverTripDay({
+  trip,
+  bookings,
+}: {
+  readonly trip: MyTrip;
+  readonly bookings: readonly Booking[];
+}) {
+  const { locale, t } = useLanguage();
+  const palette = usePalette();
+  const boarding = boardingOf(bookings);
+  const { open } = imHereStops(trip, bookings, now());
   return (
     <>
       <Heading>{t("tripDay.title")}</Heading>
@@ -190,22 +292,16 @@ export function DriverTripDay({
                 ))}
               </View>
             )}
-            {checkIn !== null &&
-            (checkIn.at !== null || open.includes(position) || position === next) ? (
-              <View style={[styles.action, { borderTopColor: palette.border }]}>
-                <ImHere
-                  state={checkIn}
-                  told={t("tripDay.toldPassengers")}
-                  accessibilityLabel={t("tripDay.imHereAt", { stop: name })}
-                  send={() =>
-                    session.call(driverCheckInRoute, {
-                      params: { id: trip.id, stopId: stop.id },
-                      body: {},
-                    })
-                  }
-                  onSaid={onSaid}
-                  onStale={onStale}
-                />
+            {saidHere ? (
+              <View
+                testID="said-here"
+                accessible
+                style={[styles.action, styles.said, { borderTopColor: palette.border }]}
+              >
+                <Icon icon={CircleCheck} color={palette.primary} />
+                <Text style={[typography.bodyStrong, styles.grow, { color: palette.text }]}>
+                  {t("tripDay.toldPassengers")}
+                </Text>
               </View>
             ) : null}
           </Card>
@@ -220,6 +316,8 @@ const styles = StyleSheet.create({
   group: { gap: spacing.sm },
   rider: { flexDirection: "row", alignItems: "center", gap: spacing.ms },
   action: { borderTopWidth: controlOutline / 2, paddingTop: spacing.ms },
+  said: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  bar: { gap: spacing.sm },
   end: { flexDirection: "row", justifyContent: "flex-end" },
   grow: { flex: 1 },
 });

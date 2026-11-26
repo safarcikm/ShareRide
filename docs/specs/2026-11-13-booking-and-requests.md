@@ -118,6 +118,14 @@ Opened from trip details (spec 4) with the chosen part and seats.
 6. **Expiry** (rule R5.5): an unanswered request expires; its seats are freed
    and the passenger is told, with the same search button. The driver is
    reminded once, halfway to the deadline.
+7. Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.12) a request on the
+   driver's ride is a yellow card under "Needs you": who asks, opening
+   their profile, with the time left; their part as a timetable with the
+   seats and the price, and their message in quotation marks; and one
+   line in the place of the seats on each stretch, "If you accept, 2 of 3
+   seats are taken from Mjódd to Selfoss", for the fullest stretch of
+   their part. Decline and Accept stand side by side, and "Decline
+   request" is red. The title's line says "1 request needs your answer."
 
 ### 3.4 Requests: the passenger's side
 
@@ -184,6 +192,16 @@ passengers get in and out, with seats per segment. Changing and cancelling a
 trip with bookings is spec 6. Until it leaves, a share icon beside the
 trip's name opens Share this ride
 ([spec 28](2026-11-25-share-a-ride.md), 3.1 and 3.2).
+
+Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.12) the page is "Your
+ride to Selfoss": the ride as a ticket, with sharing in its corner; what
+needs the driver; the passengers as one card of rows, in the order they
+get in, each with its tag and a round Message button once confirmed, and
+unfolding to their part, their profile, reporting them and "Cancel
+booking"; the seats as one line, "1 of 3 taken at the busiest, Mjódd to
+Selfoss", with the bar of each stretch behind "Each stretch"; and rows
+for the rest, "Cancel the ride" red and last. "Waiting for payment" is a
+blue tag for the driver, who waits with the passenger.
 
 ## 4. Rules
 

@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { english, signUp } from "./support/account";
+import { passengerRow } from "./support/driver-ride";
 import { picturesUnderTheirText } from "./support/layout";
 import { focused, postTripToSelfoss } from "./support/trips";
 
@@ -53,7 +54,10 @@ test("a passenger requests a seat, the driver accepts, the passenger pays", asyn
   await driver.goto("/drive/trips");
   await driver.getByRole("button", { name: /, 1 request$/ }).click();
   await expect(driver).toHaveURL(`/drive/trips/${tripId}`);
-  await expect(driver.getByRole("heading", { name: "Requests" })).toBeVisible();
+  await expect(driver.getByRole("heading", { name: "Needs you" })).toBeVisible();
+  await expect(
+    driver.getByText("1 request needs your answer.", { exact: true }).filter(visible),
+  ).toBeVisible();
   await expect(driver.getByText("Dóra", { exact: true }).filter(visible)).toBeVisible();
   await expect(driver.getByText("No reviews yet").filter(visible)).toBeVisible();
   await expect(driver.getByText("A small rucksack.").filter(visible)).toBeVisible();
@@ -64,9 +68,9 @@ test("a passenger requests a seat, the driver accepts, the passenger pays", asyn
   const accepted = /^Request accepted\. Dóra has until \d\d:\d\d( tomorrow)? to pay\.$/;
   await expect(driver.getByText(accepted).filter(visible)).toBeVisible();
   await expect.poll(() => focused(driver)).toMatch(/^Request accepted\./);
-  await expect(driver.getByRole("heading", { name: "Requests" })).toBeHidden();
+  await expect(driver.getByRole("heading", { name: "Needs you" })).toBeHidden();
   await expect(driver.getByRole("heading", { name: "Passengers" })).toBeVisible();
-  await expect(driver.getByLabel("Dóra, 1 seat, Waiting for payment")).toBeVisible();
+  await expect(passengerRow(driver, "Dóra", "Waiting for payment")).toBeVisible();
 
   // The passenger sees the answer on coming back, and pays on the booking,
   // which opens in place of Request sent once it is no longer a request.
@@ -93,6 +97,6 @@ test("a passenger requests a seat, the driver accepts, the passenger pays", asyn
 
   // The driver's trip shows the seat confirmed.
   await driver.reload();
-  await expect(driver.getByLabel("Dóra, 1 seat, Confirmed")).toBeVisible();
+  await expect(passengerRow(driver, "Dóra", "Confirmed")).toBeVisible();
   await passengerContext.close();
 });
