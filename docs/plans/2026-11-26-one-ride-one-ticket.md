@@ -376,7 +376,7 @@ Merged, #261. `feat(rides)`, spec 31, 3.3 item 3 and section 6.
 
 ## PR 4: one name each
 
-`feat(texts)`, spec 31, 3.4. Values only; no key is renamed.
+Merged, #262. `feat(texts)`, spec 31, 3.4. Values only; no key is renamed.
 
 1. **A test first** in `packages/i18n` (`one-name.test.ts`): no English
    value says "trip" or "trips" as a word except in "Trip day", none is a
