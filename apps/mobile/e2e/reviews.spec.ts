@@ -5,9 +5,10 @@ import { confirmedBooking, secondPage, visible } from "./support/cancelling";
 // Spec 8's ratings and reviews on the web build. As in the trip day
 // journeys, Bára posts Mjódd to N1 Selfoss and Dóra books and pays; then the
 // test API moves that one trip a day and a half back, so it has completed.
-// Dóra rates Bára, and her review waits; Bára rates Dóra, and both show at
-// once (R8.9). Then Dóra opens Bára's profile from the trip. The window,
-// the limits and the errors are left to the API and screen tests.
+// Each finds the ride under Past in My rides, where it says a rating is
+// still to give. Dóra rates Bára, and her review waits; Bára rates Dóra,
+// and both show at once (R8.9). Then Dóra opens Bára's profile from the trip. The window, the
+// limits and the errors are left to the API and screen tests.
 
 test.use({ locale: "en-GB" });
 
@@ -30,8 +31,13 @@ test("after the trip, both review the other, and then each sees the other's revi
   const { tripId, booking } = await confirmedBooking(driver, passenger);
   await move(driver, tripId, -36 * 60);
 
-  // Dóra rates Bára, with a few words; it waits for Bára's.
-  await passenger.goto(booking);
+  // Under Past in My rides, Dóra's ride says a rating is still to give
+  // (spec 31, 3.10). Its ticket opens the booking, as every ticket does,
+  // and the booking's main button rates. She rates Bára, with a few words;
+  // it waits for Bára's.
+  await passenger.goto("/my-rides?when=past");
+  await passenger.getByRole("button", { name: /^Passenger, .*, Rate the driver$/ }).click();
+  await expect(passenger).toHaveURL(booking);
   await passenger.getByRole("link", { name: "Rate the driver" }).click();
   await passenger.getByRole("radio", { name: "5 stars" }).click();
   await passenger
@@ -45,9 +51,18 @@ test("after the trip, both review the other, and then each sees the other's revi
       "Your review appears when the other person has reviewed too, or after 14 days.",
     ),
   ).toBeVisible();
+  // The ride no longer asks: its ticket says how it ended.
+  await passenger.goto("/my-rides?when=past");
+  await expect(
+    passenger.getByRole("button", { name: /^Passenger, .*, Completed$/ }).filter(visible),
+  ).toBeVisible();
+  await expect(text(passenger, "Rate the driver")).toHaveCount(0);
 
-  // Bára rates Dóra from her trip: now both show.
-  await driver.goto(`/drive/trips/${tripId}`);
+  // Bára's ride says the same of her passenger under Past, and opens the
+  // ride, where she rates Dóra: now both show.
+  await driver.goto("/my-rides?when=past");
+  await driver.getByRole("button", { name: /^You drive, .*, Rate your passenger$/ }).click();
+  await expect(driver).toHaveURL(`/drive/trips/${tripId}`);
   await driver.getByRole("button", { name: "Rate your passenger: Dóra" }).click();
   await driver.getByRole("radio", { name: "4 stars" }).click();
   await driver.getByRole("button", { name: "Send review" }).click();

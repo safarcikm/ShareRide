@@ -300,6 +300,20 @@ export const myTripSchema = z.object({
       to: localisedTextSchema,
     })
     .nullable(),
+  /**
+   * The passengers the driver can still rate, for "Rate your passenger" on
+   * a ride that is done (spec 31, 3.10; spec 8, 3.7): the trip's completed
+   * bookings, in the order they were made, whose time to review still
+   * runs, which the driver has not reviewed, with no report waiting to be
+   * decided and a passenger who has not left. `closesAt` is when the last
+   * of those times ends (R8.8). Null for none.
+   */
+  toRate: z
+    .object({
+      bookingIds: z.array(z.uuid()).min(1),
+      closesAt: timestampSchema,
+    })
+    .nullable(),
   /** Why the driver cancelled it, with their note; null unless the driver cancelled it (spec 6, 3.3), as when ShareRide did (spec 9, 3.6). */
   cancellation: z
     .object({

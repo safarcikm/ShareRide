@@ -1,5 +1,5 @@
-import { act, fireEvent, screen, within } from "expo-router/testing-library";
-import { Dimensions } from "react-native";
+import { act, fireEvent, screen, waitFor, within } from "expo-router/testing-library";
+import { AccessibilityInfo, Dimensions } from "react-native";
 import { shareLink } from "@/lib/share";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
@@ -37,6 +37,8 @@ async function open(url: string, start: Parameters<typeof tripsApi>[1] = []) {
     me: completeMe,
     setUp: (client) => {
       api = tripsApi(client, start);
+      // My rides, where a published ride is listed, loads my bookings too.
+      client.answer("/v1/me/bookings", () => ok(200, { bookings: [] }));
     },
   });
   if (api === undefined) throw new Error("The fake API was not set up.");
@@ -833,9 +835,13 @@ describe("Posting a trip (spec 3)", () => {
     await fireEvent.press(screen.getByRole("button", { name: "Check your ride" }));
     await fireEvent.press(await screen.findByRole("button", { name: "Publish ride" }));
     await fireEvent.press(await screen.findByRole("button", { name: "See my rides" }));
+    // My rides, a place of the menu, with the ride just published on it.
     expect(await screen.findByRole("header", { name: "My rides" })).toBeVisible();
-    await fireEvent.press(screen.getByRole("button", { name: "Back" }));
-    expect(screen).toHavePathname("/offer");
+    expect(screen).toHavePathname("/my-rides");
+    expect(
+      await screen.findByRole("button", { name: /^You drive, Sunday 15 November/ }),
+    ).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Back" })).toBeNull();
   });
 
   it("clears what to fix once the driver changes the trip", async () => {
@@ -864,62 +870,27 @@ describe("Posting a trip (spec 3)", () => {
     await fireEvent.press(await screen.findByRole("button", { name: "Delete draft" }));
     expect(screen.getByText("Delete this draft? You can't undo this.")).toBeVisible();
     await fireEvent.press(screen.getByRole("button", { name: "Delete draft" }));
-    expect(await screen.findByText("You haven't offered a ride yet.")).toBeVisible();
-    // One puffin for My trips; Offer's first step, open behind it, has its
-    // own with its sentence.
-    const hidden = { includeHiddenElements: true };
-    const puffins = screen.queryAllByTestId("puffin-by-pin", hidden).length;
-    const steps = screen.queryAllByText(/^Start and end at meeting points/, hidden).length;
-    expect(puffins - steps).toBe(1);
+    // Offer, with the draft gone from over its form (spec 31, 3.10, item 4).
+    expect(await screen.findByRole("header", { name: "Where are you driving?" })).toBeVisible();
+    expect(screen).toHavePathname("/offer");
+    expect(screen.queryByRole("header", { name: "Drafts" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Back" })).toBeNull();
     expect(api.trips()).toEqual([]);
   });
-});
 
-describe("My trips (spec 3, 3.8.4)", () => {
-  it("lists drafts, which open where the driver left off, then published trips", async () => {
-    const unplanned = plannedDraft({
-      id: "0190a1d6-0000-7000-8000-000000000202",
-      stops: plannedDraft().stops.map((stop) => ({ ...stop, plannedAt: null })),
-      departsAt: null,
-      arrivesAt: null,
-    });
-    const published = plannedDraft({
-      id: "0190a1d6-0000-7000-8000-000000000203",
-      status: "published",
-      publishedAt: "2026-11-14T11:00:00.000Z",
-    });
-    await open("/drive/trips", [unplanned, published]);
-    expect(await screen.findByRole("header", { name: "Drafts" })).toBeVisible();
-    expect(screen.getByRole("header", { name: "Published" })).toBeVisible();
-    expect(screen.getByText("Sunday 15 November at 09:00", { exact: false })).toBeVisible();
-    await fireEvent.press(
-      screen.getByRole("button", {
-        name: "BSÍ bus terminal → Hof, Akureyri, Not published yet, 3 seats",
-      }),
-    );
+  it("leads back to Offer from a step opened by its address", async () => {
+    const draft = plannedDraft();
+    await open(`/drive/trips/${draft.id}/time`, [draft]);
     expect(await screen.findByRole("header", { name: "When are you leaving?" })).toBeVisible();
-  });
-
-  it("keeps a trip under way with the published ones until its last stop (spec 8, R8.1)", async () => {
-    const underWay = plannedDraft({
-      id: "0190a1d6-0000-7000-8000-000000000204",
-      status: "departed",
-      publishedAt: "2026-11-14T11:00:00.000Z",
-    });
-    await open("/drive/trips", [underWay]);
-    expect(await screen.findByRole("header", { name: "Published" })).toBeVisible();
-    expect(screen.getByText("Sunday 15 November at 09:00", { exact: false })).toBeVisible();
-  });
-
-  it("starts a trip from Post a trip", async () => {
-    await open("/drive/trips");
-    await fireEvent.press(await screen.findByRole("button", { name: "Offer a ride" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Back" }));
     expect(await screen.findByRole("header", { name: "Where are you driving?" })).toBeVisible();
+    expect(screen).toHavePathname("/offer");
   });
 });
 
-describe("Offer opens the form (spec 16, 3.6)", () => {
+describe("Offer opens the form (spec 16, 3.6; spec 31, 3.11, item 6)", () => {
   const newestId = "0190a1d6-0000-7000-8000-000000000302";
+  const plannedId = "0190a1d6-0000-7000-8000-000000000301";
   /** A draft with no times yet, changed after the planned one. */
   const unplanned = () =>
     plannedDraft({
@@ -929,56 +900,154 @@ describe("Offer opens the form (spec 16, 3.6)", () => {
       arrivesAt: null,
       updatedAt: "2026-11-14T11:00:00.000Z",
     });
-  const planned = () =>
-    plannedDraft({
-      id: "0190a1d6-0000-7000-8000-000000000301",
-      updatedAt: "2026-11-14T10:00:00.000Z",
-    });
-  const continueDraft = "Continue your draft: BSÍ bus terminal → Hof, Akureyri";
+  const planned = () => plannedDraft({ id: plannedId, updatedAt: "2026-11-14T10:00:00.000Z" });
+  /** A draft's row to a screen reader: what it does, the route and when, or that no time is chosen. */
+  const continueRoute = "Continue your draft: BSÍ bus terminal → Hof, Akureyri";
+  const continueDraft = `${continueRoute}, No time yet`;
+  const continuePlanned = `${continueRoute}, Sunday 15 November at 09:00`;
+  /** The view that takes focus around a row (`TakesFocus`): the nearest one above it. */
+  const focusTaker = (row: ReturnType<typeof screen.getByRole>) => {
+    let above = row.parent;
+    while (above !== null && (above.props as { tabIndex?: number }).tabIndex !== -1) {
+      above = above.parent;
+    }
+    return above;
+  };
+  /** The drafts' rows, in the order they stand. */
+  const draftRows = () =>
+    within(screen.getByTestId("draft-rows"))
+      .getAllByRole("link")
+      .map((row) => (row.props as { accessibilityLabel: string }).accessibilityLabel);
+  /** Five drafts, each changed a minute after the one before; the last is the newest. */
+  const five = () =>
+    [1, 2, 3, 4, 5].map((minute) =>
+      plannedDraft({
+        id: `0190a1d6-0000-7000-8000-00000000040${String(minute)}`,
+        // Each leaves an hour later, which tells them apart.
+        departsAt: `2026-11-15T${String(9 + minute).padStart(2, "0")}:00:00.000Z`,
+        updatedAt: `2026-11-14T10:0${String(minute)}:00.000Z`,
+      }),
+    );
 
   it("opens Where are you driving? straight away, with no Back on a place of the menu", async () => {
     await open("/offer");
     expect(await screen.findByRole("header", { name: "Where are you driving?" })).toBeVisible();
     expect(screen.getByText("Step 1 of 5")).toBeVisible();
     expect(screen.queryByRole("button", { name: "Back" })).toBeNull();
-    expect(screen.queryByRole("button", { name: /^Continue your draft/ })).toBeNull();
+    expect(screen.queryByRole("header", { name: "Drafts" })).toBeNull();
+    expect(screen.queryByTestId("draft-rows")).toBeNull();
     expect(screen.queryByRole("header", { name: "Before you publish" })).toBeNull();
   });
 
   it("opens the form even when the drafts do not load", async () => {
     const { client } = await open("/offer", [planned()]);
-    expect(await screen.findByRole("button", { name: continueDraft })).toBeVisible();
+    expect(await screen.findByRole("link", { name: continuePlanned })).toBeVisible();
     client.answer("/v1/me/trips", () => failure(503, "server_error"));
     await fireEvent.press(screen.getByRole("tab", { name: "Find" }));
     await fireEvent.press(await screen.findByRole("tab", { name: "Offer" }));
     expect(await screen.findByRole("header", { name: "Where are you driving?" })).toBeVisible();
     expect(screen.getByRole("button", { name: "From: Choose a meeting point" })).toBeVisible();
-    expect(screen.queryByRole("button", { name: continueDraft })).toBeNull();
+    expect(screen.queryByRole("link", { name: continuePlanned })).toBeNull();
   });
 
-  it("continues the newest draft at the step where it was left", async () => {
+  it("lists the drafts as rows in one card, the one changed last first, with the day once it is chosen", async () => {
     // The API lists the older one first; the newest still comes on top.
     await open("/offer", [planned(), unplanned()]);
-    await fireEvent.press(await screen.findByRole("button", { name: continueDraft }));
+    expect(await screen.findByRole("header", { name: "Drafts" })).toBeVisible();
+    expect(draftRows()).toEqual([continueDraft, continuePlanned]);
+    const rows = within(screen.getByTestId("draft-rows"));
+    // What stands in a row: the route, and under it the day and time, or
+    // that none is chosen, which tells two drafts of one route apart.
+    expect(rows.getAllByText("BSÍ bus terminal → Hof, Akureyri")).toHaveLength(2);
+    expect(rows.getByText("Sunday 15 November at 09:00")).toBeVisible();
+    expect(rows.getByText("No time yet")).toBeVisible();
+    // One card of rows, and nothing else to press in it: two drafts need no "Show all drafts".
+    expect(within(screen.getByTestId("draft-rows")).getByTestId("action-rows")).toBeVisible();
+    expect(rows.queryByRole("button")).toBeNull();
+  });
+
+  it("continues a draft at the step where it was left", async () => {
+    await open("/offer", [planned(), unplanned()]);
+    await fireEvent.press(await screen.findByRole("link", { name: continueDraft }));
     expect(await screen.findByRole("header", { name: "When are you leaving?" })).toBeVisible();
     expect(screen).toHavePathname(`/drive/trips/${newestId}/time`);
   });
 
-  it("opens a draft with its times at the review, and has no list for one draft", async () => {
+  it("opens a draft with its times at the review, and Back leads to Offer", async () => {
     await open("/offer", [planned()]);
-    await fireEvent.press(await screen.findByRole("button", { name: continueDraft }));
+    await fireEvent.press(await screen.findByRole("link", { name: continuePlanned }));
     expect(await screen.findByRole("header", { name: "Check and publish" })).toBeVisible();
-    expect(screen).toHavePathname("/drive/trips/0190a1d6-0000-7000-8000-000000000301/review");
+    expect(screen).toHavePathname(`/drive/trips/${plannedId}/review`);
     await fireEvent.press(screen.getByRole("button", { name: "Back" }));
     expect(await screen.findByRole("header", { name: "Where are you driving?" })).toBeVisible();
-    expect(screen.queryByRole("link", { name: "See all drafts" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Show all drafts" })).toBeNull();
   });
 
-  it("lists every draft from See all drafts", async () => {
-    await open("/offer", [planned(), unplanned()]);
-    await fireEvent.press(await screen.findByRole("link", { name: "See all drafts" }));
+  it("lists rides that are published on My rides only", async () => {
+    const published = plannedDraft({
+      id: "0190a1d6-0000-7000-8000-000000000303",
+      status: "published",
+      publishedAt: "2026-11-14T11:00:00.000Z",
+    });
+    await open("/offer", [published]);
+    expect(await screen.findByRole("header", { name: "Where are you driving?" })).toBeVisible();
+    expect(screen.queryByTestId("draft-rows")).toBeNull();
+  });
+
+  it("shows three drafts at most, and the others under Show all drafts", async () => {
+    const focus = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
+    try {
+      const { client } = await open("/offer", five());
+      expect(await screen.findByRole("header", { name: "Drafts" })).toBeVisible();
+      const row = (hour: string) => `${continueRoute}, Sunday 15 November at ${hour}:00`;
+      expect(draftRows()).toEqual([row("14"), row("13"), row("12")]);
+      const showAll = screen.getByRole("button", { name: "Show all drafts" });
+      // The last row of the same card, with a sign of its own as the drafts have.
+      const card = within(screen.getByTestId("action-rows"));
+      expect(card.getByText("Show all drafts")).toBeVisible();
+      expect(card.getAllByTestId("row-icon", { includeHiddenElements: true })).toHaveLength(4);
+      // The spy keeps what earlier tests did: count from here.
+      focus.mockClear();
+      await fireEvent.press(showAll);
+      expect(draftRows()).toEqual([row("14"), row("13"), row("12"), row("11"), row("10")]);
+      expect(screen.queryByRole("button", { name: "Show all drafts" })).toBeNull();
+      // Focus goes to the first of the drafts that came, as the row pressed
+      // is gone: the view that takes it holds that draft and no other.
+      expect(focus).toHaveBeenCalledTimes(1);
+      const fourth = screen.getByRole("link", { name: row("11") });
+      const taker = focusTaker(fourth);
+      if (taker === null) throw new Error("Nothing takes focus around the fourth draft");
+      expect(within(taker).getAllByRole("link")).toEqual([fourth]);
+      expect(focusTaker(screen.getByRole("link", { name: row("12") }))).not.toBe(taker);
+
+      // Only the press moves focus: when the drafts cannot be read and then
+      // come back, they are all there and focus stays where it is.
+      focus.mockClear();
+      const answer = { fails: true };
+      const drafts = five();
+      client.answer("/v1/me/trips", () =>
+        answer.fails ? failure(503, "server_error") : ok(200, { trips: drafts }),
+      );
+      await fireEvent.press(screen.getByRole("tab", { name: "Find" }));
+      await fireEvent.press(await screen.findByRole("tab", { name: "Offer" }));
+      await waitFor(() => {
+        expect(screen.queryByTestId("draft-rows")).toBeNull();
+      });
+      answer.fails = false;
+      await fireEvent.press(screen.getByRole("tab", { name: "Find" }));
+      await fireEvent.press(await screen.findByRole("tab", { name: "Offer" }));
+      expect(await screen.findByRole("link", { name: row("10") })).toBeVisible();
+      expect(focus).not.toHaveBeenCalled();
+    } finally {
+      focus.mockRestore();
+    }
+  });
+
+  it("has no Show all drafts for three drafts", async () => {
+    await open("/offer", five().slice(0, 3));
     expect(await screen.findByRole("header", { name: "Drafts" })).toBeVisible();
-    expect(screen).toHavePathname("/drive/trips");
+    expect(draftRows()).toHaveLength(3);
+    expect(screen.queryByRole("button", { name: "Show all drafts" })).toBeNull();
   });
 
   it("starts a new draft, and the form is empty again back on Offer", async () => {
@@ -997,7 +1066,7 @@ describe("Offer opens the form (spec 16, 3.6)", () => {
     expect(await screen.findByRole("header", { name: "Where are you driving?" })).toBeVisible();
     expect(screen).toHavePathname("/drive/trips/0190a1d6-0000-7000-8000-000000000100/route");
     await fireEvent.press(screen.getByRole("button", { name: "Back" }));
-    expect(await screen.findByRole("button", { name: continueDraft })).toBeVisible();
+    expect(await screen.findByRole("link", { name: continueDraft })).toBeVisible();
     expect(screen).toHavePathname("/offer");
     expect(screen.getByRole("button", { name: "From: Choose a meeting point" })).toBeVisible();
   });
@@ -1261,11 +1330,11 @@ describe("Posting a trip on a laptop (spec 18, 3.13)", () => {
     expect(screen.queryByTestId("bottom-bar")).toBeNull();
   });
 
-  it("keeps the draft to continue above the form on Offer", async () => {
+  it("keeps the drafts above the form on Offer", async () => {
     await open("/offer", [plannedDraft()]);
     expect(
-      await main().findByRole("button", {
-        name: "Continue your draft: BSÍ bus terminal → Hof, Akureyri",
+      await main().findByRole("link", {
+        name: "Continue your draft: BSÍ bus terminal → Hof, Akureyri, Sunday 15 November at 09:00",
       }),
     ).toBeVisible();
     expect(main().getByText("Step 1 of 5")).toBeVisible();

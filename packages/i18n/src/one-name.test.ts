@@ -40,17 +40,13 @@ describe("one name each (spec 31, 3.4)", () => {
     expect(en["welcome.findRide"]).toBe("Find a ride");
     expect(en["search.title"]).toBe("Find a ride");
     expect(en["driver.offerRide"]).toBe("Offer a ride");
-    expect(en["trip.post"]).toBe("Offer a ride");
     expect(en["trip.publish"]).toBe("Publish ride");
-    expect(en["trip.myTrips"]).toBe(en["nav.myRides"]);
   });
 
   it('keeps "far" for finding and offering in Icelandic, and "ferð" for the ride itself', () => {
     expect(is["welcome.findRide"]).toBe("Finna far");
     expect(is["search.title"]).toBe("Finna far");
     expect(is["driver.offerRide"]).toBe("Bjóða far");
-    expect(is["trip.post"]).toBe("Bjóða far");
     expect(is["trip.publish"]).toBe("Birta ferð");
-    expect(is["trip.myTrips"]).toBe(is["nav.myRides"]);
   });
 });

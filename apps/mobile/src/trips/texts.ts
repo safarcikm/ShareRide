@@ -1,7 +1,14 @@
 import type { MyTrip, Quote } from "@shareride/contracts";
 import { noteMaxLength } from "@shareride/domain";
 import { maxSeatsLastRead } from "@/beta/config";
-import type { Locale, MessageKey, Translate } from "@shareride/i18n";
+import {
+  capitalised,
+  formatClock,
+  formatDay,
+  type Locale,
+  type MessageKey,
+  type Translate,
+} from "@shareride/i18n";
 
 export const luggageKeys = {
   small_bag: "trip.prefs.luggage.small_bag",
@@ -33,6 +40,14 @@ export const bookingModeKeys = {
   approval: { title: "trip.bookingMode.approval", help: "trip.bookingMode.approvalHelp" },
   instant: { title: "trip.bookingMode.instant", help: "trip.bookingMode.instantHelp" },
 } as const satisfies Record<MyTrip["bookingMode"], { title: MessageKey; help: MessageKey }>;
+
+/** When a ride leaves, as a line of its own: "Sunday 15 November at 09:00". */
+export function dayAtTime(t: Translate, locale: Locale, at: Date): string {
+  return capitalised(
+    t("trip.mine.when", { day: formatDay(at, locale), time: formatClock(at) }),
+    locale,
+  );
+}
 
 /** A price level as shown: "Free" at 0, otherwise "90%". */
 export function levelText(t: Translate, level: number): string {

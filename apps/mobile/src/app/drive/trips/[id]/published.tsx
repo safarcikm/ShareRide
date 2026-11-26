@@ -52,7 +52,7 @@ function Published({ trip }: { readonly trip: MyTrip }) {
       <Button
         label={t("trip.published.seeTrips")}
         onPress={() => {
-          router.replace("/drive/trips");
+          router.replace("/my-rides");
         }}
       />
     </>

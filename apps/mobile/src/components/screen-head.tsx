@@ -10,7 +10,9 @@ import { Title } from "./text";
 /**
  * The top of a screen (spec 31, 3.2, rule 5, and 3.3): Back, then the title
  * at the left, which says what is going on, with at most one line under it
- * and at most one round icon button at the right, such as Share. Small text
+ * and at most one control at the right: a round icon button, such as
+ * Share, or on a place of the menu an outlined button with words, as
+ * "Offer a ride" is on My rides (3.10). Small text
  * `over` the title names what the title is about, such as a ride's day. On
  * a posting step the `road` stands beside Back and the title has the whole
  * width under them. Where a title has no room for its longest word between

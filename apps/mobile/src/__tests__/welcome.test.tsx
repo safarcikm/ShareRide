@@ -594,6 +594,7 @@ describe("Find, signed in (spec 31, 3.5)", () => {
     openRequests: 0,
     requestsCloseAt: null,
     firstRequest: null,
+    toRate: null,
   };
   /** The parts of Find in the order they stand: the card, the search, my ride, the rides. */
   const parts = () =>

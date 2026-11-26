@@ -263,6 +263,7 @@ export function tripsApi(
       openRequests: 0,
       requestsCloseAt: null,
       firstRequest: null,
+      toRate: null,
       cancellation: null,
       phase: null,
       priceSettings: startingPriceSettings,
@@ -337,6 +338,7 @@ export function tripsApi(
       openRequests: 0,
       requestsCloseAt: null,
       firstRequest: null,
+      toRate: null,
       cancellation: null,
     };
     return ok(201, { trip: store(copy), dropped });
@@ -581,6 +583,7 @@ export function plannedDraft(changes: Partial<MyTrip> = {}): MyTrip {
     openRequests: 0,
     requestsCloseAt: null,
     firstRequest: null,
+    toRate: null,
     cancellation: null,
     phase: null,
     priceSettings: startingPriceSettings,

@@ -17,9 +17,9 @@ needs me comes first and each screen has one main button.
 rules (`RideTicket`, `Road`, `NeedsYouCard`, `ActionRows`, `ScreenHead`);
 each feature folder keeps a thin file that turns its own data into a part's
 props. What needs me and the busiest stretch are pure functions in
-`packages/domain`. The API gains one field, `firstRequest`. The screens are
-then rebuilt flow by flow on those parts; no screen gets a second way of
-doing something.
+`packages/domain`. The API gains three fields of a ride I drive (the table
+below). The screens are then rebuilt flow by flow on those parts; no screen
+gets a second way of doing something.
 
 **Tech stack:** as today: Expo and React Native Web with expo-router,
 `@shareride/i18n`, the tokens of `@shareride/ui`, Jest with `renderApp`,
@@ -63,8 +63,8 @@ request goes to `main` and so to staging; production waits for him.
 
 ## Checked against the API (spec 31, section 6)
 
-Everything the screens need is there today except two fields; the second
-was found while building PR 5.
+Everything the screens need is there today except three fields; the second
+was found while building PR 5 and the third while building PR 8c.
 
 | Needed | Where it comes from | State |
 | ------ | ------------------- | ----- |
@@ -72,7 +72,8 @@ was found while building PR 5.
 | A ride on its trip day | `Booking.tripDay.phase` and `MyTrip.phase`, `"trip_day"` | There |
 | Requests to answer | `MyTrip.openRequests`, `requestsCloseAt` | There |
 | Who asks, for how many seats, between which stops | nothing in `GET /v1/me/trips` | **Missing:** `MyTrip.firstRequest`, PR 3 |
-| A rating still to give | `Booking.review` (`mine === null` and now before `closesAt`) | There |
+| A rating still to give, on a seat | `Booking.review` (`mine === null` and now before `closesAt`) | There |
+| Passengers still to rate, on a ride I drove | nothing in `GET /v1/me/trips` | **Missing:** `MyTrip.toRate`, PR 8c |
 | Seats taken on each stretch | `MyTrip.segments[].seatsTaken` | There |
 | A request's own deadline | `Booking.requestExpiresAt` | There |
 | A conversation's ride, role and car | `Conversation.booking` | There |
@@ -915,6 +916,68 @@ As built in 8b (spec 31 says the same where a person sees it, in 3.19):
   nothing used, is gone. Spec 28's picture of sharing on a laptop is
   taken again. Four smaller things are on PR 12's list.
 
+As built in 8c (spec 31 says the same where a person sees it, in 3.10 and
+3.11, item 6; section 6 for the data):
+
+- **The API** (`trips/drafts.ts`): a ride in `GET /v1/me/trips` and
+  `GET /v1/me/trips/{id}` gains `toRate`, `{ bookingIds, closesAt }` or
+  null (`myTripSchema`): the ride's completed bookings whose 14 days run
+  (`reviewsOpenSince` in `packages/domain`, beside `reviewClosesAt`),
+  that the driver has not reviewed, with no report waiting and whose
+  passenger has not left, in the order they were made. Read with the
+  ride in `present()`. Integration tests in
+  `reviews.integration.test.ts`.
+- **My rides** (`app/(tabs)/my-rides.tsx`): `ScreenHead` with "Offer a
+  ride" as its `action`, an outlined `Button` that takes an `icon` (new,
+  before the label); the empty state keeps "Find a ride" alone.
+  `ratingOf` (`my-rides/rides.ts`) gives the rating a ride still waits
+  for, from `canRate` (`reviews/held-back.ts`) for a seat and from
+  `toRate` for a ride I drove; `MyRideTicket` shows it as the yellow tag
+  with a star where a need's tag stands. `canRate` is now the one rule
+  for the tag, a booked seat's title and main button, and the button
+  under a review (`reviewOpen` is gone). Coming up and Past stay chips:
+  the drawing shows a control of two halves, which spec 31 does not ask
+  for (PR 12's list).
+- **Every ticket opens its ride** (item 3, changed after the code
+  review): the first build opened the rating itself from a ticket with
+  one rating to give, with a way back to My rides. That kept a finished
+  ride's own page out of reach from My rides for up to 14 days (its
+  messages, a report to make or answer, "Post it again"), so the ticket
+  opens the booking or the ride, which already asks for the rating (3.8,
+  3.12), and the rating's way back is as it was.
+- **My trips goes** (item 4): `app/drive/trips/index.tsx` is a
+  `Redirect` to `/my-rides`. `StepScreen`'s Back falls back to Offer;
+  deleting a draft closes the steps down to Offer (`leaveSteps` with
+  nothing to open); "See my rides" after publishing, and on sharing a
+  ride that cannot be found, open My rides. `ShareTripCorner` goes with
+  the cards that had it.
+- **Drafts on Offer** (PR 9's item 4, built here, as "See all drafts"
+  led to the page that goes): `trips/draft-rows.tsx` (`DraftRows`), one
+  `ActionRows` of `Row`s under the heading "Drafts", each a link to the
+  step where the draft was left, with "No time yet" under a route that
+  has no time; three at first, the others under "Show all drafts", the
+  card's last row, after which the first of them takes focus
+  (`TakesFocus`, only from the press). `dayAtTime` in `trips/texts.ts`
+  writes "Sunday 15 November at 09:00" for the rows, and for Edit the
+  ride and `TripHead`, which each wrote it out.
+- **Texts:** new, "Rate your passengers" and "No time yet";
+  changed, "See all drafts" to "Show all drafts"; gone with My trips,
+  `trip.myTrips`, `trip.post`, `trip.mine.published`, `trip.mine.empty`,
+  `trip.mine.draftLine` and `trip.mine.requests`.
+- **Tests:** the title's button on both lists and where it leads; the
+  rating tags under Past, in order, and that each opens its ride, which
+  asks for the rating; `/drive/trips` leading to My rides; the drafts'
+  rows by what a screen reader hears, in order, three at most until
+  "Show all drafts", where focus goes then and that only the press moves
+  it; where Back, deleting a draft and "See my rides" lead. In the API,
+  `toRate` on one ride and in the list of past rides. Journeys changed: `driver-requests.spec.ts` (the old
+  address, then the ride from its ticket), `post-a-trip.spec.ts` (ends
+  on My rides), `reviews.spec.ts` (each finds the ride under Past and
+  rates from its page),
+  `laptop.spec.ts` ("Offer a ride" on the title's line). Pictures:
+  `built/my-rides-*` and `built/offer-drafts-phone-light`; spec 28's
+  picture of a card in My trips goes.
+
 ## PR 9: offering a ride
 
 `feat(drive)`, spec 31, 3.11, and "Your ride is published" (3.19).
@@ -932,7 +995,9 @@ As built in 8b (spec 31 says the same where a person sees it, in 3.19):
    outlined button for the next one; Delete draft red and last; Publish
    ride in the bar.
 4. **Drafts on Offer:** rows in one card over step 1, the newest first,
-   more than three under "Show all drafts".
+   more than three under "Show all drafts". Built with My rides (PR 8c),
+   as the page of drafts went with My trips; what is left here is their
+   place once the step has its road and its title at the left.
 5. **"Your ride is published":** the ride as a ticket; the share panel
    stays.
 6. Tests: the road's label on each step; 08:00 for tomorrow and the next
@@ -1051,11 +1116,19 @@ and deleting the account (3.19).
     9, item 2 here); `cancel-trip.spec.ts` does not read the bar's notice
     or where focus goes, as `cancel-booking.spec.ts` does, and
     `look.spec.ts` opens none of Edit the ride's screens with long names
-    or large text; "day at time" is written out on Edit the ride and in
-    `TripHead`; an `ActionNotice` given plain words does not say them
-    again on another press, which is easy to get wrong: `useSaid`
-    everywhere, or a rule for it.
-12. **Docs:** spec 31 becomes Built, with what differs from the drawings;
+    or large text; "day at time" has one helper since 8c (`dayAtTime`),
+    which `TripSummary`, `driver-trip/title.ts`, `trip-so-far.tsx` and
+    the post's text do not use yet; an `ActionNotice` given plain words
+    does not say them again on another press, which is easy to get
+    wrong: `useSaid` everywhere, or a rule for it.
+12. **Left from My rides (PR 8c):** Coming up and Past are two chips,
+    where the drawing has one control of two halves; the address
+    `/drive/trips/new`, a first step outside Offer, which nothing in the
+    app opens since My trips went; after "Show all drafts" focus goes to
+    a view around the first draft that came, not to its link, so Enter
+    does nothing until Tab (`TakesFocus`, the app's way everywhere: one
+    fix for all); a draft whose stops were all retired reads " → ".
+13. **Docs:** spec 31 becomes Built, with what differs from the drawings;
     spec 15 has the parts; the roadmap and the changelog.
 
 ## After merging

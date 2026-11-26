@@ -233,6 +233,8 @@ decision 17), added two: its edge and its fill under the pointer.
    secondary buttons and of loose text links.
 5. **`ScreenHead`**: Back, then the title at the left with at most one
    line under it, and at most one round icon button at the right (Share).
+   On a place of the menu that one control can be an outlined button
+   with words, as "Offer a ride" is on My rides (3.10).
    (`PageHead` is already the name of the title for search engines.)
 6. **Titles and figures** (Fredoka) are set without kerning and with a
    word space 0.06 em wider (3.18, item 1), on the web, where it was
@@ -589,19 +591,55 @@ As built, for the driver, on a phone
    ("Answer Dóra's request", "Pay by 20:46", "Leaves in 40 minutes"), and
    the ticket opens where that is done.
 3. Under Past, a finished ride whose rating can still be given has the
-   yellow tag "Rate the driver" or "Rate your passenger" in its foot, and
-   opens the rating (decision 9).
+   yellow tag "Rate the driver" or "Rate your passenger" in its foot
+   (decision 9). The ticket opens the ride, as every ticket does, and the
+   ride asks for the rating. (As first written, the ticket opened the
+   rating itself; the note under "As built" says why it does not.)
 4. My trips (`/drive/trips`) goes; its address leads to My rides. Drafts
    are listed on Offer (3.11, item 6; spec 16, decision 6), and what led
    to My trips today (Back from a posting step opened by its address,
    and deleting a draft) leads to Offer.
 
-As built so far (the tickets; the title's button, the rating under Past
-and My trips follow after the driver's ride, plan, PR 8c): a ticket of
-My rides holds no
-button of its own. What it needs is the yellow tag in its foot, and
-pressing the ticket opens where that is done. "Needs you" lists the ride
-whose deadline or leaving time is soonest first, as Find does.
+As built, on a phone
+([light](images/one-ride-one-ticket/built/my-rides-phone-light.webp),
+[dark, in Icelandic](images/one-ride-one-ticket/built/my-rides-phone-dark.webp),
+[Past](images/one-ride-one-ticket/built/my-rides-past-phone-light.webp))
+and a laptop
+([light](images/one-ride-one-ticket/built/my-rides-laptop-light.webp)),
+with the
+[drafts on Offer](images/one-ride-one-ticket/built/offer-drafts-phone-light.webp):
+a ticket of My rides holds no button of its own. What it needs is the
+yellow tag in its foot, and pressing the ticket opens where that is
+done. "Needs you" lists the ride whose deadline or leaving time is
+soonest first, as Find does.
+
+- **The title's button** is "Offer a ride", outlined, with a plus before
+  the words. It is the button every screen has, 48 high, and not a
+  smaller one: it is as easy to press as any, and the parts have no small
+  button. On a laptop it stands at the page's right edge, on the
+  title's line. Where a narrow phone has no room for it beside the
+  title's longest word, it stands over the title, as the head's rule
+  says (3.3). With nothing coming up, the screen keeps "Find a ride"
+  alone under its sentence: offering is at the title.
+- **A rating to give** is the same yellow tag, with a star in place of
+  the bell, where the ride's state would stand: "Rate the driver" on a
+  seat of mine; on a ride I drove "Rate your passenger" for one passenger
+  and "Rate your passengers" for several. It shows while the rating can
+  be given: the ride is done, its 14 days run, I have sent nothing, the
+  other person has not left and no report on the booking waits. The
+  ticket opens the ride, as every ticket does. A booked seat then asks in
+  its title, "How was your ride?", with "Rate the driver" as its main
+  button (3.8); a ride I drove lists its passengers with "Rate your
+  passenger: Dóra" under each (3.12). A ticket that opened the rating
+  itself, as item 3 first said, kept a finished ride out of reach from
+  My rides for up to 14 days: its messages, a report to make or to
+  answer, what was paid, "Post it again".
+- **My trips is gone.** `/drive/trips` leads to My rides. "See my rides"
+  after publishing opens My rides, as does the link on sharing a ride
+  that cannot be found. Back from a posting step opened by its address,
+  and deleting a draft, lead to Offer. A ride I drive is shared from its
+  page (3.12): its ticket in My rides has no share icon, as it has no
+  button of its own.
 
 ### 3.11 Offering a ride
 
@@ -628,7 +666,16 @@ whose deadline or leaving time is soonest first, as Find does.
 6. **Drafts** are listed on Offer, over step 1, as rows in one card, the
    one changed last first: the route and day, opening the step where it
    was left, as today. More than three fold under "Show all drafts".
-   "See all drafts" and its page go with My trips (3.10).
+   "See all drafts" and its page go with My trips (3.10). As built (with
+   My rides, plan, PR 8c): under the step's title, the heading "Drafts"
+   over one card of rows; a row has the route and under it the day and
+   time ("Sunday 15 November at 09:00"), or "No time yet", which tells
+   two drafts of one route apart. A row is a link a screen reader hears
+   as "Continue your draft: Mjódd → N1 Selfoss, Sunday 15 November at
+   09:00". "Show all drafts" is the card's last row, with a sign of its
+   own as the drafts have; pressed, it goes, the other drafts come and
+   focus goes to the first of them. Only the press moves focus: drafts
+   read again later come without it.
 
 ### 3.12 The driver's ride
 
@@ -1128,7 +1175,16 @@ My rides load, named below.
   the three always agree.
 - A rating to give is known from a finished booking's `review`, which My
   rides loads under Past. Find loads upcoming rides only, which is why a
-  rating is not raised there (decision 9).
+  rating is not raised there (decision 9). **Missing for a ride I
+  drove:** a ride in `GET /v1/me/trips` said nothing of its passengers'
+  reviews. Built so: the ride gains `toRate`, the IDs of its completed
+  bookings the driver can still rate, in the order they were made, and
+  `closesAt`, when the last of those times ends; null when there is none.
+  A booking counts while its 14 days run (`reviewsOpenSince` in
+  `packages/domain`), the driver has not reviewed it, no report on it
+  waits to be decided and its passenger has not left: what the server
+  asks before it takes a review (R8.8). It says nothing new to the
+  driver, who sees the same on the ride's page.
 - "1 of 3 taken at the busiest, Mjódd to Selfoss" (3.12) comes from the
   seats taken on each stretch, which the driver's ride already has; naming
   the busiest stretch is a function in `packages/domain`.
@@ -1195,6 +1251,8 @@ native speaker to check. Every other text keeps its key.
 | End of results | That's every ride found | Ekki fundust fleiri ferðir |
 | Profile groups | Driving, Account, Safety and privacy, Help | Akstur, Aðgangur, Öryggi og persónuvernd, Aðstoð |
 | Drafts on Offer | Show all drafts | Sýna öll drög |
+| Several passengers to rate | Rate your passengers | Gefðu farþegunum einkunn |
+| A draft with no time | No time yet | Enginn tími enn |
 | A passenger's row | See profile | Skoða prófíl |
 
 Three Icelandic texts are not as first written here, and the table shows
@@ -1250,8 +1308,9 @@ place after a preposition.
 
 ## 9. Testing
 
-- **Unit:** the two domain functions of section 6; `firstRequest` in the
-  API, with its integration test; every new key in both languages.
+- **Unit:** the two domain functions of section 6; `firstRequest` and
+  `toRate` in the API, each with its integration tests; every new key in
+  both languages.
 - **Screen tests** (`renderApp`), written first for each pull request: a
   ticket's parts for each kind of ride; the road's step and its label for
   screen readers; Find with each kind of thing that needs me, with a
@@ -1300,7 +1359,7 @@ Working choices, for Martin to change:
 | 11 | A passenger on the driver's ride | The row unfolds in place to See profile, Cancel booking and Report, with Message as a button on the row. Those three take one press more than today; there is no new screen (3.12). As built the order is See profile, Report, Cancel booking: what cannot be undone is last (R31.3) |
 | 12 | Language, notifications and the phone number | Language and Notifications get a page each; the phone number is a row that opens nothing (3.14) |
 | 13 | The screens that are not drawn | They keep what they hold and take the rules with their flow (3.19) |
-| 14 | Naming who asks for a seat, on Find and My rides | A ride in my list gains `firstRequest` in the API (section 6) |
+| 14 | Naming who asks for a seat, on Find and My rides | A ride in my list gains `firstRequest` in the API (section 6). For "Rate your passenger" under Past it also gains `toRate`, the passengers its driver can still rate (3.10) |
 | 15 | Drafts | All of them are listed on Offer; the page of drafts goes with My trips (3.11, item 6) |
 | 16 | Filled buttons | One main button a screen; the button of a `NeedsYouCard` is the only other filled one (R31.1) |
 | 17 | Which main buttons are red | The ones that take something away: "Cancel booking", "Cancel the ride", "Withdraw request", "Block Bára", and "Decline request" on the driver's ride. The ones that tell PuffinRide what happened stay moss, so that red does not warn anyone off a report: "Tell PuffinRide", "Mark as no-show", "Send answer", "Send review", "Send report" (3.19, R31.3) |

@@ -1,4 +1,5 @@
 import { router, useLocalSearchParams } from "expo-router";
+import { Plus } from "lucide-react-native";
 import type { ReactNode } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { errorText } from "@/auth/errors";
@@ -9,8 +10,9 @@ import { PageColumn } from "@/components/columns";
 import { Grid } from "@/components/grid";
 import { Notice } from "@/components/notice";
 import { Screen, useWideScreen } from "@/components/screen";
+import { ScreenHead } from "@/components/screen-head";
 import { PuffinByPin } from "@/components/puffin-scenes";
-import { Body, Heading, Title } from "@/components/text";
+import { Body, Heading } from "@/components/text";
 import { offerRide } from "@/drive/offer-ride";
 import { useLanguage } from "@/i18n/language";
 import { useClock } from "@/lib/use-clock";
@@ -23,15 +25,16 @@ import { usePalette } from "@/theme/use-palette";
 
 /**
  * My rides, a place of the menu (spec 16, 3.3): my bookings and the rides I
- * drive in one list of tickets (spec 31, 3.10), coming up or past. Coming
- * up puts what needs me first.
+ * drive in one list of tickets (spec 31, 3.10), coming up or past. The
+ * title is at the left, with "Offer a ride" as an outlined button at its
+ * right. Coming up puts what needs me first; Past says whose rating I can
+ * still give.
  * Which list shows lives in the address, so Back returns to it. Pulling
  * down loads it again (3.9). Signed out, it asks to sign in.
  *
- * On a wide screen (spec 18, 3.10) it is a page: the title and the choice
- * start at the left, and the rides are a grid in the same order. What
- * stands in the rides' place, when there are none or they cannot be
- * loaded, keeps the width of a column at the page's left.
+ * On a wide screen (spec 18, 3.10) it is a page: the rides are a grid in
+ * the same order. What stands in the rides' place, when there are none or
+ * they cannot be loaded, keeps the width of a column at the page's left.
  */
 export default function MyRidesScreen() {
   const { t } = useLanguage();
@@ -42,6 +45,7 @@ export default function MyRidesScreen() {
 
 function MyRides() {
   const { t } = useLanguage();
+  const me = useMe();
   const palette = usePalette();
   const params = useLocalSearchParams<{ when?: string }>();
   const when: When = params.when === "past" ? "past" : "upcoming";
@@ -52,7 +56,20 @@ function MyRides() {
 
   return (
     <Screen width="page" refresh={pull}>
-      <Title align={wide ? "start" : "center"}>{t("nav.myRides")}</Title>
+      <ScreenHead
+        title={t("nav.myRides")}
+        back={null}
+        action={
+          <Button
+            variant="secondary"
+            icon={Plus}
+            label={t("driver.offerRide")}
+            onPress={() => {
+              offerRide(me);
+            }}
+          />
+        }
+      />
       <View
         accessibilityRole="radiogroup"
         accessibilityLabel={t("myRides.which")}
@@ -99,8 +116,8 @@ function MyRides() {
 /**
  * What needs me under "Needs you", the soonest need first (spec 31, 3.3
  * item 3), then the rest, soonest first (3.3 items 2 and 3), or Find a
- * ride and Offer a ride when nothing is coming up. A ticket says in its
- * foot what the ride needs, and opens where that is done.
+ * ride when nothing is coming up: offering one is at the title. A ticket
+ * says in its foot what the ride needs, and opens where that is done.
  */
 function ComingUp({
   rides,
@@ -112,7 +129,6 @@ function ComingUp({
   readonly wide: boolean;
 }) {
   const { t } = useLanguage();
-  const me = useMe();
   if (rides.length === 0) {
     const nothing = (
       <View style={styles.nothing}>
@@ -122,13 +138,6 @@ function ComingUp({
           label={t("welcome.findRide")}
           onPress={() => {
             router.navigate("/");
-          }}
-        />
-        <Button
-          variant="secondary"
-          label={t("driver.offerRide")}
-          onPress={() => {
-            offerRide(me);
           }}
         />
       </View>

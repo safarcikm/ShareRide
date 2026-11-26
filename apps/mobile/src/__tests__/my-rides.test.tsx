@@ -16,6 +16,7 @@ import {
 import { now } from "@/lib/clock";
 import { filledButtons } from "@/testing/buttons";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
+import { completedBooking, completedRider } from "@/testing/reviews";
 import { searchApi } from "@/testing/search";
 import { onTheDay, tripOnTheDay } from "@/testing/trip-day";
 import { tripsApi } from "@/testing/trips";
@@ -65,6 +66,7 @@ const drivingLater: MyTrip = {
   openRequests: 0,
   requestsCloseAt: null,
   firstRequest: null,
+  toRate: null,
 };
 /** A trip Anna drove last week. */
 const drove: MyTrip = {
@@ -282,7 +284,7 @@ describe("My rides (spec 16, 3.3)", () => {
     expect(screen.queryByText(/seats? taken/)).toBeNull();
   });
 
-  it("offers Find a ride and Offer a ride when nothing is coming up", async () => {
+  it("offers Find a ride when nothing is coming up, with Offer a ride at the title", async () => {
     await renderApp("/my-rides", {
       me: completeMe,
       setUp: (client) => {
@@ -297,11 +299,145 @@ describe("My rides (spec 16, 3.3)", () => {
     ).toBeVisible();
     expect(screen.queryByRole("header", { name: "Needs you" })).toBeNull();
     expect(screen.getByTestId("puffin-by-pin", { includeHiddenElements: true })).toBeTruthy();
+    // Find a ride is the one thing to do here; offering is at the title, once.
+    expect(filledButtons()).toBe(1);
+    expect(screen.getAllByRole("button", { name: "Offer a ride" })).toHaveLength(1);
     await fireEvent.press(screen.getByRole("button", { name: "Find a ride" }));
     expect(screen).toHavePathname("/");
     await fireEvent.press(await screen.findByRole("tab", { name: "My rides" }));
     await fireEvent.press(await screen.findByRole("button", { name: "Offer a ride" }));
     expect(screen).toHavePathname("/offer");
+  });
+
+  it("has Offer a ride at the title's right, outlined, on both lists (spec 31, 3.10)", async () => {
+    await renderApp("/my-rides", {
+      me: completeMe,
+      setUp: (client) => {
+        tripsApi(client);
+        myRidesApi(client, {
+          upcoming: { bookings: [northBooking()] },
+          past: { bookings: [declined] },
+        });
+      },
+    });
+    expect(await screen.findByRole("button", { name: /^Passenger, / })).toBeVisible();
+    // The title is at the left, with no Back: My rides is a place of the menu.
+    const head = within(screen.getByTestId("screen-head"));
+    expect(head.getByRole("header", { name: "My rides" })).not.toHaveStyle({
+      textAlign: "center",
+    });
+    expect(head.queryByRole("button", { name: "Back" })).toBeNull();
+    const offer = () =>
+      within(screen.getByTestId("screen-head-action")).getByRole("button", {
+        name: "Offer a ride",
+      });
+    expect(
+      within(offer()).getByTestId("button-icon", { includeHiddenElements: true }),
+    ).toBeTruthy();
+    // Outlined: a list of rides has no main button (R31.1).
+    expect(filledButtons()).toBe(0);
+    await fireEvent.press(screen.getByRole("radio", { name: "Past" }));
+    expect(await screen.findByText("Declined")).toBeVisible();
+    await fireEvent.press(offer());
+    expect(screen).toHavePathname("/offer");
+  });
+
+  it("says under Past whose rating can still be given, and opens the ride, which asks for it (spec 31, 3.10)", async () => {
+    const mockedNow = now as jest.Mock<Date, []>;
+    // Monday: the day after the north trip, which Gunna rode along.
+    mockedNow.mockReturnValue(new Date("2026-11-16T12:00:00Z"));
+    try {
+      const rode = completedBooking();
+      const closesAt = "2026-11-21T16:00:00.000Z";
+      const passenger = completedRider("0190a1d6-0000-7000-8000-0000000000e1", "Jón");
+      const other = completedRider("0190a1d6-0000-7000-8000-0000000000e2", "Dóra");
+      /** Last week's ride, with one passenger still to rate. */
+      const droveOne: MyTrip = {
+        ...drove,
+        status: "completed",
+        toRate: { bookingIds: [passenger.id], closesAt },
+      };
+      /** One the week before, with two. */
+      const droveTwo: MyTrip = {
+        ...drove,
+        id: "0190a1d6-0000-7000-8000-0000000000d3",
+        status: "completed",
+        departsAt: "2026-11-05T09:00:00.000Z",
+        arrivesAt: "2026-11-05T14:00:00.000Z",
+        toRate: { bookingIds: [passenger.id, other.id], closesAt },
+      };
+      await renderApp("/my-rides?when=past", {
+        me: completeMe,
+        setUp: (client) => {
+          tripsApi(client, [droveOne, droveTwo]);
+          driverApi(client, [passenger, other]);
+          client.answer(
+            "/v1/bookings/{id}",
+            (input) => {
+              const { id } = input["params"] as { id: string };
+              return ok(200, id === rode.id ? rode : passenger);
+            },
+            "get",
+          );
+          myRidesApi(client, {
+            past: { bookings: [rode, declined], trips: [droveOne, droveTwo] },
+          });
+        },
+      });
+      expect(await screen.findByText("Rate the driver")).toHaveStyle({
+        color: colors.light.warning,
+      });
+      expect(rowNames()).toEqual([
+        expect.stringMatching(/^Passenger, Sunday 15 November, .*, Anna, Rate the driver$/),
+        expect.stringMatching(/^Passenger, Sunday 15 November, .*Declined$/),
+        expect.stringMatching(/^You drive, Saturday 7 November, .*, Rate your passenger$/),
+        expect.stringMatching(/^You drive, Thursday 5 November, .*, Rate your passengers$/),
+      ]);
+      // A rating to give is not under "Needs you" (decision 9): Past has no such heading.
+      expect(screen.queryByRole("header", { name: "Needs you" })).toBeNull();
+
+      // A ticket opens its ride, as every ticket does: the ride's own page
+      // asks for the rating, and still has everything else the ride has.
+      await fireEvent.press(screen.getByRole("button", { name: /, Rate the driver$/ }));
+      expect(await screen.findByRole("header", { name: "How was your ride?" })).toBeVisible();
+      expect(screen).toHavePathname(`/bookings/${rode.id}`);
+      expect(
+        within(screen.getByTestId("bottom-bar")).getByRole("link", { name: "Rate the driver" }),
+      ).toBeVisible();
+      await fireEvent.press(screen.getByRole("button", { name: "Back" }));
+
+      // One passenger to rate: the ride, with the rating under them.
+      await fireEvent.press(await screen.findByRole("button", { name: /, Rate your passenger$/ }));
+      expect(await screen.findByRole("button", { name: "Rate your passenger: Jón" })).toBeVisible();
+      expect(screen).toHavePathname(`/drive/trips/${droveOne.id}`);
+      await fireEvent.press(screen.getByRole("button", { name: "Back" }));
+
+      // Several: the same page lists them, with a rating under each.
+      await fireEvent.press(await screen.findByRole("button", { name: /, Rate your passengers$/ }));
+      expect(
+        await screen.findByRole("button", { name: "Rate your passenger: Dóra" }),
+      ).toBeVisible();
+      expect(screen).toHavePathname(`/drive/trips/${droveTwo.id}`);
+    } finally {
+      mockedNow.mockImplementation(() => new Date("2026-11-14T12:00:00Z"));
+    }
+  });
+
+  it("leads from My trips' old address to My rides (spec 31, 3.10)", async () => {
+    await renderApp("/drive/trips", {
+      me: completeMe,
+      setUp: (client) => {
+        tripsApi(client, [drivingLater]);
+        myRidesApi(client, { upcoming: { trips: [drivingLater] } });
+      },
+    });
+    expect(await screen.findByRole("header", { name: "My rides" })).toBeVisible();
+    expect(screen).toHavePathname("/my-rides");
+    expect(
+      await screen.findByRole("button", { name: /^You drive, Tuesday 17 November/ }),
+    ).toBeVisible();
+    // My rides itself, with its choice of Coming up and Past.
+    expect(screen.getByRole("radio", { name: "Coming up" })).toBeChecked();
   });
 
   it("says when nothing is past", async () => {
@@ -569,7 +705,7 @@ describe("My rides on a laptop (spec 18, 3.10)", () => {
     expect(within(screen.getByTestId("grid")).getAllByTestId("grid-cell")).toHaveLength(3);
   });
 
-  it("offers Find a ride and Offer a ride in a column at the page's left when nothing is coming up", async () => {
+  it("offers Find a ride in a column at the page's left when nothing is coming up, with Offer a ride at the title", async () => {
     await renderApp("/my-rides", {
       me: completeMe,
       setUp: (client) => {
@@ -583,7 +719,12 @@ describe("My rides on a laptop (spec 18, 3.10)", () => {
       ),
     ).not.toHaveStyle({ textAlign: "center" });
     expect(column.getByRole("button", { name: "Find a ride" })).toBeVisible();
-    expect(column.getByRole("button", { name: "Offer a ride" })).toBeVisible();
+    expect(column.queryByRole("button", { name: "Offer a ride" })).toBeNull();
+    expect(
+      within(screen.getByTestId("screen-head-action")).getByRole("button", {
+        name: "Offer a ride",
+      }),
+    ).toBeVisible();
     expect(screen.getByTestId("page")).toBeVisible();
     expect(screen.queryByTestId("grid")).toBeNull();
 

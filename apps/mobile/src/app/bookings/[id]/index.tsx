@@ -17,7 +17,7 @@ import {
   statusKey,
 } from "@/booking/status";
 import { endedLines } from "@/booking/texts";
-import { bookingRoad, bookingTitle, reviewOpen } from "@/booking/title";
+import { bookingRoad, bookingTitle } from "@/booking/title";
 import { TripChanges, useMoveChoice } from "@/booking/trip-changes";
 import { showsWhereToStand, WhereToStand } from "@/booking/where-to-stand";
 import { useWithdraw, WithdrawQuestion } from "@/booking/withdraw";
@@ -43,6 +43,7 @@ import { useClock } from "@/lib/use-clock";
 import { useLoadedOnFocus } from "@/lib/use-loaded";
 import { NotificationsPrompt } from "@/notifications/notifications-prompt";
 import { firstNameOf } from "@/people/texts";
+import { canRate } from "@/reviews/held-back";
 import { ReviewSection } from "@/reviews/review-section";
 import { bookingShareText } from "@/safety/share-details";
 import { showsWeatherAndRoads, WeatherAndRoadsRow } from "@/safety/weather-roads-row";
@@ -429,7 +430,7 @@ function BookingDetails({
         </View>
       );
     }
-    if (reviewOpen(t, booking, at)) {
+    if (canRate(booking, at)) {
       return (
         <Button
           main

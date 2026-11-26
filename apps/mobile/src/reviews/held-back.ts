@@ -11,7 +11,26 @@ import { otherPerson } from "@/chat/texts";
  * server can tell them apart.
  */
 export function heldBack(t: Translate, booking: Booking): string | null {
-  if (otherPerson(booking).firstName === null) return t("review.personLeft");
-  if (booking.dispute !== null && booking.dispute.outcome === null) return t("review.reportOpen");
+  const by = heldBackBy(booking);
+  if (by === null) return null;
+  return t(by === "personLeft" ? "review.personLeft" : "review.reportOpen");
+}
+
+function heldBackBy(booking: Booking): "personLeft" | "reportOpen" | null {
+  if (otherPerson(booking).firstName === null) return "personLeft";
+  if (booking.dispute !== null && booking.dispute.outcome === null) return "reportOpen";
   return null;
+}
+
+/**
+ * Whether the viewer can rate the other person on a booking at `at` (spec
+ * 8, 3.7): it is completed, its 14 days still run, the viewer has sent
+ * nothing, and nothing holds the review back. The one rule for the tag in
+ * My rides (spec 31, 3.10), a booked seat's title and main button (3.8)
+ * and the button under a review.
+ */
+export function canRate(booking: Booking, at: Date): boolean {
+  const { review } = booking;
+  if (review === null || review.mine !== null || at >= new Date(review.closesAt)) return false;
+  return heldBackBy(booking) === null;
 }

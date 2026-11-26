@@ -1766,6 +1766,17 @@ releases follow [Semantic Versioning](https://semver.org/).
   its ticket and "Cancel the ride" as a red main button over "Keep the
   ride". Sharing a ride shows it as its ticket, and messaging all
   passengers has its title at the left.
+- My rides is the one list of your rides (spec 31, 3.10 and 3.11). "Offer
+  a ride" stands at its title. Under Past, a ride that is done says in
+  its foot whose rating you can still give ("Rate the driver", "Rate
+  your passenger", "Rate your passengers"); its ticket opens the ride,
+  which asks for the rating. My trips is gone: its address leads to My
+  rides, and your drafts are rows in one card on Offer, the one changed
+  last first, each with its day and time or "No time yet", with "Show
+  all drafts" for more than three.
+  After publishing, "See my rides" opens My rides; deleting a draft
+  leads to Offer. A ride you drive says which of its passengers you can
+  still rate (`toRate` in `GET /v1/me/trips`).
 - The web journeys never give two test accounts the same phone number: a
   run in ten did, and a sign-in journey then failed.
 - CI skips its code jobs (bundles, unit, integration and web tests, the API

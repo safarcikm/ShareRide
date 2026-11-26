@@ -16,7 +16,7 @@ import type * as TestApp from "@/testing/app";
 import { driverApi, northMyTrip } from "@/testing/bookings";
 import { failure } from "@/testing/fake-client";
 import { northResult, searchApi, soonestApi, soonRide } from "@/testing/search";
-import { blonduos, borgarnes, plannedDraft, tripsApi } from "@/testing/trips";
+import { blonduos, borgarnes, tripsApi } from "@/testing/trips";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
 jest.mock("@/auth/token-store", () => {
@@ -341,30 +341,6 @@ describe("Share this ride, after publishing (spec 28, 3.2)", () => {
 });
 
 describe("Share this ride, a screen of its own (spec 28, 3.1 and 3.2)", () => {
-  it("opens from a published trip's corner in My trips", async () => {
-    await openDriver("/drive/trips");
-    await fireEvent.press(
-      await screen.findByRole("button", {
-        name: "Share the ride BSÍ bus terminal → Hof, Akureyri",
-      }),
-    );
-    expect(screen).toHavePathname(`/drive/trips/${tripId}/share`);
-    expect(await screen.findByRole("header", { name: "Share this ride" })).toBeVisible();
-    expect(screen.getByLabelText("Text for your post")).toHaveTextContent(englishPost);
-  });
-
-  it("has no corner on a draft or on a trip under way", async () => {
-    const draft = plannedDraft({ id: "0190a1d6-0000-7000-8000-000000000202" });
-    const underWay = {
-      ...northTrip,
-      id: "0190a1d6-0000-7000-8000-000000000204",
-      status: "departed" as const,
-    };
-    await openDriver("/drive/trips", [draft, underWay]);
-    expect(await screen.findByRole("header", { name: "Published" })).toBeVisible();
-    expect(screen.queryByRole("button", { name: /^Share the ride/ })).toBeNull();
-  });
-
   it("opens from the corner of the driver's ride ticket, and from the ride's rows", async () => {
     await openDriver(`/drive/trips/${tripId}`);
     expect(await screen.findByTestId("driver-ride-ticket")).toBeVisible();
@@ -416,7 +392,7 @@ describe("Share this ride, a screen of its own (spec 28, 3.1 and 3.2)", () => {
     expect(screen.queryByRole("link", { name: "Share this ride" })).toBeNull();
   });
 
-  it("says when the trip cannot be found, with a way to My trips", async () => {
+  it("says when the trip cannot be found, with a way to My rides", async () => {
     await openDriver(`/drive/trips/0190a1d6-0000-7000-8000-0000000009ff/share`);
     expect(
       await screen.findByText(
@@ -425,7 +401,7 @@ describe("Share this ride, a screen of its own (spec 28, 3.1 and 3.2)", () => {
     ).toBeVisible();
     expect(screen.queryByRole("button", { name: "Try again" })).toBeNull();
     await fireEvent.press(screen.getByRole("link", { name: "See my rides" }));
-    expect(screen).toHavePathname("/drive/trips");
+    expect(screen).toHavePathname("/my-rides");
   });
 
   it("refuses a trip that has left, with a way back to it", async () => {

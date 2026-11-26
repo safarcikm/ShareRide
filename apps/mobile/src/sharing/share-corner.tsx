@@ -1,4 +1,3 @@
-import { router } from "expo-router";
 import { Check, Share } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import { Announcer } from "@/components/announcer";
@@ -74,33 +73,5 @@ export function ShareCorner({
       />
       <Announcer message={said} />
     </>
-  );
-}
-
-/**
- * The share icon in the corner of a driver's own trip in My trips (spec 28,
- * 3.1, item 5): it opens Share this ride for that trip, since a driver
- * wants the post text too.
- */
-export function ShareTripCorner({
-  tripId,
-  route,
-}: {
-  readonly tripId: string;
-  /** The trip's route, which names the button. */
-  readonly route: string;
-}) {
-  const { t } = useLanguage();
-  const card = useCardCorner();
-  return (
-    <IconButton
-      quiet
-      icon={Share}
-      label={t("shareRide.cardLabel", { route })}
-      {...(card ?? {})}
-      onPress={() => {
-        router.push({ pathname: "/drive/trips/[id]/share", params: { id: tripId } });
-      }}
-    />
   );
 }
