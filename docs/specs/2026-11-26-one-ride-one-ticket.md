@@ -619,7 +619,10 @@ My rides load, named below.
   the seats and the two stops of the request that closes first, which the
   driver already sees on the ride. With more than one request the card
   says "2 requests to answer". Built so: `firstRequest` is null when no
-  request waits, and its first name is null for a former member.
+  request waits, and its first name is null where there is none. Of two
+  requests that close at the same minute it is the one sent first. It is
+  read with the number of requests and their first deadline in one go, so
+  the three always agree.
 - A rating to give is known from a finished booking's `review`, which My
   rides loads under Past. Find loads upcoming rides only, which is why a
   rating is not raised there (decision 9).
