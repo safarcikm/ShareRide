@@ -118,7 +118,8 @@ function tripParts(t: Translate, locale: Locale, trip: MyTrip): Parts {
   // Cancelled, nobody rides along (spec 6, 3.1): it says so, and why.
   if (trip.status === "cancelled") {
     return {
-      tag: { label: t("booking.status.cancelled"), kind: "warning" },
+      // Quiet, as a cancelled booking is: nothing is asked of anyone (spec 31, 3.3).
+      tag: { label: t("booking.status.cancelled"), kind: "plain" },
       lines:
         trip.cancellation === null
           ? []

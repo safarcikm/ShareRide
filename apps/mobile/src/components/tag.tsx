@@ -51,7 +51,7 @@ export function Tag({
       {icon === undefined ? null : (
         <Icon testID="tag-icon" icon={icon} color={text} size={iconSizes.tick} />
       )}
-      <Text style={[typography.caption, { color: text }]}>{label}</Text>
+      <Text style={[typography.caption, styles.label, { color: text }]}>{label}</Text>
     </View>
   );
 }
@@ -66,4 +66,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs / 2,
   },
+  // A label too long for one line wraps beside the icon instead of running past the tag.
+  label: { flexShrink: 1 },
 });

@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { linkProps, type AppPath } from "@/navigation/link-props";
 import { useHover } from "@/theme/hover";
+import { ringInside } from "@/theme/ring-inside";
 import { radii, sizes, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 import { useInActionRows } from "./action-rows";
@@ -20,17 +21,33 @@ interface RowLook {
   readonly danger?: boolean;
 }
 
+/** What each kind of row takes; a row is one kind and takes nothing of another. */
+interface Kinds {
+  readonly onPress: () => void;
+  readonly href: AppPath;
+  readonly expanded: boolean;
+  readonly onToggle: () => void;
+  readonly children: ReactNode;
+  readonly switched: boolean;
+  readonly onSwitch: (on: boolean) => void;
+  readonly shows: true;
+}
+
+type Only<Own extends keyof Kinds> = Pick<Kinds, Own> & {
+  readonly [Other in Exclude<keyof Kinds, Own>]?: never;
+};
+
 type RowKind =
   /** Does something: a button. */
-  | { readonly onPress: () => void }
+  | Only<"onPress">
   /** Opens a screen: a link, an `<a href>` on the web. */
-  | { readonly href: AppPath }
+  | Only<"href">
   /** Unfolds what is under it. */
-  | { readonly expanded: boolean; readonly onToggle: () => void; readonly children: ReactNode }
+  | Only<"expanded" | "onToggle" | "children">
   /** Holds a switch, and is the switch. */
-  | { readonly switched: boolean; readonly onSwitch: (on: boolean) => void }
+  | Only<"switched" | "onSwitch">
   /** Only shows a value: not a button. */
-  | { readonly shows: true };
+  | Only<"shows">;
 
 /**
  * A `Row` (spec 15, section 5.2; spec 31, 3.3): an icon in a soft square
@@ -73,8 +90,13 @@ export function Row(props: RowLook & RowKind) {
       )}
     </>
   );
-  const shape = [styles.row, inRows ? styles.inRows : styles.inCard];
-  if ("shows" in props) return <View style={shape}>{face}</View>;
+  // In a card of rows each row is a surface of its own: the lines between
+  // the rows are the card of rows showing through.
+  const ground = inRows ? { backgroundColor: palette.surface } : null;
+  const shape = [styles.row, inRows ? styles.inRows : styles.inCard, ground];
+  if (props.shows === true) return <View style={shape}>{face}</View>;
+  // Its focus ring is drawn inside it there, where the card would cut it off.
+  const ring = inRows ? ringInside : null;
 
   const label = value === undefined ? title : `${title}, ${value}`;
   const tinted = ({ pressed }: { readonly pressed: boolean }) => [
@@ -83,35 +105,38 @@ export function Row(props: RowLook & RowKind) {
       ? { backgroundColor: danger ? palette.errorSoft : palette.primarySoft }
       : null,
   ];
-  if ("switched" in props) {
+  if (props.switched !== undefined) {
+    const { switched, onSwitch } = props;
     const toggle = () => {
-      props.onSwitch(!props.switched);
+      onSwitch(!switched);
     };
     return (
       <Pressable
         accessibilityRole="switch"
         accessibilityLabel={label}
         // aria-checked rather than accessibilityState, which the web build drops.
-        aria-checked={props.switched}
+        aria-checked={switched}
         onPress={toggle}
         {...spaceKeyPresses(toggle)}
         {...hover}
+        {...ring}
         style={tinted}
       >
         {face}
-        <SwitchTrack value={props.switched} />
+        <SwitchTrack value={switched} />
       </Pressable>
     );
   }
-  if ("expanded" in props) {
+  if (props.expanded !== undefined) {
     return (
-      <View>
+      <View style={ground}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={label}
           aria-expanded={props.expanded}
           onPress={props.onToggle}
           {...hover}
+          {...ring}
           style={tinted}
         >
           {face}
@@ -129,10 +154,11 @@ export function Row(props: RowLook & RowKind) {
   }
   return (
     <Pressable
-      accessibilityRole={"href" in props ? "link" : "button"}
+      accessibilityRole={props.href === undefined ? "button" : "link"}
       accessibilityLabel={label}
-      {...("href" in props ? linkProps(props.href) : { onPress: props.onPress })}
+      {...(props.href === undefined ? { onPress: props.onPress } : linkProps(props.href))}
       {...hover}
+      {...ring}
       style={tinted}
     >
       {face}

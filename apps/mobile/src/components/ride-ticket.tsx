@@ -1,6 +1,6 @@
 import type { LucideIcon } from "lucide-react-native";
 import type { ReactNode } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Platform, StyleSheet, Text, View, type TextStyle, type ViewStyle } from "react-native";
 import Svg, { Line } from "react-native-svg";
 import type { AppPath } from "@/navigation/link-props";
 import { controlOutline, edges, radii, sizes, spacing, typography } from "@/theme/tokens";
@@ -23,25 +23,45 @@ export interface TicketTag {
   readonly icon?: LucideIcon;
 }
 
-interface RideTicketProps {
-  /** "Fri 27 Nov", or a caption such as "Your part of the ride". */
-  readonly day: string;
-  /** At the right of the day, such as "Book instantly" or "You drive". */
-  readonly tags?: readonly TicketTag[];
+interface TimetableProps {
   readonly from: TicketEnd;
   readonly to: TicketEnd;
   /** Beside the line: "1 h 35 min", "2 h 25 min, 5 stops", "1 seat, 800 ISK". */
   readonly between: string;
   /** At the right of the timetable: "1,500 ISK" over "per seat"; "Free" is an amount. */
   readonly price?: { readonly amount: string; readonly unit: string } | null;
+}
+
+/**
+ * What makes a ticket one link or one button: either needs a name, as a
+ * screen reader would otherwise read every text the ticket holds.
+ */
+type TicketPress =
+  | {
+      readonly href: AppPath;
+      readonly onPress?: never;
+      readonly accessibilityLabel: string;
+    }
+  | {
+      readonly onPress: () => void;
+      readonly href?: never;
+      readonly accessibilityLabel: string;
+    }
+  | {
+      readonly href?: never;
+      readonly onPress?: never;
+      readonly accessibilityLabel?: string;
+    };
+
+interface TicketLook extends TimetableProps {
+  /** "Fri 27 Nov", or a caption such as "Your part of the ride". */
+  readonly day: string;
+  /** At the right of the day, such as "Book instantly" or "You drive". */
+  readonly tags?: readonly TicketTag[];
   /** One line under the tear line, usually a `TicketFoot`; without it there is no tear line. */
   readonly foot?: ReactNode;
   /** A ride that is mine: a moss bottom edge. */
   readonly mine?: boolean;
-  /** Makes the ticket one link, or one button, named by `accessibilityLabel`. */
-  readonly href?: AppPath;
-  readonly onPress?: () => void;
-  readonly accessibilityLabel?: string;
   /** In a grid: as tall as the tallest ticket of its row, with the foot at the bottom. */
   readonly fill?: boolean;
   /** A button of its own in the top right corner, such as Share (spec 28, 3.1). */
@@ -54,11 +74,15 @@ interface RideTicketProps {
 
 /**
  * A ride, the same card wherever one shows (spec 31, 3.2, rule 1, and 3.3):
- * the day and its tags; the two times and places as a timetable, with what
- * lies between them beside the line; the price at the right. Under a tear
- * line the `foot` says what this place needs: the driver in the results,
- * your seat in My rides, the request to answer for a driver. Tickets in one
- * row of a grid are equally tall (`fill`).
+ * the day and its tags; the two times and places as a `Timetable`, with
+ * what lies between them beside the line and the price at the right. Under
+ * a tear line the `foot` says what this place needs: the driver in the
+ * results, your seat in My rides, the request to answer for a driver.
+ * Tickets in one row of a grid are equally tall (`fill`).
+ *
+ * Where there is not room for all of it, on a narrow phone or with large
+ * text, nothing is squeezed: the tags go under the day, the price under
+ * the timetable and the foot's end under its start.
  */
 export function RideTicket({
   day,
@@ -76,10 +100,8 @@ export function RideTicket({
   corner,
   marked = false,
   onShow,
-}: RideTicketProps) {
+}: TicketLook & TicketPress) {
   const palette = usePalette();
-  const times = [from.time, to.time] as const;
-  const rail = { backgroundColor: palette.primary };
   return (
     <Card
       flush
@@ -96,55 +118,15 @@ export function RideTicket({
         <Text style={[typography.caption, styles.dayText, { color: palette.textMuted }]}>
           {day}
         </Text>
-        {tags.map((tag) => (
-          <Tag key={tag.label} label={tag.label} kind={tag.kind} icon={tag.icon} />
+        {tags.map((tag, index) => (
+          // In a view of its own, so the row puts it at the day's middle.
+          <View key={index}>
+            <Tag label={tag.label} kind={tag.kind} icon={tag.icon} />
+          </View>
         ))}
       </View>
       <View testID="ticket-top" style={[styles.top, fill && styles.fill]}>
-        <View testID="ticket-route" style={styles.route}>
-          <View testID="ticket-from" style={styles.end}>
-            <Time shown={from.time} times={times} />
-            <Unspoken style={styles.railCell}>
-              <View
-                testID="ticket-ring"
-                style={[
-                  styles.dot,
-                  styles.ring,
-                  { borderColor: palette.primary, backgroundColor: palette.surface },
-                ]}
-              />
-              <View testID="ticket-rail" style={[styles.rail, styles.fill, rail]} />
-            </Unspoken>
-            <Place testID="ticket-from-place" end={from} />
-          </View>
-          <View style={styles.end}>
-            <Time shown={null} times={times} />
-            <Unspoken style={styles.railCell}>
-              <View testID="ticket-rail" style={[styles.rail, styles.fill, rail]} />
-            </Unspoken>
-            <Text style={[typography.small, styles.between, { color: palette.textMuted }]}>
-              {between}
-            </Text>
-          </View>
-          <View testID="ticket-to" style={styles.end}>
-            <Time shown={to.time} times={times} />
-            <Unspoken style={styles.railCell}>
-              <View testID="ticket-rail" style={[styles.rail, styles.railEnd, rail]} />
-              <View testID="ticket-dot" style={[styles.dot, rail]} />
-            </Unspoken>
-            <Place testID="ticket-to-place" end={to} />
-          </View>
-        </View>
-        {price === null ? null : (
-          <View testID="ticket-price" style={styles.price}>
-            <Text style={[typography.figure, styles.priceText, { color: palette.text }]}>
-              {price.amount}
-            </Text>
-            <Text style={[typography.small, styles.priceText, { color: palette.textMuted }]}>
-              {price.unit}
-            </Text>
-          </View>
-        )}
+        <Timetable from={from} to={to} between={between} price={price} />
       </View>
       {foot === undefined || foot === null ? null : (
         <>
@@ -157,8 +139,69 @@ export function RideTicket({
 }
 
 /**
+ * The two ends of a ride as a timetable (spec 31, 3.3): each time before
+ * its place, a line from a ring to a dot between them, what lies between
+ * beside the line, and the price at the right. A ticket holds one; so can
+ * a card about a part of a ride, such as a request to answer.
+ */
+export function Timetable({ from, to, between, price = null }: TimetableProps) {
+  const palette = usePalette();
+  const times = [from.time, to.time] as const;
+  const rail = { backgroundColor: palette.primary };
+  return (
+    <View testID="ticket-times" style={styles.times}>
+      <View testID="ticket-route" style={[styles.route, wholeWords]}>
+        <View testID="ticket-from" style={styles.end}>
+          <Time shown={from.time} times={times} />
+          <Unspoken style={styles.railCell}>
+            <View
+              testID="ticket-ring"
+              style={[
+                styles.dot,
+                styles.ring,
+                { borderColor: palette.primary, backgroundColor: palette.surface },
+              ]}
+            />
+            <View testID="ticket-rail" style={[styles.rail, styles.fill, rail]} />
+          </Unspoken>
+          <Place testID="ticket-from-place" end={from} />
+        </View>
+        <View style={styles.end}>
+          <Time shown={null} times={times} />
+          <Unspoken style={styles.railCell}>
+            <View testID="ticket-rail" style={[styles.rail, styles.fill, rail]} />
+          </Unspoken>
+          <Text style={[typography.small, styles.between, { color: palette.textMuted }]}>
+            {between}
+          </Text>
+        </View>
+        <View testID="ticket-to" style={styles.end}>
+          <Time shown={to.time} times={times} />
+          <Unspoken style={styles.railCell}>
+            <View testID="ticket-rail" style={[styles.rail, styles.railEnd, rail]} />
+            <View testID="ticket-dot" style={[styles.dot, rail]} />
+          </Unspoken>
+          <Place testID="ticket-to-place" end={to} />
+        </View>
+      </View>
+      {price === null ? null : (
+        <View testID="ticket-price" style={styles.price}>
+          <Text style={[typography.figure, styles.priceText, { color: palette.text }]}>
+            {price.amount}
+          </Text>
+          <Text style={[typography.small, styles.priceText, { color: palette.textMuted }]}>
+            {price.unit}
+          </Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
+/**
  * The usual foot of a ticket, one line: a picture and a name at the left,
- * and something at the right, such as the seats left or a status tag.
+ * and something at the right, such as the seats left or a status tag,
+ * which goes under the left when the two do not fit beside each other.
  */
 export function TicketFoot({
   start,
@@ -172,7 +215,11 @@ export function TicketFoot({
       <View testID="ticket-foot-start" style={styles.footStart}>
         {start}
       </View>
-      {end}
+      {end === undefined || end === null ? null : (
+        <View testID="ticket-foot-end" style={styles.footEnd}>
+          {end}
+        </View>
+      )}
     </View>
   );
 }
@@ -201,9 +248,23 @@ function Unspoken({
 }
 
 /**
- * A time in the timetable's first column. Each cell is as wide as the wider
- * of the two times, so the line beside them stands straight whatever the
- * digits are; the row between the ends shows none.
+ * The widest digit of the title face, Fredoka, which has no digits of one
+ * width ("1" is two thirds of "2"): a time with each digit turned into it
+ * is as wide as any time can be.
+ */
+const widestDigit = "2";
+
+/** As wide as any time written like these two: "22:22" for "10:00" and "11:35". */
+function widestTime(times: readonly [string, string]): string {
+  const [first, second] = times;
+  return (second.length > first.length ? second : first).replace(/\d/g, widestDigit);
+}
+
+/**
+ * A time in the timetable's first column. Each cell is as wide as the
+ * widest time there can be, kept by a text nobody sees, so the line beside
+ * the times stands straight, and in the same place on every ticket of a
+ * list, whatever the digits are; the row between the ends shows none.
  */
 function Time({
   shown,
@@ -216,14 +277,12 @@ function Time({
   return (
     <View testID="ticket-time" style={styles.time}>
       {shown === null ? null : (
-        <Text style={[typography.heading, styles.digits, { color: palette.text }]}>{shown}</Text>
+        <Text style={[typography.heading, { color: palette.text }]}>{shown}</Text>
       )}
       <Unspoken>
-        {times.map((time, index) => (
-          <Text key={index} style={[typography.heading, styles.digits, styles.width]}>
-            {time}
-          </Text>
-        ))}
+        <Text testID="ticket-time-width" style={[typography.heading, styles.width, unseen]}>
+          {widestTime(times)}
+        </Text>
       </Unspoken>
     </View>
   );
@@ -268,6 +327,25 @@ function TearLine() {
   );
 }
 
+/**
+ * On the web the timetable is never narrower than its longest word, so a
+ * price that would split a place's name goes under the timetable instead.
+ * React Native's types and phones lack `min-content`; a phone keeps the
+ * price beside the timetable.
+ */
+const wholeWords =
+  Platform.OS === "web" ? ({ flexBasis: "min-content" } as unknown as ViewStyle) : null;
+
+/**
+ * On the web the text that keeps a time's width is not found by searching
+ * the page, nor copied with the ticket (React Native's types lack
+ * `visibility`).
+ */
+const unseen =
+  Platform.OS === "web"
+    ? ({ visibility: "hidden", userSelect: "none" } as unknown as TextStyle)
+    : null;
+
 /** The line of the timetable and its ring: as thick as a card's edge. */
 const line = edges.card;
 /** A ring or a dot: as on From and To of a search (`RouteEnds`). */
@@ -276,31 +354,40 @@ const dot = spacing.ms;
 const dotDrop = (typography.bodyStrong.lineHeight - dot) / 2;
 /** The middle of a corner's button, from the card's top: the day and its tags stand there. */
 const cornerMiddle = spacing.xs + sizes.iconButton / 2;
+/** Above and under what a foot holds. */
+const footPadding = spacing.sm + spacing.xs / 2;
 
 const styles = StyleSheet.create({
   fill: { flexGrow: 1 },
+  // Tags that do not fit beside the day go under it.
   day: {
     flexDirection: "row",
+    flexWrap: "wrap",
     alignItems: "center",
-    gap: spacing.sm,
+    columnGap: spacing.sm,
+    rowGap: spacing.xs,
     paddingTop: spacing.ms,
     paddingHorizontal: spacing.md,
     minHeight: spacing.ms + 2 * (cornerMiddle - spacing.ms),
   },
   dayWithCorner: { paddingRight: spacing.md + cardCornerRoom },
-  dayText: { flex: 1 },
+  dayText: { flexGrow: 1, flexShrink: 1 },
   top: {
-    flexDirection: "row",
-    gap: spacing.ms,
     paddingTop: spacing.sm,
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.ms,
   },
-  route: { flex: 1, minWidth: 0 },
+  // A price that does not fit beside the timetable goes under it, at the right.
+  times: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    columnGap: spacing.ms,
+    rowGap: spacing.xs,
+  },
+  route: { flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: 0 },
   // A place that wraps keeps its time, and its dot, on its first line.
   end: { flexDirection: "row", alignItems: "flex-start", gap: spacing.sm },
   time: { flexShrink: 0 },
-  digits: { fontVariant: ["tabular-nums"] },
   width: { height: 0, opacity: 0 },
   railCell: { alignSelf: "stretch", width: spacing.md, alignItems: "center" },
   dot: { width: dot, height: dot, borderRadius: radii.pill },
@@ -309,7 +396,7 @@ const styles = StyleSheet.create({
   railEnd: { height: dotDrop },
   place: { flex: 1, minWidth: 0 },
   between: { flex: 1, paddingVertical: spacing.xs / 2 },
-  price: { flexShrink: 0, alignItems: "flex-end" },
+  price: { flexShrink: 0, alignItems: "flex-end", marginLeft: "auto" },
   priceText: { textAlign: "right" },
   tear: { height: controlOutline, justifyContent: "center" },
   dashes: { marginHorizontal: sizes.ticketNotch / 2 + spacing.xs },
@@ -322,12 +409,24 @@ const styles = StyleSheet.create({
   },
   notchStart: { left: -sizes.ticketNotch / 2 },
   notchEnd: { right: -sizes.ticketNotch / 2 },
+  // As tall with words only as with a small picture, so the tear lines of a row line up.
   foot: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    columnGap: spacing.sm,
+    rowGap: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingVertical: footPadding,
+    minHeight: sizes.avatarSmall + 2 * footPadding,
+  },
+  footStart: {
+    flexGrow: 1,
+    flexShrink: 1,
+    minWidth: 0,
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.sm,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm + spacing.xs / 2,
   },
-  footStart: { flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  footEnd: { flexShrink: 1, marginLeft: "auto" },
 });

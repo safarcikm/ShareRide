@@ -22,13 +22,14 @@ export function Road({
 }: {
   /** The steps' names, in order. */
   readonly steps: readonly string[];
-  /** The step the car stands on, from 0. */
+  /** The step the car stands on, from 0; past either end it stands on that end. */
   readonly current: number;
 }) {
   const { t } = useLanguage();
   const palette = usePalette();
   const land = icelandScene[useColorScheme() === "dark" ? "dark" : "light"];
   const last = Math.max(steps.length - 1, 1);
+  const at = Math.min(Math.max(Math.trunc(current), 0), steps.length - 1);
   const spot = (index: number) => `${String((index / last) * 100)}%` as const;
   const gone = { backgroundColor: palette.primary };
   return (
@@ -36,9 +37,9 @@ export function Road({
       accessible
       accessibilityRole="image"
       accessibilityLabel={t("road.step", {
-        step: current + 1,
+        step: at + 1,
         total: steps.length,
-        name: steps[current] ?? "",
+        name: steps[at] ?? "",
       })}
     >
       <View
@@ -61,40 +62,40 @@ export function Road({
               />
             </Svg>
           </View>
-          {current === 0 ? null : (
+          {at <= 0 ? null : (
             <>
               <View testID="road-lead" style={[styles.lead, gone]} />
-              <View testID="road-gone" style={[styles.gone, gone, { width: spot(current) }]} />
+              <View testID="road-gone" style={[styles.gone, gone, { width: spot(at) }]} />
             </>
           )}
-          {steps.map((name, index) =>
-            index === current ? null : (
+          {steps.map((_, index) =>
+            index === at ? null : (
               <View
-                key={name}
+                key={index}
                 testID="road-mark"
                 style={[
                   styles.mark,
                   {
                     left: spot(index),
                     backgroundColor: palette.surface,
-                    borderColor: index < current ? palette.surface : palette.control,
+                    borderColor: index < at ? palette.surface : palette.control,
                   },
                 ]}
               />
             ),
           )}
-          <View testID="road-car" style={[styles.car, { left: spot(current) }]}>
+          <View testID="road-car" style={[styles.car, { left: spot(Math.max(at, 0)) }]}>
             <PuffinsInCar width={sizes.roadCar} />
           </View>
         </View>
         <View style={styles.names}>
           {steps.map((name, index) => (
             <Text
-              key={name}
+              key={index}
               style={[
                 typography.caption,
                 index === 0 ? styles.first : index === steps.length - 1 ? styles.last : styles.name,
-                { color: index === current ? palette.text : palette.textMuted },
+                { color: index === at ? palette.text : palette.textMuted },
               ]}
             >
               {name}

@@ -21,7 +21,7 @@ import { Card } from "@/components/card";
 import { Grid } from "@/components/grid";
 import { IconButton } from "@/components/icon-button";
 import { NeedsYouCard } from "@/components/needs-you-card";
-import { RideTicket, TicketFoot } from "@/components/ride-ticket";
+import { RideTicket, TicketFoot, Timetable } from "@/components/ride-ticket";
 import { Road } from "@/components/road";
 import { Row } from "@/components/row";
 import { Screen } from "@/components/screen";
@@ -119,6 +119,28 @@ export default function Parts() {
           price={{ amount: "Free", unit: "per seat" }}
           fill
         />
+        {/* Where room runs out on a narrow phone: the tags go under the day,
+            the price under the timetable, the foot's end under its start. */}
+        <RideTicket
+          mine
+          day="Fri 27 Nov"
+          tags={[
+            { label: "Book instantly", kind: "positive", icon: Zap },
+            { label: "Women only", kind: "womenOnly" },
+          ]}
+          from={{ time: "18:30", place: "Kirkjubæjarklaustur, N1" }}
+          to={{ time: "20:55", place: "N1 Vík" }}
+          between="2 h 25 min, 5 stops"
+          price={{ amount: "1,500 ISK", unit: "per seat" }}
+          fill
+          corner={<IconButton quiet icon={Share} label="Share" onPress={() => undefined} />}
+          foot={
+            <TicketFoot
+              start={<Tag kind="warning" label="Answer Guðmundur's request" icon={Bell} />}
+              end={muted("1 of 3 seats taken")}
+            />
+          }
+        />
       </Grid>
       <Grid>
         <Card>
@@ -155,6 +177,11 @@ export default function Parts() {
           <Avatar firstName="Dóra" colour={1} />
           <Heading>Dóra</Heading>
         </View>
+        <Timetable
+          from={{ time: "18:30", place: "Mjódd bus terminal" }}
+          to={{ time: "19:20", place: "N1 Selfoss" }}
+          between="1 seat, 800 ISK"
+        />
         <View style={styles.request}>
           <View style={styles.half}>
             <Button fill variant="secondary" label="Decline" onPress={() => undefined} />

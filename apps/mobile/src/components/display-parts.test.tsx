@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, within } from "@testing-library/react-native";
 import { Text } from "react-native";
 import { LanguageProvider } from "@/i18n/language";
+import { ringInside as webRing } from "@/theme/ring-inside.web";
 import { colors } from "@/theme/tokens";
 import { ChevronLeft, Pencil, Share, X, Zap } from "lucide-react-native";
 import { ActionRows } from "./action-rows";
@@ -64,6 +65,8 @@ describe("Tag", () => {
     expect(hidden("tag-icon")).toBeOnTheScreen();
     expect(screen.queryByTestId("tag-icon")).toBeNull();
     expect(within(tag).getByText("Book instantly")).toBeVisible();
+    // A label too long for one line wraps beside the icon.
+    expect(within(tag).getByText("Book instantly")).toHaveStyle({ flexShrink: 1 });
   });
 
   it("has no icon unless it is given one", async () => {
@@ -273,6 +276,36 @@ describe("Row", () => {
     expect(screen.getByRole("link", { name: "Share this ride" })).toBeVisible();
   });
 
+  it("is a red link when it opens what cannot be undone", async () => {
+    await render(<Row danger icon={X} title="Cancel booking" href="/about" />);
+    expect(screen.getByRole("link", { name: "Cancel booking" })).toBeVisible();
+    expect(screen.getByText("Cancel booking")).toHaveStyle({ color: colors.light.error });
+    expect(screen.queryByTestId("row-chevron", { includeHiddenElements: true })).toBeNull();
+  });
+
+  it("is one kind of row and takes nothing of another", async () => {
+    const onPress = jest.fn();
+    const maybe = undefined as "/about" | undefined;
+    await render(
+      <>
+        {/* @ts-expect-error A button is not also a link. */}
+        <Row title="Both" onPress={onPress} href="/about" />
+        {/* @ts-expect-error A link needs its address. */}
+        <Row title="Perhaps" onPress={onPress} href={maybe} />
+        {/* @ts-expect-error A row that only shows a value does nothing. */}
+        <Row shows title="Shown" onPress={onPress} />
+        {/* @ts-expect-error A row that unfolds is not a link. */}
+        <Row title="Unfolds" href="/about" expanded={false} onToggle={onPress}>
+          <Text>Under</Text>
+        </Row>
+      </>,
+    );
+    // Whatever gets past the types, an address that is missing makes no link.
+    const perhaps = screen.getByRole("button", { name: "Perhaps" });
+    await fireEvent.press(perhaps);
+    expect(onPress).toHaveBeenCalledTimes(1);
+  });
+
   it("is red and has no chevron when it cannot be undone (R31.3)", async () => {
     const onPress = jest.fn();
     await render(<Row danger icon={X} title="Cancel the ride" onPress={onPress} />);
@@ -352,18 +385,48 @@ describe("ActionRows", () => {
       backgroundColor: colors.light.surface,
     });
     expect(screen.getByTestId("card")).toHaveStyle({ borderBottomWidth: 3 });
-    // A line over every row but the first; a row that is left out leaves none.
-    const lines = screen.getAllByTestId("action-row");
-    expect(lines).toHaveLength(3);
-    expect(lines[0]).not.toHaveStyle({ borderTopWidth: 2 });
-    expect(lines[1]).toHaveStyle({ borderTopWidth: 2, borderTopColor: colors.light.border });
-    expect(lines[2]).toHaveStyle({ borderTopWidth: 2, borderTopColor: colors.light.border });
-    // Inside the card a row is padded by 16 and its tint reaches the edges.
-    expect(screen.getByRole("button", { name: "Edit the ride" })).toHaveStyle({
+    // The lines are the card of rows showing between its rows, 2 wide; a
+    // row that is left out leaves none.
+    const rows = screen.getByTestId("action-rows");
+    expect(rows).toHaveStyle({ gap: 2, backgroundColor: colors.light.border });
+    expect(rows.children).toHaveLength(3);
+    // Inside the card a row is a surface padded by 16, and its tint reaches the edges.
+    const edit = screen.getByRole("button", { name: "Edit the ride" });
+    expect(edit).toHaveStyle({
       paddingHorizontal: 16,
       marginHorizontal: 0,
       borderRadius: 0,
+      backgroundColor: colors.light.surface,
     });
+    await fireEvent(edit, "hoverIn");
+    expect(edit).toHaveStyle({ backgroundColor: colors.light.primarySoft });
+  });
+
+  it("gives a line to rows in a fragment, and none to a part that shows nothing", async () => {
+    const Nothing = () => null;
+    await render(
+      <ActionRows>
+        <>
+          <Row shows title="Phone" value="Confirmed" />
+          <Row title="Language" value="English" href="/about" />
+        </>
+        <Nothing />
+        <Row title="Gunnar" expanded onToggle={jest.fn()}>
+          <Text>Mjódd to Hella</Text>
+        </Row>
+      </ActionRows>,
+    );
+    const rows = screen.getByTestId("action-rows").children;
+    expect(rows).toHaveLength(3);
+    // Each kind of row is a surface, the unfolded one with what is under it.
+    for (const row of rows) {
+      expect(row).toHaveStyle({ backgroundColor: colors.light.surface });
+    }
+    expect(within(rows[2] as never).getByText("Mjódd to Hella")).toBeVisible();
+  });
+
+  it("draws a row's keyboard focus ring inside it on the web, where the card would cut it off", () => {
+    expect(webRing).toEqual({ dataSet: { ring: "inside" } });
   });
 });
 

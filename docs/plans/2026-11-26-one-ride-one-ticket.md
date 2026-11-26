@@ -136,14 +136,22 @@ export function RideTicket(props: {
   readonly foot?: ReactNode;
   /** A ride that is mine: a moss bottom edge. */
   readonly mine?: boolean;
-  /** One link or button, with this as its name; without either it is not pressed. */
-  readonly href?: AppPath;
-  readonly onPress?: () => void;
-  readonly accessibilityLabel?: string;
   readonly fill?: boolean;
   readonly corner?: ReactNode;
   readonly marked?: boolean;
   readonly onShow?: () => void;
+} & (
+  /** One link or button, and then its name is required; without either it is not pressed. */
+  | { readonly href: AppPath; readonly accessibilityLabel: string }
+  | { readonly onPress: () => void; readonly accessibilityLabel: string }
+  | {}
+)): ReactElement;
+/** The times, the line and the places alone: a request's part in a NeedsYouCard. */
+export function Timetable(props: {
+  readonly from: TicketEnd;
+  readonly to: TicketEnd;
+  readonly between: string;
+  readonly price?: { readonly amount: string; readonly unit: string } | null;
 }): ReactElement;
 /** The foot's usual line: a picture and name at the left, something at the right. */
 export function TicketFoot(props: { readonly start: ReactNode; readonly end?: ReactNode }): ReactElement;
@@ -166,7 +174,8 @@ export function NeedsYouCard(props:
   | { readonly children: ReactNode }
 ): ReactElement;
 
-// row.tsx: today's Row gains an icon, a red look and three more kinds.
+// row.tsx: today's Row gains an icon, a red look and three more kinds. A
+// row is one kind: the props of another kind are a type error.
 export function Row(props: {
   readonly title: string;
   readonly value?: string;
@@ -180,7 +189,9 @@ export function Row(props: {
   | { readonly switched: boolean; readonly onSwitch: (on: boolean) => void }
   | { readonly shows: true } // only a value: not a button
 )): ReactElement;
-// action-rows.tsx: a Card of rows with a line between them.
+// action-rows.tsx: a Card of rows. The lines between them are the gaps, so
+// a part that shows nothing leaves no line, and a row's focus ring is drawn
+// inside it (theme/ring-inside.ts, `ringInside`), where the card cannot cut it.
 export function ActionRows(props: { readonly children: ReactNode }): ReactElement;
 
 // screen-head.tsx
@@ -281,14 +292,23 @@ screen.
 3. **Status tags** (decision 10), `booking/status.ts`: declined, expired,
    cancelled and withdrawn are `plain`; "Did not show up" is `problem`;
    "Driver said yes: pay" stays `warning`. Test: `statusTag` for every
-   status.
+   status. The two tags that do not come from `statusTag` follow: a
+   cancelled ride I drive in My rides is `plain`, and "No-show" beside a
+   passenger on the driver's trip day is `problem` (tests in
+   `my-rides.test.tsx` and `trip-day.test.tsx`).
 4. **`RideTicket`** with `TicketFoot`. Tests in a new
    `ticket-parts.test.tsx`: the day, both times and places, `between` and
    the price show; no price without one, "Free" where it is given as the
    amount; the tear line and its notches are hidden from screen readers;
    `mine` gives the `primary` edge; with `href` it is one link named by
    `accessibilityLabel`; a `corner` button does not press it; a long place
-   keeps its time on the first line.
+   keeps its time on the first line. Where room runs out, nothing is cut:
+   tags go under the day, the price goes under the timetable at the right,
+   the foot's end goes under its start, and a place breaks between words,
+   never inside one. The title face has no digits of one width, so the
+   times of every ticket stand in a column as wide as the widest time
+   ("22:22"), kept by a text nobody sees or hears. `Timetable` is the
+   times, the line and the places on their own.
 5. **`Road`:** the road behind the car in `primary`, the rest in the
    scene's road grey with its dashed line; passed marks `surface`, those
    to come ringed in `control`; the car at `current`, from 0; its label is
@@ -302,10 +322,12 @@ screen.
    on `warningSoft` is 4.5:1 in both themes (tokens test).
 7. **`Row` and `ActionRows`:** the icon in a soft square (`background`,
    and `errorSoft` for a red row), the five kinds. Tests in
-   `navigation-parts.test.tsx`: a red row has no chevron and reads as a
+   `display-parts.test.tsx`: a red row has no chevron and reads as a
    button; an unfolding row says whether it is open (`expanded`) and shows
    its children only then; a switch row is a switch; a `shows` row is not
-   a button. Every use of `Row` today keeps passing unchanged.
+   a button; a row takes the props of one kind only; the lines of
+   `ActionRows` are its gaps, whatever its children are. Every use of
+   `Row` today keeps passing unchanged.
 8. **`ScreenHead`:** Back, the title at the left as the screen's heading,
    `over`, `line`, `action`, `road`. Tests: the title is the heading;
    without `back` there is no Back; the line under it is one text.
@@ -396,7 +418,8 @@ a meeting point (3.19).
 8. **All rides, a place, a meeting point:** rides as tickets.
 9. **Web journeys:** `search.spec.ts`, `welcome.spec.ts`, `my-rides.spec.ts`
    and `laptop.spec.ts` with the new shapes; `look.spec.ts` measures that
-   nothing in a ticket reaches past it at 360 wide with a long place name.
+   nothing in a ticket reaches past it at 360 wide with a long place name,
+   and that no line of the place ends inside a word.
 10. **Docs and pictures:** specs 4, 16 and 18; `built/find-*`,
     `built/results-*`.
 
@@ -406,8 +429,10 @@ a meeting point (3.19).
 (3.19).
 
 1. **Head:** `ScreenHead` with the day over "Selfoss to Vík" and Share.
-2. **Your part of the ride** as a ticket with Change under each end and
-   the seats stepper in the foot; **the driver** card with the car and the
+2. **Your part of the ride** as a ticket with Change at the right of each
+   end, as drawn (a link in the end's `under` would stand under the place:
+   the ticket of this screen gives each end its own line, with `Timetable`
+   as its model), and the seats stepper in the foot; **the driver** card with the car and the
    preferences; **Where you sit**; **The whole route** with the map and
    the stops, mine marked; rows for free cancellation, Weather and roads
    and Report this ride. The bar keeps the price and Book.
@@ -442,6 +467,8 @@ the reports, rating and blocking (3.19).
    when offered.
 5. **The screens around it:** `ScreenHead`, the ride as a ticket where
    one shows, the main button in the bar and red when it cannot be undone.
+   A red main button carries `testID="filled-button"` as a primary one
+   does, so `filledButtons` counts it.
 6. Tests: the title for each state on the screen; the road's step; the
    rows' order; one filled button. A new journey in `trip-day.spec.ts`
    reads the trip day's first screen on a phone and finds "I'm here"
@@ -461,13 +488,19 @@ cancelling a ride, sharing and messaging all passengers (3.19).
    Mjódd to Selfoss" (`busiestStretch` over the part, with this request),
    Decline and Accept side by side, "Report Dóra"; passengers as unfolding
    rows with a round Message button, the rating under a row once the ride
-   is done, "Message all passengers" last; Seats in one line with "Each
+   is done, "Message all passengers" last (a passenger's row holds a
+   picture, a second line, a tag and a button beside what unfolds it,
+   which is more than `Row`: it is a part of its own,
+   `drive/passenger-row.tsx`, inside `ActionRows`); Seats in one line with "Each
    stretch" unfolding today's bars; rows with Cancel the ride red and
    last. Wide: as 3.16 item 3, with "Drive it again".
 2. **The driver's trip day:** its list of stops stays; "I'm here" in the
    bar.
 3. **My rides:** the title with Offer a ride as a small outlined button;
-   tickets; the yellow tag in the foot of a ride that needs me; under Past
+   tickets; the yellow tag in the foot of a ride that needs me (a
+   passenger who has yet to pay needs nothing from the driver: on the
+   driver's ride "Waiting for payment" is `info`, and `statusTag` learns
+   who looks); under Past
    "Rate the driver" or "Rate your passenger" where a rating can still be
    given, opening the rating.
 4. **My trips goes:** `/drive/trips` redirects to My rides; Back from a
@@ -495,7 +528,9 @@ cancelling a ride, sharing and messaging all passengers (3.19).
    kronur is the headline, the level in per cent its control.
 3. **Check and publish:** the ticket as passengers will see it; one card
    of rows with Change (Route, Time, Price, Seats and booking, Car,
-   Preferences and note); what is missing as one `NeedsYouCard` with an
+   Preferences and note: each a small caption over what is set, with
+   Change at the right, as drawn, which is not `Row`'s shape: a part of
+   its own, `drive/check-row.tsx`, inside `ActionRows`); what is missing as one `NeedsYouCard` with an
    outlined button for the next one; Delete draft red and last; Publish
    ride in the bar.
 4. **Drafts on Offer:** rows in one card over step 1, the newest first,

@@ -131,5 +131,6 @@ const styles = StyleSheet.create({
   },
   // One line stands at the icon's middle; two start at its top.
   texts: { flex: 1, minHeight: sizes.rowIcon, justifyContent: "center" },
-  action: { flexShrink: 0 },
+  // Never wider than the card: with large text its label wraps instead.
+  action: { maxWidth: "100%" },
 });

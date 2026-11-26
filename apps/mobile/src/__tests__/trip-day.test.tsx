@@ -7,6 +7,7 @@ import { bookingApi, driverApi, northBooking, northMyTrip, paidBooking } from "@
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
 import { onTheDay, rider, tripOnTheDay } from "@/testing/trip-day";
 import { tripsApi } from "@/testing/trips";
+import { colors } from "@/theme/tokens";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
 jest.mock("@/auth/token-store", () => {
@@ -381,6 +382,10 @@ describe("the driver's trip day (spec 8, 3.1)", () => {
     // Once in the trip day and once in the passengers below it.
     expect(screen.getAllByLabelText("Siggi, 1 seat, No-show")).toHaveLength(2);
     expect(screen.queryByLabelText("Siggi, 1 seat")).toBeNull();
+    // Red in both, as a problem is (spec 31, 3.3).
+    const tags = screen.getAllByText("No-show");
+    expect(tags).toHaveLength(2);
+    for (const tag of tags) expect(tag).toHaveStyle({ color: colors.light.error });
   });
 
   it("offers I'm here at the next stop only, and tells those getting in there", async () => {

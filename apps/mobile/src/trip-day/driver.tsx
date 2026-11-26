@@ -32,10 +32,11 @@ const arrivalKey = {
   no_show: "tripDay.statusNoShow",
 } as const;
 
+/** A no-show is a problem, red as on the booking (spec 31, 3.3). */
 const arrivalTag: Record<Arrival, TagKind> = {
   not_here: "info",
   here: "positive",
-  no_show: "warning",
+  no_show: "problem",
 };
 
 /** "Gunna, 1 seat, Here": a passenger getting in, as a screen reader says them. */

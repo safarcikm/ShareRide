@@ -28,6 +28,14 @@ describe("focusRingCss", () => {
     expect(css.match(/:focus\{[^}]*\}/g)).toEqual([":focus{outline:none !important}"]);
   });
 
+  it("draws the ring inside a part that asks for it, such as a row in a card of rows", () => {
+    expect(css).toContain(`[data-ring="inside"]${ring}{outline-offset:-3px !important}`);
+    // After the rule for every part, so it wins.
+    expect(css.indexOf('[data-ring="inside"]')).toBeGreaterThan(
+      css.indexOf("outline-offset:2px !important"),
+    );
+  });
+
   it("leaves text fields to show focus with their own outline", () => {
     expect(css).toContain("input:focus,textarea:focus{outline:none !important}");
   });

@@ -31,6 +31,7 @@ export function Avatar({
   return (
     <View
       testID="avatar"
+      aria-hidden
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
       style={[

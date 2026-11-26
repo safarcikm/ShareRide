@@ -8,7 +8,7 @@ import { colors, icelandScene, people } from "@/theme/tokens";
 import { Button } from "./button";
 import { IconButton } from "./icon-button";
 import { NeedsYouCard } from "./needs-you-card";
-import { RideTicket, TicketFoot } from "./ride-ticket";
+import { RideTicket, TicketFoot, Timetable } from "./ride-ticket";
 import { Road } from "./road";
 
 // Spec 31, 3.3: the parts that carry "one ride, one ticket".
@@ -54,11 +54,9 @@ describe("RideTicket", () => {
       fontSize: 13,
       color: colors.light.textMuted,
     });
-    // Times in the title face with digits of one width, so they line up.
     for (const time of ["10:00", "11:35"]) {
       expect(screen.getByText(time)).toHaveStyle({
         fontFamily: "Fredoka_600SemiBold",
-        fontVariant: ["tabular-nums"],
         color: colors.light.text,
       });
     }
@@ -145,8 +143,59 @@ describe("RideTicket", () => {
     for (const time of screen.getAllByTestId("ticket-time")) {
       expect(time).toHaveStyle({ flexShrink: 0 });
     }
-    expect(screen.getByTestId("ticket-route")).toHaveStyle({ flex: 1 });
+    expect(screen.getByTestId("ticket-route")).toHaveStyle({ flexGrow: 1, flexShrink: 1 });
     expect(screen.getByTestId("ticket-price")).toHaveStyle({ flexShrink: 0 });
+  });
+
+  it("puts a price that does not fit beside the timetable under it, at the right", async () => {
+    await render(
+      <RideTicket
+        day="Sat 28 Nov"
+        from={{ time: "10:00", place: "Kirkjubæjarklaustur, N1" }}
+        to={vik}
+        between="1 h 35 min"
+        price={{ amount: "1,500 ISK", unit: "per seat" }}
+      />,
+    );
+    expect(screen.getByTestId("ticket-times")).toHaveStyle({
+      flexDirection: "row",
+      flexWrap: "wrap",
+    });
+    expect(screen.getByTestId("ticket-price")).toHaveStyle({ marginLeft: "auto" });
+  });
+
+  it("keeps the times of every ticket in a column of one width", async () => {
+    await render(<RideTicket day="Sat 28 Nov" from={selfoss} to={vik} between="1 h 35 min" />);
+    // Fredoka's digits differ in width, so each cell holds the widest time
+    // there can be, which nobody sees or hears.
+    const widths = allHidden("ticket-time-width");
+    expect(widths).toHaveLength(3);
+    for (const width of widths) {
+      expect(width).toHaveTextContent("22:22");
+      expect(width).toHaveStyle({ height: 0, opacity: 0, fontFamily: "Fredoka_600SemiBold" });
+    }
+    expect(screen.queryAllByTestId("ticket-time-width")).toHaveLength(0);
+    // No time is written twice: a search of the page finds each once.
+    for (const time of ["10:00", "11:35"]) {
+      expect(screen.getAllByText(time, { includeHiddenElements: true })).toHaveLength(1);
+    }
+  });
+
+  it("is a timetable on its own, for a card about a part of a ride", async () => {
+    await render(
+      <Timetable
+        from={selfoss}
+        to={vik}
+        between="1 seat, 800 ISK"
+        price={{ amount: "800 ISK", unit: "per seat" }}
+      />,
+    );
+    expect(screen.getByText("10:00")).toBeVisible();
+    expect(screen.getByText("N1 Vík")).toBeVisible();
+    expect(screen.getByText("1 seat, 800 ISK")).toBeVisible();
+    expect(screen.getByText("800 ISK")).toBeVisible();
+    expect(screen.queryByTestId("card")).toBeNull();
+    expect(screen.queryByTestId("ticket-day")).toBeNull();
   });
 
   it("shows something under a place, such as how far it is", async () => {
@@ -177,8 +226,9 @@ describe("RideTicket", () => {
       />,
     );
     const row = screen.getByTestId("ticket-day");
-    expect(row).toHaveStyle({ flexDirection: "row", alignItems: "center" });
-    expect(within(row).getByText("Sat 28 Nov")).toHaveStyle({ flex: 1 });
+    // Tags that do not fit beside the day go under it.
+    expect(row).toHaveStyle({ flexDirection: "row", flexWrap: "wrap", alignItems: "center" });
+    expect(within(row).getByText("Sat 28 Nov")).toHaveStyle({ flexGrow: 1, flexShrink: 1 });
     expect(within(row).getAllByTestId("tag")).toHaveLength(2);
     expect(within(row).getByText("Book instantly")).toHaveStyle({ color: colors.light.primary });
   });
@@ -211,10 +261,19 @@ describe("RideTicket", () => {
     expect(notches[1]).toHaveStyle({ right: -8 });
     expect(screen.getByTestId("card-face")).toHaveStyle({ overflow: "hidden" });
     const foot = screen.getByTestId("ticket-foot");
-    expect(foot).toHaveStyle({ flexDirection: "row", alignItems: "center" });
+    // Its end goes under its start when they do not fit beside each other;
+    // with words only it is as tall as with a small picture.
+    expect(foot).toHaveStyle({
+      flexDirection: "row",
+      flexWrap: "wrap",
+      alignItems: "center",
+      minHeight: 28 + 2 * 10,
+    });
     expect(within(foot).getByText("Jón")).toBeVisible();
-    expect(within(foot).getByText("2 seats left")).toBeVisible();
-    expect(screen.getByTestId("ticket-foot-start")).toHaveStyle({ flex: 1 });
+    expect(screen.getByTestId("ticket-foot-start")).toHaveStyle({ flexGrow: 1, flexShrink: 1 });
+    const end = screen.getByTestId("ticket-foot-end");
+    expect(end).toHaveStyle({ marginLeft: "auto" });
+    expect(within(end).getByText("2 seats left")).toBeVisible();
   });
 
   it("has no tear line without a foot", async () => {
@@ -370,6 +429,22 @@ describe("Road", () => {
       expect(screen.queryByText(name)).toBeNull();
       expect(screen.getByText(name, { includeHiddenElements: true })).toBeOnTheScreen();
     }
+  });
+
+  it.each([
+    [7, "Step 4 of 4: Done", "100%"],
+    [-1, "Step 1 of 4: Asked", "0%"],
+  ])("keeps the car on the road at step %i", async (current, label, left) => {
+    await inApp(<Road steps={booking} current={current} />);
+    expect(screen.getByRole("image", { name: label })).toBeVisible();
+    expect(hidden("road-car")).toHaveStyle({ left });
+    expect(allHidden("road-mark")).toHaveLength(3);
+  });
+
+  it("takes two steps of one name", async () => {
+    await inApp(<Road steps={["Asked", "Seats", "Seats", "Done"]} current={2} />);
+    expect(screen.getByRole("image", { name: "Step 3 of 4: Seats" })).toBeVisible();
+    expect(screen.getAllByText("Seats", { includeHiddenElements: true })).toHaveLength(2);
   });
 
   it("says it in Icelandic", async () => {

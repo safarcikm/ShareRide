@@ -1562,10 +1562,14 @@ releases follow [Semantic Versioning](https://semver.org/).
   on signing in, forms, My rides, Messages, Profile or in the phone apps.
 
 - The parts of "one ride, one ticket" (spec 31, 3.3), not on a screen yet:
-  `RideTicket` (a ride as a timetable with a tear line and a foot), `Road`
+  `RideTicket` (a ride as a timetable with a tear line and a foot, which
+  moves a tag, the price or the foot's end to a line of its own where a
+  narrow phone or large text leaves no room; `Timetable` is its times and
+  places alone), `Road`
   (where a booking or a draft stands, with the puffins' car on the step),
   `NeedsYouCard` (what needs you, in the car's yellow), `ActionRows` (a card
-  of rows) and `ScreenHead` (Back, the title at the left, one line). `Row`
+  of rows, whose focus ring is drawn inside the row) and `ScreenHead` (Back,
+  the title at the left, one line). `Row`
   can have an icon, be red, unfold, hold a switch or only show a value;
   `Tag` can have an icon; `Avatar` has a small size; tests can count a
   screen's filled buttons.
@@ -1648,7 +1652,9 @@ releases follow [Semantic Versioning](https://semver.org/).
 - A booking's status tag follows what the colours say (spec 31, 3.2, rule
   6): declined, expired, cancelled and withdrawn are a quiet grey tag, as
   nothing is asked of anyone, and "No-show" is red. They were amber, or
-  blue for a withdrawal. "Waiting for payment" stays amber.
+  blue for a withdrawal. "Waiting for payment" stays amber. The tag of a
+  cancelled ride you drive in My rides (grey) and "No-show" beside a
+  passenger on the driver's trip day (red) follow.
 - CI skips its code jobs (bundles, unit, integration and web tests, the API
   image) for a change to docs, marketing and other files that no code reads,
   and on `main` when the pull request already tested exactly the same files
