@@ -1,5 +1,7 @@
 import { join } from "node:path";
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { soonestTripsRoute, type TripSearchResult } from "@shareride/contracts";
+import { ticketFit } from "./support/layout";
 
 // The look from spec 15 in a real browser: centred buttons that fit their label, the
 // keyboard focus ring, the moss outline of a field you type in, the loaded
@@ -116,9 +118,9 @@ for (const scheme of schemes) {
       // screens have it in the top bar. On phones the buttons sit in the
       // middle, under the centred title: Offer a ride fits its label, and
       // Find a ride is the main button across the search card, inside the
-      // column (spec 16, 3.2). A wide page has Find a ride at the end of the
-      // search row and Offer a ride as a text button under the rides (spec
-      // 18, 3.5).
+      // column (spec 16, 3.2). A wide page has the title at the left of the
+      // scene, Find a ride at the end of the search row and Offer a ride
+      // beside the rides, under "How it works" (spec 18, 3.5; spec 31, 3.16).
       const wide = (page.viewportSize()?.width ?? 0) >= 900;
       const column = await box(title);
       const languageBox = await box(language);
@@ -139,7 +141,8 @@ for (const scheme of schemes) {
         const found = await box(findRide);
         expect(found.x + found.width).toBeCloseTo(row.x + row.width, 0);
       }
-      await expect(title).toHaveCSS("text-align", "center");
+      if (wide) await expect(title).not.toHaveCSS("text-align", "center");
+      else await expect(title).toHaveCSS("text-align", "center");
 
       await tabTo(page, offerRide);
       expect(await outlineOf(offerRide)).toEqual(ring);
@@ -170,3 +173,99 @@ for (const scheme of schemes) {
     });
   });
 }
+
+// Spec 31, review focus 3: a ride between places with long names, on the
+// narrowest phone the app is made for. Find's rides are given such a ride
+// first, as no sample ride has names this long.
+test.describe("a ticket with long place names, 360 wide", () => {
+  test.use({ locale: "en-GB" });
+
+  for (const zoom of [1, 2] as const) {
+    test(`holds its ride, with the text ${zoom === 1 ? "as set" : "twice as large"}`, async ({
+      page,
+    }, testInfo) => {
+      test.skip(testInfo.project.name !== "phone", "A phone's column; laptops have a grid.");
+      await page.setViewportSize({ width: 360, height: 740 });
+      await page.route(
+        (url) => url.pathname === soonestTripsRoute.path,
+        async (route) => {
+          const response = await route.fetch();
+          const { results } = (await response.json()) as { results: TripSearchResult[] };
+          const [first, ...rest] = results;
+          if (first === undefined) throw new Error("No ride leaves soon.");
+          const named = (name: string) => ({ is: name, en: name });
+          const long: TripSearchResult = {
+            ...first,
+            board: {
+              ...first.board,
+              meetingPoint: {
+                ...first.board.meetingPoint,
+                name: named("Kirkjubæjarklaustur, N1 við Skaftárskála"),
+              },
+            },
+            alight: {
+              ...first.alight,
+              meetingPoint: {
+                ...first.alight.meetingPoint,
+                name: named("Keflavíkurflugvöllur, komusalur"),
+              },
+            },
+          };
+          await route.fulfill({ response, json: { results: [long, ...rest] } });
+        },
+      );
+      await page.goto("/");
+      const ticket = page.getByTestId("trip-result").first();
+      await expect(ticket.getByText("Kirkjubæjarklaustur, N1 við Skaftárskála")).toBeVisible();
+      if (zoom === 2) {
+        // Text at 200% (WCAG 1.4.4), as a browser's text-only zoom sets it.
+        await page.evaluate(() => {
+          document.documentElement.style.fontSize = "200%";
+          for (const text of document.querySelectorAll<HTMLElement>("[dir]")) {
+            const style = getComputedStyle(text);
+            text.style.fontSize = `${String(parseFloat(style.fontSize) * 2)}px`;
+            text.style.lineHeight = `${String(parseFloat(style.lineHeight) * 2)}px`;
+          }
+        });
+      }
+      const fit = await ticketFit(page, "trip-result");
+      // Nothing reaches past the ticket and no place is cut, and the ticket
+      // is whole in the window.
+      expect(fit.past).toEqual([]);
+      expect(fit.cut).toEqual([]);
+      expect(fit.beyondWindow).toBe(0);
+      // The times stay on their places' first lines, and the price is whole
+      // inside the ticket, beside the timetable or under it.
+      const from = await box(ticket.getByTestId("ticket-from-place"));
+      const to = await box(ticket.getByTestId("ticket-to-place"));
+      const time = await box(ticket.getByTestId("ticket-time").first());
+      expect(Math.abs(time.y - from.y)).toBeLessThan(8 * zoom);
+      const card = await box(ticket);
+      const price = await box(ticket.getByTestId("ticket-price"));
+      expect(price.x).toBeGreaterThanOrEqual(card.x);
+      expect(price.x + price.width).toBeLessThanOrEqual(card.x + card.width);
+      if (zoom === 1) {
+        // With the text as set every word is whole: the price goes under
+        // the timetable before it squeezes a name.
+        expect(fit.brokenWords).toEqual([]);
+        // Neither the screen nor the page scrolls sideways. At twice the
+        // size the name line over the scene is wider than the screen, and
+        // the labels of the tab bar than their tabs, which is the last
+        // pass's to mend (plan, PR 12), not a ticket's: the ticket is
+        // whole in the window at either size.
+        expect(fit.screenWider).toBeLessThanOrEqual(0);
+        const wider = await page.evaluate(
+          () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        );
+        expect(wider).toBeLessThanOrEqual(0);
+      } else {
+        // Twice as large, a word longer than a whole line of its place can
+        // only be broken: no other word is, and by then the price stands
+        // under the timetable, so the place has all the room there is.
+        expect(fit.needlessly).toEqual([]);
+        expect(fit.brokenWords.length).toBeGreaterThan(0);
+        expect(price.y).toBeGreaterThanOrEqual(to.y + to.height - 1);
+      }
+    });
+  }
+});

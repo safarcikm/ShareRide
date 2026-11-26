@@ -58,6 +58,6 @@ test("deletes an account after cancelling its booking, then keeps it on signing 
   await expect(dora.getByRole("heading", { name: scheduled })).toBeVisible();
   await expect(dora).toHaveURL("/account/deletion");
   await dora.getByRole("button", { name: "Keep my account" }).click();
-  await expect(dora.getByRole("heading", { name: english.findTitle })).toBeVisible();
+  await expect(dora.getByRole("heading", { name: english.hi("Dóra") })).toBeVisible();
   await close();
 });

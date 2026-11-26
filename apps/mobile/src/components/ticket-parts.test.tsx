@@ -99,6 +99,80 @@ describe("RideTicket", () => {
     expect(within(screen.getByTestId("ticket-price")).getByText("Free")).toBeVisible();
   });
 
+  it("shows a price without a unit, and a line more under it, such as what two seats cost", async () => {
+    await render(
+      <RideTicket
+        day="Sat 28 Nov"
+        from={selfoss}
+        to={vik}
+        between="1 h 35 min"
+        price={{ amount: "Free" }}
+      />,
+    );
+    expect(within(screen.getByTestId("ticket-price")).getByText("Free")).toBeVisible();
+    expect(screen.queryByText("per seat")).toBeNull();
+    await screen.rerender(
+      <RideTicket
+        day="Sat 28 Nov"
+        from={selfoss}
+        to={vik}
+        between="1 h 35 min"
+        price={{ amount: "1,500 ISK", unit: "per seat", more: "3,000 ISK for 2 seats" }}
+      />,
+    );
+    const price = within(screen.getByTestId("ticket-price"));
+    expect(price.getByText("per seat")).toBeVisible();
+    expect(price.getByText("3,000 ISK for 2 seats")).toHaveStyle({
+      color: colors.light.textMuted,
+      textAlign: "right",
+    });
+  });
+
+  it("says one thing more about the ride under the timetable, over the tear line", async () => {
+    await render(
+      <RideTicket
+        day="Sat 28 Nov"
+        from={selfoss}
+        to={vik}
+        between="1 h 35 min"
+        note="Anna drives Reykjavík → Höfn"
+        foot={<TicketFoot start={<Text>Anna</Text>} />}
+      />,
+    );
+    const note = within(screen.getByTestId("ticket-top")).getByText("Anna drives Reykjavík → Höfn");
+    expect(note).toHaveStyle({ fontSize: 15, color: colors.light.textMuted });
+    expect(screen.getByTestId("ticket-note")).toBeVisible();
+    await screen.rerender(
+      <RideTicket day="Sat 28 Nov" from={selfoss} to={vik} between="1 h 35 min" />,
+    );
+    expect(screen.queryByTestId("ticket-note")).toBeNull();
+  });
+
+  it("holds all it shows under a name of its own, for a list to find its rides", async () => {
+    const onPress = jest.fn();
+    await render(
+      <RideTicket
+        fill
+        testID="trip-result"
+        day="Sat 28 Nov"
+        from={selfoss}
+        to={vik}
+        between="1 h 35 min"
+        onPress={onPress}
+        accessibilityLabel="Selfoss to Vík"
+        foot={<TicketFoot start={<Text>Jón</Text>} />}
+      />,
+    );
+    const ride = screen.getByTestId("trip-result");
+    expect(within(ride).getByText("Sat 28 Nov")).toBeVisible();
+    expect(within(ride).getByText("N1 Vík")).toBeVisible();
+    expect(within(ride).getByText("Jón")).toBeVisible();
+    // It takes the room the card has, so the foot stays at the bottom of a filled one.
+    expect(ride).toHaveStyle({ flexGrow: 1 });
+    await fireEvent.press(ride);
+    expect(onPress).toHaveBeenCalledTimes(1);
+  });
+
   it("draws the line from a ring to a dot, hidden from screen readers", async () => {
     await render(<RideTicket day="Sat 28 Nov" from={selfoss} to={vik} between="1 h 35 min" />);
     expect(hidden("ticket-ring")).toHaveStyle({

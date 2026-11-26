@@ -15,23 +15,31 @@ export const sectionLevel: object = Platform.OS === "web" ? { "aria-level": 2 } 
  * block of facts about a trip, with its date and status, starts at the left
  * like them (`align="start"`), as on trip details. A title of a `part` of
  * a screen that has its own title, such as the open conversation beside
- * Messages on a wide screen, looks the same and is an h2 on the web.
+ * Messages on a wide screen, looks the same and is an h2 on the web. The
+ * front page's title on a wide page is `large`, on its scene (spec 31,
+ * 3.16).
  */
 export function Title({
   children,
   align = "center",
   part = false,
+  large = false,
 }: {
   readonly children: ReactNode;
   readonly align?: "center" | "start";
   readonly part?: boolean;
+  readonly large?: boolean;
 }) {
   const palette = usePalette();
   return (
     <Text
       accessibilityRole="header"
       {...(part ? sectionLevel : {})}
-      style={[typography.title, align === "center" && styles.centre, { color: palette.text }]}
+      style={[
+        large ? typography.display : typography.title,
+        align === "center" && styles.centre,
+        { color: palette.text },
+      ]}
     >
       {children}
     </Text>

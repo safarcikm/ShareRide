@@ -198,6 +198,30 @@ changes on a phone.
    and its road; nothing on the page waits for them, and nothing says they
    are missing. A call that failed is made again each time the person
    comes back to Find, which stays open under the other screens.
+7. Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.16, item 1) the
+   **title stands at the left of the scene**, in the display size, with
+   its line under it, and the car drives on the hills at the right; the
+   title's line is taller for it (spec 15, 5.3). Signed in, the title
+   greets by name and has no line under it. The **side column** starts
+   with a heading in the row beside "Leaving soon", and under it:
+   - signed out, **"How it works"**: one card with three numbered steps
+     (Find a ride, Book a seat, Meet and go), and under a line "Driving
+     somewhere? Offer the empty seats in your car." with "Offer a ride" as
+     a secondary button. It takes the place of the line that closed the
+     rides (item 3, decision 17), so the offer is said once; with no rides
+     the card of item 5 says it, and "How it works" keeps its steps alone;
+   - signed in, **"Needs you"** with the yellow card, or else "Your next
+     ride" with the ticket; when the card is about another ride than my
+     next one, "Your next ride" follows it. With nothing coming up the
+     empty row of decision 18 stays, and the line of item 3 closes the
+     rides as before.
+
+   The map follows under these. So for someone new the map is no longer
+   whole in a window 720 high (item 3): "How it works" is, with its
+   button, and the map comes into view with the first scroll. Signed in
+   with nothing coming up the map is whole in that window, and the link
+   under it ends 25 under the window's edge, as the title's line is 36
+   taller.
 
 ### 3.6 Search results
 
@@ -205,7 +229,10 @@ changes on a phone.
    map beside it, up to 640 wide, staying in view.
 2. The list is as today: the search summary with Change, the chips, the days
    and their trips. The chips wrap onto a second line instead of scrolling
-   sideways.
+   sideways. Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.6) the
+   chips are one row, on a phone too: the order, one Filters chip and the
+   number of rides at the right; the filters open under the row, where
+   they wrap (spec 4, 3.4, item 7).
 3. The map shows the part of Iceland the trips found are in, with the
    stretch of one trip drawn along the roads and its two meeting points
    standing out: the first trip found, or the trip the pointer or the
@@ -485,7 +512,11 @@ Every other text is one the app has.
   dark in Icelandic. Pictures of every changed screen, before and now at
   1440 wide, are in the project files under `laptop-web/built`. On Find
   the journey also points at a ride and looks for it on the map, and
-  checks the map and the link under it are whole in a window 720 high.
+  checks what stands first in the side column is whole in a window 720
+  high: "How it works" for someone signed out (spec 31, 3.16; the map
+  under it is then partly below the fold), and the map for someone signed
+  in with nothing coming up (the link under it then ends just under the
+  window's edge).
 - By hand, still to do (Martin): a look at the main screens in a laptop's
   browser, and a keyboard-only pass through Find, results, a trip and
   Messages.

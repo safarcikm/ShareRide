@@ -5,10 +5,11 @@ import {
   type TripSearchResult,
 } from "@shareride/contracts";
 import { timesOfDay, type TimeOfDay } from "@shareride/domain";
-import { capitalised, formatDay, formatShortDay } from "@shareride/i18n";
+import { capitalised, formatDay, formatShortDay, type MessageKey } from "@shareride/i18n";
 import { router, useLocalSearchParams } from "expo-router";
+import { SlidersHorizontal } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { useSession, useSessionState } from "@/auth/session";
 import { useMaxSeats } from "@/beta/config";
 import { offerRide } from "@/drive/offer-ride";
@@ -17,9 +18,10 @@ import { Button } from "@/components/button";
 import { Card } from "@/components/card";
 import { Chip } from "@/components/chip";
 import { Notice } from "@/components/notice";
+import { PuffinByPin } from "@/components/puffin-scenes";
 import { Screen, useWideScreen } from "@/components/screen";
 import { TakesFocus } from "@/components/takes-focus";
-import { Body, Heading, sectionLevel } from "@/components/text";
+import { Body, Heading } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { now } from "@/lib/clock";
 import { dayOf, isoDay, showsOtherTime } from "@/lib/days";
@@ -28,9 +30,9 @@ import { failureText } from "@/search/failure-text";
 import type { SearchQuery } from "@/search/recent-searches";
 import { resultsParams } from "@/search/results-href";
 import { useRouteSearch } from "@/search/route-search";
-import { ResultCard, type SearchedNames } from "@/search/result-card";
+import { ResultTicket, type SearchedNames } from "@/search/result-ticket";
 import { ResultsMap } from "@/search/results-map";
-import { spacing, typography } from "@/theme/tokens";
+import { sizes, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
 type Sort = "departure" | "price";
@@ -45,15 +47,20 @@ const timeKeys = {
 } as const satisfies Record<TimeOfDay, string>;
 
 /**
- * Search results (spec 4, 3.4 and 3.5): trips for the passenger's part,
- * sorted by time or price, filtered by instant booking and time of day, and
- * grouped by day. When nothing matches, the days around the date and trips
- * from meeting points nearby. The header is one button that opens the search
- * in place, filled in, and the order is one chip (spec 16, 3.8).
+ * Search results (spec 4, 3.4 and 3.5; spec 31, 3.6): rides for the
+ * passenger's part as tickets, sorted by time or price, filtered by instant
+ * booking and time of day, and grouped by day. When nothing matches, the
+ * days around the date and rides from meeting points nearby. The header is
+ * one button that opens the search in place, filled in (spec 16, 3.8).
  *
- * A wide screen (spec 18, 3.6) has our map beside the list, with the trip
- * the pointer or the keyboard came to last, or the first one; that trip's
- * card is marked. The chips wrap instead of scrolling sideways.
+ * Under it one row: the order as one chip, one Filters chip that opens the
+ * filters under the row and says how many are on, and how many rides there
+ * are. One of the two is open at a time. The list ends with a card that
+ * says so and leads to All rides.
+ *
+ * A wide screen (spec 18, 3.6) has our map beside the list, with the ride
+ * the pointer or the keyboard came to last, or the first one; that ride's
+ * ticket is marked.
  */
 export default function SearchResults() {
   const { locale, t } = useLanguage();
@@ -78,10 +85,12 @@ export default function SearchResults() {
   const [instant, setInstant] = useState(false);
   const [timeOfDay, setTimeOfDay] = useState<TimeOfDay | null>(null);
   const filtered = instant || timeOfDay !== null;
+  const filtersOn = (instant ? 1 : 0) + (timeOfDay === null ? 0 : 1);
   const [changing, setChanging] = useState(false);
   // Counts the times the form closed, to give focus back to the header.
   const [closed, setClosed] = useState(0);
-  const [choosingOrder, setChoosingOrder] = useState(false);
+  // What the row has open under it: the orders, the filters or neither.
+  const [open, setOpen] = useState<"order" | "filters" | null>(null);
   // Counts the orders chosen, to give focus back to the Sort chip.
   const [orderChosen, setOrderChosen] = useState(0);
   // The trip the pointer or the keyboard came to last, for the map.
@@ -245,16 +254,12 @@ export default function SearchResults() {
           grouped={sort === "departure"}
           onMap={onMap}
         />
-        <Body>
-          {found.length >= resultLimit
-            ? t("results.firstOnly", { count: found.length })
-            : t("results.everyTrip")}
-        </Body>
+        <ListEnd count={found.length} onDay={date !== undefined} />
         {otherDays.length === 0 ? null : (
-          <>
+          <View testID="other-days" style={styles.day}>
             <Heading>{t("results.otherDays")}</Heading>
             {otherDayChips}
-          </>
+          </View>
         )}
       </>
     );
@@ -313,38 +318,10 @@ export default function SearchResults() {
   }
 
   const sortLabel = sort === "departure" ? t("results.sortEarliest") : t("results.sortCheapest");
-  const chips = (
-    <>
-      <TakesFocus key={orderChosen} when={orderChosen > 0}>
-        <Chip
-          role="button"
-          label={t("results.sort", { order: sortLabel })}
-          selected={false}
-          expanded={choosingOrder}
-          onToggle={() => {
-            setChoosingOrder(!choosingOrder);
-          }}
-        />
-      </TakesFocus>
-      <Chip
-        label={t("results.instantOnly")}
-        selected={instant}
-        onToggle={() => {
-          setInstant(!instant);
-        }}
-      />
-      {timesOfDay.map((time) => (
-        <Chip
-          key={time}
-          label={t(timeKeys[time])}
-          selected={timeOfDay === time}
-          onToggle={() => {
-            setTimeOfDay(timeOfDay === time ? null : time);
-          }}
-        />
-      ))}
-    </>
-  );
+  // The rides the list shows, counted once, and said when a filter changes
+  // it, also when it leaves none: the count stays, so that is heard too.
+  const counted =
+    !loading && found !== undefined && (found.length > 0 || filtered) ? found.length : null;
   return (
     <Screen siteFooter aside={map} refresh={refresh}>
       <View style={styles.header}>
@@ -356,7 +333,7 @@ export default function SearchResults() {
             <Card
               accessibilityLabel={t("results.changeSearchLabel", { route: title, summary })}
               onPress={() => {
-                setChoosingOrder(false);
+                setOpen(null);
                 setChanging(true);
               }}
             >
@@ -373,21 +350,68 @@ export default function SearchResults() {
           </TakesFocus>
         </View>
       </View>
-      {wide ? (
-        <View testID="chips-wrap" style={styles.wrap}>
-          {chips}
-        </View>
-      ) : (
-        <ScrollView
-          testID="chips-scroll"
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.chipRow}
+      <View testID="results-row" style={styles.row}>
+        <TakesFocus key={orderChosen} when={orderChosen > 0}>
+          <Chip
+            role="button"
+            label={sortLabel}
+            name={t("results.sort", { order: sortLabel })}
+            selected={false}
+            expanded={open === "order"}
+            onToggle={() => {
+              setOpen(open === "order" ? null : "order");
+            }}
+          />
+        </TakesFocus>
+        <Chip
+          role="button"
+          icon={SlidersHorizontal}
+          label={
+            filtersOn === 0 ? t("results.filters") : t("results.filtersOn", { count: filtersOn })
+          }
+          selected={filtersOn > 0}
+          expanded={open === "filters"}
+          onToggle={() => {
+            setOpen(open === "filters" ? null : "filters");
+          }}
+        />
+        {counted === null ? null : (
+          <Text
+            testID="results-count"
+            accessibilityLiveRegion="polite"
+            style={[typography.small, styles.count, { color: palette.textMuted }]}
+          >
+            {t("results.tripCount", { count: counted })}
+          </Text>
+        )}
+      </View>
+      {open === "filters" ? (
+        <View
+          testID="results-filters"
+          role="group"
+          aria-label={t("results.filters")}
+          style={styles.wrap}
         >
-          <View style={styles.chips}>{chips}</View>
-        </ScrollView>
-      )}
-      {choosingOrder ? (
+          <Chip
+            label={t("results.instantOnly")}
+            selected={instant}
+            onToggle={() => {
+              setInstant(!instant);
+            }}
+          />
+          {timesOfDay.map((time) => (
+            <Chip
+              key={time}
+              label={t(timeKeys[time])}
+              selected={timeOfDay === time}
+              onToggle={() => {
+                setTimeOfDay(timeOfDay === time ? null : time);
+              }}
+            />
+          ))}
+        </View>
+      ) : null}
+      {open === "order" ? (
         <View accessibilityRole="radiogroup" aria-label={t("results.sortBy")} style={styles.chips}>
           {(["departure", "price"] as const).map((order) => (
             <Chip
@@ -397,7 +421,7 @@ export default function SearchResults() {
               selected={sort === order}
               onToggle={() => {
                 setSort(order);
-                setChoosingOrder(false);
+                setOpen(null);
                 setOrderChosen((count) => count + 1);
               }}
             />
@@ -470,16 +494,15 @@ function Found({
   readonly grouped: boolean;
   readonly onMap: OnMap | undefined;
 }) {
-  const { locale, t } = useLanguage();
-  const palette = usePalette();
+  const { locale } = useLanguage();
   if (!grouped) {
     return results.map((result) => (
-      <ResultCard
+      <ResultTicket
         key={result.tripId}
         result={result}
         searched={searched}
         seats={seats}
-        showDay
+        dayInName
         {...mapProps(onMap, result)}
       />
     ));
@@ -491,20 +514,11 @@ function Found({
   }
   return [...days].map(([day, onDay]) => (
     <View key={day} style={styles.day}>
-      <View style={styles.dayHeader}>
-        <Text
-          accessibilityRole="header"
-          {...sectionLevel}
-          style={[typography.heading, styles.grow, { color: palette.text }]}
-        >
-          {capitalised(formatDay(new Date(onDay[0]?.board.plannedAt ?? 0), locale), locale)}
-        </Text>
-        <Text style={[typography.small, { color: palette.textMuted }]}>
-          {t("results.tripCount", { count: onDay.length })}
-        </Text>
-      </View>
+      <Heading>
+        {capitalised(formatDay(new Date(onDay[0]?.board.plannedAt ?? 0), locale), locale)}
+      </Heading>
       {onDay.map((result) => (
-        <ResultCard
+        <ResultTicket
           key={result.tripId}
           result={result}
           searched={searched}
@@ -514,6 +528,44 @@ function Found({
       ))}
     </View>
   ));
+}
+
+/**
+ * What the end of the list says to do next. Cut at the first fifty, a
+ * search of any day says to choose one, and a search of one day to filter
+ * by time of day; with every ride shown, a search of one day says to try
+ * another, which the days under it offer.
+ */
+function endLine(first: boolean, onDay: boolean): MessageKey {
+  if (first) return onDay ? "results.endFirstOnlyDay" : "results.endFirstOnly";
+  return onDay ? "results.endOtherDay" : "results.endAnyDay";
+}
+
+/**
+ * Where the list ends (spec 31, 3.6 item 4): the puffin by its pin, that
+ * this is every ride found, or the first fifty, and All rides, which shows
+ * every ride leaving soon.
+ */
+function ListEnd({ count, onDay }: { readonly count: number; readonly onDay: boolean }) {
+  const { t } = useLanguage();
+  const palette = usePalette();
+  const first = count >= resultLimit;
+  return (
+    <Card>
+      <View testID="results-end" style={styles.end}>
+        <PuffinByPin height={sizes.scenePuffinSmall} />
+        <View style={styles.endTexts}>
+          <Text style={[typography.bodyStrong, { color: palette.text }]}>
+            {first ? t("results.firstOnly", { count }) : t("results.everyTrip")}
+          </Text>
+          <Text style={[typography.small, { color: palette.textMuted }]}>
+            {t(endLine(first, onDay))}
+          </Text>
+        </View>
+        <Button variant="text" label={t("results.allRides")} href="/rides" />
+      </View>
+    </Card>
+  );
 }
 
 /** Spec 4, 3.5: other days, trips from nearby points, or none at all. */
@@ -588,12 +640,12 @@ function NothingMatches({
         <>
           <Heading>{t("results.nearbyPoints")}</Heading>
           {nearby.map((result) => (
-            <ResultCard
+            <ResultTicket
               key={result.tripId}
               result={result}
               searched={searched}
               seats={seats}
-              showDay
+              dayInName
               {...mapProps(onMap, result)}
             />
           ))}
@@ -619,11 +671,17 @@ const styles = StyleSheet.create({
   header: { flexDirection: "row", alignItems: "center", gap: spacing.ms },
   headerRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   headerTexts: { flex: 1 },
-  // A row of chips that scrolls sideways; it must not grow to fill the screen.
-  chipRow: { flexGrow: 0 },
+  // The order, Filters and the count: one row, which wraps where large
+  // text leaves no room, so nothing scrolls sideways.
+  row: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: spacing.sm },
+  // At the right of its row, or of the line it wraps to.
+  count: { marginLeft: "auto" },
   chips: { flexDirection: "row", gap: spacing.sm },
   wrap: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
   day: { gap: spacing.ms },
-  dayHeader: { flexDirection: "row", alignItems: "baseline", gap: spacing.sm },
   grow: { flex: 1 },
+  // The puffin, the two lines, then the link; the link goes under them
+  // where they leave it no room.
+  end: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: spacing.ms },
+  endTexts: { flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: sizes.wordsBeside },
 });

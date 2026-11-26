@@ -1,4 +1,4 @@
-import { Check, ChevronDown, ChevronUp } from "lucide-react-native";
+import { Check, ChevronDown, ChevronUp, type LucideIcon } from "lucide-react-native";
 import { Platform, Pressable, StyleSheet, Text } from "react-native";
 import { useHover } from "@/theme/hover";
 import {
@@ -25,6 +25,10 @@ const hitSlop = { top: slop, bottom: slop, left: 0, right: 0 } as const;
  * shows a tick as well as its colour; under the pointer, a chip that is not
  * selected is tinted and keeps its outline (spec 18, 3.4). A `button` chip with `expanded` opens
  * choices under it, such as the order of search results, and shows a chevron.
+ * With an `icon`, that stands before the label, where the tick would, in the
+ * chip's colour. `name` is what screen readers call a chip whose label alone
+ * does not say what it is, such as "Sort: Earliest" for "Earliest"; it holds
+ * the label, so voice control finds the chip by what it shows.
  * `lang` is the language of a label that is not in the app's, such as
  * "Íslenska" in English, so screen readers read it in that language.
  */
@@ -34,12 +38,18 @@ export function Chip({
   onToggle,
   role = "checkbox",
   expanded,
+  icon,
+  name,
   lang,
 }: {
   readonly label: string;
   readonly selected: boolean;
   readonly onToggle: () => void;
   readonly role?: "checkbox" | "radio" | "button";
+  /** A Lucide icon before the label, such as `SlidersHorizontal` for filters. */
+  readonly icon?: LucideIcon;
+  /** The chip's name for screen readers, when the label alone is not enough. */
+  readonly name?: string;
   /** Whether the choices it opens show; leave out for a chip that opens nothing. */
   readonly expanded?: boolean;
   /** A BCP 47 tag, such as "is". */
@@ -50,7 +60,7 @@ export function Chip({
   return (
     <Pressable
       accessibilityRole={role}
-      accessibilityLabel={label}
+      accessibilityLabel={name ?? label}
       // aria-checked rather than accessibilityState, which the web build drops.
       aria-checked={role === "button" ? undefined : selected}
       aria-expanded={expanded}
@@ -71,7 +81,14 @@ export function Chip({
             },
       ]}
     >
-      {selected ? (
+      {icon !== undefined ? (
+        <Icon
+          icon={icon}
+          color={selected ? palette.primary : palette.text}
+          size={iconSizes.tick}
+          testID="chip-icon"
+        />
+      ) : selected ? (
         <Icon icon={Check} color={palette.primary} size={iconSizes.tick} testID="chip-tick" />
       ) : null}
       <Text

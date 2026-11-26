@@ -53,11 +53,11 @@ export interface RouteSearch {
   /**
    * The search in one card, for a phone or a column (spec 16, 3.2): From
    * and To, each with a place search that drops down under it, then the
-   * date and the seats on one line, and `action`, the button that searches,
-   * if it is in the card. The date opens the calendar under that line. A
-   * message when a place is missing goes under the card.
+   * date and the seats on one line, and `action`, the button that
+   * searches. The date opens the calendar under that line. A message when
+   * a place is missing goes under the card.
    */
-  readonly fields: (action?: ReactElement) => ReactElement;
+  readonly fields: (action: ReactElement) => ReactElement;
   /**
    * The same search as one row in a card, for a wide page (spec 18, 3.5):
    * From, the swap button, To, the date, the seats and `action`, the button
@@ -237,7 +237,7 @@ export function useRouteSearch(
       </View>
     ) : null;
 
-  const fields = (action?: ReactElement) => (
+  const fields = (action: ReactElement) => (
     <>
       {ends(
         "column",

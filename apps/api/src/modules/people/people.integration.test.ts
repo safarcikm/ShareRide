@@ -13,7 +13,7 @@ import {
 } from "@shareride/contracts";
 import { schema } from "@shareride/db";
 import { sampleId } from "@shareride/db/seed";
-import { defaultTripDaySettings as settings } from "@shareride/domain";
+import { defaultTripDaySettings as settings, peopleColourOf } from "@shareride/domain";
 import { desc, eq } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { startTestApi, type TestApi } from "../../testing.ts";
@@ -588,16 +588,17 @@ describe("beside a person's name (spec 4, 3.4 and 3.6; spec 5, 3.3)", () => {
       query: { from: point("borgarnes"), to: point("blonduos") },
     });
     if (!found.ok) throw new Error(found.error.code);
-    expect(found.data.results.map((result) => result.driver)).toEqual([
-      { firstName: "Jón", rating: { average: 4, count: 1 }, photo: null },
-    ]);
-    const soonest = await api.client.call(soonestTripsRoute, { query: { limit: 50 } });
-    if (!soonest.ok) throw new Error(soonest.error.code);
-    expect(soonest.data.results.find((result) => result.tripId === north)?.driver).toEqual({
+    // With the colour behind his initial, as he has no photo (spec 31, 3.3).
+    const asFound = {
       firstName: "Jón",
       rating: { average: 4, count: 1 },
       photo: null,
-    });
+      colour: peopleColourOf(jon.userId),
+    };
+    expect(found.data.results.map((result) => result.driver)).toEqual([asFound]);
+    const soonest = await api.client.call(soonestTripsRoute, { query: { limit: 50 } });
+    if (!soonest.ok) throw new Error(soonest.error.code);
+    expect(soonest.data.results.find((result) => result.tripId === north)?.driver).toEqual(asFound);
 
     const forVisitors = await api.client.call(tripDetailsRoute, {
       params: { id: north },

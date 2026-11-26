@@ -75,7 +75,11 @@ driver posts a trip, a passenger requests a seat on it, the driver accepts
 from "My rides", the passenger pays, and both see the seat confirmed
 (`apps/mobile/e2e/driver-requests.spec.ts`). Until cancellations come
 (spec 6), journey 5 withdraws a request and finds it under "Past" in My
-rides (`apps/mobile/e2e/my-rides.spec.ts`). Find, where the app
+rides; before that, Find greets the passenger by name with the request
+as "Your next ride" (`apps/mobile/e2e/my-rides.spec.ts`). A ticket holds
+a ride between places with long names on a phone 360 wide, with the text
+as set and twice as large (`apps/mobile/e2e/look.spec.ts`; spec 31,
+review focus 3). Find, where the app
 opens, shows a ride leaving soon and searches a route, leads from "Offer a
 ride" and from Sign in under Profile to signing in, and shows the menu of
 five places on every main screen, marking the one you are on

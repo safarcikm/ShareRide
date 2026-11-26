@@ -1,6 +1,7 @@
 import { tripSearchAlternativesRoute, tripSearchRoute } from "@shareride/contracts";
 import { schema } from "@shareride/db";
 import { sampleId, seedSampleMeetingPoints, seedSampleTrips } from "@shareride/db/seed";
+import { peopleColourOf } from "@shareride/domain";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { startTestApi, type TestApi } from "../../testing.ts";
@@ -44,7 +45,8 @@ describe("GET /v1/trips/search (spec 4, R4.1)", () => {
       tripFrom: { is: "BSÍ" },
       tripTo: { en: "Hof bus stop, Akureyri" },
       freeSeats: 3,
-      driver: { firstName: "Anna" },
+      // Her colour too, the one her page and her messages show (spec 31, 3.3).
+      driver: { firstName: "Anna", colour: peopleColourOf(sampleId("user:anna")) },
       bookingMode: "approval",
     });
     expect(found?.pricePerSeat.amount).toBeGreaterThan(0);

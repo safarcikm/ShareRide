@@ -289,6 +289,32 @@ details": "Share ride" is the product's old name, kept out of every text
 ![Find now](images/one-ride-one-ticket/proposal/img/now-find-first.webp)
 ![Find proposed](images/one-ride-one-ticket/proposal/img/new-find-first.webp)
 
+As built, on a phone
+([light](images/one-ride-one-ticket/built/find-phone-light.webp),
+[dark, in Icelandic](images/one-ride-one-ticket/built/find-phone-dark.webp))
+and on a laptop
+([light](images/one-ride-one-ticket/built/find-laptop-light.webp)). What
+differs from the drawing, or was left open by it:
+
+- My next ride has the heading "Your next ride" over its ticket in both
+  places, over the search when nothing needs me and under it when
+  something does.
+- A ticket always says its day, in a list under a day's heading too: the
+  same ticket shows on Find, where no heading says it.
+- A ride found that is a part of a driver's ride says the whole ride in
+  one muted line over the tear line: "Anna drives BSÍ → Akureyri".
+- A ride that costs nothing says "Free", with no "per seat" under it.
+- A seat of mine has no moss edge until it is confirmed (asked for, or
+  accepted and not yet paid, it is not mine yet); until the driver answers,
+  its foot says whose answer it waits for ("Waiting for Sigga's answer").
+- What counts keeps counting: Find and My rides read the clock again every
+  half minute while they are in view, and when the app or the tab comes
+  back to the front. "Leaves in 40 minutes" becomes 39, and a need whose
+  deadline passes leaves the screen without anything being pressed.
+- With text at twice its size on a phone 360 wide, a word longer than a
+  whole line of its place ("Kirkjubæjarklaustur,") is broken inside the
+  word. Nothing else is, and nothing reaches past the ticket.
+
 ### 3.6 Search results
 
 1. The head stays: Back, and the search as a card with Change.
@@ -299,6 +325,29 @@ details": "Share ride" is the product's old name, kept out of every text
 4. The list ends with a card, the puffin by its pin beside "That's every
    ride found" and "All rides". The sections for other days and nearby
    meeting points stay as they are.
+
+As built, on a phone
+([light](images/one-ride-one-ticket/built/results-phone-light.webp),
+[dark, in Icelandic](images/one-ride-one-ticket/built/results-phone-dark.webp))
+and on a laptop
+([light](images/one-ride-one-ticket/built/results-laptop-light.webp)):
+
+- The sorting chip shows the order alone ("Earliest") and is named "Sort:
+  Earliest" for a screen reader. The Filters chip says how many are on
+  ("Filters: 1 on") and is then filled. One of the two is open at a time,
+  under the row.
+- A day's heading no longer counts its rides: the row counts them all.
+  When a filter leaves none the count stays and says "0 rides", so a
+  screen reader hears what the filter did.
+- The end card says "That's every ride found", or "These are the first 50
+  rides" when there are more than the list holds. Its second line depends
+  on the search. With every ride shown: "Try another day, or see every
+  ride leaving soon." for a search on one day, "You can also see every
+  ride leaving soon." for any day. With the first 50: "Choose a day to see
+  others." for any day, "Filter by time of day to see others." for one
+  day.
+- `/search` has the title at the left (`ScreenHead`) and Find a ride
+  inside the card, as on Find; the bar at the bottom is gone.
 
 ### 3.7 A ride's details
 
@@ -370,6 +419,12 @@ details": "Share ride" is the product's old name, kept out of every text
    are listed on Offer (3.11, item 6; spec 16, decision 6), and what led
    to My trips today (Back from a posting step opened by its address,
    and deleting a draft) leads to Offer.
+
+As built so far (the tickets; the title's button, the rating under Past
+and My trips follow with the driver's ride): a ticket of My rides holds no
+button of its own. What it needs is the yellow tag in its foot, and
+pressing the ticket opens where that is done. "Needs you" lists the ride
+whose deadline or leaving time is soonest first, as Find does.
 
 ### 3.11 Offering a ride
 
@@ -479,7 +534,16 @@ changes:
    the car on the road at the right; the search row overlaps the scene's
    lower edge as today. Main column: the rides as tickets. Side column:
    signed in, what needs me or my next ride; signed out, "How it works"
-   in three lines with **Offer a ride**; then the map, as today.
+   in three lines with **Offer a ride**; then the map, as today. As
+   built: the scene behind the title is 132 high and the car 170 wide,
+   two `xxl` in from the right; signed in, "Offer a ride" is a line under
+   the rides, as before. "How it works" stands whole in a window 1280 by
+   720; the map under it is then partly below the fold for someone signed
+   out (spec 18, 3.5). Signed in with nothing coming up, the map leads
+   the side column and is whole in that window; the link under it, "See
+   the meeting points", starts in the window and ends 25 under its edge,
+   as the scene is 36 higher than it was. The laptop journey measures
+   both.
 2. **A booked seat:** main column: the title, the road, where to stand and
    the driver; side column: the ticket, then the rows. On the trip day
    "I'm here" is the main button at the top of the side column.
@@ -550,7 +614,7 @@ ticket wherever it shows a ride (R31.2), and the tags of rule 6.
 | Edit trip (`/drive/trips/[id]/edit`) | Its parts become rows with what is set now: Time, Stops (with Add a stop and Remove a stop under it), Price, Seats, Car, How people book, Preferences and note. Each part's screen and "Check the change" keep their fields |
 | Sharing a ride, messaging all passengers | The head at the left |
 | A person's profile, its preview, Edit profile | The person's card as on Profile (3.14); Report and Block as rows, red and last |
-| All rides (`/rides`), a place, a meeting point and their list | Rides as tickets; the rest as today |
+| All rides (`/rides`), a place, a meeting point and their list | Rides as tickets; the rest as today. As built: a place and a meeting point list no rides today, so only All rides changed |
 | My cars, a car, the driving licence, the photo | The head at the left |
 | The pages under Settings, Notices, Send feedback, deleting the account | The head at the left |
 
@@ -645,6 +709,13 @@ My rides load, named below.
 - The plan checks each of these against the API before the first pull
   request; a field that turns out to be missing is added there, and named
   in the plan.
+- Found while building the result ticket: a ride found carried its
+  driver's name, photo and rating, but not the `colour` of the circle
+  that stands in for a photo (spec 15, 4.2), which a booking and a
+  conversation already carry. `TripSearchResult.driver` gains `colour`,
+  so the same driver has the same circle in the results as on their ride.
+  It says nothing new about anyone: the colour is worked out from the
+  account, as everywhere else.
 
 ## 7. Privacy and safety
 
@@ -674,7 +745,7 @@ native speaker to check. Every other text keeps its key.
 | Several requests | {count} requests to answer | {count} beiðnir bíða svars |
 | A seat to pay for | {name} said yes: pay to keep your seat | {name} samþykkti: greiddu til að halda sætinu |
 | Its detail | {route}, {day}. Pay by {time}. | {route}, {day}. Greiddu fyrir kl. {time}. |
-| A ride on its trip day, and the trip day's title | Leaves in {minutes} minutes; Leaves at {time} | Fer eftir {minutes} mínútur; Fer kl. {time} |
+| A ride on its trip day, and the trip day's title | Leaves in {minutes} minutes; Leaves at {time} | Brottför eftir {minutes} mínútur; Brottför kl. {time} |
 | Its button | See your ride | Skoða ferðina |
 | More that needs me | and {count} more | og {count} í viðbót |
 | Tags on my rides | You drive, Passenger | Þú ekur, Farþegi |
@@ -691,10 +762,38 @@ native speaker to check. Every other text keeps its key.
 | Its detail | Photo and car are done. Your driving licence is left. | Mynd og bíll eru komin. Ökuskírteinið er eftir. |
 | Publishing | Publish ride | Birta ferð |
 | Laptop heading | Drive it again | Aka aftur |
-| End of results | That's every ride found | Þetta eru allar ferðirnar |
+| End of results | That's every ride found | Ekki fundust fleiri ferðir |
 | Profile groups | Driving, Account, Safety and privacy, Help | Akstur, Aðgangur, Öryggi og persónuvernd, Aðstoð |
 | Drafts on Offer | Show all drafts | Sýna öll drög |
 | A passenger's row | See profile | Skoða prófíl |
+
+Two Icelandic texts are not as first written here, and the table shows
+them as built. A ride leaves with "Brottför eftir … / Brottför kl. …":
+"fer eftir" also reads as "depends on", and the results already say
+"brottför kl.". The end of the results says "Ekki fundust fleiri ferðir":
+"Þetta eru allar ferðirnar" would be followed by a line offering "allar
+ferðir á næstunni", every ride and then more of them.
+
+Texts added while building, as they are in the app:
+
+| Text | English | Icelandic |
+| ---- | ------- | --------- |
+| A detail with nothing after the day | {route}, {day}. | {route}, {day}. |
+| What needs me, as a ticket's yellow tag | Answer {name}'s request; {count} requests to answer; Pay to keep your seat; Pay by {time}; Pay by {time} tomorrow | {name} bíður svars; {count} beiðnir bíða svars; Greiddu til að halda sætinu; Greiddu fyrir kl. {time}; Greiddu fyrir kl. {time} á morgun |
+| More that needs me, as the link's name | and {count} more: open My rides | og {count} í viðbót: opna Ferðirnar mínar |
+| Heading over my next ride | Your next ride | Næsta ferðin þín |
+| A seat's foot | Waiting for {name}'s answer; Seat confirmed | {name} á eftir að svara; Sæti staðfest |
+| The whole ride, on a part of it | {driver} drives {from} → {to} | {driver} ekur {from} → {to} |
+| How it works (a laptop, signed out) | How it works | Svona virkar þetta |
+| Its first step | Find a ride: Choose where from, where to and the day. | Finna far: Veldu hvaðan, hvert og hvaða dag. |
+| Its second step | Book a seat: At once, or the driver says yes first. | Bókaðu sæti: Strax, eða ökumaðurinn samþykkir fyrst. |
+| Its third step | Meet and go: Get in at a meeting point, at the time the ride shows. | Hittist og leggið af stað: Þú sest inn á mótsstað, á þeim tíma sem ferðin sýnir. |
+| Its line for drivers | Driving somewhere? Offer the empty seats in your car. | Ertu að keyra eitthvert? Bjóddu lausu sætin í bílnum þínum. |
+| The sorting chip's name | Sort: {order} | Röðun: {order} |
+| The Filters chip | Filters; Filters: {count} on | Síur; Síur: {count} virk (virkar) |
+| The first rides only | These are the first {count} rides | Þetta eru fyrstu {count} ferðirnar |
+| The end card's second line | Try another day, or see every ride leaving soon.; You can also see every ride leaving soon.; Choose a day to see others.; Filter by time of day to see others. | Prófaðu annan dag, eða skoðaðu allar ferðir á næstunni.; Þú getur líka skoðað allar ferðir á næstunni.; Veldu dag til að sjá fleiri.; Síaðu eftir tíma dags til að sjá fleiri. |
+| The end card's link | All rides | Allar ferðir |
 
 Texts that exist are reused where they say the same: "Rate the driver",
 "Rate your passenger", "Pay", "Delete draft", "My reports", "Notices",

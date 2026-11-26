@@ -63,7 +63,8 @@ request goes to `main` and so to staging; production waits for him.
 
 ## Checked against the API (spec 31, section 6)
 
-Everything the screens need is there today except one field.
+Everything the screens need is there today except two fields; the second
+was found while building PR 5.
 
 | Needed | Where it comes from | State |
 | ------ | ------------------- | ----- |
@@ -75,6 +76,7 @@ Everything the screens need is there today except one field.
 | Seats taken on each stretch | `MyTrip.segments[].seatsTaken` | There |
 | A request's own deadline | `Booking.requestExpiresAt` | There |
 | A conversation's ride, role and car | `Conversation.booking` | There |
+| The colour of a driver's circle in the results | nothing in a ride found | **Missing:** `TripSearchResult.driver.colour`, PR 5 |
 
 ## Review focus
 
@@ -94,7 +96,9 @@ its test in the pull request named.
    wide, and text at 200%: the place wraps under its own first line, its
    time stays on that first line, and the price stays inside the ticket (PR
    2 ticket test; PR 5 web journey measures that nothing in a ticket
-   reaches past it).
+   reaches past it). At 200% a word longer than a whole line of its place
+   is broken inside the word, the only way it stays in the ticket; the
+   journey lets that through and no other broken word.
 4. **Several things at once.** Two rides need me: Find shows the soonest
    with "and 1 more", My rides lists both under Needs you, and a ride with
    two requests says "2 requests to answer", not a name (PR 5, PR 8).
@@ -372,7 +376,7 @@ Merged, #261. `feat(rides)`, spec 31, 3.3 item 3 and section 6.
 
 ## PR 4: one name each
 
-`feat(texts)`, spec 31, 3.4. Values only; no key is renamed.
+Merged, #262. `feat(texts)`, spec 31, 3.4. Values only; no key is renamed.
 
 1. **A test first** in `packages/i18n` (`one-name.test.ts`): no English
    value says "trip" or "trips" as a word except in "Trip day", none is a
@@ -444,6 +448,41 @@ a meeting point (3.19).
    and that no line of the place ends inside a word.
 10. **Docs and pictures:** specs 4, 16 and 18; `built/find-*`,
     `built/results-*`.
+
+As built, what differs from the list above (spec 31 says the same where a
+person sees it, in 3.5, 3.6, 3.10 and 3.16):
+
+- A ride found gains its driver's `colour` in the API (the table above),
+  as the foot of its ticket shows the driver's circle.
+- `RideTicket` gains a `note` (the driver's whole ride, where the ticket
+  is a part of it) and a `testID`; `Chip` gains an `icon` and a `name`.
+- `my-rides/ride-row.tsx` and the texts only it used are gone
+  (`myRides.answerBy`, `myRides.answer`, `myRides.freeEverywhere`,
+  `myRides.freeOnStretch`, `myBookings.driverAndCar`, `search.submit`).
+  My rides shows `MyRideTicket` from this pull request on; the rest of
+  3.10 stays with PR 8.
+- Sizes: `sceneLine` 132 (was 96), `sceneCarWide` 170 (was 116) and
+  `scenePuffinSmall` 60, new.
+- The journeys greet by name ("Hi Anna") where they looked for "Find a
+  ride" after signing in.
+- A place and a meeting point list no rides today, so item 8 changed All
+  rides only.
+- `lib/use-clock.ts`, new: `useClock()` gives a screen that counts the
+  present moment, read again every half minute while the screen is in
+  view and in front, and when it or the app comes back. Find and My rides
+  use it; the booked seat and the trip day (PR 7) and the driver's ride
+  (PR 8) take it for their titles and deadlines.
+- `ResultTicket`'s `showDay` is `dayInName`: the ticket always shows its
+  day, and the prop only puts it in the name where no heading says it.
+- `sizes.wordsBeside` 144, new: the narrowest a line's words get before
+  the button or link beside them goes under them (the end card, the offer
+  in "How it works").
+- The Filters chip has its icon and, like the sorting chip, a chevron: it
+  unfolds what is under the row.
+- From the code review, left where they belong: PR 7 takes `leavesText`
+  out of `my-rides/need-texts.ts` for the title that counts down; PR 8
+  adds `MyRideTicket` to `look.spec.ts`'s phone 360 wide; the rest is in
+  PR 12's list.
 
 ## PR 6: a ride's details and booking a seat
 
@@ -614,11 +653,25 @@ and deleting the account (3.19).
 3. **Laptop, dark, Icelandic:** each rebuilt screen looked at in the three
    pictures and against its drawing; what differs is fixed or named.
 4. **Accessibility:** focus order follows the reading order on each
-   rebuilt screen; the road and the tear line are skipped.
+   rebuilt screen; the road and the tear line are skipped. With text at
+   200% on a phone 360 wide, the labels of the tab bar are wider than their
+   tabs (the page scrolls 4 px sideways) and Find's name line (the logo,
+   the name, Beta and the language) is 85 px wider than the screen, so the
+   language switch is reached by scrolling sideways. Both were there
+   before, and were found by PR 5's `look.spec.ts`, which measures the
+   sideways scroll with the text as set only: the labels fit their tabs,
+   the name line wraps, and that journey measures it at 200% too.
 5. **Sign-in** (3.15): if spec 29's screen has landed by then, the ride
    someone was about to book shows over the form as a ticket; if not, it
    is named as left for that spec's thread.
-6. **Docs:** spec 31 becomes Built, with what differs from the drawings;
+6. **Small things PR 5's code review named:** after "Show all rides"
+   focus goes to the first ride; a chip is 40 high on the web, under the
+   44 of a touch target; "New driver" is an amber tag, which rule 6 keeps
+   for what needs someone; the reading order of the yellow card beside
+   the rides on a laptop; All rides' centred title; Find on a phone moves
+   down a ticket's height when my rides arrive after the rides leaving
+   soon (room kept for them, or both shown together).
+7. **Docs:** spec 31 becomes Built, with what differs from the drawings;
    spec 15 has the parts; the roadmap and the changelog.
 
 ## After merging

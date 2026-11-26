@@ -13,17 +13,18 @@ import { PuffinByPin } from "@/components/puffin-scenes";
 import { Body, Heading, Title } from "@/components/text";
 import { offerRide } from "@/drive/offer-ride";
 import { useLanguage } from "@/i18n/language";
-import { now } from "@/lib/clock";
-import { RideItem } from "@/my-rides/ride-row";
-import { needOf, rideKey, type Ride, type When } from "@/my-rides/rides";
+import { useClock } from "@/lib/use-clock";
+import { MyRideTicket } from "@/my-rides/my-ride-ticket";
+import { needing, needOf, rideKey, type Ride, type When } from "@/my-rides/rides";
 import { useRides } from "@/my-rides/use-rides";
 import { SignInFirst } from "@/navigation/sign-in-first";
 import { sizes, spacing } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
 /**
- * My rides, a place of the menu (spec 16, 3.3): my bookings and the trips I
- * drive in one list, coming up or past. Coming up puts what needs me first.
+ * My rides, a place of the menu (spec 16, 3.3): my bookings and the rides I
+ * drive in one list of tickets (spec 31, 3.10), coming up or past. Coming
+ * up puts what needs me first.
  * Which list shows lives in the address, so Back returns to it. Pulling
  * down loads it again (3.9). Signed out, it asks to sign in.
  *
@@ -46,6 +47,8 @@ function MyRides() {
   const when: When = params.when === "past" ? "past" : "upcoming";
   const { loaded, reload, pull } = useRides(when);
   const wide = useWideScreen();
+  // What a ride needs counts down ("Leaves in 40 minutes") while the list is open.
+  const at = useClock();
 
   return (
     <Screen width="page" refresh={pull}>
@@ -81,26 +84,35 @@ function MyRides() {
           <Button variant="secondary" label={t("common.retry")} onPress={reload} />
         </Instead>
       ) : when === "upcoming" ? (
-        <ComingUp rides={loaded.rides} wide={wide} />
+        <ComingUp rides={loaded.rides} at={at} wide={wide} />
       ) : loaded.rides.length === 0 ? (
         <Instead wide={wide}>
           <Body align={wide ? "start" : "center"}>{t("myRides.nonePast")}</Body>
         </Instead>
       ) : (
-        <Rides rides={loaded.rides} at={now()} grid={wide} />
+        <Rides rides={loaded.rides} at={at} grid={wide} />
       )}
     </Screen>
   );
 }
 
 /**
- * What needs me under "Needs you", then the rest, soonest first (3.3 items
- * 2 and 3), or Find a ride and Offer a ride when nothing is coming up.
+ * What needs me under "Needs you", the soonest need first (spec 31, 3.3
+ * item 3), then the rest, soonest first (3.3 items 2 and 3), or Find a
+ * ride and Offer a ride when nothing is coming up. A ticket says in its
+ * foot what the ride needs, and opens where that is done.
  */
-function ComingUp({ rides, wide }: { readonly rides: readonly Ride[]; readonly wide: boolean }) {
+function ComingUp({
+  rides,
+  at,
+  wide,
+}: {
+  readonly rides: readonly Ride[];
+  readonly at: Date;
+  readonly wide: boolean;
+}) {
   const { t } = useLanguage();
   const me = useMe();
-  const at = now();
   if (rides.length === 0) {
     const nothing = (
       <View style={styles.nothing}>
@@ -123,13 +135,13 @@ function ComingUp({ rides, wide }: { readonly rides: readonly Ride[]; readonly w
     );
     return <Instead wide={wide}>{nothing}</Instead>;
   }
-  const needing = rides.filter((ride) => needOf(ride, at) !== null);
+  const needsMe = needing(rides, at).map(({ ride }) => ride);
   const rest = rides.filter((ride) => needOf(ride, at) === null);
-  if (needing.length === 0) return <Rides rides={rest} at={at} grid={wide} />;
+  if (needsMe.length === 0) return <Rides rides={rest} at={at} grid={wide} />;
   return (
     <>
       <Heading>{t("myRides.needsYou")}</Heading>
-      <Rides rides={needing} at={at} grid={wide} />
+      <Rides rides={needsMe} at={at} grid={wide} />
       {rest.length === 0 ? null : (
         <>
           <Heading>{t("myRides.comingUp")}</Heading>
@@ -140,7 +152,7 @@ function ComingUp({ rides, wide }: { readonly rides: readonly Ride[]; readonly w
   );
 }
 
-/** The rides one under the other, or as a `grid` on a wide page, in the same order. */
+/** The rides as tickets one under the other, or as a `grid` on a wide page, in the same order. */
 function Rides({
   rides,
   at,
@@ -151,7 +163,7 @@ function Rides({
   readonly grid: boolean;
 }) {
   const items = rides.map((ride) => (
-    <RideItem key={rideKey(ride)} ride={ride} at={at} fill={grid} />
+    <MyRideTicket key={rideKey(ride)} ride={ride} at={at} fill={grid} />
   ));
   return grid ? <Grid>{items}</Grid> : items;
 }

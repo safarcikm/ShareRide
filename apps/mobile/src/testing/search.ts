@@ -26,7 +26,7 @@ export const northResult: TripSearchResult = {
   pricePerSeat: { amount: 2900, currency: "ISK" },
   total: { amount: 2900, currency: "ISK" },
   freeSeats: 3,
-  driver: { firstName: "Anna", rating: newcomer.rating, photo: null },
+  driver: { firstName: "Anna", rating: newcomer.rating, photo: null, colour: 1 },
   bookingMode: "approval",
 };
 

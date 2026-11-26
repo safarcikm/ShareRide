@@ -57,7 +57,7 @@ test.describe("Continue with Google", () => {
     await page.getByRole("checkbox", { name: english.accept }).click();
     await page.getByRole("button", { name: english.createAccount, exact: true }).click();
     await notNow(page, english);
-    await expect(page.getByRole("heading", { name: english.findTitle })).toBeVisible();
+    await expect(page.getByRole("heading", { name: english.hi(person.firstName) })).toBeVisible();
 
     // Signed out, Google alone signs the member in again: no code.
     await menuLink(page, english.profileTab).click();
@@ -66,7 +66,7 @@ test.describe("Continue with Google", () => {
     await menuLink(page, english.profileTab).click();
     await page.getByRole("button", { name: english.signIn, exact: true }).click();
     await continueWithGoogle(page, person.label);
-    await expect(page.getByRole("heading", { name: english.findTitle })).toBeVisible();
+    await expect(page.getByRole("heading", { name: english.hi(person.firstName) })).toBeVisible();
     await menuLink(page, english.profileTab).click();
     await expect(page.getByRole("heading", { name: english.myProfile })).toBeVisible();
     await expect(

@@ -29,7 +29,15 @@ interface TimetableProps {
   /** Beside the line: "1 h 35 min", "2 h 25 min, 5 stops", "1 seat, 800 ISK". */
   readonly between: string;
   /** At the right of the timetable: "1,500 ISK" over "per seat"; "Free" is an amount. */
-  readonly price?: { readonly amount: string; readonly unit: string } | null;
+  readonly price?: TicketPrice | null;
+}
+
+export interface TicketPrice {
+  readonly amount: string;
+  /** Under the amount: "per seat", "1 seat". "Free" has none in the results. */
+  readonly unit?: string | undefined;
+  /** One line more under those, such as "3,000 ISK for 2 seats". */
+  readonly more?: string | null | undefined;
 }
 
 /**
@@ -58,6 +66,11 @@ interface TicketLook extends TimetableProps {
   readonly day: string;
   /** At the right of the day, such as "Book instantly" or "You drive". */
   readonly tags?: readonly TicketTag[];
+  /**
+   * One thing more about the ride, under the timetable and over the tear
+   * line, such as the driver's whole ride where this is a part of it.
+   */
+  readonly note?: string | null | undefined;
   /** One line under the tear line, usually a `TicketFoot`; without it there is no tear line. */
   readonly foot?: ReactNode;
   /** A ride that is mine: a moss bottom edge. */
@@ -70,6 +83,8 @@ interface TicketLook extends TimetableProps {
   readonly marked?: boolean;
   /** The pointer or the keyboard came to the ticket. */
   readonly onShow?: (() => void) | undefined;
+  /** Names all the ticket shows, inside what is pressed, for a list to find its rides. */
+  readonly testID?: string | undefined;
 }
 
 /**
@@ -91,6 +106,7 @@ export function RideTicket({
   to,
   between,
   price = null,
+  note = null,
   foot,
   mine = false,
   href,
@@ -100,20 +116,11 @@ export function RideTicket({
   corner,
   marked = false,
   onShow,
+  testID,
 }: TicketLook & TicketPress) {
   const palette = usePalette();
-  return (
-    <Card
-      flush
-      mine={mine}
-      fill={fill}
-      marked={marked}
-      corner={corner}
-      onHoverIn={onShow}
-      onFocus={onShow}
-      accessibilityLabel={accessibilityLabel}
-      {...(href === undefined ? { onPress } : { href })}
-    >
+  const ticket = (
+    <>
       <View testID="ticket-day" style={[styles.day, corner !== undefined && styles.dayWithCorner]}>
         <Text style={[typography.caption, styles.dayText, { color: palette.textMuted }]}>
           {day}
@@ -127,12 +134,38 @@ export function RideTicket({
       </View>
       <View testID="ticket-top" style={[styles.top, fill && styles.fill]}>
         <Timetable from={from} to={to} between={between} price={price} />
+        {note === null ? null : (
+          <Text testID="ticket-note" style={[typography.small, { color: palette.textMuted }]}>
+            {note}
+          </Text>
+        )}
       </View>
       {foot === undefined || foot === null ? null : (
         <>
           <TearLine />
           {foot}
         </>
+      )}
+    </>
+  );
+  return (
+    <Card
+      flush
+      mine={mine}
+      fill={fill}
+      marked={marked}
+      corner={corner}
+      onHoverIn={onShow}
+      onFocus={onShow}
+      accessibilityLabel={accessibilityLabel}
+      {...(href === undefined ? { onPress } : { href })}
+    >
+      {testID === undefined ? (
+        ticket
+      ) : (
+        <View testID={testID} style={styles.fill}>
+          {ticket}
+        </View>
       )}
     </Card>
   );
@@ -189,9 +222,16 @@ export function Timetable({ from, to, between, price = null }: TimetableProps) {
           <Text style={[typography.figure, styles.priceText, { color: palette.text }]}>
             {price.amount}
           </Text>
-          <Text style={[typography.small, styles.priceText, { color: palette.textMuted }]}>
-            {price.unit}
-          </Text>
+          {[price.unit, price.more].map((line) =>
+            line === undefined || line === null ? null : (
+              <Text
+                key={line}
+                style={[typography.small, styles.priceText, { color: palette.textMuted }]}
+              >
+                {line}
+              </Text>
+            ),
+          )}
         </View>
       )}
     </View>
@@ -376,6 +416,7 @@ const styles = StyleSheet.create({
     paddingTop: spacing.sm,
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.ms,
+    gap: spacing.sm,
   },
   // A price that does not fit beside the timetable goes under it, at the right.
   times: {

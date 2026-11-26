@@ -36,10 +36,10 @@ describe("beside the driver of a trip (spec 4, 3.4 and 3.6)", () => {
         setUp: (client) => {
           searchApi(client, {
             results: () => [
-              { ...northResult, driver: { firstName: "Anna", rating: rated.rating, photo: null } },
+              { ...northResult, driver: { ...northResult.driver, rating: rated.rating } },
               resultOn("2026-11-15", {
                 tripId: "0190a1d6-0000-7000-8000-0000000000f2",
-                driver: { firstName: "Bára", rating: newcomer.rating, photo: null },
+                driver: { firstName: "Bára", rating: newcomer.rating, photo: null, colour: 2 },
               }),
             ],
           });

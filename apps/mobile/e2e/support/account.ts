@@ -10,8 +10,10 @@ import { codeIn, newPhoneNumber, sentCount, textMessage } from "./sms";
 export interface Texts {
   /** "Sign in" on Profile in the menu, signed out. */
   readonly signIn: string;
-  /** Find's title, where the app opens. */
+  /** Find's title, where the app opens, for someone signed out. */
   readonly findTitle: string;
+  /** Find's title for someone signed in, who is greeted by name (spec 31, 3.5). */
+  readonly hi: (firstName: string) => string;
   /** Find and Profile in the menu. */
   readonly findTab: string;
   readonly profileTab: string;
@@ -41,6 +43,7 @@ export interface Texts {
 export const english: Texts = {
   signIn: "Sign in",
   findTitle: "Share your ride",
+  hi: (firstName) => `Hi ${firstName}`,
   findTab: "Find",
   profileTab: "Profile",
   email: "Email",
@@ -63,6 +66,7 @@ export const english: Texts = {
 export const icelandic: Texts = {
   signIn: "Skrá inn",
   findTitle: "Verum samferða",
+  hi: (firstName) => `Hæ ${firstName}`,
   findTab: "Leita",
   profileTab: "Prófíll",
   email: "Netfang",
@@ -146,13 +150,13 @@ export async function signUp(page: Page, texts: Texts, firstName: string) {
   const { email, text } = await enterCodes(page, texts, phone);
   await finishSignUp(page, texts, firstName);
   await notNow(page, texts);
-  await expect(page.getByRole("heading", { name: texts.findTitle })).toBeVisible();
+  await expect(page.getByRole("heading", { name: texts.hi(firstName) })).toBeVisible();
   await menuLink(page, texts.profileTab).click();
   await expect(page.getByRole("heading", { name: texts.myProfile })).toBeVisible();
   // Other places of the menu stay in the page, out of sight.
   await expect(page.getByText(firstName, { exact: true }).filter({ visible: true })).toBeVisible();
   await menuLink(page, texts.findTab).click();
-  await expect(page.getByRole("heading", { name: texts.findTitle })).toBeVisible();
+  await expect(page.getByRole("heading", { name: texts.hi(firstName) })).toBeVisible();
   // Back to Find goes back in the browser's history, which moves the address
   // a moment after the screen. A reload before then opens My profile again.
   await expect(page).toHaveURL("/");

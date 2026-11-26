@@ -300,6 +300,8 @@ export const sizes = {
   wheelWidth: 64,
   /** Narrowest the main action of a bottom bar gets before it moves under the price. */
   barAction: 200,
+  /** Narrowest the words of a line get before the button or link beside them moves under them. */
+  wordsBeside: 144,
   /** A row that opens a screen, such as My cars on Profile. */
   row: 56,
   /** The soft square behind a row's icon, and behind the icon of what needs you (spec 31, 3.3). */
@@ -329,20 +331,23 @@ export const sizes = {
    * The puffin scenes (spec 15, section 5.3): the car on a phone's front page,
    * on a wide page's title line (no higher than the title and the room
    * around it), and driving off when a seat is booked; the puffin by a pin
-   * on an empty screen, by its height.
+   * on an empty screen, and small beside the line that ends a list, by its
+   * height.
    */
   sceneCar: 170,
   sceneCarSmall: 88,
   sceneCarBooked: 200,
   /**
    * The Iceland scene (spec 15, section 5.3): its road on a phone; on a
-   * wide page the line of the title over it, taller than the title alone,
-   * and the car on its hills.
+   * wide page the line of the title over it, which holds the title with
+   * its line at the left and the car on its hills at the right (spec 31,
+   * 3.16).
    */
   sceneRoad: 22,
-  sceneLine: 96,
-  sceneCarWide: 116,
+  sceneLine: 132,
+  sceneCarWide: 170,
   scenePuffin: 120,
+  scenePuffinSmall: 60,
 } as const;
 
 /** Width of the outline on inputs, tick boxes and chips. */

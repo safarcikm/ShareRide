@@ -85,8 +85,8 @@ is added (Martin asked, 2026-11-25).
 
 ### 3.1 The share icon on ride cards
 
-1. **Where:** every result card (`ResultCard`): search results, the front
-   page's "Leaving soon", All rides. And the driver's cards in My trips,
+1. **Where:** every ride found (`ResultTicket` since spec 31, `ResultCard`
+   before it): search results, the front page's "Leaving soon", All rides. And the driver's cards in My trips,
    for a published trip that has not left (status `published`).
 2. **How it looks:** a quiet icon button, drawn 36 round inside a 44
    button (the web has no `hitSlop`), the Share icon in `textMuted`, no
@@ -316,7 +316,7 @@ from `pnpm --filter @shareride/api story-pictures`):
 
 | Screen | Picture |
 | ------ | ------- |
-| A result card on a phone | ![A result card with the share icon in its corner](images/share-a-ride/result-card-phone.png) |
+| A ride found, on a phone (a ticket since spec 31) | ![A ride's ticket with the share icon in its corner](images/share-a-ride/result-card-phone.png) |
 | The front page on a laptop | ![Rides leaving soon, each with the share icon](images/share-a-ride/front-page-laptop.png) |
 | A result's link copied, on a laptop | ![The icon turned into a tick](images/share-a-ride/link-copied-laptop.png) |
 | Your trip is published, on a phone (no share window in that browser) | ![Share this ride after publishing: Share on Facebook, the post's text, Copy text, Follow PuffinRide](images/share-a-ride/published-phone.png) |
