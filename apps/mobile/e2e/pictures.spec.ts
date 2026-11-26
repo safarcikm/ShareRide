@@ -312,7 +312,8 @@ test.describe("pictures", () => {
       locale: "en-GB",
     });
     const dora = await other.newPage();
-    const { tripId, booking } = await confirmedBooking(page, dora);
+    // The whole ride, to N1 Selfoss, which leaves the capital area.
+    const { tripId, booking } = await confirmedBooking(page, dora, [], 3);
 
     const visible = { visible: true };
     const shoot = async (name: string, scheme: "light" | "dark") => {
