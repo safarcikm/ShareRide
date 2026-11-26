@@ -16,12 +16,28 @@ export function fontFamily(face: string, os: string = Platform.OS): string {
   return os === "web" ? `${face}, system-ui, sans-serif` : face;
 }
 
+/**
+ * What keeps the words of a title apart on the web. Fredoka's space is
+ * narrow, and its kerning pulls a "V" or a "T" after a space closer still,
+ * so "N1 Vík" read as "N1Vík" (spec 31, 3.18): the browser sets the title
+ * face without kerning and with a slightly wider space. Phones draw text
+ * their own way and have neither setting.
+ */
+export function wordsApart(
+  face: string,
+  os: string = Platform.OS,
+): { readonly fontKerning?: "none"; readonly wordSpacing?: string } {
+  return os === "web" && face.startsWith("Fredoka")
+    ? { fontKerning: "none", wordSpacing: "0.06em" }
+    : {};
+}
+
 type TypeStyle = keyof typeof typeScale;
 
 export const typography = Object.fromEntries(
   Object.entries(typeScale).map(([name, { face, fontSize, lineHeight }]) => [
     name,
-    { fontFamily: fontFamily(face), fontSize, lineHeight },
+    { fontFamily: fontFamily(face), fontSize, lineHeight, ...wordsApart(face) },
   ]),
 ) as {
   readonly [K in TypeStyle]: {

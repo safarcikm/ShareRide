@@ -13,7 +13,7 @@ import { useRef, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { errorText } from "@/auth/errors";
 import { useSession } from "@/auth/session";
-import { Avatar } from "@/components/avatar";
+import { Avatar, besideAvatar } from "@/components/avatar";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
 import { Chip } from "@/components/chip";
@@ -121,13 +121,13 @@ export function RequestCard({
 
   return (
     <Card>
-      <View style={styles.person}>
+      <View style={besideAvatar.row}>
         <Avatar
           firstName={name}
           colour={booking.passenger.colour}
           photo={booking.passenger.photo}
         />
-        <View style={styles.grow}>
+        <View style={besideAvatar.text}>
           <Text style={[typography.bodyStrong, { color: palette.text }]}>{name}</Text>
           <Text style={[typography.small, { color: palette.textMuted }]}>
             {memberSinceText(t, locale, monthOf(booking.passenger.memberSince))}
@@ -248,8 +248,6 @@ export function RequestCard({
 }
 
 const styles = StyleSheet.create({
-  person: { flexDirection: "row", alignItems: "center", gap: spacing.ms },
-  grow: { flex: 1 },
   spread: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   chips: { flexDirection: "row", gap: spacing.sm, flexWrap: "wrap" },
   declining: { gap: spacing.ms },

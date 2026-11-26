@@ -17,6 +17,11 @@ interface SectionLink {
  * that opens the screen to change it, as on posting's review and on Edit
  * trip (spec 6, 3.2); `more` is a second way to change it, under what it
  * holds, such as removing a stop.
+ *
+ * The link stands at the end of the title's line. Where the two do not fit
+ * on one line, as "Change the preferences and note" on a phone, the link
+ * goes under the title, and a link wider than the card breaks into lines:
+ * it never runs out of the card (spec 31, 3.18).
  */
 export function SummarySection({
   title,
@@ -31,7 +36,7 @@ export function SummarySection({
 }) {
   const palette = usePalette();
   return (
-    <View style={styles.section}>
+    <View testID="summary-section" style={styles.section}>
       <View style={styles.header}>
         <Text
           accessibilityRole="header"
@@ -40,7 +45,9 @@ export function SummarySection({
         >
           {title}
         </Text>
-        <TextLink {...link} />
+        <View style={styles.link}>
+          <TextLink {...link} />
+        </View>
       </View>
       {lines.map((line, index) => (
         <Text key={`${String(index)}-${line}`} style={[typography.body, { color: palette.text }]}>
@@ -49,7 +56,7 @@ export function SummarySection({
       ))}
       {more === undefined ? null : (
         <View style={styles.more}>
-          <TextLink {...more} />
+          <TextLink {...more} align="start" />
         </View>
       )}
     </View>
@@ -58,7 +65,9 @@ export function SummarySection({
 
 const styles = StyleSheet.create({
   section: { gap: spacing.xs },
-  header: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
-  title: { flex: 1 },
+  header: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", columnGap: spacing.sm },
+  // As wide as its words, and the room that is left: the link goes to the end.
+  title: { flexGrow: 1, flexShrink: 1 },
+  link: { flexShrink: 1, maxWidth: "100%" },
   more: { alignItems: "flex-start" },
 });

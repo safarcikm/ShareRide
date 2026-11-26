@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { english, signUp } from "./support/account";
 import {
   confirmedBooking,
@@ -17,6 +17,37 @@ import { chooseTime, focused, postTripToSelfoss, timeField } from "./support/tri
 // full refund, "The trip changed" chosen, without it counting.
 
 test.use({ locale: "en-GB" });
+
+/** The parts of a trip's summary on the screen in view; a screen under it stays in the page. */
+const shownParts = '[data-testid="summary-section"]';
+
+function partsOf(page: Page): Promise<number> {
+  return page.evaluate(
+    (parts) =>
+      [...document.querySelectorAll(parts)].filter((part) => part.getClientRects().length > 0)
+        .length,
+    shownParts,
+  );
+}
+
+/** The links that reach past the left or right edge of the part they change. */
+function linksOutsideTheirPart(page: Page): Promise<string[]> {
+  return page.evaluate(
+    (parts) =>
+      [...document.querySelectorAll(parts)]
+        .filter((part) => part.getClientRects().length > 0)
+        .flatMap((part) => {
+          const box = part.getBoundingClientRect();
+          return [...part.querySelectorAll("a")]
+            .filter((link) => {
+              const at = link.getBoundingClientRect();
+              return at.left < box.left - 0.5 || at.right > box.right + 0.5;
+            })
+            .map((link) => link.textContent);
+        }),
+    shownParts,
+  );
+}
 
 /** A clock time ("09:00") `minutes` later. */
 function later(time: string, minutes: number): string {
@@ -39,6 +70,15 @@ test("a driver moves the departure 45 minutes, and the passenger cancels with a 
   await driver.getByRole("button", { name: "Edit trip", exact: true }).click();
   await expect(driver).toHaveURL(new RegExp(`/drive/trips/${tripId}/edit$`));
   await expect(driver.getByRole("heading", { name: "Edit trip" })).toBeVisible();
+  // On a narrow phone a part's link is wider than what its title leaves:
+  // it goes under the title, and never out of the card (spec 31, 3.18).
+  const size = driver.viewportSize();
+  if (testInfo.project.use.isMobile === true && size !== null) {
+    await driver.setViewportSize({ width: 360, height: size.height });
+    await expect.poll(() => partsOf(driver)).toBe(7);
+    expect(await linksOutsideTheirPart(driver)).toEqual([]);
+    await driver.setViewportSize(size);
+  }
   await driver.getByRole("link", { name: "Change the time" }).click();
   await expect(driver.getByRole("heading", { name: "Change the departure" })).toBeVisible();
   await expect(

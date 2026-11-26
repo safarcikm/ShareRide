@@ -492,10 +492,27 @@ chosen:
 1. Titles run words together ("N1Vík" for "N1 Vík"): Fredoka's space is
    narrow, and the kerning between "1" or a space and "V" closes it
    further. At 28 px the space is 6.75 px and "N1 Vík" is 72.5 px wide
-   with kerning, 77.4 px without.
+   with kerning, 77.4 px without. **Fixed:** on the web, every Fredoka
+   style is set without kerning and with a word space 0.06 em wider
+   (`wordsApart` in the app's tokens).
 2. On Edit trip, "Change the preferences and note" runs out of its card.
+   **Fixed:** where a part's title and its link do not fit on one line,
+   the link goes under the title; the same on the last step of posting.
+   "Remove a stop" starts at the left.
 3. Profile pictures sit at mid-height beside tall blocks of text (the
-   driver's card, a request).
+   driver's card, a request). **Fixed:** the picture stands at the top,
+   with the name; beside a line or two it stays at their middle.
+
+A web journey checks each of the last two in the browser: no link of Edit
+trip reaches past its part at 360 wide, and no picture starts under the
+top of the text beside it.
+
+Pictures: Edit trip
+[before](images/one-ride-one-ticket/defects/edit-trip-before.webp) and
+[after](images/one-ride-one-ticket/defects/edit-trip-after.webp) (a phone
+360 and 390 wide, and a laptop), and a profile picture beside its text
+[before](images/one-ride-one-ticket/defects/picture-before.webp) and
+[after](images/one-ride-one-ticket/defects/picture-after.webp).
 
 ### 3.19 Every other screen
 

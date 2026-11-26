@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { english, signUp } from "./support/account";
+import { picturesUnderTheirText } from "./support/layout";
 import { focused, postTripToSelfoss } from "./support/trips";
 
 // Spec 5's request from both sides on the web build, in two browsers: a new
@@ -34,6 +35,11 @@ test("a passenger requests a seat, the driver accepts, the passenger pays", asyn
   const tripId = await postTripToSelfoss(driver, "18:30");
   await signUp(passenger, english, "Dóra");
   await passenger.goto(`/trips/${tripId}?from=0&to=1`);
+  // The driver's picture stands with her name, over the lines about her (spec 31, 3.18).
+  await expect(
+    passenger.getByText("Reliability: not enough trips yet").filter(visible),
+  ).toBeVisible();
+  expect(await picturesUnderTheirText(passenger)).toEqual({ pictures: 1, under: [] });
   await passenger.getByRole("button", { name: "Send request", exact: true }).click();
   await passenger.getByLabel("Message to the driver (optional)").fill("A small rucksack.");
   await passenger.getByRole("button", { name: "Send request", exact: true }).click();
@@ -52,6 +58,8 @@ test("a passenger requests a seat, the driver accepts, the passenger pays", asyn
   await expect(driver.getByText("No reviews yet").filter(visible)).toBeVisible();
   await expect(driver.getByText("A small rucksack.").filter(visible)).toBeVisible();
   await expect(driver.getByText(/ left to answer$/).filter(visible)).toBeVisible();
+  // And the picture of who asks stands with their name.
+  expect(await picturesUnderTheirText(driver)).toEqual({ pictures: 1, under: [] });
   await driver.getByRole("button", { name: "Accept", exact: true }).click();
   const accepted = /^Request accepted\. Dóra has until \d\d:\d\d( tomorrow)? to pay\.$/;
   await expect(driver.getByText(accepted).filter(visible)).toBeVisible();
