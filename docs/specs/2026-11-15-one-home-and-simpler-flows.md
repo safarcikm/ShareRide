@@ -139,6 +139,13 @@ Find replaces both the front page and My profile as the place the app opens.
      with Pay);
    - a trip you drive with requests to answer ("Answer by 08:10 tomorrow, or
      the requests close", with Answer requests).
+
+   Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.3, item 3) a ride
+   on its trip day needs you too, as a passenger and as a driver: its row
+   says "Trip day" and stands under "Needs you" with no button of its own,
+   as the row opens the ride. What needs you is one rule in
+   `packages/domain` (`bookingNeed`, `tripNeed`), which Find and My rides
+   share.
 3. After that, under "Coming up", every other booking and published trip
    you drive, soonest first. Each row says **Passenger** or **Driving**, its
    status, the date, times and route. A booking adds the driver and car and
@@ -440,6 +447,9 @@ No new tables. Changes to the API:
 - Each trip in `GET /v1/me/trips` says when its first open request closes
   (`requestsCloseAt`, null when none waits), for "Answer by 08:10 tomorrow,
   or the requests close".
+- Since [spec 31](2026-11-26-one-ride-one-ticket.md) (section 6) it also
+  says who asks in that request (`firstRequest`: the first name, the seats
+  and the names of the two stops; null when none waits).
 - "Your next ride" and My rides read `GET /v1/me/bookings` and
   `GET /v1/me/trips` and merge them in the app, soonest first.
 - Check and pay creates the booking (`POST /v1/trips/{id}/bookings`), then

@@ -1,6 +1,7 @@
 import { northBooking, northMyTrip, unpaidBooking } from "@/testing/bookings";
+import { onTheDay } from "@/testing/trip-day";
 import { plannedDraft } from "@/testing/trips";
-import { mergeRides, needsYou, seatsFree, seatsTaken } from "./rides";
+import { mergeRides, needOf, seatsFree, seatsTaken } from "./rides";
 
 const at = (time: string) => new Date(`2026-11-15T${time}:00.000Z`);
 
@@ -12,6 +13,7 @@ function trip(departs: string, arrives: string, seatsTaken: number[] = [0, 0, 0]
     arrivesAt: at(arrives).toISOString(),
     openRequests: 0,
     requestsCloseAt: null,
+    firstRequest: null,
     segments: seatsTaken.map((taken) => ({
       distanceM: 100_000,
       durationS: 3600,
@@ -55,25 +57,30 @@ describe("mergeRides (spec 16, 3.3)", () => {
   });
 });
 
-describe("needsYou (spec 16, 3.3 item 2)", () => {
+describe("needOf (spec 31, 3.3 item 3)", () => {
   const noon = new Date("2026-11-14T12:00:00.000Z");
   const [ride] = mergeRides([unpaidBooking], [], "upcoming");
 
   it("asks to pay while the payment deadline is still to come", () => {
-    expect(ride && needsYou(ride, noon)).toBe("pay");
-    expect(ride && needsYou(ride, new Date("2026-11-14T12:30:00.000Z"))).toBeNull();
+    expect(ride && needOf(ride, noon)).toEqual({
+      kind: "pay",
+      by: new Date("2026-11-14T12:30:00.000Z"),
+    });
+    expect(ride && needOf(ride, new Date("2026-11-14T12:30:00.000Z"))).toBeNull();
   });
 
-  it("asks nothing of a request or a confirmed booking", () => {
+  it("asks nothing of a request or a confirmed booking before its trip day", () => {
     const rides = mergeRides(
       [
         northBooking(),
         northBooking({ id: "0190a1d6-0000-7000-8000-0000000000c3", status: "confirmed" }),
+        onTheDay({ phase: "upcoming" }),
+        onTheDay({ phase: "completed" }),
       ],
       [],
       "upcoming",
     );
-    expect(rides.map((each) => needsYou(each, noon))).toEqual([null, null]);
+    expect(rides.map((each) => needOf(each, noon))).toEqual([null, null, null, null]);
   });
 
   it("asks to answer requests until they close", () => {
@@ -83,10 +90,31 @@ describe("needsYou (spec 16, 3.3 item 2)", () => {
       requestsCloseAt: "2026-11-14T22:00:00.000Z",
     };
     const [driving] = mergeRides([], [waiting], "upcoming");
-    expect(driving && needsYou(driving, noon)).toBe("answer");
-    expect(driving && needsYou(driving, new Date("2026-11-14T22:00:00.000Z"))).toBeNull();
+    expect(driving && needOf(driving, noon)).toEqual({
+      kind: "answer",
+      by: new Date("2026-11-14T22:00:00.000Z"),
+    });
+    expect(driving && needOf(driving, new Date("2026-11-14T22:00:00.000Z"))).toBeNull();
     const [answered] = mergeRides([], [trip("10:00", "13:00")], "upcoming");
-    expect(answered && needsYou(answered, noon)).toBeNull();
+    expect(answered && needOf(answered, noon)).toBeNull();
+  });
+
+  it("raises a booked seat on its trip day, by when I get in", () => {
+    const booking = onTheDay({ phase: "trip_day" });
+    const [mine] = mergeRides([booking], [], "upcoming");
+    expect(mine && needOf(mine, noon)).toEqual({
+      kind: "tripDay",
+      by: new Date(booking.board.plannedAt),
+    });
+  });
+
+  it("raises a ride I drive on its trip day, by when it leaves", () => {
+    const [driving] = mergeRides(
+      [],
+      [{ ...trip("10:00", "13:00"), phase: "trip_day" as const }],
+      "upcoming",
+    );
+    expect(driving && needOf(driving, noon)).toEqual({ kind: "tripDay", by: at("10:00") });
   });
 });
 

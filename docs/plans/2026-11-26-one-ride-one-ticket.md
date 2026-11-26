@@ -278,8 +278,8 @@ spec 31 becomes Approved, with decision 1 answered.
 
 ## PR 2: the parts and the tags
 
-`feat(look)`, spec 31, 3.3. Nothing but the status tags changes on a
-screen.
+Merged, #260. `feat(look)`, spec 31, 3.3. Nothing but the status tags
+changes on a screen.
 
 1. **Tokens:** `sizes.roadCar` 60, `sizes.road` 12, `sizes.roadMark` 10,
    `sizes.ticketNotch` 16, `sizes.rowIcon` 36, `sizes.avatarSmall` 28, as
@@ -354,15 +354,20 @@ screen.
 3. **Contract and API:** `firstRequest` on `MyTrip`; in
    `modules/trips/drafts.ts` the request with the earliest `expiresAt`
    among those still open, with its passenger's first name and its two
-   stops' names. Integration test: none, one, and two requests (the one
-   that closes first); an expired request is not it; a former member's
-   name is null.
+   stops' names; of two that close together, the one sent first. It comes
+   from the same statement as `openRequests` and `requestsCloseAt`, so the
+   three never disagree. Integration test, on the three together: none,
+   one, and two requests (the one that closes first, and the one sent
+   first at the same minute); an answered or expired request is not it; a
+   missing name is null.
 4. **Fake API and fixtures:** `testing/bookings.ts` and `testing/trips.ts`
    send `firstRequest`.
 5. **App:** `my-rides/rides.ts` loses `needsYou` for `needOf(ride, at):
    Need | null`, which calls the domain. My rides and Find keep behaving
    as today (their tests pass unchanged, a ride on its trip day now also
-   stands under Needs you).
+   stands under Needs you). Until PR 5 gives it a card, such a ride's row
+   says "Trip day" (`tripDay.title`, a text of today) and has no button of
+   its own.
 6. **Docs:** spec 16, 3.3 points to spec 31; API reference; changelog.
 
 ## PR 4: one name each

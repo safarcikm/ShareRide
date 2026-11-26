@@ -629,6 +629,7 @@ describe("Your next ride (spec 16, 3.2 item 2)", () => {
               takings: { amount: 0, currency: "ISK" },
               openRequests: 0,
               requestsCloseAt: null,
+              firstRequest: null,
             },
           ],
         );

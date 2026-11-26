@@ -24,15 +24,22 @@ import {
   type TripDaySettings,
   type PriceSettings,
 } from "@shareride/domain";
-import { and, asc, count, desc, eq, gt, inArray, isNull, lte, min, ne, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, isNull, lte, ne, or, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { lockActive } from "../account/standing.ts";
 import type { DrivingService } from "../driving/index.ts";
 import { seatsTakenNow, takingsBookings } from "../bookings/seats.ts";
-import { toSummary } from "../meeting-points/service.ts";
+import { nameOf, toSummary } from "../meeting-points/service.ts";
 import { checkInsAt, driverCheckedInAt, shownWindow } from "../trip-day/check-ins.ts";
 import type { TripSettingsSource } from "../settings/trip-settings.ts";
 
 const { bookings, legs, meetingPoints, segments, trips, tripStops, users, vehicles } = schema;
+
+// The two ends of a request, for who asks first (spec 31, 3.3).
+const askFromStops = alias(tripStops, "ask_from_stops");
+const askToStops = alias(tripStops, "ask_to_stops");
+const askFromPoints = alias(meetingPoints, "ask_from_points");
+const askToPoints = alias(meetingPoints, "ask_to_points");
 
 type TripRow = typeof trips.$inferSelect;
 type Transaction = Parameters<Parameters<Database["transaction"]>[0]>[0];
@@ -169,7 +176,7 @@ export function createTripService(dependencies: {
     const ids = rows.map((row) => row.id);
     if (ids.length === 0) return [];
     const now = clock();
-    const [stopRows, segmentRows, requestRows, occupancy, takings] = await Promise.all([
+    const [stopRows, segmentRows, askRows, occupancy, takings] = await Promise.all([
       q
         .select({ stop: tripStops, point: meetingPoints })
         .from(tripStops)
@@ -182,18 +189,41 @@ export function createTripService(dependencies: {
         .from(segments)
         .where(inArray(segments.tripId, ids))
         .orderBy(asc(segments.position)),
-      // A request whose deadline passed reads as expired, as bookings show it.
+      // Of each trip's requests that wait: how many there are, and the one
+      // that closes first, the earlier sent of two that close together
+      // (spec 31, 3.3). One statement, so the three never disagree.
       q
-        .select({ tripId: bookings.tripId, count: count(), closesAt: min(bookings.expiresAt) })
+        .selectDistinctOn([bookings.tripId], {
+          tripId: bookings.tripId,
+          count: sql<number>`count(*) over (partition by ${bookings.tripId})`.mapWith(Number),
+          closesAt: bookings.expiresAt,
+          firstName: users.firstName,
+          seats: bookings.seats,
+          fromIs: askFromPoints.nameIs,
+          fromEn: askFromPoints.nameEn,
+          toIs: askToPoints.nameIs,
+          toEn: askToPoints.nameEn,
+        })
         .from(bookings)
+        .innerJoin(users, eq(users.id, bookings.passengerId))
+        .innerJoin(askFromStops, eq(askFromStops.id, bookings.fromStopId))
+        .innerJoin(askFromPoints, eq(askFromPoints.id, askFromStops.meetingPointId))
+        .innerJoin(askToStops, eq(askToStops.id, bookings.toStopId))
+        .innerJoin(askToPoints, eq(askToPoints.id, askToStops.meetingPointId))
         .where(
           and(
             inArray(bookings.tripId, ids),
             eq(bookings.status, "requested"),
+            // A request whose deadline passed reads as expired, as bookings show it.
             gt(bookings.expiresAt, now),
           ),
         )
-        .groupBy(bookings.tripId),
+        .orderBy(
+          asc(bookings.tripId),
+          asc(bookings.expiresAt),
+          asc(bookings.createdAt),
+          asc(bookings.id),
+        ),
       seatsTakenNow(q, ids, now),
       takingsBookings(q, ids, now),
     ]);
@@ -222,6 +252,7 @@ export function createTripService(dependencies: {
     return rows.map((row) => {
       // The trip day is for a trip that runs, or ran (spec 8, 3.1).
       const runs = runsOrRan(row.status as MyTrip["status"]);
+      const ask = askRows.find((request) => request.tripId === row.id);
       return {
         id: row.id,
         status: row.status as MyTrip["status"],
@@ -265,10 +296,17 @@ export function createTripService(dependencies: {
         takings: takingsOf(takings.get(row.id) ?? []),
         priceSettings:
           row.status === "draft" ? current : (published.get(row.settingsVersion) ?? current),
-        openRequests: requestRows.find((requests) => requests.tripId === row.id)?.count ?? 0,
-        requestsCloseAt:
-          requestRows.find((requests) => requests.tripId === row.id)?.closesAt?.toISOString() ??
-          null,
+        openRequests: ask?.count ?? 0,
+        requestsCloseAt: ask?.closesAt?.toISOString() ?? null,
+        firstRequest:
+          ask === undefined
+            ? null
+            : {
+                firstName: ask.firstName,
+                seats: ask.seats,
+                from: nameOf({ nameIs: ask.fromIs, nameEn: ask.fromEn }),
+                to: nameOf({ nameIs: ask.toIs, nameEn: ask.toEn }),
+              },
         cancellation:
           row.status === "cancelled" && row.cancelReason !== null
             ? {

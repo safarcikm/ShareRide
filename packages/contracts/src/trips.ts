@@ -13,7 +13,7 @@ import {
 import { z } from "zod";
 import { moneySchema, timestampSchema } from "./common.ts";
 import { accountSuspendedResponse, errorResponseSchema } from "./errors.ts";
-import { dateSchema, meetingPointSummarySchema } from "./meeting-points.ts";
+import { dateSchema, localisedTextSchema, meetingPointSummarySchema } from "./meeting-points.ts";
 import { defineRoute } from "./route.ts";
 
 const unauthenticated = { description: "unauthenticated", schema: errorResponseSchema } as const;
@@ -287,6 +287,19 @@ export const myTripSchema = z.object({
   openRequests: z.int().nonnegative(),
   /** The first deadline among those requests, for "Answer by" (spec 16, 3.3); null for none. */
   requestsCloseAt: timestampSchema.nullable(),
+  /**
+   * The request with that deadline, for "Dóra asks for 1 seat" on what
+   * needs the driver (spec 31, 3.3); null for none. `firstName` is null for
+   * a former member (spec 11).
+   */
+  firstRequest: z
+    .object({
+      firstName: z.string().nullable(),
+      seats: z.int().min(1),
+      from: localisedTextSchema,
+      to: localisedTextSchema,
+    })
+    .nullable(),
   /** Why the driver cancelled it, with their note; null unless the driver cancelled it (spec 6, 3.3), as when ShareRide did (spec 9, 3.6). */
   cancellation: z
     .object({

@@ -20,7 +20,7 @@ import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 import { carText } from "@/trip-details/texts";
 import { routeText } from "@/trips/texts";
-import { needsYou, seatsFree, seatsTaken, type Ride } from "./rides";
+import { needOf, seatsFree, seatsTaken, type Ride } from "./rides";
 import { firstNameOf } from "@/people/texts";
 
 /** Opens a ride where it lives: the booking (spec 5) or the driver's trip page (spec 3). */
@@ -49,11 +49,12 @@ export function RideItem({
   readonly fill?: boolean;
 }) {
   const { locale, t } = useLanguage();
-  const needs = needsYou(ride, at);
+  const needs = needOf(ride, at);
   return (
     <View style={[styles.item, fill && styles.fill]}>
       <RideCard ride={ride} at={at} fill={fill} />
-      {needs === null ? null : (
+      {/* A ride on its trip day has no button of its own: its row opens it. */}
+      {needs === null || needs.kind === "tripDay" ? null : (
         <Button
           label={
             ride.kind === "booking"
@@ -153,16 +154,15 @@ function tripParts(t: Translate, locale: Locale, trip: MyTrip): Parts {
 
 /** What the ride asks of me, in words, or null. */
 function needsText(t: Translate, ride: Ride, at: Date): string | null {
-  switch (needsYou(ride, at)) {
+  const needs = needOf(ride, at);
+  switch (needs?.kind) {
     case "pay":
-      return ride.kind === "booking" && ride.booking.paymentDueAt !== null
-        ? payByText(t, new Date(ride.booking.paymentDueAt), at)
-        : null;
+      return payByText(t, needs.by, at);
     case "answer":
-      return ride.kind === "trip" && ride.trip.requestsCloseAt !== null
-        ? answerByText(t, new Date(ride.trip.requestsCloseAt), at)
-        : null;
-    case null:
+      return answerByText(t, needs.by, at);
+    case "tripDay":
+      return t("tripDay.title");
+    case undefined:
       return null;
   }
 }
