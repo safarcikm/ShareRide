@@ -1692,6 +1692,21 @@ releases follow [Semantic Versioning](https://semver.org/).
   rides) and end with a card that leads to All rides. `/search` is the
   same search card as Find's. A ride found says its driver's `colour` in
   the API, so the circle in place of a photo is the same everywhere.
+- A ride's details are built around one ticket (spec 31, 3.7). The title
+  names your part ("N1 Borgarnes to Olís Blönduós") under the day. "Your
+  part of the ride" is a ticket: where you get in and out with Change on
+  each, which unfolds the stops inside the ticket, and the seats under the
+  tear line. Then the driver's card with the car and the preferences,
+  "Where you sit", and "The whole route" with the map and the stops. Free
+  cancellation, "Weather and roads" (the links to the weather, the roads
+  and SafeTravel) and "Report this ride" are rows at the end. On a laptop
+  the booking panel and the whole route stay beside them.
+- Booking a seat shows the ride as a ticket, with the total, the seats and
+  the driver and car on it, and "You're booked" and "Request sent" show
+  the ticket My rides has for the seat (spec 31, 3.19).
+- A row's value ("Up to 15 min before") goes under its title where the
+  two have no room on one line; a title is no longer broken in two to make
+  room for it (spec 15, 5.2).
 - CI skips its code jobs (bundles, unit, integration and web tests, the API
   image) for a change to docs, marketing and other files that no code reads,
   and on `main` when the pull request already tested exactly the same files

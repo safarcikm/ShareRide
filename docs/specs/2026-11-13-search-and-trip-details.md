@@ -26,7 +26,9 @@ ride" and "Publish ride". The keys keep their names;
 Amended by spec 31 (3.5 and 3.6) too: a ride found is a ticket; the
 search form is the front page's one card (3.1); the results have one row
 with the order, one "Filters" chip and the number of rides, and end with
-a card that leads to All rides (3.4).
+a card that leads to All rides (3.4). A ride's details have my part as
+a ticket, then the driver, where I sit, the whole route and rows (3.6,
+item 10).
 
 ## 1. Problem and goal
 
@@ -188,6 +190,14 @@ When there are no results (on a chosen date, or at all):
 9. **Other states:** full on this part (with "Try another part of the trip"),
    departed from the boarding stop, cancelled, or past the booking cut-off;
    each shown plainly instead of the booking button.
+10. Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.7) the screen
+    has this order: the day over the part's two places as the title, with
+    Share; "Your part of the ride" as a ticket, with Change on each end
+    and the seats; the driver's card with the car, the preferences and
+    the note; "Where you sit"; "The whole route" with the map and the
+    stops; and rows for free cancellation (or how a ride paid in person is
+    paid), "Weather and roads" and "Report this ride". What each holds is
+    as above.
 
 ### 3.7 Shared trip links
 
@@ -321,7 +331,7 @@ upcoming trips.
 | `results.otherDays` | Trips on other days | Ferðir aðra daga |
 | `results.nearbyPoints` | Trips from nearby meeting points | Ferðir frá nálægum mótsstöðum |
 | `results.noTripsYet` | No trips yet on this route | Engar ferðir enn á þessari leið |
-| `trip.yourPart` | Your part of the trip | Þinn hluti ferðarinnar |
+| `trip.yourPartOfRide` (was `trip.yourPart`, until spec 31 made it the ticket's caption) | Your part of the ride | Þinn hluti ferðarinnar |
 | `trip.payInApp` | Pay in the app once your booking is accepted. Free cancellation up to 15 minutes before departure. | Þú greiðir í appinu þegar bókunin hefur verið samþykkt. Ókeypis afbókun allt að 15 mínútum fyrir brottför. |
 | `trip.book` | Book | Bóka |
 | `trip.requestToBook` | Request to book | Óska eftir fari |

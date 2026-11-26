@@ -10,6 +10,11 @@ Book; a payment that does not finish keeps the seats held and Pay starts it
 again. "You're booked!" or "Request sent" follows, with what happens next
 (3.7). After a price change, instant booking asks "Pay this price?".
 
+Amended by [spec 31](2026-11-26-one-ride-one-ticket.md) (3.19): Check and
+pay shows the ride as a ticket, with the total, the seats, the driver and
+the car on it, and "You're booked!" and "Request sent" show the ticket My
+rides has for the seat.
+
 Features: D3 Book seats on the whole trip or only part of it, D4 My bookings,
 C7 Accept or decline requests ([features](../product/features.md)).
 Related: [pricing and seats](../product/pricing-and-seats.md) (rules P1, S1 to

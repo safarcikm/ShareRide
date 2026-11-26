@@ -357,6 +357,18 @@ describe("Row", () => {
     });
   });
 
+  it("puts a value that has no room beside its title under it, and never breaks the title for it", async () => {
+    await render(<Row title="Free cancellation" value="Up to 15 min before" onPress={jest.fn()} />);
+    const words = hidden("row-words");
+    expect(words).toHaveStyle({ flexDirection: "row", flexWrap: "wrap", flexGrow: 1 });
+    // The title takes the room there is, so a value beside it stands at the row's end.
+    expect(within(words).getByText("Free cancellation")).toHaveStyle({
+      flexGrow: 1,
+      flexBasis: "auto",
+    });
+    expect(within(words).getByText("Up to 15 min before")).toBeOnTheScreen();
+  });
+
   it("only shows a value when that is all it does: no button, no chevron", async () => {
     await render(<Row shows title="Phone" value="Confirmed" />);
     expect(screen.queryByRole("button")).toBeNull();

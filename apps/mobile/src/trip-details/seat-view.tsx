@@ -54,13 +54,15 @@ const puffinShift = 6;
  * passenger's part (spec 15, section 5.3): the driver, your seats, seats
  * others took, free seats and seats not offered. Positions are
  * illustrative. One image for screen readers, with a label in words, and a
- * legend that repeats the states.
+ * legend that repeats the states, unless words beside the drawing say what
+ * it shows (`legend` false).
  */
 export function SeatView({
   offered,
   free,
   yours,
   driverColour,
+  legend = true,
 }: {
   readonly offered: number;
   /** Seats free on the part, yours included. */
@@ -68,6 +70,7 @@ export function SeatView({
   readonly yours: number;
   /** Index of the driver's people colour, the same on every trip. */
   readonly driverColour: number;
+  readonly legend?: boolean;
 }) {
   const { t } = useLanguage();
   const palette = usePalette();
@@ -226,33 +229,36 @@ export function SeatView({
           )}
         </Svg>
       </View>
-      <View
-        style={styles.legend}
-        accessibilityElementsHidden
-        importantForAccessibility="no-hide-descendants"
-        aria-hidden
-      >
-        <LegendItem label={t("trip.seatView.you")}>
-          <View
-            style={[
-              styles.swatch,
-              { backgroundColor: palette.primarySoft, borderColor: palette.primary },
-            ]}
-          />
-        </LegendItem>
-        <LegendItem label={t("trip.seatView.taken")}>
-          <View style={[styles.swatch, { backgroundColor: car.taken, borderColor: car.taken }]} />
-        </LegendItem>
-        <LegendItem label={t("trip.seatView.free")}>
-          <View
-            style={[
-              styles.swatch,
-              styles.dashed,
-              { backgroundColor: palette.surface, borderColor: palette.control },
-            ]}
-          />
-        </LegendItem>
-      </View>
+      {legend ? (
+        <View
+          testID="seat-legend"
+          style={styles.legend}
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+          aria-hidden
+        >
+          <LegendItem label={t("trip.seatView.you")}>
+            <View
+              style={[
+                styles.swatch,
+                { backgroundColor: palette.primarySoft, borderColor: palette.primary },
+              ]}
+            />
+          </LegendItem>
+          <LegendItem label={t("trip.seatView.taken")}>
+            <View style={[styles.swatch, { backgroundColor: car.taken, borderColor: car.taken }]} />
+          </LegendItem>
+          <LegendItem label={t("trip.seatView.free")}>
+            <View
+              style={[
+                styles.swatch,
+                styles.dashed,
+                { backgroundColor: palette.surface, borderColor: palette.control },
+              ]}
+            />
+          </LegendItem>
+        </View>
+      ) : null}
     </View>
   );
 }

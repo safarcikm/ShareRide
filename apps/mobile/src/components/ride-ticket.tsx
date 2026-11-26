@@ -15,6 +15,8 @@ export interface TicketEnd {
   readonly place: string;
   /** Under the place, such as "1.3 km from Kringlan". */
   readonly under?: ReactNode;
+  /** At the right of the place, on its row: something to press, such as Change. */
+  readonly action?: ReactNode;
 }
 
 export interface TicketTag {
@@ -64,6 +66,8 @@ type TicketPress =
 interface TicketLook extends TimetableProps {
   /** "Fri 27 Nov", or a caption such as "Your part of the ride". */
   readonly day: string;
+  /** The caption names a part of its screen: a heading for screen readers. */
+  readonly headed?: boolean;
   /** At the right of the day, such as "Book instantly" or "You drive". */
   readonly tags?: readonly TicketTag[];
   /**
@@ -71,6 +75,12 @@ interface TicketLook extends TimetableProps {
    * line, such as the driver's whole ride where this is a part of it.
    */
   readonly note?: string | null | undefined;
+  /**
+   * Under the timetable and the note, over the tear line: what a button of
+   * the ticket unfolds, such as the stops to choose from. A ticket that
+   * holds buttons is not itself pressed.
+   */
+  readonly unfolded?: ReactNode;
   /** One line under the tear line, usually a `TicketFoot`; without it there is no tear line. */
   readonly foot?: ReactNode;
   /** A ride that is mine: a moss bottom edge. */
@@ -101,12 +111,14 @@ interface TicketLook extends TimetableProps {
  */
 export function RideTicket({
   day,
+  headed = false,
   tags = [],
   from,
   to,
   between,
   price = null,
   note = null,
+  unfolded,
   foot,
   mine = false,
   href,
@@ -122,7 +134,10 @@ export function RideTicket({
   const ticket = (
     <>
       <View testID="ticket-day" style={[styles.day, corner !== undefined && styles.dayWithCorner]}>
-        <Text style={[typography.caption, styles.dayText, { color: palette.textMuted }]}>
+        <Text
+          accessibilityRole={headed ? "header" : undefined}
+          style={[typography.caption, styles.dayText, { color: palette.textMuted }]}
+        >
           {day}
         </Text>
         {tags.map((tag, index) => (
@@ -138,6 +153,9 @@ export function RideTicket({
           <Text testID="ticket-note" style={[typography.small, { color: palette.textMuted }]}>
             {note}
           </Text>
+        )}
+        {unfolded === undefined || unfolded === null ? null : (
+          <View testID="ticket-unfolded">{unfolded}</View>
         )}
       </View>
       {foot === undefined || foot === null ? null : (
@@ -198,6 +216,7 @@ export function Timetable({ from, to, between, price = null }: TimetableProps) {
             <View testID="ticket-rail" style={[styles.rail, styles.fill, rail]} />
           </Unspoken>
           <Place testID="ticket-from-place" end={from} />
+          <EndAction end={from} />
         </View>
         <View style={styles.end}>
           <Time shown={null} times={times} />
@@ -215,6 +234,7 @@ export function Timetable({ from, to, between, price = null }: TimetableProps) {
             <View testID="ticket-dot" style={[styles.dot, rail]} />
           </Unspoken>
           <Place testID="ticket-to-place" end={to} />
+          <EndAction end={to} />
         </View>
       </View>
       {price === null ? null : (
@@ -339,6 +359,19 @@ function Place({ end, testID }: { readonly end: TicketEnd; readonly testID: stri
 }
 
 /**
+ * What is pressed at the right of a place, such as Change: at the middle
+ * of the place's first line, and never squeezed by a long name.
+ */
+function EndAction({ end }: { readonly end: TicketEnd }) {
+  if (end.action === undefined || end.action === null) return null;
+  return (
+    <View testID="ticket-end-action" style={styles.endAction}>
+      {end.action}
+    </View>
+  );
+}
+
+/**
  * A dashed line with a notch in each edge, in the page's colour, where a
  * ticket would be torn (spec 31, 3.3). Half of each notch is outside the
  * card, which cuts it off.
@@ -436,6 +469,13 @@ const styles = StyleSheet.create({
   rail: { width: line },
   railEnd: { height: dotDrop },
   place: { flex: 1, minWidth: 0 },
+  // As high as the place's first line, so a button taller than the line
+  // stands at its middle and does not push the next row down.
+  endAction: {
+    flexShrink: 0,
+    height: typography.bodyStrong.lineHeight,
+    justifyContent: "center",
+  },
   between: { flex: 1, paddingVertical: spacing.xs / 2 },
   price: { flexShrink: 0, alignItems: "flex-end", marginLeft: "auto" },
   priceText: { textAlign: "right" },

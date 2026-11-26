@@ -3,6 +3,7 @@ import { formatClock } from "@shareride/i18n";
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Button } from "@/components/button";
+import { Tag } from "@/components/tag";
 import { TextLink } from "@/components/text-link";
 import { useLanguage } from "@/i18n/language";
 import { controlOutline, minTouchTarget, radii, spacing, typography } from "@/theme/tokens";
@@ -32,8 +33,9 @@ const dots = Array.from({ length: 24 }, (_, index) => index);
 
 /**
  * The route (spec 4, 3.6.2; spec 15, `RouteLine`): every stop with its
- * time, the passenger's part solid and highlighted, the rest dotted and
- * greyed. A stop opens to get in or out there, or to see the meeting point.
+ * time, the passenger's part solid and highlighted, with "Get in" and "Get
+ * out" as tags at its ends, the rest dotted and greyed. A stop opens to get
+ * in or out there, or to see the meeting point.
  */
 export function RouteList({
   stops,
@@ -123,9 +125,10 @@ export function RouteList({
                   {name}
                 </Text>
                 {boarding || alighting ? (
-                  <Text style={[typography.label, { color: palette.primary }]}>
-                    {boarding ? t("trip.getIn") : t("trip.getOut")}
-                  </Text>
+                  // In a view of its own, so the row puts it at the name's middle.
+                  <View>
+                    <Tag kind="positive" label={boarding ? t("trip.getIn") : t("trip.getOut")} />
+                  </View>
                 ) : null}
               </Pressable>
               {isOpen ? (

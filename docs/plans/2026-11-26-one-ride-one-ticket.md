@@ -504,6 +504,38 @@ person sees it, in 3.5, 3.6, 3.10 and 3.16):
    Journeys: `trip-details.spec.ts`, `booking.spec.ts`.
 6. **Docs and pictures:** specs 4 and 5; `built/ride-*`, `built/book-*`.
 
+As built, what differs from the list above (spec 31 says the same where a
+person sees it, in 3.7, 3.16 and 3.19):
+
+- `RideTicket` gains three things: an end's `action` (Change, at the right
+  of the place), `unfolded` (what a Change opens, inside the ticket and
+  above the tear line) and `headed` (the caption is a heading where it
+  names a part of its screen). The ticket of this screen is
+  `trip-details/part-ticket.tsx`; `stop-choice.tsx` is gone, and so is
+  `Halves`, which only this screen used.
+- New parts of the screen: `trip-details/driver-card.tsx`,
+  `trip-details/where-you-sit.tsx` (`SeatView` gains `legend`, off there)
+  and `safety/weather-roads-row.tsx`, which shows when the Safety links
+  did. `preferenceNeeds` in `trip-parts.tsx` gives the preferences to the
+  card and to a booking alike.
+- The driver's card has no number of rides and no "what is checked": a
+  ride's details do not carry them, and the spec adds no data.
+- On a phone the paying line is a row that unfolds its sentence; a laptop
+  keeps the sentence under the button. Pay in person has its own row.
+- `Row` puts a value under its title where the two have no room on one
+  line, on every screen (spec 15, 5.2). `sizes.carBeside` 176, new.
+- Booking a seat's ticket shows the sum under the total for more than one
+  seat only; the keys `booking.driver`, `booking.driverAndCar` and
+  `booking.total` are gone with the lines they wrote, as are
+  `trip.yourPart`, `trip.whoYouRideWith`, `trip.route`, `trip.wholeTrip`
+  and `results.partOf`.
+- "You're booked" shows `MyRideTicket`; `rideOfBooking` in
+  `my-rides/rides.ts` makes its ride from a booking.
+- Journeys changed: `trip-details.spec.ts` (Change on the ticket, then a
+  stop of the route), `booking.spec.ts`, `reporting.spec.ts` and
+  `laptop.spec.ts`. Pictures: `built/ride-*`, `built/book-*` and
+  `built/booked-*`.
+
 ## PR 7: a booked seat and the trip day
 
 `feat(booking)`, spec 31, 3.8, 3.9, 3.16 item 2, and cancelling a booking,

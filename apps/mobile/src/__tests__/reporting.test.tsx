@@ -70,14 +70,14 @@ async function openTrip(changes: Parameters<typeof northTrip>[1] = {}, signedIn 
       reportsApi(client);
     },
   });
-  expect(await screen.findByRole("header", { name: "Borgarnes → Blönduós" })).toBeVisible();
+  expect(await screen.findByRole("header", { name: "Borgarnes to Blönduós" })).toBeVisible();
   return app;
 }
 
 describe("Reporting a trip (spec 9, 3.1)", () => {
   it("asks what happened, sends it, and thanks", async () => {
     const { client } = await openTrip();
-    await fireEvent.press(screen.getByRole("button", { name: "Report this ride" }));
+    await fireEvent.press(screen.getByRole("link", { name: "Report this ride" }));
     expect(await screen.findByRole("header", { name: "Report this ride" })).toBeVisible();
     expect(screen).toHaveSearchParams({ kind: "trip", id: northResult.tripId });
 
@@ -111,22 +111,22 @@ describe("Reporting a trip (spec 9, 3.1)", () => {
 
   it("is not offered for my own trip", async () => {
     await openTrip({ part: { state: "own" }, drivenByMe: true });
-    expect(screen.queryByRole("button", { name: "Report this ride" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Report this ride" })).toBeNull();
   });
 
   it("is not offered to its driver once it has left, or been cancelled", async () => {
     await openTrip({ part: { state: "departed" }, drivenByMe: true });
-    expect(screen.queryByRole("button", { name: "Report this ride" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Report this ride" })).toBeNull();
   });
 
   it("is not offered signed out", async () => {
     await openTrip({}, false);
-    expect(screen.queryByRole("button", { name: "Report this ride" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Report this ride" })).toBeNull();
   });
 
   it("says nothing of 112 on a safety report: people dial it themselves (decision 5)", async () => {
     await openTrip();
-    await fireEvent.press(screen.getByRole("button", { name: "Report this ride" }));
+    await fireEvent.press(screen.getByRole("link", { name: "Report this ride" }));
 
     await fireEvent.press(
       await screen.findByRole("radio", { name: "Safety: dangerous driving, threats or violence" }),
@@ -138,7 +138,7 @@ describe("Reporting a trip (spec 9, 3.1)", () => {
 
   it("asks for a shorter description over 1 000 characters, and sends nothing", async () => {
     const { client } = await openTrip();
-    await fireEvent.press(screen.getByRole("button", { name: "Report this ride" }));
+    await fireEvent.press(screen.getByRole("link", { name: "Report this ride" }));
     await fireEvent.press(await screen.findByRole("radio", { name: "Something else" }));
     await fireEvent.changeText(screen.getByLabelText("Tell us more (optional)"), "a".repeat(1001));
     expect(screen.getByText("Shorten it to 1000 characters or fewer.")).toBeVisible();
@@ -158,7 +158,7 @@ describe("Reporting a trip (spec 9, 3.1)", () => {
         reportsApi(client, () => failure(status, code));
       },
     });
-    await fireEvent.press(await screen.findByRole("button", { name: "Report this ride" }));
+    await fireEvent.press(await screen.findByRole("link", { name: "Report this ride" }));
     await fireEvent.press(await screen.findByRole("radio", { name: "Something else" }));
     await fireEvent.press(screen.getByRole("button", { name: "Send report" }));
     expect(await screen.findByText(text)).toBeVisible();

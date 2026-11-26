@@ -39,14 +39,26 @@ test.describe("ride details without an account", () => {
 
     await expect(page).toHaveURL(/\/trips\/[0-9a-f-]+\?from=1&to=2$/);
     await expect(
-      page.getByRole("heading", { name: "N1 Borgarnes → Olís Blönduós" }).filter({ visible: true }),
+      page
+        .getByRole("heading", { name: "N1 Borgarnes to Olís Blönduós" })
+        .filter({ visible: true }),
     ).toBeVisible();
+    // Your part is one ticket, named as a part of the screen (spec 31, 3.7).
+    const ticket = page.getByTestId("part-ticket").filter({ visible: true });
+    await expect(ticket.getByRole("heading", { name: "Your part of the ride" })).toBeVisible();
     await expect(
       page.getByRole("img", {
         name: "Seats on your part: 3 offered, 0 taken, 1 yours and 2 free.",
       }),
     ).toBeVisible();
-    await expect(page.getByText(/^3 free on your part · [\d,]+ ISK per seat$/)).toBeVisible();
+    // A phone has the price in the bar at the bottom; a laptop beside the seats.
+    await expect(
+      page.getByText(
+        test.info().project.name === "phone"
+          ? /^3 free on your part$/
+          : /^3 free on your part · [\d,]+ ISK per seat$/,
+      ),
+    ).toBeVisible();
     await expect(
       page.getByRole("img", {
         name: /^The ride on a map of Iceland: .+\. Your part: N1 Borgarnes → Olís Blönduós\.$/,
@@ -60,6 +72,16 @@ test.describe("ride details without an account", () => {
     expect(heights).toHaveLength(4);
     expect(Math.max(...heights) - Math.min(...heights)).toBeLessThan(2);
     await expect(page.getByText("White Toyota Yaris")).toBeVisible();
+    if (test.info().project.name === "phone") {
+      // A row's value goes under its title where the two have no room on one
+      // line: the title is never broken for it (spec 15, 5.2).
+      const [paying, weather] = await Promise.all(
+        ["Free cancellation", "Weather and roads"].map((title) =>
+          page.getByText(title, { exact: true }).filter({ visible: true }).boundingBox(),
+        ),
+      );
+      expect(paying?.height).toBe(weather?.height);
+    }
     await expect(page.getByRole("button", { name: "Send request" })).toBeEnabled();
     // Trip pages ask search engines not to index them (R4.6).
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
@@ -67,16 +89,28 @@ test.describe("ride details without an account", () => {
       "noindex, nofollow",
     );
 
-    // Get in at the first stop instead.
+    // Get in at the first stop instead: Change on the ticket unfolds the
+    // stops to get in at, and choosing one folds them again.
+    await ticket.getByRole("button", { name: "Change where you get in" }).click();
+    const choices = ticket.getByRole("radiogroup", { name: "Where you get in" });
+    await expect(choices.getByRole("radio")).toHaveCount(2);
+    await choices.getByRole("radio", { name: /^\d\d:\d\d, BSÍ bus terminal$/ }).click();
+    await expect(choices).toHaveCount(0);
+    await expect(
+      page
+        .getByRole("heading", { name: "BSÍ bus terminal to Olís Blönduós" })
+        .filter({ visible: true }),
+    ).toBeVisible();
+    await expect(page).toHaveURL(/\?from=0&to=2$/);
+
+    // The whole route does the same from a stop: back to Borgarnes, and out again.
+    await page.getByRole("button", { name: /^\d\d:\d\d, N1 Borgarnes, on your part$/ }).click();
+    await page.getByRole("button", { name: "Get in here" }).click();
+    await expect(page).toHaveURL(/\?from=1&to=2$/);
     await page
       .getByRole("button", { name: /^\d\d:\d\d, BSÍ bus terminal, not on your part$/ })
       .click();
     await page.getByRole("button", { name: "Get in here" }).click();
-    await expect(
-      page
-        .getByRole("heading", { name: "BSÍ bus terminal → Olís Blönduós" })
-        .filter({ visible: true }),
-    ).toBeVisible();
     await expect(page).toHaveURL(/\?from=0&to=2$/);
 
     // Share copies the link, which opens the same part in another browser.
@@ -95,7 +129,9 @@ test.describe("ride details without an account", () => {
       await expect(
         elsewhere.getByRole("heading", { name: "BSÍ → Olís Blönduósi" }).filter({ visible: true }),
       ).toBeVisible();
-      await expect(elsewhere.getByText("Þinn hluti", { exact: true })).toBeVisible();
+      await expect(
+        elsewhere.getByRole("heading", { name: "Þinn hluti ferðarinnar" }),
+      ).toBeVisible();
       await expect(elsewhere.getByText("Hvítur Toyota Yaris")).toBeVisible();
     } finally {
       await other.close();

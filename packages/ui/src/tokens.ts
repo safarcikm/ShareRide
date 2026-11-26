@@ -302,6 +302,8 @@ export const sizes = {
   barAction: 200,
   /** Narrowest the words of a line get before the button or link beside them moves under them. */
   wordsBeside: 144,
+  /** Widest the car from above gets beside the words about its seats (spec 31, 3.7). */
+  carBeside: 176,
   /** A row that opens a screen, such as My cars on Profile. */
   row: 56,
   /** The soft square behind a row's icon, and behind the icon of what needs you (spec 31, 3.3). */

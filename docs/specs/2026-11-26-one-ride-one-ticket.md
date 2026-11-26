@@ -367,6 +367,50 @@ and on a laptop
 7. The bar at the bottom stays: the price for my seats and **Book** (or
    "Ask for a seat").
 
+As built, on a phone
+([light](images/one-ride-one-ticket/built/ride-phone-light.webp),
+[dark, in Icelandic](images/one-ride-one-ticket/built/ride-phone-dark.webp))
+and on a laptop
+([light](images/one-ride-one-ticket/built/ride-laptop-light.webp)):
+
+- The title names my part in words, "N1 Borgarnes to Olís Blönduós" (in
+  Icelandic with the arrow, section 8), and follows it when I change where
+  I get in or out. The line under it about the driver's whole ride is
+  gone: the whole route is on the screen.
+- The ticket's caption, "Your part of the ride", is a heading. An end has
+  Change when the ride has another stop to choose there. Change unfolds
+  that end's stops inside the ticket, as radio cards with their times, one
+  end at a time; a choice folds them, and focus goes back to Change. Under
+  the tear line a phone has the seats with "3 free on your part"; the
+  price is in the bar.
+- The driver's card: picture, name, rating or "New driver", and the
+  reliability a member sees. The whole line opens the profile and is named
+  in one line for a screen reader ("See profile: Anna, 4.3 (3 ratings),
+  Reliability: 91%"). A ride's details carry no number of rides and
+  nothing about what is checked, and section 6 adds no data, so the card
+  has neither; the profile it opens has both.
+- "Where you sit" says "2 of 3 seats are free. Seats are not numbered: you
+  agree in the car." in the place of the legend. The picture keeps its
+  one-line description for screen readers, and is at most `carBeside`
+  (176) wide, so a wide card gives its room to the words.
+- "The whole route" gives no distance: a ride has none in the API. My
+  stops are marked with the tags "Get in" and "Get out", and a stop still
+  opens to get in or out there.
+- The rows. "Free cancellation", with "Up to 15 min before", unfolds the
+  whole sentence. Where the ride is paid in person (ADR 0038) the row is
+  "Paying", with "Cash or bank transfer", and unfolds that sentence; a
+  free ride has neither. "Weather and roads" is there for a ride that
+  leaves the capital area and is not cancelled, as the Safety links were,
+  and unfolds them with their line. "Report this ride" is a link, for
+  someone signed in who does not drive the ride. With none of the three
+  there is no card of rows.
+- A row's value goes under its title where the two have no room on one
+  line (spec 15, 5.2), so "Free cancellation" is never broken in two.
+- The bar's button keeps its texts, "Book" and "Send request".
+- On a laptop (3.16, item 6) the ticket has no foot: the seats are in the
+  booking panel, beside the price they change, and the panel keeps the
+  free cancellation sentence, so the rows leave it out.
+
 ### 3.8 A booked seat
 
 1. The **title is the state**: "Request sent", "Bára said yes: pay to keep
@@ -555,6 +599,13 @@ changes:
 4. **My rides:** a grid of tickets, as today.
 5. **Profile:** the person's card in the side column, the groups in the
    main column.
+6. **A ride's details and Booking a seat** (as built) keep their columns
+   of spec 18 (3.7 and 3.8). A ride's details: main column, the ticket of
+   my part, the driver's card, "Where you sit" and the rows, one under the
+   other; side column, the booking panel and "The whole route". Get in and
+   Get out are the ticket's two ends, so nothing stands in two halves any
+   more. Booking a seat: the side column is the ride's ticket and the main
+   button under it.
 
 ![The driver's ride on a laptop, proposed](images/one-ride-one-ticket/proposal/img/new-laptop-driver-ride-first.webp)
 
@@ -617,6 +668,26 @@ ticket wherever it shows a ride (R31.2), and the tags of rule 6.
 | All rides (`/rides`), a place, a meeting point and their list | Rides as tickets; the rest as today. As built: a place and a meeting point list no rides today, so only All rides changed |
 | My cars, a car, the driving licence, the photo | The head at the left |
 | The pages under Settings, Notices, Send feedback, deleting the account | The head at the left |
+
+As built, Booking a seat on a phone
+([light](images/one-ride-one-ticket/built/book-phone-light.webp),
+[dark, in Icelandic](images/one-ride-one-ticket/built/book-phone-dark.webp))
+and on a laptop
+([light](images/one-ride-one-ticket/built/book-laptop-light.webp)), and
+"Request sent" on a
+[phone](images/one-ride-one-ticket/built/booked-phone-light.webp) and a
+[laptop](images/one-ride-one-ticket/built/booked-laptop-light.webp):
+
+- Booking a seat has its title at the left and the ride as a ticket: the
+  day, my two stops with their times, the total with "2 seats × 2,900 ISK"
+  under it ("1 seat" for one, which needs no sum; "Free" for a free ride),
+  and in the foot the driver's picture and name, with the car at the
+  right. The lines "Driver: Jón · Blue Kia Ceed" and "Total" are gone.
+  While booking is paused, the banner that says so stays above the title
+  on a phone.
+- "You're booked" and "Request sent" show the ride as the ticket My rides
+  has for it, under the line about the day and time, with "Seat confirmed"
+  or "Waiting for Jón's answer" in its foot. It opens the booking.
 
 Not changed: signing in and joining (`/sign-in`, `/onboarding`, the
 invitation and email links), which are spec 29's; About, the legal
@@ -794,6 +865,12 @@ Texts added while building, as they are in the app:
 | The first rides only | These are the first {count} rides | Þetta eru fyrstu {count} ferðirnar |
 | The end card's second line | Try another day, or see every ride leaving soon.; You can also see every ride leaving soon.; Choose a day to see others.; Filter by time of day to see others. | Prófaðu annan dag, eða skoðaðu allar ferðir á næstunni.; Þú getur líka skoðað allar ferðir á næstunni.; Veldu dag til að sjá fleiri.; Síaðu eftir tíma dags til að sjá fleiri. |
 | The end card's link | All rides | Allar ferðir |
+| The ticket of my part | Your part of the ride | Þinn hluti ferðarinnar |
+| The seats on a phone | {count} free on your part | {count} laust (laus) á þínum hluta |
+| The line of "Where you sit" | {free} of {offered} seats are free. Seats are not numbered: you agree in the car. | {free} af {offered} sætum eru laus. Sætin eru ekki númeruð: þið semjið um þau í bílnum. |
+| The cancellation row | Free cancellation; Up to {time} before | Ókeypis afbókun; Allt að {time} áður |
+| The row of a ride paid in person | Paying; Cash or bank transfer | Greiðsla; Reiðufé eða millifærsla |
+| The row of the Safety links | Weather and roads | Veður og færð |
 
 Texts that exist are reused where they say the same: "Rate the driver",
 "Rate your passenger", "Pay", "Delete draft", "My reports", "Notices",

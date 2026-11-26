@@ -28,6 +28,8 @@ Amended by spec 31 (3.5, 3.6 and 3.10) too: signed in, Find greets by
 name with what needs me first (3.2, item 7); a ride of mine is a ticket
 that says in yellow what it needs, with no button under it (3.3, item 8);
 and the results' chips are one row with one Filters chip (3.8, item 2).
+A ride's details, Check and pay and "You're booked" show the ride as a
+ticket (3.7, item 6).
 
 ## 1. Problem and goal
 
@@ -373,6 +375,24 @@ Find replaces both the front page and My profile as the place the app opens.
    Needs you, to confirm your seat." (for a free ride, "your seat is
    confirmed"); "No answer in time? The request ends, and you pay nothing."
    Where to stand waits until the seat is confirmed.
+6. Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.7 and 3.19) the
+   ride is a ticket on all three screens.
+   - **The ride's page:** the title is the part's two places ("N1
+     Borgarnes to Olís Blönduós") under the day. "Your part of the ride"
+     is a ticket with the tag, Get in and Get out as its two ends with
+     Change at the right of each, and the seats under its tear line with
+     "2 free on your part"; the price per seat is in the bar. Change
+     unfolds the stops inside the ticket. "Who you ride with" is the
+     driver's card, and the seat view a card of its own, "Where you sit".
+     The cancellation line is a row, "Free cancellation" with "Up to 15
+     min before", which unfolds the sentence; with it stand "Weather and
+     roads" and "Report this ride".
+   - **Check and pay:** the card is a ticket: the day, the part with
+     times, the total with the seats times the price under it for more
+     than one seat, and the driver and the car in its foot.
+   - **You're booked and Request sent:** the ride shows as its ticket of
+     My rides, under the line about the day and time, and opens the
+     booking.
 
 ### 3.8 Small fixes (proposal 6)
 

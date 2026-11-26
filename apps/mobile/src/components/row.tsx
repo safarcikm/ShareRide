@@ -52,7 +52,8 @@ type RowKind =
 /**
  * A `Row` (spec 15, section 5.2; spec 31, 3.3): an icon in a soft square
  * when it has one, the title in `bodyStrong`, a value such as "Confirmed"
- * in `small` `textMuted`, and a chevron; at least 56 high, tinted
+ * in `small` `textMuted` (under the title where the two have no room on
+ * one line), and a chevron; at least 56 high, tinted
  * `primarySoft` while pressed and under the pointer. Rows go in a `Card`,
  * or in `ActionRows` with a line between them.
  *
@@ -84,10 +85,14 @@ export function Row(props: RowLook & RowKind) {
           <Icon icon={icon} color={ink} />
         </View>
       )}
-      <Text style={[typography.bodyStrong, styles.title, { color: ink }]}>{title}</Text>
-      {value === undefined ? null : (
-        <Text style={[typography.small, styles.value, { color: palette.textMuted }]}>{value}</Text>
-      )}
+      <View testID="row-words" style={styles.words}>
+        <Text style={[typography.bodyStrong, styles.title, { color: ink }]}>{title}</Text>
+        {value === undefined ? null : (
+          <Text style={[typography.small, styles.value, { color: palette.textMuted }]}>
+            {value}
+          </Text>
+        )}
+      </View>
     </>
   );
   // In a card of rows each row is a surface of its own: the lines between
@@ -191,8 +196,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  title: { flex: 1 },
-  value: { flexShrink: 1, textAlign: "right" },
+  // The title and its value on one line where both fit, the value at the
+  // row's end; where they do not, the value goes under the title, which is
+  // never broken to make room for it.
+  words: {
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 0,
+    minWidth: 0,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    columnGap: spacing.sm,
+  },
+  title: { flexGrow: 1, flexShrink: 1, flexBasis: "auto" },
+  value: { flexShrink: 1 },
   under: { paddingBottom: spacing.ms },
   underInRows: { paddingHorizontal: spacing.md },
 });

@@ -214,4 +214,78 @@ test.describe("pictures", () => {
     }
     await other.close();
   });
+
+  test("a ride's details and booking a seat (spec 31)", async ({ page, browser }, info) => {
+    test.setTimeout(180_000);
+    const folder = join(root ?? "", "one-ride-one-ticket", "built");
+    mkdirSync(folder, { recursive: true });
+    const wide = info.project.name === "desktop";
+    const window = wide ? { width: 1280, height: 720 } : (page.viewportSize() ?? null);
+    if (window === null) throw new Error("The page has no size");
+
+    // Bára offers a ride, and Dóra opens a part of it, signed in.
+    await page.setViewportSize(window);
+    await signUp(page, english, "Bára");
+    const tripId = await postTripToSelfoss(page, "09:00");
+    const { userAgent, isMobile, hasTouch, baseURL } = info.project.use;
+    const other = await browser.newContext({
+      viewport: window,
+      deviceScaleFactor: 2,
+      userAgent,
+      isMobile,
+      hasTouch,
+      baseURL,
+      locale: "en-GB",
+    });
+    const dora = await other.newPage();
+    await signUp(dora, english, "Dóra");
+
+    const shoot = async (name: string, scheme: "light" | "dark") => {
+      await showWhole(dora, window.width);
+      const kind = wide ? "laptop" : "phone";
+      await dora.screenshot({
+        path: join(folder, `${name}-${kind}-${scheme}.png`),
+        scale: wide ? "css" : "device",
+      });
+      await dora.setViewportSize(window);
+    };
+    const visible = { visible: true };
+    // From the second stop to the last: both ends can change, and the part
+    // leaves the capital area, so the weather and the roads have a row.
+    const ride = async (yourPart: string) => {
+      await dora.goto(`/trips/${tripId}?from=1&to=3`);
+      await expect(dora.getByRole("heading", { name: yourPart }).filter(visible)).toBeVisible();
+      await expect(dora.getByTestId("where-you-sit").filter(visible)).toBeVisible();
+    };
+    const book = async (sendRequest: string, title: string) => {
+      await dora.getByRole("button", { name: sendRequest, exact: true }).click();
+      await expect(dora.getByRole("heading", { name: title }).filter(visible)).toBeVisible();
+    };
+
+    if (!wide) {
+      // Dark and in Icelandic first, while the seat is not asked for yet.
+      await dora.emulateMedia({ colorScheme: "dark" });
+      await dora.goto("/");
+      await dora.getByRole("button", { name: "Change the language to Icelandic" }).click();
+      await expect(dora.getByRole("button", { name: "Skipta yfir í ensku" })).toBeVisible();
+      await ride("Þinn hluti ferðarinnar");
+      await shoot("ride", "dark");
+      await book("Senda beiðni", "Óska eftir sæti í þessari ferð");
+      await shoot("book", "dark");
+      await dora.emulateMedia({ colorScheme: "light" });
+      await dora.goto("/");
+      await dora.getByRole("button", { name: "Skipta yfir í ensku" }).click();
+      await expect(
+        dora.getByRole("button", { name: "Change the language to Icelandic" }),
+      ).toBeVisible();
+    }
+    await ride("Your part of the ride");
+    await shoot("ride", "light");
+    await book("Send request", "Request this ride");
+    await shoot("book", "light");
+    await dora.getByRole("button", { name: "Send request", exact: true }).click();
+    await expect(dora.getByRole("heading", { name: "Request sent" }).filter(visible)).toBeVisible();
+    await shoot("booked", "light");
+    await other.close();
+  });
 });
