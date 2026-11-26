@@ -414,6 +414,31 @@ describe("a passkey the browser saves by itself after a password (spec 29, 3.3; 
     ).toEqual([]);
   });
 
+  it("refuses an answer to someone else's quiet options, and never signs in with one", async () => {
+    const owner = await member();
+    const other = await member();
+    const options = await quietOptions(owner);
+    if (!options.ok) throw new Error(options.error.code);
+    const answer = authenticator().register(options.data.options, { quiet: true });
+    expect(await addPasskey(other, answer)).toMatchObject({
+      status: 400,
+      body: { error: { code: "passkey_invalid" } },
+    });
+    // The challenge is used up, and a quiet one is no sign-in challenge.
+    const again = await quietOptions(owner);
+    if (!again.ok) throw new Error(again.error.code);
+    const device = authenticator();
+    device.register(again.data.options, { quiet: true });
+    expect(
+      await api.client.call(passkeySignInRoute, {
+        body: {
+          credential: device.authenticate(again.data.options as Options) as never,
+          device: { platform: "web" },
+        },
+      }),
+    ).toMatchObject({ ok: false, status: 400, error: { code: "passkey_expired" } });
+  });
+
   it("gives quiet options only straight after signing in, never for a confirm code", async () => {
     const cecilia = await member();
     api.advance(10 * 60);

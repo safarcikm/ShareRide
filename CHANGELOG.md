@@ -1532,8 +1532,9 @@ releases follow [Semantic Versioning](https://semver.org/).
 - A passkey the browser saves by itself after a password (spec 29, 3.3,
   ADR 0050): on Safari and Chrome with their own password managers, a
   sign-in with a password is followed by the browser's quiet save, with no
-  screen; where it saves none within 3 seconds, Face ID is offered as after
-  any other way in. `POST /v1/me/passkeys/options` takes `quiet`, given
+  screen, unless "Not now" was pressed there in the last 30 days; where it
+  saves none within 3 seconds, Face ID is offered as after any other way
+  in, and none with 10 devices set up. `POST /v1/me/passkeys/options` takes `quiet`, given
   only to a session signed in less than 10 minutes ago, and only the answer
   to such options is saved without "user present" or "user verified".
   Migration 0064.

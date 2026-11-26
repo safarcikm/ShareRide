@@ -125,9 +125,12 @@ How [ADR 0016](../decisions/0016-own-sign-in-module.md) is built, in
   one by itself (conditional create, spec 29, 3.3;
   [ADR 0050](../decisions/0050-passkey-saved-by-the-browser-after-a-password.md)):
   its options (`quiet`) go only to a session signed in less than 10
-  minutes ago, a confirm code does not stand in, their challenge is kept
-  as `register_quiet`, and only an answer to such a challenge is saved
-  without "user present" or "user verified". Every other setup and every
+  minutes ago, a confirm code does not stand in, they ask for user
+  verification only as preferred, their challenge is kept as
+  `register_quiet`, and only an answer to such a challenge is saved without
+  "user present" or "user verified". The app stops the browser's save
+  after 3 seconds, and tells the browser to forget a passkey it made that
+  the API refused. Every other setup and every
   sign-in still needs user verification. The app offers it only where `GET /v1/config` says
   `passkeySignIn` and the browser reports a built-in authenticator; the
   phone apps do not yet.

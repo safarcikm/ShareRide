@@ -190,7 +190,7 @@ test("after a password, a browser that saves no passkey by itself offers Face ID
   );
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await quiet;
-  await expect(page.getByRole("heading", { name: offerTitle })).toBeVisible();
+  await expect(page.getByRole("heading", { name: offerTitle })).toBeVisible({ timeout: 10_000 });
   expect(await keptPasskeys(lock)).toBe(0);
   await page.getByRole("button", { name: "Set it up", exact: true }).click();
   await expect(

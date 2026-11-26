@@ -912,6 +912,65 @@ describe("Face ID offered after another way in (spec 29, 3.2 and 3.3)", () => {
     expect(await screen.findByRole("header", { name: offerTitle })).toBeVisible();
     expect(callsTo(app.client, "/v1/me/passkeys")).toHaveLength(0);
   });
+
+  it("after a password, asks the browser nothing within 30 days of Not now", async () => {
+    mockDevice.quietCreateAvailable.mockReturnValue(Promise.resolve(true));
+    mockPreferences.set("passkey-offer-declined", new Date(Date.now() - 29 * dayMs).toISOString());
+    const app = await openSignInForOffer();
+    await signInWithPassword();
+    await onFind("password");
+    expect(mockDevice.createQuietly).not.toHaveBeenCalled();
+    expect(callsTo(app.client, "/v1/me/passkeys/options")).toHaveLength(0);
+    expect(screen.queryByRole("header", { name: offerTitle })).toBeNull();
+  });
+
+  it("after a password, asks the browser nothing where it is known to have a passkey", async () => {
+    mockDevice.quietCreateAvailable.mockReturnValue(Promise.resolve(true));
+    mockPreferences.set("passkey-here", mac.credentialId);
+    const app = await openSignInForOffer();
+    await signInWithPassword();
+    await onFind("password");
+    expect(mockDevice.createQuietly).not.toHaveBeenCalled();
+    expect(callsTo(app.client, "/v1/me/passkeys/options")).toHaveLength(0);
+  });
+
+  it("after a password, does not ask when the browser has a passkey already", async () => {
+    mockDevice.quietCreateAvailable.mockReturnValue(Promise.resolve(true));
+    mockDevice.createQuietly.mockReturnValue(Promise.reject(named("InvalidStateError")));
+    await openSignInForOffer();
+    await signInWithPassword();
+    await onFind("password");
+    await waitFor(() => {
+      expect(mockPreferences.get("passkey-here")).toBe("*");
+    });
+    expect(screen.queryByRole("header", { name: offerTitle })).toBeNull();
+  });
+
+  it("after a password, does not ask with 10 devices set up", async () => {
+    mockDevice.quietCreateAvailable.mockReturnValue(Promise.resolve(true));
+    await openSignInForOffer(false, (client) => {
+      client.answer("/v1/me/passkeys/options", () => failure(409, "too_many"));
+    });
+    await signInWithPassword();
+    await onFind("password");
+    await waitFor(() => {
+      expect(mockDevice.available).toHaveBeenCalled();
+    });
+    expect(mockDevice.createQuietly).not.toHaveBeenCalled();
+    expect(screen.queryByRole("header", { name: offerTitle })).toBeNull();
+  });
+
+  it("tells the browser to forget a passkey it saved by itself that the API then refused", async () => {
+    mockDevice.quietCreateAvailable.mockReturnValue(Promise.resolve(true));
+    mockDevice.createQuietly.mockReturnValue(Promise.resolve(registration));
+    await openSignInForOffer(false, (client) => {
+      client.answer("/v1/me/passkeys", () => failure(400, "passkey_invalid"));
+    });
+    await signInWithPassword();
+    expect(await screen.findByRole("header", { name: offerTitle })).toBeVisible();
+    expect(mockDevice.forget).toHaveBeenCalledWith(registration.id);
+    expect(mockPreferences.get("passkey-here")).toBeUndefined();
+  });
 });
 
 describe("Sign in faster next time, after sign-up (spec 27, 3.7)", () => {

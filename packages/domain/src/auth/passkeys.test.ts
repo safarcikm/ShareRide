@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   deviceName,
   memberPasskeyRules,
+  offerDeclinedLately,
   passkeyOfferDue,
   passkeyOfferRules,
   type PasskeyOfferInput,
@@ -98,5 +99,13 @@ describe("passkeyOfferDue (spec 29, 3.2, R29.2)", () => {
 
   it("offers it when Not now has a date still to come, as from a clock that was wrong", () => {
     expect(passkeyOfferDue({ ...capable, declinedAt: daysAgo(-1) })).toBe(true);
+  });
+
+  it("says whether Not now was pressed in the last 30 days", () => {
+    expect(offerDeclinedLately(null, now)).toBe(false);
+    expect(offerDeclinedLately(daysAgo(0), now)).toBe(true);
+    expect(offerDeclinedLately(daysAgo(29), now)).toBe(true);
+    expect(offerDeclinedLately(daysAgo(30), now)).toBe(false);
+    expect(offerDeclinedLately(daysAgo(-1), now)).toBe(false);
   });
 });

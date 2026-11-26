@@ -44,24 +44,30 @@ export interface PasskeyOfferInput {
 }
 
 /**
+ * Whether "Not now" was pressed on this browser in the last 30 days: then
+ * neither the offer nor the browser's own save (spec 29, 3.3) comes. A date
+ * still to come, as from a clock that was wrong, is no answer.
+ */
+export function offerDeclinedLately(declinedAt: Date | null, now: Date): boolean {
+  if (declinedAt === null) return false;
+  const since = now.getTime() - declinedAt.getTime();
+  return since >= 0 && since < passkeyOfferRules.askAgainAfterDays * 24 * 60 * 60 * 1000;
+}
+
+/**
  * Whether to ask "Use Face ID or fingerprint next time?" (R29.2): an
  * account from before this sign-in, in by any way but a passkey, on a
  * browser that can keep one and is not known to have one, not declined
  * there in 30 days, and with nothing kept to open first.
  */
 export function passkeyOfferDue(input: PasskeyOfferInput): boolean {
-  const { declinedAt, now } = input;
-  const askAgainMs = passkeyOfferRules.askAgainAfterDays * 24 * 60 * 60 * 1000;
-  // A date still to come, as from a clock that was wrong, is no answer.
-  const since = declinedAt === null ? null : now.getTime() - declinedAt.getTime();
-  const declinedLately = since !== null && since >= 0 && since < askAgainMs;
   return (
     !input.isNewUser &&
     input.way !== "passkey" &&
     input.deviceHasLock &&
     input.serverHasPasskeys &&
     !input.passkeyHere &&
-    !declinedLately &&
+    !offerDeclinedLately(input.declinedAt, input.now) &&
     !input.keptChoice
   );
 }

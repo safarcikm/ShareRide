@@ -89,7 +89,12 @@ export function registerPasskeyRoutes(
     const { error } = result;
     switch (error.code) {
       case "confirm_required":
-        return errorResponse(c, 403, error.code, "Send a confirm code first.");
+        return errorResponse(
+          c,
+          403,
+          error.code,
+          quiet === true ? "Only straight after signing in." : "Send a confirm code first.",
+        );
       case "too_many":
         return errorResponse(c, 409, error.code, tooManyMessage);
       default:

@@ -6,9 +6,10 @@
 **Goal:** a returning member gets back in with a glance or a touch, or with
 the way they used last time on top ([spec 29](../specs/2026-11-25-easier-sign-in.md)).
 
-**Architecture:** no migration and no new dependency. The API learns one
-error (`passkey_unknown`), shows each passkey's `credentialId`, and allows
-more sign-in options. The app's device layer (`apps/mobile/src/sign-in/passkey*.ts`)
+**Architecture:** no new dependency, and one migration (PR 3, for ADR
+0050's quiet setup). The API learns one error (`passkey_unknown`), shows
+each passkey's `credentialId`, allows more sign-in options, and gives quiet
+setup options straight after a sign-in. The app's device layer (`apps/mobile/src/sign-in/passkey*.ts`)
 gains the browser's quiet requests (conditional get and create, through
 `@simplewebauthn/browser` 14, which has both) and the Signal API; step 1
 runs the quiet request; a hook in the menu layout decides, after each

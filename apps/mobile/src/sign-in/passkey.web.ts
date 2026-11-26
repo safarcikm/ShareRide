@@ -40,6 +40,17 @@ const forgetWaitMs = 1_000;
  */
 const quietSaveWaitMs = 3_000;
 
+/**
+ * The number of the newest request to the browser this app started: each
+ * new one ends the one before, so a timer may end only a request that is
+ * still the newest.
+ */
+let newest = 0;
+function started(): number {
+  newest += 1;
+  return newest;
+}
+
 async function hasLock(): Promise<boolean> {
   if (!browserSupportsWebAuthn()) return false;
   try {
@@ -61,6 +72,7 @@ export const devicePasskeys: DevicePasskeys = {
   },
   async autofill(options) {
     const optionsJSON = options as unknown as PublicKeyCredentialRequestOptionsJSON;
+    started();
     return (await startAuthentication({
       optionsJSON,
       useBrowserAutofill: true,
@@ -79,10 +91,10 @@ export const devicePasskeys: DevicePasskeys = {
   },
   async createQuietly(options) {
     const optionsJSON = options as unknown as PublicKeyCredentialCreationOptionsJSON;
-    let deciding = true;
+    const mine = started();
     const timer = setTimeout(() => {
       // Only this request: a sheet opened since is never ended here.
-      if (deciding) WebAuthnAbortService.cancelCeremony();
+      if (newest === mine) WebAuthnAbortService.cancelCeremony();
     }, quietSaveWaitMs);
     try {
       return (await startRegistration({
@@ -90,7 +102,6 @@ export const devicePasskeys: DevicePasskeys = {
         useAutoRegister: true,
       })) as unknown as PasskeyRegistration;
     } finally {
-      deciding = false;
       clearTimeout(timer);
     }
   },
@@ -111,10 +122,12 @@ export const devicePasskeys: DevicePasskeys = {
   },
   async create(options) {
     const optionsJSON = options as unknown as PublicKeyCredentialCreationOptionsJSON;
+    started();
     return (await startRegistration({ optionsJSON })) as unknown as PasskeyRegistration;
   },
   async get(options: PasskeyOptions) {
     const optionsJSON = options as unknown as PublicKeyCredentialRequestOptionsJSON;
+    started();
     return (await startAuthentication({ optionsJSON })) as unknown as PasskeyAssertion;
   },
 };

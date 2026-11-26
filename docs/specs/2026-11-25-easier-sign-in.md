@@ -124,7 +124,9 @@ Google One Tap, magic links.
 1. After signing in with a password, where the browser can save a passkey
    by itself (WebAuthn conditional create: Chrome and Safari with their own
    password managers), the app asks it to, quietly. The browser decides:
-   usually when its password manager filled the password.
+   usually when its password manager filled the password. Not on a browser
+   known to have a passkey (3.2, item 5), and not within 30 days of "Not
+   now" there (my call: the person said no to Face ID on it).
 2. When it saves one, the browser says so in its own way, the passkey is
    added as in Settings, the usual email goes (R27.7), and 3.2 is not
    shown. When it does not, nothing is shown and 3.2 applies as for any
@@ -265,7 +267,12 @@ speaker):
   the email field where Chromium's automation can pick it.
 - **Manual (Martin):** on puffinride.is, on an iPhone in Safari: tap the
   email field and pick the passkey; on a laptop, sign in with the email
-  code on a new browser and see the offer.
+  code on a new browser and see the offer. The browser's own save (3.3),
+  which no automated browser does: in Chrome with Google Password Manager,
+  and in Safari with iCloud Keychain (Passwords), sign in with a password
+  the password manager filled; the browser says it saved a passkey, the
+  "set up" email comes, the offer does not open, and the next sign-in
+  works with Face ID or Touch ID.
 
 ## 9. Out of scope
 
