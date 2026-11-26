@@ -33,7 +33,7 @@ export default function Rides() {
   const { value: answer, reload, pull } = useLoaded(load);
 
   return (
-    <Screen refresh={() => pull((loaded) => loaded.ok)}>
+    <Screen siteFooter refresh={() => pull((loaded) => loaded.ok)}>
       <BackButton />
       <Title>{t("rides.title")}</Title>
       {answer === undefined ? (

@@ -100,7 +100,10 @@ changes on a phone.
    out anew. What the person typed, chose or opened to pay stays, and
    nothing loads again. Where the focus is, and a list opened in place
    (the stops under Change), may not stay (decision 11).
-8. A two-column screen is a page from the start: while it loads, and when
+8. Since 2026-11-26 a public page of the website ends with the website's
+   footer, under all of its columns and lined up with the page
+   ([spec 30, 3.3](2026-11-26-about-page-and-footer.md#33-the-footer)).
+9. A two-column screen is a page from the start: while it loads, and when
    it cannot be loaded, Back is where it will be once loaded. The notice
    and Try again keep the 480 column, at the left (`PageColumn`, spec 15).
 

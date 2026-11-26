@@ -47,7 +47,7 @@ export default function MeetingPointScreen() {
   const { value: result, reload } = useLoaded(load);
 
   return (
-    <Screen>
+    <Screen siteFooter>
       <BackButton fallback="/meeting-points" />
       {result === undefined ? (
         <ActivityIndicator accessibilityLabel={t("common.loading")} color={palette.primary} />

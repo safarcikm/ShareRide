@@ -79,6 +79,13 @@ export const en = {
   "about.contactTitle": "Contact us",
   "about.contact": "Questions or ideas? Write to us, in English or Icelandic.",
   "about.facebook": "PuffinRide on Facebook",
+  "about.instagram": "PuffinRide on Instagram",
+  "footer.label": "About PuffinRide and our terms",
+  "footer.tagline": "Carpooling across Iceland",
+  "footer.terms": "Terms",
+  "footer.contact": "Contact",
+  "footer.facebook": "Facebook",
+  "footer.instagram": "Instagram",
   "consent.title": "Cookies",
   "consent.text":
     "May we count your visit with Google Analytics? It uses cookies and tells Google which pages you open, never your name.",

@@ -8,7 +8,7 @@ import { Screen } from "@/components/screen";
 import { Heading, Title } from "@/components/text";
 import { TextLink } from "@/components/text-link";
 import { useLanguage } from "@/i18n/language";
-import { puffinRideFacebookPage } from "@/sharing/links";
+import { puffinRideFacebookPage, puffinRideInstagram } from "@/sharing/links";
 import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
@@ -18,7 +18,8 @@ import { usePalette } from "@/theme/use-palette";
  * which the server also writes for search engines that do not run the
  * app. It takes the place of "Terms, rules and privacy" (3.2). Every link
  * is a real one: the documents and Carpool in Iceland open in the app, the
- * address writes an email, and our Facebook Page opens in the browser.
+ * address writes an email, and our Facebook Page and Instagram open in the
+ * browser.
  */
 export default function AboutScreen() {
   const { t } = useLanguage();
@@ -27,7 +28,7 @@ export default function AboutScreen() {
     <Text style={[typography.body, { color: palette.text }]}>{text}</Text>
   );
   return (
-    <Screen>
+    <Screen siteFooter>
       <PageHead {...pageText(t, { kind: "about" })} />
       <BackButton fallback="/profile" />
       <Title>{t(aboutPage.title)}</Title>
@@ -58,6 +59,7 @@ export default function AboutScreen() {
         {paragraph(t(aboutPage.contact))}
         <TextLink label={aboutPage.email} url={`mailto:${aboutPage.email}`} align="start" />
         <TextLink label={t("about.facebook")} url={puffinRideFacebookPage} align="start" />
+        <TextLink label={t("about.instagram")} url={puffinRideInstagram} align="start" />
       </View>
     </Screen>
   );

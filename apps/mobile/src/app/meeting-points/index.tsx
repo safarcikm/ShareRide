@@ -36,7 +36,7 @@ export default function MeetingPointsScreen() {
   const [shown, setShown] = useState<"map" | "list">("map");
   const points = result?.ok === true ? result.data.meetingPoints : [];
   return (
-    <Screen aside={points.length === 0 ? undefined : <PointsMap points={points} />}>
+    <Screen siteFooter aside={points.length === 0 ? undefined : <PointsMap points={points} />}>
       <PageHead {...pageText(t, { kind: "meetingPoints" })} />
       <BackButton />
       <Title>{t("meetingPoints.title")}</Title>

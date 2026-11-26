@@ -30,8 +30,10 @@ import {
   sidePanelFrom,
   spacing,
 } from "@/theme/tokens";
+import { onWebsite } from "@/lib/on-website";
 import { usePalette } from "@/theme/use-palette";
 import { useRefresh, type Refresh } from "./refresh";
+import { SiteFooter } from "./site-footer";
 
 /**
  * A full screen with safe-area padding. On wide screens (web, tablets) the
@@ -56,6 +58,9 @@ import { useRefresh, type Refresh } from "./refresh";
  * takes no presses. With `topColour`, the room the screen leaves at its top
  * for the status bar or a notch has that colour, such as the backdrop's sky,
  * rather than the screen's.
+ * With `siteFooter`, a public page of the website ends with the website's
+ * footer (spec 30, 3.3), after the content and across the window, at the
+ * window's bottom edge when the page is shorter; the phone apps have none.
  */
 export function Screen({
   children,
@@ -68,6 +73,7 @@ export function Screen({
   refreshAsked,
   backdrop,
   topColour,
+  siteFooter = false,
 }: {
   readonly children: ReactNode;
   readonly footer?: ReactNode;
@@ -79,6 +85,7 @@ export function Screen({
   readonly refreshAsked?: number | undefined;
   readonly backdrop?: ReactNode;
   readonly topColour?: string;
+  readonly siteFooter?: boolean;
 }) {
   const palette = usePalette();
   const wide = useWideScreen();
@@ -139,6 +146,7 @@ export function Screen({
               ) : (
                 <View style={styles.column}>{children}</View>
               )}
+              {siteFooter && onWebsite() ? <SiteFooter /> : null}
             </ScreenViewHeightContext.Provider>
           </ScreenScrollContext.Provider>
         </ScrollView>

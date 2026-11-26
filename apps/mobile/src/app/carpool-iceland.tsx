@@ -25,7 +25,7 @@ export default function CarpoolIcelandScreen() {
     <Text style={[typography.body, { color: palette.text }]}>{text}</Text>
   );
   return (
-    <Screen>
+    <Screen siteFooter>
       <PageHead {...pageText(t, { kind: "carpool" })} />
       <BackButton fallback="/" />
       <View style={styles.picture}>

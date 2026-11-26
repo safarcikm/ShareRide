@@ -47,6 +47,7 @@ describe("About PuffinRide", () => {
     expect(screen.getByText(en(aboutPage.operator))).toBeVisible();
     expect(screen.getByRole("link", { name: "admin@puffinride.is" })).toBeVisible();
     expect(screen.getByRole("link", { name: "PuffinRide on Facebook" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "PuffinRide on Instagram" })).toBeVisible();
   });
 
   it("opens each document and Cookies", async () => {
@@ -67,12 +68,14 @@ describe("About PuffinRide", () => {
     expect(await screen.findByRole("header", { name: "Carpool in Iceland" })).toBeVisible();
   });
 
-  it("writes an email to our address and opens our Facebook Page", async () => {
+  it("writes an email to our address and opens our Facebook Page and Instagram", async () => {
     await renderApp("/about");
     await fireEvent.press(await screen.findByRole("link", { name: "admin@puffinride.is" }));
     expect(openURL).toHaveBeenCalledWith("mailto:admin@puffinride.is");
     await fireEvent.press(screen.getByRole("link", { name: "PuffinRide on Facebook" }));
     expect(openURL).toHaveBeenCalledWith("https://www.facebook.com/profile.php?id=61597055066444");
+    await fireEvent.press(screen.getByRole("link", { name: "PuffinRide on Instagram" }));
+    expect(openURL).toHaveBeenCalledWith("https://www.instagram.com/puffinride.is/");
   });
 
   it("is in Icelandic for an Icelandic device", async () => {
