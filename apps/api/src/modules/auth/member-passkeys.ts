@@ -16,7 +16,7 @@ import {
   type AuthenticationResponseJSON,
   type RegistrationResponseJSON,
 } from "@simplewebauthn/server";
-import { and, asc, count, desc, eq, gt, notInArray } from "drizzle-orm";
+import { and, asc, count, desc, eq, gt, inArray, notInArray } from "drizzle-orm";
 import type { Logger } from "../../logger.ts";
 import type { KeyedHasher } from "../../platform/crypto.ts";
 import type { EmailChannel } from "../../platform/email.ts";
@@ -81,12 +81,16 @@ export interface MemberPasskeyService {
   /**
    * Options for a new passkey on this device (3.6): with `code` unless this
    * session signed in less than 10 minutes ago (R27.5). The challenge they
-   * make is the proof when the passkey comes back.
+   * make is the proof when the passkey comes back. `quiet` ones are for the
+   * browser to save one by itself (spec 29, 3.3; ADR 0050): only within
+   * those 10 minutes, and their answer needs neither presence nor
+   * verification.
    */
   setupOptions(input: {
     readonly userId: string;
     readonly sessionId: string;
     readonly code?: string;
+    readonly quiet?: boolean;
   }): Promise<Result<WebAuthnOptions, PasskeySetupError>>;
   /** Saves the passkey the device made, named from the browser's user agent. */
   add(input: {
@@ -119,6 +123,9 @@ const passkeyExpired = { code: "passkey_expired" } as const;
 const waitingSetups = 5;
 const tooMany = { code: "too_many" } as const;
 const algorithms = [-7, -257];
+/** The two ways of setting one up: the device's sheet, or the browser by itself. */
+const setups = ["register", "register_quiet"] as const;
+type Setup = (typeof setups)[number];
 
 /** The challenge a browser signed, read from its client data, or null. */
 function challengeOf(clientDataJSON: string): string | null {
@@ -154,7 +161,7 @@ export function createMemberPasskeyService(
   async function takeChallenge(
     tx: Transaction,
     clientDataJSON: string,
-    purpose: "sign_in" | "register",
+    purposes: readonly ("sign_in" | Setup)[],
   ) {
     const challenge = challengeOf(clientDataJSON);
     if (challenge === null) return null;
@@ -163,7 +170,7 @@ export function createMemberPasskeyService(
       .where(
         and(
           eq(memberPasskeyChallenges.challenge, challenge),
-          eq(memberPasskeyChallenges.purpose, purpose),
+          inArray(memberPasskeyChallenges.purpose, purposes),
           gt(memberPasskeyChallenges.expiresAt, clock()),
         ),
       )
@@ -190,6 +197,7 @@ export function createMemberPasskeyService(
 
   async function registrationOptions(
     userId: string,
+    setup: Setup,
   ): Promise<{ readonly options: WebAuthnOptions; readonly userHandle: string }> {
     const [user] = await db
       .select({ firstName: users.firstName, email: users.email })
@@ -217,21 +225,29 @@ export function createMemberPasskeyService(
       authenticatorSelection: {
         authenticatorAttachment: "platform",
         residentKey: "required",
-        userVerification: "required",
+        // The browser's own save checks no one (ADR 0050).
+        userVerification: setup === "register_quiet" ? "preferred" : "required",
       },
       supportedAlgorithmIDs: algorithms,
     });
     return { options, userHandle };
   }
 
-  async function verifyNewPasskey(credential: RegistrationResponseJSON, challenge: string) {
+  async function verifyNewPasskey(
+    credential: RegistrationResponseJSON,
+    challenge: string,
+    setup: Setup,
+  ) {
+    // Only the browser's own save may answer without presence or verification (ADR 0050).
+    const checked = setup === "register";
     try {
       const result = await verifyRegistrationResponse({
         response: credential,
         expectedChallenge: challenge,
         expectedOrigin: passkeyOrigin,
         expectedRPID: rpID,
-        requireUserVerification: true,
+        requireUserPresence: checked,
+        requireUserVerification: checked,
         supportedAlgorithmIDs: algorithms,
       });
       return result.verified ? result.registrationInfo : null;
@@ -258,7 +274,7 @@ export function createMemberPasskeyService(
     async signIn({ credential, device }) {
       return db.transaction(async (tx): Promise<Result<PasskeySignedIn, PasskeySignInError>> => {
         if (challengeOf(credential.response.clientDataJSON) === null) return err(passkeyInvalid);
-        const challenge = await takeChallenge(tx, credential.response.clientDataJSON, "sign_in");
+        const challenge = await takeChallenge(tx, credential.response.clientDataJSON, ["sign_in"]);
         if (challenge === null) return err(passkeyExpired);
         const [found] = await tx
           .select({ passkey: memberPasskeys, status: users.status })
@@ -312,7 +328,7 @@ export function createMemberPasskeyService(
       });
     },
 
-    async setupOptions({ userId, sessionId, code }) {
+    async setupOptions({ userId, sessionId, code, quiet = false }) {
       if ((await devicesOf(db, userId)) >= memberPasskeyRules.perAccount) return err(tooMany);
       const [session] = await db
         .select({ startedAt: sessions.createdAt })
@@ -320,8 +336,10 @@ export function createMemberPasskeyService(
         .where(eq(sessions.id, sessionId));
       if (session === undefined) throw new Error("The session does not exist.");
       const proofNeeded = needsProof(session.startedAt, clock());
-      if (proofNeeded && code === undefined) return err({ code: "confirm_required" });
-      const { options, userHandle } = await registrationOptions(userId);
+      // The browser saves one by itself only straight after signing in.
+      if (proofNeeded && (code === undefined || quiet)) return err({ code: "confirm_required" });
+      const setup: Setup = quiet ? "register_quiet" : "register";
+      const { options, userHandle } = await registrationOptions(userId, setup);
       const save = async (tx: Transaction): Promise<Result<WebAuthnOptions, never>> => {
         // The account's older setups beyond a few go, so it cannot fill the table.
         const newest = tx
@@ -330,7 +348,7 @@ export function createMemberPasskeyService(
           .where(
             and(
               eq(memberPasskeyChallenges.userId, userId),
-              eq(memberPasskeyChallenges.purpose, "register"),
+              inArray(memberPasskeyChallenges.purpose, setups),
             ),
           )
           .orderBy(desc(memberPasskeyChallenges.expiresAt))
@@ -340,13 +358,13 @@ export function createMemberPasskeyService(
           .where(
             and(
               eq(memberPasskeyChallenges.userId, userId),
-              eq(memberPasskeyChallenges.purpose, "register"),
+              inArray(memberPasskeyChallenges.purpose, setups),
               notInArray(memberPasskeyChallenges.challenge, newest),
             ),
           );
         await tx.insert(memberPasskeyChallenges).values({
           challenge: options.challenge,
-          purpose: "register",
+          purpose: setup,
           userId,
           userHandle,
           expiresAt: expiry(),
@@ -361,11 +379,12 @@ export function createMemberPasskeyService(
     async add({ userId, credential, userAgent }) {
       const added = await db.transaction(
         async (tx): Promise<Result<MemberPasskey, PasskeyInvalid | TooMany>> => {
-          const challenge = await takeChallenge(tx, credential.response.clientDataJSON, "register");
+          const challenge = await takeChallenge(tx, credential.response.clientDataJSON, setups);
           if (challenge?.userId !== userId || challenge.userHandle === null) {
             return err(passkeyInvalid);
           }
-          const info = await verifyNewPasskey(credential, challenge.challenge);
+          const setup = challenge.purpose === "register_quiet" ? "register_quiet" : "register";
+          const info = await verifyNewPasskey(credential, challenge.challenge, setup);
           if (info === null) return err(passkeyInvalid);
           // The account's row, locked: two devices saved at once count each other.
           await tx.select({ id: users.id }).from(users).where(eq(users.id, userId)).for("update");
