@@ -157,6 +157,7 @@ import {
   createTripDetailsService,
   registerSearchRoutes,
   rideFinder,
+  tripPicturePaths,
   type FindRide,
 } from "./modules/search/index.ts";
 import {
@@ -335,6 +336,16 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
     app.use(`${photoFilesPath}/*`, async (c, next) => {
       await next();
       c.res.headers.set("Cross-Origin-Resource-Policy", "cross-origin");
+    });
+  }
+  // A trip's pictures are made for other sites and apps to show, such as a
+  // story or a link's card, and hold nothing about a person (R23.8); the
+  // web app in development and tests runs on another port and shows the
+  // story too. Before the secure headers, so it keeps the last word.
+  for (const path of Object.values(tripPicturePaths)) {
+    app.use(path, async (c, next) => {
+      await next();
+      if (c.res.ok) c.res.headers.set("Cross-Origin-Resource-Policy", "cross-origin");
     });
   }
   // Before the secure headers, so it has the last word on the opener

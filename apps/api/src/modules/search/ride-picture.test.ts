@@ -4,9 +4,14 @@ import { rideOf, type RideSource } from "./link-preview.ts";
 import {
   createRidePictures,
   drawRide,
+  drawStory,
   layOutRide,
+  layOutStory,
   pictureSize,
   rideSvg,
+  storyFileName,
+  storySize,
+  storySvg,
   textWidth,
 } from "./ride-picture.ts";
 
@@ -119,6 +124,92 @@ describe("a ride's picture (spec 23, 3.10)", () => {
   });
 });
 
+/** Room for words in a story: its width less a margin each side (spec 28, 3.5). */
+const storyRoom = storySize.width - 2 * storySize.margin;
+
+/** Each word's line in a story's SVG: its baseline and its size. */
+const storyWords = (svg: string) =>
+  [
+    ...svg.matchAll(/<text x="[^"]+" y="([^"]+)"[^>]* font-size="([^"]+)"[^>]*>([^<]*)<\/text>/g),
+  ].map(([, y = "0", size = "0", text = ""]) => ({ y: Number(y), size: Number(size), text }));
+
+describe("a ride's story picture (spec 28, 3.5)", () => {
+  it("is a PNG of 1080 by 1920", async () => {
+    const png = await drawStory(short, "en");
+    expect([...png.subarray(0, 8)]).toEqual([137, 80, 78, 71, 13, 10, 26, 10]);
+    const header = Buffer.from(png.subarray(16, 24));
+    expect([header.readUInt32BE(0), header.readUInt32BE(4)]).toEqual([1080, 1920]);
+  });
+
+  it("puts one end of the route under the other, large", () => {
+    const layout = layOutStory(short, "en");
+    expect(layout.route.ends).toEqual([["Reykjavík – BSÍ"], ["Akureyri – Hof"]]);
+    expect(layout.route.size).toBeGreaterThanOrEqual(90);
+  });
+
+  it("puts the longest names on two lines each, then shortens what is left", () => {
+    const layout = layOutStory(longest, "is");
+    expect(layout.route.ends.map((end) => end.length)).toEqual([2, 2]);
+    expect(layout.route.ends.flat().join(" ")).toBe(
+      "Brautarholt á Skeiðum – stoppistöð Strætó Sólheimar í Grímsnesi – Verslunin Vala",
+    );
+    expect(layout.route.size).toBeGreaterThanOrEqual(64);
+    const longer = layOutStory(
+      ride([
+        "Brautarholt á Skeiðum – stoppistöð Strætó við gamla samkomuhúsið við Skeiðaveg",
+        "Vík – N1",
+      ]),
+      "is",
+    );
+    const [first] = longer.route.ends;
+    expect(first).toHaveLength(2);
+    expect(first.at(-1)).toMatch(/…$/);
+    for (const line of longer.route.ends.flat()) {
+      expect(textWidth(line, "route", longer.route.size)).toBeLessThanOrEqual(storyRoom);
+    }
+  });
+
+  it("names the stops on lines that fit, then how many more", () => {
+    const layout = layOutStory(manyStops, "en");
+    expect(layout.stops.length).toBeGreaterThan(0);
+    expect(layout.stops.length).toBeLessThanOrEqual(3);
+    expect(layout.stops[0]).toMatch(/^Stops on the way: Hveragerði – N1/);
+    for (const line of layout.stops) {
+      expect(textWidth(line, "stops", layout.stopsSize)).toBeLessThanOrEqual(storyRoom);
+    }
+    expect(layOutStory(ride(["Reykjavík – BSÍ", "Akureyri – Hof"]), "en").stops).toEqual([]);
+  });
+
+  it("keeps every word out of the top and the bottom, where Instagram has its buttons", () => {
+    for (const shown of [short, longest, manyStops]) {
+      for (const locale of ["is", "en"] as const) {
+        const words = storyWords(storySvg(shown, locale));
+        expect(words.length).toBeGreaterThan(3);
+        for (const { y, size, text } of words) {
+          expect(y - size, text).toBeGreaterThanOrEqual(storySize.safeTop);
+          expect(y + size * 0.3, text).toBeLessThanOrEqual(storySize.height - storySize.safeBottom);
+        }
+      }
+    }
+  });
+
+  it("shows what the link preview shows, and the Free seats tag only while seats can be booked", () => {
+    const words = storyWords(storySvg(short, "en")).map(({ text }) => text);
+    expect(words).toContain("Friday 27 November at 09:00");
+    expect(words).toContain("Free seats");
+    expect(storySvg(ride(["A – 1", "B – 2"], "full"), "en")).not.toContain("Free seats");
+    expect(storySvg(ride(["Bakarí & <Co>", "Vík – N1"]), "en")).not.toContain("<Co>");
+  });
+
+  it("is saved under a name from its route", () => {
+    expect(storyFileName(short, "en")).toBe("puffinride-reykjavik-bsi-akureyri-hof.png");
+    const icelandic = ride(["Þórshöfn – Ráðhús", "Ægisíða – Bæjarlækur"]);
+    expect(storyFileName(icelandic, "is")).toBe(
+      "puffinride-thorshofn-radhus-aegisida-baejarlaekur.png",
+    );
+  });
+});
+
 describe("the pictures the API keeps (spec 23, 3.10, item 4)", () => {
   const other = ride(["Selfoss – Olís", "Vík – N1"]);
 
@@ -145,6 +236,14 @@ describe("the pictures the API keeps (spec 23, 3.10, item 4)", () => {
     const first = await pictures.picture(short, "en");
     await pictures.picture(other, "en");
     expect(await pictures.picture(short, "en")).not.toBe(first);
+  });
+
+  it("keeps a ride's story apart from its link preview", async () => {
+    const pictures = createRidePictures();
+    const preview = await pictures.picture(short, "en");
+    const story = await pictures.picture(short, "en", "story");
+    expect(story).not.toBe(preview);
+    expect(await pictures.picture(short, "en", "story")).toBe(story);
   });
 
   it("is busy rather than drawing more than it may at once", async () => {

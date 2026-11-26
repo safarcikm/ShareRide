@@ -1187,6 +1187,12 @@ export const is = {
   "shareRide.post.offer": "Býð far: {route}",
   "shareRide.post.book": "Bókaðu sæti á PuffinRide:",
   "shareRide.post.ask": "Óskaðu eftir sæti á PuffinRide:",
+  "shareRide.story": "Story á Instagram",
+  "shareRide.storyHint":
+    "Mynd af ferðinni í story. Instagram tekur ekki hlekki í færslum, svo bættu hlekknum við með hlekkjalímmiða.",
+  "shareRide.sharePicture": "Deila mynd",
+  "shareRide.downloadPicture": "Sækja mynd",
+  "shareRide.copyLink": "Afrita hlekk",
   "shareRide.follow": "Fylgdu PuffinRide á Facebook",
   "shareRide.notShareable": "Aðeins er hægt að deila birtri ferð sem er ekki lögð af stað.",
   "shareRide.backToTrip": "Sjá ferðina",

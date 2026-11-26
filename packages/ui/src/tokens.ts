@@ -277,6 +277,8 @@ export const sizes = {
   iconButton: 44,
   /** The round of a quiet icon button, drawn inside its 44 button (spec 28, 3.1). */
   iconButtonSmall: 36,
+  /** A story picture's width in Share this ride; it stands 16 by 9 (spec 28, 3.2). */
+  storyPreview: 108,
   checkbox: 26,
   /** The round mark of a radio card. */
   radio: 24,

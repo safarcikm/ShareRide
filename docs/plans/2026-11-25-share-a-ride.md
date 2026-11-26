@@ -79,7 +79,8 @@ migration, no new dependency.
 3. **Texts:** `shareRide.story`, `shareRide.storyHint`, `shareRide.sharePicture`,
    `shareRide.downloadPicture`, `shareRide.copyLink`.
 4. **Check by eye:** draw the story for a short, a long and a many-stop
-   trip in both languages.
+   trip in both languages. Done with `pnpm --filter @shareride/api
+   story-pictures`, which keeps three of them in spec 28's pictures.
 5. **Docs:** spec 23, 3.10 mentions the story picture; the changelog.
 
 ## After merging

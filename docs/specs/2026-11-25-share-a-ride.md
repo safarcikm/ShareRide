@@ -204,9 +204,10 @@ what it shows (R23.8):
 
 - PuffinRide's icon and name at the top;
 - the route in large letters, one end under the other with an arrow down
-  between them, shrinking to fit, then shortened with "…";
-- the day and time, and the stops on the way (as many as fit, then
-  "and 2 more");
+  between them, shrinking to fit, then each end on up to two lines, then
+  shortened with "…";
+- the day and time, and the stops on the way on up to three lines (as
+  many as fit, then "and 2 more");
 - the front page's Iceland scene below: the pins, and the puffin driver in
   the yellow car with "Free seats" while the trip can be booked.
 
@@ -214,9 +215,13 @@ Words keep out of the top 270 and the bottom 340 pixels, where Instagram
 puts its own buttons. Its address is
 `/v1/trips/{id}/story.png?fromStop=…&toStop=…&lang=is`, answering as the
 preview's address does (404 where the preview is general), from the same
-pictures kept in memory and with the same limit; `&download=1` answers it
-as a file to save, named after the route, such as
-`puffinride-reykjavik-akureyri.png`.
+pictures kept in memory and with the same limit, but not kept by the
+browser (`Cache-Control: no-cache`), so a story shared after a change
+shows it; `&download=1` answers it as a file to save, named after the
+route, such as `puffinride-reykjavik-akureyri.png`. Any site may show a
+trip's pictures, the preview's and the story's
+(`Cross-Origin-Resource-Policy: cross-origin`, every other answer of the
+API keeps `same-origin`): they hold nothing about a person.
 
 On a phone's browser that can share files, the panel fetches the picture
 when it shows, so that Share picture opens the share window at once (a
@@ -294,7 +299,8 @@ A result card, with the icon in its corner:
 └──────────────────────────────────────────┘
 ```
 
-As built (pictures from `apps/mobile/e2e/pictures.spec.ts`):
+As built (pictures from `apps/mobile/e2e/pictures.spec.ts`, and the stories
+from `pnpm --filter @shareride/api story-pictures`):
 
 | Screen | Picture |
 | ------ | ------- |
@@ -306,6 +312,10 @@ As built (pictures from `apps/mobile/e2e/pictures.spec.ts`):
 | A published trip in My trips, on a phone | ![A trip card in My trips with the share icon in its corner](images/share-a-ride/my-trips-card-phone.png) |
 | The driver's trip page on a phone | ![The trip's name with the share icon beside it](images/share-a-ride/trip-page-head-phone.png) |
 | The driver's trip page on a laptop | ![The page head: the trip's name, the share icon, then the trip's actions](images/share-a-ride/trip-page-head-laptop.png) |
+| Story on Instagram, on a phone's browser that cannot share files | ![The story picture small, Download picture and Copy link](images/share-a-ride/story-section-phone.png) |
+| A story, short trip, Icelandic | ![The route Mjódd to N1 Selfossi, Friday 27 November at 09:00, a stop on the way, the scene with "Laus sæti"](images/share-a-ride/story-short-is.png) |
+| A story, long names, English, full | ![Each end of the route on two lines, no "Free seats" tag](images/share-a-ride/story-long-names-en.png) |
+| A story, many stops, Icelandic | ![Seven stops on the way on three lines](images/share-a-ride/story-many-stops-is.png) |
 
 ## 6. Data and API
 

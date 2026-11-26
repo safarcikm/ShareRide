@@ -1,8 +1,9 @@
-// A shared ride's picture for its link preview (spec 23, 3.10; ADR 0049):
-// an SVG in PuffinRide's look, turned into a PNG with resvg. It shows the
-// route, the day and time, the stops on the way and the Iceland scene with
-// the puffin driver's car; never a name, a photo, a price or a seat count
-// (R23.8).
+// A shared ride's picture for its link preview (spec 23, 3.10; ADR 0049),
+// and the same ride standing up for a story (spec 28, 3.5): an SVG in
+// PuffinRide's look, turned into a PNG with resvg. It shows the route, the
+// day and time, the stops on the way and the Iceland scene with the puffin
+// driver's car; never a name, a photo, a price or a seat count (R23.8,
+// R28.2).
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { renderAsync, Resvg, type ResvgRenderOptions } from "@resvg/resvg-js";
@@ -227,11 +228,17 @@ function lupines(points: readonly (readonly [number, number])[], scale: number):
   return s;
 }
 
-function landscape(width: number, height: number, horizon: number, roadY: number): string {
+function landscape(
+  width: number,
+  height: number,
+  horizon: number,
+  roadY: number,
+  mountainScale = 0.95,
+): string {
   const k = width / 1080;
   const hills = roadY - 70;
   let s = `<circle cx="${(width * 0.915).toFixed(1)}" cy="${(horizon - 50).toFixed(1)}" r="48" fill="${people.sun}"/>`;
-  s += mountains(width, horizon, roadY, 0.95);
+  s += mountains(width, horizon, roadY, mountainScale);
   s +=
     `<path d="M${-20 * k} ${hills + 10} Q${140 * k} ${hills - 50} ${330 * k} ${hills - 6} Q${520 * k} ${hills + 30} ${700 * k} ${hills - 24} ` +
     `Q${880 * k} ${hills - 62} ${1100 * k} ${hills - 4} L${1100 * k} ${roadY} L${-20 * k} ${roadY}Z" fill="${people.mossLight}"/>`;
@@ -267,7 +274,13 @@ function pin(cx: number, ground: number, height: number): string {
 }
 
 /** The car with its wheels on the road, its left bumper at x, and the free-seats tag over its back window. */
-function carOnRoad(x: number, roadY: number, width: number, tag: string | null): string {
+function carOnRoad(
+  x: number,
+  roadY: number,
+  width: number,
+  tag: string | null,
+  tagSize: number = styles.tag.size,
+): string {
   const scale = width / carBox.width;
   const height = carBox.height * scale;
   const top = roadY + 8 - (carBox.wheelBottom - carBox.y) * scale;
@@ -285,8 +298,8 @@ function carOnRoad(x: number, roadY: number, width: number, tag: string | null):
     // The arrow's tip at the top of the empty back window.
     const tipX = x + (54 - carBox.x) * scale;
     const tipY = top + (35 - carBox.y) * scale;
-    const size = styles.tag.size;
-    const w = textWidth(tag, "tag") + size * 1.3;
+    const size = tagSize;
+    const w = textWidth(tag, "tag", size) + size * 1.3;
     const h = size * 1.6;
     const right = tipX + 18;
     const y = tipY - 14 - h;
@@ -294,6 +307,7 @@ function carOnRoad(x: number, roadY: number, width: number, tag: string | null):
     s += `<rect x="${(right - w).toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" rx="${(h / 2).toFixed(1)}" fill="${light.primary}"/>`;
     s += `<path d="M${(tipX - 11).toFixed(1)} ${(y + h - 1).toFixed(1)} L${tipX.toFixed(1)} ${(tipY - 1).toFixed(1)} L${(tipX + 11).toFixed(1)} ${(y + h - 1).toFixed(1)}Z" fill="${light.primary}"/>`;
     s += textElement(tag, "tag", right - w / 2, y + h * 0.68, {
+      size,
       fill: light.surface,
       anchor: "middle",
     });
@@ -384,12 +398,218 @@ export async function drawRide(ride: Ride, locale: Locale): Promise<Buffer> {
   return (await renderAsync(rideSvg(ride, locale), renderOptions)).asPng();
 }
 
+// ---------- the story: the same ride standing up (spec 28, 3.5) ----------
+
+/**
+ * A story's size, the margin words keep from each side, and the top and
+ * bottom where Instagram puts its own buttons, which words keep out of.
+ */
+export const storySize = {
+  width: 1080,
+  height: 1920,
+  margin: 72,
+  safeTop: 270,
+  safeBottom: 340,
+} as const;
+
+/**
+ * The route's sizes in a story: on one line each from the largest down to
+ * `oneLine`, then on two lines each down to the smallest.
+ */
+const storyRoute = { largest: 110, oneLine: 84, smallest: 60 } as const;
+const storyStops = { size: 36, lineHeight: 50, lines: 3 } as const;
+
+export interface StoryLayout {
+  /** The route's two ends, one under the other, each on one or two lines, and their size. */
+  readonly route: {
+    readonly ends: readonly [readonly string[], readonly string[]];
+    readonly size: number;
+  };
+  readonly when: string;
+  /** "Stops on the way: …" broken into lines that fit; none for a ride without stops between. */
+  readonly stops: readonly string[];
+  readonly stopsSize: number;
+}
+
+/** Words in lines no wider than `room`, a word too long for a line on its own. */
+function wrapped(text: string, style: Style, size: number, room: number): string[] {
+  const lines: string[] = [];
+  let line = "";
+  for (const word of text.split(" ")) {
+    const longer = line === "" ? word : `${line} ${word}`;
+    if (line !== "" && textWidth(longer, style, size) > room) {
+      lines.push(line);
+      line = word;
+    } else {
+      line = longer;
+    }
+  }
+  if (line !== "") lines.push(line);
+  return lines;
+}
+
+/** Where a story's words go: the route as large as fits, the day, then the stops (3.5). */
+export function layOutStory(ride: Ride, locale: Locale): StoryLayout {
+  const t = createTranslator(locale);
+  const room = storySize.width - 2 * storySize.margin;
+  const { from, to, between } = endsOf(ride);
+  const ends = [from.name[locale], to.name[locale]] as const;
+
+  let route: StoryLayout["route"] | undefined;
+  for (let size: number = storyRoute.largest; size >= storyRoute.oneLine; size -= 4) {
+    if (ends.every((end) => textWidth(end, "route", size) <= room)) {
+      route = { ends: [[ends[0]], [ends[1]]], size };
+      break;
+    }
+  }
+  const fitsIn = (end: readonly string[], size: number) =>
+    end.length <= 2 && end.every((line) => textWidth(line, "route", size) <= room);
+  for (let size: number = storyRoute.oneLine; size >= storyRoute.smallest && !route; size -= 4) {
+    const lines = ends.map((end) => wrapped(end, "route", size, room));
+    if (size === storyRoute.smallest || lines.every((end) => fitsIn(end, size))) {
+      // At the smallest size, a third line joins the second, shortened.
+      const [first, second] = lines.map(([top = "", ...rest]) =>
+        rest.length === 0
+          ? [shortened(top, "route", size, room)]
+          : [shortened(top, "route", size, room), shortened(rest.join(" "), "route", size, room)],
+      );
+      route = { ends: [first ?? [], second ?? []], size };
+    }
+  }
+  if (route === undefined) throw new Error("unreachable: the smallest size always fits");
+
+  const names = between.map((stop) => stop.name[locale]);
+  const stopsLines = (shown: readonly string[]) =>
+    wrapped(
+      t("seo.tripStops", {
+        stops:
+          shown.length === names.length
+            ? shown.join(", ")
+            : t("seo.tripMoreStops", {
+                stops: shown.join(", "),
+                count: names.length - shown.length,
+              }),
+      }),
+      "stops",
+      storyStops.size,
+      room,
+    );
+  const fits = (lines: readonly string[]) =>
+    lines.length <= storyStops.lines &&
+    lines.every((line) => textWidth(line, "stops", storyStops.size) <= room);
+  let stops: string[] = [];
+  for (let shown = names.length; shown >= 1 && stops.length === 0; shown -= 1) {
+    const lines = stopsLines(names.slice(0, shown));
+    if (fits(lines)) stops = lines;
+  }
+  const [firstStop] = names;
+  if (stops.length === 0 && firstStop !== undefined) {
+    // Not even one name fits: shorten it, and keep the count of the others.
+    let kept = firstStop;
+    while (kept.length > 1 && !fits(stopsLines([`${kept}…`]))) kept = kept.slice(0, -1);
+    stops = stopsLines([`${kept.trimEnd()}…`]);
+  }
+
+  return {
+    route,
+    when: capitalised(whenOf(ride, locale, true), locale),
+    stops,
+    stopsSize: storyStops.size,
+  };
+}
+
+/** An arrow pointing down, from `top` to `top + length`, centred on cx. */
+function downArrow(cx: number, top: number, length: number, size: number): string {
+  const head = length * 0.32;
+  const stroke = (size * 0.085).toFixed(1);
+  const bottom = top + length;
+  return (
+    `<path d="M${cx.toFixed(1)} ${top.toFixed(1)} V${bottom.toFixed(1)} M${(cx - head).toFixed(1)} ${(bottom - head).toFixed(1)} ` +
+    `L${cx.toFixed(1)} ${bottom.toFixed(1)} L${(cx + head).toFixed(1)} ${(bottom - head).toFixed(1)}" ` +
+    `fill="none" stroke="${light.primary}" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round"/>`
+  );
+}
+
+/** The story as SVG, 1080 by 1920. */
+export function storySvg(ride: Ride, locale: Locale): string {
+  const { width: W, height: H, safeTop } = storySize;
+  const t = createTranslator(locale);
+  const layout = layOutStory(ride, locale);
+  const roadY = H - 280;
+  const horizon = roadY - 250;
+  let s = `<rect width="${W}" height="${H}" fill="${light.background}"/>`;
+  s += landscape(W, H, horizon, roadY, 1.6);
+  s += pin(W * 0.12, roadY - 20, 120) + pin(W * 0.88, roadY - 20, 120);
+  const carWidth = 500;
+  s += carOnRoad(
+    W / 2 - carWidth / 2 + 36,
+    roadY,
+    carWidth,
+    ride.bookable ? t("seo.tripFreeSeats") : null,
+    36,
+  );
+
+  s += lockup(W / 2, safeTop + 40, 76);
+  const { ends, size } = layout.route;
+  const lineHeight = size * 1.08;
+  const gap = size * 0.34;
+  const arrowLength = Math.max(size * 0.8, 60);
+  let baseline = safeTop + 200 + size * 0.76;
+  const [from, to] = ends;
+  from.forEach((line, index) => {
+    if (index > 0) baseline += lineHeight;
+    s += textElement(line, "route", W / 2, baseline, { size, anchor: "middle" });
+  });
+  s += downArrow(W / 2, baseline + gap, arrowLength, Math.max(size, 80));
+  baseline += gap + arrowLength + gap + size * 0.76;
+  to.forEach((line, index) => {
+    if (index > 0) baseline += lineHeight;
+    s += textElement(line, "route", W / 2, baseline, { size, anchor: "middle" });
+  });
+  baseline += 110;
+  s += textElement(layout.when, "when", W / 2, baseline, { size: 48, anchor: "middle" });
+  baseline += 30;
+  for (const line of layout.stops) {
+    baseline += storyStops.lineHeight;
+    s += textElement(line, "stops", W / 2, baseline, {
+      size: layout.stopsSize,
+      anchor: "middle",
+      fill: light.textMuted,
+    });
+  }
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${s}</svg>`;
+}
+
+/** The story as a PNG, drawn off the main thread. */
+export async function drawStory(ride: Ride, locale: Locale): Promise<Buffer> {
+  return (await renderAsync(storySvg(ride, locale), renderOptions)).asPng();
+}
+
+/** Letters a file name spells another way: Icelandic ones that have no accent to take off. */
+const spelled: Readonly<Record<string, string>> = { ð: "d", þ: "th", æ: "ae", ø: "o", ß: "ss" };
+
+/** The name a saved story gets, from its route: "puffinride-reykjavik-akureyri.png". */
+export function storyFileName(ride: Ride, locale: Locale): string {
+  const { from, to } = endsOf(ride);
+  const words = `${from.name[locale]} ${to.name[locale]}`
+    .toLowerCase()
+    .replace(/[ðþæøß]/g, (letter) => spelled[letter] ?? letter)
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+  return `puffinride-${words}.png`;
+}
+
+/** The pictures of a ride: its link preview, or its story (spec 28, 3.5). */
+export type PictureKind = "preview" | "story";
+
 export interface RidePictures {
   /**
    * A ride's picture, drawn once and then kept while what it shows stays the
    * same; undefined when as many are being drawn as may be at once.
    */
-  picture(ride: Ride, locale: Locale): Promise<Buffer | undefined>;
+  picture(ride: Ride, locale: Locale, kind?: PictureKind): Promise<Buffer | undefined>;
 }
 
 /**
@@ -402,8 +622,8 @@ export function createRidePictures({ capacity = 100, drawingAtOnce = 2 } = {}): 
   const kept = new Map<string, Buffer>();
   let drawing = 0;
   return {
-    async picture(ride, locale) {
-      const key = [ride.id, ride.board, ride.alight, rideVersion(ride, locale)].join(" ");
+    async picture(ride, locale, kind = "preview") {
+      const key = [kind, ride.id, ride.board, ride.alight, rideVersion(ride, locale)].join(" ");
       const known = kept.get(key);
       if (known !== undefined) {
         // Most recently used last, so the oldest is first to go.
@@ -414,7 +634,7 @@ export function createRidePictures({ capacity = 100, drawingAtOnce = 2 } = {}): 
       if (drawing >= drawingAtOnce) return undefined;
       drawing += 1;
       try {
-        const png = await drawRide(ride, locale);
+        const png = await (kind === "story" ? drawStory : drawRide)(ride, locale);
         kept.set(key, png);
         for (const oldest of kept.keys()) {
           if (kept.size <= capacity) break;

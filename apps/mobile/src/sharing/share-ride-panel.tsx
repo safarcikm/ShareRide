@@ -17,6 +17,7 @@ import { usePalette } from "@/theme/use-palette";
 import { tripWebAddress } from "@/trip-details/trip-link";
 import { facebookShareAddress, puffinRideFacebookPage } from "./links";
 import { postText } from "./post-text";
+import { StorySection } from "./story-section";
 
 const languages: readonly {
   readonly locale: Locale;
@@ -163,6 +164,8 @@ export function ShareRidePanel({
       )}
       {/* A notice that shows with its words is not always read out, nor a second copy. */}
       <Announcer message={copied} />
+
+      <StorySection trip={trip} link={url} language={language} />
 
       <TextLink
         label={t("shareRide.follow")}

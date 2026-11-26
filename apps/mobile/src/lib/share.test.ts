@@ -1,5 +1,14 @@
 import { Platform, Share } from "react-native";
-import { canCopy, canShareWindow, copyText, shareLink, shareText } from "./share";
+import {
+  canCopy,
+  canShareWindow,
+  copyText,
+  fetchPicture,
+  pictureSharing,
+  shareLink,
+  sharePicture,
+  shareText,
+} from "./share";
 
 const url = "https://shareride.is/trips/0190a1d6-0000-7000-8000-0000000000d1?from=1&to=2";
 const text = "Borgarnes → Blönduós on PuffinRide";
@@ -167,5 +176,45 @@ describe("Copying a text (spec 28, 3.2)", () => {
   it("fails on a phone, which shares instead", async () => {
     jest.replaceProperty(Platform, "OS", "ios");
     await expect(copyText("Býð far")).resolves.toBe("failed");
+  });
+});
+
+describe("Sharing a picture, such as a ride's story (spec 28, 3.5)", () => {
+  it("shares it as a file where the browser can, downloads it elsewhere, and waits in the apps", () => {
+    browserWith({ canShare: () => true, share: jest.fn() });
+    expect(pictureSharing()).toBe("share");
+    browserWith({ canShare: () => false, share: jest.fn() });
+    expect(pictureSharing()).toBe("download");
+    browserWith({});
+    expect(pictureSharing()).toBe("download");
+    jest.replaceProperty(Platform, "OS", "ios");
+    expect(pictureSharing()).toBe("none");
+  });
+
+  it("fetches the picture ahead, as a PNG file with a name", async () => {
+    const blob = new Blob(["png"], { type: "image/png" });
+    const fetched = jest
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue({ ok: true, blob: () => Promise.resolve(blob) } as Response);
+    const file = await fetchPicture("https://puffinride.is/v1/trips/1/story.png", "puffinride.png");
+    expect(fetched).toHaveBeenCalledWith("https://puffinride.is/v1/trips/1/story.png");
+    expect(file?.name).toBe("puffinride.png");
+    expect(file?.type).toBe("image/png");
+    fetched.mockResolvedValue({ ok: false } as Response);
+    await expect(fetchPicture("https://puffinride.is/x.png", "x.png")).resolves.toBeNull();
+    fetched.mockRejectedValue(new TypeError("Failed to fetch"));
+    await expect(fetchPicture("https://puffinride.is/x.png", "x.png")).resolves.toBeNull();
+  });
+
+  it("opens the share window with the file, and knows when it was closed", async () => {
+    const share = jest.fn(() => Promise.resolve());
+    browserWith({ share });
+    const file = new File(["png"], "puffinride.png", { type: "image/png" });
+    await expect(sharePicture(file)).resolves.toBe("shared");
+    expect(share).toHaveBeenCalledWith({ files: [file] });
+    share.mockRejectedValueOnce(abort());
+    await expect(sharePicture(file)).resolves.toBe("dismissed");
+    share.mockRejectedValueOnce(new Error("NotAllowedError"));
+    await expect(sharePicture(file)).resolves.toBe("failed");
   });
 });

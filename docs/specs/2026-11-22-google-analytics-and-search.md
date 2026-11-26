@@ -346,6 +346,11 @@ title only (the same picture) and no change.
 6. **Facebook keeps what it read.** A card already posted keeps the old
    time if the driver moves it; the trip page shows the change. Facebook's
    Sharing Debugger reads a link again on request.
+7. **A story picture beside it:** the same ride standing up, 1080 × 1920,
+   for a driver's Instagram or Facebook story, drawn the same way and
+   showing the same things, at `/v1/trips/<id>/story.png`, from the same
+   kept pictures and limits
+   ([spec 28](2026-11-25-share-a-ride.md), 3.5).
 
 ## 4. Rules
 

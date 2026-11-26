@@ -66,6 +66,53 @@ export async function copyText(text: string): Promise<"copied" | "failed"> {
   }
 }
 
+/**
+ * How a picture, such as a ride's story (spec 28, 3.5), can be shared
+ * here: as a file in the share window (browsers on phones), saved with a
+ * download (other browsers), or not yet (the apps, which need a package of
+ * their own to share a file).
+ */
+export function pictureSharing(): "share" | "download" | "none" {
+  if (Platform.OS !== "web") return "none";
+  const browser = globalThis.navigator as Partial<Navigator> | undefined;
+  try {
+    const probe = new File([], "picture.png", { type: "image/png" });
+    if (typeof browser?.canShare === "function" && browser.canShare({ files: [probe] })) {
+      return "share";
+    }
+  } catch {
+    // A browser without File, or one that throws on canShare, downloads.
+  }
+  return "download";
+}
+
+/**
+ * Fetches a picture ahead of sharing it: a browser opens the share window
+ * only straight after a tap, with no time to fetch then. Null when it
+ * could not be fetched.
+ */
+export async function fetchPicture(url: string, name: string): Promise<File | null> {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) return null;
+    return new File([await response.blob()], name, { type: "image/png" });
+  } catch {
+    return null;
+  }
+}
+
+/** Opens the browser's share window with a picture fetched before. */
+export async function sharePicture(file: File): Promise<ShareOutcome> {
+  const browser = globalThis.navigator as Partial<Navigator> | undefined;
+  if (typeof browser?.share !== "function") return "failed";
+  try {
+    await browser.share({ files: [file] });
+    return "shared";
+  } catch (error) {
+    return isAbort(error) ? "dismissed" : "failed";
+  }
+}
+
 /** A text, with a web address or without. */
 async function share(text: string, url: string | null, title = text): Promise<ShareOutcome> {
   if (Platform.OS !== "web") {

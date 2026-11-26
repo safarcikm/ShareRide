@@ -101,6 +101,7 @@ pnpm --filter @shareride/api operator add <phone or user ID>  # give the console
 pnpm --filter @shareride/api test:contract  # 46elks, Vonage, Mailjet and photo bucket checks, need their keys; not in CI
 pnpm --filter @shareride/api sentry:check   # send a test error (needs SENTRY_DSN)
 pnpm --filter @shareride/api email-previews # the key emails as files to look at (apps/api/email-previews/)
+pnpm --filter @shareride/api story-pictures # sample Instagram story pictures (docs/specs/images/share-a-ride/)
 pnpm --filter @shareride/db generate   # SQL migration from schema changes
 infra/docker/smoke-test.sh <image>     # start the API image and check it (needs DATABASE_URL)
 pnpm --filter @shareride/domain test   # one package
