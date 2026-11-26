@@ -52,6 +52,16 @@ describe("the Carpool in Iceland page (spec 23, 3.9)", () => {
     );
   });
 
+  it("says what samferða means, also spelt without ð, for people who search for the word (3.9)", () => {
+    const questions = carpoolPage.sections.flatMap((section) => section.questions ?? []);
+    const word = questions.find(({ question }) => en(question).includes("samferða"));
+    expect(word).toBeDefined();
+    if (word === undefined) return;
+    expect(en(word.question)).toBe("What does samferða mean?");
+    expect(en(word.answer)).toContain("samferda");
+    expect(is(word.question)).toContain("samferða");
+  });
+
   it("links to the meeting points and the community rules", () => {
     const links = carpoolPage.sections.flatMap((section) =>
       section.link === undefined ? [] : [section.link.href],

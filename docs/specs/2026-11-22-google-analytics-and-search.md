@@ -262,7 +262,7 @@ is and how carpooling with it works, for people who search for it:
    from Keflavík Airport), trust (a checked phone number, drivers' photos,
    reviews after each trip, a link to the community rules) and a few
    questions: is it a taxi (no: drivers share a trip they are making
-   anyway), and is it in English.
+   anyway), what samferða means, and is it in English.
 3. Nothing about money: no prices, payments or fees (Martin's rule for
    marketing texts).
 4. Find links to it ("How carpooling works") beside "See the meeting
@@ -278,6 +278,18 @@ carpool groups, Reddit's Iceland travel groups when someone asks, a line in
 Hitchwiki's Iceland page and travel guides' "getting around" pages, the
 Icelandic listings (Já.is). Search Console: ask Google to index the new
 page once it is live. Expect weeks, not days.
+
+**Samferða** (added 2026-11-26, Martin: searches for "samferða",
+"samferda" and "samferda iceland" should lead to us too). Samferða is an
+everyday Icelandic word, "travelling together", and the Icelandic titles
+already use it (Find: "Samferða um Ísland: far og samakstur"; this page:
+"Samferða um Ísland"). It is also the name of a carpool site that has
+been around for years, and its name stays theirs: we use the word as the
+language does, never as if we were that site, and do not name it. The
+page's questions now say what samferða means, with its spelling without
+ð (samferda) in English for visitors who type it without Icelandic
+letters, so an English reader searching for the word finds a page that
+explains it.
 
 ### 3.10 A shared ride's link preview
 
