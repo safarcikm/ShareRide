@@ -268,7 +268,7 @@ async function postTrip(page: Page, journey: Journey) {
   // Share this ride (spec 28, 3.2): the post's text, in the app's language, copied.
   await expect(page.getByRole("heading", { name: journey.shareRide })).toBeVisible();
   await page.getByRole("button", { name: journey.copyText }).click();
-  await expect(page.getByText(journey.textCopied)).toBeVisible();
+  await expect(page.getByTestId("notice").filter({ hasText: journey.textCopied })).toBeVisible();
   expect(await page.evaluate(() => navigator.clipboard.readText())).toMatch(journey.post);
   // No push on the web, but the account's email reaches them: no prompt
   // for one (spec 7, 3.6.2; spec 26).

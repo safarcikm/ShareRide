@@ -230,11 +230,72 @@ describe("Share this ride, after publishing (spec 28, 3.2)", () => {
     ).toBeVisible();
   });
 
-  it("has no Copy text where there is no clipboard, as the share window takes the text", async () => {
+  it("says to copy by hand in the apps, which have no clipboard of their own", async () => {
     hasClipboard.mockReturnValue(false);
     await openDriver(published);
     expect(await screen.findByLabelText("Text for your post")).toBeVisible();
     expect(screen.queryByRole("button", { name: "Copy text" })).toBeNull();
+    expect(
+      screen.getByText(
+        "On your wall, in a group or in Messenger. Facebook doesn't let apps write the post, so press and hold the text below to copy it, then paste it in.",
+      ),
+    ).toBeVisible();
+  });
+
+  it("reads out each copy", async () => {
+    const announce = jest.spyOn(AccessibilityInfo, "announceForAccessibility");
+    await openDriver(published);
+    const copy = await screen.findByRole("button", { name: "Copy text" });
+    announce.mockClear();
+    await fireEvent.press(copy);
+    await fireEvent.press(copy);
+    expect(
+      announce.mock.calls.filter(([said]) => said === "Text copied. Paste it into your post."),
+    ).toHaveLength(2);
+    announce.mockRestore();
+  });
+
+  it("opens one share window at a time", async () => {
+    let close = () => {};
+    mockedShare.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          close = () => {
+            resolve("shared");
+          };
+        }),
+    );
+    await openDriver(published);
+    const share = await screen.findByRole("button", { name: "Share" });
+    await fireEvent.press(share);
+    await fireEvent.press(share);
+    expect(mockedShare).toHaveBeenCalledTimes(1);
+    await act(() => {
+      close();
+    });
+    await fireEvent.press(share);
+    expect(mockedShare).toHaveBeenCalledTimes(2);
+  });
+
+  it("shows the link to paste when Facebook does not open, and the Page's when it does not", async () => {
+    openURL.mockRejectedValue(new Error("No app"));
+    await openDriver(published);
+    await fireEvent.press(await screen.findByRole("button", { name: "Share on Facebook" }));
+    expect(
+      await screen.findByText(`The link could not be shared. Here it is to copy: ${tripLink}`),
+    ).toBeVisible();
+    await fireEvent.press(screen.getByRole("link", { name: "Follow PuffinRide on Facebook" }));
+    expect(
+      await screen.findByText(
+        "The link could not be shared. Here it is to copy: https://www.facebook.com/profile.php?id=61597055066444",
+      ),
+    ).toBeVisible();
+  });
+
+  it("is not there once the trip has left", async () => {
+    await openDriver(published, [{ ...northTrip, status: "departed" }]);
+    expect(await screen.findByRole("header", { name: "Your trip is published" })).toBeVisible();
+    expect(screen.queryByRole("header", { name: "Share this ride" })).toBeNull();
   });
 
   it("links to PuffinRide's Facebook Page", async () => {
@@ -290,6 +351,18 @@ describe("Share this ride, a screen of its own (spec 28, 3.1 and 3.2)", () => {
     await openDriver(`/drive/trips/${tripId}`, [{ ...northTrip, status: "departed" }]);
     expect(await screen.findByText("BSÍ bus terminal → Hof, Akureyri")).toBeVisible();
     expect(screen.queryByRole("button", { name: "Share this ride" })).toBeNull();
+  });
+
+  it("says when the trip cannot be found, with a way to My trips", async () => {
+    await openDriver(`/drive/trips/0190a1d6-0000-7000-8000-0000000009ff/share`);
+    expect(
+      await screen.findByText(
+        "This trip can't be found. The link may be wrong, or the trip removed.",
+      ),
+    ).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Try again" })).toBeNull();
+    await fireEvent.press(screen.getByRole("link", { name: "See my trips" }));
+    expect(screen).toHavePathname("/drive/trips");
   });
 
   it("refuses a trip that has left, with a way back to it", async () => {

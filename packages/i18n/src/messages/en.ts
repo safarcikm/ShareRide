@@ -1158,6 +1158,8 @@ export const en = {
   "shareRide.facebook": "Share on Facebook",
   "shareRide.facebookHint":
     "On your wall, in a group or in Messenger. Facebook doesn't let apps write the post, so copy the text below and paste it in.",
+  "shareRide.facebookHintHold":
+    "On your wall, in a group or in Messenger. Facebook doesn't let apps write the post, so press and hold the text below to copy it, then paste it in.",
   "shareRide.postText": "Text for your post",
   "shareRide.postLanguage": "Language of the text",
   "shareRide.copyText": "Copy text",

@@ -1173,6 +1173,8 @@ export const is = {
   "shareRide.facebook": "Deila á Facebook",
   "shareRide.facebookHint":
     "Á vegginn þinn, í hóp eða í Messenger. Facebook leyfir öppum ekki að skrifa færsluna, svo afritaðu textann hér fyrir neðan og límdu hann inn.",
+  "shareRide.facebookHintHold":
+    "Á vegginn þinn, í hóp eða í Messenger. Facebook leyfir öppum ekki að skrifa færsluna, svo haltu fingri á textanum hér fyrir neðan til að afrita hann og límdu hann svo inn.",
   "shareRide.postText": "Texti í færsluna",
   "shareRide.postLanguage": "Tungumál textans",
   "shareRide.copyText": "Afrita texta",

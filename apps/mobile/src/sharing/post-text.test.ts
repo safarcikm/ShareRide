@@ -44,10 +44,28 @@ describe("The text for a driver's post (spec 28, 3.4)", () => {
     );
   });
 
-  it("never says a price, a fee, a payment or a seat count (R28.2)", () => {
+  it("never says a price, a fee, a payment, a seat count or the driver's note (R28.2)", () => {
+    const priced = {
+      ...published,
+      note: "Room for skis",
+      seats: 3,
+      segments: [3400, 2100].map((amount) => ({
+        distanceM: 100_000,
+        durationS: 3600,
+        suggestedPrice: { amount, currency: "ISK" as const },
+        cap: { amount: amount * 2, currency: "ISK" as const },
+        price: { amount, currency: "ISK" as const },
+        seatsTaken: 1,
+      })),
+      takings: { amount: 5500, currency: "ISK" as const },
+    };
     for (const locale of ["en", "is"] as const) {
-      const { text } = postText(published, locale, url);
-      expect(text).not.toMatch(/kr\b|ISK|fee|gjald|greið|pay|seats? (left|free)|laus sæti/i);
+      const { text, withoutLink, title } = postText(priced, locale, url);
+      for (const words of [text, withoutLink, title]) {
+        expect(words).not.toMatch(
+          /kr\b|ISK|fee|gjald|greið|pay|seats? (left|free)|laus sæti|skis|3\s?400|2\s?100|5\s?500/i,
+        );
+      }
     }
   });
 });

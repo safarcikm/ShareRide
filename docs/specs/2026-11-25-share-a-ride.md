@@ -139,8 +139,10 @@ From the top:
    Copying says "Text copied. Paste it into your post." Where the text
    cannot be copied, it says "The text couldn't be copied. Select it in the
    box to copy it.", and the words in the box can be selected by hand. The
-   apps have no clipboard of their own, so there Copy text is left out and
-   Share (item 2) takes the text.
+   apps have no clipboard of their own (that needs a package, for a later
+   change), so there Copy text is left out, the hint under Facebook says
+   "press and hold the text below to copy it", and Share (item 2) takes
+   the text to other apps.
 5. **Story on Instagram** (web only for now, 3.5): a small picture of the
    story (3.5), "A picture of your ride for your story. Instagram doesn't
    take links in posts, so add the link with a link sticker.", then
@@ -166,10 +168,10 @@ that hasn't left can be shared." with "See the trip", a link back to it.
   chose to share.
 - The post's words are the person's own: the app never fills them in
   (Facebook does not allow it); the copy button and the hint make pasting
-  them one tap.
+  them one tap on the web, and a press and hold in the apps.
 - Pressing Facebook does not copy the text by itself: a browser may refuse
   to copy while it opens a new tab, and a separate Copy text button works
-  everywhere.
+  in every browser.
 - No Facebook or Instagram logos on the buttons: the words say where they
   go, and Meta's brand rules for its logos do not come into it.
 
@@ -260,7 +262,7 @@ People can now find it and book a seat.
 └──────────────────────────────────────┘
 Share this ride
 Post it where people look for rides, such as carpool groups on Facebook.
-[ ⇪ Share ]                        (where there is a share window)
+[ Share ]                          (where there is a share window)
 [ Share on Facebook ]
 On your wall, in a group or in Messenger. Facebook doesn't let apps
 write the post, so copy the text below and paste it in.
@@ -301,6 +303,9 @@ As built (pictures from `apps/mobile/e2e/pictures.spec.ts`):
 | A result's link copied, on a laptop | ![The icon turned into a tick](images/share-a-ride/link-copied-laptop.png) |
 | Your trip is published, on a phone (no share window in that browser) | ![Share this ride after publishing: Share on Facebook, the post's text, Copy text, Follow PuffinRide](images/share-a-ride/published-phone.png) |
 | Share this ride on a laptop, in Icelandic | ![The screen of its own, with the post's text in Icelandic](images/share-a-ride/share-screen-laptop-is.png) |
+| A published trip in My trips, on a phone | ![A trip card in My trips with the share icon in its corner](images/share-a-ride/my-trips-card-phone.png) |
+| The driver's trip page on a phone | ![The trip's name with the share icon beside it](images/share-a-ride/trip-page-head-phone.png) |
+| The driver's trip page on a laptop | ![The page head: the trip's name, the share icon, then the trip's actions](images/share-a-ride/trip-page-head-laptop.png) |
 
 ## 6. Data and API
 
@@ -333,6 +338,7 @@ As built (pictures from `apps/mobile/e2e/pictures.spec.ts`):
 | `shareRide.share` | Share | Deila |
 | `shareRide.facebook` | Share on Facebook | Deila á Facebook |
 | `shareRide.facebookHint` | On your wall, in a group or in Messenger. Facebook doesn't let apps write the post, so copy the text below and paste it in. | Á vegginn þinn, í hóp eða í Messenger. Facebook leyfir öppum ekki að skrifa færsluna, svo afritaðu textann hér fyrir neðan og límdu hann inn. |
+| `shareRide.facebookHintHold` | (in the apps) On your wall, in a group or in Messenger. Facebook doesn't let apps write the post, so press and hold the text below to copy it, then paste it in. | Á vegginn þinn, í hóp eða í Messenger. Facebook leyfir öppum ekki að skrifa færsluna, svo haltu fingri á textanum hér fyrir neðan til að afrita hann og límdu hann svo inn. |
 | `shareRide.postText` | Text for your post | Texti í færsluna |
 | `shareRide.postLanguage` | Language of the text | Tungumál textans |
 | `shareRide.copyText` | Copy text | Afrita texta |

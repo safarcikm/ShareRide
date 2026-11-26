@@ -1,7 +1,8 @@
 import type { MyTrip } from "@shareride/contracts";
 import type { Locale } from "@shareride/i18n";
-import { useId, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { Linking, Platform, StyleSheet, Text, View } from "react-native";
+import { Announcer } from "@/components/announcer";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
 import { Chip } from "@/components/chip";
@@ -47,22 +48,40 @@ export function ShareRidePanel({
   const [picked, setPicked] = useState<Locale | null>(null);
   const language = picked ?? locale;
   const [shared, setShared] = useState<Shared | null>(null);
-  const [copied, setCopied] = useState<"copied" | "failed" | null>(null);
+  const [followed, setFollowed] = useState<Shared | null>(null);
+  // What the last copy said, counted so that each copy is read out.
+  const [copied, setCopied] = useState<{
+    outcome: "copied" | "failed";
+    text: string;
+    count: number;
+  } | null>(null);
+  const sharing = useRef(false);
   const url = tripWebAddress(trip.id, { board: 0, alight: trip.stops.length - 1 });
   const post = postText(trip, language, url);
+  // The apps have no clipboard of their own: the text is copied by hand there.
+  const copies = canCopy();
 
   const share = async () => {
-    setShared({ outcome: await shareLink(url, post.withoutLink, post.title), url });
+    // A press while the share window is open does nothing.
+    if (sharing.current) return;
+    sharing.current = true;
+    try {
+      setShared({ outcome: await shareLink(url, post.withoutLink, post.title), url });
+    } finally {
+      sharing.current = false;
+    }
   };
-  const open = (address: string) => {
-    setShared(null);
-    // Should the browser or the phone not open it, the link is there to copy.
+  /** Opens an address outside the app; should it not open, `onFailed` shows a link to copy. */
+  const open = (address: string, onFailed: (shared: Shared | null) => void, shown: string) => {
+    onFailed(null);
     Linking.openURL(address).catch(() => {
-      setShared({ outcome: "failed", url });
+      onFailed({ outcome: "failed", url: shown });
     });
   };
   const copy = async () => {
-    setCopied(await copyText(post.text));
+    const outcome = await copyText(post.text);
+    const text = t(outcome === "copied" ? "shareRide.textCopied" : "shareRide.copyFailed");
+    setCopied((last) => ({ outcome, text, count: (last?.count ?? 0) + 1 }));
   };
 
   return (
@@ -82,10 +101,13 @@ export function ShareRidePanel({
         variant="secondary"
         label={t("shareRide.facebook")}
         onPress={() => {
-          open(facebookShareAddress(url));
+          // Should Facebook not open, the trip's link is there to paste.
+          open(facebookShareAddress(url), setShared, url);
         }}
       />
-      <Body align="start">{t("shareRide.facebookHint")}</Body>
+      <Body align="start">
+        {t(copies ? "shareRide.facebookHint" : "shareRide.facebookHintHold")}
+      </Body>
       <ShareNotice shared={shared} />
 
       <View style={styles.textHead}>
@@ -113,6 +135,7 @@ export function ShareRidePanel({
         </View>
       </View>
       <View
+        role="group"
         aria-labelledby={textLabel}
         style={[styles.text, { borderColor: palette.border, backgroundColor: palette.background }]}
       >
@@ -126,7 +149,7 @@ export function ShareRidePanel({
           {post.text}
         </Text>
       </View>
-      {canCopy() ? (
+      {copies ? (
         <Button
           variant="secondary"
           label={t("shareRide.copyText")}
@@ -135,15 +158,19 @@ export function ShareRidePanel({
           }}
         />
       ) : null}
-      {copied === "copied" ? <Notice kind="info" message={t("shareRide.textCopied")} /> : null}
-      {copied === "failed" ? <Notice message={t("shareRide.copyFailed")} /> : null}
+      {copied === null ? null : (
+        <Notice kind={copied.outcome === "copied" ? "info" : "error"} message={copied.text} />
+      )}
+      {/* A notice that shows with its words is not always read out, nor a second copy. */}
+      <Announcer message={copied} />
 
       <TextLink
         label={t("shareRide.follow")}
         onPress={() => {
-          open(puffinRideFacebookPage);
+          open(puffinRideFacebookPage, setFollowed, puffinRideFacebookPage);
         }}
       />
+      <ShareNotice shared={followed} />
     </Card>
   );
 }
