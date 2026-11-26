@@ -7,6 +7,7 @@ import { controlOutline, edges, radii, sizes, spacing, typography } from "@/them
 import { usePalette } from "@/theme/use-palette";
 import { Card, cardCornerRoom } from "./card";
 import { Tag, type TagKind } from "./tag";
+import { sectionLevel } from "./text";
 
 /** One end of a ride on its ticket. */
 export interface TicketEnd {
@@ -42,25 +43,35 @@ export interface TicketPrice {
   readonly more?: string | null | undefined;
 }
 
+/** An end of a ticket that is pressed as a whole: it holds nothing to press itself. */
+type PlainEnd = TicketEnd & { readonly action?: never };
+
+/** A ticket that is one link or one button holds no buttons of its own. */
+interface Pressed {
+  readonly from: PlainEnd;
+  readonly to: PlainEnd;
+  readonly unfolded?: never;
+  /** A screen reader would otherwise read every text the ticket holds. */
+  readonly accessibilityLabel: string;
+}
+
 /**
- * What makes a ticket one link or one button: either needs a name, as a
- * screen reader would otherwise read every text the ticket holds.
+ * What makes a ticket one link or one button, which then needs a name; or
+ * neither, and then it can hold buttons: an end's `action` and what that
+ * unfolds.
  */
 type TicketPress =
-  | {
-      readonly href: AppPath;
-      readonly onPress?: never;
-      readonly accessibilityLabel: string;
-    }
-  | {
-      readonly onPress: () => void;
-      readonly href?: never;
-      readonly accessibilityLabel: string;
-    }
+  | (Pressed & { readonly href: AppPath; readonly onPress?: never })
+  | (Pressed & { readonly onPress: () => void; readonly href?: never })
   | {
       readonly href?: never;
       readonly onPress?: never;
       readonly accessibilityLabel?: string;
+      /**
+       * Under the timetable and the note, over the tear line: what a button
+       * of the ticket unfolds, such as the stops to choose from.
+       */
+      readonly unfolded?: ReactNode;
     };
 
 interface TicketLook extends TimetableProps {
@@ -75,12 +86,6 @@ interface TicketLook extends TimetableProps {
    * line, such as the driver's whole ride where this is a part of it.
    */
   readonly note?: string | null | undefined;
-  /**
-   * Under the timetable and the note, over the tear line: what a button of
-   * the ticket unfolds, such as the stops to choose from. A ticket that
-   * holds buttons is not itself pressed.
-   */
-  readonly unfolded?: ReactNode;
   /** One line under the tear line, usually a `TicketFoot`; without it there is no tear line. */
   readonly foot?: ReactNode;
   /** A ride that is mine: a moss bottom edge. */
@@ -135,7 +140,8 @@ export function RideTicket({
     <>
       <View testID="ticket-day" style={[styles.day, corner !== undefined && styles.dayWithCorner]}>
         <Text
-          accessibilityRole={headed ? "header" : undefined}
+          // A part of its screen, under the screen's title: an h2 on the web.
+          {...(headed ? { accessibilityRole: "header" as const, ...sectionLevel } : {})}
           style={[typography.caption, styles.dayText, { color: palette.textMuted }]}
         >
           {day}
@@ -215,8 +221,7 @@ export function Timetable({ from, to, between, price = null }: TimetableProps) {
             />
             <View testID="ticket-rail" style={[styles.rail, styles.fill, rail]} />
           </Unspoken>
-          <Place testID="ticket-from-place" end={from} />
-          <EndAction end={from} />
+          <PlaceOfEnd testID="ticket-from-place" end={from} />
         </View>
         <View style={styles.end}>
           <Time shown={null} times={times} />
@@ -233,8 +238,7 @@ export function Timetable({ from, to, between, price = null }: TimetableProps) {
             <View testID="ticket-rail" style={[styles.rail, styles.railEnd, rail]} />
             <View testID="ticket-dot" style={[styles.dot, rail]} />
           </Unspoken>
-          <Place testID="ticket-to-place" end={to} />
-          <EndAction end={to} />
+          <PlaceOfEnd testID="ticket-to-place" end={to} />
         </View>
       </View>
       {price === null ? null : (
@@ -348,25 +352,28 @@ function Time({
   );
 }
 
-function Place({ end, testID }: { readonly end: TicketEnd; readonly testID: string }) {
+/**
+ * An end's place, and what is pressed at its right, such as Change: at the
+ * middle of the place's first line and never squeezed. Where the two have
+ * no room for the place's longest word, what is pressed goes under the
+ * place, at the right, as the price goes under the timetable.
+ */
+function PlaceOfEnd({ end, testID }: { readonly end: TicketEnd; readonly testID: string }) {
   const palette = usePalette();
-  return (
-    <View testID={testID} style={styles.place}>
+  const pressed = end.action !== undefined && end.action !== null;
+  const place = (
+    <View testID={testID} style={pressed ? [styles.placeBeside, wholeWords] : styles.place}>
       <Text style={[typography.bodyStrong, { color: palette.text }]}>{end.place}</Text>
       {end.under}
     </View>
   );
-}
-
-/**
- * What is pressed at the right of a place, such as Change: at the middle
- * of the place's first line, and never squeezed by a long name.
- */
-function EndAction({ end }: { readonly end: TicketEnd }) {
-  if (end.action === undefined || end.action === null) return null;
+  if (!pressed) return place;
   return (
-    <View testID="ticket-end-action" style={styles.endAction}>
-      {end.action}
+    <View testID="ticket-end-with-action" style={styles.placeAndAction}>
+      {place}
+      <View testID="ticket-end-action" style={styles.endAction}>
+        {end.action}
+      </View>
     </View>
   );
 }
@@ -402,9 +409,9 @@ function TearLine() {
 
 /**
  * On the web the timetable is never narrower than its longest word, so a
- * price that would split a place's name goes under the timetable instead.
- * React Native's types and phones lack `min-content`; a phone keeps the
- * price beside the timetable.
+ * price that would split a place's name goes under the timetable instead;
+ * so does a place with something to press beside it. React Native's types
+ * and phones lack `min-content`; a phone keeps them side by side.
  */
 const wholeWords =
   Platform.OS === "web" ? ({ flexBasis: "min-content" } as unknown as ViewStyle) : null;
@@ -469,12 +476,23 @@ const styles = StyleSheet.create({
   rail: { width: line },
   railEnd: { height: dotDrop },
   place: { flex: 1, minWidth: 0 },
+  // What is pressed beside a place goes under it, at the right, before it
+  // splits the place's name inside a word.
+  placeAndAction: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    columnGap: spacing.sm,
+  },
+  placeBeside: { flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: 0 },
   // As high as the place's first line, so a button taller than the line
   // stands at its middle and does not push the next row down.
   endAction: {
     flexShrink: 0,
     height: typography.bodyStrong.lineHeight,
     justifyContent: "center",
+    marginLeft: "auto",
   },
   between: { flex: 1, paddingVertical: spacing.xs / 2 },
   price: { flexShrink: 0, alignItems: "flex-end", marginLeft: "auto" },

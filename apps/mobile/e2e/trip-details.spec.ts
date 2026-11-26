@@ -1,4 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
+import { picturesUnderTheirText } from "./support/layout";
+import { focused } from "./support/trips";
 
 // Spec 4's trip details and shared links on the web build, without an
 // account, against the sample trips the e2e API seeds: Anna drives
@@ -45,7 +47,15 @@ test.describe("ride details without an account", () => {
     ).toBeVisible();
     // Your part is one ticket, named as a part of the screen (spec 31, 3.7).
     const ticket = page.getByTestId("part-ticket").filter({ visible: true });
-    await expect(ticket.getByRole("heading", { name: "Your part of the ride" })).toBeVisible();
+    // The page has one title; the ticket's caption is a heading under it.
+    await expect(
+      ticket.getByRole("heading", { name: "Your part of the ride", level: 2 }),
+    ).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1 }).filter({ visible: true })).toHaveCount(1);
+    // The driver's picture stands with the name, not at the middle of the lines (3.18).
+    const pictures = await picturesUnderTheirText(page);
+    expect(pictures.pictures).toBeGreaterThan(0);
+    expect(pictures.under).toEqual([]);
     await expect(
       page.getByRole("img", {
         name: "Seats on your part: 3 offered, 0 taken, 1 yours and 2 free.",
@@ -94,8 +104,18 @@ test.describe("ride details without an account", () => {
     await ticket.getByRole("button", { name: "Change where you get in" }).click();
     const choices = ticket.getByRole("radiogroup", { name: "Where you get in" });
     await expect(choices.getByRole("radio")).toHaveCount(2);
+    // Focus goes to the stops, which stand under both ends, and Escape
+    // folds them and gives it back to Change.
+    await expect.poll(() => focused(page)).toContain("BSÍ bus terminal");
+    await page.keyboard.press("Escape");
+    await expect(choices).toHaveCount(0);
+    await expect.poll(() => focused(page)).toBe("Change");
+    await expect(page).toHaveURL(/\?from=1&to=2$/);
+    await ticket.getByRole("button", { name: "Change where you get in" }).click();
     await choices.getByRole("radio", { name: /^\d\d:\d\d, BSÍ bus terminal$/ }).click();
     await expect(choices).toHaveCount(0);
+    // The stop chosen has gone, so its Change has focus again.
+    await expect.poll(() => focused(page)).toBe("Change");
     await expect(
       page
         .getByRole("heading", { name: "BSÍ bus terminal to Olís Blönduós" })

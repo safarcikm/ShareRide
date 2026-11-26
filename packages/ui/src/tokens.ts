@@ -264,7 +264,7 @@ export const typeScale = {
 export const spacing = { xs: 4, sm: 8, ms: 12, md: 16, lg: 24, xl: 32, xxl: 48 } as const;
 
 /** Corner radii. */
-export const radii = { seat: 4, checkbox: 9, tag: 12, control: 16, card: 22, pill: 999 } as const;
+export const radii = { checkbox: 9, tag: 12, control: 16, card: 22, pill: 999 } as const;
 
 /** Widths of the solid bottom edge that makes parts look chunky. */
 export const edges = { card: 3, buttonPrimary: 4, buttonSecondary: 3 } as const;
@@ -304,6 +304,8 @@ export const sizes = {
   wordsBeside: 144,
   /** Widest the car from above gets beside the words about its seats (spec 31, 3.7). */
   carBeside: 176,
+  /** Narrowest it gets there, before the words move under it: the two fit a 360 wide phone. */
+  carBesideLeast: 120,
   /** A row that opens a screen, such as My cars on Profile. */
   row: 56,
   /** The soft square behind a row's icon, and behind the icon of what needs you (spec 31, 3.3). */

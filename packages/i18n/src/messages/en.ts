@@ -919,8 +919,6 @@ export const en = {
   "trip.whereYouSitLine":
     "{free, plural, =0 {No seats are free} one {# of {offered} seats is free} other {# of {offered} seats are free}}. Seats are not numbered: you agree in the car.",
   "trip.seatView.you": "You",
-  "trip.seatView.taken": "Taken",
-  "trip.seatView.free": "Free",
   "trip.seatView.label":
     "Seats on your part: {offered} offered, {taken} taken, {yours} yours and {free} free.",
   "trip.seats": "Seats",

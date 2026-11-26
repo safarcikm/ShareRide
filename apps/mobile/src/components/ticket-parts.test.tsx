@@ -303,6 +303,16 @@ describe("RideTicket", () => {
       .map((part) => String(part.props.testID));
     expect(parts).toEqual(["ticket-from-place", "ticket-end-action"]);
     expect(within(screen.getByTestId("ticket-to")).queryByTestId("ticket-end-action")).toBeNull();
+    // With no room beside the place's longest word it goes under the place,
+    // at the right, and never squeezes the name.
+    expect(within(from).getByTestId("ticket-end-with-action")).toHaveStyle({
+      flexDirection: "row",
+      flexWrap: "wrap",
+    });
+    expect(within(from).getByTestId("ticket-end-action")).toHaveStyle({
+      flexShrink: 0,
+      marginLeft: "auto",
+    });
     await fireEvent.press(within(from).getByRole("button", { name: "Change" }));
     expect(change).toHaveBeenCalledTimes(1);
   });

@@ -1700,7 +1700,12 @@ releases follow [Semantic Versioning](https://semver.org/).
   "Where you sit", and "The whole route" with the map and the stops. Free
   cancellation, "Weather and roads" (the links to the weather, the roads
   and SafeTravel) and "Report this ride" are rows at the end. On a laptop
-  the booking panel and the whole route stay beside them.
+  the booking panel and the whole route stay beside them. With more than
+  one seat the bar says what each costs ("2 × 2,900 ISK"). A ride that
+  was cancelled says nothing of how to book it or of cancelling a booking.
+- A screen's title is not broken inside a word for the button beside it:
+  between places with long names on a narrow phone, Share stands over the
+  title, and Change under its place on the ticket (spec 15, 5.2).
 - Booking a seat shows the ride as a ticket, with the total, the seats and
   the driver and car on it, and "You're booked" and "Request sent" show
   the ticket My rides has for the seat (spec 31, 3.19).

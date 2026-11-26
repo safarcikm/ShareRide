@@ -26,9 +26,14 @@ export function picturesUnderTheirText(
   });
 }
 
+/** The names of the places at a ticket's two ends. */
+const placesOfTicket =
+  '[data-testid="ticket-from-place"] [dir], [data-testid="ticket-to-place"] [dir]';
+
 /**
  * How a ticket holds what is in it (spec 31, review focus 3), for the first
- * ticket in view with this test id:
+ * ticket in view with this test id; or another part of a screen, such as
+ * its head, with `words` choosing the texts to read in it:
  *
  * - `past`: the parts that reach past its edges. The notches of the tear
  *   line sit half outside the ticket on purpose and are not counted.
@@ -44,6 +49,7 @@ export function picturesUnderTheirText(
 export function ticketFit(
   page: Page,
   testId: string,
+  words = placesOfTicket,
 ): Promise<{
   readonly past: readonly string[];
   readonly cut: readonly string[];
@@ -52,66 +58,65 @@ export function ticketFit(
   readonly beyondWindow: number;
   readonly screenWider: number;
 }> {
-  return page.evaluate((id) => {
-    const ticket = [...document.querySelectorAll<HTMLElement>(`[data-testid="${id}"]`)].find(
-      (found) => found.getClientRects().length > 0,
-    );
-    if (ticket === undefined) throw new Error(`No ${id} in view`);
-    const edge = ticket.getBoundingClientRect();
-    const past = [...ticket.querySelectorAll<HTMLElement>("*")]
-      .filter((part) => {
-        if (part.dataset["testid"] === "ticket-notch") return false;
-        const box = part.getBoundingClientRect();
-        return box.width > 0 && (box.left < edge.left - 0.5 || box.right > edge.right + 0.5);
-      })
-      .map((part) => part.dataset["testid"] ?? part.textContent.slice(0, 40));
-    const places = [
-      ...ticket.querySelectorAll<HTMLElement>(
-        '[data-testid="ticket-from-place"] [dir], [data-testid="ticket-to-place"] [dir]',
-      ),
-    ];
-    const cut = places
-      .filter((place) => place.scrollWidth > place.clientWidth + 1)
-      .map((place) => place.textContent);
-    const brokenWords: string[] = [];
-    const needlessly: string[] = [];
-    for (const place of places) {
-      const [letters] = place.childNodes;
-      if (letters?.nodeType !== Node.TEXT_NODE) continue;
-      const text = letters.textContent ?? "";
-      const range = document.createRange();
-      /** The top of each letter's line; a space at a line's end has no box. */
-      const tops = Array.from({ length: text.length }, (_, at) => {
-        range.setStart(letters, at);
-        range.setEnd(letters, at + 1);
-        const [box] = range.getClientRects();
-        return box === undefined || box.width === 0 ? null : Math.round(box.top);
-      });
-      for (let at = 1; at < text.length; at += 1) {
-        const before = tops[at - 1] ?? null;
-        const here = tops[at] ?? null;
-        if (before === null || here === null || here <= before + 2) continue;
-        const ends = text.charAt(at - 1);
-        if (/\s/.test(ends) || ends === "-") continue;
-        const shown = `${text.slice(0, at)}|${text.slice(at)}`;
-        brokenWords.push(shown);
-        // The word around the break, and how wide it is in one piece.
-        const starts = text.slice(0, at).search(/\S+$/);
-        const rest = text.slice(at).search(/\s/);
-        range.setStart(letters, starts);
-        range.setEnd(letters, rest === -1 ? text.length : at + rest);
-        const wide = [...range.getClientRects()].reduce((sum, piece) => sum + piece.width, 0);
-        if (wide <= place.clientWidth) needlessly.push(shown);
+  return page.evaluate(
+    ({ id, texts }) => {
+      const ticket = [...document.querySelectorAll<HTMLElement>(`[data-testid="${id}"]`)].find(
+        (found) => found.getClientRects().length > 0,
+      );
+      if (ticket === undefined) throw new Error(`No ${id} in view`);
+      const edge = ticket.getBoundingClientRect();
+      const past = [...ticket.querySelectorAll<HTMLElement>("*")]
+        .filter((part) => {
+          if (part.dataset["testid"] === "ticket-notch") return false;
+          const box = part.getBoundingClientRect();
+          return box.width > 0 && (box.left < edge.left - 0.5 || box.right > edge.right + 0.5);
+        })
+        .map((part) => part.dataset["testid"] ?? part.textContent.slice(0, 40));
+      const places = [...ticket.querySelectorAll<HTMLElement>(texts)];
+      const cut = places
+        .filter((place) => place.scrollWidth > place.clientWidth + 1)
+        .map((place) => place.textContent);
+      const brokenWords: string[] = [];
+      const needlessly: string[] = [];
+      for (const place of places) {
+        const [letters] = place.childNodes;
+        if (letters?.nodeType !== Node.TEXT_NODE) continue;
+        const text = letters.textContent ?? "";
+        const range = document.createRange();
+        /** The top of each letter's line; a space at a line's end has no box. */
+        const tops = Array.from({ length: text.length }, (_, at) => {
+          range.setStart(letters, at);
+          range.setEnd(letters, at + 1);
+          const [box] = range.getClientRects();
+          return box === undefined || box.width === 0 ? null : Math.round(box.top);
+        });
+        for (let at = 1; at < text.length; at += 1) {
+          const before = tops[at - 1] ?? null;
+          const here = tops[at] ?? null;
+          if (before === null || here === null || here <= before + 2) continue;
+          const ends = text.charAt(at - 1);
+          if (/\s/.test(ends) || ends === "-") continue;
+          const shown = `${text.slice(0, at)}|${text.slice(at)}`;
+          brokenWords.push(shown);
+          // The word around the break, and how wide it is in one piece.
+          const starts = text.slice(0, at).search(/\S+$/);
+          const rest = text.slice(at).search(/\s/);
+          range.setStart(letters, starts);
+          range.setEnd(letters, rest === -1 ? text.length : at + rest);
+          const wide = [...range.getClientRects()].reduce((sum, piece) => sum + piece.width, 0);
+          if (wide <= place.clientWidth) needlessly.push(shown);
+        }
       }
-    }
-    const beyondWindow = Math.max(
-      0,
-      Math.ceil(edge.right - window.innerWidth),
-      Math.ceil(-edge.left),
-    );
-    const screen = ticket.closest<HTMLElement>('[data-testid="screen-scroll"]');
-    if (screen === null) throw new Error(`The ${id} is on no screen`);
-    const screenWider = screen.scrollWidth - screen.clientWidth;
-    return { past, cut, brokenWords, needlessly, beyondWindow, screenWider };
-  }, testId);
+      const beyondWindow = Math.max(
+        0,
+        Math.ceil(edge.right - window.innerWidth),
+        Math.ceil(-edge.left),
+      );
+      const screen = ticket.closest<HTMLElement>('[data-testid="screen-scroll"]');
+      if (screen === null) throw new Error(`The ${id} is on no screen`);
+      const screenWider = screen.scrollWidth - screen.clientWidth;
+      return { past, cut, brokenWords, needlessly, beyondWindow, screenWider };
+    },
+    { id: testId, texts: words },
+  );
 }

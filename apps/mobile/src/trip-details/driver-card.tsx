@@ -21,7 +21,8 @@ import { preferenceNeeds } from "./trip-parts";
  * The driver of a ride in a card of their own (spec 31, 3.7, item 3):
  * their picture, name and rating, or "New driver" before the first; for
  * members signed in, who have `profileId`, the reliability figure too, and
- * the whole line opens the profile, with a chevron at its end. Under a
+ * the whole line opens the profile, with a chevron at its end. The picture
+ * stands with the name, at the top of the lines about them (3.18). Under a
  * line: the car, with what the passenger learns about the number plate,
  * what the driver likes on a ride, and their note.
  */
@@ -75,7 +76,7 @@ export function DriverCard({
     <Card>
       <View testID="driver-card" style={styles.card}>
         {profileId === null ? (
-          <View style={styles.person}>{person}</View>
+          <View style={besideAvatar.row}>{person}</View>
         ) : (
           <ProfileLink
             profileId={profileId}
@@ -92,10 +93,7 @@ export function DriverCard({
           </ProfileLink>
         )}
         {car === null && needs.length === 0 && note === "" ? null : (
-          <View
-            testID="driver-card-line"
-            style={[styles.line, { backgroundColor: palette.border }]}
-          />
+          <View style={[styles.line, { backgroundColor: palette.border }]} />
         )}
         {car === null ? null : (
           <View style={styles.car}>
@@ -154,26 +152,29 @@ function ProfileLink({
       {...linkProps({ pathname: "/people/[profileId]", params: { profileId } })}
       {...hover}
       style={({ pressed }) => [
-        styles.person,
+        besideAvatar.row,
         styles.link,
         pressed || hovered ? { backgroundColor: palette.primarySoft } : null,
       ]}
     >
       {children}
-      <Icon testID="driver-card-chevron" icon={ChevronRight} color={palette.textMuted} />
+      {/* At the middle of the line, whatever its height; the picture stays at its top. */}
+      <View style={styles.chevron}>
+        <Icon icon={ChevronRight} color={palette.textMuted} />
+      </View>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   card: { gap: spacing.ms },
-  person: { flexDirection: "row", alignItems: "center", gap: spacing.ms },
   // The tint reaches a little past the picture and the chevron, as a row's does in a card.
   link: {
     borderRadius: radii.control,
     padding: spacing.sm,
     margin: -spacing.sm,
   },
+  chevron: { alignSelf: "center" },
   standing: { gap: spacing.xs, alignItems: "flex-start" },
   tag: { flexDirection: "row" },
   line: { height: controlOutline / 2 },

@@ -376,13 +376,21 @@ and on a laptop
 - The title names my part in words, "N1 Borgarnes to Olís Blönduós" (in
   Icelandic with the arrow, section 8), and follows it when I change where
   I get in or out. The line under it about the driver's whole ride is
-  gone: the whole route is on the screen.
-- The ticket's caption, "Your part of the ride", is a heading. An end has
-  Change when the ride has another stop to choose there. Change unfolds
-  that end's stops inside the ticket, as radio cards with their times, one
-  end at a time; a choice folds them, and focus goes back to Change. Under
-  the tear line a phone has the seats with "3 free on your part"; the
-  price is in the bar.
+  gone: the whole route is on the screen. Between places with long names
+  on a narrow phone, Share stands over the title, which then has the whole
+  width after Back: no name is broken inside a word for the button.
+- The ticket's caption, "Your part of the ride", is a heading under the
+  page's title. An end has Change when the ride has another stop to choose
+  there; beside a long name on a narrow phone, Change stands under its
+  place. Change unfolds that end's stops inside the ticket, as radio cards
+  with their times, one end at a time, and focus goes to them. A choice,
+  or Escape on the web, folds them, and focus goes back to Change. A part
+  changed from the whole route's stops folds them too, and leaves focus
+  where it is. Under the tear line a phone has the seats with "3 free on
+  your part"; the price is in the bar, with what each seat costs under it
+  for more than one ("2 × 2,900 ISK").
+- A ride that was cancelled has no booking tag on the ticket and no row or
+  line about cancelling a booking: there is no seat to book.
 - The driver's card: picture, name, rating or "New driver", and the
   reliability a member sees. The whole line opens the profile and is named
   in one line for a screen reader ("See profile: Anna, 4.3 (3 ratings),
@@ -392,7 +400,9 @@ and on a laptop
 - "Where you sit" says "2 of 3 seats are free. Seats are not numbered: you
   agree in the car." in the place of the legend. The picture keeps its
   one-line description for screen readers, and is at most `carBeside`
-  (176) wide, so a wide card gives its room to the words.
+  (176) wide, so a wide card gives its room to the words, and at least
+  `carBesideLeast` (120), so the two stand side by side on a phone 360
+  wide.
 - "The whole route" gives no distance: a ride has none in the API. My
   stops are marked with the tags "Get in" and "Get out", and a stop still
   opens to get in or out there.

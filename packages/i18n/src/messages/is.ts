@@ -931,8 +931,6 @@ export const is = {
   "trip.whereYouSitLine":
     "{free, plural, =0 {Ekkert sæti er laust} one {# af {offered} sætum er laust} other {# af {offered} sætum eru laus}}. Sætin eru ekki númeruð: þið semjið um þau í bílnum.",
   "trip.seatView.you": "Þú",
-  "trip.seatView.taken": "Upptekið",
-  "trip.seatView.free": "Laust",
   "trip.seatView.label":
     "Sæti á þínum hluta: {offered} í boði, {taken} {taken, plural, one {upptekið} other {upptekin}}, {yours} {yours, plural, one {þitt} other {þín}} og {free} {free, plural, one {laust} other {laus}}.",
   "trip.seats": "Sæti",

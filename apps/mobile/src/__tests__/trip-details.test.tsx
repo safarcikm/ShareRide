@@ -1,5 +1,5 @@
 import { act, fireEvent, screen, within } from "expo-router/testing-library";
-import { Dimensions } from "react-native";
+import { AccessibilityInfo, Dimensions } from "react-native";
 import { shareLink } from "@/lib/share";
 import { renderApp, completeMe } from "@/testing/app";
 import { filledButtons } from "@/testing/buttons";
@@ -383,6 +383,90 @@ describe("Trip details (spec 4, 3.6)", () => {
     expect(screen).toHaveSearchParams({ id, from: "1", to: "2" });
   });
 
+  it("moves focus to the stops Change unfolds, and back to Change once one is chosen", async () => {
+    await openTrip();
+    const change = await screen.findByRole("button", { name: "Change where you get in" });
+    // React Native's test set-up already mocks it, so it holds earlier tests' calls.
+    const focusMoves = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
+    focusMoves.mockClear();
+    await fireEvent.press(change);
+    // The stops stand under both ends, away from the Change that opened them.
+    expect(focusMoves).toHaveBeenCalledTimes(1);
+    await fireEvent.press(screen.getByRole("radio", { name: "09:00, BSÍ bus terminal" }));
+    expect(
+      await screen.findByRole("header", { name: "BSÍ bus terminal to Blönduós" }),
+    ).toBeVisible();
+    // The stop chosen has gone, so its Change takes focus.
+    expect(focusMoves).toHaveBeenCalledTimes(2);
+
+    // The same stop again changes nothing, and gives focus back all the same.
+    await fireEvent.press(screen.getByRole("button", { name: "Change where you get in" }));
+    expect(focusMoves).toHaveBeenCalledTimes(3);
+    await fireEvent.press(screen.getByRole("radio", { name: "09:00, BSÍ bus terminal" }));
+    expect(screen.queryAllByRole("radio")).toEqual([]);
+    expect(focusMoves).toHaveBeenCalledTimes(4);
+    focusMoves.mockRestore();
+  });
+
+  it("leaves focus where it is when the part changes from the route's stops", async () => {
+    await openTrip();
+    await fireEvent.press(await screen.findByRole("button", { name: "Change where you get in" }));
+    await fireEvent.press(screen.getByRole("radio", { name: "09:00, BSÍ bus terminal" }));
+    expect(
+      await screen.findByRole("header", { name: "BSÍ bus terminal to Blönduós" }),
+    ).toBeVisible();
+    const focusMoves = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
+    focusMoves.mockClear();
+
+    // Out at the next stop: nowhere else to get in, so that end has no Change.
+    await fireEvent.press(screen.getByRole("button", { name: "10:00, Borgarnes, on your part" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Get out here" }));
+    expect(
+      await screen.findByRole("header", { name: "BSÍ bus terminal to Borgarnes" }),
+    ).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Change where you get in" })).toBeNull();
+    // Out further on again: Change is back, and does not take focus from the route.
+    await fireEvent.press(
+      screen.getByRole("button", { name: "14:00, Hof, Akureyri, not on your part" }),
+    );
+    await fireEvent.press(screen.getByRole("button", { name: "Get out here" }));
+    expect(
+      await screen.findByRole("header", { name: "BSÍ bus terminal to Hof, Akureyri" }),
+    ).toBeVisible();
+    expect(screen.getByRole("button", { name: "Change where you get in" })).toBeVisible();
+    expect(focusMoves).not.toHaveBeenCalled();
+    focusMoves.mockRestore();
+  });
+
+  it("folds the stops Change unfolded when the part changes from the route's stops", async () => {
+    await openTrip();
+    await fireEvent.press(await screen.findByRole("button", { name: "Change where you get in" }));
+    expect(screen.getAllByRole("radio")).toHaveLength(2);
+    await fireEvent.press(
+      screen.getByRole("button", { name: "14:00, Hof, Akureyri, not on your part" }),
+    );
+    await fireEvent.press(screen.getByRole("button", { name: "Get out here" }));
+    expect(await screen.findByRole("header", { name: "Borgarnes to Hof, Akureyri" })).toBeVisible();
+    expect(screen.queryAllByRole("radio")).toEqual([]);
+    expect(screen.getByRole("button", { name: "Change where you get in" })).not.toBeExpanded();
+  });
+
+  it("says nothing of booking, cancelling or the weather on a ride that was cancelled", async () => {
+    await openTrip(undefined, () =>
+      ok(200, northTrip({ board: 1, alight: 2 }, { part: { state: "cancelled" } })),
+    );
+    expect(
+      await within(screen.getByTestId("bottom-bar")).findByText("This ride was cancelled."),
+    ).toBeVisible();
+    // The ticket still says which part, with no word on how a seat is booked.
+    expect(ticket().getByText("Your part of the ride")).toBeVisible();
+    expect(ticket().queryByText("Driver approves")).toBeNull();
+    expect(screen.queryByRole("button", { name: /^Free cancellation/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Weather and roads" })).toBeNull();
+    // A visitor has nothing to report with, so no rows are left.
+    expect(screen.queryByTestId("action-rows")).toBeNull();
+  });
+
   it("gets in or out at another stop on the route, and keeps the part in the address", async () => {
     const { client } = await openTrip();
     await fireEvent.press(
@@ -470,10 +554,11 @@ describe("Trip details (spec 4, 3.6)", () => {
     const bar = await screen.findByTestId("bottom-bar");
     expect(await within(bar).findByText("Only 1 seat is free on your part.")).toBeVisible();
     expect(within(bar).getByText("5,800 ISK")).toBeVisible();
-    expect(within(bar).getByText("2 seats")).toBeVisible();
+    expect(within(bar).getByText("2 × 2,900 ISK")).toBeVisible();
     expect(screen.getByRole("button", { name: "One seat more" })).toBeDisabled();
     await fireEvent.press(screen.getByRole("button", { name: "One seat fewer" }));
     expect(await within(bar).findByText("2,900 ISK")).toBeVisible();
+    expect(within(bar).getByText("1 seat")).toBeVisible();
     expect(within(bar).getByRole("button", { name: "Send request" })).toBeEnabled();
     expect(detailsCalls(client).at(-1)).toEqual({ seats: 1, fromStop: 1, toStop: 2 });
   });
@@ -495,7 +580,8 @@ describe("Trip details (spec 4, 3.6)", () => {
     const { client } = await openTrip();
     await fireEvent.press(await screen.findByRole("button", { name: "One seat more" }));
     expect(await within(screen.getByTestId("bottom-bar")).findByText("5,800 ISK")).toBeVisible();
-    expect(screen.getByText("2 seats")).toBeVisible();
+    // With more than one seat the bar says what each costs.
+    expect(within(screen.getByTestId("bottom-bar")).getByText("2 × 2,900 ISK")).toBeVisible();
     expect(
       screen.getByRole("image", {
         name: "Seats on your part: 3 offered, 1 taken, 2 yours and 0 free.",
@@ -748,17 +834,6 @@ describe("Trip details on a laptop (spec 18, 3.7)", () => {
     expect(part().queryByTestId("ticket-unfolded")).toBeNull();
   });
 
-  it("has the driver's card and where you sit one under the other", async () => {
-    await openTrip();
-    await screen.findByRole("header", { name: "Borgarnes to Blönduós" });
-    expect(main().queryByTestId("ride-with")).toBeNull();
-    expect(
-      within(main().getByTestId("where-you-sit")).getByRole("image", {
-        name: /^Seats on your part/,
-      }),
-    ).toBeVisible();
-  });
-
   it.each([
     [{ freeSeats: 0, state: "full" as const }, "Full on your part of the ride"],
     [{ state: "cancelled" as const }, "This ride was cancelled."],
@@ -767,6 +842,10 @@ describe("Trip details on a laptop (spec 18, 3.7)", () => {
     expect(await side().findByText(text)).toBeVisible();
     expect(screen.queryByRole("button", { name: "Send request" })).toBeNull();
     expect(screen.queryByTestId("bottom-bar")).toBeNull();
+    // What cancelling a booking costs is for a ride that can still be booked some day.
+    const cancelling = side().queryByText(/^Free cancellation, with a full refund/);
+    if (part.state === "cancelled") expect(cancelling).toBeNull();
+    else expect(cancelling).toBeVisible();
   });
 
   it("leads someone who has booked the trip to their booking, from the side column", async () => {

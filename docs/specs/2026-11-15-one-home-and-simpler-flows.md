@@ -381,8 +381,9 @@ Find replaces both the front page and My profile as the place the app opens.
      Borgarnes to Olís Blönduós") under the day. "Your part of the ride"
      is a ticket with the tag, Get in and Get out as its two ends with
      Change at the right of each, and the seats under its tear line with
-     "2 free on your part"; the price per seat is in the bar. Change
-     unfolds the stops inside the ticket. "Who you ride with" is the
+     "2 free on your part"; the price for the seats chosen is in the
+     bar, with what each costs under it for more than one ("2 × 2,900
+     ISK"). Change unfolds the stops inside the ticket. "Who you ride with" is the
      driver's card, and the seat view a card of its own, "Where you sit".
      The cancellation line is a row, "Free cancellation" with "Up to 15
      min before", which unfolds the sentence; with it stand "Weather and

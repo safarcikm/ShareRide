@@ -232,6 +232,7 @@ function Trip({
   // You can choose up to the seats free, and at least one; a link can ask
   // for more, and then only fewer is offered.
   const most = Math.max(1, Math.min(trip.part.freeSeats, maxSeats));
+  const cancelled = trip.part.state === "cancelled";
 
   const head = (
     <ScreenHead
@@ -276,6 +277,7 @@ function Trip({
       part={part}
       onChange={changePart}
       foot={wide ? undefined : seatsStepper(false)}
+      cancelled={cancelled}
     />
   );
   const driver = (
@@ -313,9 +315,10 @@ function Trip({
     </Card>
   );
 
-  // What cancelling costs, or how the driver is paid: nothing on a free ride.
+  // What cancelling costs, or how the driver is paid: nothing on a free
+  // ride, or on one that was cancelled, where there is no seat to book.
   const paying =
-    trip.part.pricePerSeat.amount === 0
+    cancelled || trip.part.pricePerSeat.amount === 0
       ? null
       : inPerson
         ? {
@@ -335,7 +338,7 @@ function Trip({
             }),
           };
   const regions = [boardStop.meetingPoint.region, alightStop.meetingPoint.region];
-  const weather = trip.part.state !== "cancelled" && showsWeatherAndRoads(regions);
+  const weather = !cancelled && showsWeatherAndRoads(regions);
   // Reporting needs an account; my own ride is not mine to report (spec 9, 3.1).
   const reports = me !== null && !trip.drivenByMe;
   // On a wide screen what cancelling costs stands whole under the button it is about.
@@ -605,7 +608,13 @@ function BookingBar({
           {free ? t("results.free") : formatMoney(part.total, locale)}
         </Text>
         <Text style={[typography.small, { color: palette.textMuted }]}>
-          {t("search.seatCount", { count: part.seats })}
+          {free || part.seats === 1
+            ? t("search.seatCount", { count: part.seats })
+            : // Short, so the button keeps its place beside it on a narrow phone.
+              t("booking.seatsTimesPrice", {
+                seats: String(part.seats),
+                price: formatMoney(part.pricePerSeat, locale),
+              })}
         </Text>
       </View>
       {action}

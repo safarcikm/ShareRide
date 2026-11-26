@@ -10,8 +10,9 @@ import { SeatView } from "./seat-view";
  * Where the passenger sits, in a card of its own (spec 31, 3.7, item 4):
  * the car from above with the seats of their part, and beside it one line
  * saying how many are free and that seats are not numbered, in the place
- * of a legend. With no room for the two beside each other, as with large
- * text, the line goes under the car.
+ * of a legend. The two stand beside each other on the narrowest phone, the
+ * car smaller there; with no room for that, as with large text, the line
+ * goes under the car.
  */
 export function WhereYouSit({
   offered,
@@ -31,13 +32,7 @@ export function WhereYouSit({
     <Card>
       <View testID="where-you-sit" style={styles.card}>
         <View style={[styles.part, styles.car]}>
-          <SeatView
-            legend={false}
-            offered={offered}
-            free={free}
-            yours={yours}
-            driverColour={driverColour}
-          />
+          <SeatView offered={offered} free={free} yours={yours} driverColour={driverColour} />
         </View>
         <View style={[styles.part, styles.words]}>
           <Heading>{t("trip.whereYouSit")}</Heading>
@@ -58,8 +53,8 @@ const styles = StyleSheet.create({
     columnGap: spacing.md,
     rowGap: spacing.ms,
   },
-  part: { flexGrow: 1, flexShrink: 1, flexBasis: sizes.wordsBeside, minWidth: 0 },
-  // The car stays the size it has on a phone, so a wide card gives its room to the words.
-  car: { maxWidth: sizes.carBeside },
-  words: { gap: spacing.xs },
+  part: { flexGrow: 1, flexShrink: 1, minWidth: 0 },
+  // The car is no wider than on a phone, so a wide card gives its room to the words.
+  car: { flexBasis: sizes.carBesideLeast, maxWidth: sizes.carBeside },
+  words: { flexBasis: sizes.wordsBeside, gap: spacing.xs },
 });
