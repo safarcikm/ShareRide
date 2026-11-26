@@ -1787,10 +1787,14 @@ releases follow [Semantic Versioning](https://semver.org/).
   that says what is done and what is left, with the button for the next
   one. "Delete draft" is a red row, last, and asks first. "Your ride is
   published" shows the ride as its ticket, with "See my rides" as its
-  main button, and its address opens a draft's step or a cancelled
-  ride's page instead. Adding a meeting point has Back and its title at
-  the left. The price beside a step on a laptop and on Edit the ride
-  says kronur first ("3,400 ISK the whole way · 110%").
+  main button; it is read again when you come back to it, and its
+  address opens a draft's step, or the page of a ride that is cancelled
+  or has left, instead. Adding a meeting point has Back and its title at
+  the left, and Android's back closes it too. The price beside a step on
+  a laptop and on Edit the ride says kronur first ("3,400 ISK the whole
+  way · 110%"), and the row for the day and times there is called
+  "Time", as on the road. Opened by its address, the last step's Back
+  leads to the price, the step before it; it led to the seats.
 - The web journeys never give two test accounts the same phone number: a
   run in ten did, and a sign-in journey then failed.
 - CI skips its code jobs (bundles, unit, integration and web tests, the API

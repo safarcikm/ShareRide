@@ -54,17 +54,6 @@ export function levelText(t: Translate, level: number): string {
   return level === 0 ? t("trip.priceLevel.free") : `${String(level)}%`;
 }
 
-/** The trip's preferences in words, in the order of the seats step. */
-export function preferenceTexts(t: Translate, preferences: MyTrip["preferences"]): string[] {
-  return [
-    t(luggageKeys[preferences.luggage]),
-    t(petKeys[preferences.pets]),
-    t(smokingKeys[preferences.smoking]),
-    t(childSeatKey(preferences.childSeat)),
-    t(chatKeys[preferences.chat]),
-  ];
-}
-
 /** "BSÍ bus terminal → Hof, Akureyri": a trip's first and last stop. */
 export function routeText(t: Translate, locale: Locale, trip: MyTrip): string {
   const first = trip.stops[0]?.meetingPoint.name[locale] ?? "";

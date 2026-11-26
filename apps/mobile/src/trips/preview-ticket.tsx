@@ -1,4 +1,4 @@
-import { publicProfileRoute, type MyTrip } from "@shareride/contracts";
+import type { MyTrip, PublicProfile } from "@shareride/contracts";
 import { peopleColourOf, type Money } from "@shareride/domain";
 import {
   capitalised,
@@ -8,13 +8,16 @@ import {
   formatShortDay,
 } from "@shareride/i18n";
 import { UserCheck, Zap } from "lucide-react-native";
-import { useCallback } from "react";
-import { useMe, useSession } from "@/auth/session";
+import { useMe } from "@/auth/session";
 import { RideTicket } from "@/components/ride-ticket";
 import { useLanguage } from "@/i18n/language";
 import { dayOf, isoDay } from "@/lib/days";
-import { useLoaded } from "@/lib/use-loaded";
 import { DriverFoot } from "@/search/result-ticket";
+
+/** Whether a ride has the times its ticket needs: a draft gets them on step 2. */
+export function hasPreview(trip: MyTrip): boolean {
+  return trip.stops.length > 0 && trip.stops.every((stop) => stop.plannedAt !== null);
+}
 
 /**
  * A ride not published yet, as people will see it (spec 31, 3.11, item 3;
@@ -24,34 +27,28 @@ import { DriverFoot } from "@/search/result-ticket";
  * others see them and the seats. It opens nothing: the rows under it
  * change the ride. A ride with no times yet has no ticket.
  *
- * The rating is read from the driver's own public profile; until it is
- * known, or when it cannot be read, the foot says neither a rating nor
- * "New driver".
+ * The rating and the colour are those of the driver's own public
+ * `profile`; until it is known, or when it could not be read, the foot
+ * says neither a rating nor "New driver".
  */
 export function PreviewTicket({
   trip,
   whole,
+  profile,
 }: {
   readonly trip: MyTrip;
   /** What a passenger pays for the whole way; null until it is quoted. */
   readonly whole: Money | null;
+  /** The driver as others see them; null while that is not known. */
+  readonly profile: PublicProfile | null;
 }) {
   const { locale, t } = useLanguage();
   const me = useMe();
-  const session = useSession();
-  const profileId = me?.profileId;
-  const load = useCallback(
-    () =>
-      profileId === undefined
-        ? Promise.resolve(undefined)
-        : session.call(publicProfileRoute, { params: { profileId } }),
-    [session, profileId],
-  );
-  const { value: profile } = useLoaded(load);
   const first = trip.stops[0];
   const last = trip.stops.at(-1);
   if (
     me === null ||
+    !hasPreview(trip) ||
     first === undefined ||
     last === undefined ||
     first.plannedAt === null ||
@@ -64,7 +61,6 @@ export function PreviewTicket({
   const duration = formatDuration((to.getTime() - from.getTime()) / 1000, locale);
   const between = trip.stops.length - 2;
   const instant = trip.bookingMode === "instant";
-  const known = profile?.ok === true ? profile.data : null;
   return (
     <RideTicket
       testID="preview-ticket"
@@ -89,10 +85,10 @@ export function PreviewTicket({
         <DriverFoot
           driver={{
             firstName: me.firstName ?? "",
-            colour: known?.colour ?? peopleColourOf(me.id),
+            colour: profile?.colour ?? peopleColourOf(me.id),
             // A photo PuffinRide hid from others is not on the ticket they see.
             photo: me.photo === null || me.photo.hidden ? null : me.photo.url,
-            rating: known?.rating ?? null,
+            rating: profile?.rating ?? null,
           }}
           freeSeats={trip.seats}
         />

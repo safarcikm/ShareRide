@@ -5,8 +5,9 @@ import {
   type PlaceSearchResult,
 } from "@shareride/contracts";
 import { formatDistance } from "@shareride/i18n";
-import { useCallback, useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { useNavigation } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
+import { BackHandler, StyleSheet, View } from "react-native";
 import { useSession } from "@/auth/session";
 import { Button } from "@/components/button";
 import { Notice } from "@/components/notice";
@@ -87,6 +88,7 @@ export function PointDropdown({
  * town shows its nearest points to choose from. Paused points cannot be
  * chosen. Its head is a step's (spec 31, 3.17): Back, which closes it, and
  * the title at the left, with the ride `over` it where one is changed.
+ * Android's back closes it too.
  */
 export function PointPicker({
   title,
@@ -111,6 +113,21 @@ export function PointPicker({
     if (point.status === "active") onChoose(point);
     else setPaused(true);
   };
+
+  // Android's back does what Back in the head does, rather than leaving
+  // the step under the picker with what was chosen there (or the app, on
+  // Offer); not while another screen covers this one.
+  const navigation = useNavigation();
+  useEffect(() => {
+    const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
+      if (!navigation.isFocused()) return false;
+      onCancel();
+      return true;
+    });
+    return () => {
+      subscription.remove();
+    };
+  }, [navigation, onCancel]);
 
   return (
     <Screen>

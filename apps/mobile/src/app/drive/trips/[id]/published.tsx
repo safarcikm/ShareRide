@@ -14,20 +14,24 @@ import { NotificationsPrompt } from "@/notifications/notifications-prompt";
 import { ShareRidePanel } from "@/sharing/share-ride-panel";
 import { tripHref } from "@/trip-details/trip-link";
 import { resumeStep, stepHref } from "@/trips/steps";
-import { Loading, useDraft } from "@/trips/use-draft";
+import { Loading, useDraftOnFocus } from "@/trips/use-draft";
 
 /**
  * Published (spec 3, screen 10; spec 31, 3.19): the ride as the ticket it
  * is in My rides, which opens it; Share this ride right after it (spec 28,
  * 3.2); the prompt to turn on notifications (spec 7, 3.6.2); the ride's
  * page as passengers see it; and "See my rides" in the bar, the screen's
- * one main button (R31.1). Only a ride that is published says so: a draft
- * opens where it was left, and a cancelled ride its own page.
+ * one main button (R31.1). Only a ride that is published and has not
+ * left says so, which is also when it can be shared (R28.4): a draft opens
+ * where it was left, and a ride that is cancelled, has left or is done its
+ * own page. The ticket opens the ride, where it can be changed or
+ * cancelled, so the ride is read again each time this screen comes back
+ * into view.
  */
 export default function PublishedScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t } = useLanguage();
-  const { value: result, reload } = useDraft(id);
+  const { value: result, reload } = useDraftOnFocus(id);
   if (result === undefined || !result.ok) {
     return (
       <Screen>
@@ -38,7 +42,7 @@ export default function PublishedScreen() {
   const trip = result.data;
   const ride = rideOfTrip(trip);
   if (ride === null) return <Redirect href={stepHref(trip.id, resumeStep(trip))} />;
-  if (trip.status === "cancelled") {
+  if (!isChangeable(trip, now())) {
     return <Redirect href={{ pathname: "/drive/trips/[id]", params: { id: trip.id } }} />;
   }
   return (
@@ -73,8 +77,7 @@ function Published({ trip, ride }: { readonly trip: MyTrip; readonly ride: Ride 
           : t("trip.published.instant")}
       </Body>
       <MyRideTicket ride={ride} at={now()} />
-      {/* Opened again once the trip has left, there is nothing to share (R28.4). */}
-      {isChangeable(trip, now()) ? <ShareRidePanel trip={trip} /> : null}
+      <ShareRidePanel trip={trip} />
       <NotificationsPrompt occasion={`posted:${trip.id}`} />
       <TextLink label={t("trip.published.see")} href={tripHref(trip.id, whole)} />
     </>

@@ -8,7 +8,7 @@ import type { ApiClient } from "@shareride/api-client";
 import type { DriverReadiness, Me, PublicProfile } from "@shareride/contracts";
 import { peopleColourOf } from "@shareride/domain";
 import { fireEvent, renderRouter, screen } from "expo-router/testing-library";
-import { createFakeClient, failure, ok, testMe, tokens, type FakeClient } from "./fake-client";
+import { createFakeClient, ok, testMe, tokens, type FakeClient } from "./fake-client";
 import { memoryTokenStore } from "./memory-token-store";
 
 let currentClient: FakeClient = createFakeClient();
@@ -66,9 +66,11 @@ export async function renderApp(
     currentClient.answer("/v1/me", () => ok(200, me));
     // My own profile as others see it, with no reviews yet: the last
     // posting step reads it for the ticket people will see (spec 31, 3.11).
+    // Anyone else's is for the test to answer, as every call is.
     currentClient.answer("/v1/people/{profileId}", (input) => {
       const { profileId } = input["params"] as { profileId: string };
-      return profileId === me.profileId ? ok(200, ownProfile(me)) : failure(404, "not_found");
+      if (profileId !== me.profileId) throw new Error("No fake answer for /v1/people/{profileId}");
+      return ok(200, ownProfile(me));
     });
   }
   // Once signed in, unless a test says otherwise: nothing in My rides and

@@ -1127,12 +1127,12 @@ test.describe("Offer a ride and the driver's ride", () => {
 
     // Step 2: the day and the times as they are chosen.
     await expect(main.getByRole("heading", { name: "When are you leaving?" })).toBeVisible();
-    await expect(soFar.getByLabel("Date and times: Step 2")).toBeVisible();
+    await expect(soFar.getByLabel("Time: Step 2")).toBeVisible();
     const day = tomorrow("en");
     if (day.nextMonth) await main.getByRole("button", { name: "Next month" }).click();
     await main.getByRole("radio", { name: day.name }).click();
     await chooseTime(driver, "Leaving Mjódd bus terminal at", "17:45");
-    await expect(soFar.getByLabel(/^Date and times: .+, 17:45 to \d\d:\d\d$/)).toBeVisible();
+    await expect(soFar.getByLabel(/^Time: .+, 17:45 to \d\d:\d\d$/)).toBeVisible();
     await expect(soFar.getByLabel("Seats and booking: Step 3")).toBeVisible();
     await expect(soFar.getByLabel("Price: Step 4")).toBeVisible();
     await expectTwoColumns();

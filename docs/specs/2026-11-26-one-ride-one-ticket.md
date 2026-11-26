@@ -707,7 +707,8 @@ and
   has the head of a step too: Back, which closes it with nothing chosen,
   in place of the cross, and the title at the left. On Edit the ride the
   ride's day, time and route stand over the title, as on its other
-  screens.
+  screens. Android's back closes it as Back does; on step 1 it left the
+  step, or the app.
 - **Step 2:** for a day other than today the departure's wheel opens at
   08:00. For today, and while no day is chosen, it opens at the first
   time one can leave at, as before (spec 3, 3.5, item 5).
@@ -722,17 +723,24 @@ and
   counted, the price ("Free" for a free ride), and in its foot the
   driver as others see them (the picture unless PuffinRide hid it, the
   rating or "New driver") with "3 seats left". It is not pressed. A
-  draft with no times yet has no ticket.
+  draft with no times yet has no ticket, and no line about one under
+  the title.
 - **The rows:** Route ("BSÍ bus terminal to Hof, Akureyri, with 1 stop
-  on the way"), Time ("Sunday 15 November, 09:00 to 11:00"; both days
-  when it ends on a later one), Price ("3,400 ISK the whole way"), Seats
-  and booking, Car, and Preferences and note (the preferences in one
-  line, as a passenger reads them, then the note or "No note"). A row
-  is a small caption over what is set, with "Change" at its right, and
-  one link, which a screen reader hears whole: "Route, BSÍ bus terminal
-  to Hof, Akureyri, with 1 stop on the way, Change". Seats and booking,
-  Car, and Preferences and note all open step 3, which holds the three,
-  as their links did.
+  on the way"), Time ("Sunday 15 November, 09:00 to 11:00"; a ride that
+  ends on a later day has a line for each day, "Sunday 15 November at
+  23:00" over "Monday 16 November at 01:00"), Price ("3,400 ISK the
+  whole way", or "Free"), Seats and booking, Car, and Preferences and
+  note (the preferences in one line, as a passenger reads them, then the
+  note or "No note"). A row is a small caption over what is set, with
+  "Change" at its right, and one link, which a screen reader hears
+  whole: "Route, BSÍ bus terminal to Hof, Akureyri, with 1 stop on the
+  way, Change". In Icelandic the Route row shows an arrow between the
+  two ends ("BSÍ → Hof, Akureyri, með 1 viðkomustað á leiðinni"), as a
+  name after "til" would stand in the wrong case; read out it is "til",
+  as on every other screen. Seats and booking, Car, and Preferences and
+  note all open step 3, which holds the three, as their links did.
+  Opened by its address, the step's Back leads to the price, the step
+  before it.
 - **What is missing** is one yellow card under the rows, over Delete
   draft. Its title counts ("Three things before you publish", "Two
   things", "One thing"), its line says what is done and what is left
@@ -741,9 +749,7 @@ and
   "Confirm your licence". Each comes back here. The title says "before
   you publish", not "before your first ride" as item 4 has it: someone
   who has driven before is asked too when one of the three is missing.
-  The card stands under the rows, where the drawing has it over them:
-  the ride comes first, and the line under Publish, in the bar, says
-  why it waits.
+  The line under Publish, in the bar, says why it waits.
 - **Delete draft** is a red row in a card of its own, last. Pressed, a
   card takes its place and takes focus: "Delete this draft? You can't
   undo this.", with "Delete draft" and "Keep it". "Keep it" brings the
@@ -757,8 +763,13 @@ and
   rides has for it, which opens the ride. The share panel stays (spec
   28). "See my rides" is the main button, in the bar; "See your ride",
   the ride as others see it, stays a link. The address says so only
-  for a ride that is published: a draft's opens the step where it was
-  left, and a cancelled ride's opens its page.
+  for a ride that is published and has not left, which is also when it
+  can be shared (R28.4): a draft's opens the step where it was left,
+  and the address of a ride that is cancelled, has left or is done
+  opens that ride's page. The ride is read again each time the screen
+  comes back into view, as its ticket leads to where the ride is
+  changed and cancelled: the ticket and the text to post have the time
+  the ride has now.
 
 ### 3.12 The driver's ride
 

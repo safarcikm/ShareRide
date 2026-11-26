@@ -1029,47 +1029,76 @@ As built (spec 31 says the same where a person sees it, in 3.11 and
   taken out of `search/result-ticket.tsx` for it; the driver's rating
   and colour come from their own public profile
   (`GET /v1/people/{profileId}`), and until that is read the foot says
-  neither a rating nor "New driver". Then one `ActionRows` of six
-  `CheckRow`s (`trips/check-row.tsx`), links made by
-  `fromReviewParams`. `StillMissing` is one `NeedsYouCard` with an
+  neither a rating nor "New driver". The step reads that profile, with
+  the ride and what is still needed, when it opens and when the driver
+  comes back to it, so the ticket does not blink after each change. Then
+  one `ActionRows` of six `CheckRow`s (`trips/check-row.tsx`), links made
+  by `fromReviewParams`. The Route and Time rows' words are
+  `routeChecked` and `timeChecked` (`trips/check-texts.ts`): what is
+  shown, and `spoken` for the link's name where that differs, as an
+  arrow does (Icelandic shows one between the two ends,
+  `trip.review.ends`, where a name after "til" would stand in the wrong
+  case) and as the two lines of a ride that ends on a later day do. A
+  draft with no times (`hasPreview`) has no ticket and no line about one.
+  Opened by its address, the step's Back leads to the price; it led to
+  the seats, the step before it until the seats moved before the price.
+  `StillMissing` is one `NeedsYouCard` with an
   outlined button for the next of photo, car and licence; its title is
   `trip.review.missing` ("One thing before you publish"), as someone who
   has driven before can be asked too; it stands under the rows. Delete
   draft is a `danger` `Row` in an `ActionRows` of its own, replaced in
   place by a card that asks, with focus (`TakesFocus`), and focus goes
-  back to the row when the draft is kept. `ActionNotice` says over
+  back to the row when the draft is kept; the two `TakesFocus` have a
+  key each, as one in the other's place is the same one to React and
+  would not take focus again. `ActionNotice` says over
   Publish why it did nothing. `SummarySection`, `TickList` and
   `TripSummary` are gone with their last uses.
 - **The picker of a meeting point** (`trips/point-picker.tsx`, PR 12's
   item 11): `ScreenHead` with `onBack` (new: Back closes what is not a
   screen, through `BackButton`'s `onPress`), the title at the left, and
   on Edit the ride's "Add a stop" the ride `over` it (`tripOver`, taken
-  out of `TripHead`).
+  out of `TripHead`). Android's back closes it too (`BackHandler`, while
+  its screen is the one in view), as it closes the list of places.
 - **"Your ride is published"** (`published.tsx`): the centred title
   takes focus; `MyRideTicket` of `rideOfTrip` (`my-rides/rides.ts`);
   "See my rides" is the `main` button in the footer. A draft's address
-  redirects to the step where it was left (`resumeStep`), a cancelled
-  ride's to its page. No puffin: the screen had none.
+  redirects to the step where it was left (`resumeStep`), and that of a
+  ride that is not published or has left (`isChangeable`) to its page,
+  so the share panel needs no check of its own (R28.4). The ride is
+  read on focus (`useDraftOnFocus`), as the ticket leads to where it is
+  changed and cancelled. No puffin: the screen had none.
 - **Texts:** new, `road.route`, `road.time`, `road.seats`, `road.price`,
-  `road.check`, `trip.review.line`, `trip.review.routeWithStops`,
+  `road.check`, `trip.review.line`, `trip.review.ends`,
+  `trip.review.routeWithStops`,
   `trip.review.time`, `trip.review.priceWhole`, and the lines of the
   card, `trip.review.done.*` and `trip.review.left.*`; changed,
   `trip.review.priceLine` and `trip.problem.driver_not_ready` ("Do what
   is left on this page before you publish."); gone, `trip.review.note`,
-  `trip.review.edit`, `trip.review.editLabel` and the tick list's
+  `trip.review.edit`, `trip.review.editLabel`, the tick list's
   (`trip.review.yourPhoto`, `photoDetail`, `yourCar`, `carDetail`,
-  `licenceDetail`).
+  `licenceDetail`, `common.notDone`) and `trip.review.times` ("Date and
+  times"): the row of "Your ride so far" is "Time" too, one name
+  (3.4).
 - **Tests:** in `post-a-trip.test.tsx` the road's label on each step,
   the preview ticket's words, the six rows by what a screen reader
   hears, the Time row for a ride that ends on a later day, the card for
   three, two and one thing with only the next one's button, its place
   between the rows and Delete draft, the red row asking first and "Keep
-  it", the published screen's ticket, a draft's and a cancelled ride's
-  address of that screen, and Back closing the picker;
+  it" with where focus goes, the published screen's ticket, which opens
+  the ride, its title taking focus, the ride read again on coming back
+  (a new time; cancelled, its page), the address of that screen for a
+  draft and for a ride that is cancelled, has left or is done, Back and
+  Android's back closing the picker, the driver on the preview (the
+  name, "New driver", a rating, a hidden photo, a profile that cannot
+  be read), a free ride, a draft with no times, and Back from the last
+  step opened by its address;
+  `check-texts.test.ts` for the Route and Time rows in both languages;
   `clock-input.test.ts` for `firstDeparture`; `edit-trip.test.tsx` for
-  the ride over "Add a stop"; `navigation-parts.test.tsx` for `onBack`.
+  the ride over "Add a stop"; `navigation-parts.test.tsx` for `onBack`;
+  `share-a-ride.test.tsx` for a ride that has left.
   The test app answers the driver's own public profile by default
-  (`ownProfile` in `testing/app.tsx`). Journeys changed:
+  (`ownProfile` in `testing/app.tsx`); anyone else's is for the test to
+  answer, as before. Journeys changed:
   `post-a-trip.spec.ts` in both languages (the road, the ticket, a row,
   the card as it counts down, the published ticket), `laptop.spec.ts`
   (the last step's main column; the columns are measured at the top of
@@ -1198,14 +1227,31 @@ and deleting the account (3.19).
     app opens since My trips went; after "Show all drafts" focus goes to
     a view around the first draft that came, not to its link, so Enter
     does nothing until Tab (`TakesFocus`, the app's way everywhere: one
-    fix for all); a draft whose stops were all retired reads " → ".
+    fix for all); a draft whose stops were all retired reads " → ", and
+    the Route row of its last step " to " (PR 9's `routeChecked`).
 13. **Left from offering a ride (PR 9):** on the last step, why
     deleting a draft failed is said over Publish, in the bar, away from
     the card that asked; the ride's ticket there is not pressed and
     does not say for a screen reader which end is which (item 8); the
     road has five names on a posting step, closer together than a
     booking's four, to measure with text at 200% (item 8); on a laptop
-    the last step's side column holds Publish alone.
+    the last step's side column holds Publish alone. From PR 9's code
+    review: on step 1 the browser's Back leaves the step with the picker
+    of a meeting point open (Android's back closes it), and the picker
+    moves no focus when it opens or closes; a posting step opened by its
+    address for a ride that is already published shows the step; at
+    23:35 the wheel for today opens at 00:05, which has passed
+    (`earliestDeparture` goes round midnight); `sign-in-methods.tsx` has
+    two `TakesFocus` in one place with no key, as Delete draft had,
+    which may not move focus either (to check, with spec 29's thread);
+    `DriverFoot` serves the results and the preview from
+    `search/result-ticket.tsx`, and has no home of its own. Icelandic,
+    for a native reader: Check and publish as a whole; "stopp" on a
+    ticket beside "viðkomustaður" in the rows; "Yfirfara" on the road, a
+    verb among four nouns, which echoes the title "Yfirfara og birta";
+    and what is read out with a name or a day after "til"
+    (`trip.stretchSpoken`, `myBookings.times`), which is heard and not
+    seen.
 14. **Docs:** spec 31 becomes Built, with what differs from the drawings;
     spec 15 has the parts; the roadmap and the changelog.
 

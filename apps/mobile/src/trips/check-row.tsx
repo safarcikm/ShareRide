@@ -12,16 +12,19 @@ import { usePalette } from "@/theme/use-palette";
  * caption over what is set, each of its `lines` on its own, and "Change"
  * at the right. The whole row is the link to the step that sets it, and a
  * screen reader hears "Route, Mjódd to Vík, with 5 stops on the way,
- * Change". It goes in `ActionRows`, as a `Row` does, whose shape it is not:
- * a `Row` has its title first and what is set after it.
+ * Change": the lines, or `spoken` where they are read out otherwise, as an
+ * arrow is a word aloud. It goes in `ActionRows`, as a `Row` does, whose
+ * shape it is not: a `Row` has its title first and what is set after it.
  */
 export function CheckRow({
   caption,
   lines,
+  spoken = lines.join(", "),
   href,
 }: {
   readonly caption: string;
   readonly lines: readonly string[];
+  readonly spoken?: string | undefined;
   readonly href: AppPath;
 }) {
   const { t } = useLanguage();
@@ -32,7 +35,7 @@ export function CheckRow({
   return (
     <Pressable
       accessibilityRole="link"
-      accessibilityLabel={[caption, ...lines, change].join(", ")}
+      accessibilityLabel={[caption, spoken, change].join(", ")}
       {...linkProps(href)}
       {...hover}
       {...(inRows ? ringInside : null)}

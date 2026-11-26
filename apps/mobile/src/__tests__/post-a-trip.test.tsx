@@ -1,7 +1,7 @@
 import { act, fireEvent, screen, waitFor, within } from "expo-router/testing-library";
-import { AccessibilityInfo, Dimensions } from "react-native";
+import { AccessibilityInfo, BackHandler, Dimensions } from "react-native";
 import { shareLink } from "@/lib/share";
-import { completeMe, renderApp } from "@/testing/app";
+import { completeMe, ownProfile, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
 import { filledButtons } from "@/testing/buttons";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
@@ -33,16 +33,26 @@ jest.mock("@/lib/share", () => ({
 
 const mockedShare = shareLink as jest.Mock;
 
-async function open(url: string, start: Parameters<typeof tripsApi>[1] = []) {
+async function open(url: string, start: Parameters<typeof tripsApi>[1] = [], me = completeMe) {
   let api: ReturnType<typeof tripsApi> | undefined;
   const app = await renderApp(url, {
-    me: completeMe,
+    me,
     setUp: (client) => {
       api = tripsApi(client, start);
       // My rides, where a published ride is listed, loads my bookings too.
       client.answer("/v1/me/bookings", () => ok(200, { bookings: [] }));
-      // A ride's own page, which its ticket opens, lists its passengers.
-      client.answer("/v1/me/trips/{id}/bookings", () => ok(200, { bookings: [] }));
+      // A ride's own page, which its ticket opens, lists its passengers:
+      // nobody yet, on either stretch.
+      client.answer("/v1/me/trips/{id}/bookings", () =>
+        ok(200, {
+          bookings: [],
+          segments: [
+            { position: 0, occupancy: 0 },
+            { position: 1, occupancy: 0 },
+          ],
+          capacity: 3,
+        }),
+      );
     },
   });
   if (api === undefined) throw new Error("The fake API was not set up.");
@@ -376,6 +386,43 @@ describe("Posting a trip (spec 3)", () => {
     expect(screen.queryByRole("header", { name: "Add a meeting point" })).toBeNull();
     expect(screen.getByRole("button", { name: /^From: BSÍ bus terminal/ })).toBeVisible();
     expect(screen.getByRole("switch", { name: "Borgarnes" })).toBeVisible();
+  });
+
+  it("closes Add a meeting point with Android's back, staying on the step", async () => {
+    // As a phone asks: the listeners still there, the one added last first.
+    type Listener = Parameters<typeof BackHandler.addEventListener>[1];
+    const listeners: Listener[] = [];
+    const listen = jest
+      .spyOn(BackHandler, "addEventListener")
+      .mockImplementation((_event, listener) => {
+        listeners.push(listener);
+        return {
+          remove: () => {
+            listeners.splice(listeners.indexOf(listener), 1);
+          },
+        };
+      });
+    try {
+      await open("/drive/trips/new");
+      await choosePoint("From", "bs", "BSÍ bus terminal");
+      await choosePoint("To", "hof", "Hof, Akureyri");
+      await screen.findByRole("switch", { name: "Borgarnes" });
+      await fireEvent.press(screen.getByRole("button", { name: "Add a meeting point" }));
+      expect(await screen.findByRole("header", { name: "Add a meeting point" })).toBeVisible();
+      let handled = false;
+      await act(() => {
+        handled = listeners
+          .toReversed()
+          .some((listener) => listener({ type: "hardwareBackPress", timeStamp: 0 }) === true);
+      });
+      expect(handled).toBe(true);
+      // As with Back in its head: the step, with the route as it was.
+      expect(await screen.findByRole("header", { name: "Where are you driving?" })).toBeVisible();
+      expect(screen.queryByRole("header", { name: "Add a meeting point" })).toBeNull();
+      expect(screen.getByRole("switch", { name: "Borgarnes" })).toBeVisible();
+    } finally {
+      listen.mockRestore();
+    }
   });
 
   it("says what meeting points are for until both ends are chosen", async () => {
@@ -727,9 +774,105 @@ describe("Posting a trip (spec 3)", () => {
     await open(`/drive/trips/${draft.id}/review`, [
       plannedDraft({ stops, arrivesAt: "2026-11-16T01:00:00.000Z" }),
     ]);
-    expect(await changeRow("Time")).toHaveAccessibleName(
+    const row = await changeRow("Time");
+    expect(row).toHaveAccessibleName(
       "Time, Sunday 15 November at 09:00 to Monday 16 November at 01:00, Change",
     );
+    // On screen each day has a line of its own.
+    expect(within(row).getByText("Sunday 15 November at 09:00")).toBeVisible();
+    expect(within(row).getByText("Monday 16 November at 01:00")).toBeVisible();
+  });
+
+  it("shows the driver on the ticket as others see them: the name, and New driver before the first rating", async () => {
+    const draft = plannedDraft();
+    await open(`/drive/trips/${draft.id}/review`, [draft]);
+    const preview = within(await screen.findByTestId("preview-ticket"));
+    expect(preview.getByText("Anna")).toBeVisible();
+    expect(await preview.findByText("New driver")).toBeVisible();
+    // A seat is asked for, as the draft has it.
+    expect(preview.getByText("Driver approves")).toBeVisible();
+    expect(preview.getByText("3 seats left")).toBeVisible();
+  });
+
+  it("shows the rating others see once the driver has one", async () => {
+    const draft = plannedDraft();
+    const { client } = await open(`/drive/trips/${draft.id}/review`, [draft]);
+    client.answer("/v1/people/{profileId}", () =>
+      ok(200, ownProfile(completeMe, { rating: { average: 4.8, count: 12 } })),
+    );
+    // Back on the last step from another one, it reads the profile again.
+    await fireEvent.press(await changeRow("Route"));
+    await fireEvent.press(await screen.findByRole("button", { name: "Back" }));
+    const preview = within(await screen.findByTestId("preview-ticket"));
+    expect(await preview.findByText("4.8 (12 ratings)")).toBeVisible();
+    expect(preview.queryByText("New driver")).toBeNull();
+  });
+
+  it("says neither a rating nor New driver when the profile cannot be read", async () => {
+    const draft = plannedDraft();
+    let reads = 0;
+    const app = await renderApp(`/drive/trips/${draft.id}/review`, {
+      me: completeMe,
+      setUp: (client) => {
+        tripsApi(client, [draft]);
+        client.answer("/v1/people/{profileId}", () => {
+          reads += 1;
+          return failure(500, "internal_error");
+        });
+      },
+    });
+    const preview = within(await app.findByTestId("preview-ticket"));
+    await waitFor(() => {
+      expect(reads).toBeGreaterThan(0);
+    });
+    expect(preview.getByText("Anna")).toBeVisible();
+    expect(preview.queryByText("New driver")).toBeNull();
+    expect(preview.queryByText(/rating/)).toBeNull();
+    // The rest of the step is there: the ride can be published.
+    expect(screen.getByRole("button", { name: "Publish ride" })).toBeEnabled();
+  });
+
+  it("shows the photo on the ticket, unless PuffinRide hid it from others", async () => {
+    const draft = plannedDraft();
+    const url = "https://photos.test/profile-photos/0193f0c4-7d4a-7b1e-9c2a-123456789abc.jpg";
+    await open(`/drive/trips/${draft.id}/review`, [draft], {
+      ...completeMe,
+      photo: { url, hidden: false },
+    });
+    // The picture is hidden from screen readers, which hear the name.
+    const pictures = { includeHiddenElements: true };
+    const shown = within(await screen.findByTestId("preview-ticket"));
+    expect(shown.getByTestId("avatar-photo", pictures)).toHaveProp("source", { uri: url });
+
+    await open(`/drive/trips/${draft.id}/review`, [draft], {
+      ...completeMe,
+      photo: { url, hidden: true },
+    });
+    const hidden = within(await screen.findByTestId("preview-ticket"));
+    expect(hidden.getByText("Anna")).toBeVisible();
+    expect(hidden.queryByTestId("avatar-photo", pictures)).toBeNull();
+  });
+
+  it("says Free on the ticket and the Price row of a ride that costs nothing", async () => {
+    const draft = plannedDraft({ priceLevel: 0 });
+    await open(`/drive/trips/${draft.id}/review`, [draft]);
+    const preview = within(await screen.findByTestId("preview-ticket"));
+    expect(await preview.findByText("Free")).toBeVisible();
+    expect(preview.queryByText("the whole way")).toBeNull();
+    expect(await changeRow("Price")).toHaveAccessibleName("Price, Free, Change");
+  });
+
+  it("has no ticket, and no line about one, for a draft with no times yet", async () => {
+    const draft = plannedDraft({
+      stops: plannedDraft().stops.map((stop) => ({ ...stop, plannedAt: null })),
+      departsAt: null,
+      arrivesAt: null,
+    });
+    await open(`/drive/trips/${draft.id}/review`, [draft]);
+    expect(await changeRow("Time")).toHaveAccessibleName("Time, No date yet, Change");
+    expect(screen.queryByTestId("preview-ticket")).toBeNull();
+    expect(screen.queryByText("This is how people will see your ride.")).toBeNull();
+    expect(screen.getByRole("header", { name: "Check and publish" })).toBeVisible();
   });
 
   it("lists what to fix when the server refuses to publish", async () => {
@@ -960,16 +1103,113 @@ describe("Posting a trip (spec 3)", () => {
     expect(screen.queryByRole("header", { name: "Your ride is published" })).toBeNull();
   });
 
-  it("opens a cancelled ride's page in place of Your ride is published", async () => {
-    const cancelled = plannedDraft({
-      status: "cancelled",
-      publishedAt: "2026-11-14T11:00:00.000Z",
+  it.each(["cancelled", "departed", "completed"] as const)(
+    "opens the page of a ride that is %s in place of Your ride is published",
+    async (status) => {
+      const ride = plannedDraft({ status, publishedAt: "2026-11-14T11:00:00.000Z" });
+      await open(`/drive/trips/${ride.id}/published`, [ride]);
+      await waitFor(() => {
+        expect(screen).toHavePathname(`/drive/trips/${ride.id}`);
+      });
+      expect(screen.queryByRole("header", { name: "Your ride is published" })).toBeNull();
+    },
+  );
+
+  it("opens the page of a ride that left this morning, though it is not marked as left yet", async () => {
+    // It is noon on Saturday 14 November.
+    const times = [
+      "2026-11-14T09:00:00.000Z",
+      "2026-11-14T10:00:00.000Z",
+      "2026-11-14T11:00:00.000Z",
+    ];
+    const ride = plannedDraft({
+      status: "published",
+      publishedAt: "2026-11-13T11:00:00.000Z",
+      stops: plannedDraft().stops.map((stop, index) => ({
+        ...stop,
+        plannedAt: times[index] ?? null,
+      })),
+      departsAt: times[0] ?? null,
+      arrivesAt: times[2] ?? null,
     });
-    await open(`/drive/trips/${cancelled.id}/published`, [cancelled]);
+    await open(`/drive/trips/${ride.id}/published`, [ride]);
     await waitFor(() => {
-      expect(screen).toHavePathname(`/drive/trips/${cancelled.id}`);
+      expect(screen).toHavePathname(`/drive/trips/${ride.id}`);
     });
     expect(screen.queryByRole("header", { name: "Your ride is published" })).toBeNull();
+  });
+
+  it("moves focus to Your ride is published, whose ticket opens the ride", async () => {
+    const draft = plannedDraft();
+    await open(`/drive/trips/${draft.id}/review`, [draft]);
+    const publish = await screen.findByRole("button", { name: "Publish ride" });
+    // React Native's test set-up already mocks it, so it holds earlier tests' calls.
+    const focusMoves = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
+    focusMoves.mockClear();
+    await fireEvent.press(publish);
+    expect(await screen.findByRole("header", { name: "Your ride is published" })).toBeVisible();
+    // The outcome of the button just pressed, which has gone with its step.
+    expect(focusMoves.mock.calls.map(([, event]) => event)).toEqual(["focus"]);
+    await fireEvent.press(screen.getByRole("button", { name: /^You drive, Sunday 15 November/ }));
+    await waitFor(() => {
+      expect(screen).toHavePathname(`/drive/trips/${draft.id}`);
+    });
+    expect(await screen.findByRole("header", { name: "Your ride to Hof, Akureyri" })).toBeVisible();
+  });
+
+  it("reads the ride again back on Your ride is published: a new time, and its own page once cancelled", async () => {
+    const draft = plannedDraft();
+    const { api } = await open(`/drive/trips/${draft.id}/review`, [draft]);
+    await fireEvent.press(await screen.findByRole("button", { name: "Publish ride" }));
+    const ticket = await screen.findByRole("button", {
+      name: /^You drive, Sunday 15 November, Leaves BSÍ bus terminal at 09:00/,
+    });
+    // The ticket opens the ride, where the driver moves it an hour.
+    await fireEvent.press(ticket);
+    await waitFor(() => {
+      expect(screen).toHavePathname(`/drive/trips/${draft.id}`);
+    });
+    const [ride] = api.trips();
+    if (ride === undefined) throw new Error("The ride is not there.");
+    const later = [
+      "2026-11-15T10:00:00.000Z",
+      "2026-11-15T11:00:00.000Z",
+      "2026-11-15T12:00:00.000Z",
+    ];
+    ride.stops = ride.stops.map((stop, index) => ({ ...stop, plannedAt: later[index] ?? null }));
+    ride.departsAt = later[0] ?? null;
+    ride.arrivesAt = later[2] ?? null;
+    await fireEvent.press(screen.getByRole("button", { name: "Back" }));
+    // The ticket, and the text to post, have the time the ride has now.
+    expect(
+      await screen.findByRole("button", {
+        name: /^You drive, Sunday 15 November, Leaves BSÍ bus terminal at 10:00/,
+      }),
+    ).toBeVisible();
+    expect(screen.getByRole("header", { name: "Your ride is published" })).toBeVisible();
+
+    // Cancelled from its page, the ride is not said to be published.
+    await fireEvent.press(
+      screen.getByRole("button", { name: /^You drive, Sunday 15 November, Leaves BSÍ bus/ }),
+    );
+    await waitFor(() => {
+      expect(screen).toHavePathname(`/drive/trips/${draft.id}`);
+    });
+    ride.status = "cancelled";
+    ride.cancellation = { reason: "plans_changed", note: "", countsOnReliability: false };
+    await fireEvent.press(screen.getByRole("button", { name: "Back" }));
+    await waitFor(() => {
+      expect(screen.queryByRole("header", { name: "Your ride is published" })).toBeNull();
+    });
+    expect(screen).toHavePathname(`/drive/trips/${draft.id}`);
+  });
+
+  it("leads back to the price from the last step opened by its address", async () => {
+    const draft = plannedDraft();
+    await open(`/drive/trips/${draft.id}/review`, [draft]);
+    await fireEvent.press(await screen.findByRole("button", { name: "Back" }));
+    expect(await screen.findByRole("header", { name: "Set your price" })).toBeVisible();
+    expect(screen).toHavePathname(`/drive/trips/${draft.id}/price`);
   });
 
   it("leaves the posting steps behind once the trip is published", async () => {
@@ -1015,11 +1255,17 @@ describe("Posting a trip (spec 3)", () => {
     expect(within(row).getByText("Delete draft")).toHaveStyle({ color: colors.light.error });
     // The last thing on the screen, under the rows that change the ride.
     expect(marksOf(["action-rows", "Delete draft"]).at(-1)).toBe("Delete draft");
+    // React Native's test set-up already mocks it, so it holds earlier tests' calls.
+    const focusMoves = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
+    focusMoves.mockClear();
     await fireEvent.press(row);
     expect(screen.getByText("Delete this draft? You can't undo this.")).toBeVisible();
-    // Asked first: keeping it brings the row back, and nothing was deleted.
+    // The question takes focus, as the row just pressed has gone.
+    expect(focusMoves.mock.calls.map(([, event]) => event)).toEqual(["focus"]);
+    // Asked first: keeping it brings the row back, with focus, and nothing was deleted.
     await fireEvent.press(screen.getByRole("button", { name: "Keep it" }));
     expect(screen.queryByText("Delete this draft? You can't undo this.")).toBeNull();
+    expect(focusMoves.mock.calls.map(([, event]) => event)).toEqual(["focus", "focus"]);
     expect(api.trips()).toHaveLength(1);
     await fireEvent.press(screen.getByRole("button", { name: "Delete draft" }));
     expect(filledButtons()).toBe(1);
@@ -1273,7 +1519,7 @@ describe("Posting a trip on a laptop (spec 18, 3.13)", () => {
 
     expect(soFar().getByRole("header", { name: "Your ride so far" })).toBeVisible();
     expect(soFar().getByLabelText("Route: Step 1")).toBeVisible();
-    expect(soFar().getByLabelText("Date and times: Step 2")).toBeVisible();
+    expect(soFar().getByLabelText("Time: Step 2")).toBeVisible();
     expect(soFar().getByLabelText("Seats and booking: Step 3")).toBeVisible();
     expect(soFar().getByLabelText("Price: Step 4")).toBeVisible();
     expect(side().getByRole("button", { name: "Choose date and time" })).toBeVisible();
@@ -1306,7 +1552,7 @@ describe("Posting a trip on a laptop (spec 18, 3.13)", () => {
       soFar().getByLabelText("Route: BSÍ bus terminal to Hof, Akureyri, 1 stop on the way"),
     ).toBeVisible();
     expect(await main().findByText("200 km · about 2 h")).toBeVisible();
-    expect(soFar().getByLabelText("Date and times: Step 2")).toBeVisible();
+    expect(soFar().getByLabelText("Time: Step 2")).toBeVisible();
     // With no stop on the way, the ends alone.
     await fireEvent.press(main().getByRole("switch", { name: "Borgarnes" }));
     expect(soFar().getByLabelText("Route: BSÍ bus terminal to Hof, Akureyri")).toBeVisible();
@@ -1348,15 +1594,13 @@ describe("Posting a trip on a laptop (spec 18, 3.13)", () => {
   it("shows the day and times as they are chosen", async () => {
     const draft = unplanned();
     await open(`/drive/trips/${draft.id}/time`, [draft]);
-    expect(await soFar().findByLabelText("Date and times: Step 2")).toBeVisible();
+    expect(await soFar().findByLabelText("Time: Step 2")).toBeVisible();
     expect(
       soFar().getByLabelText("Route: BSÍ bus terminal to Hof, Akureyri, 1 stop on the way"),
     ).toBeVisible();
     await fireEvent.press(main().getByRole("radio", { name: "Sunday 15 November" }));
     await chooseTime("Leaving BSÍ bus terminal at", "09:00");
-    expect(
-      soFar().getByLabelText("Date and times: Sunday 15 November, 09:00 to 11:00"),
-    ).toBeVisible();
+    expect(soFar().getByLabelText("Time: Sunday 15 November, 09:00 to 11:00")).toBeVisible();
     expect(soFar().getByLabelText("Seats and booking: Step 3")).toBeVisible();
     expect(soFar().getByLabelText("Price: Step 4")).toBeVisible();
     expect(side().getByRole("button", { name: "Choose seats" })).toBeVisible();
@@ -1372,9 +1616,7 @@ describe("Posting a trip on a laptop (spec 18, 3.13)", () => {
     expect(
       soFar().getByLabelText("Route: BSÍ bus terminal to Hof, Akureyri, 1 stop on the way"),
     ).toBeVisible();
-    expect(
-      soFar().getByLabelText("Date and times: Sunday 15 November, 09:00 to 11:00"),
-    ).toBeVisible();
+    expect(soFar().getByLabelText("Time: Sunday 15 November, 09:00 to 11:00")).toBeVisible();
     expect(soFar().getByLabelText("Price: Step 4")).toBeVisible();
     expect(screen.queryByTestId("bottom-bar")).toBeNull();
 
@@ -1399,9 +1641,7 @@ describe("Posting a trip on a laptop (spec 18, 3.13)", () => {
     expect(
       soFar().getByLabelText("Route: BSÍ bus terminal to Hof, Akureyri, 1 stop on the way"),
     ).toBeVisible();
-    expect(
-      soFar().getByLabelText("Date and times: Sunday 15 November, 09:00 to 11:00"),
-    ).toBeVisible();
+    expect(soFar().getByLabelText("Time: Sunday 15 November, 09:00 to 11:00")).toBeVisible();
     expect(await soFar().findByLabelText("Price: 3,000 ISK the whole way · 100%")).toBeVisible();
     expect(
       soFar().getByLabelText("Seats and booking: 3 seats, I approve each passenger"),
@@ -1413,19 +1653,15 @@ describe("Posting a trip on a laptop (spec 18, 3.13)", () => {
   it("names the times' step again while the route is not the saved one", async () => {
     await open(`/drive/trips/${plannedDraft().id}/review`, [plannedDraft()]);
     await fireEvent.press(await changeRow("Route"));
-    expect(
-      await soFar().findByLabelText("Date and times: Sunday 15 November, 09:00 to 11:00"),
-    ).toBeVisible();
+    expect(await soFar().findByLabelText("Time: Sunday 15 November, 09:00 to 11:00")).toBeVisible();
     // The saved times are the saved route's: with other stops they are counted anew.
     await fireEvent.press(main().getByRole("switch", { name: "Borgarnes" }));
     expect(soFar().getByLabelText("Route: BSÍ bus terminal to Hof, Akureyri")).toBeVisible();
-    expect(soFar().getByLabelText("Date and times: Step 2")).toBeVisible();
+    expect(soFar().getByLabelText("Time: Step 2")).toBeVisible();
     expect(soFar().queryByText("09:00 → 11:00")).toBeNull();
     // Back on the saved route, they are its times again.
     await fireEvent.press(main().getByRole("switch", { name: "Borgarnes" }));
-    expect(
-      soFar().getByLabelText("Date and times: Sunday 15 November, 09:00 to 11:00"),
-    ).toBeVisible();
+    expect(soFar().getByLabelText("Time: Sunday 15 November, 09:00 to 11:00")).toBeVisible();
   });
 
   it("has Publish and what it waits for beside the summary, with no trip so far", async () => {

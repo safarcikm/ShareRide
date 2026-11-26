@@ -2,10 +2,12 @@ import {
   deleteTripRoute,
   driverReadinessRoute,
   listVehiclesRoute,
+  publicProfileRoute,
   publishTripRoute,
   updateTripRoute,
   type DriverReadiness,
   type MyTrip,
+  type PublicProfile,
   type Vehicle,
 } from "@shareride/contracts";
 import { formatMoney, inOneLine } from "@shareride/i18n";
@@ -14,7 +16,7 @@ import { Camera, CarFront, IdCard, Trash2 } from "lucide-react-native";
 import { useCallback, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { errorText } from "@/auth/errors";
-import { useSession } from "@/auth/session";
+import { useMe, useSession } from "@/auth/session";
 import { ActionRows } from "@/components/action-rows";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
@@ -30,11 +32,11 @@ import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 import { preferenceNeeds } from "@/trip-details/trip-parts";
 import { CheckRow } from "@/trips/check-row";
-import { PreviewTicket } from "@/trips/preview-ticket";
+import { routeChecked, timeChecked } from "@/trips/check-texts";
+import { hasPreview, PreviewTicket } from "@/trips/preview-ticket";
 import { StepScreen } from "@/trips/step-screen";
 import { fromReviewParams } from "@/trips/steps";
 import { bookingModeKeys, levelText, problemText, stopNameAt } from "@/trips/texts";
-import { timesSoFar } from "@/trips/trip-so-far";
 import { Loading, useDraftOnFocus } from "@/trips/use-draft";
 import { useQuote } from "@/trips/use-quote";
 
@@ -46,7 +48,8 @@ import { useQuote } from "@/trips/use-quote";
  * Delete draft, red and last, which asks first; and Publish in the bar,
  * which waits for the photo, the car and the licence and runs every check
  * again on the server. Loads again when the driver comes back from
- * changing something.
+ * changing something: the ride, what is still needed, and the driver as
+ * others see them, for the ticket.
  */
 export default function ReviewStepScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -60,6 +63,16 @@ export default function ReviewStepScreen() {
   );
   const { value: driver, reload: reloadDriver } = useLoadedOnFocus(loadDriver);
   const [readiness, cars] = driver ?? [];
+  // The ticket's rating; the step does not wait for it, or need it.
+  const profileId = useMe()?.profileId;
+  const loadProfile = useCallback(
+    () =>
+      profileId === undefined
+        ? Promise.resolve(undefined)
+        : session.call(publicProfileRoute, { params: { profileId } }),
+    [session, profileId],
+  );
+  const { value: profile } = useLoadedOnFocus(loadProfile);
   if (
     trip === undefined ||
     !trip.ok ||
@@ -88,6 +101,7 @@ export default function ReviewStepScreen() {
       trip={trip.data}
       readiness={readiness.data}
       cars={cars.data.vehicles}
+      profile={profile?.ok === true ? profile.data : null}
     />
   );
 }
@@ -96,10 +110,12 @@ function Review({
   trip,
   readiness,
   cars,
+  profile,
 }: {
   readonly trip: MyTrip;
   readonly readiness: DriverReadiness;
   readonly cars: readonly Vehicle[];
+  readonly profile: PublicProfile | null;
 }) {
   const { locale, t } = useLanguage();
   const palette = usePalette();
@@ -119,7 +135,7 @@ function Review({
   // A draft started before the first car was added gets that car on publishing.
   const car = trip.vehicleId === null ? cars[0] : cars.find((known) => known.id === trip.vehicleId);
 
-  const missing = stillMissing(readiness);
+  const missing = needed(readiness, false);
 
   const publish = async () => {
     if (missing.length > 0) return;
@@ -164,15 +180,15 @@ function Review({
     else setFailure(errorText(t, result));
   };
 
-  const from = names[0] ?? "";
-  const to = names.at(-1) ?? "";
-  const between = names.length - 2;
-  const ends = t("trip.stretchSpoken", { from, to });
-  const moments = trip.stops.flatMap((stop) =>
-    stop.plannedAt === null ? [] : [new Date(stop.plannedAt)],
-  );
+  const route = routeChecked(t, names);
   // The day and the two ends' times; the stops' times are on the time step.
-  const times = moments.length < trip.stops.length ? undefined : timesSoFar(t, locale, moments);
+  const times = hasPreview(trip)
+    ? timeChecked(
+        t,
+        locale,
+        trip.stops.flatMap((stop) => (stop.plannedAt === null ? [] : [new Date(stop.plannedAt)])),
+      )
+    : undefined;
   // As a passenger reads them on the ride, in one line: "Some chat, one suitcase, no pets".
   const likes = inOneLine(
     preferenceNeeds(t, trip.preferences).map(({ label }) => label),
@@ -183,8 +199,10 @@ function Review({
     <StepScreen
       step="review"
       title={t("trip.review.title")}
-      line={t("trip.review.line")}
-      back={{ pathname: "/drive/trips/[id]/seats", params: { id: trip.id } }}
+      // The line is about the ticket, which a draft with no times has not.
+      line={hasPreview(trip) ? t("trip.review.line") : undefined}
+      // Opened by its address, Back leads to the step before.
+      back={{ pathname: "/drive/trips/[id]/price", params: { id: trip.id } }}
       footer={
         <>
           <ActionNotice says={failure} />
@@ -220,18 +238,18 @@ function Review({
           ))}
         </View>
       )}
-      <PreviewTicket trip={trip} whole={quote?.wholeRoutePrice ?? null} />
+      <PreviewTicket trip={trip} whole={quote?.wholeRoutePrice ?? null} profile={profile} />
       <ActionRows>
         <CheckRow
           caption={t("trip.review.route")}
-          lines={[
-            between > 0 ? t("trip.review.routeWithStops", { route: ends, count: between }) : ends,
-          ]}
+          lines={route.lines}
+          spoken={route.spoken}
           href={fromReviewParams(trip.id, "route")}
         />
         <CheckRow
           caption={t("trip.review.time")}
-          lines={[times === undefined ? t("trip.review.noTimes") : times.spoken]}
+          lines={times?.lines ?? [t("trip.review.noTimes")]}
+          spoken={times?.spoken}
           href={fromReviewParams(trip.id, "time")}
         />
         <CheckRow
@@ -266,9 +284,10 @@ function Review({
           href={fromReviewParams(trip.id, "seats")}
         />
       </ActionRows>
-      <StillMissing readiness={readiness} />
+      <StillMissing missing={missing} done={needed(readiness, true)} />
+      {/* A key each: one in the other's place would not take focus again. */}
       {deleting === "asking" ? (
-        <TakesFocus>
+        <TakesFocus key="asking">
           <Card>
             <Body align="start">{t("trip.review.deleteConfirm")}</Body>
             <View style={styles.confirm}>
@@ -292,7 +311,7 @@ function Review({
         </TakesFocus>
       ) : (
         // Cannot be undone: red, and the last thing on the screen (R31.3).
-        <TakesFocus when={deleting === "kept"}>
+        <TakesFocus key="row" when={deleting === "kept"}>
           <ActionRows>
             <Row
               danger
@@ -312,14 +331,15 @@ function Review({
 type Missing = "photo" | "car" | "licence";
 
 /**
- * What the driver still has to do before publishing (rules R3.1 and R3.2):
- * the photo, the car and the licence. The API asks for the photo only
- * while photo storage is on (spec 16, 3.6, item 5).
+ * Of what publishing needs (rules R3.1 and R3.2), the photo, the car and
+ * the licence, in that order: what the driver has `done`, or still has to
+ * do. The API asks for the photo only while photo storage is on (spec 16,
+ * 3.6, item 5).
  */
-function stillMissing(readiness: DriverReadiness): Missing[] {
+function needed(readiness: DriverReadiness, done: boolean): Missing[] {
   const order: readonly Missing[] = ["photo", "car", "licence"];
   return order.filter((wanted) =>
-    readiness.items.some(({ item, done, blocking }) => item === wanted && blocking && !done),
+    readiness.items.some((asked) => asked.item === wanted && asked.blocking && asked.done === done),
   );
 }
 
@@ -336,14 +356,6 @@ const waitingTexts = {
 /** Why Publish waits, under it. */
 function waitsFor(missing: readonly Missing[]) {
   return waitingTexts[missing.join(" ") as keyof typeof waitingTexts];
-}
-
-/** What is done already of what publishing needs, in the same order. */
-function alreadyDone(readiness: DriverReadiness): Missing[] {
-  const order: readonly Missing[] = ["photo", "car", "licence"];
-  return order.filter((wanted) =>
-    readiness.items.some(({ item, done, blocking }) => item === wanted && blocking && done),
-  );
 }
 
 const doneTexts = {
@@ -379,18 +391,23 @@ const todo = {
  * outlined button for the next one, as Publish is the screen's main button
  * (R31.1). Doing it comes back here, where the card names the next.
  */
-function StillMissing({ readiness }: { readonly readiness: DriverReadiness }) {
+function StillMissing({
+  missing,
+  done,
+}: {
+  readonly missing: readonly Missing[];
+  readonly done: readonly Missing[];
+}) {
   const { t } = useLanguage();
-  const missing = stillMissing(readiness);
   const [next] = missing;
   if (next === undefined) return null;
-  const done = alreadyDone(readiness).join(" ") as keyof typeof doneTexts | "";
+  const said = done.join(" ") as keyof typeof doneTexts | "";
   const left = t(leftTexts[missing.join(" ") as keyof typeof leftTexts]);
   return (
     <NeedsYouCard
       icon={todo[next].icon}
       title={t("trip.review.missing", { count: missing.length })}
-      detail={done === "" ? left : `${t(doneTexts[done])} ${left}`}
+      detail={said === "" ? left : `${t(doneTexts[said])} ${left}`}
       action={{
         label: t(todo[next].label),
         outlined: true,

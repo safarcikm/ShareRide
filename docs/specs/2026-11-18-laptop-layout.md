@@ -418,7 +418,9 @@ changes on a phone.
    map, not under it as drawn: it keeps its place when a route is chosen
    and is whole in a small laptop's window (1280 by 720) on every step
    (decision 13). On wide screens these steps have no bottom bar.
-3. "Your trip so far" has a row each for the route, the day and times, the
+3. "Your trip so far" has a row each for the route, the day and times
+   (called "Time" since spec 31, as on the road and the last step; it was
+   "Date and times"), the
    seats and booking, and the price (in the order of the steps since
    2026-11-22, when the seats moved before the price; spec 3). The open
    step's row shows what is

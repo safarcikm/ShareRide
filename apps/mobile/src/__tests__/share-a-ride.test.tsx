@@ -1,5 +1,5 @@
 import type { MyTrip } from "@shareride/contracts";
-import { act, fireEvent, screen, within } from "expo-router/testing-library";
+import { act, fireEvent, screen, waitFor, within } from "expo-router/testing-library";
 import { AccessibilityInfo, Dimensions, Linking } from "react-native";
 import {
   canCopy,
@@ -317,9 +317,12 @@ describe("Share this ride, after publishing (spec 28, 3.2)", () => {
     ).toBeVisible();
   });
 
-  it("is not there once the trip has left", async () => {
+  it("is not there once the trip has left: its own page opens, with nothing to share", async () => {
     await openDriver(published, [{ ...northTrip, status: "departed" }]);
-    expect(await screen.findByRole("header", { name: "Your ride is published" })).toBeVisible();
+    await waitFor(() => {
+      expect(screen).toHavePathname(`/drive/trips/${tripId}`);
+    });
+    expect(screen.queryByRole("header", { name: "Your ride is published" })).toBeNull();
     expect(screen.queryByRole("header", { name: "Share this ride" })).toBeNull();
   });
 
