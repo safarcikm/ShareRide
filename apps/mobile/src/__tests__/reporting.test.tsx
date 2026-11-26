@@ -15,6 +15,7 @@ import {
 } from "@/testing/bookings";
 import { filledButtons } from "@/testing/buttons";
 import { callsTo, chatMessage, chatServer, messageId, openedLine } from "@/testing/chat";
+import { passengerRow, unfoldPassenger } from "@/testing/driver-trip";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
 import { newcomer } from "@/testing/people";
 import { northResult, northTrip, tripDetailsApi } from "@/testing/search";
@@ -379,13 +380,14 @@ describe("Reporting from the driver's trip (spec 9, 3.1.1)", () => {
         reportsApi(client);
       },
     });
-    expect(await screen.findByLabelText("Jón, 1 seat, Confirmed")).toBeVisible();
+    expect(await screen.findByRole("button", { name: passengerRow("Jón") })).toBeVisible();
     return app;
   }
 
-  it("reports a passenger, named from the booking", async () => {
+  it("reports a passenger from under their row, named from the booking", async () => {
     const { client } = await openDriverTrip();
-    await fireEvent.press(screen.getByRole("button", { name: "Report Jón" }));
+    await unfoldPassenger("Jón");
+    await fireEvent.press(screen.getByRole("link", { name: "Report Jón" }));
     expect(await screen.findByRole("header", { name: "Report Jón" })).toBeVisible();
     expect(screen).toHaveSearchParams({ kind: "user", id: jon.id });
     await fireEvent.press(screen.getByRole("radio", { name: "Something else" }));

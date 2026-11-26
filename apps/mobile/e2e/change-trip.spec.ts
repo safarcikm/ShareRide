@@ -67,7 +67,7 @@ test("a driver moves the departure 45 minutes, and the passenger cancels with a 
 
   // Edit trip opens the trip's parts; the time opens its own screen.
   await driver.goto(`/drive/trips/${tripId}`);
-  await driver.getByRole("button", { name: "Edit the ride", exact: true }).click();
+  await driver.getByRole("link", { name: "Edit the ride", exact: true }).click();
   await expect(driver).toHaveURL(new RegExp(`/drive/trips/${tripId}/edit$`));
   await expect(driver.getByRole("heading", { name: "Edit the ride" })).toBeVisible();
   // On a narrow phone a part's link is wider than what its title leaves:

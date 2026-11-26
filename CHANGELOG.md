@@ -1744,6 +1744,17 @@ releases follow [Semantic Versioning](https://semver.org/).
   ("Choose a reason.") stands over it and is read out, where it was at
   the end of the page. After blocking, reporting and rating, the way back
   is the main button.
+- A ride you drive is built around its ticket (spec 31, 3.12): the title
+  is "Your ride to Selfoss", with what it needs under it ("1 request
+  needs your answer."). A request is a yellow card with who asks, their
+  part, their message and "If you accept, 2 of 3 seats are taken from
+  Mjódd to Selfoss"; the passengers are one card of rows, each with a
+  Message button and unfolding to their profile, reporting them and
+  "Cancel booking"; the seats are one line, with each stretch behind it;
+  and everything else is a row, "Cancel the ride" red and last. On the
+  trip day "I'm here at Mjódd" is the main button, in the bar at the
+  bottom (3.9). On a laptop the ticket, the seats and the rows stand
+  beside the requests and the passengers (3.16).
 - The web journeys never give two test accounts the same phone number: a
   run in ten did, and a sign-in journey then failed.
 - CI skips its code jobs (bundles, unit, integration and web tests, the API

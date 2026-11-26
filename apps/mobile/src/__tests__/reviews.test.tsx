@@ -501,6 +501,23 @@ describe("the driver rates each passenger (spec 8, 3.7)", () => {
     expect(screen.queryByRole("button", { name: /^Rate your passenger/ })).toBeNull();
   });
 
+  it("has nothing under a passenger nobody reviewed once the 14 days are over", async () => {
+    mockNow = new Date(reviewsCloseAt);
+    await openDriverTrip([
+      completedRider("0190a1d6-0000-7000-8000-0000000000c1", "Gunna"),
+      completedRider("0190a1d6-0000-7000-8000-0000000000c2", "Siggi", {
+        mine: { ...aReview(5), revealed: false },
+      }),
+    ]);
+    expect(await screen.findByText("Your review")).toBeVisible();
+    const [gunna, siggi] = screen.getAllByTestId("passenger-row").map((row) => within(row));
+    if (gunna === undefined || siggi === undefined) throw new Error("Two rows are expected.");
+    // No band of white under Gunna's row with nothing in it.
+    expect(gunna.queryByTestId("passenger-review")).toBeNull();
+    expect(siggi.getByTestId("passenger-review")).toBeVisible();
+    expect(screen.queryByRole("button", { name: /^Rate your passenger/ })).toBeNull();
+  });
+
   it("rates a passenger, and the trip then shows the review sent instead of the button", async () => {
     const gunna = completedRider("0190a1d6-0000-7000-8000-0000000000c1", "Gunna", {
       theirs: null,

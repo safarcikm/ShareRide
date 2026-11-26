@@ -33,21 +33,25 @@ function look(kind: TagKind, palette: Palette) {
  * A short label on a tinted fill, such as "Sample meeting point" or "Not in
  * use at the moment" (spec 15, section 5.2), with an icon before it when it
  * is given one. The words carry the meaning; the colour and the icon only
- * repeat it.
+ * repeat it. `onTint` is for a tag on a card in its own tint, such as "No
+ * reviews yet" on a request in the car's yellow: its fill would not show
+ * there, so it stands on the white of a surface, as a ticket does.
  */
 export function Tag({
   label,
   kind,
   icon,
+  onTint = false,
 }: {
   readonly label: string;
   readonly kind: TagKind;
   readonly icon?: LucideIcon | undefined;
+  readonly onTint?: boolean;
 }) {
   const palette = usePalette();
   const { text, fill } = look(kind, palette);
   return (
-    <View testID="tag" style={[styles.tag, { backgroundColor: fill }]}>
+    <View testID="tag" style={[styles.tag, { backgroundColor: onTint ? palette.surface : fill }]}>
       {icon === undefined ? null : (
         <Icon testID="tag-icon" icon={icon} color={text} size={iconSizes.tick} />
       )}

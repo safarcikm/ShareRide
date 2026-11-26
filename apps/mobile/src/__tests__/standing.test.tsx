@@ -3,6 +3,7 @@ import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
 import { ok } from "@/testing/fake-client";
 import { bookingApi, driverApi, northBooking, northMyTrip, northStop } from "@/testing/bookings";
+import { unfoldPassenger } from "@/testing/driver-trip";
 import { aProfileId, annaProfile, annaProfileId, newcomer, profileApi } from "@/testing/people";
 import { northResult, northTrip, resultOn, searchApi, tripDetailsApi } from "@/testing/search";
 import { blonduos, borgarnes, tripsApi } from "@/testing/trips";
@@ -193,7 +194,10 @@ describe("a passenger, for the driver (spec 5, 3.3 and 3.7)", () => {
     await openTrip([gunna()]);
     expect(await screen.findByText("4.3 (3 ratings)")).toBeVisible();
     expect(screen.getByText("Reliability: 91%")).toBeVisible();
-    await fireEvent.press(screen.getByRole("link", { name: "See profile: Gunna" }));
+    // The person on the card is the way to their profile, and says how they stand.
+    await fireEvent.press(
+      screen.getByRole("link", { name: "See profile: Gunna, 4.3 (3 ratings), Reliability: 91%" }),
+    );
     expect(await screen.findByRole("header", { name: "Gunna" })).toBeVisible();
   });
 
@@ -201,6 +205,8 @@ describe("a passenger, for the driver (spec 5, 3.3 and 3.7)", () => {
     await openTrip([gunna(newcomer)]);
     expect(await screen.findByText("No reviews yet")).toBeVisible();
     expect(screen.getByText("Reliability: not enough rides yet")).toBeVisible();
+    // How long they have been here stands in for the reviews.
+    expect(screen.getByText("Member since November 2026")).toBeVisible();
   });
 
   it("shows nothing of the kind for someone asking who is leaving PuffinRide", async () => {
@@ -232,7 +238,8 @@ describe("a passenger, for the driver (spec 5, 3.3 and 3.7)", () => {
         confirmed: { registration: "AB 123", whereToStand: null },
       }),
     ]);
-    expect(await screen.findByLabelText("Jón, 1 seat, Confirmed")).toBeVisible();
+    // Under their row, once it is unfolded (spec 31, 3.12, item 4).
+    await unfoldPassenger("Jón");
     expect(screen.getByRole("link", { name: "See profile: Jón" })).toBeVisible();
   });
 });

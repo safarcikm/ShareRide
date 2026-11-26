@@ -1,5 +1,6 @@
 import { expect, type Browser, type Page, type TestInfo } from "@playwright/test";
 import { english, signUp } from "./account";
+import { passengerRow } from "./driver-ride";
 import { postTripToSelfoss } from "./trips";
 
 // People and bookings for the cancelling journeys (spec 6): a trip for
@@ -56,7 +57,7 @@ export async function confirmedBooking(
   await askForSeat(passenger, tripId, to);
   await driver.goto(`/drive/trips/${tripId}`);
   await driver.getByRole("button", { name: "Accept", exact: true }).click();
-  await expect(driver.getByLabel("Dóra, 1 seat, Waiting for payment")).toBeVisible();
+  await expect(passengerRow(driver, "Dóra", "Waiting for payment")).toBeVisible();
   await passenger.reload();
   await expect(passenger).toHaveURL(/\/bookings\/[0-9a-f-]+$/);
   const booking = passenger.url();

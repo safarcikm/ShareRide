@@ -57,6 +57,18 @@ describe("Tag", () => {
     });
   });
 
+  // On a card in the tag's own tint its fill would not show: there it
+  // stands on the white of a surface, as a ticket does (spec 31, 3.12).
+  it.each(["light", "dark"] as const)(
+    "stands on the surface where the card under it has its tint, in %s",
+    async (scheme) => {
+      mockScheme = scheme;
+      await render(<Tag kind="warning" label="No reviews yet" onTint />);
+      expect(screen.getByTestId("tag")).toHaveStyle({ backgroundColor: colors[scheme].surface });
+      expect(screen.getByText("No reviews yet")).toHaveStyle({ color: colors[scheme].warning });
+    },
+  );
+
   it("puts an icon before its label, in the label's colour", async () => {
     await render(<Tag kind="positive" label="Book instantly" icon={Zap} />);
     const tag = screen.getByTestId("tag");
@@ -317,6 +329,24 @@ describe("Row", () => {
     expect(row).toHaveStyle({ backgroundColor: colors.light.errorSoft });
     await fireEvent.press(row);
     expect(onPress).toHaveBeenCalledTimes(1);
+  });
+
+  it("waits while it is disabled: muted, with no tint, saying so, and doing nothing", async () => {
+    const onPress = jest.fn();
+    await render(<Row disabled icon={Pencil} title="Post the way back" onPress={onPress} />);
+    const row = screen.getByRole("button", { name: "Post the way back" });
+    expect(row).toBeDisabled();
+    expect(screen.getByText("Post the way back")).toHaveStyle({
+      color: colors.light.textMuted,
+    });
+    await fireEvent(row, "hoverIn");
+    expect(row).not.toHaveStyle({ backgroundColor: colors.light.primarySoft });
+    await fireEvent.press(row);
+    expect(onPress).not.toHaveBeenCalled();
+    // Its turn comes: it is a row like any other again.
+    await screen.rerender(<Row icon={Pencil} title="Post the way back" onPress={onPress} />);
+    expect(screen.getByRole("button", { name: "Post the way back" })).toBeEnabled();
+    expect(screen.getByText("Post the way back")).toHaveStyle({ color: colors.light.text });
   });
 
   it("unfolds what is under it, and says whether it is open", async () => {

@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { apiUrl } from "../playwright.config";
 import { confirmedBooking, secondPage, visible } from "./support/cancelling";
+import { focused } from "./support/trips";
 
 // Spec 8's trip day, on the web build: Bára posts Mjódd to N1 Selfoss for
 // tomorrow and Dóra books and pays, as in the cancelling journeys. Then the
@@ -58,10 +59,15 @@ test("on the trip day, the passenger and the driver each say I'm here and see th
     driver.getByText("Use this only when parked.", { exact: true }).filter(visible),
   ).toBeVisible();
   await expect(driver.getByLabel("Dóra, 1 seat, Here")).toBeVisible();
-  await driver.getByRole("button", { name: "I'm here at Mjódd bus terminal" }).click();
-  await expect(
-    driver.getByText("We've told your passengers you're here.", { exact: true }).filter(visible),
-  ).toBeVisible();
+  // The ride's one main button: in the bar at the bottom of a phone, at the
+  // top of the side column on a laptop (spec 31, 3.9, item 4). What it told
+  // takes its place, with focus, and the stop says so too.
+  const imHereAt = driver.getByTestId("driver-im-here").filter(visible);
+  await imHereAt.getByRole("button", { name: "I'm here at Mjódd bus terminal" }).click();
+  const told = "We've told your passengers you're here.";
+  await expect(imHereAt.getByText(told, { exact: true })).toBeVisible();
+  await expect.poll(() => focused(driver)).toContain(told);
+  await expect(driver.getByTestId("said-here").filter(visible)).toHaveText(told);
 
   // And Dóra's page, left open, says in its title that Bára is there, within
   // half a minute.

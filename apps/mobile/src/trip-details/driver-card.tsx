@@ -1,7 +1,7 @@
 import type { Standing, TripDetails } from "@shareride/contracts";
-import { Car, ChevronRight } from "lucide-react-native";
+import { Car } from "lucide-react-native";
 import type { ReactNode } from "react";
-import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { Platform, StyleSheet, Text, View } from "react-native";
 import { Avatar, besideAvatar } from "@/components/avatar";
 import { Card } from "@/components/card";
 import { Icon } from "@/components/icon";
@@ -9,9 +9,8 @@ import { NeedBubble } from "@/components/need-bubble";
 import { Tag } from "@/components/tag";
 import { Body } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
-import { linkProps } from "@/navigation/link-props";
+import { ProfileLink } from "@/people/profile-link";
 import { RatingLine, ratingText, reliabilityText } from "@/people/standing";
-import { useHover } from "@/theme/hover";
 import { controlOutline, radii, sizes, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 import { carText } from "./texts";
@@ -179,53 +178,8 @@ export function DriverCard({
   );
 }
 
-/** The driver's line as a link to their profile, tinted under the pointer and while pressed. */
-function ProfileLink({
-  profileId,
-  label,
-  chevron,
-  children,
-}: {
-  readonly profileId: string;
-  readonly label: string;
-  /** At its end, unless a button stands there. */
-  readonly chevron: boolean;
-  readonly children: ReactNode;
-}) {
-  const palette = usePalette();
-  const [hovered, hover] = useHover();
-  return (
-    <Pressable
-      accessibilityRole="link"
-      accessibilityLabel={label}
-      {...linkProps({ pathname: "/people/[profileId]", params: { profileId } })}
-      {...hover}
-      style={({ pressed }) => [
-        besideAvatar.row,
-        styles.link,
-        pressed || hovered ? { backgroundColor: palette.primarySoft } : null,
-      ]}
-    >
-      {children}
-      {/* At the middle of the line, whatever its height; the picture stays at its top. */}
-      {chevron ? (
-        <View style={styles.chevron}>
-          <Icon icon={ChevronRight} color={palette.textMuted} />
-        </View>
-      ) : null}
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   card: { gap: spacing.ms },
-  // The tint reaches a little past the picture and the chevron, as a row's does in a card.
-  link: {
-    borderRadius: radii.control,
-    padding: spacing.sm,
-    margin: -spacing.sm,
-  },
-  chevron: { alignSelf: "center" },
   // The driver and the button beside them; the button goes under the
   // driver where the card has no room for both.
   withAction: {

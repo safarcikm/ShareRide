@@ -71,8 +71,15 @@ view. It is built to be used while parked: large buttons and no typing needed.
   bottom of the screen, on the first screen with no scrolling (at the top
   of the side column on a laptop). "The driver didn't come" is a link in
   that bar: under "I'm here" while that can be pressed, and the bar's main
-  button after. The driver's trip day changes with the driver's ride
-  (spec 31, 3.12).
+  button after.
+- Since spec 31 (3.9 and 3.12) the driver's trip day is the first part of
+  the driver's ride: the stops with who gets in and out, then the
+  passengers, the ticket and the rows. "I'm here at Mjódd bus terminal"
+  is the main button, in the bar at the bottom (at the top of the side
+  column on a laptop), for the first stop that is open, with another open
+  stop outlined under it. Before a stop opens the bar says from when;
+  once said, it says the passengers were told, and so does the stop.
+  Message is the round button on a passenger's row.
 
 ### 3.2 "I'm here" (E2)
 

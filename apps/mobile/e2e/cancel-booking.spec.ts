@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { confirmedBooking, secondPage, visible } from "./support/cancelling";
+import { passengerRow } from "./support/driver-ride";
 import { focused } from "./support/trips";
 
 // Spec 6's cancelling of one booking, on the web build: a driver posts
@@ -85,9 +86,11 @@ test("a driver cancels a paid booking with a note the passenger reads", async ({
   const { page: passenger, close } = await secondPage(browser, testInfo);
   const { tripId, booking } = await confirmedBooking(driver, passenger);
 
-  // On the trip, under Dóra: Cancel booking opens its own screen.
+  // On the ride, under Dóra's row once it is unfolded: Cancel booking
+  // opens its own screen.
   await driver.reload();
-  await driver.getByRole("button", { name: "Cancel booking: Dóra" }).click();
+  await passengerRow(driver, "Dóra", "Confirmed").click();
+  await driver.getByRole("link", { name: "Cancel booking: Dóra" }).click();
   await expect(driver).toHaveURL(/\/bookings\/[0-9a-f-]+\/cancel$/);
   await expect(driver.getByRole("heading", { name: "Cancel booking: Dóra" })).toBeVisible();
   await expect(

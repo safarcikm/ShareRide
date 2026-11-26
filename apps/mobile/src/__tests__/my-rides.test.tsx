@@ -216,7 +216,7 @@ describe("My rides (spec 16, 3.3)", () => {
     await fireEvent.press(
       await screen.findByRole("button", { name: /^You drive, .*, Answer Gunna's request$/ }),
     );
-    expect(await screen.findByText("One small bag.")).toBeVisible();
+    expect(await screen.findByText("“One small bag.”")).toBeVisible();
     expect(screen).toHavePathname(`/drive/trips/${driving.id}`);
   });
 

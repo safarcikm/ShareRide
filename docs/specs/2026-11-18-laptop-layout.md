@@ -464,6 +464,17 @@ changes on a phone.
    window turns narrow or wide: one tree at every width, as a booking (3.9,
    4). A trip that is cancelled, or cannot be loaded, is a page with one
    column at its left (3.2, 8).
+5. Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.12 and 3.16, item 3)
+   the head is Back and "Your ride to Selfoss", with one line under it.
+   Main column: what needs the driver, the passengers, and "Drive it
+   again" with the two rows that post the ride again. Side column: the
+   ride as a ticket, with sharing in its corner; the seats in one line;
+   and the rows Edit the ride, "Share the ride's details", "Weather and
+   roads" and Cancel the ride, in the place of the two buttons at the
+   head's right. The side column is still whole in a window 1280 by 720
+   (decision 14). On the trip day "I'm here" leads the side column and is
+   whole in that window; until the ride leaves, the rows at the column's
+   end are then reached by scrolling it in a window lower than 800.
 
 ### 3.15 What stays one column
 

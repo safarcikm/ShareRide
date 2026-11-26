@@ -1,5 +1,5 @@
 import type { MyTrip } from "@shareride/contracts";
-import { act, fireEvent, screen } from "expo-router/testing-library";
+import { act, fireEvent, screen, within } from "expo-router/testing-library";
 import { AccessibilityInfo, Dimensions, Linking } from "react-native";
 import {
   canCopy,
@@ -364,17 +364,23 @@ describe("Share this ride, a screen of its own (spec 28, 3.1 and 3.2)", () => {
     expect(screen.queryByRole("button", { name: /^Share the ride/ })).toBeNull();
   });
 
-  it("opens from the head of the driver's trip page", async () => {
+  it("opens from the corner of the driver's ride ticket, and from the ride's rows", async () => {
     await openDriver(`/drive/trips/${tripId}`);
-    await fireEvent.press(await screen.findByRole("button", { name: "Share this ride" }));
+    expect(await screen.findByTestId("driver-ride-ticket")).toBeVisible();
+    expect(
+      within(screen.getByTestId("ride-rows")).getByRole("link", { name: "Share this ride" }),
+    ).toBeVisible();
+    // The quiet button in the ticket's corner.
+    await fireEvent.press(screen.getByRole("button", { name: "Share this ride" }));
     expect(screen).toHavePathname(`/drive/trips/${tripId}/share`);
     expect(await screen.findByRole("header", { name: "Share this ride" })).toBeVisible();
   });
 
   it("is not on the trip page once the trip has left", async () => {
     await openDriver(`/drive/trips/${tripId}`, [{ ...northTrip, status: "departed" }]);
-    expect(await screen.findByText("BSÍ bus terminal → Hof, Akureyri")).toBeVisible();
+    expect(await screen.findByTestId("driver-ride-ticket")).toBeVisible();
     expect(screen.queryByRole("button", { name: "Share this ride" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Share this ride" })).toBeNull();
   });
 
   it("says when the trip cannot be found, with a way to My trips", async () => {

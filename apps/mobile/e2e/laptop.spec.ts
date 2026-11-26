@@ -5,7 +5,9 @@ import {
   type TripSearchResult,
 } from "@shareride/contracts";
 import { maxContentWidth } from "@shareride/ui";
+import { apiUrl } from "../playwright.config";
 import { english, signUp } from "./support/account";
+import { passengerRow } from "./support/driver-ride";
 import { expectNoSidewaysScroll, laptop, widths } from "./support/laptop";
 import { addPhotoBeforePublishing } from "./support/photo";
 import { chooseTime, postTripToSelfoss, tomorrow } from "./support/trips";
@@ -642,7 +644,7 @@ async function askForSeat(
 async function accept(driver: Page, tripId: string, name: string) {
   await driver.goto(`/drive/trips/${tripId}`);
   await driver.getByRole("button", { name: "Accept", exact: true }).click();
-  await expect(driver.getByLabel(`${name}, 1 seat, Waiting for payment`)).toBeVisible();
+  await expect(passengerRow(driver, name, "Waiting for payment")).toBeVisible();
 }
 
 /**
@@ -1025,7 +1027,7 @@ test.describe("My rides, a booking and Profile", () => {
 test.describe("Offer a ride and the driver's ride", () => {
   test.use({ viewport: laptop(1280), locale: "en-GB" });
 
-  test("post a trip step by step in two columns, then answer a request beside the seats on each stretch", async ({
+  test("post a trip step by step in two columns, then answer a request beside the ride, its seats and its rows", async ({
     page: driver,
     browser,
   }, testInfo) => {
@@ -1184,45 +1186,78 @@ test.describe("Offer a ride and the driver's ride", () => {
     await expect(driver.getByRole("heading", { name: "Your ride is published" })).toBeVisible();
     const [, tripId = ""] = /\/drive\/trips\/([0-9a-f-]+)\/published/.exec(driver.url()) ?? [];
 
-    // The driver's trip: Edit trip and Cancel trip beside its name, the
-    // request in the main column and the seats on each stretch beside it.
+    // The driver's ride (spec 31, 3.16, item 3): what needs me and the
+    // passengers in the main column; beside them the ride as its ticket,
+    // its seats and its rows, with cancelling last.
     const dora = await askForSeat(browser, baseURL, tripId, "Dóra");
     await driver.goto(`/drive/trips/${tripId}`);
-    const head = driver.getByTestId("page-head").filter(shown);
-    await expect(main.getByRole("heading", { name: "Requests" })).toBeVisible();
-    await expect(side.getByRole("heading", { name: "Seats on each stretch" })).toBeVisible();
+    const head = driver.getByTestId("screen-head").filter(shown);
+    await expect(head.getByRole("heading", { name: "Your ride to N1 Selfoss" })).toBeVisible();
+    await expect(head.getByText("1 request needs your answer.", { exact: true })).toBeVisible();
+    await expect(main.getByRole("heading", { name: "Needs you" })).toBeVisible();
+    const ticket = side.getByTestId("driver-ride-ticket");
+    await expect(ticket).toBeVisible();
+    const seats = side.getByTestId("seats-card");
+    // A request holds its seat until it is answered.
+    await expect(seats.getByText("1 of 3 taken", { exact: true })).toBeVisible();
     await expect(
-      side.getByLabel("Mjódd bus terminal to N1 Hveragerði, 1 of 3 seats taken"),
+      seats.getByText("at the busiest, Mjódd bus terminal to N1 Hveragerði", { exact: true }),
     ).toBeVisible();
-    const edit = head.getByRole("button", { name: "Edit the ride" });
-    const cancel = head.getByRole("button", { name: "Cancel the ride" });
+    const rows = side.getByTestId("ride-rows");
+    const row = (name: string) =>
+      rows
+        .getByRole("button", { name, exact: true })
+        .or(rows.getByRole("link", { name, exact: true }));
     for (const width of widths) {
       await driver.setViewportSize(laptop(width));
       const mainBox = await box(main);
       const sideBox = await box(side);
       expect(sideBox.x).toBeGreaterThan(mainBox.x + mainBox.width);
       expect(sideBox.y).toBeCloseTo(mainBox.y, 0);
-      // The two buttons end the row of the trip's name, at the page's edge.
-      const headBox = await box(head);
-      const editBox = await box(edit);
-      const cancelBox = await box(cancel);
-      expect(cancelBox.x).toBeGreaterThan(editBox.x + editBox.width);
-      expect(cancelBox.y).toBeCloseTo(editBox.y, 0);
-      expect(cancelBox.x + cancelBox.width).toBeCloseTo(sideBox.x + sideBox.width, 0);
-      const title = await box(
-        head.getByRole("heading", { name: "Mjódd bus terminal → N1 Selfoss" }),
-      );
-      expect(title.x + title.width).toBeLessThanOrEqual(editBox.x);
-      expect(editBox.y).toBeGreaterThanOrEqual(headBox.y);
-      await expectButtonsInside(head, 3);
-      await expectButtonsInside(main, 3);
+      // The ticket, the seats and the rows in their order, what cannot be
+      // undone last (R31.3).
+      let above = await box(ticket);
+      for (const part of [
+        seats,
+        row("Edit the ride"),
+        row("Share the ride's details"),
+        row("Weather and roads"),
+        row("Cancel the ride"),
+      ]) {
+        const partBox = await box(part);
+        expect(partBox.y).toBeGreaterThan(above.y + above.height - 1);
+        above = partBox;
+      }
+      // Sharing in the ticket's corner, "Each stretch" and the four rows.
+      await expectButtonsInside(side, 6);
+      // The person asking, Decline, Accept, reporting them, and posting it again.
+      await expectButtonsInside(main, 6);
+      await expect(driver.getByTestId("bottom-bar").filter(shown)).toHaveCount(0);
       await expectNoSidewaysScroll(driver);
     }
+
+    // In a small laptop's window the side column is whole: nothing in it
+    // is reached only by scrolling the column itself. Sharing the ride is
+    // the button in the ticket's corner there, with no row of its own.
+    await expect(rows.getByRole("link", { name: "Share this ride" })).toHaveCount(0);
+    await driver.setViewportSize({ width: 1280, height: 720 });
+    await expect(async () => {
+      expect(await side.evaluate((part) => part.scrollHeight - part.clientHeight)).toBe(0);
+    }).toPass({ timeout: 5_000 });
+    const whole = await box(side);
+    const last = await box(row("Cancel the ride"));
+    expect(last.y + last.height).toBeLessThanOrEqual(whole.y + whole.height);
     await driver.setViewportSize(laptop(1280));
 
-    // Share this ride (spec 28, 3.1 and 3.2), from beside the trip's name:
-    // the trip and the panel in the screen's column, the post's text in it.
-    await head.getByRole("button", { name: "Share this ride" }).click();
+    // Each stretch unfolds under the seats, where it stands.
+    await seats.getByRole("button", { name: "Each stretch" }).click();
+    await expect(
+      seats.getByLabel("Mjódd bus terminal to N1 Hveragerði, 1 of 3 seats taken"),
+    ).toBeVisible();
+
+    // Share this ride (spec 28, 3.1 and 3.2), from the ticket's corner: the
+    // trip and the panel in the screen's column, the post's text in it.
+    await side.getByRole("button", { name: "Share this ride" }).click();
     await expect(driver.getByRole("heading", { name: "Share this ride" })).toBeVisible();
     const post = driver
       .getByText(/^Offering a ride: Mjódd bus terminal → N1 Selfoss\n/u)
@@ -1232,18 +1267,49 @@ test.describe("Offer a ride and the driver's ride", () => {
     expect((await box(post)).width).toBeLessThanOrEqual(maxContentWidth);
     await expectNoSidewaysScroll(driver);
     await driver.goBack();
-    await expect(head.getByRole("button", { name: "Edit the ride" })).toBeVisible();
+    await expect(row("Edit the ride")).toBeVisible();
 
     await main.getByRole("button", { name: "Accept", exact: true }).click();
-    await expect(main.getByLabel("Dóra, 1 seat, Waiting for payment")).toBeVisible();
-    await expect(side.getByRole("heading", { name: "Seats on each stretch" })).toBeVisible();
+    await expect(passengerRow(main, "Dóra", "Waiting for payment")).toBeVisible();
+    await expect(seats.getByText("1 of 3 taken", { exact: true })).toBeVisible();
 
     // In Icelandic at the narrowest wide window.
     await driver.setViewportSize(laptop(widths[0]));
     await driver.getByRole("button", { name: "Change the language to Icelandic" }).click();
-    await expect(head.getByRole("button", { name: "Breyta ferð" })).toBeVisible();
-    await expectButtonsInside(head, 3);
+    await expect(rows.getByRole("link", { name: "Breyta ferð" })).toBeVisible();
+    await expectButtonsInside(side, 6);
+    // Dóra's row, and posting it again and the way back.
     await expectButtonsInside(main, 3);
+    await expectNoSidewaysScroll(driver);
+
+    // The trip day (spec 31, 3.9, item 4, and 3.16, item 3): Dóra pays, and
+    // the ride leaves in 20 minutes. "I'm here" leads the side column, the
+    // screen's main button, over the ticket, the seats and the rows.
+    await dora.reload();
+    await payInSheet(dora);
+    const moved = await driver.request.post(`${apiUrl}/e2e/trips/${tripId}/move`, {
+      data: { minutes: 20 },
+    });
+    expect(moved.status()).toBe(204);
+    await driver.setViewportSize({ width: 1280, height: 800 });
+    await driver.reload();
+    const here = side.getByTestId("driver-im-here").getByRole("button");
+    await expect(here).toBeVisible();
+    await expect(driver.getByTestId("bottom-bar").filter(shown)).toHaveCount(0);
+    const hereBox = await box(here);
+    expect(hereBox.y).toBeGreaterThanOrEqual((await box(side)).y);
+    expect((await box(ticket)).y).toBeGreaterThan(hereBox.y + hereBox.height - 1);
+    // With the button over it the column is whole in a window 800 high.
+    await expect(async () => {
+      expect(await side.evaluate((part) => part.scrollHeight - part.clientHeight)).toBe(0);
+    }).toPass({ timeout: 5_000 });
+    // In one 720 high the button is still whole and first; the column's
+    // last row is then reached by scrolling the column itself.
+    await driver.setViewportSize({ width: 1280, height: 720 });
+    await expect(here).toBeInViewport({ ratio: 1 });
+    const lastRow = rows.getByRole("link").last();
+    await lastRow.scrollIntoViewIfNeeded();
+    await expect(lastRow).toBeInViewport({ ratio: 1 });
     await expectNoSidewaysScroll(driver);
     await dora.context().close();
   });

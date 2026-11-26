@@ -1,4 +1,5 @@
 import { leavesCapitalArea, type Region } from "@shareride/domain";
+import type { Locale, MessageKey } from "@shareride/i18n";
 import { CloudSun } from "lucide-react-native";
 import { useState } from "react";
 import { Linking, StyleSheet, View } from "react-native";
@@ -8,7 +9,22 @@ import { Body } from "@/components/text";
 import { TextLink } from "@/components/text-link";
 import { useLanguage } from "@/i18n/language";
 import { spacing } from "@/theme/tokens";
-import { beforeYouGoLinks } from "./trip-safety";
+
+/**
+ * The pages "Before you go" links to (spec 9, 3.3.2), in the reader's
+ * language where the site has one. SafeTravel is in English only.
+ */
+const beforeYouGoLinks: readonly {
+  readonly label: MessageKey;
+  readonly url: Readonly<Record<Locale, string>>;
+}[] = [
+  { label: "safety.weather", url: { is: "https://www.vedur.is/", en: "https://en.vedur.is/" } },
+  { label: "safety.roads", url: { is: "https://umferdin.is/", en: "https://umferdin.is/en" } },
+  {
+    label: "safety.safeTravel",
+    url: { is: "https://safetravel.is/", en: "https://safetravel.is/" },
+  },
+];
 
 /** Whether a ride between stops in these regions has a "Weather and roads" row. */
 export const showsWeatherAndRoads = leavesCapitalArea;

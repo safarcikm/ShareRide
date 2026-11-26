@@ -112,7 +112,10 @@ is added (Martin asked, 2026-11-25).
 6. The trip page of a driver's own trip (spec 5's driver's trip) gets the
    same icon in its head, beside the trip's name, while the trip can be
    changed (before the planned departure). It is named "Share this ride"
-   and opens Share this ride.
+   and opens Share this ride. Since
+   [spec 31](2026-11-26-one-ride-one-ticket.md) (3.12) the icon is in the
+   corner of the ride's ticket on that page, and on a phone "Share this
+   ride" is also one of the ride's rows.
 
 ### 3.2 Share this ride
 

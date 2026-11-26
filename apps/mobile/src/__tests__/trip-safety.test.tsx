@@ -133,8 +133,9 @@ describe("Safety on a trip (spec 9, 3.3)", () => {
   it("leaves the driver's trip page once the trip has arrived", async () => {
     mockNow = new Date("2026-11-16T12:00:00Z");
     await openDriverTrip();
-    expect(await screen.findByText("BSÍ bus terminal → Hof, Akureyri")).toBeVisible();
-    expect(screen.queryByRole("header", { name: "Safety" })).toBeNull();
+    expect(await screen.findByRole("header", { name: "Your ride to Hof, Akureyri" })).toBeVisible();
+    expect(screen.queryByRole("button", weatherAndRoads)).toBeNull();
+    expect(screen.queryByRole("button", shareDetails)).toBeNull();
   });
 });
 
@@ -170,7 +171,9 @@ describe("Before you go (spec 9, 3.3.2)", () => {
 
   it("shows them on the driver's trip page, from all of its stops", async () => {
     await openDriverTrip();
-    expect(await screen.findByRole("link", { name: "Weather (vedur.is)" })).toBeVisible();
+    // Folded until asked for: a row among the ride's rows (spec 31, 3.12).
+    await fireEvent.press(await screen.findByRole("button", weatherAndRoads));
+    expect(screen.getByRole("link", { name: "Weather (vedur.is)" })).toBeVisible();
   });
 
   it("says so when a page cannot be opened", async () => {

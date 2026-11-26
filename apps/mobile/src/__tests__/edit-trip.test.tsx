@@ -46,7 +46,7 @@ async function openEdit(
       searchApi(client);
     },
   });
-  await fireEvent.press(await screen.findByRole("button", { name: "Edit the ride" }));
+  await fireEvent.press(await screen.findByRole("link", { name: "Edit the ride" }));
   expect(await screen.findByRole("header", { name: "Edit the ride" })).toBeVisible();
   return app;
 }
@@ -118,7 +118,7 @@ describe("Edit trip: the seats, price, car, booking mode and details (spec 6, 3.
     expect(changes(client)).toEqual([
       { preview: saved, body: { kind: "priceLevel", priceLevel: 110 } },
     ]);
-    await fireEvent.press(screen.getByRole("button", { name: "Edit the ride" }));
+    await fireEvent.press(screen.getByRole("link", { name: "Edit the ride" }));
     expect(await screen.findByText("110% · the whole route 5,100 ISK")).toBeVisible();
   });
 
@@ -169,7 +169,7 @@ describe("Edit trip: the seats, price, car, booking mode and details (spec 6, 3.
         searchApi(client);
       },
     });
-    await fireEvent.press(await screen.findByRole("button", { name: "Edit the ride" }));
+    await fireEvent.press(await screen.findByRole("link", { name: "Edit the ride" }));
     await fireEvent.press(await screen.findByRole("link", { name: "Change the seats" }));
     expect(await screen.findByRole("header", { name: "Change the seats" })).toBeVisible();
     await fireEvent.press(screen.getByRole("button", { name: "One seat more" }));
@@ -297,7 +297,7 @@ describe("Edit trip: the seats, price, car, booking mode and details (spec 6, 3.
     expect(changes(client)).toEqual([
       { preview: saved, body: { kind: "vehicle", vehicleId: volvo.id } },
     ]);
-    await fireEvent.press(screen.getByRole("button", { name: "Edit the ride" }));
+    await fireEvent.press(screen.getByRole("link", { name: "Edit the ride" }));
     expect(await screen.findByText("Volvo XC40, red")).toBeVisible();
   });
 
@@ -447,7 +447,7 @@ describe("Edit trip: adding a stop (spec 6, 3.2; milestone 6 plan, decision 2)",
     expect(focusMoves).toHaveBeenCalled();
     focusMoves.mockRestore();
     expect(changes(client).at(-1)).toEqual({ preview: saved, body: addMosfellsbaer });
-    await fireEvent.press(screen.getByRole("button", { name: "Edit the ride" }));
+    await fireEvent.press(screen.getByRole("link", { name: "Edit the ride" }));
     expect(
       await screen.findByText(
         "BSÍ bus terminal → Mosfellsbær → Borgarnes → Blönduós → Hof, Akureyri",
@@ -586,7 +586,7 @@ describe("Edit trip: removing a stop (spec 6, 3.2; R6.5)", () => {
     expect(focusMoves).toHaveBeenCalled();
     focusMoves.mockRestore();
     expect(changes(client).at(-1)).toEqual({ preview: saved, body: removeBlonduos });
-    await fireEvent.press(screen.getByRole("button", { name: "Edit the ride" }));
+    await fireEvent.press(screen.getByRole("link", { name: "Edit the ride" }));
     expect(await screen.findByText("BSÍ bus terminal → Borgarnes → Hof, Akureyri")).toBeVisible();
   });
 

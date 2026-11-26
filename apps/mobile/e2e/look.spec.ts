@@ -3,10 +3,12 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 import {
   soonestTripsRoute,
   type Booking,
+  type MyTrip,
+  type TripBookings,
   type TripDetails,
   type TripSearchResult,
 } from "@shareride/contracts";
-import { confirmedBooking, secondPage } from "./support/cancelling";
+import { confirmedBooking, requestSeat, secondPage } from "./support/cancelling";
 import { ticketFit } from "./support/layout";
 import { openTrip } from "./support/trips";
 
@@ -541,5 +543,142 @@ test.describe("a booked seat with long names, 360 wide", () => {
     expect(said.y).toBeGreaterThanOrEqual(0);
     expect(said.y + said.height).toBeLessThanOrEqual(red.y + 1);
     await close();
+  });
+});
+
+// And on a ride I drive (spec 31, 3.12): the title beside Back, the ticket
+// with sharing in its corner, a request with the part it asks for and its
+// two answers, a passenger's row with Message beside it, and the seats
+// with where the ride is fullest. The ride and its bookings are given the
+// long names on their way to the driver's page.
+test.describe("a ride I drive with long names, 360 wide", () => {
+  test.use({ locale: "en-GB" });
+
+  // One for each stop of the ride to Selfoss, with those suggested on the way.
+  const places = [
+    "Kirkjubæjarklaustur, N1 við Skaftárskála",
+    "Vík í Mýrdal, Víkurskáli við þjóðveginn",
+    "Hvolsvöllur, Hlíðarendi við Austurveg",
+    "Keflavíkurflugvöllur, komusalur",
+    "Seyðisfjörður, ferjuhöfnin við Ferjuleiru",
+  ] as const;
+  const people = new Map([
+    ["Dóra", "Sigurbjörg Aðalheiður"],
+    ["Einar", "Guðmundur Kristján"],
+  ]);
+  const shown = { visible: true } as const;
+
+  /** A stop's long name, by its place in the ride. */
+  function long<Stop extends { readonly meetingPoint: { readonly name: object } }>(
+    stop: Stop,
+    position: number,
+  ): Stop {
+    const name = places[position];
+    if (name === undefined) throw new Error(`No long name for stop ${String(position)}`);
+    return { ...stop, meetingPoint: { ...stop.meetingPoint, name: { is: name, en: name } } };
+  }
+
+  /** Gives the ride and the people on it their long names on the way to the page. */
+  async function withLongNames(page: Page) {
+    await page.route(
+      (url) => /^\/v1\/me\/trips\/[0-9a-f-]{36}(\/bookings)?$/.test(url.pathname),
+      async (route) => {
+        const response = await route.fetch();
+        if (route.request().method() !== "GET" || !response.ok()) {
+          await route.fulfill({ response });
+          return;
+        }
+        if (!route.request().url().endsWith("/bookings")) {
+          const trip = (await response.json()) as MyTrip;
+          await route.fulfill({ response, json: { ...trip, stops: trip.stops.map(long) } });
+          return;
+        }
+        const answer = (await response.json()) as TripBookings;
+        const bookings = answer.bookings.map((booking) => ({
+          ...booking,
+          passenger: {
+            ...booking.passenger,
+            firstName: people.get(booking.passenger.firstName ?? "") ?? null,
+          },
+          board: long(booking.board, booking.board.position),
+          alight: long(booking.alight, booking.alight.position),
+        }));
+        await route.fulfill({ response, json: { ...answer, bookings } });
+      },
+    );
+  }
+
+  test("holds its title, its ticket, a request, a passenger and its seats, with the text as set and twice as large", async ({
+    page,
+    browser,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== "phone", "A phone's column; laptops have two.");
+    test.slow();
+    const dora = await secondPage(browser, testInfo);
+    const einar = await secondPage(browser, testInfo);
+    const { tripId } = await confirmedBooking(page, dora.page);
+    await requestSeat(einar.page, "Einar", tripId);
+    const window = { width: 360, height: 740 };
+    await page.setViewportSize(window);
+    await withLongNames(page);
+    await page.goto(`/drive/trips/${tripId}`);
+    const ticket = page.getByTestId("driver-ride-ticket").filter(shown);
+    await expect(ticket.getByText(places[0])).toBeVisible();
+    const share = page.getByRole("button", { name: "Share this ride" }).filter(shown);
+    const request = page.getByTestId("request").filter(shown);
+    const accept = request.getByRole("button", { name: "Accept", exact: true });
+    const decline = request.getByRole("button", { name: "Decline", exact: true });
+    await expect(accept).toBeVisible();
+    await expect(request.getByText("“One small bag.”")).toBeVisible();
+    const row = page.getByTestId("passenger-row").filter(shown);
+    const message = row.getByRole("button", { name: "Message Sigurbjörg Aðalheiður" });
+    await expect(message).toBeVisible();
+    await expect(page.getByTestId("seats-card").filter(shown)).toContainText("2 of 3 taken");
+
+    for (const zoom of [1, 2] as const) {
+      if (zoom === 2) await twiceAsLarge(page);
+      // Each part is whole in the window, with nothing past its edges and
+      // no text cut.
+      const head = await ticketFit(page, "screen-head", "h1");
+      const ride = await ticketFit(page, "driver-ride-ticket");
+      // The request's card: the tint of the link to who asks reaches a
+      // little past the request itself, inside the card.
+      const asked = await ticketFit(page, "needs-you-card", "[dir]");
+      const aboard = await ticketFit(page, "passengers", "[dir]");
+      const seats = await ticketFit(page, "seats-card", "[dir]");
+      const parts = [head, ride, asked, aboard, seats];
+      for (const part of parts) {
+        expect(part.cut).toEqual([]);
+        expect(part.past).toEqual([]);
+        expect(part.beyondWindow).toBe(0);
+      }
+      // Sharing stands in the ticket's corner, inside it.
+      const card = await box(ticket);
+      const corner = await box(share);
+      expect(corner.x).toBeGreaterThanOrEqual(card.x);
+      expect(corner.x + corner.width).toBeLessThanOrEqual(card.x + card.width + 1);
+      // The request's two answers are whole in the window, each with its label whole.
+      for (const answer of [accept, decline]) {
+        const button = await box(answer);
+        expect(button.x).toBeGreaterThanOrEqual(0);
+        expect(button.x + button.width).toBeLessThanOrEqual(window.width);
+      }
+      // Message stands inside the passenger's row, beside their name.
+      const line = await box(row);
+      const button = await box(message);
+      expect(button.x).toBeGreaterThanOrEqual(line.x);
+      expect(button.x + button.width).toBeLessThanOrEqual(line.x + line.width + 1);
+      if (zoom === 1) {
+        // With the text as set every word is whole, and the screen does
+        // not scroll sideways.
+        for (const part of parts) expect(part.brokenWords).toEqual([]);
+        expect(ride.screenWider).toBeLessThanOrEqual(0);
+      } else {
+        // Twice as large, only a word longer than a whole line is broken.
+        for (const part of parts) expect(part.needlessly).toEqual([]);
+      }
+    }
+    await dora.close();
+    await einar.close();
   });
 });

@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { english, signUp } from "./support/account";
+import { passengerRow } from "./support/driver-ride";
 import { focused, postTripToSelfoss } from "./support/trips";
 
 // Spec 9's blocking on the web build, in two browsers: a passenger with a
@@ -42,7 +43,7 @@ test("a passenger blocks a driver, loses their trips, and unblocks them", async 
   await expect(passenger).toHaveURL(/\/bookings\/[0-9a-f-]+\/booked$/);
   await driver.goto(`/drive/trips/${tripId}`);
   await driver.getByRole("button", { name: "Accept", exact: true }).click();
-  await expect(driver.getByLabel("Dóra, 1 seat, Waiting for payment")).toBeVisible();
+  await expect(passengerRow(driver, "Dóra", "Waiting for payment")).toBeVisible();
   await passenger.reload();
   await passenger.getByRole("button", { name: /^Pay [\d,]+ ISK$/ }).click();
   await passenger.getByRole("button", { name: /^Pay [\d,]+ ISK$/ }).click();

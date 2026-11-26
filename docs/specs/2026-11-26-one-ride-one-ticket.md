@@ -537,7 +537,7 @@ As built, for the passenger, on a phone
 [dark, in Icelandic](images/one-ride-one-ticket/built/trip-day-phone-dark.webp))
 and on a laptop
 ([light](images/one-ride-one-ticket/built/trip-day-laptop-light.webp)).
-The driver's trip day comes with the driver's ride (3.12).
+The driver's trip day follows the passenger's, below.
 
 - The titles: "Leaves at 10:00" until the last hour, "Leaves in 10
   minutes" in it, counting while the page is open, and "Trip day" from
@@ -560,6 +560,26 @@ The driver's trip day comes with the driver's ride (3.12).
 - Until the time to get in, the seat can still be cancelled: "Cancel
   booking" stays the last row.
 
+As built, for the driver, on a phone
+([light](images/one-ride-one-ticket/built/driver-trip-day-phone-light.webp)):
+
+- The page is the driver's ride (3.12) with the trip day first: "Trip
+  day", "Use this only when parked.", and the stops in order, each with
+  its time, who gets in there, with their seats and whether they are
+  here, and who gets out. Then what needs the driver, the passengers, the
+  ticket, the seats and the rows. The title's line is "Today at 19:44
+  from Mjódd bus terminal.", unless a request still waits for an answer.
+- "I'm here at Mjódd bus terminal" is the main button, in the bar on a
+  phone and at the top of the side column on a laptop. It names the first
+  stop that is open; where the times of two stops overlap, the other is
+  an outlined button under it. Before a stop opens the bar says from
+  when: "At Mjódd bus terminal you can say you're here from 19:14." Once
+  said, "We've told your passengers you're here." stands in the button's
+  place, with focus, and the stop's card says the same; the next stop's
+  button, or from when it can be said there, stands under it.
+- "Mark as no-show" stays a quiet button under the passenger at their
+  stop, once it can be said, and opens its screen.
+
 ### 3.10 My rides
 
 1. Title "My rides" with **Offer a ride** as a small button at its right;
@@ -577,7 +597,8 @@ The driver's trip day comes with the driver's ride (3.12).
    and deleting a draft) leads to Offer.
 
 As built so far (the tickets; the title's button, the rating under Past
-and My trips follow with the driver's ride): a ticket of My rides holds no
+and My trips follow in the second half of the driver's ride, plan, PR
+8b): a ticket of My rides holds no
 button of its own. What it needs is the yellow tag in its foot, and
 pressing the ticket opens where that is done. "Needs you" lists the ride
 whose deadline or leaving time is soonest first, as Find does.
@@ -634,6 +655,84 @@ whose deadline or leaving time is soonest first, as Find does.
    with "Each stretch" opening the bars of today.
 6. **Rows:** Edit the ride, Share this ride, Post it again, Post the way
    back, and Cancel the ride, red and last.
+
+As built, on a phone
+([light](images/one-ride-one-ticket/built/driver-ride-phone-light.webp),
+[dark, in Icelandic](images/one-ride-one-ticket/built/driver-ride-phone-dark.webp),
+[a passenger's row unfolded](images/one-ride-one-ticket/built/driver-ride-passenger-phone-light.webp))
+and on a laptop
+([light](images/one-ride-one-ticket/built/driver-ride-laptop-light.webp)).
+The screens it opens (Edit the ride, cancelling the ride, sharing and
+"Message all passengers") follow in the second half, with My rides (plan,
+PR 8b).
+
+- **The head:** Back leads to My rides when the page was opened by its
+  address. The line under the title is the first of these that is true:
+  why the ride was cancelled ("You cancelled this ride: Road closed"); "1
+  request needs your answer."; on the trip day "Today at 18:15 from Mjódd
+  bus terminal."; "This ride has left."; or else its day and time. The
+  rows have no heading on a phone.
+- **The ticket** is where I am, not a link: the short day, the tag "You
+  drive", the two ends with their times, how long the whole way takes
+  with the stops between counted ("50 min, 2 stops"), and under the tear
+  line "900 ISK the whole way", or "Free", and the car. Until the ride
+  leaves, sharing it is the button in the ticket's corner (spec 28, 3.1).
+  A cancelled ride keeps its ticket, without the moss edge of a ride that
+  is mine, and the two rows that post it again.
+- **A request** is one `NeedsYouCard` under the heading "Needs you". Who
+  asks is a link to their profile: the picture, the name, their rating or
+  the tag "No reviews yet", the reliability figure, and "Member since
+  November 2026" while nobody has rated them. The tag stands on white
+  there, as its own yellow would not show on the yellow card. The time
+  left to answer stands at the right, or under them on a phone. Their
+  part is a timetable on white, with "1 seat, 100 ISK" beside its line
+  and their message under it, in quotation marks. Then "If you accept, 2
+  of 3 seats are taken from Mjódd bus terminal to Olís Norðlingaholt.",
+  which names the fullest stretch of their part; a request holds its seat
+  from the moment it is sent (rule S1), so the Seats card counts it
+  before it is answered. Decline and Accept stand side by side, and
+  "Report Einar" is the quiet link at the card's end. Decline asks why in
+  place, and "Decline request" there is red (decision 17). Someone who is
+  leaving PuffinRide shows no rating, no "No reviews yet", no reliability
+  figure and no link; how long they have been a member still shows.
+- **Passengers:** the heading has "1 confirmed" at its right. A row is
+  the picture, the name, the part with the seats and the price, and the
+  booking's tag; "Waiting for payment" is blue for the driver, who waits
+  with the passenger (rule 6). Message is a round button at the right of
+  a confirmed booking, named "Message Dóra". Pressing the row unfolds it
+  in place: their part as a timetable, with the times they get in and
+  out, then "See profile" and "Report Dóra" as links, and "Cancel
+  booking", red and last, until the time to get in; it opens the screen
+  that asks, so it is a link too. The order is not the one first written
+  (decision 11): what cannot be undone comes last (R31.3). Someone
+  leaving PuffinRide has no profile row. The whole row unfolds it and
+  tints under the pointer and while pressed. Once the ride is done the
+  reviews stand under the row while there is one to give or to read, and
+  nothing does once the 14 days are over with none written.
+- **Seats:** a square for each seat, the taken ones filled, with "2 of 3
+  taken" beside them and "at the busiest, Mjódd bus terminal to Olís
+  Norðlingaholt" under that; the words go under the squares where a car
+  of many seats leaves them no room. "Each stretch" opens the bar of each
+  stretch, and a ride of one stretch has only the line.
+- **Rows:** Edit the ride, Share this ride, "Share the ride's details",
+  "Weather and roads", Post it again, Post the way back, and Cancel the
+  ride, red and last. The two in the middle are what the Safety card held
+  (spec 9, 3.3), which is gone. "Weather and roads" stays until the last
+  stop's time; the two that post the ride again always; the others,
+  "Share the ride's details" among them, until the ride leaves. "Share
+  the ride's details" has a shield here, to tell it from "Share this
+  ride" beside it; a booked seat, which has only the one, keeps the
+  sharing icon. A row that makes a draft says "Loading" at its right
+  while it does, and the other of the two waits, muted, until it has.
+- **What an action did** ("Request declined.", "Booking cancelled. The
+  passenger has been told.", "Ride changed. Your passengers have been
+  told.") stands over the page's parts as a notice, with focus, as
+  before. Nothing on the page is a main button but "I'm here"
+  on the trip day (3.9), so on other days it has no bar.
+- `look.spec.ts` opens the page on a phone 360 wide with long names for
+  every stop and both people, with the text as set and twice as large:
+  the title, the ticket, the request, the passengers and the seats hold
+  what is in them, and Message stays in its row.
 
 ### 3.13 Messages
 
@@ -715,7 +814,18 @@ changes:
    it again" (Post it again, Post the way back). Side column: the ticket,
    Seats in one line, and the rows Edit, Share and Cancel. The side column
    is whole in a window 1280 by 720 (spec 18, decision 14), which the
-   one-line Seats makes possible.
+   one-line Seats makes possible. As built: the title is the page's head,
+   over both columns. The side column's rows are Edit the ride, "Share the
+   ride's details", "Weather and roads" and Cancel the ride. "Share this
+   ride" is not a row there: the ticket, with sharing in its corner,
+   stands right over the rows, and with five rows the column was 37 too
+   high for that window. On the trip day "I'm here" leads the side
+   column, as on a booked seat, whole in that window; until the ride
+   leaves the column under it is then whole in a window 800 high, and in
+   one 720 high its last row is reached by scrolling the column (51 more
+   than fit; PR 12 looks at it again). Whether each stretch shows, what
+   "I'm here" told and a draft being made stay when the window turns
+   narrow and wide again.
 4. **My rides:** a grid of tickets, as today.
 5. **Profile:** the person's card in the side column, the groups in the
    main column.
@@ -819,7 +929,8 @@ on a phone
 [rating](images/one-ride-one-ticket/built/rate-phone-light.webp),
 [blocking](images/one-ride-one-ticket/built/block-phone-light.webp) and
 [reporting](images/one-ride-one-ticket/built/report-phone-light.webp).
-Cancelling a ride comes with the driver's ride (3.12).
+Cancelling a ride comes in the second half of the driver's ride (plan,
+PR 8b).
 
 - **The head and the ticket:** cancelling a booking, "The driver didn't
   come", "Mark as no-show" and answering a report have Back and their
@@ -838,8 +949,9 @@ Cancelling a ride comes with the driver's ride (3.12).
   "Send answer", "Send review" and "Send report". None of these can be
   taken back either, but a red button there would warn people off saying
   what happened, and each of those screens is itself the question "are
-  you sure?". The no-show screen is looked at again with the driver's
-  ride (3.12).
+  you sure?". "Decline request" on the driver's ride (3.12) is red too:
+  it takes away the seat that was asked for. The no-show screen is looked
+  at again with cancelling a ride (plan, PR 8b).
 - **Why nothing happened** stands over the main button, in the bar, and
   takes focus: "Choose a reason.", "Choose what happened.", "Choose a
   rating from 1 to 5 stars.", a note or a description that is too long,
@@ -1008,7 +1120,7 @@ native speaker to check. Every other text keeps its key.
 | A route in a title | {from} to {to} | {from} → {to} |
 | Details | Where you sit, The whole route | Hvar þú situr, Öll leiðin |
 | Seats, one line | {taken} of {seats} taken at the busiest, {from} to {to} | {taken} af {seats} upptekin þar sem mest er, {from} → {to} |
-| Its link | Each stretch | Hver áfangi |
+| Its link | Each stretch | Hver leggur |
 | Seats with a request | If you accept, {taken} of {seats} seats are taken from {from} to {to} | Ef þú samþykkir eru {taken} af {seats} sætum upptekin: {from} → {to} |
 | Last step | This is how people will see your ride. | Svona sér fólk ferðina þína. |
 | What is missing | One thing before your first ride | Eitt eftir fyrir fyrstu ferðina |
@@ -1020,8 +1132,9 @@ native speaker to check. Every other text keeps its key.
 | Drafts on Offer | Show all drafts | Sýna öll drög |
 | A passenger's row | See profile | Skoða prófíl |
 
-Two Icelandic texts are not as first written here, and the table shows
-them as built. A ride leaves with "Brottför eftir … / Brottför kl. …":
+Three Icelandic texts are not as first written here, and the table shows
+them as built. "Each stretch" is "Hver leggur", not "Hver áfangi": the app
+calls a stretch "leggur" everywhere else. A ride leaves with "Brottför eftir … / Brottför kl. …":
 "fer eftir" also reads as "depends on", and the results already say
 "brottför kl.". The end of the results says "Ekki fundust fleiri ferðir":
 "Þetta eru allar ferðirnar" would be followed by a line offering "allar
@@ -1055,6 +1168,12 @@ Texts added while building, as they are in the app:
 | The row of the Safety links | Weather and roads | Veður og færð |
 | Under the title of a seat to pay for | Your seat is held until {time}.; Your seat is held until {time} tomorrow. | Sætið er frátekið fyrir þig til kl. {time}.; Sætið er frátekið fyrir þig til kl. {time} á morgun. |
 | Under the trip day's title | Today at {time} from {stop}.; At {time} from {stop}. | Í dag kl. {time}. Mótsstaður: {stop}.; Kl. {time}. Mótsstaður: {stop}. |
+| Under the driver's title | {count} request needs your answer.; {count} requests need your answer. | {count} beiðni bíður svars.; {count} beiðnir bíða svars. |
+| The driver's ticket, after the price | the whole way | alla leið |
+| Beside "Passengers" | {count} confirmed | {count} staðfest; {count} staðfestar |
+| The seats card | Seats; {taken} of {seats} taken; at the busiest, {from} to {to} | Sæti; {taken} af {seats} upptekið (upptekin); þar sem mest er, {from} → {to} |
+| A request's message | “{message}” | „{message}“ |
+| Before "I'm here" opens, for the driver | At {stop} you can say you're here from {time}. | {stop}: þú getur sagt að þú sért á staðnum frá kl. {time}. |
 
 Texts that exist are reused where they say the same: "Rate the driver",
 "Rate your passenger", "Pay", "Delete draft", "My reports", "Notices",
@@ -1113,10 +1232,10 @@ Working choices, for Martin to change:
 | 8 | Order of building | Defects; the parts and the tags; Find and results (with All rides and a place); a ride and booking a seat (with "You're booked"); a booked seat and trip day (with cancelling, the reports and rating); the driver's ride and My rides (with Edit trip, cancelling a ride and sharing); offering (with the drafts and "Your ride is published"); Messages; Profile (with a person's profile and the pages under Settings); a last pass over laptop, dark and Icelandic. Each is a pull request to staging; production on Martin's go |
 | 9 | Is a rating something that "needs you"? | No: a request to answer, a seat to pay for and a ride on its trip day are. A rating is asked on the booking, under Past and by email (3.3, 3.10). The proposal page listed it at first; Find does not load finished rides |
 | 10 | Status tags | They follow rule 6: declined, expired, cancelled and withdrawn become quiet, "Did not show up" red, and paying stays amber (3.3, item 3) |
-| 11 | A passenger on the driver's ride | The row unfolds in place to See profile, Cancel booking and Report, with Message as a button on the row. Those three take one press more than today; there is no new screen (3.12) |
+| 11 | A passenger on the driver's ride | The row unfolds in place to See profile, Cancel booking and Report, with Message as a button on the row. Those three take one press more than today; there is no new screen (3.12). As built the order is See profile, Report, Cancel booking: what cannot be undone is last (R31.3) |
 | 12 | Language, notifications and the phone number | Language and Notifications get a page each; the phone number is a row that opens nothing (3.14) |
 | 13 | The screens that are not drawn | They keep what they hold and take the rules with their flow (3.19) |
 | 14 | Naming who asks for a seat, on Find and My rides | A ride in my list gains `firstRequest` in the API (section 6) |
 | 15 | Drafts | All of them are listed on Offer; the page of drafts goes with My trips (3.11, item 6) |
 | 16 | Filled buttons | One main button a screen; the button of a `NeedsYouCard` is the only other filled one (R31.1) |
-| 17 | Which main buttons are red | The ones that take something away: "Cancel booking", "Withdraw request", "Block Bára". The ones that tell PuffinRide what happened stay moss, so that red does not warn anyone off a report: "Tell PuffinRide", "Mark as no-show", "Send answer", "Send review", "Send report" (3.19, R31.3) |
+| 17 | Which main buttons are red | The ones that take something away: "Cancel booking", "Withdraw request", "Block Bára", and "Decline request" on the driver's ride. The ones that tell PuffinRide what happened stay moss, so that red does not warn anyone off a report: "Tell PuffinRide", "Mark as no-show", "Send answer", "Send review", "Send report" (3.19, R31.3) |
