@@ -241,6 +241,11 @@ export interface PageHead {
   readonly tags: string;
   /** The page's text for search engines that do not run the app, where it has one (3.9). */
   readonly noscript: string | null;
+  /**
+   * On the front page, the site's name for Google, which shows it above a
+   * result (3.6, item 7): WebSite structured data, unmarked, so the app keeps it.
+   */
+  readonly website: string | null;
 }
 
 const ogLocales: Readonly<Record<Locale, string>> = { is: "is_IS", en: "en_GB" };
@@ -334,7 +339,24 @@ export function pageHead(
   }
   const noscript =
     request.path === carpoolPage.path ? carpoolText(t, (path) => addressOf("", path, named)) : null;
-  return { locale, fromBrowser: named === null, title, tags: tags.join(""), noscript };
+  const website =
+    origin !== null && request.path === "/" ? websiteData(t("app.name"), `${origin}/`) : null;
+  return { locale, fromBrowser: named === null, title, tags: tags.join(""), noscript, website };
+}
+
+/**
+ * The site's name as Google reads it from the home page (3.6, item 7), so a
+ * result shows "PuffinRide" rather than the address. `<` is written as
+ * `\u003c`, so nothing in it can close the script.
+ */
+function websiteData(name: string, url: string): string {
+  const data = JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name,
+    url,
+  }).replaceAll("<", "\\u003c");
+  return `<script type="application/ld+json">${data}</script>`;
 }
 
 /**
@@ -365,7 +387,7 @@ function carpoolText(t: Translate, address: (path: string) => string): string {
   ].join("");
 }
 
-/** The exported page with the head's language, title, icons and tags, and its text where it has one. */
+/** The exported page with the head's language, title, icons, site name and tags, and its text where it has one. */
 export function fillPage(html: string, head: PageHead): string {
   const withText =
     head.noscript === null
@@ -374,7 +396,7 @@ export function fillPage(html: string, head: PageHead): string {
   const withLanguage = /<html[^>]*>/.test(withText)
     ? withText.replace(/<html[^>]*>/, () => `<html lang="${head.locale}">`)
     : withText;
-  const title = `<title>${escapeHtml(head.title)}</title>${iconLinks}${head.tags}`;
+  const title = `<title>${escapeHtml(head.title)}</title>${iconLinks}${head.website ?? ""}${head.tags}`;
   return /<title>[^<]*<\/title>/.test(withLanguage)
     ? withLanguage.replace(/<title>[^<]*<\/title>/, () => title)
     : withLanguage.replace("</head>", () => `${title}</head>`);

@@ -1518,6 +1518,12 @@ releases follow [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Google names us "PuffinRide" and shows a round icon (spec 23, 3.6, items
+  5 and 7): the front page carries WebSite structured data with the name
+  PuffinRide, where Google showed "puffinride.is"; the tab icon,
+  `/favicon.ico`, `/icon-192.png` and the email header's icon are a disc,
+  so Google's round frame shows a full circle where the rounded square
+  left its corners empty.
 - A shared ride's picture spells Keflavík right: resvg drew Fredoka's "fl"
   as one letter that looked like "ƀ" (Kefƀavík). An "f" before a letter is
   now drawn on its own, and the picture's address changes, so a site that

@@ -53,8 +53,8 @@ layout, from top to bottom:
 
 1. **Preview line:** hidden, the first paragraph of the words, so the inbox
    list shows what the email says rather than "PuffinRide" again.
-2. **Header:** the puffin pin icon (the browser tab icon, with rounded
-   corners) 40 pixels wide, then "PuffinRide" in Fredoka SemiBold at 24
+2. **Header:** the puffin pin icon (the browser tab icon, a disc since
+   2026-11-25) 40 pixels wide, then "PuffinRide" in Fredoka SemiBold at 24
    pixels in `text`, 10 pixels apart (spec 15, 4.9: the name at 0.6 of the
    icon's height, a quarter of it apart). On `background` (frost).
 3. **Card:** `surface` (white), corners `card` (22), the chunky bottom edge
