@@ -1761,10 +1761,11 @@ releases follow [Semantic Versioning](https://semver.org/).
   stop" and "Remove a stop" under them), in place of headings with a link
   beside each. Each part's screen has its title at the left, and why
   nothing was saved stands over the main button and is read out, where it
-  was at the end of the page. Cancelling a ride has the ride as its ticket
-  and "Cancel the ride" as a red main button over "Keep the ride".
-  Sharing a ride shows it as its ticket, and messaging all passengers has
-  its title at the left.
+  was at the end of the page; a note that cannot be saved is said there
+  too, where the button did nothing. Cancelling a ride has the ride as
+  its ticket and "Cancel the ride" as a red main button over "Keep the
+  ride". Sharing a ride shows it as its ticket, and messaging all
+  passengers has its title at the left.
 - The web journeys never give two test accounts the same phone number: a
   run in ten did, and a sign-in journey then failed.
 - CI skips its code jobs (bundles, unit, integration and web tests, the API

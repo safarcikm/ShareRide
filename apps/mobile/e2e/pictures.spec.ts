@@ -34,6 +34,25 @@ async function showWhole(page: Page, width: number) {
   await page.waitForTimeout(500);
 }
 
+/**
+ * The top of the driver's ride, down to the foot of its ticket, which has
+ * the share icon in its corner (spec 28, 3.1; spec 31, 3.12).
+ */
+async function shootTopOfRide(page: Page, path: string, width: number) {
+  await expect(page.getByRole("button", { name: "Share this ride" })).toBeVisible();
+  await page.waitForTimeout(500);
+  const ticket = await page
+    .getByTestId("card-with-corner")
+    .filter({ visible: true })
+    .first()
+    .boundingBox();
+  if (ticket === null) throw new Error("The ride has no ticket");
+  await page.screenshot({
+    path,
+    clip: { x: 0, y: 0, width, height: Math.ceil(ticket.y + ticket.height) + 16 },
+  });
+}
+
 test.describe("pictures", () => {
   test.skip(root === undefined, "PICTURES_DIR is not set");
   test.use({
@@ -98,16 +117,11 @@ test.describe("pictures", () => {
         path: join(folder, "story-section-phone.png"),
         clip: { x: 0, y: top.y - 16, width: 412, height: end.y + end.height - top.y + 32 },
       });
-      // The icon beside the trip's name on the driver's trip page, and in
-      // the corner of the trip in My trips.
+      // The icon in the corner of the ticket on the driver's ride (spec 31,
+      // 3.12), and in the corner of the trip in My trips.
       await page.setViewportSize({ width: 412, height: 839 });
       await page.goto(`/drive/trips/${tripId}`);
-      await expect(page.getByRole("button", { name: "Share this ride" })).toBeVisible();
-      await page.waitForTimeout(500);
-      await page.screenshot({
-        path: join(folder, "trip-page-head-phone.png"),
-        clip: { x: 0, y: 0, width: 412, height: 260 },
-      });
+      await shootTopOfRide(page, join(folder, "trip-page-head-phone.png"), 412);
       await page.goto("/drive/trips");
       const mine = page.getByRole("button", { name: /^Mjódd bus terminal → N1 Selfoss, / });
       await expect(mine).toBeVisible();
@@ -119,16 +133,9 @@ test.describe("pictures", () => {
         .screenshot({ path: join(folder, "my-trips-card-phone.png") });
       return;
     }
-    // The driver's trip page on a laptop: the icon between the name and Edit trip.
+    // The driver's ride on a laptop: the icon in the corner of the ticket beside the page.
     await page.goto(`/drive/trips/${tripId}`);
-    await expect(page.getByRole("button", { name: "Share this ride" })).toBeVisible();
-    await page.waitForTimeout(500);
-    const head = await page.getByTestId("page-head").filter({ visible: true }).boundingBox();
-    if (head === null) throw new Error("The ride page has no head");
-    await page.screenshot({
-      path: join(folder, "trip-page-head-laptop.png"),
-      clip: { x: head.x - 16, y: head.y - 16, width: head.width + 32, height: head.height + 26 },
-    });
+    await shootTopOfRide(page, join(folder, "trip-page-head-laptop.png"), 1280);
     // Its own screen on a laptop, in Icelandic: the post's text in it too.
     await page.goto(`/drive/trips/${tripId}/share`);
     await page.getByRole("button", { name: "Change the language to Icelandic" }).click();

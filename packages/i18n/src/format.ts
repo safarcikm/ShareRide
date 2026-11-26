@@ -124,6 +124,20 @@ export function capitalised(text: string, locale: Locale): string {
   return text.charAt(0).toLocaleUpperCase(locale) + text.slice(1);
 }
 
+/**
+ * Short texts that each start a line of their own, as one line: commas
+ * between them, and only the first keeps its capital, as "Some chat, one
+ * suitcase, no smoking". For texts that begin with an ordinary word, not
+ * a name.
+ */
+export function inOneLine(texts: readonly string[], locale: Locale): string {
+  return texts
+    .map((text, index) =>
+      index === 0 ? text : text.charAt(0).toLocaleLowerCase(locale) + text.slice(1),
+    )
+    .join(", ");
+}
+
 /** The time of a moment on a 24-hour clock in Iceland, as both languages write it: "07:05". */
 export function formatClock(moment: Date): string {
   const { hour, minute } = inIceland(moment);

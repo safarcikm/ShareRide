@@ -896,6 +896,24 @@ As built in 8b (spec 31 says the same where a person sees it, in 3.19):
   `change-trip.spec.ts` (the rows by their names; at 360 wide nine rows,
   and no words past the card). Pictures: `built/edit-ride-*`,
   `built/cancel-ride-phone-light` and `built/share-ride-phone-light`.
+- **From the code review** (nothing critical), mended in the same PR: a
+  second press of "Save the change" with nothing changed, or of "Check
+  the change" with no stop chosen, said nothing new, as the notice held
+  plain words (`useSaid` in `ChangePartScreen` and where a stop is
+  chosen); "This is what the ride has now" stayed after something was
+  changed (the notice goes once what it is about is mended, and comes
+  back only with a press); a note with contact details or too long made
+  "Save the change" do nothing without a word (`ChangePartScreen` takes
+  what the field says as `blocked`, from `noteProblem`, and says it over
+  the button). Tests added for those; the refusals of the time's check,
+  of adding and of removing a stop are now looked for in the bar; that
+  cancelling and sharing stand without the cars; that a cancelled ride
+  has no rows (the test looked for a link that no longer exists); and
+  that each stop has a line of its own (a match takes line ends as
+  spaces). The preferences' one line is `inOneLine` in
+  `packages/i18n`, with a test in both languages; `stopsText`, which
+  nothing used, is gone. Spec 28's picture of sharing on a laptop is
+  taken again. Four smaller things are on PR 12's list.
 
 ## PR 9: offering a ride
 
@@ -1027,7 +1045,17 @@ and deleting the account (3.19).
     `trip-day/passenger.tsx`, which hold components, by the two `title.ts`
     files: a home of its own without them. A cancelled ride's page has no
     pull to refresh, as before.
-11. **Docs:** spec 31 becomes Built, with what differs from the drawings;
+11. **Small things PR 8b's code review named:** choosing the meeting
+    point of a new stop keeps the picker's own top (a Cancel cross and a
+    centred title, no ride over it), which goes with posting's heads (PR
+    9, item 2 here); `cancel-trip.spec.ts` does not read the bar's notice
+    or where focus goes, as `cancel-booking.spec.ts` does, and
+    `look.spec.ts` opens none of Edit the ride's screens with long names
+    or large text; "day at time" is written out on Edit the ride and in
+    `TripHead`; an `ActionNotice` given plain words does not say them
+    again on another press, which is easy to get wrong: `useSaid`
+    everywhere, or a rule for it.
+12. **Docs:** spec 31 becomes Built, with what differs from the drawings;
     spec 15 has the parts; the roadmap and the changelog.
 
 ## After merging

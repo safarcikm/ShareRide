@@ -1,6 +1,6 @@
 import { listVehiclesRoute, myTripRoute } from "@shareride/contracts";
 import { routePrice } from "@shareride/domain";
-import { capitalised, formatClock, formatDay, formatMoney } from "@shareride/i18n";
+import { capitalised, formatClock, formatDay, formatMoney, inOneLine } from "@shareride/i18n";
 import { useLocalSearchParams } from "expo-router";
 import {
   Armchair,
@@ -75,11 +75,10 @@ export default function EditTripScreen() {
     params: { id },
   });
   // As a passenger reads them on the ride, in one line: "Some chat, small bag, no pets".
-  const likes = preferenceNeeds(t, preferences)
-    .map(({ label }, index) =>
-      index === 0 ? label : label.charAt(0).toLocaleLowerCase(locale) + label.slice(1),
-    )
-    .join(", ");
+  const likes = inOneLine(
+    preferenceNeeds(t, preferences).map(({ label }) => label),
+    locale,
+  );
   const noted = note === "" ? t("trip.review.noNote") : note;
   return (
     <Screen>

@@ -405,6 +405,8 @@ describe("Row", () => {
     // One under the other, from the left: not beside the title on a wide screen.
     expect(hidden("row-words")).toHaveStyle({ flexDirection: "column", alignItems: "flex-start" });
     expect(screen.getByText(stops)).toBeVisible();
+    // The line ends are kept: a match takes any run of spaces and line ends as one space.
+    expect(screen.getByText(stops).props.children).toBe(stops);
   });
 
   it("only shows a value when that is all it does: no button, no chevron", async () => {

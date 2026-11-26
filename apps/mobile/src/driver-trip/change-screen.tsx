@@ -13,7 +13,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useState, type ReactNode } from "react";
 import { useSession } from "@/auth/session";
 import { Button } from "@/components/button";
-import { ActionNotice } from "@/components/notice";
+import { ActionNotice, useSaid } from "@/components/notice";
 import { Screen } from "@/components/screen";
 import { useLanguage } from "@/i18n/language";
 import { now } from "@/lib/clock";
@@ -53,37 +53,52 @@ export function WithTripToChange({
 
 /**
  * A part's screen: the trip and the title, what can change, and "Save the
- * change". Saving goes back to the trip, which says so with focus; a
- * change the server refuses says why here. Nothing is saved while the
- * part is as the trip has it, or while a field says what to fix.
+ * change". Saving goes back to the trip, which says so with focus.
+ * Nothing is saved while the part is as the trip has it, or while a field
+ * says what to fix; a press then says which over the button, as it does
+ * why the server refused a change (spec 31, 3.19). What it said goes once
+ * that is mended, and another press with nothing mended says it again.
  */
 export function ChangePartScreen({
   trip,
   title,
   change,
-  blocked = false,
+  blocked,
   children,
 }: {
   readonly trip: TripToChange;
   readonly title: string;
   /** The change as chosen; null while the part is as the trip has it. */
   readonly change: TripChangeBody | null;
-  /** A field says what to fix before saving. */
-  readonly blocked?: boolean;
+  /** What a field says to fix before saving, in the field's own words. */
+  readonly blocked?: string | undefined;
   readonly children: ReactNode;
 }) {
   const { locale, t } = useLanguage();
   const session = useSession();
   const [busy, setBusy] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [said, say] = useSaid();
+  /** What the notice is about, which decides when it no longer holds. */
+  const [about, setAbout] = useState<"field" | "same" | "refusal">("refusal");
+  const mended =
+    said !== null &&
+    ((about === "field" && blocked !== said.message) || (about === "same" && change !== null));
+  // Gone for good once mended: it comes back only with another press, not
+  // when the same fault is typed again.
+  if (mended) say(null);
 
   const save = async () => {
-    setNotice(null);
-    if (blocked) return;
-    if (change === null) {
-      setNotice(t("trip.editSame"));
+    if (blocked !== undefined) {
+      setAbout("field");
+      say(blocked);
       return;
     }
+    if (change === null) {
+      setAbout("same");
+      say(t("trip.editSame"));
+      return;
+    }
+    say(null);
     setBusy(true);
     const answer = await session.call(changeTripRoute, {
       params: { id: trip.id },
@@ -101,14 +116,15 @@ export function ChangePartScreen({
       );
       return;
     }
-    setNotice(refusalText(t, locale, trip, answer));
+    setAbout("refusal");
+    say(refusalText(t, locale, trip, answer));
   };
 
   return (
     <Screen
       footer={
         <>
-          <ActionNotice says={notice} />
+          <ActionNotice says={mended ? null : said} />
           <Button
             main
             busy={busy}

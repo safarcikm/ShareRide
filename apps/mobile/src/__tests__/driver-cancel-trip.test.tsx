@@ -171,6 +171,22 @@ describe("The driver cancels the trip (spec 6, 3.3)", () => {
     expect(screen.queryByText(/Sunday 15 November at 09:00 · /)).toBeNull();
   });
 
+  it("stands without the cars: the ticket has no car, and the ride can still be cancelled", async () => {
+    await renderApp(`${tripPage}/cancel`, {
+      me: completeMe,
+      setUp: (client) => {
+        tripsApi(client, [northMyTrip]);
+        driverApi(client, [jon]);
+        client.answer("/v1/me/vehicles", () => failure(500, "internal_error"));
+      },
+    });
+    expect(await screen.findByRole("header", { name: "Cancel your ride" })).toBeVisible();
+    const ticket = within(await screen.findByTestId("driver-ride-ticket"));
+    expect(ticket.getByText("Hof, Akureyri")).toBeVisible();
+    expect(ticket.queryByText("Toyota Yaris, white")).toBeNull();
+    expect(screen.getByRole("button", { name: "Cancel the ride" })).toBeEnabled();
+  });
+
   it("has one main button, red, in the bar, over Keep the ride (R31.1)", async () => {
     await openCancel();
     const bar = within(screen.getByTestId("bottom-bar"));

@@ -95,6 +95,10 @@ const saved = { preview: false };
 /** What the check says when a stop lowers the whole trip's level (spec 17). */
 const lowersAll = "Saving lowers the price of every stretch for new bookings.";
 
+/** Why the main button did nothing, over it in the bar, where it is seen without scrolling. */
+const barAlert = () => within(screen.getByTestId("bottom-bar")).getByRole("alert");
+const noBarAlert = () => within(screen.getByTestId("bottom-bar")).queryByRole("alert") === null;
+
 /** Saves, and expects the trip page to say so, with focus. */
 async function saveAndSeeIt() {
   const focusMoves = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
@@ -135,16 +139,19 @@ describe("Edit trip: the seats, price, car, booking mode and details (spec 6, 3.
     // they are what is set, and open nothing themselves.
     const card = within(screen.getByTestId("action-rows"));
     expect(card.getByText("Stops")).toBeVisible();
-    expect(
-      card.getByText(
-        [
-          "09:00  BSÍ bus terminal",
-          "10:00  Borgarnes",
-          "12:05  Blönduós",
-          "14:00  Hof, Akureyri",
-        ].join("\n"),
-      ),
-    ).toBeVisible();
+    const stops = card.getByText(
+      stopLines("BSÍ bus terminal", "Borgarnes", "Blönduós", "Hof, Akureyri"),
+    );
+    expect(stops).toBeVisible();
+    // A line each: a match takes any run of spaces and line ends as one space.
+    expect(stops.props.children).toBe(
+      [
+        "09:00  BSÍ bus terminal",
+        "10:00  Borgarnes",
+        "12:05  Blönduós",
+        "14:00  Hof, Akureyri",
+      ].join("\n"),
+    );
     // A row each, not a heading with a loose link beside it.
     expect(screen.queryByTestId("summary-section")).toBeNull();
     expect(screen.queryByRole("link", { name: "Change the time" })).toBeNull();
@@ -162,12 +169,22 @@ describe("Edit trip: the seats, price, car, booking mode and details (spec 6, 3.
     ).toBeVisible();
   });
 
-  it("says over the button why nothing was saved, where it is seen", async () => {
+  it("says over the button why nothing was saved, again on another press, until something is changed", async () => {
     await openPart("Change the seats");
+    const focusMoves = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
+    focusMoves.mockClear();
     await fireEvent.press(screen.getByRole("button", { name: "Save the change" }));
-    expect(within(screen.getByTestId("bottom-bar")).getByRole("alert")).toHaveTextContent(
-      "This is what the ride has now. Change something first.",
-    );
+    expect(barAlert()).toHaveTextContent("This is what the ride has now. Change something first.");
+    expect(focusMoves).toHaveBeenCalledTimes(1);
+    // Another press changed nothing else a screen reader could tell: the
+    // same words take focus again (spec 15, 5.2).
+    await fireEvent.press(screen.getByRole("button", { name: "Save the change" }));
+    expect(barAlert()).toHaveTextContent("This is what the ride has now. Change something first.");
+    expect(focusMoves).toHaveBeenCalledTimes(2);
+    focusMoves.mockRestore();
+    // It no longer holds once something is changed.
+    await fireEvent.press(screen.getByRole("button", { name: "One seat fewer" }));
+    expect(noBarAlert()).toBe(true);
   });
 
   it("changes the price level for new bookings, with the new prices before saving", async () => {
@@ -349,6 +366,9 @@ describe("Edit trip: the seats, price, car, booking mode and details (spec 6, 3.
     expect(
       await screen.findByText("Passengers have taken more seats than that on part of the ride."),
     ).toBeVisible();
+    expect(barAlert()).toHaveTextContent(
+      "Passengers have taken more seats than that on part of the ride.",
+    );
     expect(screen).toHavePathname(`${tripPage}/edit/seats`);
   });
 
@@ -392,6 +412,7 @@ describe("Edit trip: the seats, price, car, booking mode and details (spec 6, 3.
     await fireEvent.press(screen.getByRole("radio", { name: /^Volvo XC40, red/ }));
     await fireEvent.press(screen.getByRole("button", { name: "Save the change" }));
     expect(await screen.findByText("Choose the car you're driving.")).toBeVisible();
+    expect(barAlert()).toHaveTextContent("Choose the car you're driving.");
     expect(screen).toHavePathname(`${tripPage}/edit/car`);
   });
 
@@ -443,9 +464,19 @@ describe("Edit trip: the seats, price, car, booking mode and details (spec 6, 3.
         "Please don't share phone numbers, emails or links. Passengers can chat with you in the app once they book.",
       ),
     ).toBeVisible();
+    expect(noBarAlert()).toBe(true);
     await fireEvent.press(screen.getByRole("button", { name: "Save the change" }));
     expect(changes(client)).toEqual([]);
+    // The field's own words, over the button too: the field is at the end of a long column.
+    expect(barAlert()).toHaveTextContent(
+      "Please don't share phone numbers, emails or links. Passengers can chat with you in the app once they book.",
+    );
 
+    await fireEvent.changeText(note, "  Meet by the café.  ");
+    expect(noBarAlert()).toBe(true);
+    // The same fault typed again is the field's to say, until another press.
+    await fireEvent.changeText(note, "Text me on 555 1234");
+    expect(noBarAlert()).toBe(true);
     await fireEvent.changeText(note, "  Meet by the café.  ");
     await saveAndSeeIt();
     expect(changes(client)).toEqual([
@@ -524,6 +555,21 @@ describe("Edit trip: adding a stop (spec 6, 3.2; milestone 6 plan, decision 2)",
         stopLines("BSÍ bus terminal", "Mosfellsbær", "Borgarnes", "Blönduós", "Hof, Akureyri"),
       ),
     ).toBeVisible();
+  });
+
+  it("says over the button when adding the stop is refused after the check", async () => {
+    await choose("mos", "Mosfellsbær", north, {
+      change: (previewing) =>
+        previewing
+          ? undefined
+          : failure(422, "change_not_allowed", {
+              details: [{ path: "meetingPointId", issue: "stop_unavailable" }],
+            }),
+    });
+    await fireEvent.press(await screen.findByRole("button", { name: "Save the change" }));
+    expect(await screen.findByRole("alert")).toBeVisible();
+    expect(barAlert()).toHaveTextContent(/paused/);
+    expect(screen).toHavePathname(`${tripPage}/edit/stop`);
   });
 
   it("says when the stop lowers the level for the whole trip, before saving (spec 17)", async () => {
@@ -663,11 +709,38 @@ describe("Edit trip: removing a stop (spec 6, 3.2; R6.5)", () => {
     ).toBeVisible();
   });
 
-  it("asks which stop before checking", async () => {
+  it("asks which stop before checking, over the button, until one is chosen", async () => {
     const { client } = await openPart("Remove a stop");
+    const focusMoves = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
+    focusMoves.mockClear();
     await fireEvent.press(screen.getByRole("button", { name: "Check the change" }));
-    expect(await screen.findByText("Choose the stop to remove.")).toBeVisible();
+    expect(barAlert()).toHaveTextContent("Choose the stop to remove.");
+    expect(focusMoves).toHaveBeenCalledTimes(1);
+    await fireEvent.press(screen.getByRole("button", { name: "Check the change" }));
+    expect(barAlert()).toHaveTextContent("Choose the stop to remove.");
+    expect(focusMoves).toHaveBeenCalledTimes(2);
+    focusMoves.mockRestore();
     expect(changes(client)).toEqual([]);
+    await fireEvent.press(screen.getByRole("radio", { name: /^Borgarnes/ }));
+    expect(noBarAlert()).toBe(true);
+  });
+
+  it("says over the button when removing the stop is refused after the check", async () => {
+    await check("Blönduós", north, {
+      change: (previewing) =>
+        previewing
+          ? undefined
+          : failure(422, "change_not_allowed", {
+              bookingsAtStop: 1,
+              details: [{ path: "meetingPointId", issue: "stop_in_use" }],
+            }),
+    });
+    await fireEvent.press(await screen.findByRole("button", { name: "Save the change" }));
+    expect(await screen.findByRole("alert")).toBeVisible();
+    expect(barAlert()).toHaveTextContent(
+      "1 passenger gets in or out at Blönduós. Cancel or decline their bookings on this ride first, or ask them to cancel.",
+    );
+    expect(screen).toHavePathname(`${tripPage}/edit/remove-stop`);
   });
 
   it("says nobody needs to be told without bookings", async () => {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   capitalised,
+  inOneLine,
   formatClock,
   formatCount,
   formatDate,
@@ -138,6 +139,23 @@ describe("formatDayAndMonth", () => {
     expect(formatDayAndMonth(moment, "en")).toBe("23 November");
     expect(formatDayAndMonth(moment, "is")).toBe("23. nóvember");
     expect(formatDayAndMonth(new Date("2027-01-01T00:00:00Z"), "is")).toBe("1. janúar");
+  });
+});
+
+describe("inOneLine", () => {
+  it("joins texts that each start a line with commas, the first keeping its capital", () => {
+    expect(inOneLine(["Some chat", "One suitcase", "Ask about pets"], "en")).toBe(
+      "Some chat, one suitcase, ask about pets",
+    );
+    // Icelandic letters lose their capital as Icelandic writes them.
+    expect(inOneLine(["Smá spjall", "Ein taska", "Ökumaður reykir ekki", "Á leið"], "is")).toBe(
+      "Smá spjall, ein taska, ökumaður reykir ekki, á leið",
+    );
+  });
+
+  it("leaves one text as it is, and none as nothing", () => {
+    expect(inOneLine(["Some chat"], "en")).toBe("Some chat");
+    expect(inOneLine([], "is")).toBe("");
   });
 });
 

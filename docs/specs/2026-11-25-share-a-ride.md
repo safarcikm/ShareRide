@@ -328,8 +328,8 @@ from `pnpm --filter @shareride/api story-pictures`):
 | Your trip is published, on a phone (no share window in that browser) | ![Share this ride after publishing: Share on Facebook, the post's text, Copy text, Follow PuffinRide](images/share-a-ride/published-phone.png) |
 | Share this ride on a laptop, in Icelandic | ![The screen of its own, with the post's text in Icelandic](images/share-a-ride/share-screen-laptop-is.png) |
 | A published trip in My trips, on a phone | ![A trip card in My trips with the share icon in its corner](images/share-a-ride/my-trips-card-phone.png) |
-| The driver's trip page on a phone | ![The trip's name with the share icon beside it](images/share-a-ride/trip-page-head-phone.png) |
-| The driver's trip page on a laptop | ![The page head: the trip's name, the share icon, then the trip's actions](images/share-a-ride/trip-page-head-laptop.png) |
+| The driver's ride on a phone (its ticket since spec 31) | ![The ride's name over its ticket, which has the share icon in its corner](images/share-a-ride/trip-page-head-phone.png) |
+| The driver's ride on a laptop | ![The ride's name, and beside the page its ticket with the share icon in its corner](images/share-a-ride/trip-page-head-laptop.png) |
 | Story on Instagram, in a browser that cannot share files | ![The story picture small, Download picture and Copy link](images/share-a-ride/story-section-phone.png) |
 | A story, short trip, Icelandic | ![The route Mjódd to N1 Selfossi, Föstudagur 27. nóvember kl. 09:00, a stop on the way, the scene with "Laus sæti"](images/share-a-ride/story-short-is.png) |
 | A story, long names, English, full | ![Each end of the route on two lines, no "Free seats" tag](images/share-a-ride/story-long-names-en.png) |

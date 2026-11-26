@@ -7,7 +7,7 @@ import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { useSession } from "@/auth/session";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
-import { ActionNotice } from "@/components/notice";
+import { ActionNotice, useSaid } from "@/components/notice";
 import { RadioCard } from "@/components/radio-card";
 import { Screen } from "@/components/screen";
 import { Body, Heading } from "@/components/text";
@@ -64,11 +64,12 @@ function ChooseStop({
   const title = t("trip.editRemoveStopAction");
   const between = trip.stops.slice(1, -1);
   const [chosen, setChosen] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+  // Another press with no stop chosen asks again (spec 31, 3.19).
+  const [said, say] = useSaid();
   const check = () => {
     const stop = between.find((each) => each.meetingPoint.id === chosen);
     if (stop === undefined) {
-      setNotice(t("trip.editRemoveStopChoose"));
+      say(t("trip.editRemoveStopChoose"));
       return;
     }
     onCheck(stop);
@@ -78,7 +79,7 @@ function ChooseStop({
       footer={
         between.length === 0 ? undefined : (
           <>
-            <ActionNotice says={notice} />
+            <ActionNotice says={said} />
             <Button main label={t("trip.editCheck")} onPress={check} />
           </>
         )
@@ -100,7 +101,7 @@ function ChooseStop({
                   : { help: formatClock(new Date(stop.plannedAt)) })}
                 selected={chosen === stop.meetingPoint.id}
                 onSelect={() => {
-                  setNotice(null);
+                  say(null);
                   setChosen(stop.meetingPoint.id);
                 }}
               />

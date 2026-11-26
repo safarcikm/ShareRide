@@ -1007,11 +1007,19 @@ and
   link beside each ("Change the time") are gone; a screen reader hears
   "Time, Sunday 15 November at 09:00".
 - **A part's screen and "Check the change"** keep their fields. Each has
-  Back and its title at the left with the ride over it. Why nothing was
-  saved or checked ("This is what the ride has now. Change something
-  first.", what the server refused) stands over the main button, in the
-  bar, with focus. It was at the end of the column, which on the time's
-  screen is under the calendar.
+  Back and its title at the left with the ride over it; choosing the
+  meeting point for "Add a stop" is the picker posting has, with its own
+  top, until posting is rebuilt (plan, PR 9). Why nothing was saved or
+  checked ("This is what the ride has now. Change something first.",
+  "Choose the stop to remove.", a note that cannot be saved in its
+  field's own words, what the server refused) stands over the main
+  button, in the bar, with focus. It was at the end of the column, which
+  on the time's screen is under the calendar, and a note that could not
+  be saved said nothing there. Another press with nothing mended says it
+  again; it goes once that is mended. What is wrong with a new time
+  itself (the time the ride has, too soon, further than the bookings
+  allow, another ride of the driver's then) stays under the time, at its
+  field.
 - **Cancelling a ride** takes what cancelling a booking has: Back and
   "Cancel your ride" at the left, and the ride as the ticket its page has
   (the day, "You drive", the two ends, what the whole way costs and the
@@ -1295,4 +1303,4 @@ Working choices, for Martin to change:
 | 14 | Naming who asks for a seat, on Find and My rides | A ride in my list gains `firstRequest` in the API (section 6) |
 | 15 | Drafts | All of them are listed on Offer; the page of drafts goes with My trips (3.11, item 6) |
 | 16 | Filled buttons | One main button a screen; the button of a `NeedsYouCard` is the only other filled one (R31.1) |
-| 17 | Which main buttons are red | The ones that take something away: "Cancel booking", "Withdraw request", "Block Bára", and "Decline request" on the driver's ride. The ones that tell PuffinRide what happened stay moss, so that red does not warn anyone off a report: "Tell PuffinRide", "Mark as no-show", "Send answer", "Send review", "Send report" (3.19, R31.3) |
+| 17 | Which main buttons are red | The ones that take something away: "Cancel booking", "Cancel the ride", "Withdraw request", "Block Bára", and "Decline request" on the driver's ride. The ones that tell PuffinRide what happened stay moss, so that red does not warn anyone off a report: "Tell PuffinRide", "Mark as no-show", "Send answer", "Send review", "Send report" (3.19, R31.3) |

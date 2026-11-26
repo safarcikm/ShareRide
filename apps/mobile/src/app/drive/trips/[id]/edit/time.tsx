@@ -61,7 +61,7 @@ function EditTime({ trip, departsAt }: { readonly trip: MyTrip; readonly departs
   const [date, setDate] = useState<Day>(() => dayOf(departsAt));
   const [clock, setClock] = useState<Clock>(() => clockOf(departsAt, true));
   const [open, setOpen] = useState(false);
-  // What is wrong with the time, under it; and anything else, below.
+  // What is wrong with the time, under it; and anything else, over the button.
   const [problem, setProblem] = useState<string | undefined>(undefined);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);

@@ -14,6 +14,7 @@ import {
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
 import { driverApi, northMyTrip } from "@/testing/bookings";
+import { failure } from "@/testing/fake-client";
 import { northResult, searchApi, soonestApi, soonRide } from "@/testing/search";
 import { blonduos, borgarnes, plannedDraft, tripsApi } from "@/testing/trips";
 
@@ -390,6 +391,21 @@ describe("Share this ride, a screen of its own (spec 28, 3.1 and 3.2)", () => {
     expect(ticket.getByText("Hof, Akureyri")).toBeVisible();
     expect(ticket.getByText("Toyota Yaris, white")).toBeVisible();
     expect(ticket.queryByRole("button")).toBeNull();
+    expect(screen.getByLabelText("Text for your post")).toHaveTextContent(englishPost);
+  });
+
+  it("stands without the cars: the ticket has no car, and the ride can still be shared", async () => {
+    await renderApp(`/drive/trips/${tripId}/share`, {
+      me: completeMe,
+      setUp: (client) => {
+        tripsApi(client, [northTrip]);
+        driverApi(client, []);
+        client.answer("/v1/me/vehicles", () => failure(500, "internal_error"));
+      },
+    });
+    const ticket = within(await screen.findByTestId("driver-ride-ticket"));
+    expect(ticket.getByText("Hof, Akureyri")).toBeVisible();
+    expect(ticket.queryByText("Toyota Yaris, white")).toBeNull();
     expect(screen.getByLabelText("Text for your post")).toHaveTextContent(englishPost);
   });
 

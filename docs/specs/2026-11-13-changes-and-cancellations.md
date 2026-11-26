@@ -231,8 +231,11 @@ stop):
     under it), Price, Seats, Car, How people book, and Preferences and
     note. A row opens its part's screen; the headings with a link beside
     each ("Change the time") are gone. Every screen here has Back and its
-    title at the left with the trip over it, and why nothing was saved or
-    checked stands over the main button, in the bar.
+    title at the left with the trip over it, but choosing the meeting
+    point of a new stop, which is the picker posting has. Why nothing was
+    saved or checked stands over the main button, in the bar, a note that
+    cannot be saved too; what is wrong with a new time stays under the
+    time (items 5 and 6).
 
 ### 3.3 Cancelling a trip (driver)
 
