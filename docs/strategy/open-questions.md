@@ -8,12 +8,13 @@ here, update or accept the linked ADR, and move the row to "Answered".
 
 ## Open
 
-A new question goes in a table here with the next free number (Q29
+A new question goes in a table here with the next free number (Q31
 onwards), a recommendation and the docs it affects.
 
 | #   | Question | Recommendation | Affects |
 | --- | -------- | -------------- | ------- |
 | Q29 | Feedback is kept 12 months after the beta ends, counted from when "Invite code required" was last turned off. Now that the beta is open and the switch is only a gate (ADR 0035), turning it on for a day against abuse and off again would start that count. Should the end of the beta be its own moment instead? | Yes: the operator sets the end of the beta at public launch (launch work, spec 20, section 10), and the switch stops counting. Until then, avoid turning the switch on and off again. | [privacy register](../compliance/privacy-gdpr.md) (Feedback), spec 12, spec 20 (3.4.5), `retention.ts` |
+| Q30 | Iceland's Act 30/2002 on electronic commerce (article 6) asks a service provider to give easy and permanent access to its name, address, email and, where it has one, its kennitala, VAT number and register. Until the ehf. is registered, the provider is Martin himself. Should the About page show Martin's own kennitala beside his name and address? | Martin's choice: it is his personal number. The About page (spec 30) gives the name, address and email the Terms already give, and no kennitala until Martin answers; once the company is registered, About and a new version of the Terms give the company's name and kennitala (ADR 0043). | [spec 30](../specs/2026-11-26-about-page-and-footer.md), `about.operator`, the Terms |
 
 ## Answered
 
