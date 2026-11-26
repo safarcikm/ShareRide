@@ -28,7 +28,7 @@ import { Body, Heading, Title } from "@/components/text";
 import { offerRide } from "@/drive/offer-ride";
 import { useLanguage } from "@/i18n/language";
 import { useSaveLanguage } from "@/i18n/use-save-language";
-import { now } from "@/lib/clock";
+import { useClock } from "@/lib/use-clock";
 import { useLoaded } from "@/lib/use-loaded";
 import { refreshFrontPage, useFrontPageRefreshes } from "@/navigation/front-page-refresh";
 import { MyRideTicket } from "@/my-rides/my-ride-ticket";
@@ -128,6 +128,8 @@ function FrontPage() {
   const { value, pull } = useLoaded(load);
   const rides = value?.ok === true ? value.data.results : [];
   const mine = useRides("upcoming", me !== null);
+  // What needs me counts down, and is gone when its deadline passes.
+  const at = useClock();
   const refresh = async () => {
     const [soonest, next] = await Promise.all([
       pull((loaded) => loaded.ok),
@@ -196,7 +198,6 @@ function FrontPage() {
       <View style={styles.intro}>{titles}</View>
     </View>
   );
-  const at = now();
   const offer = (
     <Button
       variant="secondary"
@@ -540,7 +541,7 @@ function LeavingSoon({
       result={ride}
       searched={{ from: "", to: "" }}
       seats={1}
-      showDay
+      dayInName
       fill={grid}
       marked={onMap?.shown === ride.tripId}
       onShow={
@@ -612,12 +613,15 @@ const styles = StyleSheet.create({
   rides: { gap: spacing.md },
   // As high as a text button, so a heading with a link and one without are level.
   head: { minHeight: minTouchTarget, justifyContent: "center" },
-  // The link goes under the heading where large text leaves no room beside it.
+  // The link goes under the heading where large text leaves no room beside
+  // it. Without the link the one line stays in the middle of the row, so
+  // the heading is level with the one beside the rides on a wide page.
   headWithLink: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
     alignItems: "center",
+    alignContent: "center",
     columnGap: spacing.sm,
   },
   // A step of "How it works": its number in a round of its own, then its name over its line.
@@ -633,7 +637,7 @@ const styles = StyleSheet.create({
   stepLine: { height: controlOutline },
   // The button goes under the words where they do not fit beside it.
   stepOffer: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: spacing.ms },
-  stepOfferText: { flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: spacing.xxl * 3 },
+  stepOfferText: { flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: sizes.wordsBeside },
   actions: { gap: spacing.sm, paddingTop: spacing.lg },
   offerAction: { flexDirection: "row" },
   // The sentence, then the link right after it; a narrow column puts the

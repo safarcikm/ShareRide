@@ -164,7 +164,7 @@ describe("ResultTicket", () => {
     expect(screen.getByRole("button", { name })).toBeVisible();
     await rerender(
       <LanguageProvider>
-        <ResultTicket result={northResult} searched={searched} seats={1} showDay />
+        <ResultTicket result={northResult} searched={searched} seats={1} dayInName />
       </LanguageProvider>,
     );
     expect(screen.getByRole("button", { name: `Sun 15 Nov, ${name}` })).toBeVisible();

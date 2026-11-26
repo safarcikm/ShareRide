@@ -111,7 +111,8 @@ function bookingLook(
 /**
  * A ride I drive: the whole way as two ends, with the stops between them
  * counted and no price, and under the tear line the seats taken on its
- * fullest stretch with what it needs from me. The seats free on each
+ * fullest stretch, with what it needs from me at the foot's end, where a
+ * seat's ticket has it too. The seats free on each
  * stretch are on the ride's own page (spec 31, 3.5 item 4). A ride I
  * cancelled says so, and why (spec 6, 3.1).
  */
@@ -150,17 +151,9 @@ function tripLook(
     ...look,
     note: null,
     mine: true,
-    footStart:
-      need === null ? (
-        <Text style={[typography.label, { color: palette.text }]}>{taken}</Text>
-      ) : (
-        needTag(need)
-      ),
-    footEnd:
-      need === null ? null : (
-        <Text style={[typography.small, { color: palette.textMuted }]}>{taken}</Text>
-      ),
-    spoken: need === null ? [taken] : [need, taken],
+    footStart: <Text style={[typography.label, { color: palette.text }]}>{taken}</Text>,
+    footEnd: need === null ? null : needTag(need),
+    spoken: need === null ? [taken] : [taken, need],
   };
 }
 

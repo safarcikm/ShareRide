@@ -888,6 +888,7 @@ export const en = {
   "results.everyTrip": "That's every ride found",
   "results.firstOnly": "These are the first {count} rides",
   "results.endFirstOnly": "Choose a day to see others.",
+  "results.endFirstOnlyDay": "Filter by time of day to see others.",
   "results.endOtherDay": "Try another day, or see every ride leaving soon.",
   "results.endAnyDay": "You can also see every ride leaving soon.",
   "results.allRides": "All rides",
@@ -1395,9 +1396,11 @@ export const en = {
   "needs.payByTomorrow": "Pay by {time} tomorrow",
   "needs.leavesAt": "Leaves at {time}",
   "needs.leavesIn": "Leaves in {count, plural, one {# minute} other {# minutes}}",
-  "needs.openRide": "Open the ride",
+  "needs.seeRide": "See your ride",
+  "needs.where": "{route}, {day}.",
+  "needs.whereThen": "{route}, {day}. {then}.",
   "needs.more": "and {count} more",
-  "needs.moreLabel": "{count} more need you: open My rides",
+  "needs.moreLabel": "and {count} more: open My rides",
   "myRides.nothing":
     "Nothing coming up. Book a seat on a ride, or offer the empty seats in your car.",
   "myRides.nonePast":

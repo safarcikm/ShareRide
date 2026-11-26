@@ -103,6 +103,7 @@ const findTexts = {
     meetingPoints: "See the meeting points",
     offer: "Offer a ride",
     how: "How it works",
+    soon: "Leaving soon",
     filters: "Filters",
   },
   "is-IS": {
@@ -114,6 +115,7 @@ const findTexts = {
     meetingPoints: "Skoða mótsstaði",
     offer: "Bjóða far",
     how: "Svona virkar þetta",
+    soon: "Á leiðinni bráðum",
     filters: "Síur",
   },
 } as const;
@@ -182,6 +184,13 @@ for (const locale of ["en-GB", "is-IS"] as const) {
           expect(words.x).toBeGreaterThanOrEqual(scene.x);
           expect(words.x + words.width).toBeLessThanOrEqual(car.x);
         }
+        // And no word of them is cut to stay clear of it.
+        const cutTitle = await line.evaluate((part) =>
+          [...part.querySelectorAll<HTMLElement>("[dir]")]
+            .filter((text) => text.scrollWidth > text.clientWidth + 1)
+            .map((text) => text.textContent),
+        );
+        expect(cutTitle).toEqual([]);
         // The map shows a ride from the start, whole in its column, which
         // starts level with the rides'.
         const map = side.getByTestId("iceland-map");
@@ -198,6 +207,14 @@ for (const locale of ["en-GB", "is-IS"] as const) {
         // of tickets does, under the headings' row, and no word in it is cut.
         const how = side.getByTestId("how-it-works");
         await expect(how.getByRole("heading", { name: texts.how })).toBeVisible();
+        // The two headings are level, with "See all rides" beside the rides'
+        // or without it.
+        const overSteps = await box(how.getByRole("heading", { name: texts.how }));
+        const overRides = await box(main.getByRole("heading", { name: texts.soon }));
+        expect(overSteps.y + overSteps.height / 2).toBeCloseTo(
+          overRides.y + overRides.height / 2,
+          0,
+        );
         const firstCard = await box(main.getByTestId("card").first());
         const steps = await box(how.getByTestId("card"));
         expect(steps.y).toBeCloseTo(firstCard.y, 0);
@@ -361,6 +378,24 @@ test.describe("Find's search row", () => {
     await page.setViewportSize({ width: 1280, height: 720 });
     const how = await box(page.getByTestId("columns-side").getByTestId("how-it-works"));
     expect(how.y + how.height).toBeLessThanOrEqual(720);
+  });
+
+  test("keeps the map whole in a window 720 high for someone signed in with nothing coming up", async ({
+    page,
+  }) => {
+    await signUp(page, english, "Dóra");
+    await page.setViewportSize({ width: 1280, height: 720 });
+    // Nothing needs her and she has no ride: the map leads the side column
+    // and is whole in the window (spec 18, 3.5). The link under it starts in
+    // the window and ends under its edge, since the scene is higher (spec
+    // 31, 3.16).
+    const side = page.getByTestId("columns-side").filter({ visible: true });
+    await expect(side.getByTestId("how-it-works")).toHaveCount(0);
+    const map = await box(side.getByTestId("iceland-map"));
+    expect(map.y + map.height).toBeLessThanOrEqual(720);
+    const points = await box(side.getByRole("link", { name: "See the meeting points" }));
+    expect(points.y).toBeGreaterThan(map.y + map.height - 1);
+    expect(points.y).toBeLessThan(720);
   });
 });
 

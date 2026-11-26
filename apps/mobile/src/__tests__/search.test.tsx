@@ -586,6 +586,20 @@ describe("Search results (spec 4, 3.4)", () => {
     expect(resultsRow().getByText("50 rides")).toBeVisible();
   });
 
+  it("says to filter by time of day when the first 50 are of the day searched", async () => {
+    const many = Array.from({ length: 50 }, (_, index) =>
+      resultOn("2026-11-15", {
+        tripId: `0190a1d6-0000-7000-8000-${String(index).padStart(12, "0")}`,
+      }),
+    );
+    await openResults("&date=2026-11-15", { results: () => many });
+    const end = within(await screen.findByTestId("results-end"));
+    expect(end.getByText("These are the first 50 rides")).toBeVisible();
+    // A day is chosen already: choosing one would say nothing new.
+    expect(end.getByText("Filter by time of day to see others.")).toBeVisible();
+    expect(end.queryByText("Choose a day to see others.")).toBeNull();
+  });
+
   it("says the times are Iceland's on a device set to another time zone", async () => {
     mockedShowsOtherTime.mockReturnValue(true);
     try {
@@ -658,8 +672,11 @@ describe("Nothing matches (spec 4, 3.5)", () => {
     expect(
       await screen.findByRole("header", { name: "No rides match these filters." }),
     ).toBeVisible();
-    // Nothing is counted, and nothing ends, where there is no ride.
-    expect(screen.queryByTestId("results-count")).toBeNull();
+    // The count stays where it was and says none, so a screen reader hears
+    // what the filter did; nothing ends where there is no ride.
+    const count = screen.getByTestId("results-count");
+    expect(count).toHaveTextContent("0 rides");
+    expect(count).toHaveProp("accessibilityLiveRegion", "polite");
     expect(screen.queryByTestId("results-end")).toBeNull();
     await fireEvent.press(screen.getByRole("button", { name: "Show all rides" }));
     expect(await screen.findByTestId("trip-result")).toBeVisible();

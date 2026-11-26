@@ -52,6 +52,6 @@ describe("NeedsMeCard", () => {
     if (first === undefined) throw new Error("Nothing needs me");
     await inApp(<NeedsMeCard first={first} more={2} at={noon} />);
     expect(screen.getByText("and 2 more")).toBeVisible();
-    expect(screen.getByRole("link", { name: "2 more need you: open My rides" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "and 2 more: open My rides" })).toBeVisible();
   });
 });

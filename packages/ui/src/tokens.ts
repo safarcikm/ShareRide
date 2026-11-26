@@ -300,6 +300,8 @@ export const sizes = {
   wheelWidth: 64,
   /** Narrowest the main action of a bottom bar gets before it moves under the price. */
   barAction: 200,
+  /** Narrowest the words of a line get before the button or link beside them moves under them. */
+  wordsBeside: 144,
   /** A row that opens a screen, such as My cars on Profile. */
   row: 56,
   /** The soft square behind a row's icon, and behind the icon of what needs you (spec 31, 3.3). */

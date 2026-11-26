@@ -3,6 +3,7 @@ import { AccessibilityInfo, BackHandler, Dimensions } from "react-native";
 import { getLocales } from "expo-localization";
 import type { Booking, DriverReadiness, MyTrip } from "@shareride/contracts";
 import { readAppData, writeAppData } from "@/lib/app-data";
+import { now } from "@/lib/clock";
 import { completeMe, renderApp } from "@/testing/app";
 import {
   bookingApi,
@@ -52,10 +53,11 @@ jest.mock("@/lib/app-data", () => ({
   readAppData: jest.fn(() => Promise.resolve(null)),
   writeAppData: jest.fn(() => Promise.resolve()),
 }));
-// Saturday 14 November 2026, noon in Iceland.
-jest.mock("@/lib/clock", () => ({ now: () => new Date("2026-11-14T12:00:00Z") }));
+// Saturday 14 November 2026, noon in Iceland; a test may move the clock on.
+jest.mock("@/lib/clock", () => ({ now: jest.fn(() => new Date("2026-11-14T12:00:00Z")) }));
 
 const mockedGetLocales = getLocales as jest.Mock;
+const mockedNow = now as jest.Mock<Date, []>;
 const mockedRead = readAppData as jest.Mock;
 const mockedWrite = writeAppData as jest.Mock;
 
@@ -682,7 +684,34 @@ describe("Find, signed in (spec 31, 3.5)", () => {
     const card = within(await screen.findByTestId("needs-you-card"));
     expect(card.getByText("Leaves at 10:00")).toBeVisible();
     expect(card.getByText("Borgarnes to Blönduós, Sun 15 Nov.")).toBeVisible();
-    expect(card.getByRole("link", { name: "Open the ride" })).toBeVisible();
+    expect(card.getByRole("link", { name: "See your ride" })).toBeVisible();
+  });
+
+  it("keeps counting while Find stays open, and drops a need whose deadline passes", async () => {
+    jest.useFakeTimers();
+    try {
+      deviceLanguage("en-GB");
+      await renderApp("/", {
+        me: completeMe,
+        setUp: (client) => {
+          comingUp(client, [], [northMyTrip]);
+        },
+      });
+      const card = within(await screen.findByTestId("needs-you-card"));
+      const left = (time: string) => `Borgarnes to Blönduós, Sun 15 Nov. ${time} left to answer.`;
+      expect(card.getByText(left("10 h"))).toBeVisible();
+      // An hour and a half on, nothing pressed: the card says what is left now.
+      mockedNow.mockReturnValue(new Date("2026-11-14T13:30:00Z"));
+      await act(() => jest.advanceTimersByTimeAsync(30_000));
+      expect(card.getByText(left("8 h 30 min"))).toBeVisible();
+      // The request closes at 22:00: after that it is not mine to answer.
+      mockedNow.mockReturnValue(new Date("2026-11-14T22:00:20Z"));
+      await act(() => jest.advanceTimersByTimeAsync(30_000));
+      expect(screen.queryByTestId("needs-you-card")).toBeNull();
+    } finally {
+      mockedNow.mockImplementation(() => new Date("2026-11-14T12:00:00Z"));
+      jest.useRealTimers();
+    }
   });
 
   it("shows Your next ride under the search when the card is about another ride", async () => {
@@ -727,7 +756,7 @@ describe("Find, signed in (spec 31, 3.5)", () => {
     expect(screen.getAllByTestId("needs-you-card")).toHaveLength(1);
     // The ride that leaves first is the one I drive, which the card is not about.
     expect(screen.getByRole("button", { name: /^You drive, Sunday 15 November/ })).toBeVisible();
-    await fireEvent.press(screen.getByRole("link", { name: "1 more need you: open My rides" }));
+    await fireEvent.press(screen.getByRole("link", { name: "and 1 more: open My rides" }));
     expect(await screen.findByRole("header", { name: "Needs you" })).toBeVisible();
     expect(screen).toHavePathname("/my-rides");
   });
@@ -1274,6 +1303,12 @@ describe("Find on a laptop (spec 18, 3.5)", () => {
     });
     expect(await screen.findAllByTestId("trip-result")).toHaveLength(2);
     expect(mapParts()).toEqual(["how-it-works", "find-map"]);
+    // Two rides have no "See all rides": the heading still stands in the
+    // middle of its row, level with the one beside it.
+    const soon = within(screen.getByTestId("columns-main")).getByRole("header", {
+      name: "Leaving soon",
+    });
+    expect(soon.parent).toHaveStyle({ minHeight: 44, alignContent: "center" });
   });
 
   it("says the offer once when no rides leave soon: in the card where they would be", async () => {

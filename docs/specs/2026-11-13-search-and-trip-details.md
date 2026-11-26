@@ -307,7 +307,7 @@ upcoming trips.
 | `search.to` | To | Til |
 | `search.date` | Date | Dagsetning |
 | `search.seats` | Seats | Sæti |
-| `search.submit` | Search | Leita |
+| `welcome.findRide` (was `search.submit` "Search", until spec 31 made `/search` the front page's card) | Find a ride | Finna far |
 | `results.seatsLeft` | {count, plural, one {# seat left} other {# seats left}} | {count, plural, one {# sæti laust} other {# sæti laus}} |
 | `results.free` | Free | Ókeypis |
 | `results.newDriver` | New driver | Nýr ökumaður |

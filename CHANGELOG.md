@@ -1677,13 +1677,15 @@ releases follow [Semantic Versioning](https://semver.org/).
   under "Your next ride" on Find (spec 31, 3.3, item 3). Until now only a
   seat to pay for and requests to answer stood under "Needs you".
 - A ride is a ticket wherever one is listed (spec 31, 3.5, 3.6 and 3.16):
-  on Find, in the search results, on All rides, a place and a meeting
-  point, and in My rides. A ride found shows its day, how it is booked,
+  on Find, in the search results, on All rides and in My rides. A ride
+  found shows its day, how it is booked,
   the two times and places, the price, and under the tear line the driver
   and the seats left; a ride of mine says "Passenger" or "You drive", and
   what it needs from me in a yellow tag. Signed in, Find greets you by
   name ("Hi Bára") with what needs you in the yellow card, or your next
-  ride, over the search. On a laptop the title stands at the left of the
+  ride, over the search. What counts on Find and My rides ("19 min left to
+  answer", "Leaves in 40 minutes") keeps counting while the screen is
+  open, and a deadline that passes leaves it. On a laptop the title stands at the left of the
   scene with the car at the right, and someone new reads "How it works"
   in three lines beside the rides. The search results have one row (the
   order, one Filters chip that says how many are on, and the number of

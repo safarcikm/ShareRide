@@ -63,7 +63,7 @@ export default function Rides() {
               result={ride}
               searched={{ from: "", to: "" }}
               seats={1}
-              showDay
+              dayInName
             />
           ))}
           {answer.data.results.length === soonestTripsMaxLimit ? (

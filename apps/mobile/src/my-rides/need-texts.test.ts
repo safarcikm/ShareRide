@@ -48,7 +48,7 @@ describe("a ride I drive with a request to answer", () => {
       tag: "Gunna bíður svars",
       card: {
         title: "Gunna biður um 1 sæti",
-        detail: "Borgarnes – Blönduós, sun. 15. nóv. 10 klst. eftir til að svara.",
+        detail: "Borgarnes → Blönduós, sun. 15. nóv. 10 klst. eftir til að svara.",
         action: "Sjá beiðnina",
       },
     });
@@ -113,7 +113,7 @@ describe("a seat of mine to pay for", () => {
       },
     });
     expect(texts(approved, noon, "is").card.title).toBe(
-      "Anna sagði já: greiddu til að halda sætinu",
+      "Anna samþykkti: greiddu til að halda sætinu",
     );
   });
 
@@ -158,20 +158,20 @@ describe("a ride on its trip day", () => {
       card: {
         title: "Leaves at 10:00",
         detail: "Borgarnes to Blönduós, Sun 15 Nov.",
-        action: "Open the ride",
+        action: "See your ride",
       },
     });
     expect(texts(drive, early).card).toEqual({
       title: "Leaves at 09:00",
       detail: "BSÍ bus terminal to Hof, Akureyri, Sun 15 Nov.",
-      action: "Open the ride",
+      action: "See your ride",
     });
     expect(texts(drive, early, "is")).toEqual({
       tag: "Brottför kl. 09:00",
       card: {
         title: "Brottför kl. 09:00",
-        detail: "BSÍ umferðarmiðstöð – Hof, Akureyri, sun. 15. nóv.",
-        action: "Opna ferðina",
+        detail: "BSÍ umferðarmiðstöð → Hof, Akureyri, sun. 15. nóv.",
+        action: "Skoða ferðina",
       },
     });
   });

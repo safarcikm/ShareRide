@@ -13,6 +13,7 @@ import {
   requestToDrive,
   unpaidBooking,
 } from "@/testing/bookings";
+import { now } from "@/lib/clock";
 import { filledButtons } from "@/testing/buttons";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
 import { searchApi } from "@/testing/search";
@@ -30,7 +31,7 @@ jest.mock("@/lib/preferences", () => ({
   writePreference: jest.fn(() => Promise.resolve()),
 }));
 // Saturday 14 November 2026, noon in Iceland.
-jest.mock("@/lib/clock", () => ({ now: () => new Date("2026-11-14T12:00:00Z") }));
+jest.mock("@/lib/clock", () => ({ now: jest.fn(() => new Date("2026-11-14T12:00:00Z")) }));
 
 const bookingId = northBooking().id;
 const declinedId = "0190a1d6-0000-7000-8000-0000000000b2";
@@ -113,7 +114,7 @@ describe("My rides (spec 16, 3.3)", () => {
     // though the ride with the request leaves first.
     expect(rowNames()).toEqual([
       expect.stringMatching(/^Passenger, Sunday 15 November, .*, Pay by 12:30$/),
-      expect.stringMatching(/^You drive, Sunday 15 November, .*, Answer Gunna's request, /),
+      expect.stringMatching(/^You drive, Sunday 15 November, .*, Answer Gunna's request$/),
       expect.stringMatching(/^Passenger, Sunday 15 November, .*Waiting for Anna's answer$/),
       expect.stringMatching(/^Passenger, Monday 16 November, .*Seat confirmed$/),
       expect.stringMatching(/^You drive, Tuesday 17 November, /),
@@ -135,7 +136,7 @@ describe("My rides (spec 16, 3.3)", () => {
     ).toBeVisible();
     expect(
       screen.getByRole("button", {
-        name: "You drive, Sunday 15 November, Leaves BSÍ bus terminal at 09:00, arrives at Hof, Akureyri at 14:00, 5 h, 2 stops, Answer Gunna's request, 1 of 3 seats taken",
+        name: "You drive, Sunday 15 November, Leaves BSÍ bus terminal at 09:00, arrives at Hof, Akureyri at 14:00, 5 h, 2 stops, 1 of 3 seats taken, Answer Gunna's request",
       }),
     ).toBeVisible();
     expect(screen.getAllByText("1 of 3 seats taken")).toHaveLength(2);
@@ -161,7 +162,7 @@ describe("My rides (spec 16, 3.3)", () => {
     expect(screen.getByRole("header", { name: "Coming up" })).toBeVisible();
     expect(rowNames()).toEqual([
       expect.stringMatching(
-        /^You drive, Sunday 15 November, .*, Leaves at 09:00, 1 of 3 seats taken$/,
+        /^You drive, Sunday 15 November, .*, 1 of 3 seats taken, Leaves at 09:00$/,
       ),
       expect.stringMatching(/^Passenger, Sunday 15 November, .*, Anna, Leaves at 10:00$/),
       expect.stringMatching(/^Passenger, Monday 16 November, .*, Seat confirmed$/),
@@ -170,6 +171,30 @@ describe("My rides (spec 16, 3.3)", () => {
     expect(screen.getByText("Leaves at 10:00")).toBeVisible();
     // The ticket opens the ride, where "I'm here" is.
     expect(screen.queryByRole("button", { name: /^(Pay|Answer)/ })).toBeNull();
+  });
+
+  it("counts the minutes to leaving down while My rides stays open", async () => {
+    const mockedNow = now as jest.Mock<Date, []>;
+    jest.useFakeTimers();
+    try {
+      await renderApp("/my-rides", {
+        me: completeMe,
+        setUp: (client) => {
+          myRidesApi(client, { upcoming: { bookings: [onTheDay()], trips: [] } });
+        },
+      });
+      expect(await screen.findByText("Leaves at 10:00")).toBeVisible();
+      // The next morning, 40 minutes before, with the screen left open.
+      mockedNow.mockReturnValue(new Date("2026-11-15T09:20:00Z"));
+      await act(() => jest.advanceTimersByTimeAsync(30_000));
+      expect(screen.getByText("Leaves in 40 minutes")).toBeVisible();
+      mockedNow.mockReturnValue(new Date("2026-11-15T09:35:00Z"));
+      await act(() => jest.advanceTimersByTimeAsync(30_000));
+      expect(screen.getByText("Leaves in 25 minutes")).toBeVisible();
+    } finally {
+      mockedNow.mockImplementation(() => new Date("2026-11-14T12:00:00Z"));
+      jest.useRealTimers();
+    }
   });
 
   it("opens the booking to pay, and the driver's trip page to answer the requests", async () => {
@@ -189,7 +214,7 @@ describe("My rides (spec 16, 3.3)", () => {
     expect(screen).toHavePathname(`/bookings/${unpaid.id}`);
     await fireEvent.press(screen.getByRole("button", { name: "Back" }));
     await fireEvent.press(
-      await screen.findByRole("button", { name: /^You drive, .*, Answer Gunna's request, / }),
+      await screen.findByRole("button", { name: /^You drive, .*, Answer Gunna's request$/ }),
     );
     expect(await screen.findByText("One small bag.")).toBeVisible();
     expect(screen).toHavePathname(`/drive/trips/${driving.id}`);

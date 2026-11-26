@@ -229,29 +229,43 @@ test.describe("a ticket with long place names, 360 wide", () => {
         });
       }
       const fit = await ticketFit(page, "trip-result");
-      // Nothing reaches past the ticket, no place is cut, and no line of a
-      // place ends inside a word that has room on a line of its own.
-      expect(fit).toEqual({ past: [], cut: [], brokenWords: [] });
+      // Nothing reaches past the ticket and no place is cut, and the ticket
+      // is whole in the window.
+      expect(fit.past).toEqual([]);
+      expect(fit.cut).toEqual([]);
+      expect(fit.beyondWindow).toBe(0);
       // The times stay on their places' first lines, and the price is whole
       // inside the ticket, beside the timetable or under it.
       const from = await box(ticket.getByTestId("ticket-from-place"));
+      const to = await box(ticket.getByTestId("ticket-to-place"));
       const time = await box(ticket.getByTestId("ticket-time").first());
       expect(Math.abs(time.y - from.y)).toBeLessThan(8 * zoom);
       const card = await box(ticket);
       const price = await box(ticket.getByTestId("ticket-price"));
       expect(price.x).toBeGreaterThanOrEqual(card.x);
       expect(price.x + price.width).toBeLessThanOrEqual(card.x + card.width);
-      // At twice the size the labels of the tab bar are wider than their
-      // tabs, which is the last pass's to mend (plan, PR 12), not a ticket's.
-      if (zoom === 1) await expectNoSidewaysScrollOf(page);
+      if (zoom === 1) {
+        // With the text as set every word is whole: the price goes under
+        // the timetable before it squeezes a name.
+        expect(fit.brokenWords).toEqual([]);
+        // Neither the screen nor the page scrolls sideways. At twice the
+        // size the name line over the scene is wider than the screen, and
+        // the labels of the tab bar than their tabs, which is the last
+        // pass's to mend (plan, PR 12), not a ticket's: the ticket is
+        // whole in the window at either size.
+        expect(fit.screenWider).toBeLessThanOrEqual(0);
+        const wider = await page.evaluate(
+          () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        );
+        expect(wider).toBeLessThanOrEqual(0);
+      } else {
+        // Twice as large, a word longer than a whole line of its place can
+        // only be broken: no other word is, and by then the price stands
+        // under the timetable, so the place has all the room there is.
+        expect(fit.needlessly).toEqual([]);
+        expect(fit.brokenWords.length).toBeGreaterThan(0);
+        expect(price.y).toBeGreaterThanOrEqual(to.y + to.height - 1);
+      }
     });
   }
 });
-
-/** The page is no wider than the window. */
-async function expectNoSidewaysScrollOf(page: Page) {
-  const wider = await page.evaluate(
-    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
-  );
-  expect(wider).toBeLessThanOrEqual(0);
-}

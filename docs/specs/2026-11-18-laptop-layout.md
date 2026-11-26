@@ -218,7 +218,10 @@ changes on a phone.
 
    The map follows under these. So for someone new the map is no longer
    whole in a window 720 high (item 3): "How it works" is, with its
-   button, and the map comes into view with the first scroll.
+   button, and the map comes into view with the first scroll. Signed in
+   with nothing coming up the map is whole in that window, and the link
+   under it ends 25 under the window's edge, as the title's line is 36
+   taller.
 
 ### 3.6 Search results
 
@@ -509,7 +512,11 @@ Every other text is one the app has.
   dark in Icelandic. Pictures of every changed screen, before and now at
   1440 wide, are in the project files under `laptop-web/built`. On Find
   the journey also points at a ride and looks for it on the map, and
-  checks the map and the link under it are whole in a window 720 high.
+  checks what stands first in the side column is whole in a window 720
+  high: "How it works" for someone signed out (spec 31, 3.16; the map
+  under it is then partly below the fold), and the map for someone signed
+  in with nothing coming up (the link under it then ends just under the
+  window's edge).
 - By hand, still to do (Martin): a look at the main screens in a laptop's
   browser, and a keyboard-only pass through Find, results, a trip and
   Messages.

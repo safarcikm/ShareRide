@@ -71,8 +71,8 @@ export function needTagText(t: Translate, ride: Ride, need: Need, at: Date): str
   }
 }
 
-/** A line that ends as a sentence does; an Icelandic date already ends with a full stop. */
-const sentence = (text: string) => (text.endsWith(".") ? text : `${text}.`);
+/** Without the full stop an Icelandic date ends with: the text it goes into has its own. */
+const unstopped = (text: string) => (text.endsWith(".") ? text.slice(0, -1) : text);
 
 /** How long is left, rounded down to the minute and never below one, as on the request itself. */
 function timeLeftText(t: Translate, locale: Locale, by: Date, at: Date): string {
@@ -85,7 +85,7 @@ export interface NeedCardTexts {
   readonly title: string;
   /** "Mjódd to Selfoss, Fri 27 Nov. 11 h left to answer." */
   readonly detail: string;
-  /** The button: "See the request", "Pay 1,500 ISK", "Open the ride". */
+  /** The button: "See the request", "Pay 1,500 ISK", "See your ride". */
   readonly action: string;
 }
 
@@ -103,18 +103,23 @@ export function needCardTexts(
   need: Need,
   at: Date,
 ): NeedCardTexts {
-  const day = formatShortDay(isoDay(dayOf(ride.startsAt)), locale);
-  const where = (ends: { readonly from: string; readonly to: string }) =>
-    sentence(`${t("ride.fromTo", ends)}, ${day}`);
+  const day = unstopped(formatShortDay(isoDay(dayOf(ride.startsAt)), locale));
+  /** "Mjódd to Selfoss, Fri 27 Nov.", and what comes after it as a sentence of its own. */
+  const where = (ends: { readonly from: string; readonly to: string }, then?: string) => {
+    const route = t("ride.fromTo", ends);
+    return then === undefined
+      ? t("needs.where", { route, day })
+      : t("needs.whereThen", { route, day, then: unstopped(then) });
+  };
   switch (need.kind) {
     case "answer": {
       const one = asking(ride);
-      const left = sentence(timeLeftText(t, locale, need.by, at));
+      const left = timeLeftText(t, locale, need.by, at);
       const count = ride.kind === "trip" ? ride.trip.openRequests : 1;
       return one === null
         ? {
             title: t("needs.answerMany", { count }),
-            detail: `${where(endsOf(ride, locale))} ${left}`,
+            detail: where(endsOf(ride, locale), left),
             action: t("needs.seeRequest", { count }),
           }
         : {
@@ -122,7 +127,7 @@ export function needCardTexts(
               name: one.name,
               seats: t("search.seatCount", { count: one.seats }),
             }),
-            detail: `${where({ from: one.from[locale], to: one.to[locale] })} ${left}`,
+            detail: where({ from: one.from[locale], to: one.to[locale] }, left),
             action: t("needs.seeRequest", { count: 1 }),
           };
     }
@@ -134,10 +139,10 @@ export function needCardTexts(
           booking?.trip.bookingMode === "approval"
             ? t("needs.saidYes", { name: firstNameOf(t, booking.driver) })
             : t("needs.payToKeep"),
-        detail: `${where(endsOf(ride, locale))} ${sentence(payByShortText(t, need.by, at))}`,
+        detail: where(endsOf(ride, locale), payByShortText(t, need.by, at)),
         action:
           booking === null
-            ? t("needs.openRide")
+            ? t("needs.seeRide")
             : t("booking.pay", { total: formatMoney(booking.total, locale) }),
       };
     }
@@ -145,7 +150,7 @@ export function needCardTexts(
       return {
         title: leavesText(t, need.by, at),
         detail: where(endsOf(ride, locale)),
-        action: t("needs.openRide"),
+        action: t("needs.seeRide"),
       };
   }
 }

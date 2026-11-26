@@ -5,7 +5,7 @@ import {
   type TripSearchResult,
 } from "@shareride/contracts";
 import { timesOfDay, type TimeOfDay } from "@shareride/domain";
-import { capitalised, formatDay, formatShortDay } from "@shareride/i18n";
+import { capitalised, formatDay, formatShortDay, type MessageKey } from "@shareride/i18n";
 import { router, useLocalSearchParams } from "expo-router";
 import { SlidersHorizontal } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
@@ -318,8 +318,10 @@ export default function SearchResults() {
   }
 
   const sortLabel = sort === "departure" ? t("results.sortEarliest") : t("results.sortCheapest");
-  // The rides the list shows, counted once, and said when a filter changes it.
-  const counted = !loading && found !== undefined && found.length > 0 ? found.length : null;
+  // The rides the list shows, counted once, and said when a filter changes
+  // it, also when it leaves none: the count stays, so that is heard too.
+  const counted =
+    !loading && found !== undefined && (found.length > 0 || filtered) ? found.length : null;
   return (
     <Screen siteFooter aside={map} refresh={refresh}>
       <View style={styles.header}>
@@ -500,7 +502,7 @@ function Found({
         result={result}
         searched={searched}
         seats={seats}
-        showDay
+        dayInName
         {...mapProps(onMap, result)}
       />
     ));
@@ -529,10 +531,20 @@ function Found({
 }
 
 /**
+ * What the end of the list says to do next. Cut at the first fifty, a
+ * search of any day says to choose one, and a search of one day to filter
+ * by time of day; with every ride shown, a search of one day says to try
+ * another, which the days under it offer.
+ */
+function endLine(first: boolean, onDay: boolean): MessageKey {
+  if (first) return onDay ? "results.endFirstOnlyDay" : "results.endFirstOnly";
+  return onDay ? "results.endOtherDay" : "results.endAnyDay";
+}
+
+/**
  * Where the list ends (spec 31, 3.6 item 4): the puffin by its pin, that
  * this is every ride found, or the first fifty, and All rides, which shows
- * every ride leaving soon. After a search for one day (`onDay`) it says to
- * try another, which the days under it offer.
+ * every ride leaving soon.
  */
 function ListEnd({ count, onDay }: { readonly count: number; readonly onDay: boolean }) {
   const { t } = useLanguage();
@@ -547,11 +559,7 @@ function ListEnd({ count, onDay }: { readonly count: number; readonly onDay: boo
             {first ? t("results.firstOnly", { count }) : t("results.everyTrip")}
           </Text>
           <Text style={[typography.small, { color: palette.textMuted }]}>
-            {first
-              ? t("results.endFirstOnly")
-              : onDay
-                ? t("results.endOtherDay")
-                : t("results.endAnyDay")}
+            {t(endLine(first, onDay))}
           </Text>
         </View>
         <Button variant="text" label={t("results.allRides")} href="/rides" />
@@ -637,7 +645,7 @@ function NothingMatches({
               result={result}
               searched={searched}
               seats={seats}
-              showDay
+              dayInName
               {...mapProps(onMap, result)}
             />
           ))}
@@ -675,5 +683,5 @@ const styles = StyleSheet.create({
   // The puffin, the two lines, then the link; the link goes under them
   // where they leave it no room.
   end: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: spacing.ms },
-  endTexts: { flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: spacing.xxl * 3 },
+  endTexts: { flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: sizes.wordsBeside },
 });

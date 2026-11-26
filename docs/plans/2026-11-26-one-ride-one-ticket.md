@@ -465,6 +465,24 @@ person sees it, in 3.5, 3.6, 3.10 and 3.16):
   `scenePuffinSmall` 60, new.
 - The journeys greet by name ("Hi Anna") where they looked for "Find a
   ride" after signing in.
+- A place and a meeting point list no rides today, so item 8 changed All
+  rides only.
+- `lib/use-clock.ts`, new: `useClock()` gives a screen that counts the
+  present moment, read again every half minute while the screen is in
+  view and in front, and when it or the app comes back. Find and My rides
+  use it; the booked seat and the trip day (PR 7) and the driver's ride
+  (PR 8) take it for their titles and deadlines.
+- `ResultTicket`'s `showDay` is `dayInName`: the ticket always shows its
+  day, and the prop only puts it in the name where no heading says it.
+- `sizes.wordsBeside` 144, new: the narrowest a line's words get before
+  the button or link beside them goes under them (the end card, the offer
+  in "How it works").
+- The Filters chip has its icon and, like the sorting chip, a chevron: it
+  unfolds what is under the row.
+- From the code review, left where they belong: PR 7 takes `leavesText`
+  out of `my-rides/need-texts.ts` for the title that counts down; PR 8
+  adds `MyRideTicket` to `look.spec.ts`'s phone 360 wide; the rest is in
+  PR 12's list.
 
 ## PR 6: a ride's details and booking a seat
 
@@ -637,13 +655,23 @@ and deleting the account (3.19).
 4. **Accessibility:** focus order follows the reading order on each
    rebuilt screen; the road and the tear line are skipped. With text at
    200% on a phone 360 wide, the labels of the tab bar are wider than their
-   tabs and the page scrolls 4 px sideways (found by PR 5's `look.spec.ts`,
-   which measures the sideways scroll with the text as set only): the
-   labels fit their tabs, and that journey measures it at 200% too.
+   tabs (the page scrolls 4 px sideways) and Find's name line (the logo,
+   the name, Beta and the language) is 85 px wider than the screen, so the
+   language switch is reached by scrolling sideways. Both were there
+   before, and were found by PR 5's `look.spec.ts`, which measures the
+   sideways scroll with the text as set only: the labels fit their tabs,
+   the name line wraps, and that journey measures it at 200% too.
 5. **Sign-in** (3.15): if spec 29's screen has landed by then, the ride
    someone was about to book shows over the form as a ticket; if not, it
    is named as left for that spec's thread.
-6. **Docs:** spec 31 becomes Built, with what differs from the drawings;
+6. **Small things PR 5's code review named:** after "Show all rides"
+   focus goes to the first ride; a chip is 40 high on the web, under the
+   44 of a touch target; "New driver" is an amber tag, which rule 6 keeps
+   for what needs someone; the reading order of the yellow card beside
+   the rides on a laptop; All rides' centred title; Find on a phone moves
+   down a ticket's height when my rides arrive after the rides leaving
+   soon (room kept for them, or both shown together).
+7. **Docs:** spec 31 becomes Built, with what differs from the drawings;
    spec 15 has the parts; the roadmap and the changelog.
 
 ## After merging

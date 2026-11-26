@@ -44,7 +44,7 @@ export function ResultTicket({
   result,
   searched,
   seats,
-  showDay = false,
+  dayInName = false,
   fill = false,
   onShow,
   marked = false,
@@ -56,7 +56,7 @@ export function ResultTicket({
    * In a list with no heading for each day, such as one sorted by price:
    * the ticket's name starts with the day. The ticket shows it either way.
    */
-  readonly showDay?: boolean;
+  readonly dayInName?: boolean;
   /**
    * In a grid: as tall as the tallest ticket of its row, with the foot at
    * the bottom, so the drivers of a row are level.
@@ -111,7 +111,7 @@ export function ResultTicket({
   }`;
 
   const label = [
-    showDay ? day : null,
+    dayInName ? day : null,
     t("results.boards", { name: boardName, time: formatClock(boardsAt) }),
     boardNearby,
     t("results.alights", { name: alightName, time: formatClock(alightsAt) }),

@@ -2,7 +2,7 @@ import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test, type Page } from "@playwright/test";
 import { english, signUp } from "./support/account";
-import { requestSeat, secondPage } from "./support/cancelling";
+import { requestSeat } from "./support/cancelling";
 import { postTripToSelfoss } from "./support/trips";
 
 // Pictures of screens for the specs (docs/specs/images), kept in git with
@@ -13,7 +13,7 @@ import { postTripToSelfoss } from "./support/trips";
 const env = process.env as Readonly<Record<string, string | undefined>>;
 const root = env["PICTURES_DIR"];
 
-async function choose(page: Page, end: "From" | "To", typed: string, name: RegExp) {
+async function choose(page: Page, end: string, typed: string, name: RegExp) {
   await page.getByRole("button", { name: new RegExp(`^${end}: `) }).click();
   await page.getByLabel(end, { exact: true }).fill(typed);
   await page.getByRole("button", { name }).click();
@@ -22,10 +22,12 @@ async function choose(page: Page, end: "From" | "To", typed: string, name: RegEx
 /** Makes the window as tall as the open screen, which scrolls inside the page, to draw all of it. */
 async function showWhole(page: Page, width: number) {
   const scroll = page.getByTestId("screen-scroll").filter({ visible: true });
-  // The screen's top too: on a laptop the page's header is above it.
-  const height = await scroll.evaluate(
-    (element) => element.getBoundingClientRect().top + element.scrollHeight,
-  );
+  // The screen's top too: on a laptop the page's header is above it. And
+  // what stands under the screen, as a phone's menu does.
+  const height = await scroll.evaluate((element) => {
+    const { top, bottom } = element.getBoundingClientRect();
+    return top + element.scrollHeight + (window.innerHeight - bottom);
+  });
   await page.setViewportSize({ width, height: Math.max(Math.ceil(height), 720) });
   await page.waitForTimeout(500);
 }
@@ -152,14 +154,28 @@ test.describe("pictures", () => {
     await page.setViewportSize(window);
     await signUp(page, english, "Bára");
     const tripId = await postTripToSelfoss(page, "09:00");
-    const { page: dora, close } = await secondPage(browser, info);
-    await dora.setViewportSize(window);
+    // Dóra's browser, like Bára's: the same window, at twice its size on a phone.
+    const { userAgent, isMobile, hasTouch, baseURL } = info.project.use;
+    const other = await browser.newContext({
+      viewport: window,
+      deviceScaleFactor: 2,
+      userAgent,
+      isMobile,
+      hasTouch,
+      baseURL,
+      locale: "en-GB",
+    });
+    const dora = await other.newPage();
     await requestSeat(dora, "Dóra", tripId);
 
     const shoot = async (of: Page, name: string, scheme: "light" | "dark") => {
       await showWhole(of, window.width);
       const kind = wide ? "laptop" : "phone";
-      await of.screenshot({ path: join(folder, `${name}-${kind}-${scheme}.png`) });
+      // A laptop's picture is as large as its window; a phone's twice that.
+      await of.screenshot({
+        path: join(folder, `${name}-${kind}-${scheme}.png`),
+        scale: wide ? "css" : "device",
+      });
       await of.setViewportSize(window);
     };
     const find = async (greeting: string, needs: string) => {
@@ -168,21 +184,20 @@ test.describe("pictures", () => {
       await expect(page.getByText(needs, { exact: true })).toBeVisible();
       await expect(page.getByTestId("trip-result").first()).toBeVisible();
     };
-    const results = async (address: string) => {
-      await dora.goto(address);
+    // What Dóra finds from Mjódd to Hveragerði, a part of both drivers' rides.
+    // The points by their whole names: a search made before is a button
+    // on this screen too, and starts with the same word.
+    const results = async (from: string, to: string, mjodd: RegExp, findRide: string) => {
+      await dora.goto("/search");
+      await choose(dora, from, "mjód", mjodd);
+      await choose(dora, to, "hverag", /^N1 Hveragerði,/);
+      await dora.getByRole("button", { name: findRide, exact: true }).click();
       await expect(dora.getByTestId("results-end").filter({ visible: true })).toBeVisible();
     };
 
     await find("Hi Bára", "Dóra asks for 1 seat");
     await shoot(page, "find", "light");
-    // What Dóra finds between Mjódd and Selfoss: Bára's ride and a sample one.
-    await dora.goto("/search");
-    await choose(dora, "From", "mjód", /^Mjódd bus terminal,/);
-    await choose(dora, "To", "selfo", /^N1 Selfoss,/);
-    await dora.getByRole("button", { name: "Find a ride", exact: true }).click();
-    await expect(dora).toHaveURL(/\/search\/results\?/);
-    const found = dora.url();
-    await results(found);
+    await results("From", "To", /^Mjódd bus terminal,/, "Find a ride");
     await shoot(dora, "results", "light");
 
     if (!wide) {
@@ -194,9 +209,9 @@ test.describe("pictures", () => {
       }
       await find("Hæ Bára", "Dóra biður um 1 sæti");
       await shoot(page, "find", "dark");
-      await results(found);
+      await results("Frá", "Til", /^Mjódd,/, "Finna far");
       await shoot(dora, "results", "dark");
     }
-    await close();
+    await other.close();
   });
 });

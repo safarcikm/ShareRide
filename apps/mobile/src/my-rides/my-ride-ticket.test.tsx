@@ -153,13 +153,15 @@ describe("a ride I drive", () => {
     expect(edge()).toHaveStyle({ borderBottomColor: colors.light.primary });
   });
 
-  it("says in yellow who waits for an answer, with the seats beside it", async () => {
+  it("says in yellow who waits for an answer, at the foot's end as on a seat of mine", async () => {
     await inApp(drive(northMyTrip));
-    expect(foot().getByText("Answer Gunna's request")).toHaveStyle({
+    // The seats where a seat's ticket has its driver, and the yellow tag
+    // where every ticket of a list has it (spec 31, 3.10).
+    const start = within(screen.getByTestId("ticket-foot-start"));
+    const end = within(screen.getByTestId("ticket-foot-end"));
+    expect(start.getByText("1 of 3 seats taken")).toHaveStyle({ color: colors.light.text });
+    expect(end.getByText("Answer Gunna's request")).toHaveStyle({
       color: colors.light.warning,
-    });
-    expect(foot().getByText("1 of 3 seats taken")).toHaveStyle({
-      color: colors.light.textMuted,
     });
   });
 
@@ -200,7 +202,7 @@ describe("a ride I drive", () => {
     await inApp(drive(northMyTrip));
     expect(
       screen.getByRole("button", {
-        name: "You drive, Sunday 15 November, Leaves BSÍ bus terminal at 09:00, arrives at Hof, Akureyri at 14:00, 5 h, 2 stops, Answer Gunna's request, 1 of 3 seats taken",
+        name: "You drive, Sunday 15 November, Leaves BSÍ bus terminal at 09:00, arrives at Hof, Akureyri at 14:00, 5 h, 2 stops, 1 of 3 seats taken, Answer Gunna's request",
       }),
     ).toBeVisible();
   });
