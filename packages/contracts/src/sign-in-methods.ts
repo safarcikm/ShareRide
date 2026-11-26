@@ -29,7 +29,7 @@ export type PasswordState = z.infer<typeof passwordStateSchema>;
  * A device set up for Face ID or fingerprint (spec 27, 3.6): the browser
  * and system that set it up, such as Safari and iPhone, null when unknown.
  * `credentialId` (base64url) lets the browser forget it once removed
- * (spec 28, 3.4); it is no secret.
+ * (spec 29, 3.4); it is no secret.
  */
 export const memberPasskeySchema = z.object({
   id: z.uuid(),

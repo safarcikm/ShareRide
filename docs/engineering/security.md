@@ -100,7 +100,7 @@ How [ADR 0016](../decisions/0016-own-sign-in-module.md) is built, in
   console's passkeys share the domain but not the table: one used here is
   refused as `passkey_invalid`, and one in neither table as
   `passkey_unknown`, so the app tells the browser to forget it through the
-  Signal API, never the console's, R28.4). Setup asks for a platform authenticator
+  Signal API, never the console's, R29.4). Setup asks for a platform authenticator
   with user verification and a resident key, and excludes the account's
   passkeys, so a device set up already is refused by the browser. Each
   account's user handle is a keyed hash of it (HMAC with `AUTH_SECRET`),
@@ -110,7 +110,7 @@ How [ADR 0016](../decisions/0016-own-sign-in-module.md) is built, in
   `passkey_expired`), and a setup's is bound to the account, with at most 5
   of an account's setups waiting at once; sign-in
   options are limited to 60 per 10 minutes per IP address (its /64), in
-  the API's memory, which leaves room for step 1's quiet request (spec 28,
+  the API's memory, which leaves room for step 1's quiet request (spec 29,
   3.1): where the browser can list passkeys among the email field's
   suggestions (conditional mediation), step 1 asks for options as it opens
   and every 4.5 minutes while it stays open, and the passkey picked there

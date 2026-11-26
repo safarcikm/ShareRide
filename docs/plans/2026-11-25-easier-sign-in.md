@@ -4,7 +4,7 @@
 > task by task. Steps use checkboxes (`- [ ]`) for tracking.
 
 **Goal:** a returning member gets back in with a glance or a touch, or with
-the way they used last time on top ([spec 28](../specs/2026-11-25-easier-sign-in.md)).
+the way they used last time on top ([spec 29](../specs/2026-11-25-easier-sign-in.md)).
 
 **Architecture:** no migration and no new dependency. The API learns one
 error (`passkey_unknown`), shows each passkey's `credentialId`, and allows
@@ -19,7 +19,7 @@ in `packages/domain`.
 `useAutoRegister`, `WebAuthnAbortService`), `@simplewebauthn/server`
 14.1.0, Expo Router, Playwright with Chromium's virtual authenticator.
 
-**Spec:** [spec 28](../specs/2026-11-25-easier-sign-in.md); research and
+**Spec:** [spec 29](../specs/2026-11-25-easier-sign-in.md); research and
 approval in the [plan doc](https://claude.ai/artifact/A41X4xdkpNGaFc47ryXzYA).
 
 **Date:** 2026-11-25 · **Status:** In progress
@@ -29,12 +29,12 @@ approval in the [plan doc](https://claude.ai/artifact/A41X4xdkpNGaFc47ryXzYA).
 - Three PRs, each `feat(sign-in)`, in this order; each releases on its own.
 - Every text in `packages/i18n/src/messages/en.ts` and `is.ts`.
 - Nothing new is sent to the API about the device; the three device values
-  of spec 28, section 5, go through `@/lib/preferences` only.
+  of spec 29, section 5, go through `@/lib/preferences` only.
 - Quiet requests never show an error: any failure leaves the screen as it
-  was (spec 28, 3.1, item 3; 3.3, item 2).
+  was (spec 29, 3.1, item 3; 3.3, item 2).
 - The button "Face ID or fingerprint" keeps working while the quiet request
   runs: it pauses the quiet request first, and resumes it after.
-- An operator's passkey is never reported to the browser (R28.4).
+- An operator's passkey is never reported to the browser (R29.4).
 - No passkey work on iOS and Android: the native `passkey.ts` answers
   "not available" to every new method.
 
@@ -110,7 +110,7 @@ cancels on unmount and on `pause`, starts again on `resume`; ignores every
 failure.
 
 - [x] Failing tests in `passkey.test.tsx` ("Face ID in the email field
-  (spec 28, 3.1)"): starts where `autofillAvailable` and `passkeySignIn`;
+  (spec 29, 3.1)"): starts where `autofillAvailable` and `passkeySignIn`;
   not otherwise; an answer signs in with no tap; the button pauses it (one
   `get`, `cancel` called) and it resumes after; renews after
   `keepPasskeyOptionsMs` with fake timers; `passkey_unknown` shows
@@ -125,7 +125,7 @@ failure.
 
 **Files:** `apps/mobile/e2e/passkey.spec.ts`; `docs/engineering/security.md`
 (passkeys: limit 60, `passkey_unknown`, the quiet request, the Signal API);
-spec 27 (a line pointing to spec 28 under 3.1, 3.3 and 3.6);
+spec 27 (a line pointing to spec 29 under 3.1, 3.3 and 3.6);
 `docs/specs/README.md`, `docs/plans/README.md`.
 
 - [x] Add "picks the passkey from the email field" where Chromium's
@@ -146,7 +146,7 @@ spec 27 (a line pointing to spec 28 under 3.1, 3.3 and 3.6);
 with `SignInWay = "google" | "apple" | "passkey" | "password" | "email"`.
 
 - [ ] Tests: true for an email sign-in on a capable browser; false for
-  each condition of R28.2 alone; declined 29 days ago false, 30 days ago
+  each condition of R29.2 alone; declined 29 days ago false, 30 days ago
   true. Implement; commit.
 
 ### Task 6: What the last sign-in was

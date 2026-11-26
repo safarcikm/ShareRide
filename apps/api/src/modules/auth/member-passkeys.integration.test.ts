@@ -377,7 +377,7 @@ describe("signing in with Face ID or fingerprint (spec 27, 3.3)", () => {
     expect(api.logLines.join("")).toContain('"via":"passkey"');
   });
 
-  it("says a passkey in neither table is unknown, so the browser can forget it (spec 28, 3.4)", async () => {
+  it("says a passkey in neither table is unknown, so the browser can forget it (spec 29, 3.4)", async () => {
     newIp();
     const stranger = authenticator();
     stranger.register({ challenge: "AAAA", user: { id: "AZCh1gAAcACAAAAAAAAAAQ" } });
@@ -388,7 +388,7 @@ describe("signing in with Face ID or fingerprint (spec 27, 3.3)", () => {
     });
   });
 
-  it("refuses the console's passkey on the same site, and never calls it unknown (R28.4)", async () => {
+  it("refuses the console's passkey on the same site, and never calls it unknown (R29.4)", async () => {
     const operator = await member();
     newIp();
     const console = authenticator();
@@ -425,7 +425,7 @@ describe("signing in with Face ID or fingerprint (spec 27, 3.3)", () => {
       }),
     ).toMatchObject({ ok: false, status: 404 });
     newIp();
-    // Unknown, so this browser stops offering it (spec 28, 3.4).
+    // Unknown, so this browser stops offering it (spec 29, 3.4).
     expect(await signIn(device)).toMatchObject({
       ok: false,
       status: 400,
@@ -477,7 +477,7 @@ describe("signing in with Face ID or fingerprint (spec 27, 3.3)", () => {
     });
   });
 
-  it("limits the sign-in options to 60 in 10 minutes per network address (R28.6)", async () => {
+  it("limits the sign-in options to 60 in 10 minutes per network address (R29.6)", async () => {
     newIp();
     for (let i = 0; i < 60; i++) {
       expect(await api.client.call(passkeySignInOptionsRoute, { body: {} })).toMatchObject({

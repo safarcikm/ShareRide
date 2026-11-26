@@ -1502,7 +1502,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   "How carpooling works". It is in the sitemap with its own title, and the
   server writes its text into the first answer's `<noscript>` for search
   engines that do not run the app.
-- Face ID in the email field (spec 28, 3.1 and 3.4): where the browser can
+- Face ID in the email field (spec 29, 3.1 and 3.4): where the browser can
   list passkeys among the email field's suggestions, step 1 of signing in
   asks for options as it opens and hands them to the browser quietly, so
   picking the PuffinRide passkey there signs in as the "Face ID or
@@ -1513,7 +1513,7 @@ releases follow [Semantic Versioning](https://semver.org/).
   app then tells the browser to forget it (the Signal API); removing a
   device in Settings tells this browser too, and `GET /v1/me/sign-in-methods`
   gives each passkey's `credentialId` for it. The console's passkeys stay
-  `passkey_invalid` and are never reported (R28.4). Sign-in options are
+  `passkey_invalid` and are never reported (R29.4). Sign-in options are
   limited to 60 per 10 minutes per address (was 20).
 
 ### Fixed

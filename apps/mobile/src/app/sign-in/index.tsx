@@ -67,7 +67,7 @@ function passwordErrorText(t: Translate, failure: CallFailure): string {
 
 /**
  * What a refused sign-in with Face ID or fingerprint says (spec 27, 3.3,
- * item 2): the same for a passkey removed as for the console's (spec 28, 3.4).
+ * item 2): the same for a passkey removed as for the console's (spec 29, 3.4).
  */
 function passkeyErrorText(t: Translate, failure: CallFailure): string {
   const { code, retryAfterSeconds = 0 } = failure.error;
@@ -103,10 +103,10 @@ function ChooseHowScreen() {
   const sending = useRef(false);
   const focused = useIsFocused();
   // On a laptop the field takes the focus, so its suggestions show at once
-  // (spec 28, 3.1, item 5); not on a phone, where the keyboard would cover the rest.
+  // (spec 29, 3.1, item 5); not on a phone, where the keyboard would cover the rest.
   const wide = useWideScreen();
   const focusEmail = Platform.OS === "web" && wide;
-  // A passkey picked from the email field's suggestions (spec 28, 3.1).
+  // A passkey picked from the email field's suggestions (spec 29, 3.1).
   const autofill = usePasskeyAutofill({
     enabled: passkeyOffered && emailSignIn && focused,
     async onAnswer(credential) {
@@ -162,7 +162,7 @@ function ChooseHowScreen() {
   /**
    * Signs in with the device's answer, from the button's sheet or the email
    * field; true when signed in. A passkey the site no longer has is one this
-   * browser stops offering (spec 28, 3.4).
+   * browser stops offering (spec 29, 3.4).
    */
   async function finishPasskey(credential: PasskeyAssertion): Promise<boolean> {
     const signedIn = await session.signInWithPasskey(credential);
@@ -178,7 +178,7 @@ function ChooseHowScreen() {
    * The device's own sheet, then signed in with no email typed (spec 27,
    * 3.3). Closing the sheet, or a browser with no passkey for PuffinRide,
    * changes nothing, and the next tap uses the same options. The email
-   * field's quiet request waits meanwhile (spec 28, 3.1, item 4).
+   * field's quiet request waits meanwhile (spec 29, 3.1, item 4).
    */
   async function signInWithPasskey() {
     if (sending.current) return;
@@ -303,7 +303,7 @@ function ChooseHowScreen() {
             error={fieldError}
             keyboardType="email-address"
             autoComplete="username"
-            // The browser lists the site's passkeys among its suggestions (spec 28, 3.1).
+            // The browser lists the site's passkeys among its suggestions (spec 29, 3.1).
             webAutoComplete="username webauthn"
             autoFocus={focusEmail}
             textContentType="username"

@@ -61,7 +61,7 @@ autofill (a later polish), checking passwords against a breach service.
 
 ### 3.1 The sign-in screen (step 1)
 
-> [Spec 28](2026-11-25-easier-sign-in.md) adds to this section: the passkey in the email field's suggestions (its 3.1), the way used last time first and a calmer screen (3.5 and 3.6).
+> [Spec 29](2026-11-25-easier-sign-in.md) adds to this section: the passkey in the email field's suggestions (its 3.1), the way used last time first and a calmer screen (3.5 and 3.6).
 
 Spec 26's screen gains a password field and, where the device can, a
 button for Face ID or fingerprint:
@@ -100,7 +100,7 @@ button for Face ID or fingerprint:
 
 ### 3.3 Signing in with Face ID or fingerprint
 
-> [Spec 28](2026-11-25-easier-sign-in.md) adds to this section: the same sign-in from the email field (its 3.1), and `passkey_unknown` for a passkey the site no longer has, which the browser is told to forget (3.4).
+> [Spec 29](2026-11-25-easier-sign-in.md) adds to this section: the same sign-in from the email field (its 3.1), and `passkey_unknown` for a passkey the site no longer has, which the browser is told to forget (3.4).
 
 1. "Face ID or fingerprint" asks the browser for a passkey. The browser
    shows its own sheet (Face ID, Touch ID, the fingerprint reader, Windows
@@ -170,7 +170,7 @@ button for Face ID or fingerprint:
 
 ### 3.6 Face ID or fingerprint in Settings
 
-> [Spec 28](2026-11-25-easier-sign-in.md) adds to this section: removing a device also tells this browser to forget it (its 3.4).
+> [Spec 29](2026-11-25-easier-sign-in.md) adds to this section: removing a device also tells this browser to forget it (its 3.4).
 
 1. Sign-in methods lists, below the email and Google, **Password** ("Set"
    with the date it was last changed, or "Not set") and **Face ID or

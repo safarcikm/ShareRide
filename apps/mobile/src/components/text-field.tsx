@@ -27,7 +27,7 @@ interface TextFieldProps extends Pick<
   readonly error?: string | undefined;
   /**
    * The web's own `autocomplete`, in place of `autoComplete` there, for a
-   * value the phones do not know, such as "username webauthn" (spec 28, 3.1).
+   * value the phones do not know, such as "username webauthn" (spec 29, 3.1).
    */
   readonly webAutoComplete?: string;
 }

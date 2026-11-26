@@ -4,7 +4,7 @@ import { english, enterCodes, finishSignUp, menuLink } from "./support/account";
 import { emailTo } from "./support/email";
 import { newPhoneNumber } from "./support/sms";
 
-// Spec 27's Face ID or fingerprint journey (section 8) and spec 28's
+// Spec 27's Face ID or fingerprint journey (section 8) and spec 29's
 // (section 7) on the web build, against the test API. Chromium's virtual
 // authenticator stands in for the device's own lock: built in
 // ("internal"), keeping the passkey, and checking the person (user
@@ -112,11 +112,11 @@ test("a new member sets up Face ID or fingerprint, signs in with it, then remove
   await expect(page.getByText(/^Face ID or fingerprint is removed for /)).toBeVisible();
   await expect(page.getByText("Not set up", { exact: true })).toBeVisible();
 
-  // This browser is told, and stops offering it (spec 28, 3.4).
+  // This browser is told, and stops offering it (spec 29, 3.4).
   await expect.poll(() => keptPasskeys(lock)).toBe(0);
 });
 
-test("a member signs in from the email field's suggestions, with no tap (spec 28, 3.1)", async ({
+test("a member signs in from the email field's suggestions, with no tap (spec 29, 3.1)", async ({
   page,
 }) => {
   await addDeviceLock(page);
@@ -134,7 +134,7 @@ test("a member signs in from the email field's suggestions, with no tap (spec 28
   await expect(page.getByText("Hekla", { exact: true }).filter(visible)).toBeVisible();
 });
 
-test("a passkey the site does not have says so, and the browser forgets it (spec 28, 3.4)", async ({
+test("a passkey the site does not have says so, and the browser forgets it (spec 29, 3.4)", async ({
   page,
 }) => {
   const lock = await addDeviceLock(page);

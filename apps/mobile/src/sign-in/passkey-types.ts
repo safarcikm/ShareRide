@@ -29,7 +29,7 @@ export interface DevicePasskeys {
   get(options: PasskeyOptions): Promise<PasskeyAssertion>;
   /**
    * Whether the browser can offer the site's passkeys in the email field's
-   * suggestions (spec 28, 3.1): a built-in lock and a quiet request.
+   * suggestions (spec 29, 3.1): a built-in lock and a quiet request.
    */
   autofillAvailable(): Promise<boolean>;
   /**
@@ -41,7 +41,7 @@ export interface DevicePasskeys {
   cancel(): void;
   /**
    * Tells the browser this site has no passkey `credentialId` any more, so
-   * it stops offering it (spec 28, 3.4). Never throws, and waits a second at most.
+   * it stops offering it (spec 29, 3.4). Never throws, and waits a second at most.
    */
   forget(credentialId: string): Promise<void>;
 }

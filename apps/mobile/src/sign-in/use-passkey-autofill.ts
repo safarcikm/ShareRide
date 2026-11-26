@@ -29,7 +29,7 @@ export const autofillRetryMs = 30_000;
 const endedByPersonMs = 1_000;
 
 /**
- * Face ID in the email field (spec 28, 3.1): while `enabled` and the browser
+ * Face ID in the email field (spec 29, 3.1): while `enabled` and the browser
  * can offer the site's passkeys among the email field's suggestions, asks
  * for sign-in options and hands them to the browser quietly. A passkey
  * picked there goes to `onAnswer`, and the request starts again after a

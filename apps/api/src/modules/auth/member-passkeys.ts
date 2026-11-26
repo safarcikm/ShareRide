@@ -44,7 +44,7 @@ export interface PasskeyInvalid {
 }
 /**
  * The passkey is in neither table: removed, or from a test, so the browser
- * may forget it (spec 28, 3.4). The console's own is `passkey_invalid`.
+ * may forget it (spec 29, 3.4). The console's own is `passkey_invalid`.
  */
 export interface PasskeyUnknown {
   readonly code: "passkey_unknown";
@@ -268,7 +268,7 @@ export function createMemberPasskeyService(
           .for("update", { of: memberPasskeys });
         if (found === undefined) {
           // The console's shares the site, and the browser is never told to
-          // forget it (R28.4); one in neither table was removed.
+          // forget it (R29.4); one in neither table was removed.
           const [console] = await tx
             .select({ id: operatorPasskeys.id })
             .from(operatorPasskeys)

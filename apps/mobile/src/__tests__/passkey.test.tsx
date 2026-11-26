@@ -239,7 +239,7 @@ const signedInAsAnna = (client: FakeClient) => {
 const notSetUp =
   "This device's sign-in isn't set up for your PuffinRide account. Use your email, then set it up again in Settings.";
 
-describe("Face ID in the email field (spec 28, 3.1)", () => {
+describe("Face ID in the email field (spec 29, 3.1)", () => {
   beforeEach(() => {
     mockDevice.autofillAvailable.mockReturnValue(Promise.resolve(true));
   });
@@ -512,7 +512,7 @@ describe("Face ID in the email field (spec 28, 3.1)", () => {
     expect(mockDevice.forget).toHaveBeenCalledWith("credential-one");
   });
 
-  it("keeps the console's passkey with the browser (R28.4)", async () => {
+  it("keeps the console's passkey with the browser (R29.4)", async () => {
     quietRequests();
     await openSignIn((client) => {
       client.answer("/v1/auth/passkey", () => failure(400, "passkey_invalid"));
@@ -585,7 +585,7 @@ describe("Face ID or fingerprint in Settings (spec 27, 3.6)", () => {
     expect(screen.queryByText("Safari on iPhone")).toBeNull();
     expect(screen.getByText("Not set up")).toBeVisible();
     expect(callsTo(app.client, "/v1/me/passkeys/{id}")).toHaveLength(1);
-    // This browser stops offering it (spec 28, 3.4).
+    // This browser stops offering it (spec 29, 3.4).
     expect(mockDevice.forget).toHaveBeenCalledWith("credential-of-the-iphone");
   });
 

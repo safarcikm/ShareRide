@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { deviceName, memberPasskeyRules } from "./passkeys.ts";
 
 describe("memberPasskeyRules (R27.8, ADR 0048)", () => {
-  it("allows 10 devices per account, a challenge for 5 minutes, and 60 sign-in options in 10 minutes (R28.6)", () => {
+  it("allows 10 devices per account, a challenge for 5 minutes, and 60 sign-in options in 10 minutes (R29.6)", () => {
     expect(memberPasskeyRules).toEqual({
       perAccount: 10,
       challengeSeconds: 300,

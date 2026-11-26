@@ -1,4 +1,4 @@
-# Spec 28: Easier sign-in, with Face ID first
+# Spec 29: Easier sign-in, with Face ID first
 
 **Owner:** Martin · **Date:** 2026-11-25 · **Status:** Approved (2026-11-25)
 
@@ -98,7 +98,7 @@ Google One Tap, magic links.
    member is asked once: **"Use Face ID or fingerprint next time?"**, with
    "Sign in with a glance or a touch on this device. Your email code always
    works too.", **"Set it up"** and **"Not now"**.
-2. Only when all of these hold (R28.2): the account existed before this
+2. Only when all of these hold (R29.2): the account existed before this
    sign-in (a new account gets spec 27's "Sign in faster next time"
    instead); the browser has a built-in authenticator and the server has
    passkeys (as spec 27, 3.1, item 1); this browser is not known to have a
@@ -174,12 +174,12 @@ Google One Tap, magic links.
 
 | ID    | Rule                                                                                                                                                                                                                                                  |
 | ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| R28.1 | Where the browser can, step 1's email field offers the member's passkey; picking it signs in as the "Face ID or fingerprint" button does.                                                                                                             |
-| R28.2 | After the email code, a password, Google or Apple, an existing member is offered Face ID or fingerprint, only on a browser with a built-in authenticator, not known to have a passkey, not declined there in 30 days, and with nothing kept to open. |
-| R28.3 | After a password sign-in, the app may ask the browser to save a passkey by itself; it is told by email like any other (R27.7).                                                                                                                        |
-| R28.4 | A removed passkey, and one no member or operator has, is reported to the browser so it stops offering it; an operator's never is.                                                                                                                    |
-| R28.5 | A browser keeps only which way it last signed in with, the ID of its own PuffinRide passkey, and when "Not now" was pressed; never an email or an account.                                                                                         |
-| R28.6 | Sign-in options for passkeys: at most 60 per 10 minutes per network address (its /64 for IPv6), up from 20, as each opening of step 1 asks for them.                                                                                                 |
+| R29.1 | Where the browser can, step 1's email field offers the member's passkey; picking it signs in as the "Face ID or fingerprint" button does.                                                                                                             |
+| R29.2 | After the email code, a password, Google or Apple, an existing member is offered Face ID or fingerprint, only on a browser with a built-in authenticator, not known to have a passkey, not declined there in 30 days, and with nothing kept to open. |
+| R29.3 | After a password sign-in, the app may ask the browser to save a passkey by itself; it is told by email like any other (R27.7).                                                                                                                        |
+| R29.4 | A removed passkey, and one no member or operator has, is reported to the browser so it stops offering it; an operator's never is.                                                                                                                    |
+| R29.5 | A browser keeps only which way it last signed in with, the ID of its own PuffinRide passkey, and when "Not now" was pressed; never an email or an account.                                                                                         |
+| R29.6 | Sign-in options for passkeys: at most 60 per 10 minutes per network address (its /64 for IPv6), up from 20, as each opening of step 1 asks for them.                                                                                                 |
 
 ## 5. Data and API
 
@@ -188,7 +188,7 @@ No migration.
 | Endpoint                      | Change                                                                                                                        |
 | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | `POST /auth/passkey`          | New answer `passkey_unknown` (400) for a passkey that is in neither members' nor operators' passkeys (3.4, item 2)            |
-| `POST /auth/passkey/options`  | Limit 60 per 10 minutes per network address (R28.6)                                                                           |
+| `POST /auth/passkey/options`  | Limit 60 per 10 minutes per network address (R29.6)                                                                           |
 | `GET /me/sign-in-methods`     | Each passkey gains `credentialId`, the browser's own ID for it (not secret: the browser sends it with every sign-in) (3.4)   |
 
 The browser's storage (`localStorage` on the website, secure storage in the
@@ -212,7 +212,7 @@ their `via`; nothing new is logged in the app.
   only for puffinride.is. The quiet request ends before any other sign-in
   starts.
 - **The Signal API never removes an operator's passkey:** only a removed
-  member's passkey, or one in neither table, is reported (R28.4).
+  member's passkey, or one in neither table, is reported (R29.4).
 - **The higher options limit** keeps the table bounded: the hourly clean-up
   deletes expired challenges (spec 27, section 5).
 
@@ -233,7 +233,7 @@ speaker):
 
 ## 8. Testing
 
-- **Domain:** the offer rule (R28.2) as a pure function with its 30 days,
+- **Domain:** the offer rule (R29.2) as a pure function with its 30 days,
   and the options limit. **App units:** the order of step 1 from the kept
   way and what the screen offers.
 - **API integration:** `passkey_unknown` for a passkey in neither table,

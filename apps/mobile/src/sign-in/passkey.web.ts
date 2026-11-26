@@ -25,7 +25,7 @@ export type {
 } from "./passkey-types";
 
 // On the website: the browser's own passkey sheet (spec 27, 3.3 and 3.6),
-// and its quiet request in the email field (spec 28, 3.1). Offered only
+// and its quiet request in the email field (spec 29, 3.1). Offered only
 // where the browser says the device has a built-in authenticator, never a
 // hardware key (ADR 0048).
 
