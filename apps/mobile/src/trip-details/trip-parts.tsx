@@ -1,8 +1,7 @@
-import type { Standing, TripDetails } from "@shareride/contracts";
+import type { TripDetails } from "@shareride/contracts";
 import { formatClock, type Translate } from "@shareride/i18n";
 import {
   Baby,
-  Car,
   Cigarette,
   CigaretteOff,
   Luggage,
@@ -11,19 +10,14 @@ import {
   type LucideIcon,
 } from "lucide-react-native";
 import { StyleSheet, Text, View } from "react-native";
-import { Avatar, avatarSize, besideAvatar } from "@/components/avatar";
-import { Icon } from "@/components/icon";
-import { NeedBubble } from "@/components/need-bubble";
 import { Tag } from "@/components/tag";
-import { Body } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
-import { StandingLines } from "@/people/standing";
-import { people, radii, spacing, typography } from "@/theme/tokens";
+import { people, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
-import { carText, childSeatNeedKey, needKeys } from "./texts";
+import { childSeatNeedKey, needKeys } from "./texts";
 
-// Parts of a trip shown on trip details, the booking screen and a booking:
-// a stop of the passenger's part, and the driver with their car.
+// Parts of a trip shown on more than one screen: a stop of a passenger's
+// part, and what the driver likes on a ride.
 
 type Stop = Pick<TripDetails["stops"][number], "meetingPoint" | "plannedAt">;
 
@@ -76,91 +70,7 @@ export function preferenceNeeds(
   ];
 }
 
-/**
- * The driver, their car with a line under it (when the number plate shows),
- * and, on the trip's own pages, their preferences and note.
- */
-export function DriverAndCar({
-  driver,
-  car,
-  carNote,
-  preferences,
-  note = "",
-}: {
-  readonly driver: {
-    readonly firstName: string;
-    readonly colour: number;
-    /** A link to their profile, for members signed in (spec 1, 3.5). */
-    readonly profileId: string | null;
-    /** Their rating and figure; null for someone nobody sees any more. */
-    readonly standing: Standing | null;
-    /** A link to their photo, or null (spec 1, 3.5). */
-    readonly photo: string | null;
-  };
-  readonly car: TripDetails["car"];
-  /** What the passenger learns about the number plate, if anything. */
-  readonly carNote?: string;
-  readonly preferences?: TripDetails["preferences"];
-  readonly note?: string;
-}) {
-  const { t } = useLanguage();
-  const palette = usePalette();
-  const needs = preferenceNeeds(t, preferences);
-  return (
-    <>
-      <View style={besideAvatar.row}>
-        <Avatar firstName={driver.firstName} colour={driver.colour} photo={driver.photo} />
-        <View style={besideAvatar.text}>
-          <Text style={[typography.bodyStrong, { color: palette.text }]}>{driver.firstName}</Text>
-          {driver.standing === null ? null : (
-            <StandingLines
-              standing={driver.standing}
-              profileId={driver.profileId}
-              name={driver.firstName}
-              newLabel={t("results.newDriver")}
-            />
-          )}
-        </View>
-      </View>
-      {car === null ? null : (
-        <View style={besideAvatar.row}>
-          <View style={[styles.avatar, { backgroundColor: palette.background }]}>
-            <Icon icon={Car} color={palette.text} />
-          </View>
-          <View style={besideAvatar.text}>
-            <Text style={[typography.bodyStrong, { color: palette.text }]}>{carText(t, car)}</Text>
-            {carNote === undefined ? null : (
-              <Text style={[typography.small, { color: palette.textMuted }]}>{carNote}</Text>
-            )}
-          </View>
-        </View>
-      )}
-      {needs.length === 0 ? null : (
-        <View style={styles.needs}>
-          {needs.map((need) => (
-            <NeedBubble key={need.label} icon={need.icon} colour={need.colour} label={need.label} />
-          ))}
-        </View>
-      )}
-      {note === "" ? null : (
-        <View>
-          <Text style={[typography.label, { color: palette.text }]}>{t("trip.note")}</Text>
-          <Body>{note}</Body>
-        </View>
-      )}
-    </>
-  );
-}
-
 const styles = StyleSheet.create({
   partStop: { flexDirection: "row", alignItems: "center", gap: spacing.ms },
   grow: { flex: 1 },
-  avatar: {
-    width: avatarSize,
-    height: avatarSize,
-    borderRadius: radii.pill,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  needs: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
 });

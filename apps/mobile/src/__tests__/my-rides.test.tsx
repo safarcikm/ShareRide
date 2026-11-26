@@ -210,7 +210,7 @@ describe("My rides (spec 16, 3.3)", () => {
     await fireEvent.press(
       await screen.findByRole("button", { name: /^Passenger, .*, Pay by 12:30$/ }),
     );
-    expect(await screen.findByText("Pay 2,900 ISK to confirm your seat")).toBeVisible();
+    expect(await screen.findByText("Your seat is held until 12:30.")).toBeVisible();
     expect(screen).toHavePathname(`/bookings/${unpaid.id}`);
     await fireEvent.press(screen.getByRole("button", { name: "Back" }));
     await fireEvent.press(
@@ -229,7 +229,7 @@ describe("My rides (spec 16, 3.3)", () => {
       },
     });
     await fireEvent.press(await screen.findByRole("button", { name: /^Passenger, / }));
-    expect(await screen.findByText("Request sent. Anna has until 22:00 to answer.")).toBeVisible();
+    expect(await screen.findByText("Anna has until 22:00 to answer.")).toBeVisible();
     expect(screen).toHavePathname(`/bookings/${bookingId}`);
   });
 
@@ -400,9 +400,14 @@ describe("Withdrawing a request (spec 5, 3.4; R5.8)", () => {
     app.change(unpaidBooking);
     await fireEvent.press(await screen.findByRole("button", { name: "Withdraw request" }));
     await fireEvent.press(screen.getByRole("button", { name: "Withdraw request" }));
-    expect(await screen.findByText("Pay 2,900 ISK to confirm your seat")).toBeVisible();
+    expect(await screen.findByRole("header", { name: "Pay to keep your seat" })).toBeVisible();
     expect(screen.getByText("This request was already answered or ran out.")).toBeVisible();
+    // The question went with the request: Pay is what the bar holds now.
     expect(screen.queryByRole("button", { name: "Withdraw request" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Keep my request" })).toBeNull();
+    expect(
+      within(screen.getByTestId("bottom-bar")).getByRole("button", { name: "Pay 2,900 ISK" }),
+    ).toBeVisible();
   });
 
   it("keeps the question open when withdrawing fails, to try again", async () => {

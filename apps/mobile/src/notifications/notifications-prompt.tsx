@@ -82,8 +82,10 @@ export function NotificationsPrompt({ occasion }: { readonly occasion: string })
         <Body align="start">
           {askable ? t("notifications.turnOn") : t("notifications.addEmail")}
         </Body>
+        {/* Neither is filled: a screen's one filled button is its main one (spec 31, R31.1). */}
         {askable ? (
           <Button
+            variant="secondary"
             label={t("notifications.turnOnAction")}
             busy={asking}
             onPress={() => {
@@ -92,7 +94,7 @@ export function NotificationsPrompt({ occasion }: { readonly occasion: string })
           />
         ) : null}
         <Button
-          variant={askable ? "secondary" : "primary"}
+          variant="secondary"
           label={t("notifications.addEmailAction")}
           onPress={() => {
             close();

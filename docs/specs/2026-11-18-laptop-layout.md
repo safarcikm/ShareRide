@@ -326,6 +326,22 @@ changes on a phone.
    every width, and what a wide screen shows in the side column stands in
    its phone place otherwise. While the booking loads, and when it cannot
    be loaded, the screen is a page (3.2, 8).
+5. Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.8, 3.9 and 3.16,
+   item 2) the two columns hold other things. Across the top, at the left:
+   Back and the title, which says where the booking stands, with one line
+   under it. **Main column:** a report about it, how it ended, changes to
+   the ride, the review and the prompt, as before; then the road, and the
+   driver (with Message) and where to stand in their row, where to stand
+   first on the trip day. **Side column:** the page's main button first,
+   where there is one (Pay and the payment, the question about
+   withdrawing, "I'm here" and "The driver didn't come", "Rate the
+   driver", "Find another ride"), then the ride as a ticket, then the
+   rows: sharing the ride's details, the weather and the roads, reporting
+   a problem, and "Cancel booking" or "Withdraw request" last, in red. The
+   Safety card is gone, so the side column is still whole in a window 1280
+   by 720. What is open or was said in the side column stays when the
+   window turns narrow, where it stands in the bar at the bottom, and
+   wide again: the page keeps it, as these parts move between the two.
 
 ### 3.10 My rides
 

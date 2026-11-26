@@ -1,15 +1,7 @@
 import { passengerCheckInRoute, type Booking } from "@shareride/contracts";
-import { formatClock } from "@shareride/i18n";
-import { Text, View } from "react-native";
 import { useSession } from "@/auth/session";
-import { Card } from "@/components/card";
-import { Notice } from "@/components/notice";
-import { Heading } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
-import { typography } from "@/theme/tokens";
-import { usePalette } from "@/theme/use-palette";
 import { ImHere } from "./im-here";
-import { firstNameOf } from "@/people/texts";
 
 /**
  * Whether the booking page shows the trip day (spec 8, 3.1): for the
@@ -24,37 +16,35 @@ export function onTripDay(booking: Booking): boolean {
   );
 }
 
-/** The trip day's first lines: when and where to be. */
-export function TripDayHeading({ booking }: { readonly booking: Booking }) {
-  const { locale, t } = useLanguage();
-  const palette = usePalette();
-  const { board } = booking;
+/**
+ * Whether "I'm here" shows anything for the booking's passenger at this
+ * moment (spec 8, 3.2): what it told, the button, or when it opens; nothing
+ * once it has closed unsaid.
+ */
+export function showsImHere(booking: Booking, at: Date): boolean {
+  const { tripDay } = booking;
   return (
-    <Card>
-      <Heading>{t("tripDay.title")}</Heading>
-      <View accessible>
-        <Text style={[typography.figure, { color: palette.text }]}>
-          {formatClock(new Date(board.plannedAt))}
-        </Text>
-        <Text style={[typography.bodyStrong, { color: palette.text }]}>
-          {board.meetingPoint.name[locale]}
-        </Text>
-      </View>
-    </Card>
+    tripDay !== null &&
+    (tripDay.passengerCheckedInAt !== null ||
+      at.getTime() <= new Date(tripDay.checkInClosesAt).getTime())
   );
 }
 
 /**
- * Whether the driver is at the meeting point, and the passenger's "I'm
- * here", which tells the driver (spec 8, 3.2).
+ * The passenger's "I'm here", which tells the driver (spec 8, 3.2). That
+ * the driver is at the meeting point is the page's title (spec 31, 3.9).
+ * The page keeps when it was `said`, as it moves this between its bar and
+ * its side column.
  */
 export function PassengerImHere({
   booking,
+  said,
   onSaid,
   onStale,
 }: {
   readonly booking: Booking;
-  readonly onSaid: () => void;
+  readonly said: string | null;
+  readonly onSaid: (checkedInAt: string) => void;
   /** The booking changed meanwhile, such as cancelled: say why and load it again. */
   readonly onStale: (why: string) => void;
 }) {
@@ -63,27 +53,19 @@ export function PassengerImHere({
   const { tripDay } = booking;
   if (tripDay === null) return null;
   return (
-    <>
-      {tripDay.driverCheckedInAt === null ? null : (
-        <Notice
-          kind="info"
-          urgent={false}
-          message={t("tripDay.otherHere", { name: firstNameOf(t, booking.driver) })}
-        />
-      )}
-      <ImHere
-        state={{
-          opensAt: tripDay.checkInOpensAt,
-          closesAt: tripDay.checkInClosesAt,
-          at: tripDay.passengerCheckedInAt,
-        }}
-        told={t("tripDay.toldDriver")}
-        send={() => session.call(passengerCheckInRoute, { params: { id: booking.id }, body: {} })}
-        onSaid={onSaid}
-        onStale={() => {
-          onStale(t("tripDay.bookingChanged"));
-        }}
-      />
-    </>
+    <ImHere
+      state={{
+        opensAt: tripDay.checkInOpensAt,
+        closesAt: tripDay.checkInClosesAt,
+        at: tripDay.passengerCheckedInAt,
+      }}
+      told={t("tripDay.toldDriver")}
+      send={() => session.call(passengerCheckInRoute, { params: { id: booking.id }, body: {} })}
+      said={said}
+      onSaid={onSaid}
+      onStale={() => {
+        onStale(t("tripDay.bookingChanged"));
+      }}
+    />
   );
 }

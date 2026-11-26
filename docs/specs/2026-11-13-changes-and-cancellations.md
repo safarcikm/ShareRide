@@ -310,6 +310,10 @@ As built (milestone 6, PR 4):
 5. A booking can be cancelled until the planned time at the boarding stop.
    After that, what happens belongs to the trip day (spec 8): a passenger who
    did not come is a no-show, and a driver who did not come is reported.
+6. Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.8; rule R31.3)
+   "Cancel booking" is the last of the booking's rows, in red, and never a
+   filled button; it opens the screen of items 1 to 3. After a booking the
+   driver cancelled, "Find another ride" is the page's main button.
 
 ### 3.6 Post again and post the return trip (C6)
 

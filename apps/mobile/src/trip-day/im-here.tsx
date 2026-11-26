@@ -28,12 +28,17 @@ export interface CheckInState {
  * asks the API; `onSaid` loads the page again with what it stored. When the
  * booking or trip changed meanwhile (cancelled, or no longer confirmed),
  * trying again cannot work, so `onStale` says why and loads it again.
+ *
+ * It remembers that it was said until the page has loaded again. A screen
+ * that moves it, as between a phone's bar and a wide screen's side column,
+ * remembers that itself and gives it as `said`.
  */
 export function ImHere({
   state,
   told,
   accessibilityLabel,
   send,
+  said,
   onSaid,
   onStale,
 }: {
@@ -44,14 +49,17 @@ export function ImHere({
   readonly send: () => Promise<
     { readonly ok: true; readonly data: { checkedInAt: string } } | CallFailure
   >;
-  readonly onSaid: () => void;
+  /** When it was said on this screen, where the screen keeps that; null before. */
+  readonly said?: string | null;
+  readonly onSaid: (checkedInAt: string) => void;
   readonly onStale: () => void;
 }) {
   const { t } = useLanguage();
   const palette = usePalette();
   const [sending, setSending] = useState(false);
   // Said here, before the page loads again with it.
-  const [saidAt, setSaidAt] = useState<string | null>(null);
+  const [saidHere, setSaidHere] = useState<string | null>(null);
+  const saidAt = said === undefined ? saidHere : said;
   const [problem, setProblem] = useState<string | null>(null);
 
   if (state.at !== null || saidAt !== null) {
@@ -85,8 +93,8 @@ export function ImHere({
           void send().then((answer) => {
             setSending(false);
             if (answer.ok) {
-              setSaidAt(answer.data.checkedInAt);
-              onSaid();
+              setSaidHere(answer.data.checkedInAt);
+              onSaid(answer.data.checkedInAt);
               return;
             }
             const { code, opensAt: opens } = answer.error;

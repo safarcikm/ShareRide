@@ -44,6 +44,7 @@ interface Journey extends TripSearch {
   readonly openInMaps: string;
   readonly yours: string;
   readonly see: string;
+  readonly weatherRow: string;
   readonly weather: string;
   readonly share: string;
   readonly addEmailPrompt: string;
@@ -80,6 +81,7 @@ const inEnglish: Journey = {
   openInMaps: "Open in maps",
   yours: "You have a booking on this ride.",
   see: "See your booking",
+  weatherRow: "Weather and roads",
   weather: "Weather (vedur.is)",
   share: "Share the ride's details",
   addEmailPrompt: "Add an email so we can reach you if your ride changes.",
@@ -116,6 +118,7 @@ const inIcelandic: Journey = {
   openInMaps: "Opna í kortaforriti",
   yours: "Þú átt bókun í þessari ferð.",
   see: "Sjá bókunina",
+  weatherRow: "Veður og færð",
   weather: "Veður (vedur.is)",
   share: "Deila upplýsingum um ferðina",
   addEmailPrompt: "Bættu við netfangi svo við getum látið þig vita ef ferðin breytist.",
@@ -171,7 +174,7 @@ for (const journey of journeys) {
       await expect.poll(() => focused(page)).toContain(journey.booked);
       await expect(page.getByRole("heading", { name: journey.next })).toBeVisible();
       await expect(page.getByRole("heading", { name: journey.whereToStand })).toBeVisible();
-      await expect(page.getByRole("button", { name: journey.openInMaps })).toBeVisible();
+      await expect(page.getByRole("link", { name: journey.openInMaps })).toBeVisible();
       // The account signs in with its email, which reaches them on the web,
       // so no email is asked for (spec 7, 3.6.2; spec 26).
       await expect(page.getByText(journey.addEmailPrompt)).toHaveCount(0);
@@ -188,9 +191,11 @@ for (const journey of journeys) {
         page.getByText(journey.confirmed, { exact: true }).filter({ visible: true }),
       ).toBeVisible();
 
-      // Safety on the confirmed booking (spec 9, 3.3): the links for a trip
-      // out of the capital area, and sharing its details. No 112 button:
-      // people dial it themselves.
+      // Safety on the confirmed booking (spec 9, 3.3), as rows (spec 31,
+      // 3.8): the links for a trip out of the capital area, under their
+      // row, and sharing its details. No 112 button: people dial it
+      // themselves.
+      await page.getByRole("button", { name: journey.weatherRow }).click();
       await expect(page.getByRole("link", { name: journey.weather })).toBeVisible();
       await expect(page.getByRole("button", { name: journey.share })).toBeVisible();
       await expect(page.getByRole("button", { name: /112/ })).toHaveCount(0);

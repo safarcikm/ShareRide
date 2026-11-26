@@ -23,22 +23,16 @@ function onDay(deadline: Date, at: Date): { readonly time: string; readonly tomo
   return { time: formatClock(deadline), tomorrow: compareDays(dayOf(deadline), dayOf(at)) > 0 };
 }
 
-/** "Request sent. Anna has until 22:00 to answer." */
-export function requestSentText(t: Translate, driver: string, deadline: Date, at: Date): string {
-  const { time, tomorrow } = onDay(deadline, at);
-  return t(tomorrow ? "booking.requestSentTomorrow" : "booking.requestSent", { driver, time });
-}
-
 /** "Anna has until 22:00 to answer.", under Request sent (spec 16, 3.7, item 5). */
 export function answerUntilText(t: Translate, driver: string, deadline: Date, at: Date): string {
   const { time, tomorrow } = onDay(deadline, at);
   return t(tomorrow ? "booking.answerByTomorrow" : "booking.answerBy", { driver, time });
 }
 
-/** "Pay by 12:30 to keep your seat." */
-export function payByText(t: Translate, deadline: Date, at: Date): string {
+/** "Your seat is held until 12:30.", under the title of a seat to pay for (spec 31, 3.8). */
+export function seatHeldText(t: Translate, deadline: Date, at: Date): string {
   const { time, tomorrow } = onDay(deadline, at);
-  return t(tomorrow ? "booking.payByTomorrow" : "booking.payBy", { time });
+  return t(tomorrow ? "booking.seatHeldUntilTomorrow" : "booking.seatHeldUntil", { time });
 }
 
 /** "Pay by 12:30", or "Pay by 08:10 tomorrow": the deadline alone, as in a tag (spec 31, 3.10). */

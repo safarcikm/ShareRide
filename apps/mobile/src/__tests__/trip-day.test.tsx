@@ -82,28 +82,31 @@ function textsInOrder(): string[] {
 
 const imHere = { name: "I'm here" } as const;
 
-describe("the passenger's trip day (spec 8, 3.1)", () => {
-  it("puts when and where first, then the driver and car, then I'm here, and the part last", async () => {
+describe("the passenger's trip day (spec 8, 3.1; spec 31, 3.9)", () => {
+  it("puts when and where first, then where to stand, the driver and car, and the part, with I'm here in the bar", async () => {
     await openBooking(onTheDay());
-    expect(await screen.findByRole("header", { name: "Trip day" })).toBeVisible();
+    expect(await screen.findByRole("header", { name: "Leaves in 15 minutes" })).toBeVisible();
     const texts = textsInOrder();
     const at = (text: string) => {
       const index = texts.indexOf(text);
       expect(index).toBeGreaterThanOrEqual(0);
       return index;
     };
-    expect(at("Trip day")).toBeLessThan(at("10:00"));
-    expect(at("10:00")).toBeLessThan(at("Borgarnes"));
-    expect(at("Borgarnes")).toBeLessThan(at("By the petrol pumps"));
-    expect(at("By the petrol pumps")).toBeLessThan(at("Number plate AB 123"));
-    expect(at("Number plate AB 123")).toBeLessThan(at("I'm here"));
-    expect(at("I'm here")).toBeLessThan(at("Message Anna"));
-    expect(at("Message Anna")).toBeLessThan(at("Blönduós"));
+    expect(at("Leaves in 15 minutes")).toBeLessThan(at("Today at 10:00 from Borgarnes."));
+    expect(at("Today at 10:00 from Borgarnes.")).toBeLessThan(at("Where to stand"));
+    expect(at("Where to stand")).toBeLessThan(at("By the petrol pumps"));
+    expect(at("By the petrol pumps")).toBeLessThan(at("Message"));
+    expect(at("Message")).toBeLessThan(at("AB 123"));
+    expect(at("AB 123")).toBeLessThan(at("Blönduós"));
+    expect(at("Blönduós")).toBeLessThan(at("I'm here"));
+    // The one thing to do now is under the thumb, whatever is scrolled to.
+    expect(within(screen.getByTestId("bottom-bar")).getByRole("button", imHere)).toBeVisible();
+    expect(screen.getByRole("link", { name: "Message Anna" })).toBeVisible();
   });
 
   it("leaves the prompt to add an email for another day", async () => {
     await openBooking(onTheDay());
-    expect(await screen.findByRole("header", { name: "Trip day" })).toBeVisible();
+    expect(await screen.findByRole("header", { name: "Leaves in 15 minutes" })).toBeVisible();
     expect(screen.queryByText(/Add an email/)).toBeNull();
   });
 
@@ -121,7 +124,7 @@ describe("the passenger's trip day (spec 8, 3.1)", () => {
   });
 });
 
-describe("the passenger's trip day on a laptop (spec 18, 3.9)", () => {
+describe("the passenger's trip day on a laptop (spec 18, 3.9; spec 31, 3.16)", () => {
   const phone = { width: 750, height: 1334, scale: 2, fontScale: 2 };
   const laptop = { width: 1280, height: 800, scale: 1, fontScale: 1 };
 
@@ -136,42 +139,42 @@ describe("the passenger's trip day on a laptop (spec 18, 3.9)", () => {
     });
   });
 
-  it("has when and where, the driver and I'm here in the main column, the ride and the chat beside them", async () => {
+  it("has where to stand and the driver in the main column, with I'm here over the ride beside them", async () => {
     // The booking the page loads again does not say I'm here: what was
     // said shows only for as long as the part that said it is kept.
     const { client } = await openBooking(onTheDay(), () =>
       ok(200, { checkedInAt: mockNow.toISOString() }),
     );
-    expect(await screen.findByRole("header", { name: "Trip day" })).toBeVisible();
+    expect(await screen.findByRole("header", { name: "Leaves in 15 minutes" })).toBeVisible();
     const main = within(screen.getByTestId("columns-main"));
     const side = within(screen.getByTestId("columns-side"));
-    expect(main.getByRole("header", { name: "Trip day" })).toBeVisible();
     expect(main.getByText("By the petrol pumps")).toBeVisible();
-    expect(main.getByText("Number plate AB 123")).toBeVisible();
-    expect(main.getByRole("button", imHere)).toBeVisible();
+    expect(main.getByLabelText("Number plate AB 123")).toBeVisible();
+    expect(main.getByRole("link", { name: "Message Anna" })).toBeVisible();
     // Where to stand comes before the driver on the day, in one row.
     const [stand, driver] = within(main.getByTestId("grid")).getAllByTestId("grid-cell");
     if (stand === undefined || driver === undefined) throw new Error("Two cells expected");
     expect(within(stand).getByText("By the petrol pumps")).toBeVisible();
-    expect(within(driver).getByText("Number plate AB 123")).toBeVisible();
+    expect(within(driver).getByLabelText("Number plate AB 123")).toBeVisible();
+    // What the bar holds on a phone is at the top of the side column.
+    expect(side.getByRole("button", imHere)).toBeVisible();
     expect(side.getByText("Blönduós")).toBeVisible();
-    expect(side.getByRole("button", { name: "Message Anna" })).toBeVisible();
+    expect(screen.queryByTestId("bottom-bar")).toBeNull();
     const texts = textsInOrder();
     const at = (text: string) => {
       const index = texts.indexOf(text);
       expect(index).toBeGreaterThanOrEqual(0);
       return index;
     };
-    expect(at("Trip day")).toBeLessThan(at("By the petrol pumps"));
-    expect(at("By the petrol pumps")).toBeLessThan(at("Number plate AB 123"));
-    expect(at("Number plate AB 123")).toBeLessThan(at("I'm here"));
+    expect(at("Leaves in 15 minutes")).toBeLessThan(at("By the petrol pumps"));
+    expect(at("By the petrol pumps")).toBeLessThan(at("AB 123"));
+    expect(at("AB 123")).toBeLessThan(at("I'm here"));
     expect(at("I'm here")).toBeLessThan(at("Blönduós"));
-    expect(at("Blönduós")).toBeLessThan(at("Message Anna"));
 
-    // Saying I'm here works from the main column, and stays said when the
-    // window turns narrow and wide again: the part keeps its place, and
-    // nothing is loaded again for that.
-    await fireEvent.press(main.getByRole("button", imHere));
+    // Saying I'm here works from the side column, and stays said when the
+    // window turns narrow and wide again: the part keeps what it was told,
+    // and nothing is loaded again for that.
+    await fireEvent.press(side.getByRole("button", imHere));
     const told = "We've told the driver you're here.";
     expect(await screen.findByText(told)).toBeVisible();
     // Saying it loads the booking again, once.
@@ -181,12 +184,12 @@ describe("the passenger's trip day on a laptop (spec 18, 3.9)", () => {
     await act(() => {
       Dimensions.set({ window: phone });
     });
-    expect(screen.getByText(told)).toBeVisible();
+    expect(within(screen.getByTestId("bottom-bar")).getByText(told)).toBeVisible();
     expect(screen.queryByTestId("columns-side")).toBeNull();
     await act(() => {
       Dimensions.set({ window: laptop });
     });
-    expect(within(screen.getByTestId("columns-main")).getByText(told)).toBeVisible();
+    expect(within(screen.getByTestId("columns-side")).getByText(told)).toBeVisible();
     expect(loadsOf(client, "/v1/bookings/{id}")).toBe(2);
   });
 });

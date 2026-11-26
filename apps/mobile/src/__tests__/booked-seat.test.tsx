@@ -1,0 +1,523 @@
+import { act, fireEvent, screen, within } from "expo-router/testing-library";
+import { AccessibilityInfo, Dimensions } from "react-native";
+import type { Booking } from "@shareride/contracts";
+import { completeMe, renderApp } from "@/testing/app";
+import type * as TestApp from "@/testing/app";
+import {
+  bookingApi,
+  cancelledBooking,
+  northBooking,
+  paidBooking,
+  unpaidBooking,
+} from "@/testing/bookings";
+import { filledButtons } from "@/testing/buttons";
+import { ok, type FakeClient } from "@/testing/fake-client";
+import { completedBooking } from "@/testing/reviews";
+import { onTheDay } from "@/testing/trip-day";
+
+jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
+jest.mock("@/auth/token-store", () => {
+  return jest.requireActual<typeof TestApp>("@/testing/app").mockTokenStoreModule;
+});
+jest.mock("expo-localization", () => ({ getLocales: () => [{ languageTag: "en-GB" }] }));
+jest.mock("@/lib/preferences", () => ({
+  readPreference: jest.fn(() => Promise.resolve(null)),
+  writePreference: jest.fn(() => Promise.resolve()),
+}));
+jest.mock("@/lib/app-data", () => ({
+  readAppData: jest.fn(() => Promise.resolve(null)),
+  writeAppData: jest.fn(() => Promise.resolve()),
+}));
+/** Saturday 14 November 2026, noon in Iceland, unless a test says otherwise. */
+const noon = new Date("2026-11-14T12:00:00Z");
+let mockNow = noon;
+jest.mock("@/lib/clock", () => ({ now: () => mockNow }));
+
+// Spec 31, 3.8, 3.9 and 3.16 item 2: a booked seat's page says where the
+// booking stands in its title, shows the ride as a ticket, and has one main
+// button at most, in the bar at the bottom or at the top of the side column.
+
+const phone = { width: 750, height: 1334, scale: 2, fontScale: 2 };
+const laptop = { width: 1280, height: 800, scale: 1, fontScale: 1 };
+
+beforeEach(() => {
+  mockNow = noon;
+});
+
+async function open(start: Booking, setUp?: (client: FakeClient) => void) {
+  let booking = start;
+  const result = await renderApp(`/bookings/${start.id}`, {
+    me: completeMe,
+    setUp: (client) => {
+      bookingApi(client, () => booking);
+      setUp?.(client);
+    },
+  });
+  return {
+    ...result,
+    change: (next: Booking) => {
+      booking = next;
+    },
+  };
+}
+
+/** The text on screen, in reading order. */
+function textsInOrder(): string[] {
+  const texts: string[] = [];
+  const walk = (node: unknown) => {
+    if (typeof node === "string") texts.push(node);
+    else if (Array.isArray(node)) node.forEach(walk);
+    else if (typeof node === "object" && node !== null && "children" in node) walk(node.children);
+  };
+  walk(screen.toJSON());
+  return texts;
+}
+
+/** Where each text first stands among the screen's texts; every one must show. */
+function places(...texts: readonly string[]): number[] {
+  const all = textsInOrder();
+  return texts.map((text) => {
+    const index = all.indexOf(text);
+    if (index < 0) throw new Error(`Not on screen: ${text}`);
+    return index;
+  });
+}
+
+const inOrder = (...texts: readonly string[]) => {
+  const found = places(...texts);
+  expect(found).toEqual([...found].sort((a, b) => a - b));
+};
+
+const bar = () => within(screen.getByTestId("bottom-bar"));
+const rows = () =>
+  within(screen.getByTestId("action-rows"))
+    .getAllByTestId("row-words")
+    .map((row) => within(row).getAllByText(/./)[0]?.props.children as string);
+
+describe("a booked seat on a phone (spec 31, 3.8)", () => {
+  it("has the state as its title, with what happens next under it, and no status tag", async () => {
+    await open(paidBooking);
+    expect(await screen.findByRole("header", { name: "Your seat is confirmed" })).toBeVisible();
+    expect(
+      screen.getByText("Sunday 15 November. Anna picks you up at 10:00 at Borgarnes."),
+    ).toBeVisible();
+    expect(screen.getByTestId("screen-head")).toBeVisible();
+    // The title says it: the tag and the line with a tick are gone.
+    expect(screen.queryByText("Confirmed")).toBeNull();
+    expect(screen.getAllByText("Your seat is confirmed")).toHaveLength(1);
+    expect(screen.queryByRole("header", { name: "Borgarnes → Blönduós" })).toBeNull();
+  });
+
+  it("shows how far the booking has come as a road", async () => {
+    await open(northBooking());
+    expect(await screen.findByLabelText("Step 1 of 4: Asked")).toBeVisible();
+  });
+
+  it("starts the road at Confirmed for a ride booked instantly", async () => {
+    await open(paidBooking);
+    expect(await screen.findByLabelText("Step 1 of 3: Confirmed")).toBeVisible();
+  });
+
+  it("shows the ride as a ticket, with the seats and the price under the tear line", async () => {
+    await open(paidBooking);
+    const ticket = within(await screen.findByTestId("booking-ticket"));
+    expect(ticket.getByText("Sun 15 Nov")).toBeVisible();
+    expect(ticket.getByText("Passenger")).toBeVisible();
+    expect(ticket.getByText("10:00")).toBeVisible();
+    expect(ticket.getByText("Borgarnes")).toBeVisible();
+    expect(ticket.getByText("12:05")).toBeVisible();
+    expect(ticket.getByText("Blönduós")).toBeVisible();
+    const foot = within(ticket.getByTestId("ticket-foot"));
+    expect(foot.getByText("1 seat")).toBeVisible();
+    expect(foot.getByText("2,900 ISK")).toBeVisible();
+    // It is where you are, not a link to it.
+    expect(screen.queryByRole("link", { name: /Passenger/ })).toBeNull();
+  });
+
+  it("says Free on the ticket of a free ride", async () => {
+    await open({ ...paidBooking, total: { amount: 0, currency: "ISK" } });
+    const ticket = within(await screen.findByTestId("booking-ticket"));
+    expect(ticket.getByText("Free")).toBeVisible();
+  });
+
+  it("has Message on the driver's card, and the number plate as a tag under the line", async () => {
+    await open(paidBooking);
+    const driver = within(await screen.findByTestId("driver-card"));
+    expect(driver.getByText("Anna")).toBeVisible();
+    expect(driver.getByRole("link", { name: "Message Anna" })).toBeVisible();
+    expect(driver.getByText("Message")).toBeVisible();
+    expect(driver.getByText("White Toyota Yaris")).toBeVisible();
+    expect(driver.getByLabelText("Number plate AB 123")).toBeVisible();
+    expect(driver.getByText("AB 123")).toBeVisible();
+    // Her profile is still one press away.
+    expect(driver.getByRole("link", { name: /^See profile: Anna/ })).toBeVisible();
+  });
+
+  it("says when the plate comes before it is known, and has no Message before the seat is confirmed", async () => {
+    await open(northBooking());
+    const driver = within(await screen.findByTestId("driver-card"));
+    expect(driver.getByText("Number plate shown once your seat is confirmed")).toBeVisible();
+    expect(screen.queryByRole("link", { name: "Message Anna" })).toBeNull();
+  });
+
+  it("shows where to stand with a small map and a link that opens the maps app", async () => {
+    await open(paidBooking);
+    const stand = within(await screen.findByTestId("where-to-stand"));
+    expect(stand.getByRole("header", { name: "Where to stand" })).toBeVisible();
+    expect(stand.getByText("Borgarnes")).toBeVisible();
+    expect(stand.getByText("By the petrol pumps")).toBeVisible();
+    expect(stand.getByLabelText("Borgarnes on a map of Iceland")).toBeVisible();
+    expect(stand.getByRole("link", { name: "Open in maps" })).toBeVisible();
+  });
+
+  it("puts the head first, then the road, the ticket, the driver, where to stand and the rows", async () => {
+    await open(paidBooking);
+    await screen.findByRole("header", { name: "Your seat is confirmed" });
+    inOrder(
+      "Your seat is confirmed",
+      "Passenger",
+      "2,900 ISK",
+      "Message",
+      "AB 123",
+      "Where to stand",
+      "Share the ride's details",
+    );
+    expect(screen.queryByTestId("columns-side")).toBeNull();
+  });
+
+  it("ends with rows, Cancel booking red and last, and has no main button", async () => {
+    await open(paidBooking);
+    await screen.findByRole("header", { name: "Your seat is confirmed" });
+    expect(rows()).toEqual([
+      "Share the ride's details",
+      "Weather and roads",
+      "Report a problem with this ride",
+      "Cancel booking",
+    ]);
+    expect(screen.getByRole("link", { name: "Report a problem with this ride" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Cancel booking" })).toBeVisible();
+    expect(filledButtons()).toBe(0);
+    expect(screen.queryByTestId("bottom-bar")).toBeNull();
+    expect(screen.queryByRole("header", { name: "Safety" })).toBeNull();
+  });
+
+  it("says how to pay the driver in a notice under where to stand", async () => {
+    await open({ ...paidBooking, payment: "in_person" });
+    await screen.findByRole("header", { name: "Your seat is confirmed" });
+    const how =
+      "Card payments are coming soon. Pay the driver 2,900 ISK in cash or by bank transfer when you get in.";
+    expect(within(screen.getByTestId("notice")).getByText(how)).toBeVisible();
+    inOrder("Where to stand", how, "Share the ride's details");
+  });
+
+  describe("a request", () => {
+    const question = "Withdraw your request? Anna won't see it any more, and the seat is freed.";
+
+    it("says it was sent and until when, with Withdraw request red and last", async () => {
+      // As the server answers for a request: no ride ran yet to report (R9.1).
+      await open(northBooking({ problemReportable: false }));
+      expect(await screen.findByRole("header", { name: "Request sent" })).toBeVisible();
+      expect(screen.getByText("Anna has until 22:00 to answer.")).toBeVisible();
+      expect(rows()).toEqual(["Weather and roads", "Withdraw request"]);
+      expect(filledButtons()).toBe(0);
+    });
+
+    it("asks before withdrawing, with focus on the question, and puts focus back when kept", async () => {
+      const focus = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
+      await open(northBooking());
+      focus.mockClear();
+      await fireEvent.press(await screen.findByRole("button", { name: "Withdraw request" }));
+      expect(bar().getByText(question)).toBeVisible();
+      expect(focus).toHaveBeenCalledTimes(1);
+      // The row gave way to the question: one button says it.
+      expect(screen.getAllByRole("button", { name: "Withdraw request" })).toHaveLength(1);
+      expect(filledButtons()).toBe(1);
+      await fireEvent.press(screen.getByRole("button", { name: "Keep my request" }));
+      expect(screen.queryByText(question)).toBeNull();
+      expect(screen.queryByTestId("bottom-bar")).toBeNull();
+      expect(rows().at(-1)).toBe("Withdraw request");
+      expect(focus).toHaveBeenCalledTimes(2);
+      focus.mockRestore();
+    });
+
+    it("withdraws, and the page says so", async () => {
+      const withdrawn = northBooking({ status: "cancelled", withdrawn: true });
+      const { client } = await open(northBooking(), (fake) => {
+        fake.answer("/v1/bookings/{id}/withdraw", () => ok(200, withdrawn), "post");
+      });
+      await fireEvent.press(await screen.findByRole("button", { name: "Withdraw request" }));
+      await fireEvent.press(screen.getByRole("button", { name: "Withdraw request" }));
+      expect(await screen.findByRole("header", { name: "Withdrawn" })).toBeVisible();
+      expect(
+        screen.getByText("You withdrew this request. That never counts against you."),
+      ).toBeVisible();
+      expect(
+        client.calls.filter((call) => call.path === "/v1/bookings/{id}/withdraw"),
+      ).toHaveLength(1);
+    });
+  });
+
+  describe("a seat to pay for", () => {
+    it("says so in the title, and has Pay as the one main button, in the bar", async () => {
+      await open(unpaidBooking);
+      expect(await screen.findByRole("header", { name: "Pay to keep your seat" })).toBeVisible();
+      expect(screen.getByText("Your seat is held until 12:30.")).toBeVisible();
+      expect(bar().getByRole("button", { name: "Pay 2,900 ISK" })).toBeVisible();
+      expect(filledButtons()).toBe(1);
+      // Nothing is confirmed yet: no road, and Cancel booking is still a row.
+      expect(screen.queryByLabelText(/^Step /)).toBeNull();
+      expect(rows().at(-1)).toBe("Cancel booking");
+    });
+
+    it("names the driver who said yes", async () => {
+      await open(
+        northBooking({
+          status: "accepted",
+          requestExpiresAt: null,
+          paymentDueAt: "2026-11-14T12:30:00.000Z",
+        }),
+      );
+      expect(
+        await screen.findByRole("header", { name: "Anna said yes: pay to keep your seat" }),
+      ).toBeVisible();
+      expect(screen.getByLabelText("Step 1 of 4: Asked")).toBeVisible();
+    });
+
+    it("opens the payment in the bar, in place of Pay", async () => {
+      await open(unpaidBooking, (fake) => {
+        fake.answer("/v1/bookings/{id}/payment", () =>
+          ok(200, {
+            paymentId: "0190a1d6-0000-7000-8000-0000000000e1",
+            provider: "test",
+            amount: unpaidBooking.total,
+            dueAt: unpaidBooking.paymentDueAt,
+          }),
+        );
+      });
+      await fireEvent.press(await bar().findByRole("button", { name: "Pay 2,900 ISK" }));
+      expect(
+        await bar().findByRole("header", { name: "Test payment: no money moves" }),
+      ).toBeVisible();
+    });
+  });
+
+  describe("a booking that ended", () => {
+    it("says how in its title, shows no road, and offers the same search again in the bar", async () => {
+      await open({
+        ...cancelledBooking,
+        cancellation: {
+          by: "driver",
+          reason: "weather",
+          note: "",
+          wholeTrip: false,
+          refund: paidBooking.total,
+          countsOnReliability: false,
+        },
+      });
+      expect(await screen.findByRole("header", { name: "Cancelled" })).toBeVisible();
+      expect(screen.queryByLabelText(/^Step /)).toBeNull();
+      expect(bar().getByRole("button", { name: "Find another ride" })).toBeVisible();
+      expect(filledButtons()).toBe(1);
+      expect(screen.getAllByText("Cancelled")).toHaveLength(1);
+    });
+
+    it("has no bar when the passenger cancelled it themselves", async () => {
+      await open(cancelledBooking);
+      expect(await screen.findByRole("header", { name: "Cancelled" })).toBeVisible();
+      expect(screen.queryByTestId("bottom-bar")).toBeNull();
+    });
+  });
+
+  describe("a ride that is over", () => {
+    beforeEach(() => {
+      mockNow = new Date("2026-11-16T09:00:00Z");
+    });
+
+    it("asks how it was, with Rate the driver as the main button and until when under the title", async () => {
+      await open(completedBooking());
+      expect(await screen.findByRole("header", { name: "How was your ride?" })).toBeVisible();
+      expect(screen.getByText("You can review until 29 November at 16:00.")).toBeVisible();
+      expect(bar().getByRole("link", { name: "Rate the driver" })).toBeVisible();
+      expect(screen.getAllByRole("link", { name: "Rate the driver" })).toHaveLength(1);
+      expect(filledButtons()).toBe(1);
+      expect(screen.getByLabelText("Step 3 of 3: Done")).toBeVisible();
+    });
+
+    it("has The driver didn't come as a row while it can still be said", async () => {
+      await open(completedBooking());
+      await screen.findByRole("header", { name: "How was your ride?" });
+      expect(rows()).toEqual(["The driver didn't come", "Report a problem with this ride"]);
+      expect(screen.getByRole("link", { name: "The driver didn't come" })).toBeVisible();
+    });
+  });
+
+  it("shows a driver the passenger's booking by its day and part, with Message as a row", async () => {
+    await open({ ...paidBooking, viewer: "driver" });
+    expect(await screen.findByRole("header", { name: "Borgarnes to Blönduós" })).toBeVisible();
+    expect(screen.getByText("Sunday 15 November")).toBeVisible();
+    expect(within(screen.getByTestId("screen-head")).getByText("Confirmed")).toBeVisible();
+    expect(screen.queryByLabelText(/^Step /)).toBeNull();
+    expect(rows()).toEqual([
+      "Message Gunna",
+      "Weather and roads",
+      "Report a problem with this ride",
+    ]);
+    expect(screen.queryByText("Your seat is confirmed")).toBeNull();
+    expect(filledButtons()).toBe(0);
+  });
+
+  it("tells a driver that the passenger pays them in person (rule M6)", async () => {
+    await open({ ...paidBooking, viewer: "driver", payment: "in_person" });
+    await screen.findByRole("header", { name: "Borgarnes to Blönduós" });
+    expect(
+      within(screen.getByTestId("notice")).getByText(
+        "Gunna pays you 2,900 ISK in cash or by bank transfer when they get in.",
+      ),
+    ).toBeVisible();
+    // Not on a free ride, and not where the app takes the payment.
+    await open({ ...paidBooking, viewer: "driver" });
+    await screen.findByRole("header", { name: "Borgarnes to Blönduós" });
+    expect(screen.queryByText(/pays you/)).toBeNull();
+  });
+});
+
+describe("the trip day on a phone (spec 31, 3.9)", () => {
+  it("counts down in its title, with when and where under it", async () => {
+    mockNow = new Date("2026-11-15T09:50:00Z");
+    await open(onTheDay());
+    expect(await screen.findByRole("header", { name: "Leaves in 10 minutes" })).toBeVisible();
+    expect(screen.getByText("Today at 10:00 from Borgarnes.")).toBeVisible();
+    expect(screen.getByLabelText("Step 2 of 3: Trip day")).toBeVisible();
+  });
+
+  it("keeps counting while the page is open", async () => {
+    jest.useFakeTimers();
+    try {
+      mockNow = new Date("2026-11-15T09:50:00Z");
+      await open(onTheDay());
+      expect(await screen.findByRole("header", { name: "Leaves in 10 minutes" })).toBeVisible();
+      mockNow = new Date("2026-11-15T09:51:00Z");
+      await act(() => jest.advanceTimersByTimeAsync(30_000));
+      expect(screen.getByRole("header", { name: "Leaves in 9 minutes" })).toBeVisible();
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it("says in its title that the driver is at the meeting point, and reads it out when it happens", async () => {
+    jest.useFakeTimers();
+    try {
+      mockNow = new Date("2026-11-15T09:50:00Z");
+      const announce = jest.spyOn(AccessibilityInfo, "announceForAccessibility");
+      const { change } = await open(onTheDay());
+      await screen.findByRole("header", { name: "Leaves in 10 minutes" });
+      expect(announce).not.toHaveBeenCalledWith("Anna is at the meeting point");
+      change(onTheDay({ driverCheckedInAt: "2026-11-15T09:50:30.000Z" }));
+      await act(() => jest.advanceTimersByTimeAsync(30_000));
+      expect(
+        await screen.findByRole("header", { name: "Anna is at the meeting point" }),
+      ).toBeVisible();
+      expect(announce).toHaveBeenCalledWith("Anna is at the meeting point");
+      announce.mockRestore();
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it("puts where to stand first, then the driver, the ticket and the rows, with I'm here in the bar", async () => {
+    mockNow = new Date("2026-11-15T09:50:00Z");
+    await open(onTheDay());
+    await screen.findByRole("header", { name: "Leaves in 10 minutes" });
+    inOrder(
+      "Leaves in 10 minutes",
+      "Where to stand",
+      "By the petrol pumps",
+      "Message",
+      "AB 123",
+      "Passenger",
+      "Share the ride's details",
+      "I'm here",
+    );
+    expect(bar().getByRole("button", { name: "I'm here" })).toBeVisible();
+    expect(filledButtons()).toBe(1);
+    // Until the time to get in, the seat can still be cancelled.
+    expect(rows()).toEqual([
+      "Share the ride's details",
+      "Weather and roads",
+      "Report a problem with this ride",
+      "Cancel booking",
+    ]);
+  });
+
+  it("says in the bar when I'm here opens, before then", async () => {
+    mockNow = new Date("2026-11-15T09:00:00Z");
+    await open(onTheDay());
+    expect(await bar().findByText("You can say you're here from 09:30.")).toBeVisible();
+    expect(filledButtons()).toBe(0);
+  });
+
+  it("has The driver didn't come in the bar, under I'm here, once the wait has passed", async () => {
+    mockNow = new Date("2026-11-15T10:11:00Z");
+    await open(onTheDay());
+    expect(await screen.findByRole("header", { name: "Trip day" })).toBeVisible();
+    expect(bar().getByRole("button", { name: "I'm here" })).toBeVisible();
+    expect(bar().getByRole("link", { name: "The driver didn't come" })).toBeVisible();
+    expect(filledButtons()).toBe(1);
+  });
+
+  it("has The driver didn't come as the bar's button once I'm here was said or has closed", async () => {
+    mockNow = new Date("2026-11-15T11:01:00Z");
+    await open(onTheDay());
+    expect(await bar().findByRole("link", { name: "The driver didn't come" })).toBeVisible();
+    expect(bar().queryByRole("button", { name: "I'm here" })).toBeNull();
+    expect(filledButtons()).toBe(1);
+  });
+});
+
+describe("a booked seat on a laptop (spec 31, 3.16, item 2)", () => {
+  beforeEach(() => {
+    Dimensions.set({ window: laptop });
+  });
+
+  afterEach(async () => {
+    await act(() => {
+      Dimensions.set({ window: phone });
+    });
+  });
+
+  const main = () => within(screen.getByTestId("columns-main"));
+  const side = () => within(screen.getByTestId("columns-side"));
+
+  it("has the road, the driver and where to stand in the main column, the ticket and the rows beside them", async () => {
+    await open(paidBooking);
+    expect(await screen.findByRole("header", { name: "Your seat is confirmed" })).toBeVisible();
+    expect(screen.getByTestId("page")).toBeVisible();
+    expect(main().getByLabelText("Step 1 of 3: Confirmed")).toBeVisible();
+    expect(main().getByTestId("driver-card")).toBeVisible();
+    expect(main().getByTestId("where-to-stand")).toBeVisible();
+    expect(side().getByTestId("booking-ticket")).toBeVisible();
+    expect(within(side().getByTestId("action-rows")).getByText("Cancel booking")).toBeVisible();
+    inOrder("Message", "Where to stand", "Passenger", "2,900 ISK", "Cancel booking");
+    // Each once, and no bar: the side column has what the bar would.
+    expect(screen.getAllByTestId("booking-ticket")).toHaveLength(1);
+    expect(screen.getAllByTestId("action-rows")).toHaveLength(1);
+    expect(screen.queryByTestId("bottom-bar")).toBeNull();
+  });
+
+  it("has Pay at the top of the side column, over the ticket", async () => {
+    await open(unpaidBooking);
+    expect(await side().findByRole("button", { name: "Pay 2,900 ISK" })).toBeVisible();
+    inOrder("Pay 2,900 ISK", "Passenger");
+    expect(filledButtons()).toBe(1);
+    expect(screen.queryByTestId("bottom-bar")).toBeNull();
+  });
+
+  it("has I'm here at the top of the side column on the trip day, and where to stand before the driver", async () => {
+    mockNow = new Date("2026-11-15T09:50:00Z");
+    await open(onTheDay());
+    expect(await side().findByRole("button", { name: "I'm here" })).toBeVisible();
+    inOrder("Where to stand", "Message", "I'm here", "Passenger", "Share the ride's details");
+    expect(main().getByTestId("where-to-stand")).toBeVisible();
+    expect(filledButtons()).toBe(1);
+  });
+});

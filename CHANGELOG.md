@@ -1712,6 +1712,28 @@ releases follow [Semantic Versioning](https://semver.org/).
 - A row's value ("Up to 15 min before") goes under its title where the
   two have no room on one line; a title is no longer broken in two to make
   room for it (spec 15, 5.2).
+- A booked seat's page says where the booking stands in its title (spec
+  31, 3.8): "Request sent", "Anna said yes: pay to keep your seat", "Your
+  seat is confirmed", "How was your ride?", "Cancelled", with one line
+  under it on what happens next, and a road (Asked, Confirmed, Trip day,
+  Done). Then the ride as a ticket with the seats and the price, the
+  driver with Message and the number plate as a tag, where to stand with
+  a small map and "Open in maps", and rows: share the ride's details,
+  weather and roads, report a problem, and "Cancel booking" or "Withdraw
+  request" last, in red. The one main button is in a bar at the bottom:
+  Pay, "Rate the driver" or "Find another ride". On a laptop the ticket
+  and the rows are beside the road, the driver and where to stand, with
+  the main button over them.
+- On the trip day the title counts down ("Leaves in 10 minutes") and says
+  "Anna is at the meeting point" once the driver is there; where to stand
+  comes first, and "I'm here" is in the bar at the bottom, on the first
+  screen (spec 31, 3.9). "The driver didn't come" is there too once it is
+  offered.
+- A driver who opens a passenger's booking paid in person reads who pays
+  them, and how much (ADR 0038): the line was written with paying in
+  person and never showed.
+- The web journeys never give two test accounts the same phone number: a
+  run in ten did, and a sign-in journey then failed.
 - CI skips its code jobs (bundles, unit, integration and web tests, the API
   image) for a change to docs, marketing and other files that no code reads,
   and on `main` when the pull request already tested exactly the same files

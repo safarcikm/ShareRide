@@ -1,4 +1,4 @@
-import { act, fireEvent, screen } from "expo-router/testing-library";
+import { act, fireEvent, screen, within } from "expo-router/testing-library";
 import { AccessibilityInfo } from "react-native";
 import type { AnswerDisputeBody, Booking, MyTrip } from "@shareride/contracts";
 import { renderApp, completeMe } from "@/testing/app";
@@ -86,43 +86,46 @@ const driverAbsent = { name: "The driver didn't come" } as const;
 describe("The driver didn't come (spec 8, 3.4; R8.5)", () => {
   it("is offered on the trip day once the wait after the passenger's time has passed", async () => {
     await openBooking(onTheDay());
-    const report = await screen.findByRole("button", driverAbsent);
+    // In the bar, where "I'm here" is (spec 31, 3.9): it is the thing to do now.
+    const bar = within(await screen.findByTestId("bottom-bar"));
+    const report = bar.getByRole("link", driverAbsent);
     // After the chat: talking to the driver comes first.
-    const buttons = screen.getAllByRole("button");
-    expect(buttons.indexOf(report)).toBeGreaterThan(
-      buttons.indexOf(screen.getByRole("button", { name: "Message Anna" })),
+    const links = screen.getAllByRole("link");
+    expect(links.indexOf(report)).toBeGreaterThan(
+      links.indexOf(screen.getByRole("link", { name: "Message Anna" })),
     );
+    expect(screen.getAllByRole("link", driverAbsent)).toHaveLength(1);
   });
 
   it("is not offered during the wait", async () => {
     mockNow = new Date("2026-11-15T10:09:00Z");
     await openBooking(onTheDay());
     expect(await screen.findByRole("button", { name: "I'm here" })).toBeVisible();
-    expect(screen.queryByRole("button", driverAbsent)).toBeNull();
+    expect(screen.queryByRole("link", driverAbsent)).toBeNull();
   });
 
   it("is still offered after the trip completes, until 24 hours after", async () => {
     mockNow = new Date("2026-11-16T15:59:00Z");
     await openBooking(onTheDay({ phase: "completed" }, { status: "completed" }));
-    expect(await screen.findByRole("button", driverAbsent)).toBeVisible();
+    expect(await screen.findByRole("link", driverAbsent)).toBeVisible();
   });
 
   it("is gone more than 24 hours after the trip completed", async () => {
     mockNow = new Date("2026-11-16T16:01:00Z");
     await openBooking(onTheDay({ phase: "completed" }, { status: "completed" }));
     expect(await screen.findByText("Completed")).toBeVisible();
-    expect(screen.queryByRole("button", driverAbsent)).toBeNull();
+    expect(screen.queryByRole("link", driverAbsent)).toBeNull();
   });
 
   it("is not offered once the booking has a report", async () => {
     await openBooking(onTheDay({}, { dispute: dispute({ kind: "driver_absent" }) }));
     expect(await screen.findByRole("button", { name: "I'm here" })).toBeVisible();
-    expect(screen.queryByRole("button", driverAbsent)).toBeNull();
+    expect(screen.queryByRole("link", driverAbsent)).toBeNull();
   });
 
   it("says what happens next, takes a note only PuffinRide reads, and tells PuffinRide", async () => {
     const { client } = await openBooking(onTheDay());
-    await fireEvent.press(await screen.findByRole("button", driverAbsent));
+    await fireEvent.press(await screen.findByRole("link", driverAbsent));
     expect(await screen.findByRole("header", driverAbsent)).toBeVisible();
     expect(screen).toHavePathname(`/bookings/${bookingId}/driver-absent`);
     expect(screen.getByText("Tell PuffinRide that Anna didn't come?")).toBeVisible();
@@ -152,7 +155,7 @@ describe("The driver didn't come (spec 8, 3.4; R8.5)", () => {
   it("sends no note when none was written, and says nothing of a refund for a free ride", async () => {
     const free = { amount: 0, currency: "ISK" } as const;
     const { client } = await openBooking(onTheDay({}, { total: free }));
-    await fireEvent.press(await screen.findByRole("button", driverAbsent));
+    await fireEvent.press(await screen.findByRole("link", driverAbsent));
     expect(await screen.findByText("Tell PuffinRide that Anna didn't come?")).toBeVisible();
     expect(screen.queryByText(/full refund/)).toBeNull();
     await fireEvent.press(screen.getByRole("button", { name: "Tell PuffinRide" }));
@@ -162,7 +165,7 @@ describe("The driver didn't come (spec 8, 3.4; R8.5)", () => {
 
   it("keeps a note over 500 characters from being sent", async () => {
     const { client } = await openBooking(onTheDay());
-    await fireEvent.press(await screen.findByRole("button", driverAbsent));
+    await fireEvent.press(await screen.findByRole("link", driverAbsent));
     await fireEvent.changeText(
       await screen.findByLabelText("Note for PuffinRide (optional)"),
       "x".repeat(501),
@@ -187,7 +190,7 @@ describe("The driver didn't come (spec 8, 3.4; R8.5)", () => {
     ],
   ])("says why it could not tell PuffinRide (%#)", async (answer, said) => {
     await openBooking(onTheDay(), { report: () => answer });
-    await fireEvent.press(await screen.findByRole("button", driverAbsent));
+    await fireEvent.press(await screen.findByRole("link", driverAbsent));
     await fireEvent.press(await screen.findByRole("button", { name: "Tell PuffinRide" }));
     expect(await screen.findByText(said)).toBeVisible();
   });
@@ -196,7 +199,7 @@ describe("The driver didn't come (spec 8, 3.4; R8.5)", () => {
     "says the booking changed, with the way back to it (%s)",
     async (code) => {
       await openBooking(onTheDay(), { report: () => failure(409, code) });
-      await fireEvent.press(await screen.findByRole("button", driverAbsent));
+      await fireEvent.press(await screen.findByRole("link", driverAbsent));
       await fireEvent.press(await screen.findByRole("button", { name: "Tell PuffinRide" }));
       expect(await screen.findByText("This booking changed since you opened it.")).toBeVisible();
       await fireEvent.press(screen.getByRole("button", { name: "Back to the booking" }));

@@ -57,7 +57,7 @@ test("the driver and passenger of a confirmed booking message each other", async
   ).toBeVisible();
 
   // The passenger opens the chat from the booking and writes.
-  await passenger.getByRole("button", { name: "Message Bára" }).click();
+  await passenger.getByRole("link", { name: "Message Bára" }).click();
   await expect(passenger).toHaveURL(/\/messages\/[0-9a-f-]+$/);
   await expect(
     passenger

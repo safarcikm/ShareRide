@@ -48,7 +48,7 @@ function asking(ride: Ride) {
  * less than one; and "Trip day" once the time to leave has come, as the
  * ride may not have left on the minute.
  */
-function leavesText(t: Translate, by: Date, at: Date): string {
+export function leavesText(t: Translate, by: Date, at: Date): string {
   const left = by.getTime() - at.getTime();
   if (left <= 0) return t("tripDay.title");
   if (left > hourMs) return t("needs.leavesAt", { time: formatClock(by) });

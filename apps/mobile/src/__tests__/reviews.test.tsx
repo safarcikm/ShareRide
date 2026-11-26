@@ -1,4 +1,4 @@
-import { fireEvent, screen } from "expo-router/testing-library";
+import { fireEvent, screen, within } from "expo-router/testing-library";
 import type { Booking, BookingReview, MyTrip, ReviewBody } from "@shareride/contracts";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
@@ -82,36 +82,40 @@ function withFormerDriver(): Booking {
 }
 
 describe("rating the driver from the booking (spec 8, 3.7)", () => {
-  it("offers it once the booking completed, with until when", async () => {
+  it("offers it once the booking completed, with until when under the title (spec 31, 3.8)", async () => {
     await open(completedBooking(), bookingPage(completedBooking()));
-    expect(await screen.findByRole("button", rateDriver)).toBeVisible();
-    expect(screen.getByText("You can review until 29 November at 16:00.")).toBeVisible();
+    // The page's one main button, in its bar; the title asks.
+    const bar = within(await screen.findByTestId("bottom-bar"));
+    expect(bar.getByRole("link", rateDriver)).toBeVisible();
+    expect(screen.getByRole("header", { name: "How was your ride?" })).toBeVisible();
+    expect(screen.getAllByText("You can review until 29 November at 16:00.")).toHaveLength(1);
+    expect(screen.getAllByRole("link", rateDriver)).toHaveLength(1);
   });
 
   it("waits while a report on the booking is open (3.7.3)", async () => {
     await open(withOpenReport(), bookingPage(withOpenReport()));
     expect(await screen.findByText(reportOpen)).toBeVisible();
-    expect(screen.queryByRole("button", rateDriver)).toBeNull();
+    expect(screen.queryByRole("link", rateDriver)).toBeNull();
   });
 
   it("is not offered about a driver who has left PuffinRide", async () => {
     await open(withFormerDriver(), bookingPage(withFormerDriver()));
     expect(await screen.findByText(personLeft)).toBeVisible();
-    expect(screen.queryByRole("button", rateDriver)).toBeNull();
+    expect(screen.queryByRole("link", rateDriver)).toBeNull();
   });
 
   it("is not offered before the booking completes", async () => {
     const booking = { ...completedBooking(), status: "confirmed" as const, review: null };
     await open(booking, bookingPage(booking));
     expect(await screen.findByText("Anna")).toBeVisible();
-    expect(screen.queryByRole("button", rateDriver)).toBeNull();
+    expect(screen.queryByRole("link", rateDriver)).toBeNull();
   });
 
   it("is not offered once the 14 days are over", async () => {
     mockNow = new Date(reviewsCloseAt);
     await open(completedBooking(), bookingPage(completedBooking()));
     expect(await screen.findByText("Completed")).toBeVisible();
-    expect(screen.queryByRole("button", rateDriver)).toBeNull();
+    expect(screen.queryByRole("link", rateDriver)).toBeNull();
   });
 
   it("shows the review sent, hidden from the driver until both have reviewed", async () => {
@@ -129,7 +133,7 @@ describe("rating the driver from the booking (spec 8, 3.7)", () => {
         "Your review appears when the other person has reviewed too, or after 14 days.",
       ),
     ).toBeVisible();
-    expect(screen.queryByRole("button", rateDriver)).toBeNull();
+    expect(screen.queryByRole("link", rateDriver)).toBeNull();
   });
 
   it("shows the driver's review of the passenger once it shows", async () => {
@@ -151,9 +155,13 @@ describe("rating the driver from the booking (spec 8, 3.7)", () => {
 
   it("opens the rate screen", async () => {
     await open(completedBooking(), bookingPage(completedBooking()));
-    await fireEvent.press(await screen.findByRole("button", rateDriver));
-    expect(await screen.findByRole("header", { name: "How was your ride?" })).toBeVisible();
-    expect(screen.getByLabelText("Rate the driver")).toHaveProp("accessibilityRole", "radiogroup");
+    await fireEvent.press(await screen.findByRole("link", rateDriver));
+    expect(await screen.findByLabelText("Rate the driver")).toHaveProp(
+      "accessibilityRole",
+      "radiogroup",
+    );
+    expect(screen).toHavePathname(ratePage(completedBooking()));
+    expect(screen.getByRole("header", { name: "How was your ride?" })).toBeVisible();
   });
 });
 

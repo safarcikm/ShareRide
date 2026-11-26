@@ -306,6 +306,8 @@ export const sizes = {
   carBeside: 176,
   /** Narrowest it gets there, before the words move under it: the two fit a 360 wide phone. */
   carBesideLeast: 120,
+  /** The small map beside the place where to stand (spec 31, 3.8). */
+  mapBeside: 104,
   /** A row that opens a screen, such as My cars on Profile. */
   row: 56,
   /** The soft square behind a row's icon, and behind the icon of what needs you (spec 31, 3.3). */

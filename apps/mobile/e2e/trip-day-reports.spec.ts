@@ -74,7 +74,7 @@ test("the driver didn't come and didn't answer: the booking is cancelled with a 
 
   // Dóra waited at Mjódd and tells PuffinRide that Bára didn't come.
   await passenger.goto(booking);
-  await passenger.getByRole("button", { name: "The driver didn't come" }).click();
+  await passenger.getByRole("link", { name: "The driver didn't come" }).click();
   await expect(text(passenger, "Tell PuffinRide that Bára didn't come?")).toBeVisible();
   await passenger.getByRole("button", { name: "Tell PuffinRide", exact: true }).click();
   await expect(

@@ -446,6 +446,63 @@ and on a laptop
    booking is on the driver's ride (3.12), where cancelling it and a
    report lead back to, as today.
 
+As built, on a phone
+([light](images/one-ride-one-ticket/built/booking-phone-light.webp),
+[dark, in Icelandic](images/one-ride-one-ticket/built/booking-phone-dark.webp))
+and on a laptop
+([light](images/one-ride-one-ticket/built/booking-laptop-light.webp)):
+
+- The titles, and the line under each: "Request sent" with "Anna has
+  until 22:00 to answer."; "Anna said yes: pay to keep your seat", or "Pay
+  to keep your seat" for a ride booked instantly, which nobody said yes
+  to, with "Your seat is held until 12:30."; "Your seat is confirmed" with
+  "Sunday 15 November. Anna picks you up at 10:00 at Borgarnes."; the trip
+  day's titles (3.9); "How was your ride?" with until when it can be
+  reviewed, while it can; and how a booking ended, "Completed",
+  "Declined", "Expired", "Cancelled", "Withdrawn" or "No-show", with the
+  notice that says why under it, as before. When an action here changes
+  the state, focus moves to the title, which says the outcome.
+- The road has three steps for a ride booked instantly (Confirmed, Trip
+  day, Done) and none before it is paid: nothing is confirmed yet. A
+  request the driver said yes to stays at Asked until it is paid.
+- The ticket is where I am, not a link: the short day, the tag
+  "Passenger", my two stops and the time between them, with "1 seat" and
+  the price, or "Free", under the tear line.
+- The driver's card (the one of a ride's details, 3.7). **Message** is a
+  link at the right of the driver once the seat is confirmed, named
+  "Message Anna" for a screen reader, and goes under the driver where the
+  two have no room. The number plate, once it shows, is a tag at the
+  right of the car, named "Number plate AB 123"; before that a line under
+  the car says when it shows. A driver who has left shows no rating.
+- "Where to stand" has "Open in maps" as a link at its heading's right.
+  The small map is our own map of Iceland (ADR 0024) drawn around the
+  stop, `mapBeside` (104) wide: it has no streets, so it shows which part
+  of the country, and "Open in maps" shows the street.
+- Paying. The deadline is the line under the title and **Pay** is the
+  main button in the bar, so there is no paying card; the payment opens
+  in the bar, in Pay's place. The line about paying the driver in person
+  is a notice under where to stand. A driver who opens a passenger's
+  booking paid in person reads "Gunna pays you 2,900 ISK in cash or by
+  bank transfer when they get in." there.
+- The rows, each only when it has something to do: "The driver didn't
+  come" (after the ride, while it can still be said, R8.5), "Share the
+  ride's details", "Weather and roads" (as on a ride's details), "Report
+  a problem with this ride", and red and last "Cancel booking", which
+  opens its screen, or "Withdraw request". Withdrawing asks first, in the
+  bar: the red row gives way to the question, focus goes to it, and
+  "Keep my request" puts the row and the focus back.
+- The bar holds the one main button, when there is one: Pay; "I'm here"
+  (3.9); "Rate the driver", once the ride is over and while it can be
+  reviewed; "Find another ride", after a booking the passenger did not
+  end themselves. A confirmed seat with nothing to do has no bar.
+- The prompt to turn on notifications or add an email (spec 7, 3.6.2),
+  when it shows on this screen, has outlined buttons: the bar's button is
+  the only filled one (R31.1).
+- A driver who opens a passenger's booking reads the day over the part
+  ("Sunday 15 November", "Borgarnes to Blönduós") with the status under
+  them, no road, and "Message Gunna" as the first row. Nothing of the
+  passenger's is offered: no Pay, no cancelling.
+
 ### 3.9 Trip day
 
 1. The title counts down ("Leaves in 10 minutes") and then follows the
@@ -457,6 +514,34 @@ and on a laptop
    didn't come" takes its place when that is offered.
 4. The driver's trip day keeps its list of stops with who gets in and out
    at each; its "I'm here" moves into the bar at the bottom as well.
+
+As built, for the passenger, on a phone
+([light](images/one-ride-one-ticket/built/trip-day-phone-light.webp),
+[dark, in Icelandic](images/one-ride-one-ticket/built/trip-day-phone-dark.webp))
+and on a laptop
+([light](images/one-ride-one-ticket/built/trip-day-laptop-light.webp)).
+The driver's trip day comes with the driver's ride (3.12).
+
+- The titles: "Leaves at 10:00" until the last hour, "Leaves in 10
+  minutes" in it, counting while the page is open, and "Trip day" from
+  the time to leave. Once the driver has said "I'm here" the title is
+  "Anna is at the meeting point", whatever the clock says, and a screen
+  reader hears it when it happens: the notice that said so is gone. The
+  line under the title is "Today at 10:00 from Borgarnes." ("At 00:30 from
+  Borgarnes." for a ride that leaves after midnight, opened the evening
+  before).
+- The order: where to stand, the driver with Message and the number
+  plate, then the ticket, then the rows. The ticket stays, after what is
+  needed at the meeting point, as it names where I get out.
+- "I'm here" is in the bar: before it opens the bar says from when, and
+  once said it says the driver was told. "The driver didn't come", when
+  offered (R8.5), is a link in the bar: under "I'm here" while that can
+  still be pressed, as someone waiting may do both, and the bar's main
+  button once it was said or has closed. The web journey reads the first
+  screen on a phone and finds the title, where to stand and "I'm here"
+  inside it with no scrolling.
+- Until the time to get in, the seat can still be cancelled: "Cancel
+  booking" stays the last row.
 
 ### 3.10 My rides
 
@@ -600,7 +685,15 @@ changes:
    both.
 2. **A booked seat:** main column: the title, the road, where to stand and
    the driver; side column: the ticket, then the rows. On the trip day
-   "I'm here" is the main button at the top of the side column.
+   "I'm here" is the main button at the top of the side column. As
+   built: the title is the page's head, over both columns. The driver and
+   where to stand share a row where the main column has room for both,
+   as cards of one height, where to stand first on the trip day. The
+   side column begins with what a phone's bar holds (Pay and its sheet,
+   the question about withdrawing, "I'm here", "Rate the driver", "Find
+   another ride"), then the ticket and the rows; what is open or was
+   said there stays when the window turns narrow and wide again. The
+   side column is whole in a window 1280 by 720.
 3. **The driver's ride:** main column: Needs you, Passengers, then "Drive
    it again" (Post it again, Post the way back). Side column: the ticket,
    Seats in one line, and the rows Edit, Share and Cancel. The side column
@@ -881,6 +974,8 @@ Texts added while building, as they are in the app:
 | The cancellation row | Free cancellation; Up to {time} before | Ókeypis afbókun; Allt að {time} áður |
 | The row of a ride paid in person | Paying; Cash or bank transfer | Greiðsla; Reiðufé eða millifærsla |
 | The row of the Safety links | Weather and roads | Veður og færð |
+| Under the title of a seat to pay for | Your seat is held until {time}.; Your seat is held until {time} tomorrow. | Sætið er frátekið fyrir þig til kl. {time}.; Sætið er frátekið fyrir þig til kl. {time} á morgun. |
+| Under the trip day's title | Today at {time} from {stop}.; At {time} from {stop}. | Í dag kl. {time}. Mótsstaður: {stop}.; Kl. {time}. Mótsstaður: {stop}. |
 
 Texts that exist are reused where they say the same: "Rate the driver",
 "Rate your passenger", "Pay", "Delete draft", "My reports", "Notices",

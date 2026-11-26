@@ -32,7 +32,7 @@ test("after the trip, both review the other, and then each sees the other's revi
 
   // Dóra rates Bára, with a few words; it waits for Bára's.
   await passenger.goto(booking);
-  await passenger.getByRole("button", { name: "Rate the driver" }).click();
+  await passenger.getByRole("link", { name: "Rate the driver" }).click();
   await passenger.getByRole("radio", { name: "5 stars" }).click();
   await passenger
     .getByLabel("Tell others what it was like (optional)")

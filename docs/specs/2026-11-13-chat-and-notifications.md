@@ -51,6 +51,8 @@ keep its cost down.
    only. It opens when the booking is confirmed (paid, or accepted for a free
    trip; spec 5). Before that, the request message (spec 5) is the only text
    that passes between them; it is shown at the top of the conversation.
+   Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.8) a passenger
+   opens it with **Message**, at the right of the driver on the booking.
 2. **Messages** are text only, 1 to 1 000 characters. Quick messages give one
    tap answers: "I'm running {5, 10, 15 or 30} minutes late", "I'm at the
    meeting point", "I'm on my way", "Where are you?", "See you soon", "Thank
@@ -213,7 +215,9 @@ fit two SMS parts.
 2. When someone books, posts a trip or is accepted while they have no device
    with push on (for example on the web) and no verified email, the app asks
    them to turn on notifications or add an email. They can skip; they then
-   see changes only in the app, plus any SMS from 3.4.
+   see changes only in the app, plus any SMS from 3.4. Since
+   [spec 31](2026-11-26-one-ride-one-ticket.md) (R31.1) the prompt's
+   buttons are outlined: a screen's filled button is its main one.
 3. **Unread messages by email:** for someone without push, a chat message
    still unread after 15 minutes is summarised by email ("You have unread
    messages about your trip on {date}"), at most once an hour per

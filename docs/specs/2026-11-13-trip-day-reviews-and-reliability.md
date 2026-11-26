@@ -61,6 +61,18 @@ view. It is built to be used while parked: large buttons and no typing needed.
   here" for the next stop; "Mark as no-show" after the wait time (3.3); a chat
   button per passenger and "Message all passengers" (spec 7).
 - "Before you go" and "share trip details" are spec 9.
+- Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.9) the passenger's
+  trip day has no heading of its own: the booking's title counts down
+  ("Leaves at 10:00", then "Leaves in 10 minutes", then "Trip day"), with
+  "Today at 10:00 from Borgarnes." under it, and says "Anna is at the
+  meeting point" once the driver said "I'm here". Where to stand comes
+  first, then the driver with **Message** and the number plate as a tag,
+  then the ride as a ticket and the rows. "I'm here" is in a bar at the
+  bottom of the screen, on the first screen with no scrolling (at the top
+  of the side column on a laptop). "The driver didn't come" is a link in
+  that bar: under "I'm here" while that can be pressed, and the bar's main
+  button after. The driver's trip day changes with the driver's ride
+  (spec 31, 3.12).
 
 ### 3.2 "I'm here" (E2)
 
@@ -101,6 +113,9 @@ view. It is built to be used while parked: large buttons and no typing needed.
    reliability like a cancellation (spec 6), and any reviews of that booking
    are removed.
 4. If the driver contests it, the operator decides (3.5).
+5. Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.8 and 3.9) "The
+   driver didn't come" is in the bar on the trip day (3.1), and one of the
+   booking's rows once the ride is over, for as long as it can be said.
 
 ### 3.5 When the two sides disagree
 
@@ -152,6 +167,12 @@ complain further.
    deleted account's author show "A former member".
 6. People are reminded to review when the trip completes and once more after 3
    days, using the trip reminders switch (spec 7).
+7. Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.8) a passenger's
+   completed booking asks in its title, "How was your ride?", with until
+   when it can be reviewed under it, while it can; **Rate the driver** is
+   the page's main button, in the bar at the bottom. A review sent, the
+   other's review and why a ride cannot be reviewed show under the title,
+   as before.
 
 ### 3.8 Reliability (G3)
 

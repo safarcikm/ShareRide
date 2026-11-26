@@ -53,7 +53,7 @@ test("a passenger blocks a driver, loses their trips, and unblocks them", async 
 
   // Blocking asks first, then offers the usual way out of the booking they
   // share; the passenger keeps it and goes back to the conversation.
-  await passenger.getByRole("button", { name: "Message Bára" }).click();
+  await passenger.getByRole("link", { name: "Message Bára" }).click();
   await expect(passenger).toHaveURL(/\/messages\/[0-9a-f-]+$/);
   const chat = passenger.url();
   await passenger.getByRole("button", { name: "Block Bára" }).click();
