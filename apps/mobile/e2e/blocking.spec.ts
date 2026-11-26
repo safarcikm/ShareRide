@@ -87,7 +87,7 @@ test("a passenger blocks a driver, loses their trips, and unblocks them", async 
   await passenger.goto(`/trips/${laterTrip}?from=0&to=1`);
   await expect(
     passenger
-      .getByText("This trip can't be found. The link may be wrong, or the trip removed.")
+      .getByText("This ride can't be found. The link may be wrong, or the ride removed.")
       .filter(visible),
   ).toBeVisible();
 

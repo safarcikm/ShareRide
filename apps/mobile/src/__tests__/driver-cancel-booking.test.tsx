@@ -301,7 +301,7 @@ describe("The driver cancels one booking (spec 6, 3.4)", () => {
     await openTrip([jon], { preview: () => failure(409, "booking_not_cancellable") });
     await fireEvent.press(await screen.findByRole("button", { name: "Cancel booking: Jón" }));
     expect(await screen.findByText("This booking can no longer be cancelled.")).toBeVisible();
-    await fireEvent.press(screen.getByRole("button", { name: "Back to the trip" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Back to the ride" }));
     expect(await screen.findByLabelText("Jón, 2 seats, Confirmed")).toBeVisible();
     expect(screen).toHavePathname(tripPage);
   });

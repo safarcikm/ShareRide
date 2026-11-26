@@ -111,7 +111,7 @@ describe("beside the driver of a trip (spec 4, 3.4 and 3.6)", () => {
       },
     });
     expect(await screen.findByText("New driver")).toBeVisible();
-    expect(screen.getByText("Reliability: not enough trips yet")).toBeVisible();
+    expect(screen.getByText("Reliability: not enough rides yet")).toBeVisible();
   });
 });
 
@@ -185,7 +185,7 @@ describe("a passenger, for the driver (spec 5, 3.3 and 3.7)", () => {
   it("says when the person asking has no reviews yet", async () => {
     await openTrip([gunna(newcomer)]);
     expect(await screen.findByText("No reviews yet")).toBeVisible();
-    expect(screen.getByText("Reliability: not enough trips yet")).toBeVisible();
+    expect(screen.getByText("Reliability: not enough rides yet")).toBeVisible();
   });
 
   it("shows nothing of the kind for someone asking who is leaving PuffinRide", async () => {

@@ -66,7 +66,7 @@ const bookingPage = (booking: Booking) => `/bookings/${booking.id}`;
 const ratePage = (booking: Booking) => `/bookings/${booking.id}/rate`;
 const rateDriver = { name: "Rate the driver" } as const;
 const send = { name: "Send review" } as const;
-const reportOpen = "You can review this trip once the report about it is settled.";
+const reportOpen = "You can review this ride once the report about it is settled.";
 const personLeft = "This person has left PuffinRide, so they can't be reviewed.";
 
 /** Gunna's completed booking while her report that Anna didn't come waits to be decided. */
@@ -152,7 +152,7 @@ describe("rating the driver from the booking (spec 8, 3.7)", () => {
   it("opens the rate screen", async () => {
     await open(completedBooking(), bookingPage(completedBooking()));
     await fireEvent.press(await screen.findByRole("button", rateDriver));
-    expect(await screen.findByRole("header", { name: "How was your trip?" })).toBeVisible();
+    expect(await screen.findByRole("header", { name: "How was your ride?" })).toBeVisible();
     expect(screen.getByLabelText("Rate the driver")).toHaveProp("accessibilityRole", "radiogroup");
   });
 });
@@ -228,10 +228,10 @@ describe("the rate screen (spec 8, screen 6; R8.8)", () => {
   });
 
   it.each([
-    ["review_window_closed", "Reviews of this trip closed 14 days after it ended."],
+    ["review_window_closed", "Reviews of this ride closed 14 days after it ended."],
     ["report_open", reportOpen],
     ["person_left", personLeft],
-    ["already_reviewed", "You have already reviewed this trip."],
+    ["already_reviewed", "You have already reviewed this ride."],
     ["not_completed", "This booking changed since you opened it."],
   ])("says why a review was not taken, and stops: %s", async (code, said) => {
     await open(completedBooking(), ratePage(completedBooking()), {
@@ -290,7 +290,7 @@ describe("the rate screen (spec 8, screen 6; R8.8)", () => {
   it("says so when the booking was already reviewed before the screen opened", async () => {
     const booking = completedBooking({ mine: { ...aReview(5), revealed: false } });
     await open(booking, ratePage(booking));
-    expect(await screen.findByText("You have already reviewed this trip.")).toBeVisible();
+    expect(await screen.findByText("You have already reviewed this ride.")).toBeVisible();
     expect(screen.queryByRole("button", { name: "Send review" })).toBeNull();
   });
 
@@ -298,7 +298,7 @@ describe("the rate screen (spec 8, screen 6; R8.8)", () => {
     mockNow = new Date(reviewsCloseAt);
     await open(completedBooking(), ratePage(completedBooking()));
     expect(
-      await screen.findByText("Reviews of this trip closed 14 days after it ended."),
+      await screen.findByText("Reviews of this ride closed 14 days after it ended."),
     ).toBeVisible();
     expect(screen.queryByRole("button", { name: "Send review" })).toBeNull();
   });
@@ -306,7 +306,7 @@ describe("the rate screen (spec 8, screen 6; R8.8)", () => {
 
 describe("a low rating (spec 8, 3.7.4)", () => {
   const wentWrong = "Did something go wrong?";
-  const reportProblem = { name: "Report a problem with this trip" } as const;
+  const reportProblem = { name: "Report a problem with this ride" } as const;
   // Monday morning, within 24 hours of the trip, when a problem with it can
   // still be reported (R9.1); by Tuesday noon it can't.
   const nextMorning = new Date("2026-11-16T09:00:00Z");
@@ -457,7 +457,7 @@ describe("the driver rates each passenger (spec 8, 3.7)", () => {
     await fireEvent.press(screen.getByRole("button", { name: "Send review" }));
     expect(await screen.findByText("Review sent. Thank you.")).toBeVisible();
     expect(bodiesOf(client)).toEqual([{ rating: 5 }]);
-    await fireEvent.press(screen.getByRole("button", { name: "Back to the trip" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Back to the ride" }));
     expect(await screen.findByText("Your review")).toBeVisible();
     expect(screen.queryByRole("button", { name: "Rate your passenger: Gunna" })).toBeNull();
   });

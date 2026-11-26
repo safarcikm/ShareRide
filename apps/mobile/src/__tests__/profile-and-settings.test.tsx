@@ -322,7 +322,7 @@ describe("My profile on a laptop (spec 18, 3.12)", () => {
 });
 
 describe("Settings", () => {
-  const reminderSwitch = "Trip reminders. The evening before and an hour before each trip.";
+  const reminderSwitch = "Ride reminders. The evening before and an hour before each ride.";
 
   async function openSettings() {
     const app = await openProfile();
@@ -379,7 +379,7 @@ describe("Settings", () => {
     });
     expect(
       screen.getByText(
-        "Notifications about bookings, trips, payments and messages are always on, because others rely on them.",
+        "Notifications about bookings, rides, payments and messages are always on, because others rely on them.",
       ),
     ).toBeVisible();
     await fireEvent.press(reminders);

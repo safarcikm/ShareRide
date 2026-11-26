@@ -90,7 +90,7 @@ describe("Safety on a trip (spec 9, 3.3)", () => {
 
   it("has no 112 button on the booking, trip details or the driver's trip page", async () => {
     await openBooking(paidBooking);
-    expect(await screen.findByRole("button", { name: "Share trip details" })).toBeVisible();
+    expect(await screen.findByRole("button", { name: "Share the ride's details" })).toBeVisible();
     expect(screen.queryByRole("button", { name: call })).toBeNull();
 
     await renderApp(`/trips/${northResult.tripId}?from=1&to=2`, {
@@ -102,7 +102,7 @@ describe("Safety on a trip (spec 9, 3.3)", () => {
     expect(screen.queryByRole("button", { name: call })).toBeNull();
 
     await openDriverTrip();
-    expect(await screen.findByRole("button", { name: "Share trip details" })).toBeVisible();
+    expect(await screen.findByRole("button", { name: "Share the ride's details" })).toBeVisible();
     expect(screen.queryByRole("button", { name: call })).toBeNull();
   });
 
@@ -168,7 +168,7 @@ describe("Before you go (spec 9, 3.3.2)", () => {
 
   it("leaves them out of a trip within the capital area", async () => {
     await openBooking(inTown);
-    expect(await screen.findByRole("button", { name: "Share trip details" })).toBeVisible();
+    expect(await screen.findByRole("button", { name: "Share the ride's details" })).toBeVisible();
     expect(screen.queryByRole("link", { name: "Weather (vedur.is)" })).toBeNull();
   });
 });
@@ -176,9 +176,9 @@ describe("Before you go (spec 9, 3.3.2)", () => {
 describe("Share trip details (spec 9, 3.3.3, R9.8)", () => {
   it("shares a confirmed booking's date, place, driver and car with its plate", async () => {
     await openBooking(paidBooking);
-    await fireEvent.press(await screen.findByRole("button", { name: "Share trip details" }));
+    await fireEvent.press(await screen.findByRole("button", { name: "Share the ride's details" }));
     expect(mockedShare).toHaveBeenCalledWith(
-      "My trip: Sunday 15 November at 10:00 · Borgarnes → Blönduós · " +
+      "My ride: Sunday 15 November at 10:00 · Borgarnes → Blönduós · " +
         "Meeting point: Borgarnes (By the petrol pumps) · Driver: Anna · " +
         "Car: White Toyota Yaris, AB 123 · Booked on PuffinRide",
     );
@@ -187,19 +187,19 @@ describe("Share trip details (spec 9, 3.3.3, R9.8)", () => {
   it("says when the details were copied instead", async () => {
     mockedShare.mockResolvedValueOnce("copied");
     await openBooking(paidBooking);
-    await fireEvent.press(await screen.findByRole("button", { name: "Share trip details" }));
+    await fireEvent.press(await screen.findByRole("button", { name: "Share the ride's details" }));
     expect(
-      await screen.findByText("Trip details copied. Paste them into a message to share them."),
+      await screen.findByText("Ride details copied. Paste them into a message to share them."),
     ).toBeVisible();
   });
 
   it("shows the details to copy when the device can neither share nor copy them", async () => {
     mockedShare.mockResolvedValueOnce("failed");
     await openBooking(paidBooking);
-    await fireEvent.press(await screen.findByRole("button", { name: "Share trip details" }));
+    await fireEvent.press(await screen.findByRole("button", { name: "Share the ride's details" }));
     expect(
       await screen.findByText(
-        "The trip details could not be shared. Here they are to copy: My trip: " +
+        "The ride details could not be shared. Here they are to copy: My ride: " +
           "Sunday 15 November at 10:00 · Borgarnes → Blönduós · " +
           "Meeting point: Borgarnes (By the petrol pumps) · Driver: Anna · " +
           "Car: White Toyota Yaris, AB 123 · Booked on PuffinRide",
@@ -210,14 +210,14 @@ describe("Share trip details (spec 9, 3.3.3, R9.8)", () => {
   it("waits for the booking to be confirmed", async () => {
     await openBooking(northBooking());
     expect(await screen.findByRole("link", { name: "Weather (vedur.is)" })).toBeVisible();
-    expect(screen.queryByRole("button", { name: "Share trip details" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Share the ride's details" })).toBeNull();
   });
 
   it("shares the driver's trip without the passengers' names", async () => {
     await openDriverTrip();
-    await fireEvent.press(await screen.findByRole("button", { name: "Share trip details" }));
+    await fireEvent.press(await screen.findByRole("button", { name: "Share the ride's details" }));
     expect(mockedShare).toHaveBeenCalledWith(
-      "My trip: Sunday 15 November at 09:00 · BSÍ bus terminal → Hof, Akureyri · " +
+      "My ride: Sunday 15 November at 09:00 · BSÍ bus terminal → Hof, Akureyri · " +
         "Offered on PuffinRide",
     );
     expect(mockedShare).not.toHaveBeenCalledWith(expect.stringContaining("Gunna"));
@@ -230,6 +230,6 @@ describe("Share trip details (spec 9, 3.3.3, R9.8)", () => {
       },
     });
     expect(await screen.findByRole("link", { name: "Weather (vedur.is)" })).toBeVisible();
-    expect(screen.queryByRole("button", { name: "Share trip details" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Share the ride's details" })).toBeNull();
   });
 });

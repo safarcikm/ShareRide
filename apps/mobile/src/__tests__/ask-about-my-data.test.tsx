@@ -59,14 +59,14 @@ describe("Ask about my data (spec 11, 3.6)", () => {
     expect(screen.getByText("We answer at anna@example.test.")).toBeVisible();
 
     await fireEvent.press(screen.getByRole("radio", { name: /^Ask a question/ }));
-    await write("Why do you keep my old trips?");
+    await write("Why do you keep my old rides?");
     await fireEvent.press(screen.getByRole("button", { name: "Send" }));
 
     expect(
       await screen.findByText("Thank you. We'll answer by email within a month."),
     ).toBeVisible();
     expect(sent(app).map((call) => call.input["body"])).toEqual([
-      { kind: "question", text: "Why do you keep my old trips?" },
+      { kind: "question", text: "Why do you keep my old rides?" },
     ]);
     await fireEvent.press(screen.getByRole("button", { name: "Back to Privacy" }));
     expect(await screen.findByRole("header", { name: "Privacy" })).toBeVisible();

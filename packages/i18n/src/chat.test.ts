@@ -130,9 +130,9 @@ describe("system lines in the reader's language (spec 7, 3.1, item 3)", () => {
       note: "",
       wholeTrip: true,
     } as const;
-    expect(systemLineText(en, trip, "Anna")).toBe("Anna cancelled the trip: Weather");
+    expect(systemLineText(en, trip, "Anna")).toBe("Anna cancelled the ride: Weather");
     expect(systemLineText(en, { ...trip, by: "me" }, "Gunna")).toBe(
-      "You cancelled the trip: Weather",
+      "You cancelled the ride: Weather",
     );
     expect(systemLineText(is, trip, "Anna")).toBe("Anna hætti við ferðina: Veður");
     expect(systemLineText(is, { ...trip, by: "me", note: "Því miður." }, "Gunna")).toBe(
@@ -144,7 +144,7 @@ describe("system lines in the reader's language (spec 7, 3.1, item 3)", () => {
     const line = { key: "cancelled_by_shareride", wholeTrip: false } as const;
     expect(systemLineText(en, line, "Anna")).toBe("PuffinRide cancelled the booking.");
     expect(systemLineText(en, { ...line, wholeTrip: true }, "Anna")).toBe(
-      "PuffinRide cancelled the trip.",
+      "PuffinRide cancelled the ride.",
     );
     expect(systemLineText(is, line, "Anna")).toBe("PuffinRide afbókaði.");
     expect(systemLineText(is, { ...line, wholeTrip: true }, "Anna")).toBe(

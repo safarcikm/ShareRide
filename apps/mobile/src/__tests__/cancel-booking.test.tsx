@@ -320,7 +320,7 @@ describe("A cancelled booking (spec 6, 3.4 and 3.5)", () => {
       screen.getByText("Full refund of 2,900 ISK, back to the card you paid with."),
     ).toBeVisible();
     expect(screen.queryByText("This cancellation shows on your profile")).toBeNull();
-    expect(screen.getByRole("button", { name: "Search again" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Find another ride" })).toBeVisible();
   });
 
   it("says the driver cancelled the whole trip, with their note and the refund (spec 6, 3.3)", async () => {
@@ -335,12 +335,12 @@ describe("A cancelled booking (spec 6, 3.4 and 3.5)", () => {
         wholeTrip: true,
       },
     });
-    expect(await screen.findByText("Anna cancelled the trip: Weather")).toBeVisible();
+    expect(await screen.findByText("Anna cancelled the ride: Weather")).toBeVisible();
     expect(screen.getByText("Note from the driver: The pass is closed.")).toBeVisible();
     expect(
       screen.getByText("Full refund of 2,900 ISK, back to the card you paid with."),
     ).toBeVisible();
-    expect(screen.getByRole("button", { name: "Search again" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Find another ride" })).toBeVisible();
   });
 
   it("tells a passenger whose request was declined that the trip was cancelled, and why", async () => {
@@ -358,12 +358,12 @@ describe("A cancelled booking (spec 6, 3.4 and 3.5)", () => {
         },
       }),
     );
-    expect(await screen.findByText("Anna cancelled the trip: Car problem")).toBeVisible();
+    expect(await screen.findByText("Anna cancelled the ride: Car problem")).toBeVisible();
     expect(screen.getByText("Cancelled")).toBeVisible();
     expect(screen.queryByText("Declined")).toBeNull();
     expect(screen.queryByText("The driver couldn't take this request")).toBeNull();
     expect(screen.queryByText(/refund|Note from/i)).toBeNull();
-    expect(screen.getByRole("button", { name: "Search again" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Find another ride" })).toBeVisible();
   });
 
   it("says nothing of a refund when there was none", async () => {

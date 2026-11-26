@@ -341,7 +341,7 @@ changes on a screen.
 
 ## PR 3: what needs me
 
-`feat(rides)`, spec 31, 3.3 item 3 and section 6.
+Merged, #261. `feat(rides)`, spec 31, 3.3 item 3 and section 6.
 
 1. **Domain:** `rides/needs.ts` as above, exported from the package.
    Tests: each kind; a deadline at or behind `at` is no need; a completed
@@ -374,16 +374,33 @@ changes on a screen.
 
 `feat(texts)`, spec 31, 3.4. Values only; no key is renamed.
 
-1. **A test first** in `packages/i18n`: no English value says "trip" or
-   "trips" as a word except in "Trip day", for every key outside the
-   emails and the legal texts (section 10 leaves emails out; the list of
-   key prefixes left out is in the test).
-2. **English:** "Offer a ride", "Publish ride", "Find a ride", "Edit the
-   ride", "Cancel the ride", "Share ride details", "Post it again", "Post
-   the way back", "My rides". The drawings say "Share trip details" on a
-   booking; the rule of 3.4 wins and it reads "Share ride details".
+1. **A test first** in `packages/i18n` (`one-name.test.ts`): no English
+   value says "trip" or "trips" as a word except in "Trip day", none is a
+   button named "Search", and none posts a ride or a trip. Left out are
+   the console's own texts (`admin.`, by prefix) and, by key, three on the
+   marketing pages and About where "a trip you are making anyway" is the
+   drive itself (`seo.findDescription`, `carpool.taxiAnswer`,
+   `about.intro`); the other texts there follow the rule. The legal
+   documents are not text keys and keep their words. Emails and text messages follow the rule
+   after all: nearly all their words are the app's notices, so leaving one
+   subject line out would only make them disagree.
+2. **English:** "Offer a ride", "Publish ride", "Find a ride" (also the
+   search button, which said "Search"), "Edit the ride", "Cancel the
+   ride", "Post it again", "Post the way back", "My rides", "Check your
+   ride". The drawings say "Share trip details" on a booking; the rule of
+   3.4 wins. It reads "Share the ride's details", as "Share ride" is the
+   product's old name, which a test keeps out of the texts (ADR 0039).
+   "Why prices have a ceiling" says "a drive you're making anyway", since
+   nobody makes a ride. Where "ride" alone would read as a passenger's
+   seat, the text says whose it is: "You're the driver of this ride",
+   "You haven't offered a ride yet", "You're already driving another ride
+   at that time", "Kept 11 of 12 rides offered and seats booked". "Search
+   again" on a booking that ended is "Find another ride".
 3. **Icelandic:** "far" in "Finna far" and "Bjóða far", "ferð" for the ride
-   itself; only what is inconsistent today changes.
+   itself; only what is inconsistent today changes: the search button
+   ("Leita") says "Finna far", and the button that starts a ride on the
+   driver's list ("Setja inn ferð") and "You can offer rides up to 60 days
+   ahead" say "bjóða far".
 4. **Tests and journeys** follow the new words.
 5. **Docs:** glossary (ride and trip), changelog.
 

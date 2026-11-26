@@ -235,7 +235,7 @@ describe("My rides (spec 16, 3.3)", () => {
     });
     const row = await screen.findByRole("button", { name: /^Driving, / });
     expect(String(row.props.accessibilityLabel)).toMatch(
-      /Cancelled.*You cancelled this trip: Weather/,
+      /Cancelled.*You cancelled this ride: Weather/,
     );
     // A quiet tag, as on a cancelled booking: nothing is asked of anyone (spec 31, 3.3).
     expect(within(row).getByText("Cancelled")).toHaveStyle({ color: colors.light.textMuted });
@@ -343,7 +343,7 @@ describe("Withdrawing a request (spec 5, 3.4; R5.8)", () => {
     // The seat will never be confirmed, so the plate is not promised.
     expect(screen.queryByText(/^Number plate/)).toBeNull();
 
-    await fireEvent.press(screen.getByRole("button", { name: "Search again" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Find another ride" }));
     expect(screen).toHavePathname("/search/results");
     expect(screen).toHaveSearchParams({
       from: withdrawn.board.meetingPoint.id,
@@ -397,7 +397,7 @@ describe("Withdrawing a request (spec 5, 3.4; R5.8)", () => {
       },
     });
     expect(await screen.findByText("The driver couldn't take this request")).toBeVisible();
-    await fireEvent.press(screen.getByRole("button", { name: "Search again" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Find another ride" }));
     expect(screen).toHavePathname("/search/results");
     expect(app.getSearchParams()).not.toHaveProperty("date");
   });
@@ -411,7 +411,7 @@ describe("Withdrawing a request (spec 5, 3.4; R5.8)", () => {
       },
     });
     expect(await screen.findByText("The driver didn't answer in time")).toBeVisible();
-    await fireEvent.press(screen.getByRole("button", { name: "Search again" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Find another ride" }));
     expect(screen).toHavePathname("/search/results");
     expect(app.getSearchParams()).toMatchObject({ date: "2026-11-15", seats: "1" });
   });
@@ -426,7 +426,7 @@ describe("Withdrawing a request (spec 5, 3.4; R5.8)", () => {
     expect(await screen.findByText("Cancelled")).toBeVisible();
     expect(screen.queryByText("Withdrawn")).toBeNull();
     expect(screen.queryByText(/^You withdrew/)).toBeNull();
-    expect(screen.queryByRole("button", { name: "Search again" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Find another ride" })).toBeNull();
     expect(screen.queryByText(/^Number plate/)).toBeNull();
   });
 });

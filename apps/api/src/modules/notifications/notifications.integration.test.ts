@@ -918,7 +918,7 @@ describe("the worker (plan 4.4)", () => {
       expect.arrayContaining([
         {
           to: `ExponentPushToken[${gunna.userId}]`,
-          title: "Trip cancelled: Weather",
+          title: "Ride cancelled: Weather",
           body: `BSÍ bus terminal – Hof bus stop, Akureyri · Saturday 14 November at 09:00. Full refund of ${formatMoney(confirmed.total, "en")}.`,
           data: { path: `/bookings/${confirmed.id}` },
         },
@@ -935,7 +935,7 @@ describe("the worker (plan 4.4)", () => {
       expect.arrayContaining([
         {
           to: await phoneOf(gunna),
-          text: "PuffinRide: your trip on Saturday 14 November at 09:00 is cancelled. Full refund. Details in the app.",
+          text: "PuffinRide: your ride on Saturday 14 November at 09:00 is cancelled. Full refund. Details in the app.",
         },
         {
           to: await phoneOf(oli),
@@ -945,9 +945,9 @@ describe("the worker (plan 4.4)", () => {
     );
     expect(email.sent.at(-1)).toMatchObject({
       to: "gunna-trip@example.com",
-      subject: "Trip cancelled: Weather",
+      subject: "Ride cancelled: Weather",
       text: expect.stringMatching(
-        /^Trip cancelled: Weather\n\nBSÍ bus terminal – Hof bus stop, Akureyri · Saturday 14 November at 09:00\. Full refund of /,
+        /^Ride cancelled: Weather\n\nBSÍ bus terminal – Hof bus stop, Akureyri · Saturday 14 November at 09:00\. Full refund of /,
       ) as unknown,
     });
     expect(JSON.stringify([push.sent, sms.outbox, email.sent])).not.toMatch(/snow/);
@@ -1021,7 +1021,7 @@ describe("the worker (plan 4.4)", () => {
       expect.arrayContaining([
         {
           to: await phoneOf(gunna),
-          text: "PuffinRide: your trip on Saturday 14 November now leaves at 06:10. Keep it or cancel with a full refund in the app.",
+          text: "PuffinRide: your ride on Saturday 14 November now leaves at 06:10. Keep it or cancel with a full refund in the app.",
         },
         {
           to: await phoneOf(dora),
@@ -1054,7 +1054,7 @@ describe("the worker (plan 4.4)", () => {
     expect(sms.outbox).toEqual([
       {
         to: await phoneOf(passenger),
-        text: "PuffinRide: your trip on Saturday 14 November now leaves at 12:30. Keep it or cancel with a full refund in the app.",
+        text: "PuffinRide: your ride on Saturday 14 November now leaves at 12:30. Keep it or cancel with a full refund in the app.",
       },
     ]);
   });
@@ -1873,11 +1873,11 @@ describe("email (plan 4.6)", () => {
     expect(email.sent.map((sent) => [sent.to, sent.subject])).toEqual([
       [
         "gunna-unread@example.com",
-        expect.stringMatching(/^You have unread messages about your trip on \w+day \d+ \w+$/),
+        expect.stringMatching(/^You have unread messages about your ride on \w+day \d+ \w+$/),
       ],
     ]);
     expect(email.sent[0]?.text).toMatch(
-      /^You have unread messages about your trip on \w+day \d+ \w+\n\nOpen the chat in PuffinRide to read them\.\n/,
+      /^You have unread messages about your ride on \w+day \d+ \w+\n\nOpen the chat in PuffinRide to read them\.\n/,
     );
     expect(email.sent[0]?.text).toContain(`Open in PuffinRide: ${webAppUrl}/messages/${bookingId}`);
     expect(JSON.stringify(email.sent)).not.toContain("4512");

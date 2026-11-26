@@ -388,7 +388,7 @@ describe("The driver's trip page (spec 5, 3.3 and 3.7)", () => {
       },
     });
     expect(
-      await screen.findByText("The trip's requests and bookings could not be loaded."),
+      await screen.findByText("The ride's requests and bookings could not be loaded."),
     ).toBeVisible();
     await fireEvent.press(screen.getByRole("button", { name: "Try again" }));
     expect(await screen.findByText("No requests or bookings yet.")).toBeVisible();
@@ -448,8 +448,8 @@ describe("The driver's trip on a laptop (spec 18, 3.14)", () => {
     expect(main().getByLabelText("Jón, 2 seats, Confirmed")).toBeVisible();
     expect(main().getByRole("button", { name: "Message all passengers" })).toBeVisible();
     expect(main().getByRole("header", { name: "Safety" })).toBeVisible();
-    expect(main().getByRole("button", { name: "Post again" })).toBeVisible();
-    expect(main().getByRole("button", { name: "Post the return trip" })).toBeVisible();
+    expect(main().getByRole("button", { name: "Post it again" })).toBeVisible();
+    expect(main().getByRole("button", { name: "Post the way back" })).toBeVisible();
 
     // What changes the trip stands across the top, beside its name: whole
     // in any window, however many stretches the trip has.
@@ -457,25 +457,30 @@ describe("The driver's trip on a laptop (spec 18, 3.14)", () => {
     expect(top.getByRole("button", { name: "Back" })).toBeVisible();
     expect(top.getByText("Sunday 15 November at 09:00")).toBeVisible();
     expect(top.getByRole("header", { name: "BSÍ bus terminal → Hof, Akureyri" })).toBeVisible();
-    expect(top.getByRole("button", { name: "Edit trip" })).toBeVisible();
-    expect(top.getByRole("button", { name: "Cancel trip" })).toBeVisible();
+    expect(top.getByRole("button", { name: "Edit the ride" })).toBeVisible();
+    expect(top.getByRole("button", { name: "Cancel the ride" })).toBeVisible();
 
     expect(side().getByRole("header", { name: "Seats on each stretch" })).toBeVisible();
     expect(side().getByLabelText("Blönduós to Hof, Akureyri, 0 of 3 seats taken")).toBeVisible();
 
     // Each thing is there once.
-    for (const name of ["Message all passengers", "Edit trip", "Cancel trip", "Post again"]) {
+    for (const name of [
+      "Message all passengers",
+      "Edit the ride",
+      "Cancel the ride",
+      "Post it again",
+    ]) {
       expect(screen.getAllByRole("button", { name })).toHaveLength(1);
     }
     expect(screen.getAllByRole("header", { name: "Seats on each stretch" })).toHaveLength(1);
     const places = placesOf([
-      "Edit trip",
-      "Cancel trip",
+      "Edit the ride",
+      "Cancel the ride",
       "Requests",
       "Passengers",
       "Message all passengers",
       "Safety",
-      "Post again",
+      "Post it again",
       "Seats on each stretch",
     ]);
     expect(places).toEqual(inOrder(places));
@@ -492,14 +497,14 @@ describe("The driver's trip on a laptop (spec 18, 3.14)", () => {
     expect(screen.queryByTestId("columns-side")).toBeNull();
     expect(screen.queryByTestId("page")).toBeNull();
     expect(screen.getByRole("radio", { name: "The luggage won't fit" })).toBeChecked();
-    expect(screen.getAllByRole("button", { name: "Edit trip" })).toHaveLength(1);
+    expect(screen.getAllByRole("button", { name: "Edit the ride" })).toHaveLength(1);
 
     await act(() => {
       Dimensions.set({ window: laptop });
     });
     expect(main().getByRole("radio", { name: "The luggage won't fit" })).toBeChecked();
     expect(side().getByRole("header", { name: "Seats on each stretch" })).toBeVisible();
-    expect(screen.getAllByRole("button", { name: "Edit trip" })).toHaveLength(1);
+    expect(screen.getAllByRole("button", { name: "Edit the ride" })).toHaveLength(1);
   });
 
   it("says at the left that nobody has asked yet, with no way to message nobody", async () => {
@@ -508,7 +513,7 @@ describe("The driver's trip on a laptop (spec 18, 3.14)", () => {
     expect(none).toBeVisible();
     expect(none).not.toHaveStyle({ textAlign: "center" });
     expect(screen.queryByRole("button", { name: "Message all passengers" })).toBeNull();
-    expect(screen.getByRole("button", { name: "Edit trip" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Edit the ride" })).toBeVisible();
     expect(side().getByRole("header", { name: "Seats on each stretch" })).toBeVisible();
   });
 
@@ -522,7 +527,7 @@ describe("The driver's trip on a laptop (spec 18, 3.14)", () => {
       },
     });
     const column = within(await screen.findByTestId("page-column"));
-    expect(column.getByText("The trip's requests and bookings could not be loaded.")).toBeVisible();
+    expect(column.getByText("The ride's requests and bookings could not be loaded.")).toBeVisible();
     expect(column.getByRole("button", { name: "Try again" })).toBeVisible();
     expect(screen.getByTestId("page")).toBeVisible();
     expect(screen.getByRole("button", { name: "Back" })).toBeVisible();
@@ -538,11 +543,11 @@ describe("The driver's trip on a laptop (spec 18, 3.14)", () => {
       },
     });
     const column = within(await screen.findByTestId("page-column"));
-    expect(column.getByText("This trip was cancelled.")).toBeVisible();
-    expect(column.getByRole("button", { name: "Post again" })).toBeVisible();
+    expect(column.getByText("This ride was cancelled.")).toBeVisible();
+    expect(column.getByRole("button", { name: "Post it again" })).toBeVisible();
     expect(screen.getByTestId("page")).toBeVisible();
     expect(screen.getByRole("header", { name: "BSÍ bus terminal → Hof, Akureyri" })).toBeVisible();
-    expect(screen.queryByRole("button", { name: "Edit trip" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Edit the ride" })).toBeNull();
     expect(screen.queryByTestId("columns")).toBeNull();
   });
 
@@ -557,10 +562,10 @@ describe("The driver's trip on a laptop (spec 18, 3.14)", () => {
       "Passengers",
       "Message all passengers",
       "Seats on each stretch",
-      "Edit trip",
-      "Cancel trip",
+      "Edit the ride",
+      "Cancel the ride",
       "Safety",
-      "Post again",
+      "Post it again",
     ]);
     expect(places).toEqual(inOrder(places));
   });

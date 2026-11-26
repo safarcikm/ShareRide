@@ -67,9 +67,9 @@ test("a driver moves the departure 45 minutes, and the passenger cancels with a 
 
   // Edit trip opens the trip's parts; the time opens its own screen.
   await driver.goto(`/drive/trips/${tripId}`);
-  await driver.getByRole("button", { name: "Edit trip", exact: true }).click();
+  await driver.getByRole("button", { name: "Edit the ride", exact: true }).click();
   await expect(driver).toHaveURL(new RegExp(`/drive/trips/${tripId}/edit$`));
-  await expect(driver.getByRole("heading", { name: "Edit trip" })).toBeVisible();
+  await expect(driver.getByRole("heading", { name: "Edit the ride" })).toBeVisible();
   // On a narrow phone a part's link is wider than what its title leaves:
   // it goes under the title, and never out of the card (spec 31, 3.18).
   const size = driver.viewportSize();
@@ -115,7 +115,7 @@ test("a driver moves the departure 45 minutes, and the passenger cancels with a 
 
   // Back on the trip, it says so with focus.
   await expect(driver).toHaveURL(new RegExp(`/drive/trips/${tripId}\\?changed=`));
-  const outcome = "Trip changed. Your passengers have been told.";
+  const outcome = "Ride changed. Your passengers have been told.";
   await expect(driver.getByText(outcome, { exact: true }).filter(visible)).toBeVisible();
   await expect.poll(() => focused(driver)).toContain(outcome);
 
@@ -125,7 +125,7 @@ test("a driver moves the departure 45 minutes, and the passenger cancels with a 
   await expect(dora.getByText(change, { exact: true }).filter(visible)).toBeVisible();
   await dora.getByRole("button", { name: "Cancel with full refund", exact: true }).click();
   await expect(dora).toHaveURL(`${booking}/cancel?reason=trip_changed`);
-  await expect(dora.getByRole("radio", { name: "The trip changed" })).toBeChecked();
+  await expect(dora.getByRole("radio", { name: "The ride changed" })).toBeChecked();
   await expect(dora.getByText(/^Full refund of [\d,]+ ISK$/).filter(visible)).toBeVisible();
   await expect(
     dora.getByText("This cancellation shows on your profile").filter(visible),
@@ -133,7 +133,7 @@ test("a driver moves the departure 45 minutes, and the passenger cancels with a 
   await dora.getByRole("button", { name: "Cancel booking", exact: true }).click();
 
   await expect(dora).toHaveURL(`${booking}?cancelled=1`);
-  const cancelled = "You cancelled this booking: The trip changed";
+  const cancelled = "You cancelled this booking: The ride changed";
   await expect(dora.getByText(cancelled, { exact: true }).filter(visible)).toBeVisible();
   await expect(
     dora.getByText(/^Full refund of [\d,]+ ISK, back to the card you paid with\.$/).filter(visible),
@@ -156,12 +156,12 @@ test("a driver offers fewer seats and a higher price, each saved from Edit trip"
 
   const edit = async () => {
     await driver.goto(`/drive/trips/${tripId}/edit`);
-    await expect(driver.getByRole("heading", { name: "Edit trip" })).toBeVisible();
+    await expect(driver.getByRole("heading", { name: "Edit the ride" })).toBeVisible();
   };
   const saved = async () => {
     await driver.getByRole("button", { name: "Save the change", exact: true }).click();
     await expect(driver).toHaveURL(new RegExp(`/drive/trips/${tripId}\\?changed=`));
-    const outcome = "Trip changed.";
+    const outcome = "Ride changed.";
     await expect(driver.getByText(outcome, { exact: true }).filter(visible)).toBeVisible();
     await expect.poll(() => focused(driver)).toContain(outcome);
   };
@@ -170,7 +170,7 @@ test("a driver offers fewer seats and a higher price, each saved from Edit trip"
   await driver.getByRole("link", { name: "Change the seats" }).click();
   await expect(
     driver
-      .getByText("1 seat is taken on part of the trip, so you can offer no fewer.", {
+      .getByText("1 seat is taken on part of the ride, so you can offer no fewer.", {
         exact: true,
       })
       .filter(visible),
@@ -238,7 +238,7 @@ test("a driver changes the car, and the passenger reads it on the booking and in
   await driver.getByRole("radio", { name: /^Volvo XC40, red/ }).click();
   await driver.getByRole("button", { name: "Save the change", exact: true }).click();
   await expect(driver).toHaveURL(new RegExp(`/drive/trips/${tripId}\\?changed=`));
-  const outcome = "Trip changed. Your passengers have been told.";
+  const outcome = "Ride changed. Your passengers have been told.";
   await expect(driver.getByText(outcome, { exact: true }).filter(visible)).toBeVisible();
 
   const newCar = "New car: Red Volvo XC40";
@@ -291,7 +291,7 @@ test("a driver adds a stop on the way, and the passenger reads it on the booking
   ).toBeVisible();
   await driver.getByRole("button", { name: "Save the change", exact: true }).click();
   await expect(driver).toHaveURL(new RegExp(`/drive/trips/${tripId}\\?changed=`));
-  const outcome = "Trip changed. Your passengers have been told.";
+  const outcome = "Ride changed. Your passengers have been told.";
   await expect(driver.getByText(outcome, { exact: true }).filter(visible)).toBeVisible();
 
   await dora.goto(booking);
@@ -330,7 +330,7 @@ test("a driver removes a stop nobody uses, and the passenger reads it on the boo
   await expect(
     driver
       .getByText(
-        "1 passenger gets in or out at Olís Norðlingaholt. Cancel or decline their bookings from the trip first, or ask them to cancel.",
+        "1 passenger gets in or out at Olís Norðlingaholt. Cancel or decline their bookings on this ride first, or ask them to cancel.",
         { exact: true },
       )
       .filter(visible),
@@ -353,7 +353,7 @@ test("a driver removes a stop nobody uses, and the passenger reads it on the boo
   ).toBeVisible();
   await driver.getByRole("button", { name: "Save the change", exact: true }).click();
   await expect(driver).toHaveURL(new RegExp(`/drive/trips/${tripId}\\?changed=`));
-  const outcome = "Trip changed. Your passengers have been told.";
+  const outcome = "Ride changed. Your passengers have been told.";
   await expect(driver.getByText(outcome, { exact: true }).filter(visible)).toBeVisible();
 
   await dora.goto(booking);

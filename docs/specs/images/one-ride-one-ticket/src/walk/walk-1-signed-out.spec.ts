@@ -28,7 +28,7 @@ test("signed out tour", async ({ page }, info) => {
     .catch(() => {});
   await s("search-date-open");
   await page.keyboard.press("Escape");
-  await page.getByRole("button", { name: "Search", exact: true }).click();
+  await page.getByRole("button", { name: "Find a ride", exact: true }).click();
   await page.getByTestId("results-heading").waitFor();
   await s("results");
   await s("results-whole", true);

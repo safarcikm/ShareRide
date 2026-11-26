@@ -99,7 +99,7 @@ describe("Sharing a link on the web", () => {
 });
 
 describe("Sharing a text, such as a trip's details (spec 9, 3.3.3)", () => {
-  const details = "My trip: Saturday 14 November at 13:00 · Borgarnes → Blönduós";
+  const details = "My ride: Saturday 14 November at 13:00 · Borgarnes → Blönduós";
 
   it.each(["ios", "android"] as const)("opens the share sheet with the text on %s", async (os) => {
     jest.replaceProperty(Platform, "OS", os);

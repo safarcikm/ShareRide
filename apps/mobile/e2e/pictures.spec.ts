@@ -54,7 +54,7 @@ test.describe("pictures", () => {
     await page.goto("/search");
     await choose(page, "From", "borgarn", /^N1 Borgarnes,/);
     await choose(page, "To", "blondu", /^Olís Blönduós,/);
-    await page.getByRole("button", { name: "Search", exact: true }).click();
+    await page.getByRole("button", { name: "Find a ride", exact: true }).click();
     const icon = page.getByRole("button", { name: /^Share the ride / }).first();
     await icon.waitFor();
     await page.waitForTimeout(500);
@@ -119,7 +119,7 @@ test.describe("pictures", () => {
     await expect(page.getByRole("button", { name: "Share this ride" })).toBeVisible();
     await page.waitForTimeout(500);
     const head = await page.getByTestId("page-head").filter({ visible: true }).boundingBox();
-    if (head === null) throw new Error("The trip page has no head");
+    if (head === null) throw new Error("The ride page has no head");
     await page.screenshot({
       path: join(folder, "trip-page-head-laptop.png"),
       clip: { x: head.x - 16, y: head.y - 16, width: head.width + 32, height: head.height + 26 },

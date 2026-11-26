@@ -180,7 +180,7 @@ describe("Pulling down to refresh (spec 16, 3.9)", () => {
         },
       },
     );
-    expect(await screen.findByText("That's every trip found.")).toBeVisible();
+    expect(await screen.findByText("That's every ride found.")).toBeVisible();
     const before = callsTo(app.client, "/v1/trips/search");
     await pullDown();
     expect(await screen.findByText("Updated")).toBeVisible();

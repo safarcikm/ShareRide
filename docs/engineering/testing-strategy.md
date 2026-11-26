@@ -72,7 +72,7 @@ trip and pays with the test provider's sheet after a failed payment, in both
 languages, and signs up in the middle of booking
 (`apps/mobile/e2e/booking.spec.ts`). Journey 4 runs in two browsers: a new
 driver posts a trip, a passenger requests a seat on it, the driver accepts
-from "My trips", the passenger pays, and both see the seat confirmed
+from "My rides", the passenger pays, and both see the seat confirmed
 (`apps/mobile/e2e/driver-requests.spec.ts`). Until cancellations come
 (spec 6), journey 5 withdraws a request and finds it under "Past" in My
 rides (`apps/mobile/e2e/my-rides.spec.ts`). Find, where the app
@@ -81,7 +81,7 @@ ride" and from Sign in under Profile to signing in, and shows the menu of
 five places on every main screen, marking the one you are on
 (`apps/mobile/e2e/welcome.spec.ts`). A passenger adds an email in Settings,
 opens the link from the email, and gets the "Pay now" email once a request
-is accepted (`apps/mobile/e2e/email.spec.ts`). Trip reminders are turned off
+is accepted (`apps/mobile/e2e/email.spec.ts`). Ride reminders are turned off
 in Settings and stay off after a reload
 (`apps/mobile/e2e/notification-settings.spec.ts`). After posting a trip on
 the web, the driver is asked to add an email and closes it with "Not now"

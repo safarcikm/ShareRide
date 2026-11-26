@@ -29,8 +29,8 @@ jest.mock("@/lib/clock", () => ({ now: () => new Date("2026-11-14T12:00:00Z") })
 const mockProject = { id: "test-project" as string | undefined };
 jest.mock("@/notifications/project-id", () => ({ projectId: () => mockProject.id }));
 
-const turnOn = "Turn on notifications so you hear at once if your trip changes.";
-const addEmail = "Add an email so we can reach you if your trip changes.";
+const turnOn = "Turn on notifications so you hear at once if your ride changes.";
+const addEmail = "Add an email so we can reach you if your ride changes.";
 
 // Each test posts its own trip, so each is a new occasion.
 let trips = 0;
@@ -58,12 +58,12 @@ async function openPosted(me = completeMe) {
       client.answer("/v1/me/sessions/current/push-token", () => ok(204), "put");
     },
   });
-  expect(await screen.findByRole("header", { name: "Your trip is published" })).toBeVisible();
+  expect(await screen.findByRole("header", { name: "Your ride is published" })).toBeVisible();
   return { ...app, trip };
 }
 
 /** Lets the prompt finish asking the phone and the device's storage. */
-async function settled(button = "See my trips") {
+async function settled(button = "See my rides") {
   await waitFor(() => {
     expect(screen.getByRole("button", { name: button })).toBeVisible();
   });
@@ -196,7 +196,7 @@ describe("The prompt to turn on notifications (spec 7, 3.6.2)", () => {
         tripsApi(client, [trip]);
       },
     });
-    expect(await screen.findByRole("header", { name: "Your trip is published" })).toBeVisible();
+    expect(await screen.findByRole("header", { name: "Your ride is published" })).toBeVisible();
     await settled();
     expect(screen.queryByText(turnOn)).toBeNull();
   });

@@ -113,7 +113,7 @@ describe("The menu (spec 16, 3.1)", () => {
     expect(screen.queryByTestId("puffin-by-pin")).toBeNull();
     expect(
       screen.getByText(
-        "Sign in to book seats, offer rides and keep your trips and messages in one place.",
+        "Sign in to book seats and offer rides, with your rides and messages in one place.",
       ),
     ).toBeVisible();
     expect(screen.getByRole("button", { name: "Sign in" })).toBeVisible();

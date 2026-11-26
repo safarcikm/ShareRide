@@ -14,6 +14,12 @@ No ADR: no new service, dependency or business rule. Facebook is opened as
 a plain link (3.3), and the story picture is drawn with resvg as the link
 preview is ([ADR 0049](../decisions/0049-draw-link-preview-pictures-with-resvg.md)).
 
+Amended by [spec 31](2026-11-26-one-ride-one-ticket.md) (3.4): in English
+a member now reads "ride" where the texts quoted here say "trip" (which
+stays in "Trip day"), and the actions are named "Find a ride", "Offer a
+ride" and "Publish ride". The keys keep their names;
+`packages/i18n/src/messages/en.ts` has the words as they are.
+
 ## 1. Problem and goal
 
 Martin, 2026-11-25: "I want to include a share icon on the route cards

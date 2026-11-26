@@ -64,7 +64,7 @@ const signups =
 const sms =
   "We can't send text messages right now, so adding a phone number is paused for a short while. Try again later.";
 const trips =
-  "Posting new trips is paused for a short while. Your trips and drafts are safe. Try again later.";
+  "Offering new rides is paused for a short while. Your rides and drafts are safe. Try again later.";
 
 describe("Signing in while something is paused", () => {
   it("shows nothing when nothing is paused", async () => {

@@ -82,8 +82,8 @@ async function openTrip(
 /** The trip page, then Cancel trip. */
 async function openCancel(...trip: Parameters<typeof openTrip>) {
   const app = await openTrip(...trip);
-  await fireEvent.press(await screen.findByRole("button", { name: "Cancel trip" }));
-  expect(await screen.findByRole("header", { name: "Cancel your trip" })).toBeVisible();
+  await fireEvent.press(await screen.findByRole("button", { name: "Cancel the ride" }));
+  expect(await screen.findByRole("header", { name: "Cancel your ride" })).toBeVisible();
   return app;
 }
 
@@ -101,7 +101,7 @@ const counts = "This cancellation shows on your profile";
 describe("The driver cancels the trip (spec 6, 3.3)", () => {
   it("offers Cancel trip until the trip leaves, after the seats on each stretch", async () => {
     await openTrip();
-    const cancel = await screen.findByRole("button", { name: "Cancel trip" });
+    const cancel = await screen.findByRole("button", { name: "Cancel the ride" });
     const buttons = screen.getAllByRole("button");
     expect(buttons.indexOf(cancel)).toBeGreaterThan(
       buttons.indexOf(screen.getByRole("button", { name: "Cancel booking: Jón" })),
@@ -112,7 +112,7 @@ describe("The driver cancels the trip (spec 6, 3.3)", () => {
     const left = { ...northMyTrip, departsAt: "2026-11-14T12:00:00.000Z" };
     await openTrip([jon], { trip: left });
     expect(await screen.findByLabelText("Jón, 2 seats, Confirmed")).toBeVisible();
-    expect(screen.queryByRole("button", { name: "Cancel trip" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Cancel the ride" })).toBeNull();
   });
 
   it("cancels with a reason and a note, then says so on the trip, with focus", async () => {
@@ -135,17 +135,17 @@ describe("The driver cancels the trip (spec 6, 3.3)", () => {
     // React Native's test set-up already mocks it, so it holds earlier tests' calls.
     const focusMoves = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
     focusMoves.mockClear();
-    await fireEvent.press(screen.getByRole("button", { name: "Cancel trip" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Cancel the ride" }));
     expect(cancels(client)).toEqual([
       { reason: "car_problem", countsOnReliability: true, note: "Sorry, the clutch went." },
     ]);
-    expect(await screen.findByText("You cancelled this trip: Car problem")).toBeVisible();
+    expect(await screen.findByText("You cancelled this ride: Car problem")).toBeVisible();
     expect(focusMoves).toHaveBeenCalledTimes(1);
     focusMoves.mockRestore();
     expect(screen).toHavePathname(tripPage);
     expect(screen.getByText("Your note: Sorry, the clutch went.")).toBeVisible();
     // Nothing left to answer, cancel or message.
-    expect(screen.queryByRole("button", { name: "Cancel trip" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Cancel the ride" })).toBeNull();
     expect(screen.queryByRole("button", { name: /^Cancel booking/ })).toBeNull();
     expect(screen.queryByRole("button", { name: "Accept" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Message all passengers" })).toBeNull();
@@ -154,14 +154,14 @@ describe("The driver cancels the trip (spec 6, 3.3)", () => {
   it("says nobody is told when nobody booked, and sends no note when none is written", async () => {
     const { client } = await openCancel([]);
     expect(
-      screen.getByText("Nobody has booked this trip, so nobody needs to be told."),
+      screen.getByText("Nobody has booked this ride, so nobody needs to be told."),
     ).toBeVisible();
     // Without a passenger it never counts.
     await choose("Plans changed");
     expect(screen.queryByText(counts)).toBeNull();
-    await fireEvent.press(screen.getByRole("button", { name: "Cancel trip" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Cancel the ride" }));
     expect(cancels(client)).toEqual([{ reason: "plans_changed", countsOnReliability: false }]);
-    expect(await screen.findByText("You cancelled this trip: Plans changed")).toBeVisible();
+    expect(await screen.findByText("You cancelled this ride: Plans changed")).toBeVisible();
     expect(screen.queryByText(/^Your note/)).toBeNull();
   });
 
@@ -172,7 +172,7 @@ describe("The driver cancels the trip (spec 6, 3.3)", () => {
     expect(screen.getByText("1 person with a booking or request will be told now.")).toBeVisible();
     await choose("Car problem");
     expect(screen.getByText(counts)).toBeVisible();
-    await fireEvent.press(screen.getByRole("button", { name: "Cancel trip" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Cancel the ride" }));
     expect(cancels(client)).toEqual([{ reason: "car_problem", countsOnReliability: true }]);
   });
 
@@ -191,7 +191,7 @@ describe("The driver cancels the trip (spec 6, 3.3)", () => {
     await fireEvent.changeText(screen.getByLabelText("Note to passengers (optional)"), note);
     const focusMoves = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
     focusMoves.mockClear();
-    await fireEvent.press(screen.getByRole("button", { name: "Cancel trip" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Cancel the ride" }));
     expect(
       await screen.findByText(
         "Something changed since you opened this. Check who is affected again.",
@@ -201,16 +201,16 @@ describe("The driver cancels the trip (spec 6, 3.3)", () => {
     focusMoves.mockRestore();
     expect(screen.getByRole("radio", { name: "Illness" })).toBeChecked();
     expect(screen.getByLabelText("Note to passengers (optional)")).toHaveDisplayValue(note);
-    await fireEvent.press(screen.getByRole("button", { name: "Cancel trip" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Cancel the ride" }));
     expect(cancels(client)).toHaveLength(2);
-    expect(await screen.findByText("You cancelled this trip: Illness")).toBeVisible();
+    expect(await screen.findByText("You cancelled this ride: Illness")).toBeVisible();
   });
 
   it("asks for a reason first, with focus", async () => {
     const { client } = await openCancel();
     const focusMoves = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
     focusMoves.mockClear();
-    await fireEvent.press(screen.getByRole("button", { name: "Cancel trip" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Cancel the ride" }));
     expect(screen.getByRole("alert")).toHaveTextContent("Choose a reason.");
     expect(focusMoves).toHaveBeenCalledTimes(1);
     focusMoves.mockRestore();
@@ -224,22 +224,22 @@ describe("The driver cancels the trip (spec 6, 3.3)", () => {
     await fireEvent.changeText(note, "Call me on 555 1234");
     const warning = "Please don't share phone numbers, emails or links in the note.";
     expect(screen.getByText(warning)).toBeVisible();
-    await fireEvent.press(screen.getByRole("button", { name: "Cancel trip" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Cancel the ride" }));
     expect(screen.getByRole("alert")).toHaveTextContent(warning);
     expect(cancels(client)).toEqual([]);
     await fireEvent.changeText(note, "Sorry, I'm ill.");
     expect(screen.queryByText(warning)).toBeNull();
-    await fireEvent.press(screen.getByRole("button", { name: "Cancel trip" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Cancel the ride" }));
     expect(cancels(client)).toHaveLength(1);
   });
 
   it("goes back to the trip as it was with Keep the trip", async () => {
     const { client } = await openCancel();
     await choose("Illness");
-    await fireEvent.press(screen.getByRole("button", { name: "Keep the trip" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Keep the ride" }));
     expect(await screen.findByLabelText("Jón, 2 seats, Confirmed")).toBeVisible();
     expect(screen).toHavePathname(tripPage);
-    expect(screen.getByRole("button", { name: "Cancel trip" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Cancel the ride" })).toBeVisible();
     expect(cancels(client)).toEqual([]);
   });
 
@@ -252,9 +252,9 @@ describe("The driver cancels the trip (spec 6, 3.3)", () => {
       },
     });
     await choose("Illness");
-    await fireEvent.press(screen.getByRole("button", { name: "Cancel trip" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Cancel the ride" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "This trip can no longer be cancelled.",
+      "This ride can no longer be cancelled.",
     );
     expect(screen.getByRole("radio", { name: "Illness" })).toBeChecked();
   });
@@ -268,10 +268,10 @@ describe("The driver cancels the trip (spec 6, 3.3)", () => {
     const focusMoves = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
     focusMoves.mockClear();
     await openTrip([], { trip: cancelled });
-    expect(await screen.findByText("You cancelled this trip: Weather")).toBeVisible();
+    expect(await screen.findByText("You cancelled this ride: Weather")).toBeVisible();
     expect(focusMoves).not.toHaveBeenCalled();
     focusMoves.mockRestore();
-    expect(screen.queryByRole("button", { name: "Cancel trip" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Cancel the ride" })).toBeNull();
     expect(screen.queryByText("No requests or bookings yet.")).toBeNull();
   });
 });

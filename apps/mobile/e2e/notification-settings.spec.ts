@@ -11,16 +11,16 @@ test("turns trip reminders off in Settings, and they stay off", async ({ page })
   await signUp(page, english, "Rósa");
   await page.goto("/settings");
   await expect(page.getByRole("heading", { name: "Notifications" })).toBeVisible();
-  const reminders = page.getByRole("switch", { name: /^Trip reminders/ });
+  const reminders = page.getByRole("switch", { name: /^Ride reminders/ });
   await expect(reminders).toBeChecked();
   await expect(
     page.getByText(
-      "Notifications about bookings, trips, payments and messages are always on, because others rely on them.",
+      "Notifications about bookings, rides, payments and messages are always on, because others rely on them.",
     ),
   ).toBeVisible();
 
   await reminders.click();
   await expect(reminders).not.toBeChecked();
   await page.reload();
-  await expect(page.getByRole("switch", { name: /^Trip reminders/ })).not.toBeChecked();
+  await expect(page.getByRole("switch", { name: /^Ride reminders/ })).not.toBeChecked();
 });

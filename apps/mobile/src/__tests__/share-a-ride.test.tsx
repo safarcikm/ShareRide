@@ -167,9 +167,9 @@ describe("Share this ride, after publishing (spec 28, 3.2)", () => {
       screen.getByText("Post it where people look for rides, such as carpool groups on Facebook."),
     ).toBeVisible();
     expect(screen.getByLabelText("Text for your post")).toHaveTextContent(englishPost);
-    // It replaces the old button.
+    // It replaces the old button, by the name it had.
     expect(screen.queryByRole("button", { name: "Share the trip" })).toBeNull();
-    expect(screen.getByRole("link", { name: "See the trip page" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "See your ride" })).toBeVisible();
   });
 
   it("opens the share window with the post and the whole trip's link", async () => {
@@ -318,7 +318,7 @@ describe("Share this ride, after publishing (spec 28, 3.2)", () => {
 
   it("is not there once the trip has left", async () => {
     await openDriver(published, [{ ...northTrip, status: "departed" }]);
-    expect(await screen.findByRole("header", { name: "Your trip is published" })).toBeVisible();
+    expect(await screen.findByRole("header", { name: "Your ride is published" })).toBeVisible();
     expect(screen.queryByRole("header", { name: "Share this ride" })).toBeNull();
   });
 
@@ -381,21 +381,21 @@ describe("Share this ride, a screen of its own (spec 28, 3.1 and 3.2)", () => {
     await openDriver(`/drive/trips/0190a1d6-0000-7000-8000-0000000009ff/share`);
     expect(
       await screen.findByText(
-        "This trip can't be found. The link may be wrong, or the trip removed.",
+        "This ride can't be found. The link may be wrong, or the ride removed.",
       ),
     ).toBeVisible();
     expect(screen.queryByRole("button", { name: "Try again" })).toBeNull();
-    await fireEvent.press(screen.getByRole("link", { name: "See my trips" }));
+    await fireEvent.press(screen.getByRole("link", { name: "See my rides" }));
     expect(screen).toHavePathname("/drive/trips");
   });
 
   it("refuses a trip that has left, with a way back to it", async () => {
     await openDriver(`/drive/trips/${tripId}/share`, [{ ...northTrip, status: "departed" }]);
     expect(
-      await screen.findByText("Only a published trip that hasn't left can be shared."),
+      await screen.findByText("Only a published ride that hasn't left can be shared."),
     ).toBeVisible();
     expect(screen.queryByLabelText("Text for your post")).toBeNull();
-    await fireEvent.press(screen.getByRole("link", { name: "See the trip" }));
+    await fireEvent.press(screen.getByRole("link", { name: "See the ride" }));
     expect(screen).toHavePathname(`/drive/trips/${tripId}`);
   });
 });

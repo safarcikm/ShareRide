@@ -84,7 +84,7 @@ test("the whole story, driver and passenger", async ({ page: driver, browser }, 
     await d("offer-3-seats", true);
     await driver.getByRole("button", { name: "Set your price" }).click();
     await d("offer-4-price", true);
-    await driver.getByRole("button", { name: "Review your trip" }).click();
+    await driver.getByRole("button", { name: "Check your ride" }).click();
     await d("offer-5-review-missing", true);
     const titled = (title: string) =>
       driver
@@ -112,10 +112,10 @@ test("the whole story, driver and passenger", async ({ page: driver, browser }, 
       })
       .click();
     await driver.getByRole("button", { name: "Confirm", exact: true }).click();
-    await driver.getByRole("button", { name: "Publish trip" }).waitFor();
+    await driver.getByRole("button", { name: "Publish ride" }).waitFor();
     await d("offer-5-review-ready", true);
-    await driver.getByRole("button", { name: "Publish trip" }).click();
-    await driver.getByRole("heading", { name: "Your trip is published" }).waitFor();
+    await driver.getByRole("button", { name: "Publish ride" }).click();
+    await driver.getByRole("heading", { name: "Your ride is published" }).waitFor();
     await d("offer-published", true);
     tripId = /\/drive\/trips\/([0-9a-f-]+)\/published/.exec(driver.url())?.[1] ?? "";
   });

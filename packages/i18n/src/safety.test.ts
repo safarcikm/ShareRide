@@ -23,7 +23,7 @@ describe("reports in the reader's language (spec 9, 3.1)", () => {
       expect(new Set(texts).size).toBe(reportCategories.length);
       for (const text of texts) expect(text).not.toContain("{");
     }
-    expect(reportCategoryText(en, "not_as_listed")).toBe("The trip wasn't as listed");
+    expect(reportCategoryText(en, "not_as_listed")).toBe("The ride wasn't as listed");
   });
 
   it("say every outcome in general terms, in both languages", () => {

@@ -62,7 +62,7 @@ describe("a shared ride's card on its trip page (spec 23, 3.10)", () => {
     const page = await (await website().request(`/trips/${north}?from=1&to=2&lang=en`)).text();
     expect(meta(page, "og:title")).toBe("N1 Borgarnes → Olís Blönduós · Sat 14 Nov at 10:00");
     expect(meta(page, "og:description")).toBe(
-      "A shared ride on PuffinRide, carpooling across Iceland. See the trip and book a seat.",
+      "A shared ride on PuffinRide, carpooling across Iceland. See the ride and book a seat.",
     );
     expect(meta(page, "og:image")).toMatch(
       new RegExp(

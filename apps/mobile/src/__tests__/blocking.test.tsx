@@ -85,7 +85,7 @@ describe("Blocking from a conversation (spec 9, 3.2)", () => {
     expect(await screen.findByRole("header", { name: "Block Anna?" })).toBeVisible();
     expect(
       screen.getByText(
-        "You won't see each other's trips, your chat becomes read-only, and they won't be told.",
+        "You won't see each other's rides, your chat becomes read-only, and they won't be told.",
       ),
     ).toBeVisible();
     expect(callsTo(client, "/v1/bookings/{id}/block", () => true)).toHaveLength(0);

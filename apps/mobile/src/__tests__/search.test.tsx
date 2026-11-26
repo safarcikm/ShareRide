@@ -79,7 +79,7 @@ describe("Searching for a ride (spec 4)", () => {
       },
     });
     expect(await screen.findByRole("header", { name: "Find a ride" })).toBeVisible();
-    await fireEvent.press(screen.getByRole("button", { name: "Search" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Find a ride" }));
     expect(
       await screen.findByText("Choose where you're leaving from and where you're going."),
     ).toBeVisible();
@@ -88,7 +88,7 @@ describe("Searching for a ride (spec 4)", () => {
     await choose("To", "blön", "Blönduós");
     expect(screen.getByRole("button", { name: "From: Borgarnes" })).toBeVisible();
     await fireEvent.press(screen.getByRole("button", { name: "One seat more" }));
-    await fireEvent.press(screen.getByRole("button", { name: "Search" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Find a ride" }));
 
     expect(await changeSearch("Borgarnes → Blönduós", "Any day, 2 seats")).toBeVisible();
     expect(screen.getByText("Any day, 2 seats")).toBeVisible();
@@ -105,7 +105,7 @@ describe("Searching for a ride (spec 4)", () => {
     expect(within(card).getByText("2,900 ISK")).toBeVisible();
     expect(within(card).getByText("Anna drives BSÍ bus terminal → Hof, Akureyri")).toBeVisible();
     expect(screen.getByRole("header", { name: "Sunday 15 November" })).toBeVisible();
-    expect(screen.getByText("That's every trip found.")).toBeVisible();
+    expect(screen.getByText("That's every ride found.")).toBeVisible();
 
     // The search is kept on this device, with its names, in the app's own
     // storage rather than the secure storage, which iOS can keep after the
@@ -136,7 +136,7 @@ describe("Searching for a ride (spec 4)", () => {
     await fireEvent.press(screen.getByRole("button", { name: "Date: Any day" }));
     await fireEvent.press(await screen.findByRole("radio", { name: "Friday 20 November" }));
     expect(screen.getByRole("button", { name: "Date: Fri 20 Nov" })).toBeVisible();
-    await fireEvent.press(screen.getByRole("button", { name: "Search" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Find a ride" }));
     expect(await screen.findByText("Fri 20 Nov, 1 seat")).toBeVisible();
     expect(searchesOf(client)).toEqual([
       { from: thorlakshofn.id, to: borgarnes.id, seats: 1, sort: "departure", date: "2026-11-20" },
@@ -151,7 +151,7 @@ describe("Searching for a ride (spec 4)", () => {
     });
     await choose("From", "borg", "Borgarnes");
     await choose("To", "borg", "Borgarnes");
-    await fireEvent.press(screen.getByRole("button", { name: "Search" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Find a ride" }));
     expect(await screen.findByText("Choose two different places.")).toBeVisible();
   });
 
@@ -365,8 +365,8 @@ describe("Search results (spec 4, 3.4)", () => {
     await openResults("", { results: () => results });
     expect(await screen.findByRole("header", { name: "Sunday 15 November" })).toBeVisible();
     expect(screen.getByRole("header", { name: "Monday 16 November" })).toBeVisible();
-    expect(screen.getByText("1 trip")).toBeVisible();
-    expect(screen.getByText("2 trips")).toBeVisible();
+    expect(screen.getByText("1 ride")).toBeVisible();
+    expect(screen.getByText("2 rides")).toBeVisible();
     await sortBy("Cheapest");
     expect(await screen.findByText("Sun 15 Nov")).toBeVisible();
     expect(screen.queryByRole("header", { name: "Sunday 15 November" })).toBeNull();
@@ -400,7 +400,7 @@ describe("Search results (spec 4, 3.4)", () => {
     });
     expect(await screen.findByText("Sun 15 Nov, 1 seat")).toBeVisible();
     // Past days and days without trips are left out.
-    const chip = await screen.findByRole("button", { name: "Mon 16 Nov, 2 trips" });
+    const chip = await screen.findByRole("button", { name: "Mon 16 Nov, 2 rides" });
     expect(screen.queryByRole("button", { name: /^Thu 12 Nov/ })).toBeNull();
     expect(screen.queryByRole("button", { name: /^Tue 17 Nov/ })).toBeNull();
     await fireEvent.press(chip);
@@ -413,10 +413,10 @@ describe("Search results (spec 4, 3.4)", () => {
     const { client } = await openResults("&date=2026-11-15", {
       days: [{ date: "2026-11-16", count: 2 }],
     });
-    expect(await screen.findByRole("button", { name: "Mon 16 Nov, 2 trips" })).toBeVisible();
+    expect(await screen.findByRole("button", { name: "Mon 16 Nov, 2 rides" })).toBeVisible();
     await sortBy("Cheapest");
     await sortBy("Earliest");
-    expect(await screen.findByRole("button", { name: "Mon 16 Nov, 2 trips" })).toBeVisible();
+    expect(await screen.findByRole("button", { name: "Mon 16 Nov, 2 rides" })).toBeVisible();
     expect(searchesOf(client, "/v1/trips/search/alternatives")).toHaveLength(1);
   });
 
@@ -428,7 +428,7 @@ describe("Search results (spec 4, 3.4)", () => {
     );
     await openResults("", { results: () => many });
     expect(
-      await screen.findByText("These are the first 50 trips. Choose a day to see others."),
+      await screen.findByText("These are the first 50 rides. Choose a day to see others."),
     ).toBeVisible();
   });
 
@@ -451,9 +451,9 @@ describe("Nothing matches (spec 4, 3.5)", () => {
       days: [{ date: "2026-11-18", count: 1 }],
       nearby: [nearby],
     });
-    expect(await screen.findByRole("header", { name: "No trips on Sun 15 Nov" })).toBeVisible();
-    expect(await screen.findByRole("button", { name: "Wed 18 Nov, 1 trip" })).toBeVisible();
-    expect(screen.getByRole("header", { name: "Trips from nearby meeting points" })).toBeVisible();
+    expect(await screen.findByRole("header", { name: "No rides on Sun 15 Nov" })).toBeVisible();
+    expect(await screen.findByRole("button", { name: "Wed 18 Nov, 1 ride" })).toBeVisible();
+    expect(screen.getByRole("header", { name: "Rides from nearby meeting points" })).toBeVisible();
     expect(screen.getByText("8.4 km from Borgarnes")).toBeVisible();
     expect(screen.getByText("Sun 15 Nov")).toBeVisible();
     expect(searchesOf(client, "/v1/trips/search/alternatives")).toEqual([
@@ -463,15 +463,15 @@ describe("Nothing matches (spec 4, 3.5)", () => {
 
   it("says when there are no trips on the route yet, and sends drivers to sign in", async () => {
     await openResults("", { results: () => [] });
-    expect(await screen.findByRole("header", { name: "No trips yet on this route" })).toBeVisible();
-    expect(screen.queryByRole("header", { name: "No trips found" })).toBeNull();
+    expect(await screen.findByRole("header", { name: "No rides yet on this route" })).toBeVisible();
+    expect(screen.queryByRole("header", { name: "No rides found" })).toBeNull();
     await fireEvent.press(screen.getByRole("button", { name: "Offer a ride" }));
     expect(screen).toHavePathname("/sign-in");
   });
 
   it("offers any day when there is nothing on or around the date", async () => {
     const { client } = await openResults("&date=2026-11-15", { results: () => [] });
-    expect(await screen.findByRole("header", { name: "No trips on Sun 15 Nov" })).toBeVisible();
+    expect(await screen.findByRole("header", { name: "No rides on Sun 15 Nov" })).toBeVisible();
     expect(
       await screen.findByText(
         "There are none on the days around it or from meeting points nearby either.",
@@ -501,9 +501,9 @@ describe("Nothing matches (spec 4, 3.5)", () => {
     await screen.findByTestId("trip-result");
     await fireEvent.press(screen.getByRole("checkbox", { name: "Book instantly only" }));
     expect(
-      await screen.findByRole("header", { name: "No trips match these filters." }),
+      await screen.findByRole("header", { name: "No rides match these filters." }),
     ).toBeVisible();
-    await fireEvent.press(screen.getByRole("button", { name: "Show all trips" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Show all rides" }));
     expect(await screen.findByTestId("trip-result")).toBeVisible();
     expect(screen.getByRole("checkbox", { name: "Book instantly only" })).not.toBeChecked();
     // Filters do not look for alternatives.
@@ -528,7 +528,7 @@ describe("Nothing matches (spec 4, 3.5)", () => {
     expect(screen.queryByRole("button", { name: "Search any day" })).toBeNull();
     fail = false;
     await fireEvent.press(screen.getByRole("button", { name: "Try again" }));
-    expect(await screen.findByRole("button", { name: "Mon 16 Nov, 1 trip" })).toBeVisible();
+    expect(await screen.findByRole("button", { name: "Mon 16 Nov, 1 ride" })).toBeVisible();
   });
 
   it("does not show an old answer's message while a changed search loads", async () => {
@@ -547,8 +547,8 @@ describe("Nothing matches (spec 4, 3.5)", () => {
     });
     await fireEvent.press(await screen.findByRole("button", { name: "Search any day" }));
     expect(await screen.findByText("Any day, 1 seat")).toBeVisible();
-    expect(screen.queryByRole("header", { name: "No trips on Sun 15 Nov" })).toBeNull();
-    expect(screen.queryByRole("header", { name: "No trips yet on this route" })).toBeNull();
+    expect(screen.queryByRole("header", { name: "No rides on Sun 15 Nov" })).toBeNull();
+    expect(screen.queryByRole("header", { name: "No rides yet on this route" })).toBeNull();
     expect(screen.getByLabelText("Loading")).toBeVisible();
     answerAnyDay(ok(200, { results: [northResult] }));
     expect(await screen.findByTestId("trip-result")).toBeVisible();
@@ -590,14 +590,14 @@ describe("Search results on a laptop (spec 18, 3.6)", () => {
     alight: { ...northResult.alight, position: 3, meetingPoint: hof },
   });
   const map = () => within(screen.getByTestId("aside")).getByRole("image");
-  const mapOf = (route: string) => `The trip on a map of Iceland: ${route}.`;
+  const mapOf = (route: string) => `The ride on a map of Iceland: ${route}.`;
   /** The edge of the card whose trip the map shows. */
   const marked = { borderBottomColor: colors.light.primary };
   /** The card of the trip at this place in the list, from 0. */
   const card = (place: number) => {
     // By price a card's name starts with its day.
     const found = screen.getAllByRole("button", { name: /(^|, )Leaves / })[place];
-    if (found === undefined) throw new Error(`No trip at ${String(place)}`);
+    if (found === undefined) throw new Error(`No ride at ${String(place)}`);
     return found;
   };
   /** The map's drawn parts, which screen readers skip: the label says them. */
@@ -677,7 +677,7 @@ describe("Search results on a laptop (spec 18, 3.6)", () => {
     await fireEvent(card(1), "focus");
     expect(map()).toHaveProp("accessibilityLabel", mapOf("BSÍ bus terminal → Hof, Akureyri"));
     await fireEvent.press(screen.getByRole("checkbox", { name: "Book instantly only" }));
-    await screen.findByText("1 trip");
+    await screen.findByText("1 ride");
     expect(screen.getAllByTestId("trip-result")).toHaveLength(1);
     expect(map()).toHaveProp("accessibilityLabel", mapOf("Borgarnes → Blönduós"));
   });
@@ -708,7 +708,7 @@ describe("Search results on a laptop (spec 18, 3.6)", () => {
 
   it("keeps the map, without a trip, when nothing matches", async () => {
     await openResults("", { results: () => [] });
-    expect(await screen.findByRole("header", { name: "No trips yet on this route" })).toBeVisible();
+    expect(await screen.findByRole("header", { name: "No rides yet on this route" })).toBeVisible();
     expect(map()).toHaveProp("accessibilityLabel", "Map of Iceland");
     expect(drawn("map-dot-chosen")).toHaveLength(0);
   });
@@ -740,7 +740,7 @@ describe("Search results on a laptop (spec 18, 3.6)", () => {
       const evening = screen.getByRole("checkbox", { name: "Evening" });
       await fireEvent.press(evening);
       expect(
-        await screen.findByRole("header", { name: "No trips match these filters." }),
+        await screen.findByRole("header", { name: "No rides match these filters." }),
       ).toBeVisible();
       // The map stays, without a trip, so the column did not move: the chip
       // pressed is the one still there, and nothing took focus from it.

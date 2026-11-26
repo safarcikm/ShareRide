@@ -361,7 +361,7 @@ describe("Booking from trip details (spec 5, 3.1)", () => {
     expect(screen.queryByTestId("puffins-in-car", { includeHiddenElements: true })).toBeNull();
     // Request sent took the place of Check and pay, so Back opens the trip.
     await fireEvent.press(screen.getByRole("button", { name: "Back" }));
-    expect(await screen.findByText("You have a booking on this trip.")).toBeVisible();
+    expect(await screen.findByText("You have a booking on this ride.")).toBeVisible();
     expect(screen).toHavePathname(`/trips/${id}`);
   });
 
@@ -406,7 +406,7 @@ describe("Booking from trip details (spec 5, 3.1)", () => {
       },
     });
     const bar = await screen.findByTestId("bottom-bar");
-    expect(within(bar).getByText("You have a booking on this trip.")).toBeVisible();
+    expect(within(bar).getByText("You have a booking on this ride.")).toBeVisible();
     await fireEvent.press(within(bar).getByRole("button", { name: "See your booking" }));
     expect(await screen.findByText("Request sent. Anna has until 22:00 to answer.")).toBeVisible();
     expect(screen).toHavePathname(`/bookings/${bookingId}`);
@@ -687,7 +687,7 @@ describe("The booking screen (spec 5, 3.1 and 3.2)", () => {
   it("says how long to wait when trips were opened too often", async () => {
     await openBooking({ trip: () => failure(429, "rate_limited", { retryAfterSeconds: 120 }) });
     expect(
-      await screen.findByText("Too many trips opened in a short time. Try again in 2 minutes."),
+      await screen.findByText("Too many rides opened in a short time. Try again in 2 minutes."),
     ).toBeVisible();
   });
 
@@ -753,10 +753,10 @@ describe("The booking screen (spec 5, 3.1 and 3.2)", () => {
     expect(await screen.findByText("Sorry, those seats were just taken")).toBeVisible();
     expect(screen.getByText("No seats are free on your part now.")).toBeVisible();
     // The trip's free seats are asked for again: the part is full now.
-    expect(await screen.findByText("Full on your part of the trip")).toBeVisible();
+    expect(await screen.findByText("Full on your part of the ride")).toBeVisible();
     expect(screen.queryByRole("button", { name: "Send request" })).toBeNull();
     expect(client.calls.filter((call) => call.path === "/v1/trips/{id}")).toHaveLength(2);
-    await fireEvent.press(screen.getByRole("button", { name: "Back to the trip" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Back to the ride" }));
     expect(screen).toHavePathname(`/trips/${id}`);
     expect(screen).toHaveSearchParams({ id, from: "1", to: "2", seats: "1" });
   });
@@ -793,7 +793,7 @@ describe("The booking screen (spec 5, 3.1 and 3.2)", () => {
     const bar = await screen.findByTestId("bottom-bar");
     await fireEvent.press(within(bar).getByRole("button", { name: "Send request" }));
     await fireEvent.press(await screen.findByRole("button", { name: "Send request" }));
-    await fireEvent.press(await screen.findByRole("button", { name: "Back to the trip" }));
+    await fireEvent.press(await screen.findByRole("button", { name: "Back to the ride" }));
     expect(await screen.findByText("1 free on your part · 2,900 ISK per seat")).toBeVisible();
     expect(screen).toHavePathname(`/trips/${id}`);
     expect(screen).toHaveSearchParams({ id, from: "1", to: "2", seats: "1" });
@@ -861,14 +861,14 @@ describe("The booking screen (spec 5, 3.1 and 3.2)", () => {
     await fireEvent.press(await screen.findByRole("button", { name: "Send request" }));
     expect(
       await screen.findByText(
-        "This trip can't take this booking right now. Go back and try fewer seats or a shorter part of the trip.",
+        "This ride can't take this booking right now. Go back and try fewer seats or a shorter part of the ride.",
       ),
     ).toBeVisible();
     // The price per seat is asked for again, in case it has fallen.
     await waitFor(() => {
       expect(client.calls.filter((call) => call.path === "/v1/trips/{id}")).toHaveLength(2);
     });
-    await fireEvent.press(screen.getByRole("button", { name: "Back to the trip" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Back to the ride" }));
     expect(screen).toHavePathname(`/trips/${id}`);
     expect(screen).toHaveSearchParams({ id, from: "1", to: "2", seats: "1" });
   });
@@ -876,11 +876,11 @@ describe("The booking screen (spec 5, 3.1 and 3.2)", () => {
   it.each([
     ["where to get in", `fromPoint=${bsi.id}&toPoint=${blonduos.id}`],
     ["where to get out", `fromPoint=${borgarnes.id}&toPoint=${borgarnes.id}`],
-  ])("books nothing when the trip page showed another place %s (spec 6, 3.2)", async (_, shown) => {
+  ])("books nothing when the ride page showed another place %s (spec 6, 3.2)", async (_, shown) => {
     const { client } = await openBooking({}, `/trips/${id}/book?from=1&to=2&seats=1&${shown}`);
     expect(
       await screen.findByText(
-        "The driver has changed the trip's stops. Go back to the trip to choose where you get in and out again.",
+        "The driver has changed the ride's stops. Go back to the ride to choose where you get in and out again.",
       ),
     ).toBeVisible();
     expect(screen.queryByRole("button", { name: "Send request" })).toBeNull();
@@ -912,7 +912,7 @@ describe("The booking screen (spec 5, 3.1 and 3.2)", () => {
     await fireEvent.press(await screen.findByRole("button", { name: "Send request" }));
     expect(
       await screen.findByText(
-        "The driver has changed the trip's stops. Go back to the trip to choose where you get in and out again.",
+        "The driver has changed the ride's stops. Go back to the ride to choose where you get in and out again.",
       ),
     ).toBeVisible();
     expect(screen.queryByRole("button", { name: "Send request" })).toBeNull();
@@ -924,7 +924,7 @@ describe("The booking screen (spec 5, 3.1 and 3.2)", () => {
     await fireEvent.press(await screen.findByRole("button", { name: "Send request" }));
     expect(
       await screen.findByText(
-        "The driver has changed the trip's stops. Go back to the trip to choose where you get in and out again.",
+        "The driver has changed the ride's stops. Go back to the ride to choose where you get in and out again.",
       ),
     ).toBeVisible();
   });
@@ -1069,8 +1069,8 @@ describe("Check and pay and a request on a laptop (spec 18, 3.8)", () => {
     });
     await fireEvent.press(await screen.findByRole("button", { name: "Send request" }));
     expect(await main().findByText("Sorry, those seats were just taken")).toBeVisible();
-    expect(main().getByRole("button", { name: "Back to the trip" })).toBeVisible();
-    expect(await side().findByText("Full on your part of the trip")).toBeVisible();
+    expect(main().getByRole("button", { name: "Back to the ride" })).toBeVisible();
+    expect(await side().findByText("Full on your part of the ride")).toBeVisible();
     expect(screen.queryByRole("button", { name: "Send request" })).toBeNull();
   });
 
@@ -1118,7 +1118,7 @@ describe("Check and pay and a request on a laptop (spec 18, 3.8)", () => {
 
   it("keeps the page, with Back in its place, when the trip cannot be loaded", async () => {
     await openBooking({ trip: () => failure(500, "internal_error") });
-    expect(await screen.findByText("The trip could not be loaded.")).toBeVisible();
+    expect(await screen.findByText("The ride could not be loaded.")).toBeVisible();
     expect(screen.getByTestId("page")).toBeVisible();
     const column = within(screen.getByTestId("page-column"));
     expect(column.getByRole("button", { name: "Try again" })).toBeVisible();
@@ -1195,7 +1195,7 @@ describe("You're booked and Request sent (spec 16, 3.7, items 4 and 5)", () => {
     await fireEvent.press(await screen.findByRole("button", { name: "Pay 2,900 ISK" }));
     expect(await screen.findByRole("header", { name: "You're booked!" })).toBeVisible();
     await fireEvent.press(screen.getByRole("button", { name: "Back" }));
-    expect(await screen.findByText("You have a booking on this trip.")).toBeVisible();
+    expect(await screen.findByText("You have a booking on this ride.")).toBeVisible();
     expect(screen).toHavePathname(`/trips/${id}`);
   });
 

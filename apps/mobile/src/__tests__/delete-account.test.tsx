@@ -134,7 +134,7 @@ describe("Delete my account (spec 11, 3.4)", () => {
     ).toBeVisible();
     expect(
       screen.getByRole("button", {
-        name: "BSÍ – Hof, Akureyri, Cancel your trip: Saturday 14 November at 09:00",
+        name: "BSÍ – Hof, Akureyri, Cancel your ride: Saturday 14 November at 09:00",
       }),
     ).toBeVisible();
     expect(
@@ -167,7 +167,7 @@ describe("Delete my account (spec 11, 3.4)", () => {
   });
 
   it.each([
-    ["Cancel your trip", `/drive/trips/${tripId}/cancel`],
+    ["Cancel your ride", `/drive/trips/${tripId}/cancel`],
     ["Cancel your booking", `/bookings/${bookingId}/cancel`],
     ["Withdraw your request", `/bookings/${requestId}`],
   ])("opens %s where it is done under the normal rules", async (action, path) => {
@@ -192,7 +192,7 @@ describe("Delete my account (spec 11, 3.4)", () => {
     const app = await openDeleteScreen();
     expect(
       screen.getByText(
-        "You'll be signed out on every device at once, and nobody can see your profile or trips any more. Your data is erased 7 days later. Until then, you can sign in and keep your account.",
+        "You'll be signed out on every device at once, and nobody can see your profile or rides any more. Your data is erased 7 days later. Until then, you can sign in and keep your account.",
       ),
     ).toBeVisible();
     expect(callsTo(app, "/v1/me/confirm-code")).toEqual([]);
@@ -263,7 +263,7 @@ describe("While the deletion waits (spec 11, 3.4.4)", () => {
     expect(screen).toHavePathname("/account/deletion");
     expect(
       screen.getByText(
-        "Nobody can see your profile or trips, book with you or message you. Keep your account to use PuffinRide again, as it was.",
+        "Nobody can see your profile or rides, book with you or message you. Keep your account to use PuffinRide again, as it was.",
       ),
     ).toBeVisible();
     expect(screen.getByRole("button", { name: "Keep my account" })).toBeVisible();
