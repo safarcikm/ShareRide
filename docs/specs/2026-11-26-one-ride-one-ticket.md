@@ -1,9 +1,10 @@
 # Spec 31: One ride, one ticket: the same rules for every screen
 
-**Owner:** Martin · **Date:** 2026-11-26 · **Status:** Proposed
-(2026-11-26): Martin asked for the review; the direction (3.1) and the
-choices in the Decisions section are his to make. Nothing is built until he
-approves
+**Owner:** Martin · **Date:** 2026-11-26 · **Status:** Approved
+(2026-11-26): Martin chose "One ride, one ticket" (3.1, B) on the thread's
+card, to be built flow by flow as drawn
+([plan](../plans/2026-11-26-one-ride-one-ticket.md)). The other choices in
+the Decisions section stay his to change
 
 Amends, once approved: [spec 15](2026-11-13-visual-design-system.md) (new
 parts, title alignment, the title font's spacing),
@@ -128,8 +129,8 @@ screen today and on none afterwards.
 - **C. A new look.** New colours, fonts and drawings. Martin likes the
   style, and what is wrong is the order, not the style. Not recommended.
 
-Martin chooses on the thread's decision card (decision 1). The rest of this
-spec describes B.
+Martin chose B on the thread's decision card on 2026-11-26 (decision 1).
+The rest of this spec describes B.
 
 ### 3.2 The six rules
 
@@ -722,7 +723,7 @@ Working choices, for Martin to change:
 
 | # | Question | Working choice |
 | - | -------- | -------------- |
-| 1 | Which way? | B, "One ride, one ticket" (3.1). Asked on the thread's card, 2026-11-26 |
+| 1 | Which way? | B, "One ride, one ticket" (3.1). **Martin chose it on the thread's card, 2026-11-26** |
 | 2 | Titles | At the left on screens where you do something; centred on Find on a phone, empty screens and About (3.17). Changes the choice of 2026-11-14 |
 | 3 | Profile and Settings | One page of grouped rows (3.14) |
 | 4 | My trips | Goes; My rides lists both (3.10) |
