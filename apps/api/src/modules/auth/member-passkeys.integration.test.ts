@@ -32,7 +32,7 @@ afterAll(async () => {
   await api.close();
 });
 
-const { memberPasskeys, users } = schema;
+const { memberPasskeys, operatorPasskeys, users } = schema;
 const iPhoneSafari =
   "Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1 Mobile/15E148 Safari/604.1";
 const webDevice = { platform: "web" } as const;
@@ -169,7 +169,16 @@ describe("setting up Face ID or fingerprint (spec 27, 3.6)", () => {
       await api.client.call(listSignInMethodsRoute, { accessToken: anna.accessToken }),
     ).toMatchObject({
       ok: true,
-      data: { passkeys: [{ id: added.body["id"], browser: "Safari", system: "iPhone" }] },
+      data: {
+        passkeys: [
+          {
+            id: added.body["id"],
+            credentialId: device.credentialId,
+            browser: "Safari",
+            system: "iPhone",
+          },
+        ],
+      },
     });
 
     // The next device's options leave this one out, under the same handle.
@@ -368,11 +377,30 @@ describe("signing in with Face ID or fingerprint (spec 27, 3.3)", () => {
     expect(api.logLines.join("")).toContain('"via":"passkey"');
   });
 
-  it("refuses a passkey no member has, such as the console's on the same site", async () => {
+  it("says a passkey in neither table is unknown, so the browser can forget it (spec 29, 3.4)", async () => {
+    newIp();
+    const stranger = authenticator();
+    stranger.register({ challenge: "AAAA", user: { id: "AZCh1gAAcACAAAAAAAAAAQ" } });
+    expect(await signIn(stranger)).toMatchObject({
+      ok: false,
+      status: 400,
+      error: { code: "passkey_unknown" },
+    });
+  });
+
+  it("refuses the console's passkey on the same site, and never calls it unknown (R29.4)", async () => {
+    const operator = await member();
     newIp();
     const console = authenticator();
     // Made for the console: the browser keeps it under the account's ID.
     console.register({ challenge: "AAAA", user: { id: "AZCh1gAAcACAAAAAAAAAAQ" } });
+    await api.connection.db.insert(operatorPasskeys).values({
+      userId: operator.userId,
+      credentialId: console.credentialId,
+      publicKey: "AAAA",
+      backedUp: true,
+      name: "Laptop",
+    });
     expect(await signIn(console)).toMatchObject({
       ok: false,
       status: 400,
@@ -380,7 +408,7 @@ describe("signing in with Face ID or fingerprint (spec 27, 3.3)", () => {
     });
   });
 
-  it("refuses a removed passkey", async () => {
+  it("says a removed passkey is unknown", async () => {
     const ingi = await member();
     const device = authenticator();
     const saved = await setUp(ingi, device);
@@ -397,7 +425,12 @@ describe("signing in with Face ID or fingerprint (spec 27, 3.3)", () => {
       }),
     ).toMatchObject({ ok: false, status: 404 });
     newIp();
-    expect(await signIn(device)).toMatchObject({ ok: false, error: { code: "passkey_invalid" } });
+    // Unknown, so this browser stops offering it (spec 29, 3.4).
+    expect(await signIn(device)).toMatchObject({
+      ok: false,
+      status: 400,
+      error: { code: "passkey_unknown" },
+    });
   });
 
   it("says a challenge used twice or answered too late has expired", async () => {
@@ -444,9 +477,9 @@ describe("signing in with Face ID or fingerprint (spec 27, 3.3)", () => {
     });
   });
 
-  it("limits the sign-in options per network address", async () => {
+  it("limits the sign-in options to 60 in 10 minutes per network address (R29.6)", async () => {
     newIp();
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 60; i++) {
       expect(await api.client.call(passkeySignInOptionsRoute, { body: {} })).toMatchObject({
         ok: true,
       });

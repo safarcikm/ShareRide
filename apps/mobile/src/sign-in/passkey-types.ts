@@ -1,9 +1,16 @@
 import type { CallInput } from "@shareride/api-client";
 import type { addPasskeyRoute, passkeySignInRoute } from "@shareride/contracts";
+import { memberPasskeyRules } from "@shareride/domain";
 
 // Face ID or fingerprint (spec 27, 3.3 and 3.6; ADR 0048): a passkey kept on
 // the device. What the website's module (passkey.web.ts) and the apps'
 // (passkey.ts) share.
+
+/**
+ * How long options are used: a little short of their challenge's 5
+ * minutes, for the trip to the API.
+ */
+export const keepPasskeyOptionsMs = (memberPasskeyRules.challengeSeconds - 30) * 1000;
 
 /** Options the API made for the device's passkey sheet. */
 export type PasskeyOptions = { readonly challenge: string } & Readonly<Record<string, unknown>>;
@@ -20,6 +27,23 @@ export interface DevicePasskeys {
   create(options: PasskeyOptions): Promise<PasskeyRegistration>;
   /** Answers a challenge with one of the site's passkeys; throws like `create`. */
   get(options: PasskeyOptions): Promise<PasskeyAssertion>;
+  /**
+   * Whether the browser can offer the site's passkeys in the email field's
+   * suggestions (spec 29, 3.1): a built-in lock and a quiet request.
+   */
+  autofillAvailable(): Promise<boolean>;
+  /**
+   * The quiet request: waits, with no sheet, until the person picks a
+   * passkey from the email field's suggestions. Throws when cancelled.
+   */
+  autofill(options: PasskeyOptions): Promise<PasskeyAssertion>;
+  /** Stops the request that is waiting, quiet or not. */
+  cancel(): void;
+  /**
+   * Tells the browser this site has no passkey `credentialId` any more, so
+   * it stops offering it (spec 29, 3.4). Never throws, and waits a second at most.
+   */
+  forget(credentialId: string): Promise<void>;
 }
 
 /** Why the device's sheet gave no passkey: cancelled, or this device has one already. */

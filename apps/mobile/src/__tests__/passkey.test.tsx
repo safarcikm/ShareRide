@@ -1,8 +1,11 @@
-import { fireEvent, screen } from "expo-router/testing-library";
+import { act, fireEvent, screen, waitFor } from "expo-router/testing-library";
 import type { Me, MemberPasskey } from "@shareride/contracts";
 import { failure, ok, tokens, type FakeClient } from "@/testing/fake-client";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
+import { memberPasskeyRules } from "@shareride/domain";
+import { router } from "expo-router";
+import { openAuthSessionAsync } from "@/testing/web-browser";
 import type * as PasskeyTypes from "@/sign-in/passkey-types";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
@@ -27,6 +30,10 @@ const mockDevice = {
   available: jest.fn(() => Promise.resolve(true)),
   create: jest.fn(),
   get: jest.fn(),
+  autofillAvailable: jest.fn(() => Promise.resolve(false)),
+  autofill: jest.fn(),
+  cancel: jest.fn(),
+  forget: jest.fn(() => Promise.resolve()),
 };
 jest.mock("@/sign-in/passkey", () => ({
   ...jest.requireActual<typeof PasskeyTypes>("@/sign-in/passkey-types"),
@@ -55,6 +62,7 @@ const named = (name: string) => Object.assign(new Error(name), { name });
 
 const iPhone: MemberPasskey = {
   id: "0190a1d6-0000-7000-8000-0000000000a1",
+  credentialId: "credential-of-the-iphone",
   browser: "Safari",
   system: "iPhone",
   createdAt: "2026-11-21T10:00:00.000Z",
@@ -62,6 +70,7 @@ const iPhone: MemberPasskey = {
 };
 const mac: MemberPasskey = {
   id: "0190a1d6-0000-7000-8000-0000000000a2",
+  credentialId: "credential-of-the-mac",
   browser: "Chrome",
   system: "Mac",
   createdAt: "2026-11-23T12:00:00.000Z",
@@ -92,6 +101,10 @@ beforeEach(() => {
   mockDevice.available.mockReset().mockReturnValue(Promise.resolve(true));
   mockDevice.create.mockReset().mockReturnValue(Promise.resolve(registration));
   mockDevice.get.mockReset().mockReturnValue(Promise.resolve(assertion));
+  mockDevice.autofillAvailable.mockReset().mockReturnValue(Promise.resolve(false));
+  mockDevice.autofill.mockReset();
+  mockDevice.cancel.mockReset();
+  mockDevice.forget.mockReset().mockReturnValue(Promise.resolve());
 });
 
 async function openSignIn(setUp?: (client: FakeClient) => void, passkeySignIn = true) {
@@ -186,6 +199,330 @@ describe("Signing in with Face ID or fingerprint (spec 27, 3.1 and 3.3)", () => 
   });
 });
 
+/**
+ * The browser's quiet request, stood in for: each waits until a passkey is
+ * picked from the email field's suggestions, or until it is cancelled.
+ */
+function quietRequests() {
+  const waiting: { resolve: (answer: typeof assertion) => void; reject: (e: Error) => void }[] = [];
+  const abortAll = () => {
+    for (const request of waiting.splice(0)) request.reject(named("AbortError"));
+  };
+  // As the browser does, a new request ends the one before.
+  mockDevice.autofill.mockImplementation(
+    () =>
+      new Promise((resolve, reject) => {
+        abortAll();
+        waiting.push({ resolve, reject });
+      }),
+  );
+  mockDevice.cancel.mockImplementation(abortAll);
+  return {
+    waiting,
+    pick: (answer = assertion) => {
+      waiting.shift()?.resolve(answer);
+    },
+    /** The browser ends it, as when the person cancels Face ID after picking the passkey. */
+    end: () => {
+      waiting.shift()?.reject(named("NotAllowedError"));
+    },
+  };
+}
+
+const keepOptionsMs = (memberPasskeyRules.challengeSeconds - 30) * 1000;
+
+const signedInAsAnna = (client: FakeClient) => {
+  client.answer("/v1/auth/passkey", () =>
+    ok(200, { status: "signedIn", ...tokens(1), user: anna, isNewUser: false }),
+  );
+};
+const notSetUp =
+  "This device's sign-in isn't set up for your PuffinRide account. Use your email, then set it up again in Settings.";
+
+describe("Face ID in the email field (spec 29, 3.1)", () => {
+  beforeEach(() => {
+    mockDevice.autofillAvailable.mockReturnValue(Promise.resolve(true));
+  });
+
+  it("waits quietly for a passkey from the email field where the browser offers it", async () => {
+    const quiet = quietRequests();
+    await openSignIn();
+    await waitFor(() => {
+      expect(quiet.waiting).toHaveLength(1);
+    });
+    expect(mockDevice.autofill).toHaveBeenCalledWith(options);
+    expect(mockDevice.get).not.toHaveBeenCalled();
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("does not wait where the browser cannot offer passkeys in the field", async () => {
+    mockDevice.autofillAvailable.mockReturnValue(Promise.resolve(false));
+    const app = await openSignIn();
+    expect(await screen.findByRole("button", { name: "Face ID or fingerprint" })).toBeVisible();
+    expect(mockDevice.autofill).not.toHaveBeenCalled();
+    expect(callsTo(app.client, "/v1/auth/passkey/options")).toHaveLength(0);
+  });
+
+  it("does not wait with a server that has no passkeys", async () => {
+    const app = await openSignIn(undefined, false);
+    expect(await screen.findByLabelText("Email")).toBeVisible();
+    expect(mockDevice.autofill).not.toHaveBeenCalled();
+    expect(callsTo(app.client, "/v1/auth/passkey/options")).toHaveLength(0);
+  });
+
+  it("signs in with a passkey picked from the email field, with no tap", async () => {
+    const quiet = quietRequests();
+    const app = await openSignIn(signedInAsAnna);
+    await waitFor(() => {
+      expect(quiet.waiting).toHaveLength(1);
+    });
+    await act(() => {
+      quiet.pick();
+    });
+    expect(await screen.findByRole("tab", { name: "Find", selected: true })).toBeVisible();
+    expect(callsTo(app.client, "/v1/auth/passkey").map((call) => call.input["body"])).toEqual([
+      { credential: assertion, device: expect.any(Object) as unknown },
+    ]);
+    expect(mockDevice.get).not.toHaveBeenCalled();
+  });
+
+  it("stops waiting while the button's sheet is open, and waits again after", async () => {
+    const quiet = quietRequests();
+    mockDevice.get.mockReturnValue(Promise.reject(named("NotAllowedError")));
+    const app = await openSignIn();
+    await waitFor(() => {
+      expect(quiet.waiting).toHaveLength(1);
+    });
+    await fireEvent.press(screen.getByRole("button", { name: "Face ID or fingerprint" }));
+    expect(
+      await screen.findByRole("button", { name: "Face ID or fingerprint", disabled: false }),
+    ).toBeVisible();
+    expect(mockDevice.get).toHaveBeenCalledTimes(1);
+    const [cancelled] = mockDevice.cancel.mock.invocationCallOrder;
+    const [sheet] = mockDevice.get.mock.invocationCallOrder;
+    expect(cancelled).toBeLessThan(sheet ?? 0);
+    await waitFor(() => {
+      expect(quiet.waiting).toHaveLength(1);
+    });
+    expect(mockDevice.autofill).toHaveBeenCalledTimes(2);
+    expect(callsTo(app.client, "/v1/auth/passkey")).toHaveLength(0);
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("signs in once from the button while the quiet request waits", async () => {
+    const quiet = quietRequests();
+    const app = await openSignIn(signedInAsAnna);
+    await waitFor(() => {
+      expect(quiet.waiting).toHaveLength(1);
+    });
+    await fireEvent.press(screen.getByRole("button", { name: "Face ID or fingerprint" }));
+    expect(await screen.findByRole("tab", { name: "Find", selected: true })).toBeVisible();
+    expect(mockDevice.get).toHaveBeenCalledTimes(1);
+    expect(callsTo(app.client, "/v1/auth/passkey")).toHaveLength(1);
+    expect(quiet.waiting).toHaveLength(0);
+  });
+
+  it("asks for new options a little before the challenge's 5 minutes are up", async () => {
+    jest.useFakeTimers();
+    try {
+      const quiet = quietRequests();
+      const app = await openSignIn(signedInAsAnna);
+      await waitFor(() => {
+        expect(quiet.waiting).toHaveLength(1);
+      });
+      // 30 seconds before the challenge's 5 minutes are up.
+      await act(() => jest.advanceTimersByTimeAsync(keepOptionsMs));
+      await waitFor(() => {
+        expect(mockDevice.autofill).toHaveBeenCalledTimes(2);
+      });
+      expect(callsTo(app.client, "/v1/auth/passkey/options")).toHaveLength(2);
+      expect(quiet.waiting).toHaveLength(1);
+      await act(() => {
+        quiet.pick();
+      });
+      expect(await screen.findByRole("tab", { name: "Find", selected: true })).toBeVisible();
+      // Gone with step 1: no more options.
+      await act(() => jest.advanceTimersByTimeAsync(2 * keepOptionsMs));
+      expect(callsTo(app.client, "/v1/auth/passkey/options")).toHaveLength(2);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it("offers the passkey again with the same options after the person cancels Face ID", async () => {
+    jest.useFakeTimers();
+    try {
+      const quiet = quietRequests();
+      const app = await openSignIn();
+      await waitFor(() => {
+        expect(quiet.waiting).toHaveLength(1);
+      });
+      await act(() => jest.advanceTimersByTimeAsync(5_000));
+      await act(() => {
+        quiet.end();
+      });
+      await waitFor(() => {
+        expect(quiet.waiting).toHaveLength(1);
+      });
+      expect(mockDevice.autofill.mock.calls).toEqual([[options], [options]]);
+      expect(callsTo(app.client, "/v1/auth/passkey/options")).toHaveLength(1);
+      expect(screen.queryByRole("alert")).toBeNull();
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it("waits for new options when the browser refuses the quiet request at once", async () => {
+    jest.useFakeTimers();
+    try {
+      const quiet = quietRequests();
+      const app = await openSignIn();
+      await waitFor(() => {
+        expect(quiet.waiting).toHaveLength(1);
+      });
+      await act(() => {
+        quiet.end();
+      });
+      await act(() => jest.advanceTimersByTimeAsync(10_000));
+      expect(mockDevice.autofill).toHaveBeenCalledTimes(1);
+      await act(() => jest.advanceTimersByTimeAsync(keepOptionsMs));
+      await waitFor(() => {
+        expect(quiet.waiting).toHaveLength(1);
+      });
+      expect(callsTo(app.client, "/v1/auth/passkey/options")).toHaveLength(2);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it("asks again 30 seconds after the options could not be had, and shows nothing", async () => {
+    jest.useFakeTimers();
+    try {
+      const quiet = quietRequests();
+      let answers = 0;
+      const app = await openSignIn((client) => {
+        client.answer("/v1/auth/passkey/options", () => {
+          answers += 1;
+          return answers === 1 ? failure(0, "network_error") : ok(200, { options });
+        });
+      });
+      await waitFor(() => {
+        expect(callsTo(app.client, "/v1/auth/passkey/options")).toHaveLength(1);
+      });
+      expect(mockDevice.autofill).not.toHaveBeenCalled();
+      expect(screen.queryByRole("alert")).toBeNull();
+      await act(() => jest.advanceTimersByTimeAsync(30_000));
+      await waitFor(() => {
+        expect(quiet.waiting).toHaveLength(1);
+      });
+      expect(callsTo(app.client, "/v1/auth/passkey/options")).toHaveLength(2);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it("stops waiting when the email code screen opens, and waits again back on step 1", async () => {
+    jest.useFakeTimers();
+    try {
+      const quiet = quietRequests();
+      const app = await openSignIn((client) => {
+        client.answer("/v1/auth/email/start", () => ok(202, { resendAfterSeconds: 30 }));
+      });
+      await waitFor(() => {
+        expect(quiet.waiting).toHaveLength(1);
+      });
+      await fireEvent.changeText(screen.getByLabelText("Email"), "anna@example.com");
+      await fireEvent.press(screen.getByRole("button", { name: "Send code" }));
+      expect(await screen.findByRole("header", { name: "Enter the code" })).toBeVisible();
+      expect(mockDevice.cancel).toHaveBeenCalled();
+      expect(quiet.waiting).toHaveLength(0);
+      await act(() => jest.advanceTimersByTimeAsync(2 * keepOptionsMs));
+      expect(callsTo(app.client, "/v1/auth/passkey/options")).toHaveLength(1);
+
+      await act(() => {
+        router.back();
+      });
+      await waitFor(() => {
+        expect(quiet.waiting).toHaveLength(1);
+      });
+      expect(callsTo(app.client, "/v1/auth/passkey/options")).toHaveLength(2);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it("steps aside while Google's window is open, and waits again once it is closed", async () => {
+    const quiet = quietRequests();
+    await openSignIn((client) => {
+      client.answer("/v1/config", () =>
+        ok(200, {
+          beta: false,
+          paused: [],
+          maxSeats: 8,
+          freeCancellationMinutes: 15,
+          maxMoveMinutes: 120,
+          reliabilityMonths: 12,
+          signInProviders: ["google"],
+          emailSignIn: true,
+          passkeySignIn: true,
+        }),
+      );
+    });
+    await waitFor(() => {
+      expect(quiet.waiting).toHaveLength(1);
+    });
+    openAuthSessionAsync.mockClear();
+    // The person closes Google's window.
+    await fireEvent.press(screen.getByRole("button", { name: "Continue with Google" }));
+    await waitFor(() => {
+      expect(mockDevice.autofill).toHaveBeenCalledTimes(2);
+    });
+    const [cancelled] = mockDevice.cancel.mock.invocationCallOrder;
+    const [opened] = openAuthSessionAsync.mock.invocationCallOrder;
+    expect(cancelled).toBeLessThan(opened ?? 0);
+    expect(quiet.waiting).toHaveLength(1);
+  });
+
+  it("says a passkey this site no longer has is not set up, and tells the browser (3.4)", async () => {
+    const quiet = quietRequests();
+    await openSignIn((client) => {
+      client.answer("/v1/auth/passkey", () => failure(400, "passkey_unknown"));
+    });
+    await waitFor(() => {
+      expect(quiet.waiting).toHaveLength(1);
+    });
+    await act(() => {
+      quiet.pick();
+    });
+    expect(await screen.findByText(notSetUp)).toBeVisible();
+    expect(mockDevice.forget).toHaveBeenCalledWith("credential-one");
+    // The field offers its passkeys again.
+    await waitFor(() => {
+      expect(quiet.waiting).toHaveLength(1);
+    });
+  });
+
+  it("tells the browser after the button's passkey is unknown too", async () => {
+    quietRequests();
+    await openSignIn((client) => {
+      client.answer("/v1/auth/passkey", () => failure(400, "passkey_unknown"));
+    });
+    await fireEvent.press(await screen.findByRole("button", { name: "Face ID or fingerprint" }));
+    expect(await screen.findByText(notSetUp)).toBeVisible();
+    expect(mockDevice.forget).toHaveBeenCalledWith("credential-one");
+  });
+
+  it("keeps the console's passkey with the browser (R29.4)", async () => {
+    quietRequests();
+    await openSignIn((client) => {
+      client.answer("/v1/auth/passkey", () => failure(400, "passkey_invalid"));
+    });
+    await fireEvent.press(await screen.findByRole("button", { name: "Face ID or fingerprint" }));
+    expect(await screen.findByText(notSetUp)).toBeVisible();
+    expect(mockDevice.forget).not.toHaveBeenCalled();
+  });
+});
+
 /** Opens Sign-in methods with these devices; the list answers as it is kept. */
 async function openMethods(devices: MemberPasskey[], setUp?: (client: FakeClient) => void) {
   const kept = [...devices];
@@ -248,6 +585,8 @@ describe("Face ID or fingerprint in Settings (spec 27, 3.6)", () => {
     expect(screen.queryByText("Safari on iPhone")).toBeNull();
     expect(screen.getByText("Not set up")).toBeVisible();
     expect(callsTo(app.client, "/v1/me/passkeys/{id}")).toHaveLength(1);
+    // This browser stops offering it (spec 29, 3.4).
+    expect(mockDevice.forget).toHaveBeenCalledWith("credential-of-the-iphone");
   });
 
   it("sets up this device with a fresh sign-in", async () => {

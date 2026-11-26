@@ -37,10 +37,17 @@ import { openSession } from "./sessions.ts";
 // sheet lists every passkey of the site, the console's too; only a member's
 // signs in here.
 
-const { memberPasskeyChallenges, memberPasskeys, sessions, users } = schema;
+const { memberPasskeyChallenges, memberPasskeys, operatorPasskeys, sessions, users } = schema;
 
 export interface PasskeyInvalid {
   readonly code: "passkey_invalid";
+}
+/**
+ * The passkey is in neither table: removed, or from a test, so the browser
+ * may forget it (spec 29, 3.4). The console's own is `passkey_invalid`.
+ */
+export interface PasskeyUnknown {
+  readonly code: "passkey_unknown";
 }
 export interface TooMany {
   readonly code: "too_many";
@@ -50,7 +57,7 @@ export interface PasskeyExpired {
   readonly code: "passkey_expired";
 }
 export type PasskeySignInError =
-  PasskeyInvalid | PasskeyExpired | { readonly code: "account_unavailable" };
+  PasskeyInvalid | PasskeyUnknown | PasskeyExpired | { readonly code: "account_unavailable" };
 export type PasskeySetupError = { readonly code: "confirm_required" } | TooMany | ConfirmError;
 
 export interface PasskeySignedIn {
@@ -63,8 +70,9 @@ export interface MemberPasskeyService {
   /** Options for the browser's sheet, for any of the site's passkeys (3.3). */
   signInOptions(): Promise<WebAuthnOptions>;
   /**
-   * Signs in with a member's passkey; any other answer is `passkey_invalid`,
-   * and one to a challenge that is gone `passkey_expired`.
+   * Signs in with a member's passkey; one the site does not have is
+   * `passkey_unknown`, the console's or any other bad answer
+   * `passkey_invalid`, and one to a challenge that is gone `passkey_expired`.
    */
   signIn(input: {
     readonly credential: AuthenticationResponseJSON;
@@ -105,6 +113,7 @@ export interface MemberPasskeyServiceDependencies {
 }
 
 const passkeyInvalid = { code: "passkey_invalid" } as const;
+const passkeyUnknown = { code: "passkey_unknown" } as const;
 const passkeyExpired = { code: "passkey_expired" } as const;
 /** Setups of one account waiting for the browser's answer, at most. */
 const waitingSetups = 5;
@@ -125,6 +134,7 @@ function challengeOf(clientDataJSON: string): string | null {
 function toMemberPasskey(row: typeof memberPasskeys.$inferSelect): MemberPasskey {
   return {
     id: row.id,
+    credentialId: row.credentialId,
     browser: row.browser,
     system: row.system,
     createdAt: row.createdAt.toISOString(),
@@ -256,8 +266,15 @@ export function createMemberPasskeyService(
           .innerJoin(users, eq(users.id, memberPasskeys.userId))
           .where(eq(memberPasskeys.credentialId, credential.id))
           .for("update", { of: memberPasskeys });
-        // Not a member's: removed, or the console's, which shares the site.
-        if (found === undefined) return err(passkeyInvalid);
+        if (found === undefined) {
+          // The console's shares the site, and the browser is never told to
+          // forget it (R29.4); one in neither table was removed.
+          const [console] = await tx
+            .select({ id: operatorPasskeys.id })
+            .from(operatorPasskeys)
+            .where(eq(operatorPasskeys.credentialId, credential.id));
+          return err(console === undefined ? passkeyUnknown : passkeyInvalid);
+        }
         const { passkey } = found;
         const handle = credential.response.userHandle;
         if (handle !== undefined && handle !== passkey.userHandle) return err(passkeyInvalid);

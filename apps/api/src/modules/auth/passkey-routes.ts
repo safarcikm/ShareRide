@@ -60,6 +60,8 @@ export function registerPasskeyRoutes(
           return errorResponse(c, 400, "passkey_expired", "That took too long. Try again.");
         case "passkey_invalid":
           return errorResponse(c, 400, "passkey_invalid", invalidMessage);
+        case "passkey_unknown":
+          return errorResponse(c, 400, "passkey_unknown", invalidMessage);
       }
     }
     const { userId, tokens } = result.value;
