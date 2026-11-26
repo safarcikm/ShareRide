@@ -39,16 +39,33 @@ export function codeIn(text: string): string {
   return code;
 }
 
-// Icelandic mobile prefixes; with five random digits after them, numbers
-// do not repeat within a run in practice. The test database is new each run.
+// Icelandic mobile prefixes, with five random digits after them: half a
+// million numbers. The test database is new each run.
 const mobilePrefixes = ["69", "76", "77", "78", "79"] as const;
 
-/** A new Icelandic mobile number. The test API never sends real text messages. */
-export function newPhoneNumber(): { local: string; e164: string } {
-  const prefix = mobilePrefixes[randomInt(mobilePrefixes.length)] ?? "69";
-  const digits = String(randomInt(100_000)).padStart(5, "0");
-  return {
-    local: `${prefix}${digits.slice(0, 1)} ${digits.slice(1)}`,
-    e164: `+354${prefix}${digits}`,
-  };
+/** The numbers this worker gave out, also before their first text message. */
+const givenOut = new Set<string>();
+
+/**
+ * A new Icelandic mobile number, one nobody had in this run. The test API
+ * never sends real text messages.
+ *
+ * A run draws a few hundred numbers, and two of them out of half a million
+ * are the same about one run in ten. The second person then signed in to
+ * the first one's account, and their journey failed at "Last step: about
+ * you". Every number a journey draws gets a text message at once, and all
+ * workers read the same outbox, so a number is `taken` when a message went
+ * to it or this worker gave it out.
+ */
+export function newPhoneNumber(
+  taken: (e164: string) => boolean = (e164) => givenOut.has(e164) || sentCount(e164) > 0,
+): { local: string; e164: string } {
+  for (;;) {
+    const prefix = mobilePrefixes[randomInt(mobilePrefixes.length)] ?? "69";
+    const digits = String(randomInt(100_000)).padStart(5, "0");
+    const e164 = `+354${prefix}${digits}`;
+    if (taken(e164)) continue;
+    givenOut.add(e164);
+    return { local: `${prefix}${digits.slice(0, 1)} ${digits.slice(1)}`, e164 };
+  }
 }
