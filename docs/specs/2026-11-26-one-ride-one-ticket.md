@@ -507,6 +507,13 @@ A web journey checks each of the last two in the browser: no link of Edit
 trip reaches past its part at 360 wide, and no picture starts under the
 top of the text beside it.
 
+Pictures: Edit trip
+[before](images/one-ride-one-ticket/defects/edit-trip-before.webp) and
+[after](images/one-ride-one-ticket/defects/edit-trip-after.webp) (a phone
+360 and 390 wide, and a laptop), and a profile picture beside its text
+[before](images/one-ride-one-ticket/defects/picture-before.webp) and
+[after](images/one-ride-one-ticket/defects/picture-after.webp).
+
 ### 3.19 Every other screen
 
 The sections above describe the screens that change most. Every other
