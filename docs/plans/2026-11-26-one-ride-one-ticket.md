@@ -341,7 +341,7 @@ changes on a screen.
 
 ## PR 3: what needs me
 
-`feat(rides)`, spec 31, 3.3 item 3 and section 6.
+Merged, #261. `feat(rides)`, spec 31, 3.3 item 3 and section 6.
 
 1. **Domain:** `rides/needs.ts` as above, exported from the package.
    Tests: each kind; a deadline at or behind `at` is no need; a completed
