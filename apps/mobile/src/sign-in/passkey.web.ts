@@ -1,6 +1,7 @@
 import {
   browserSupportsWebAuthn,
   browserSupportsWebAuthnAutofill,
+  getBrowserCapabilities,
   platformAuthenticatorIsAvailable,
   sendSignal,
   startAuthentication,
@@ -25,12 +26,19 @@ export type {
 } from "./passkey-types";
 
 // On the website: the browser's own passkey sheet (spec 27, 3.3 and 3.6),
-// and its quiet request in the email field (spec 29, 3.1). Offered only
+// its quiet request in the email field (spec 29, 3.1), and the passkey it
+// may save by itself after a password (3.3). Offered only
 // where the browser says the device has a built-in authenticator, never a
 // hardware key (ADR 0048).
 
 /** How long `forget` waits for the browser, at most. */
 const forgetWaitMs = 1_000;
+/**
+ * How long the browser may take to decide on saving a passkey by itself.
+ * One that has not by then, as Chromium without a saved password, is
+ * stopped, and the offer opens instead (spec 29, 3.3).
+ */
+const quietSaveWaitMs = 3_000;
 
 async function hasLock(): Promise<boolean> {
   if (!browserSupportsWebAuthn()) return false;
@@ -60,6 +68,31 @@ export const devicePasskeys: DevicePasskeys = {
   },
   cancel() {
     WebAuthnAbortService.cancelCeremony();
+  },
+  async quietCreateAvailable() {
+    if (!(await hasLock())) return false;
+    try {
+      return (await getBrowserCapabilities()).conditionalCreate === "supported";
+    } catch {
+      return false;
+    }
+  },
+  async createQuietly(options) {
+    const optionsJSON = options as unknown as PublicKeyCredentialCreationOptionsJSON;
+    let deciding = true;
+    const timer = setTimeout(() => {
+      // Only this request: a sheet opened since is never ended here.
+      if (deciding) WebAuthnAbortService.cancelCeremony();
+    }, quietSaveWaitMs);
+    try {
+      return (await startRegistration({
+        optionsJSON,
+        useAutoRegister: true,
+      })) as unknown as PasskeyRegistration;
+    } finally {
+      deciding = false;
+      clearTimeout(timer);
+    }
   },
   async forget(credentialId) {
     try {

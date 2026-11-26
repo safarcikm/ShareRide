@@ -162,6 +162,43 @@ test("a member who signs in with the email code is offered Face ID, and uses it 
   await expect(page.getByRole("heading", { name: offerTitle })).toHaveCount(0);
 });
 
+test("after a password, a browser that saves no passkey by itself offers Face ID (spec 29, 3.3)", async ({
+  page,
+}) => {
+  const lock = await addDeviceLock(page);
+  await withoutSuggestions(page);
+  await page.goto("/profile");
+  await page.getByRole("button", { name: english.signIn, exact: true }).click();
+  const { email } = await enterCodes(page, english, newPhoneNumber());
+  await finishSignUp(page, english, "Hekla");
+  await page.getByRole("button", { name: "Add a password" }).click();
+  await page.getByLabel("New password").fill("puffins fly north in May");
+  await page.getByRole("button", { name: "Save password" }).click();
+  await page.getByRole("button", { name: "Done" }).click();
+  await expect(page.getByRole("heading", { name: english.findTitle })).toBeVisible();
+  await signOut(page);
+
+  // Chromium, with no password of its own saved, never decides: the app
+  // stops asking after a few seconds and offers Face ID instead.
+  await openSignIn(page);
+  await page.getByLabel("Email", { exact: true }).fill(email);
+  await page.getByLabel("Password", { exact: true }).fill("puffins fly north in May");
+  const quiet = page.waitForRequest(
+    (request) =>
+      request.url().endsWith("/v1/me/passkeys/options") &&
+      (request.postDataJSON() as { quiet?: boolean } | null)?.quiet === true,
+  );
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await quiet;
+  await expect(page.getByRole("heading", { name: offerTitle })).toBeVisible();
+  expect(await keptPasskeys(lock)).toBe(0);
+  await page.getByRole("button", { name: "Set it up", exact: true }).click();
+  await expect(
+    page.getByText("Face ID or fingerprint is set up on this device.").filter(visible),
+  ).toBeVisible();
+  expect(await keptPasskeys(lock)).toBe(1);
+});
+
 test("a passkey the site does not have says so, and the browser forgets it (spec 29, 3.4)", async ({
   page,
 }) => {

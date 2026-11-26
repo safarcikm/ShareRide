@@ -21,5 +21,7 @@ export const devicePasskeys: DevicePasskeys = {
   autofillAvailable: () => Promise.resolve(false),
   autofill: unavailable,
   cancel: () => undefined,
+  quietCreateAvailable: () => Promise.resolve(false),
+  createQuietly: unavailable,
   forget: () => Promise.resolve(),
 };

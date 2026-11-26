@@ -39,6 +39,8 @@ const mockDevice = {
   autofill: jest.fn(),
   cancel: jest.fn(),
   forget: jest.fn(() => Promise.resolve()),
+  quietCreateAvailable: jest.fn(() => Promise.resolve(false)),
+  createQuietly: jest.fn(),
 };
 jest.mock("@/sign-in/passkey", () => ({
   ...jest.requireActual<typeof PasskeyTypes>("@/sign-in/passkey-types"),
@@ -111,6 +113,8 @@ beforeEach(() => {
   mockDevice.autofill.mockReset();
   mockDevice.cancel.mockReset();
   mockDevice.forget.mockReset().mockReturnValue(Promise.resolve());
+  mockDevice.quietCreateAvailable.mockReset().mockReturnValue(Promise.resolve(false));
+  mockDevice.createQuietly.mockReset();
 });
 
 async function openSignIn(setUp?: (client: FakeClient) => void, passkeySignIn = true) {
@@ -731,7 +735,7 @@ describe("Face ID or fingerprint in Settings (spec 27, 3.6)", () => {
   });
 });
 
-describe("Face ID offered after another way in (spec 29, 3.2)", () => {
+describe("Face ID offered after another way in (spec 29, 3.2 and 3.3)", () => {
   const offerTitle = "Use Face ID or fingerprint next time?";
   const dayMs = 24 * 60 * 60 * 1000;
 
@@ -870,7 +874,39 @@ describe("Face ID offered after another way in (spec 29, 3.2)", () => {
     expect(screen.queryByRole("header", { name: offerTitle })).toBeNull();
   });
 
-  it("asks after a password too", async () => {
+  it("after a password, lets the browser save a passkey by itself, and then does not ask", async () => {
+    mockDevice.quietCreateAvailable.mockReturnValue(Promise.resolve(true));
+    mockDevice.createQuietly.mockReturnValue(Promise.resolve(registration));
+    const app = await openSignInForOffer();
+    await signInWithPassword();
+    await onFind("password");
+    await waitFor(() => {
+      expect(mockPreferences.get("passkey-here")).toBe(mac.credentialId);
+    });
+    expect(mockDevice.createQuietly).toHaveBeenCalledWith(options);
+    expect(mockDevice.create).not.toHaveBeenCalled();
+    // Options of their own, which the API gives only straight after a sign-in (ADR 0050).
+    expect(
+      callsTo(app.client, "/v1/me/passkeys/options").map((call) => call.input["body"]),
+    ).toEqual([{ quiet: true }]);
+    expect(callsTo(app.client, "/v1/me/passkeys").map((call) => call.input["body"])).toEqual([
+      { credential: registration },
+    ]);
+    expect(screen.queryByRole("header", { name: offerTitle })).toBeNull();
+  });
+
+  it("never lets the browser save one by itself after the email code", async () => {
+    mockDevice.quietCreateAvailable.mockReturnValue(Promise.resolve(true));
+    const app = await openSignInForOffer();
+    await signInWithEmailCode();
+    expect(await screen.findByRole("header", { name: offerTitle })).toBeVisible();
+    expect(mockDevice.createQuietly).not.toHaveBeenCalled();
+    expect(callsTo(app.client, "/v1/me/passkeys/options")).toHaveLength(0);
+  });
+
+  it("after a password the browser did not save a passkey for, asks", async () => {
+    mockDevice.quietCreateAvailable.mockReturnValue(Promise.resolve(true));
+    mockDevice.createQuietly.mockReturnValue(Promise.reject(named("NotAllowedError")));
     const app = await openSignInForOffer();
     await signInWithPassword();
     expect(await screen.findByRole("header", { name: offerTitle })).toBeVisible();
