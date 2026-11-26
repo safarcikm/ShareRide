@@ -82,7 +82,7 @@ test.describe("pictures", () => {
     if (!wide) {
       await expect(page.getByRole("heading", { name: "Share this ride" })).toBeVisible();
       await expect(page.getByRole("heading", { name: "Story on Instagram" })).toBeVisible();
-      await expect(page.locator('[style*="story.png"]')).toBeVisible();
+      await expect(page.locator('[style*="blob:"]')).toBeVisible();
       await showWhole(page, 412);
       await page.screenshot({ path: join(folder, "published-phone.png") });
       // The story section: from its heading to Copy link.
@@ -130,7 +130,7 @@ test.describe("pictures", () => {
     await expect(page.getByRole("heading", { name: "Deildu þessari ferð" })).toBeVisible();
     await expect(page.getByText(/^Býð far: /u)).toBeVisible();
     await expect(page.getByRole("heading", { name: "Story á Instagram" })).toBeVisible();
-    await expect(page.locator('[style*="lang=is"]')).toBeVisible();
+    await expect(page.locator('[style*="blob:"]')).toBeVisible();
     await showWhole(page, 1280);
     await page.screenshot({ path: join(folder, "share-screen-laptop-is.png") });
   });

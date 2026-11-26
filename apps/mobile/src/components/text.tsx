@@ -39,12 +39,19 @@ export function Title({
 }
 
 /** A section or card heading, at the left, read out as a heading. */
-export function Heading({ children }: { readonly children: ReactNode }) {
+export function Heading({
+  children,
+  level = 2,
+}: {
+  readonly children: ReactNode;
+  /** A heading inside a section with its own heading is a level 3 (an h3 on the web). */
+  readonly level?: 2 | 3;
+}) {
   const palette = usePalette();
   return (
     <Text
       accessibilityRole="header"
-      {...sectionLevel}
+      {...(level === 2 || Platform.OS !== "web" ? sectionLevel : { "aria-level": 3 })}
       style={[typography.heading, { color: palette.text }]}
     >
       {children}

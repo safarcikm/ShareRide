@@ -10,6 +10,7 @@ import {
   pictureSize,
   rideSvg,
   storyFileName,
+  storyScene,
   storySize,
   storySvg,
   textWidth,
@@ -173,7 +174,9 @@ describe("a ride's story picture (spec 28, 3.5)", () => {
     const layout = layOutStory(manyStops, "en");
     expect(layout.stops.length).toBeGreaterThan(0);
     expect(layout.stops.length).toBeLessThanOrEqual(3);
-    expect(layout.stops[0]).toMatch(/^Stops on the way: Hveragerði – N1/);
+    expect(layout.stops[0]?.replaceAll("\u00A0", " ")).toMatch(
+      /^Stops on the way: Hveragerði – N1/,
+    );
     for (const line of layout.stops) {
       expect(textWidth(line, "stops", layout.stopsSize)).toBeLessThanOrEqual(storyRoom);
     }
@@ -193,6 +196,44 @@ describe("a ride's story picture (spec 28, 3.5)", () => {
     }
   });
 
+  it("keeps every word above the mountains, with the longest names and the most stops", () => {
+    const tallest = ride([
+      "Brautarholt á Skeiðum – stoppistöð Strætó",
+      ...manyStops.stops.slice(1, -1).map((one) => one.name.is),
+      "Sólheimar í Grímsnesi – Verslunin Vala",
+    ]);
+    for (const shown of [short, longest, manyStops, tallest]) {
+      for (const locale of ["is", "en"] as const) {
+        const words = storyWords(storySvg(shown, locale)).filter(
+          ({ text }) => text !== "Free seats" && text !== "Laus sæti",
+        );
+        for (const { y, size, text } of words) {
+          expect(y + size * 0.3, text).toBeLessThanOrEqual(storyScene.peak - 24);
+        }
+      }
+    }
+    const layout = layOutStory(tallest, "is");
+    expect(layout.route.ends.map((end) => end.length)).toEqual([2, 2]);
+    expect(layout.stops).toHaveLength(3);
+  });
+
+  it("breaks the stops' line between names, never inside one", () => {
+    for (const locale of ["is", "en"] as const) {
+      const lines = layOutStory(manyStops, locale).stops;
+      const names = manyStops.stops.slice(1, -1).map((one) => one.name[locale]);
+      const shown = names.filter((name) =>
+        lines.join(" ").replaceAll("\u00A0", " ").includes(name),
+      );
+      expect(shown.length).toBeGreaterThan(2);
+      for (const name of shown) {
+        expect(
+          lines.some((line) => line.replaceAll("\u00A0", " ").includes(name)),
+          name,
+        ).toBe(true);
+      }
+    }
+  });
+
   it("shows what the link preview shows, and the Free seats tag only while seats can be booked", () => {
     const words = storyWords(storySvg(short, "en")).map(({ text }) => text);
     expect(words).toContain("Friday 27 November at 09:00");
@@ -207,6 +248,8 @@ describe("a ride's story picture (spec 28, 3.5)", () => {
     expect(storyFileName(icelandic, "is")).toBe(
       "puffinride-thorshofn-radhus-aegisida-baejarlaekur.png",
     );
+    // No letter or digit a file name can keep: the name alone.
+    expect(storyFileName(ride(["Αθήνα", "Σπάρτη"]), "en")).toBe("puffinride.png");
   });
 });
 

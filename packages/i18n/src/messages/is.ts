@@ -1193,6 +1193,8 @@ export const is = {
   "shareRide.sharePicture": "Deila mynd",
   "shareRide.downloadPicture": "Sækja mynd",
   "shareRide.copyLink": "Afrita hlekk",
+  "shareRide.pictureFailed": "Ekki tókst að búa til myndina í bili.",
+  "shareRide.pictureNotShared": "Ekki tókst að deila myndinni hér. Sæktu hana í staðinn.",
   "shareRide.follow": "Fylgdu PuffinRide á Facebook",
   "shareRide.notShareable": "Aðeins er hægt að deila birtri ferð sem er ekki lögð af stað.",
   "shareRide.backToTrip": "Sjá ferðina",

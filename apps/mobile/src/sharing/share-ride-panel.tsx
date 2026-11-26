@@ -165,7 +165,7 @@ export function ShareRidePanel({
       {/* A notice that shows with its words is not always read out, nor a second copy. */}
       <Announcer message={copied} />
 
-      <StorySection trip={trip} link={url} language={language} />
+      <StorySection trip={trip} link={url} language={language} headingLevel={heading ? 3 : 2} />
 
       <TextLink
         label={t("shareRide.follow")}

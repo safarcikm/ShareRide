@@ -320,7 +320,8 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       origin: [...webOrigins],
       credentials: true,
       allowHeaders: ["Content-Type", "Authorization", clientPlatformHeader],
-      exposeHeaders: ["X-Request-Id", "Retry-After"],
+      // Content-Disposition: the name of a story saved from the web app (spec 28, 3.5).
+      exposeHeaders: ["X-Request-Id", "Retry-After", "Content-Disposition"],
       maxAge: 600,
     });
     // The console is served from the API's own origin and is never called

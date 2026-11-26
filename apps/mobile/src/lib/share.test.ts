@@ -5,6 +5,8 @@ import {
   copyText,
   fetchPicture,
   pictureSharing,
+  pictureWait,
+  savePicture,
   shareLink,
   sharePicture,
   shareText,
@@ -193,17 +195,80 @@ describe("Sharing a picture, such as a ride's story (spec 28, 3.5)", () => {
 
   it("fetches the picture ahead, as a PNG file with a name", async () => {
     const blob = new Blob(["png"], { type: "image/png" });
-    const fetched = jest
-      .spyOn(globalThis, "fetch")
-      .mockResolvedValue({ ok: true, blob: () => Promise.resolve(blob) } as Response);
+    const fetched = jest.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      headers: new Headers(),
+      blob: () => Promise.resolve(blob),
+    } as Response);
     const file = await fetchPicture("https://puffinride.is/v1/trips/1/story.png", "puffinride.png");
-    expect(fetched).toHaveBeenCalledWith("https://puffinride.is/v1/trips/1/story.png");
+    expect(fetched).toHaveBeenCalledWith("https://puffinride.is/v1/trips/1/story.png", {
+      signal: expect.any(AbortSignal) as AbortSignal,
+    });
     expect(file?.name).toBe("puffinride.png");
     expect(file?.type).toBe("image/png");
     fetched.mockResolvedValue({ ok: false } as Response);
     await expect(fetchPicture("https://puffinride.is/x.png", "x.png")).resolves.toBeNull();
     fetched.mockRejectedValue(new TypeError("Failed to fetch"));
     await expect(fetchPicture("https://puffinride.is/x.png", "x.png")).resolves.toBeNull();
+  });
+
+  it("names the file as the API does, after the route", async () => {
+    jest.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      headers: new Headers({
+        "content-disposition": 'attachment; filename="puffinride-bsi-hofn-n1.png"',
+      }),
+      blob: () => Promise.resolve(new Blob(["png"], { type: "image/png" })),
+    } as Response);
+    const file = await fetchPicture("https://puffinride.is/x.png?download=1", "puffinride.png");
+    expect(file?.name).toBe("puffinride-bsi-hofn-n1.png");
+  });
+
+  it("gives up on a picture that takes too long, or that is no longer wanted", async () => {
+    jest.useFakeTimers();
+    jest.spyOn(globalThis, "fetch").mockImplementation(
+      (_url, init) =>
+        new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener("abort", () => {
+            reject(Object.assign(new Error("Aborted"), { name: "AbortError" }));
+          });
+        }),
+    );
+    const slow = fetchPicture("https://puffinride.is/x.png", "x.png");
+    jest.advanceTimersByTime(pictureWait);
+    await expect(slow).resolves.toBeNull();
+    const stop = new AbortController();
+    const unwanted = fetchPicture("https://puffinride.is/x.png", "x.png", stop.signal);
+    stop.abort();
+    await expect(unwanted).resolves.toBeNull();
+    jest.useRealTimers();
+  });
+
+  it("saves it from the page, without leaving the page", () => {
+    jest.useFakeTimers();
+    const click = jest.fn();
+    const link = { href: "", download: "", click, remove: jest.fn() };
+    const append = jest.fn();
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      value: { createElement: () => link, body: { append } },
+    });
+    const createObjectURL = jest.fn(() => "blob:story");
+    const revokeObjectURL = jest.fn();
+    Object.assign(URL, { createObjectURL, revokeObjectURL });
+    const file = new File(["png"], "puffinride-bsi-hofn-n1.png", { type: "image/png" });
+    savePicture(file);
+    expect(createObjectURL).toHaveBeenCalledWith(file);
+    expect(link).toMatchObject({ href: "blob:story", download: "puffinride-bsi-hofn-n1.png" });
+    expect(append).toHaveBeenCalledWith(link);
+    expect(click).toHaveBeenCalled();
+    expect(link.remove).toHaveBeenCalled();
+    // The browser starts the download after the click; the address goes later.
+    expect(revokeObjectURL).not.toHaveBeenCalled();
+    jest.runAllTimers();
+    expect(revokeObjectURL).toHaveBeenCalledWith("blob:story");
+    Reflect.deleteProperty(globalThis, "document");
+    jest.useRealTimers();
   });
 
   it("opens the share window with the file, and knows when it was closed", async () => {

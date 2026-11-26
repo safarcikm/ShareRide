@@ -232,6 +232,13 @@ describe("browsers on other origins", () => {
     expect(response.headers.get("access-control-allow-origin")).toBe("https://shareride.test");
   });
 
+  it("may read a saved story's file name (spec 28, 3.5)", async () => {
+    const response = await app.request("/v1/health", {
+      headers: { origin: "https://shareride.test" },
+    });
+    expect(response.headers.get("access-control-expose-headers")).toContain("Content-Disposition");
+  });
+
   it("may never call the console's API (ADR 0028)", async () => {
     const response = await preflight("/admin/v1/me");
     expect(response.headers.get("access-control-allow-origin")).toBeNull();

@@ -1178,6 +1178,8 @@ export const en = {
   "shareRide.sharePicture": "Share picture",
   "shareRide.downloadPicture": "Download picture",
   "shareRide.copyLink": "Copy link",
+  "shareRide.pictureFailed": "The picture couldn't be made just now.",
+  "shareRide.pictureNotShared": "The picture couldn't be shared here. Download it instead.",
   "shareRide.follow": "Follow PuffinRide on Facebook",
   "shareRide.notShareable": "Only a published trip that hasn't left can be shared.",
   "shareRide.backToTrip": "See the trip",

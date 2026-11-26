@@ -36,17 +36,21 @@ export interface SearchRoutesDependencies {
   /** Refuses a suspended person: they cannot search (spec 9, 3.6.2). */
   readonly standing: (userId: string) => Promise<Result<void, AccountSuspended>>;
   /**
-   * Per IP address, for a ride's picture alone (spec 23, 3.10, item 4): link
-   * previews come from a few sites' readers, and a refused picture stays
-   * missing from their copy of the card.
+   * Per IP address, for a ride's pictures alone (spec 23, 3.10, item 4):
+   * link previews come from a few sites' readers, where a refused picture
+   * stays missing from their copy of the card, and stories from drivers'
+   * browsers, one fetch each (spec 28, 3.5), where a refused one can be
+   * fetched again.
    */
   readonly pictureLimiter: RateLimiter;
   /** The pictures the API keeps; a new set by default. */
   readonly pictures?: RidePictures;
 }
 
-/** The addresses of a shared ride's pictures, for Hono: its link preview (spec 23, 3.10, item 4) and its story (spec 28, 3.5). */
-/** A trip's pictures, which any site may show (spec 23, 3.10; spec 28, 3.5). */
+/**
+ * The addresses of a shared ride's pictures, for Hono: its link preview
+ * (spec 23, 3.10, item 4) and its story (spec 28, 3.5). Any site may show them.
+ */
 export const tripPicturePaths = {
   preview: "/v1/trips/:id/preview.png",
   story: "/v1/trips/:id/story.png",

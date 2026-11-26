@@ -412,6 +412,18 @@ export const storySize = {
   safeBottom: 340,
 } as const;
 
+/** Where a story's scene is: its road, its horizon, and the top of its highest mountain. */
+export const storyScene = (() => {
+  const roadY = storySize.height - 280;
+  const horizon = roadY - 250;
+  const mountainScale = 1.6;
+  // The mountains' highest point is 122 above the horizon, before scaling.
+  return { roadY, horizon, mountainScale, peak: horizon - 122 * mountainScale } as const;
+})();
+
+/** The least room between a story's last line of words and the mountains. */
+const aboveMountains = 40;
+
 /**
  * The route's sizes in a story: on one line each from the largest down to
  * `oneLine`, then on two lines each down to the smallest.
@@ -478,7 +490,8 @@ export function layOutStory(ride: Ride, locale: Locale): StoryLayout {
   }
   if (route === undefined) throw new Error("unreachable: the smallest size always fits");
 
-  const names = between.map((stop) => stop.name[locale]);
+  // A name's own spaces do not break, so lines break between names only.
+  const names = between.map((stop) => stop.name[locale].replaceAll(" ", "\u00A0"));
   const stopsLines = (shown: readonly string[]) =>
     wrapped(
       t("seo.tripStops", {
@@ -533,12 +546,11 @@ function downArrow(cx: number, top: number, length: number, size: number): strin
 /** The story as SVG, 1080 by 1920. */
 export function storySvg(ride: Ride, locale: Locale): string {
   const { width: W, height: H, safeTop } = storySize;
+  const { roadY, horizon, mountainScale } = storyScene;
   const t = createTranslator(locale);
   const layout = layOutStory(ride, locale);
-  const roadY = H - 280;
-  const horizon = roadY - 250;
   let s = `<rect width="${W}" height="${H}" fill="${light.background}"/>`;
-  s += landscape(W, H, horizon, roadY, 1.6);
+  s += landscape(W, H, horizon, roadY, mountainScale);
   s += pin(W * 0.12, roadY - 20, 120) + pin(W * 0.88, roadY - 20, 120);
   const carWidth = 500;
   s += carOnRoad(
@@ -554,27 +566,47 @@ export function storySvg(ride: Ride, locale: Locale): string {
   const lineHeight = size * 1.08;
   const gap = size * 0.34;
   const arrowLength = Math.max(size * 0.8, 60);
-  let baseline = safeTop + 200 + size * 0.76;
+  // Each line's baseline from the top of the words, then the words moved
+  // up as far as they would reach into the mountains (the longest names
+  // with the most stops), never higher than under the logo.
+  const lines: { text: string; style: Style; size: number; y: number; fill?: string }[] = [];
+  let baseline = size * 0.76;
   const [from, to] = ends;
   from.forEach((line, index) => {
     if (index > 0) baseline += lineHeight;
-    s += textElement(line, "route", W / 2, baseline, { size, anchor: "middle" });
+    lines.push({ text: line, style: "route", size, y: baseline });
   });
-  s += downArrow(W / 2, baseline + gap, arrowLength, Math.max(size, 80));
+  const arrowTop = baseline + gap;
   baseline += gap + arrowLength + gap + size * 0.76;
   to.forEach((line, index) => {
     if (index > 0) baseline += lineHeight;
-    s += textElement(line, "route", W / 2, baseline, { size, anchor: "middle" });
+    lines.push({ text: line, style: "route", size, y: baseline });
   });
   baseline += 110;
-  s += textElement(layout.when, "when", W / 2, baseline, { size: 48, anchor: "middle" });
+  lines.push({ text: layout.when, style: "when", size: 48, y: baseline });
   baseline += 30;
   for (const line of layout.stops) {
     baseline += storyStops.lineHeight;
-    s += textElement(line, "stops", W / 2, baseline, {
+    lines.push({
+      text: line,
+      style: "stops",
       size: layout.stopsSize,
-      anchor: "middle",
+      y: baseline,
       fill: light.textMuted,
+    });
+  }
+  const last = lines.at(-1);
+  const bottom = last === undefined ? 0 : last.y + last.size * 0.3;
+  const top = Math.min(
+    safeTop + 200,
+    Math.max(safeTop + 150, storyScene.peak - aboveMountains - bottom),
+  );
+  s += downArrow(W / 2, top + arrowTop, arrowLength, Math.max(size, 80));
+  for (const line of lines) {
+    s += textElement(line.text, line.style, W / 2, top + line.y, {
+      size: line.size,
+      anchor: "middle",
+      ...(line.fill === undefined ? {} : { fill: line.fill }),
     });
   }
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${s}</svg>`;
@@ -598,7 +630,7 @@ export function storyFileName(ride: Ride, locale: Locale): string {
     .replace(/\p{M}/gu, "")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
-  return `puffinride-${words}.png`;
+  return words === "" ? "puffinride.png" : `puffinride-${words}.png`;
 }
 
 /** The pictures of a ride: its link preview, or its story (spec 28, 3.5). */
@@ -615,7 +647,7 @@ export interface RidePictures {
 /**
  * The pictures the API keeps (item 4). A picture takes tens of milliseconds
  * of a small server's processor, and sites read one link many times, so the
- * API keeps the last `capacity` pictures (about 70 kB each) and draws at
+ * API keeps the last `capacity` pictures (70 to 140 kB each) and draws at
  * most `drawingAtOnce` at a time.
  */
 export function createRidePictures({ capacity = 100, drawingAtOnce = 2 } = {}): RidePictures {

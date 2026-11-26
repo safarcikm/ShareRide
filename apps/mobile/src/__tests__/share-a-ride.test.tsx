@@ -7,10 +7,10 @@ import {
   copyText,
   fetchPicture,
   pictureSharing,
+  savePicture,
   shareLink,
   sharePicture,
 } from "@/lib/share";
-import { openDownload } from "@/privacy/open-download";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
 import { driverApi, northMyTrip } from "@/testing/bookings";
@@ -41,8 +41,10 @@ jest.mock("@/lib/share", () => ({
   pictureSharing: jest.fn(() => "none"),
   fetchPicture: jest.fn(() => Promise.resolve({ name: "puffinride.png" })),
   sharePicture: jest.fn(() => Promise.resolve("shared")),
+  savePicture: jest.fn(),
+  pictureAddress: jest.fn(() => "blob:story"),
+  forgetPictureAddress: jest.fn(),
 }));
-jest.mock("@/privacy/open-download", () => ({ openDownload: jest.fn(() => Promise.resolve()) }));
 
 const mockedShare = shareLink as jest.Mock;
 const mockedCopy = copyText as jest.Mock;
@@ -51,7 +53,7 @@ const hasClipboard = canCopy as jest.Mock;
 const sharingPictures = pictureSharing as jest.Mock;
 const mockedFetchPicture = fetchPicture as jest.Mock;
 const mockedSharePicture = sharePicture as jest.Mock;
-const mockedDownload = openDownload as jest.Mock;
+const mockedSave = savePicture as jest.Mock;
 let openURL: jest.SpyInstance;
 
 beforeEach(() => {
@@ -62,7 +64,7 @@ beforeEach(() => {
   sharingPictures.mockReturnValue("none");
   mockedFetchPicture.mockClear();
   mockedSharePicture.mockClear().mockImplementation(() => Promise.resolve("shared"));
-  mockedDownload.mockClear();
+  mockedSave.mockClear();
   openURL = jest.spyOn(Linking, "openURL").mockResolvedValue(undefined);
 });
 
@@ -400,9 +402,10 @@ describe("Share this ride, a screen of its own (spec 28, 3.1 and 3.2)", () => {
 
 describe("Story on Instagram, on the web (spec 28, 3.2 item 5 and 3.5)", () => {
   const published = `/drive/trips/${tripId}/published`;
-  const story = `http://localhost:3000/v1/trips/${tripId}/story.png?fromStop=0&toStop=3&lang=en`;
+  const story = `http://localhost:3000/v1/trips/${tripId}/story.png?fromStop=0&toStop=3&lang=en&download=1`;
+  const storyFile = { name: "puffinride.png" };
 
-  it("shares the picture, fetched as the panel shows, from a phone's browser", async () => {
+  it("shares or saves the picture, fetched once as the panel shows, from a phone's browser", async () => {
     sharingPictures.mockReturnValue("share");
     await openDriver(published);
     expect(await screen.findByRole("header", { name: "Story on Instagram" })).toBeVisible();
@@ -411,10 +414,13 @@ describe("Story on Instagram, on the web (spec 28, 3.2 item 5 and 3.5)", () => {
         "A picture of your ride for your story. Instagram doesn't take links in posts, so add the link with a link sticker.",
       ),
     ).toBeVisible();
-    expect(mockedFetchPicture).toHaveBeenCalledWith(story, "puffinride.png");
+    expect(mockedFetchPicture).toHaveBeenCalledTimes(1);
+    expect(mockedFetchPicture).toHaveBeenCalledWith(story, "puffinride.png", expect.anything());
     await fireEvent.press(await screen.findByRole("button", { name: "Share picture" }));
-    expect(mockedSharePicture).toHaveBeenCalledWith({ name: "puffinride.png" });
-    expect(screen.queryByRole("button", { name: "Download picture" })).toBeNull();
+    expect(mockedSharePicture).toHaveBeenCalledWith(storyFile);
+    // A laptop's browser may share a file too, so the picture can always be saved.
+    await fireEvent.press(screen.getByRole("button", { name: "Download picture" }));
+    expect(mockedSave).toHaveBeenCalledWith(storyFile);
   });
 
   it("draws the picture in the post's language", async () => {
@@ -424,24 +430,40 @@ describe("Story on Instagram, on the web (spec 28, 3.2 item 5 and 3.5)", () => {
     expect(mockedFetchPicture).toHaveBeenLastCalledWith(
       story.replace("lang=en", "lang=is"),
       "puffinride.png",
+      expect.anything(),
     );
   });
 
-  it("downloads the picture where the browser cannot share it, or could not fetch it", async () => {
+  it("saves the picture where the browser cannot share it", async () => {
     sharingPictures.mockReturnValue("download");
     await openDriver(published);
     await fireEvent.press(await screen.findByRole("button", { name: "Download picture" }));
-    expect(mockedDownload).toHaveBeenCalledWith(`${story}&download=1`);
-    expect(mockedFetchPicture).not.toHaveBeenCalled();
+    expect(mockedSave).toHaveBeenCalledWith(storyFile);
     expect(screen.queryByRole("button", { name: "Share picture" })).toBeNull();
   });
 
-  it("downloads it too when it could not be fetched ahead", async () => {
+  it("says when the picture could not be made, and tries again", async () => {
     sharingPictures.mockReturnValue("share");
     mockedFetchPicture.mockResolvedValueOnce(null);
     await openDriver(published);
-    expect(await screen.findByRole("button", { name: "Download picture" })).toBeVisible();
+    expect(await screen.findByText("The picture couldn't be made just now.")).toBeVisible();
     expect(screen.queryByRole("button", { name: "Share picture" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Download picture" })).toBeNull();
+    await fireEvent.press(screen.getByRole("button", { name: "Try again" }));
+    expect(await screen.findByRole("button", { name: "Share picture" })).toBeVisible();
+    expect(mockedFetchPicture).toHaveBeenCalledTimes(2);
+    expect(screen.queryByText("The picture couldn't be made just now.")).toBeNull();
+  });
+
+  it("says when the picture could not be shared, and keeps Download picture", async () => {
+    sharingPictures.mockReturnValue("share");
+    mockedSharePicture.mockImplementation(() => Promise.resolve("failed"));
+    await openDriver(published);
+    await fireEvent.press(await screen.findByRole("button", { name: "Share picture" }));
+    expect(
+      await screen.findByText("The picture couldn't be shared here. Download it instead."),
+    ).toBeVisible();
+    expect(screen.getByRole("button", { name: "Download picture" })).toBeVisible();
   });
 
   it("opens one share window at a time, and keeps Share picture after it", async () => {
@@ -466,7 +488,9 @@ describe("Story on Instagram, on the web (spec 28, 3.2 item 5 and 3.5)", () => {
       close();
     });
     expect(screen.getByRole("button", { name: "Share picture" })).toBeVisible();
-    expect(screen.queryByRole("button", { name: "Download picture" })).toBeNull();
+    expect(
+      screen.queryByText("The picture couldn't be shared here. Download it instead."),
+    ).toBeNull();
   });
 
   it("copies the link for the sticker", async () => {

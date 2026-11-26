@@ -195,7 +195,9 @@ agreements below are still to sign
   link only, after the person taps it: no Facebook script, SDK or pixel,
   and the post's text that PuffinRide writes holds no name, car, price or
   seat count ([spec 28](../specs/2026-11-25-share-a-ride.md), R28.2,
-  R28.3).
+  R28.3). A ride's story picture for Instagram, which Instagram keeps a copy
+  of once posted, shows the same as the link preview and nothing more
+  (spec 28, 3.5).
 - Production data never copied to staging or development.
 - Privacy impact is a checkbox in every PR template.
 - Retention jobs are tested like any other feature.
