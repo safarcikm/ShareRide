@@ -156,6 +156,54 @@ describe("The way used last time first (spec 29, 3.5)", () => {
     ]);
   });
 
+  it("waits for a slow device's answer after Face ID, so no way moves once shown", async () => {
+    mockPreferences.set("last-sign-in", "passkey");
+    let answer: (available: boolean) => void = () => undefined;
+    mockDevice.available.mockReturnValue(
+      new Promise<boolean>((resolve) => {
+        answer = resolve;
+      }),
+    );
+    await openSignIn();
+    expect(screen.queryAllByText(parts)).toEqual([]);
+    answer(true);
+    await settled([
+      "Last used",
+      "Face ID or fingerprint",
+      "Continue with Google",
+      "Continue with Apple",
+      "or with your email",
+      "Send code",
+    ]);
+  });
+
+  it("adds Face ID in its usual place, unmarked, when the device answers too late", async () => {
+    mockPreferences.set("last-sign-in", "passkey");
+    let answer: (available: boolean) => void = () => undefined;
+    mockDevice.available.mockReturnValue(
+      new Promise<boolean>((resolve) => {
+        answer = resolve;
+      }),
+    );
+    await openSignIn();
+    await settled(["Continue with Google", "Continue with Apple", "or with your email", "Send code"]);
+    answer(true);
+    await settled([
+      "Continue with Google",
+      "Continue with Apple",
+      "Face ID or fingerprint",
+      "or with your email",
+      "Send code",
+    ]);
+  });
+
+  it("marks nothing when the email is the only way", async () => {
+    mockPreferences.set("last-sign-in", "email");
+    mockDevice.available.mockReturnValue(Promise.resolve(false));
+    await openSignIn([]);
+    await settled(["Send code"]);
+  });
+
   it("keeps today's order after Face ID on a device without its own lock", async () => {
     mockPreferences.set("last-sign-in", "passkey");
     mockDevice.available.mockReturnValue(Promise.resolve(false));

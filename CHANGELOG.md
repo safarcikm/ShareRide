@@ -1561,7 +1561,9 @@ releases follow [Semantic Versioning](https://semver.org/).
   shows the way this browser signed in with last, marked "Last used":
   Google, Apple or Face ID at the top, or for the email code or a password
   the email form first, then "or" and the buttons. A way the screen no
-  longer offers keeps the usual order with no mark.
+  longer offers keeps the usual order with no mark. The order is decided
+  once, so no button moves after it shows, and a removed Face ID is no
+  longer first.
 - A calmer sign-in screen (spec 29, 3.6): step 1 and its email code show no
   "Step 1 of 3" (the steps start at the phone number), the password's help
   says "Leave it empty and we'll email you a code." in place of the line

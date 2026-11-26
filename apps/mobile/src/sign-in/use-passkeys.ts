@@ -16,13 +16,11 @@ import {
 import { markPasskeyHere, unnamedPasskey } from "./this-browser";
 
 /**
- * Whether to offer Face ID or fingerprint (spec 27, 3.1, item 1): the
- * server has it (`passkeySignIn`) and the browser says this device has its
- * own lock to keep a passkey with. Never a hardware key (ADR 0048).
+ * Whether the browser says this device has its own lock to keep a passkey
+ * with: null until it has answered. Never a hardware key (ADR 0048).
  */
-export function usePasskeysOffered(): boolean {
-  const { passkeySignIn } = useConfig();
-  const [device, setDevice] = useState(false);
+export function useDeviceLock(): boolean | null {
+  const [device, setDevice] = useState<boolean | null>(null);
   useEffect(() => {
     let live = true;
     void devicePasskeys.available().then((available) => {
@@ -32,7 +30,17 @@ export function usePasskeysOffered(): boolean {
       live = false;
     };
   }, []);
-  return passkeySignIn && device;
+  return device;
+}
+
+/**
+ * Whether to offer Face ID or fingerprint (spec 27, 3.1, item 1): the
+ * server has it (`passkeySignIn`) and the device has its own lock.
+ */
+export function usePasskeysOffered(): boolean {
+  const { passkeySignIn } = useConfig();
+  const device = useDeviceLock();
+  return passkeySignIn && device === true;
 }
 
 /** Why the API gave no options to set up Face ID or fingerprint. */

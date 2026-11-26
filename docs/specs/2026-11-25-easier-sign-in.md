@@ -4,8 +4,10 @@
 
 This spec builds on [spec 27](2026-11-23-passwords-and-passkeys.md) and
 amends its 3.1 (the sign-in screen), 3.3 (signing in with Face ID or
-fingerprint) and 3.6 (removing a device), and [spec 16](2026-11-15-one-home-and-simpler-flows.md),
-3.5, item 1 (the steps of signing up). It changes no rule of
+fingerprint) and 3.6 (removing a device), [spec 16](2026-11-15-one-home-and-simpler-flows.md),
+3.5, item 1 (the steps of signing up), [spec 23](2026-11-22-google-analytics-and-search.md),
+3.1 (when the cookie question shows), and [spec 26](2026-11-23-sign-in-without-text-messages.md),
+section 5 (step 1's texts). It changes no rule of
 [ADR 0016](../decisions/0016-own-sign-in-module.md).
 [ADR 0050](../decisions/0050-passkey-saved-by-the-browser-after-a-password.md)
 amends [ADR 0048](../decisions/0048-member-passkeys-on-the-device-only.md)
@@ -166,6 +168,13 @@ Google One Tap, magic links.
    order with no mark.
 4. A new account keeps the way it started with (Google, Apple or the email
    code), once sign-up is done.
+5. The order is decided once, so no button moves under a finger: step 1
+   shows its ways once it has read the kept way, and after Face ID once the
+   device says whether it has its own lock, waiting a quarter of a second
+   at most. Face ID found later is added in its usual place, unmarked.
+   "Last used" shows only when there is more than one way.
+6. When this browser's passkey goes (removed in Settings, or unknown to the
+   site, 3.4), Face ID is no longer kept as the way used last time.
 
 ### 3.6 A calmer sign-in screen
 

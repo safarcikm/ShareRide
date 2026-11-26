@@ -516,14 +516,17 @@ describe("Face ID in the email field (spec 29, 3.1)", () => {
     quietRequests();
     // Removed in another device's Sign-in methods since this browser signed in with it.
     mockPreferences.set("passkey-here", "credential-one");
+    mockPreferences.set("last-sign-in", "passkey");
     await openSignIn((client) => {
       client.answer("/v1/auth/passkey", () => failure(400, "passkey_unknown"));
     });
     await fireEvent.press(await screen.findByRole("button", { name: "Face ID or fingerprint" }));
     expect(await screen.findByText(notSetUp)).toBeVisible();
     expect(mockDevice.forget).toHaveBeenCalledWith("credential-one");
-    // So Face ID can be offered here again (spec 29, 3.2, item 5).
+    // So Face ID can be offered here again (spec 29, 3.2, item 5), and is
+    // no longer first as "Last used" (3.5).
     expect(mockPreferences.get("passkey-here")).toBe("");
+    expect(mockPreferences.get("last-sign-in")).toBe("");
   });
 
   it("keeps the console's passkey with the browser (R29.4)", async () => {
@@ -607,6 +610,7 @@ describe("Face ID or fingerprint in Sign-in methods (spec 27, 3.6)", () => {
 
   it("forgets that this browser has a passkey when its own is removed, not another's", async () => {
     mockPreferences.set("passkey-here", mac.credentialId);
+    mockPreferences.set("last-sign-in", "passkey");
     await openMethods([iPhone, mac]);
     await fireEvent.press(
       await screen.findByRole("button", {
@@ -618,6 +622,7 @@ describe("Face ID or fingerprint in Sign-in methods (spec 27, 3.6)", () => {
       await screen.findByText("Face ID or fingerprint is removed for Safari on iPhone."),
     ).toBeVisible();
     expect(mockPreferences.get("passkey-here")).toBe(mac.credentialId);
+    expect(mockPreferences.get("last-sign-in")).toBe("passkey");
     await fireEvent.press(
       screen.getByRole("button", { name: "Remove Face ID or fingerprint for Chrome on Mac" }),
     );
@@ -628,6 +633,8 @@ describe("Face ID or fingerprint in Sign-in methods (spec 27, 3.6)", () => {
     await waitFor(() => {
       expect(mockPreferences.get("passkey-here")).toBe("");
     });
+    // Step 1 no longer puts Face ID first (spec 29, 3.5).
+    expect(mockPreferences.get("last-sign-in")).toBe("");
   });
 
   it("sets up this device with a fresh sign-in", async () => {

@@ -39,7 +39,7 @@ import { SignUpProgress } from "@/sign-in/sign-up-progress";
 import { firstWay } from "@/sign-in/last-used";
 import { forgetPasskeyHere, lastWay } from "@/sign-in/this-browser";
 import { usePasskeyAutofill } from "@/sign-in/use-passkey-autofill";
-import { usePasskeysOffered } from "@/sign-in/use-passkeys";
+import { useDeviceLock } from "@/sign-in/use-passkeys";
 import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
@@ -82,14 +82,21 @@ function passkeyErrorText(t: Translate, failure: CallFailure): string {
   return errorText(t, failure);
 }
 
+/**
+ * How long step 1 waits, at most, for the device to say whether it has its
+ * own lock, when Face ID was the way used last time (spec 29, 3.5).
+ */
+const orderWaitMs = 250;
+
 /** Google or Apple, Face ID or fingerprint, or the email with a code or its password. */
 function ChooseHowScreen() {
   const { locale, t } = useLanguage();
   const session = useSession();
   const flow = useSignInFlow();
-  const { signInProviders, emailSignIn } = useConfig();
+  const { signInProviders, emailSignIn, passkeySignIn } = useConfig();
   const providerWindow = useProviderWindow();
-  const passkeyOffered = usePasskeysOffered();
+  const deviceLock = useDeviceLock();
+  const passkeyOffered = passkeySignIn && deviceLock === true;
   const [fieldError, setFieldError] = useState<string>();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -105,7 +112,8 @@ function ChooseHowScreen() {
   // Guards against a second tap or a Return key before the first reply.
   const sending = useRef(false);
   const focused = useIsFocused();
-  const [last, setLast] = useState<SignInWay | null>(null);
+  // The way this browser used last time: undefined until read.
+  const [last, setLast] = useState<SignInWay | null | undefined>(undefined);
   useEffect(() => {
     let live = true;
     void lastWay().then((way) => {
@@ -115,6 +123,17 @@ function ChooseHowScreen() {
       live = false;
     };
   }, []);
+  // Whether the device took longer than `orderWaitMs` to say if it has its own lock.
+  const [checkLate, setCheckLate] = useState(false);
+  useEffect(() => {
+    if (deviceLock !== null) return;
+    const timer = setTimeout(() => {
+      setCheckLate(true);
+    }, orderWaitMs);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [deviceLock]);
   // On a laptop the field takes the focus, so its suggestions show at once
   // (spec 29, 3.1, item 5); not on a phone, where the keyboard would cover the rest.
   const wide = useWideScreen();
@@ -282,9 +301,13 @@ function ChooseHowScreen() {
   }
 
   // The way this browser used last time, first and marked (spec 29, 3.5).
-  const first = firstWay(last, {
+  // The order is decided once, so nothing moves under a finger: the ways
+  // wait for the kept way, and after Face ID for the device's answer, at
+  // most `orderWaitMs`. Face ID answered later keeps its usual place.
+  const ordered = last !== undefined && (last !== "passkey" || deviceLock !== null || checkLate);
+  const first = firstWay(last ?? null, {
     providers: signInProviders,
-    passkey: passkeyOffered,
+    passkey: passkeyOffered && !checkLate,
     email: emailSignIn,
   });
   const formFirst = first === "email" || first === "password";
@@ -307,7 +330,7 @@ function ChooseHowScreen() {
   const buttons =
     signInProviders.length > 0 || passkeyOffered ? (
       <View style={styles.providers}>
-        {formFirst ? <OrWithEmail label={t("auth.or")} /> : null}
+        {formFirst ? <OrDivider label={t("auth.or")} /> : null}
         {first === "passkey" ? (
           <>
             {lastUsed}
@@ -322,21 +345,22 @@ function ChooseHowScreen() {
           onPress={(provider) => void continueWith(provider)}
         />
         {first === "passkey" ? null : passkeyButton}
-        {emailSignIn && !formFirst ? <OrWithEmail label={t("auth.orEmail")} /> : null}
+        {emailSignIn && !formFirst ? <OrDivider label={t("auth.orEmail")} /> : null}
       </View>
     ) : null;
 
-  return (
-    <Screen>
-      {/* Who is new is not known yet: the steps start at the number (spec 29, 3.6). */}
-      <SignUpProgress />
-      <KeptRideCard kept={flow.keptRide} />
-      <Title>{t("signIn.title")}</Title>
-      <PausedBanner part="signups" />
+  // For members who joined with their number: after every way in, as it is about both.
+  const before = emailSignIn ? (
+    <View style={styles.form}>
+      <Body>{t("auth.email.before")}</Body>
+    </View>
+  ) : null;
+  const ways = (
+    <>
       {formFirst ? null : buttons}
       {emailSignIn ? (
         <View style={styles.form}>
-          {formFirst ? lastUsed : null}
+          {formFirst && buttons !== null ? lastUsed : null}
           <TextField
             label={t("auth.email.label")}
             value={flow.email}
@@ -386,7 +410,6 @@ function ChooseHowScreen() {
               onPress={() => void send(true)}
             />
           </View>
-          <Body>{t("auth.email.before")}</Body>
         </View>
       ) : (
         <View style={styles.form}>
@@ -395,6 +418,18 @@ function ChooseHowScreen() {
         </View>
       )}
       {formFirst ? buttons : null}
+      {before}
+    </>
+  );
+
+  return (
+    <Screen>
+      {/* Who is new is not known yet: the steps start at the number (spec 29, 3.6). */}
+      <SignUpProgress />
+      <KeptRideCard kept={flow.keptRide} />
+      <Title>{t("signIn.title")}</Title>
+      <PausedBanner part="signups" />
+      {ordered ? ways : null}
     </Screen>
   );
 }
@@ -488,8 +523,8 @@ function PhoneStepScreen({ pending }: { readonly pending: PhoneNeeded }) {
   );
 }
 
-/** "or with your email", between two lines. */
-function OrWithEmail({ label }: { readonly label: string }) {
+/** "or with your email", or "or" after the email form, between two lines. */
+function OrDivider({ label }: { readonly label: string }) {
   const palette = usePalette();
   const line = [styles.line, { backgroundColor: palette.border }];
   return (
