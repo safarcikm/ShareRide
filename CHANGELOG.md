@@ -1603,6 +1603,11 @@ releases follow [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- CI skips its code jobs (bundles, unit, integration and web tests, the API
+  image) for a change to docs, marketing and other files that no code reads,
+  and on `main` when the pull request already tested exactly the same files
+  (`.github/scripts/ci-changes.sh`). The format check and the dependency
+  audit always run.
 - A text message no longer signs in (spec 26): the phone step needs a
   waiting email, Google or Apple sign-in (`pendingSignIn`), at most 3 texts
   go for one, and all sign-in and confirm texts together stop at 300 an

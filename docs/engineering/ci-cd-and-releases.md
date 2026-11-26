@@ -20,11 +20,44 @@ Runs on GitHub Actions for every pull request and every push to `main`.
 | Dependency review and CodeQL | | Needs a paid GitHub security plan on a private repository; `pnpm audit` for high and critical advisories runs instead |
 | Secret scanning | GitHub setting | GitHub setting |
 
-The code checks run in `.github/workflows/ci.yml` and are added job by job
+The code checks run in `.github/workflows/ci.yml`, first added job by job
 in milestone 1 ([plan](../plans/2026-11-13-milestone-1-phone-sign-in.md)).
-Turborepo runs only the tasks affected by a change and caches results.
-Third-party actions are pinned to a full commit SHA, with the version in a
-comment, and kept current by Dependabot.
+Turborepo runs the lint, type check and unit tests of every package; CI
+keeps no Turborepo cache between runs. Third-party actions are pinned to a
+full commit SHA, with the version in a comment, and kept current by
+Dependabot.
+
+### When CI skips the code jobs
+
+GitHub's Linux machines cost nothing for this public repository, but a full
+run takes about 34 machine minutes on three machines, half of it the web
+tests. So CI does not repeat work it has done. Its first job, "What changed"
+(`.github/scripts/ci-changes.sh`, whose rules `ci-changes.test.sh` checks in
+the same job), skips the bundles, the unit, integration and web tests and
+the API image when:
+
+- The change touches only files that no app, API, console or test reads:
+  `docs/`, `marketing/`, `.claude/`, the Markdown files at the root,
+  `.markdownlint-cli2.jsonc`, the docs, release and road file workflows,
+  Dependabot's settings, CODEOWNERS and the issue and pull request
+  templates. Markdown inside `apps/` and `packages/` is code: the API serves
+  the legal texts. A pull request is compared with the `main` it merges
+  into, so a docs pull request does not test `main`'s code again; `main`'s
+  own runs do. A push to `main` is compared with the newest `main` commit
+  whose CI passed, so code that came before a docs commit never goes
+  untested.
+- A push to `main` has exactly the files (the same git tree) that a pull
+  request's run into `main` tested with every job passing. Each such run
+  keeps the tree it tests as a small artifact, `main-tree-<tree>`, for 7
+  days; runs from forks do not count. When another pull request merged in
+  between, the trees differ and everything runs: that run is what catches
+  two pull requests that clash.
+
+The format check and the dependency audit always run. A skipped job counts
+as passed for branch protection, for Render's deploy after CI and for
+"Release to production". When the script cannot tell (an API error, missing
+history), or the job itself fails, everything runs. A new folder that no
+code reads goes in the list in `ci-changes.sh`, with a test.
 
 ## Branch protection for `main`
 
