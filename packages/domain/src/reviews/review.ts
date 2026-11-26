@@ -55,6 +55,15 @@ export function reviewClosesAt(completedAt: Date, settings: ReviewSettings): Dat
 }
 
 /**
+ * At `now`, reviews can still be written of bookings completed after this
+ * moment, and not of one completed at it (R8.8): for finding them, as
+ * `checkReview` decides each.
+ */
+export function reviewsOpenSince(now: Date, settings: ReviewSettings): Date {
+  return new Date(now.getTime() - settings.reviewWindowDays * dayMs);
+}
+
+/**
  * When to remind people to review a booking completed then (3.7.6), or null
  * when that moment has already passed: a ride the operator found happened
  * days later gets "How was your trip?" once, not twice in a row.

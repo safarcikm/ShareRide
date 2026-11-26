@@ -10,7 +10,7 @@ import {
 import { payByShortText } from "@/booking/texts";
 import { dayOf, isoDay } from "@/lib/days";
 import { firstNameOf } from "@/people/texts";
-import type { Ride } from "./rides";
+import type { Rating, Ride } from "./rides";
 
 // What a ride needs from me, in words (spec 31, 3.3 item 3): short, for the
 // tag in a ticket's foot in My rides (3.10), and as the lines and the
@@ -69,6 +69,12 @@ export function needTagText(t: Translate, ride: Ride, need: Need, at: Date): str
     case "tripDay":
       return leavesText(t, need.by, at);
   }
+}
+
+/** "Rate the driver", "Rate your passenger" or "Rate your passengers" (spec 31, 3.10). */
+export function rateTagText(t: Translate, rating: Rating): string {
+  if (rating.whom === "driver") return t("review.rateDriver");
+  return t(rating.count === 1 ? "review.ratePassenger" : "review.ratePassengers");
 }
 
 /** Without the full stop an Icelandic date ends with: the text it goes into has its own. */

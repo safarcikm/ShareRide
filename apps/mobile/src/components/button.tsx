@@ -1,3 +1,4 @@
+import type { LucideIcon } from "lucide-react-native";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { useHover } from "@/theme/hover";
 import { chunky } from "@/theme/pressable";
@@ -12,6 +13,7 @@ import {
 } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 import { linkProps, type AppPath } from "@/navigation/link-props";
+import { Icon } from "./icon";
 
 /**
  * `danger` is the main button that takes something away, such as "Cancel
@@ -37,6 +39,8 @@ type ButtonProps = ButtonLook &
 
 interface ButtonLook {
   readonly label: string;
+  /** Before the label, in its colour: the plus of "Offer a ride" (spec 31, 3.10). */
+  readonly icon?: LucideIcon | undefined;
   /** Read by screen readers instead of the label, when the label is not enough. */
   readonly accessibilityLabel?: string;
   readonly variant?: Variant;
@@ -107,6 +111,7 @@ function look(variant: Variant, palette: Palette, disabled: boolean, hovered: bo
 
 export function Button({
   label,
+  icon,
   onPress,
   href,
   accessibilityLabel,
@@ -159,6 +164,9 @@ export function Button({
           ]}
         >
           {busy ? <ActivityIndicator size="small" color={labelColor} /> : null}
+          {icon === undefined || busy ? null : (
+            <Icon testID="button-icon" icon={icon} color={labelColor} />
+          )}
           <Text
             style={[
               variant === "text" ? typography.label : typography.button,

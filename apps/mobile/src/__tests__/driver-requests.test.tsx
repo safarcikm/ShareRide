@@ -130,19 +130,6 @@ function pressedIn(testID: string): string[] {
     .map((row) => (row.props as { accessibilityLabel: string }).accessibilityLabel);
 }
 
-describe("Requests in My trips (spec 5, 3.3)", () => {
-  it("shows how many requests wait on a published trip, and opens the trip", async () => {
-    await openAsDriver("/drive/trips");
-    const card = await screen.findByRole("button", {
-      name: "BSÍ bus terminal → Hof, Akureyri, Sunday 15 November at 09:00, 3 seats, 1 request",
-    });
-    expect(screen.getByText("1 request")).toBeVisible();
-    await fireEvent.press(card);
-    expect(await screen.findByRole("header", { name: "Needs you" })).toBeVisible();
-    expect(screen).toHavePathname(tripPage);
-  });
-});
-
 describe("The driver's ride (spec 31, 3.12; spec 5, 3.3 and 3.7)", () => {
   it("is headed by where the ride goes and what it needs, with the ride as its ticket", async () => {
     await openAsDriver(tripPage);

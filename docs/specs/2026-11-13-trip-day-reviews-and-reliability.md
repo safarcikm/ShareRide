@@ -191,7 +191,10 @@ complain further.
    the left, with the day over it and the part under it; "Send review" is
    its main button, in the bar, with "Choose a rating from 1 to 5 stars."
    over it when none is chosen; and once sent, or when the ride cannot be
-   reviewed, the way back is the main button.
+   reviewed, the way back is the main button. Under Past in My rides a
+   ride that is done says whose rating is still to give, on a seat and on
+   a ride I drove; its ticket opens the booking or the ride, which asks
+   for the rating (spec 31, 3.10).
 
 ### 3.8 Reliability (G3)
 

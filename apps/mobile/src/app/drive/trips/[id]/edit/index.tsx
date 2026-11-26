@@ -1,6 +1,6 @@
 import { listVehiclesRoute, myTripRoute } from "@shareride/contracts";
 import { routePrice } from "@shareride/domain";
-import { capitalised, formatClock, formatDay, formatMoney, inOneLine } from "@shareride/i18n";
+import { formatMoney, inOneLine } from "@shareride/i18n";
 import { useLocalSearchParams } from "expo-router";
 import {
   Armchair,
@@ -32,7 +32,7 @@ import { useLanguage } from "@/i18n/language";
 import { now } from "@/lib/clock";
 import { useLoadedOnFocus } from "@/lib/use-loaded";
 import { preferenceNeeds } from "@/trip-details/trip-parts";
-import { bookingModeKeys, levelText } from "@/trips/texts";
+import { bookingModeKeys, dayAtTime, levelText } from "@/trips/texts";
 
 /**
  * Edit trip (spec 6, 3.2; screen 3): what the published trip holds, one
@@ -92,13 +92,7 @@ export default function EditTripScreen() {
         <Row
           icon={Clock}
           title={t("trip.editTime")}
-          value={capitalised(
-            t("trip.mine.when", {
-              day: formatDay(departure, locale),
-              time: formatClock(departure),
-            }),
-            locale,
-          )}
+          value={dayAtTime(t, locale, departure)}
           href={part("time")}
         />
         {/* What is set, over the two rows that change it: each stop with its time. */}

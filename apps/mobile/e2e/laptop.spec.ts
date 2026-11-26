@@ -867,6 +867,19 @@ test.describe("My rides, a booking and Profile", () => {
       const cell = await box(rides.nth(0));
       const card = await box(rides.nth(0).getByRole("button"));
       expect(card.height).toBeCloseTo(cell.height, 0);
+      // "Offer a ride" stands on the title's line, at the right edge of the
+      // page, where the rides' grid ends (spec 31, 3.10, item 1).
+      const offer = await box(
+        driver
+          .getByTestId("screen-head-action")
+          .filter(shown)
+          .getByRole("button", { name: "Offer a ride" }),
+      );
+      expect(offer.x).toBeGreaterThan(title.x + title.width);
+      expect(offer.y + offer.height / 2).toBeGreaterThan(title.y);
+      expect(offer.y + offer.height / 2).toBeLessThan(title.y + title.height);
+      const grid = await box(driver.getByTestId("grid").filter(shown));
+      expect(offer.x + offer.width).toBeCloseTo(grid.x + grid.width, 0);
       await expectNoSidewaysScroll(driver);
     }
     await driver.setViewportSize(laptop(1280));

@@ -44,6 +44,12 @@ confirm. Drivers repost a regular trip or its return in seconds.
 
 ### 3.1 My trips (driver)
 
+Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.10) there is no My
+trips page: the rides a driver offers stand in My rides beside the seats
+they booked, each as a ticket that opens the ride, where the seat view
+and what item 3 lists are; drafts are listed on Offer. `/drive/trips`
+leads to My rides.
+
 1. **Upcoming:** drafts and published trips, soonest first, each with date,
    route, seats booked and free on each part, requests waiting, and expected
    earnings. **Past:** completed and cancelled trips, with payouts (spec 13).

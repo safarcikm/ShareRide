@@ -26,7 +26,7 @@ export function StepScreen({
   step,
   title,
   footer,
-  back = "/drive/trips",
+  back = "/offer",
   onOffer = false,
   soFar,
   map,

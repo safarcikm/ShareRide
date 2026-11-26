@@ -86,8 +86,9 @@ is added (Martin asked, 2026-11-25).
 ### 3.1 The share icon on ride cards
 
 1. **Where:** every ride found (`ResultTicket` since spec 31, `ResultCard`
-   before it): search results, the front page's "Leaving soon", All rides. And the driver's cards in My trips,
-   for a published trip that has not left (status `published`).
+   before it): search results, the front page's "Leaving soon", All
+   rides. And the driver's cards in My trips, for a published trip that
+   has not left (status `published`), until My trips went (item 5).
 2. **How it looks:** a quiet icon button, drawn 36 round inside a 44
    button (the web has no `hitSlop`), the Share icon in `textMuted`, no
    fill or edge; `primarySoft` behind it under the pointer or pressed. It
@@ -109,6 +110,9 @@ is added (Martin asked, 2026-11-25).
    by hand under it, as the trip page does.
 5. **On a driver's card in My trips it opens Share this ride** (3.2) for
    that trip, since a driver wants the post text and the picture too.
+   Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.10) My trips is
+   gone, and a ride I drive is a ticket in My rides with no button of its
+   own: it is shared from its page (item 6).
 6. The trip page of a driver's own trip (spec 5's driver's trip) gets the
    same icon in its head, beside the trip's name, while the trip can be
    changed (before the planned departure). It is named "Share this ride"
@@ -124,8 +128,8 @@ Put to Martin as "Share your ride"; named "Share this ride" in the app, since
 
 A panel, on the **Your trip is published** screen (spec 3, screen 10) right
 after the ride's card, and on a screen of its own, **Share this ride**
-(`/drive/trips/{id}/share`), opened from My trips and the driver's trip
-page. On the published screen it replaces the "Share the trip" button.
+(`/drive/trips/{id}/share`), opened from My trips (until spec 31) and
+the driver's trip page. On the published screen it replaces the "Share the trip" button.
 
 It shares the whole trip: the link to the trip page from the first stop to
 the last, so passengers choose their part there.
@@ -327,7 +331,6 @@ from `pnpm --filter @shareride/api story-pictures`):
 | A result's link copied, on a laptop | ![The icon turned into a tick](images/share-a-ride/link-copied-laptop.png) |
 | Your trip is published, on a phone (no share window in that browser) | ![Share this ride after publishing: Share on Facebook, the post's text, Copy text, Follow PuffinRide](images/share-a-ride/published-phone.png) |
 | Share this ride on a laptop, in Icelandic | ![The screen of its own, with the post's text in Icelandic](images/share-a-ride/share-screen-laptop-is.png) |
-| A published trip in My trips, on a phone | ![A trip card in My trips with the share icon in its corner](images/share-a-ride/my-trips-card-phone.png) |
 | The driver's ride on a phone (its ticket since spec 31) | ![The ride's name over its ticket, which has the share icon in its corner](images/share-a-ride/trip-page-head-phone.png) |
 | The driver's ride on a laptop | ![The ride's name, and beside the page its ticket with the share icon in its corner](images/share-a-ride/trip-page-head-laptop.png) |
 | Story on Instagram, in a browser that cannot share files | ![The story picture small, Download picture and Copy link](images/share-a-ride/story-section-phone.png) |

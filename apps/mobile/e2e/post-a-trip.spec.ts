@@ -71,7 +71,9 @@ interface Journey {
   readonly downloadPicture: string;
   readonly addEmailPrompt: string;
   readonly seeTrips: string;
-  readonly publishedTrips: string;
+  /** My rides' title, and what the name of a ride I drive starts with there. */
+  readonly myRides: string;
+  readonly myRide: RegExp;
 }
 
 const inEnglish: Journey = {
@@ -125,7 +127,8 @@ const inEnglish: Journey = {
   post: /^Offering a ride: .+\n.+\n(Stops on the way: .+\n)?(Book|Ask for) a seat on PuffinRide: http:\/\/localhost:\d+\/trips\/[0-9a-f-]+\?from=0&to=\d+$/u,
   addEmailPrompt: "Add an email so we can reach you if your ride changes.",
   seeTrips: "See my rides",
-  publishedTrips: "Published",
+  myRides: "My rides",
+  myRide: /^You drive, /,
 };
 
 const inIcelandic: Journey = {
@@ -184,7 +187,8 @@ const inIcelandic: Journey = {
   post: /^Býð far: .+\n.+\n(Mótsstaðir á leiðinni: .+\n)?(Bókaðu|Óskaðu eftir) sæti á PuffinRide: http:\/\/localhost:\d+\/trips\/[0-9a-f-]+\?from=0&to=\d+$/u,
   addEmailPrompt: "Bættu við netfangi svo við getum látið þig vita ef ferðin breytist.",
   seeTrips: "Sjá ferðirnar mínar",
-  publishedTrips: "Birtar",
+  myRides: "Ferðirnar mínar",
+  myRide: /^Þú ekur, /,
 };
 
 async function choose(page: Page, field: string, label: string, typed: string, card: RegExp) {
@@ -282,7 +286,12 @@ async function postTrip(page: Page, journey: Journey) {
   // for one (spec 7, 3.6.2; spec 26).
   await expect(page.getByText(journey.addEmailPrompt)).toHaveCount(0);
   await page.getByRole("button", { name: journey.seeTrips }).click();
-  await expect(page.getByRole("heading", { name: journey.publishedTrips })).toBeVisible();
+  // My rides, with the ride just published as a ticket (spec 31, 3.10).
+  await expect(page).toHaveURL("/my-rides");
+  await expect(page.getByRole("heading", { name: journey.myRides, exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: journey.myRide }).filter({ visible: true }),
+  ).toBeVisible();
 }
 
 test.describe("posting a ride on the web, in English", () => {

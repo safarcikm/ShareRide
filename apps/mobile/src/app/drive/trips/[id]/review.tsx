@@ -154,7 +154,7 @@ function Review({
     setBusy(true);
     const result = await session.call(deleteTripRoute, { params: { id: trip.id } });
     setBusy(false);
-    if (result.ok) leaveSteps("/drive/trips");
+    if (result.ok) leaveSteps();
     else setFailure(errorText(t, result));
   };
 
@@ -386,12 +386,14 @@ function StillMissing({ missing }: { readonly missing: readonly Missing[] }) {
 }
 
 /**
- * Opens `next` on top of Offer, closing the posting steps, so
- * Back never leads into the steps of a trip that is published or deleted.
+ * Closes the posting steps down to Offer, and opens `next` on top of it,
+ * so Back never leads into the steps of a trip that is published or
+ * deleted. A deleted draft has nothing to open: Offer lists the drafts
+ * that are left (spec 31, 3.10, item 4).
  */
-function leaveSteps(next: Href) {
+function leaveSteps(next?: Href) {
   router.dismissTo("/offer");
-  router.push(next);
+  if (next !== undefined) router.push(next);
 }
 
 /** A part of the summary: its title, what was chosen, and Edit, which opens its step. */

@@ -5,7 +5,7 @@ import { apiUrl } from "../playwright.config";
 import { english, signUp } from "./support/account";
 import { confirmedBooking, requestSeat, secondPage } from "./support/cancelling";
 import { passengerRow } from "./support/driver-ride";
-import { postTripToSelfoss } from "./support/trips";
+import { chooseTime, postTripToSelfoss, tomorrow } from "./support/trips";
 
 // Pictures of screens for the specs (docs/specs/images), kept in git with
 // the script that makes them. Not a check: skipped unless PICTURES_DIR names
@@ -117,20 +117,10 @@ test.describe("pictures", () => {
         path: join(folder, "story-section-phone.png"),
         clip: { x: 0, y: top.y - 16, width: 412, height: end.y + end.height - top.y + 32 },
       });
-      // The icon in the corner of the ticket on the driver's ride (spec 31,
-      // 3.12), and in the corner of the trip in My trips.
+      // The icon in the corner of the ticket on the driver's ride (spec 31, 3.12).
       await page.setViewportSize({ width: 412, height: 839 });
       await page.goto(`/drive/trips/${tripId}`);
       await shootTopOfRide(page, join(folder, "trip-page-head-phone.png"), 412);
-      await page.goto("/drive/trips");
-      const mine = page.getByRole("button", { name: /^Mjódd bus terminal → N1 Selfoss, / });
-      await expect(mine).toBeVisible();
-      await page.waitForTimeout(500);
-      await page
-        .getByTestId("card-with-corner")
-        .filter({ visible: true })
-        .first()
-        .screenshot({ path: join(folder, "my-trips-card-phone.png") });
       return;
     }
     // The driver's ride on a laptop: the icon in the corner of the ticket beside the page.
@@ -623,5 +613,119 @@ test.describe("pictures", () => {
     await expect(page.getByLabel("Text for your post").filter(visible)).toBeVisible();
     await shoot("share-ride", "light");
     await dora.close();
+  });
+
+  // My rides as built (spec 31, 3.10), and the drafts on Offer (3.11, item
+  // 6). Bára drove Dóra the day before yesterday, offers two rides for
+  // tomorrow, one of which Einar asks a seat on, and has started two more
+  // without publishing them.
+  test("My rides and the drafts on Offer (spec 31)", async ({ page, browser }, info) => {
+    test.setTimeout(300_000);
+    const folder = join(root ?? "", "one-ride-one-ticket", "built");
+    mkdirSync(folder, { recursive: true });
+    const wide = info.project.name === "desktop";
+    const window = wide ? { width: 1280, height: 720 } : (page.viewportSize() ?? null);
+    if (window === null) throw new Error("The page has no size");
+    await page.setViewportSize(window);
+    const dora = await secondPage(browser, info);
+    const einar = await secondPage(browser, info);
+
+    // The ride that is done: each can still rate the other.
+    const done = await confirmedBooking(page, dora.page);
+    const moved = await page.request.post(`${apiUrl}/e2e/trips/${done.tripId}/move`, {
+      data: { minutes: -36 * 60 },
+    });
+    expect(moved.status()).toBe(204);
+    // Tomorrow's two: Einar asks for a seat on the first.
+    const asked = await postTripToSelfoss(page, "17:45", [], true);
+    await postTripToSelfoss(page, "20:15", [], true);
+    await requestSeat(einar.page, "Einar", asked);
+
+    const visible = { visible: true };
+    const kind = wide ? "laptop" : "phone";
+    const shoot = async (name: string, scheme: "light" | "dark") => {
+      await showWhole(page, window.width);
+      await page.screenshot({
+        path: join(folder, `${name}-${kind}-${scheme}.png`),
+        scale: wide ? "css" : "device",
+      });
+      await page.setViewportSize(window);
+    };
+    const tickets = (start: string) =>
+      page.getByRole("button", { name: new RegExp(`^${start}, `) }).filter(visible);
+
+    await page.goto("/my-rides");
+    await expect(page.getByRole("heading", { name: "Needs you" }).filter(visible)).toBeVisible();
+    await expect(tickets("You drive")).toHaveCount(2);
+    await shoot("my-rides", "light");
+    if (wide) {
+      await dora.close();
+      await einar.close();
+      return;
+    }
+
+    // Under Past, the ride that is done says whose rating is still to give.
+    await page.goto("/my-rides?when=past");
+    await expect(
+      page.getByText("Rate your passenger", { exact: true }).filter(visible),
+    ).toBeVisible();
+    await shoot("my-rides-past", "light");
+
+    // In Icelandic, at night.
+    await page.emulateMedia({ colorScheme: "dark" });
+    await page.goto("/");
+    await page.getByRole("button", { name: "Change the language to Icelandic" }).click();
+    await expect(page.getByRole("button", { name: "Skipta yfir í ensku" })).toBeVisible();
+    await page.goto("/my-rides");
+    await expect(tickets("Þú ekur")).toHaveCount(2);
+    await shoot("my-rides", "dark");
+    await page.emulateMedia({ colorScheme: "light" });
+    await page.goto("/");
+    await page.getByRole("button", { name: "Skipta yfir í ensku" }).click();
+    await expect(
+      page.getByRole("button", { name: "Change the language to Icelandic" }),
+    ).toBeVisible();
+
+    // Four rides started and left, the one changed last first: three
+    // show, one of them with its day and time, and "Show all drafts"
+    // brings the fourth.
+    type Point = readonly [typed: string, card: RegExp];
+    const mjodd: Point = ["mjódd", /^Mjódd bus terminal,/];
+    const start = async (from: Point, to: Point) => {
+      await page.goto("/offer");
+      const choose = async (end: "From" | "To", [typed, name]: Point) => {
+        await page.getByRole("button", { name: new RegExp(`^${end}: `) }).click();
+        await page.getByLabel(end, { exact: true }).fill(typed);
+        await page.getByRole("button", { name }).click();
+      };
+      await choose("From", from);
+      await choose("To", to);
+      await page.getByRole("button", { name: "Choose date and time" }).click();
+      await expect(page.getByRole("heading", { name: "When are you leaving?" })).toBeVisible();
+    };
+    await start(["selfo", /^N1 Selfoss,/], ["hella", /^N1 Hella,/]);
+    await start(["bs", /^BSÍ bus terminal,/], ["borgar", /^N1 Borgarnes,/]);
+    await start(mjodd, ["hverag", /^N1 Hveragerði,/]);
+    const day = tomorrow("en");
+    if (day.nextMonth) await page.getByRole("button", { name: "Next month" }).click();
+    await page.getByRole("radio", { name: day.name }).click();
+    await chooseTime(page, "Leaving Mjódd bus terminal at", "08:30");
+    await page.getByRole("button", { name: "Choose seats" }).click();
+    await expect(page.getByRole("button", { name: "Set your price" })).toBeVisible();
+    await start(mjodd, ["selfo", /^N1 Selfoss,/]);
+    await page.goto("/offer");
+    const drafts = page.getByTestId("draft-rows").filter(visible);
+    await expect(drafts.getByRole("link")).toHaveCount(3);
+    await expect(drafts.getByRole("button", { name: "Show all drafts" })).toBeVisible();
+    await page.waitForTimeout(500);
+    const rows = await drafts.boundingBox();
+    if (rows === null) throw new Error("Offer has no drafts");
+    // The top of Offer: the drafts, and the form's first fields under them.
+    await page.screenshot({
+      path: join(folder, "offer-drafts-phone-light.png"),
+      clip: { x: 0, y: 0, width: window.width, height: Math.ceil(rows.y + rows.height) + 180 },
+    });
+    await dora.close();
+    await einar.close();
   });
 });

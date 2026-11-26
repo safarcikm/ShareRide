@@ -669,6 +669,7 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       ...features,
       settings,
       tripDaySettings,
+      reviewSettings: defaultReviewSettings,
       driving,
     });
     registerDraftRoutes(app, trips, requireAuth, paused);

@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react-native";
+import { Plus } from "lucide-react-native";
 import { StyleSheet } from "react-native";
 import { colors } from "@/theme/tokens";
 import { Button } from "./button";
@@ -45,6 +46,18 @@ describe("Button", () => {
       );
     },
   );
+
+  it("shows an icon before the label, in the label's colour and unheard (spec 31, 3.10)", async () => {
+    await render(
+      <Button label="Offer a ride" variant="secondary" icon={Plus} onPress={jest.fn()} />,
+    );
+    const icon = screen.getByTestId("button-icon", { includeHiddenElements: true });
+    expect(icon).toHaveProp("aria-hidden", true);
+    // The first thing on the button's face, before its label.
+    expect(face().children[0]).toBe(icon);
+    // Named by its label alone.
+    expect(screen.getByRole("button", { name: "Offer a ride" })).toBeVisible();
+  });
 
   it("outlines a secondary button in the control colour", async () => {
     await render(<Button label="Íslenska" variant="secondary" onPress={jest.fn()} />);

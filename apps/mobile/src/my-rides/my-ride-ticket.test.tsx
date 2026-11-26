@@ -9,6 +9,7 @@ import {
   paidBooking,
   unpaidBooking,
 } from "@/testing/bookings";
+import { completedBooking, reviewsCloseAt } from "@/testing/reviews";
 import { onTheDay } from "@/testing/trip-day";
 import { colors, peopleColours } from "@/theme/tokens";
 import { MyRideTicket } from "./my-ride-ticket";
@@ -44,10 +45,13 @@ const quiet: MyTrip = {
   openRequests: 0,
   requestsCloseAt: null,
   firstRequest: null,
+  toRate: null,
 };
 
 const foot = () => within(screen.getByTestId("ticket-foot"));
 const edge = () => screen.getByTestId("card");
+/** The day after the north trip, with most of its 14 days to review left. */
+const dayAfter = new Date("2026-11-16T12:00:00Z");
 
 describe("a seat of mine", () => {
   it("is a ticket for my part: Passenger beside the day, the price for my seats, the driver and the state", async () => {
@@ -118,6 +122,22 @@ describe("a seat of mine", () => {
     expect(edge()).toHaveStyle({ borderBottomColor: colors.light.primary });
   });
 
+  it("says in yellow that the driver can still be rated, where its state stood (spec 31, 3.10)", async () => {
+    const { rerender } = await inApp(seat(completedBooking(), dayAfter));
+    expect(foot().getByText("Rate the driver")).toHaveStyle({ color: colors.light.warning });
+    expect(foot().queryByText("Completed")).toBeNull();
+    expect(foot().getByText("Anna")).toBeVisible();
+    expect(String(screen.getByRole("button").props.accessibilityLabel)).toMatch(
+      /^Passenger, .*, Anna, Rate the driver$/,
+    );
+    // Once its 14 days have passed, it is done and says so.
+    await rerender(
+      <LanguageProvider>{seat(completedBooking(), new Date(reviewsCloseAt))}</LanguageProvider>,
+    );
+    expect(foot().getByText("Completed")).toBeVisible();
+    expect(foot().queryByText("Rate the driver")).toBeNull();
+  });
+
   it("says Free where the price stands, and counts the seats under it", async () => {
     await inApp(seat(northBooking({ seats: 2, total: { amount: 0, currency: "ISK" } })));
     const price = within(screen.getByTestId("ticket-price"));
@@ -163,6 +183,41 @@ describe("a ride I drive", () => {
     expect(end.getByText("Answer Gunna's request")).toHaveStyle({
       color: colors.light.warning,
     });
+  });
+
+  it("says in yellow that a passenger, or passengers, can still be rated (spec 31, 3.10)", async () => {
+    const done: MyTrip = { ...quiet, status: "completed" };
+    const one = "0190a1d6-0000-7000-8000-0000000000e1";
+    const other = "0190a1d6-0000-7000-8000-0000000000e2";
+    const { rerender } = await inApp(
+      drive({ ...done, toRate: { bookingIds: [one], closesAt: reviewsCloseAt } }, dayAfter),
+    );
+    const end = () => within(screen.getByTestId("ticket-foot-end"));
+    expect(end().getByText("Rate your passenger")).toHaveStyle({ color: colors.light.warning });
+    expect(foot().getByText("1 of 3 seats taken")).toBeVisible();
+    expect(String(screen.getByRole("button").props.accessibilityLabel)).toMatch(
+      /^You drive, .*, 1 of 3 seats taken, Rate your passenger$/,
+    );
+    await rerender(
+      <LanguageProvider>
+        {drive(
+          { ...done, toRate: { bookingIds: [one, other], closesAt: reviewsCloseAt } },
+          dayAfter,
+        )}
+      </LanguageProvider>,
+    );
+    expect(end().getByText("Rate your passengers")).toBeVisible();
+    // Once the time to rate has passed, the foot holds the seats alone.
+    await rerender(
+      <LanguageProvider>
+        {drive(
+          { ...done, toRate: { bookingIds: [one], closesAt: reviewsCloseAt } },
+          new Date(reviewsCloseAt),
+        )}
+      </LanguageProvider>,
+    );
+    expect(screen.queryByText(/^Rate /)).toBeNull();
+    expect(screen.queryByTestId("ticket-foot-end")).toBeNull();
   });
 
   it("says one stop, and only how long it takes with none between the ends", async () => {

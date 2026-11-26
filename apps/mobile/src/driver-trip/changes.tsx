@@ -13,7 +13,7 @@ import { Screen } from "@/components/screen";
 import { ScreenHead } from "@/components/screen-head";
 import { useLanguage } from "@/i18n/language";
 import { usePalette } from "@/theme/use-palette";
-import { problemText, routeText, stopNameAt } from "@/trips/texts";
+import { dayAtTime, problemText, routeText, stopNameAt } from "@/trips/texts";
 
 /** The driver's trip page; `params` such as what just changed. */
 export const tripHref = (id: string, params: Readonly<Record<string, string>> = {}) => ({
@@ -49,16 +49,7 @@ export function TripHead({
 }) {
   const { locale, t } = useLanguage();
   const departure = trip.departsAt === null ? null : new Date(trip.departsAt);
-  const when =
-    departure === null
-      ? ""
-      : `${capitalised(
-          t("trip.mine.when", {
-            day: formatDay(departure, locale),
-            time: formatClock(departure),
-          }),
-          locale,
-        )} · `;
+  const when = departure === null ? "" : `${dayAtTime(t, locale, departure)} · `;
   return (
     <ScreenHead
       title={title}

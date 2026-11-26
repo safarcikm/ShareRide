@@ -283,7 +283,11 @@ Find replaces both the front page and My profile as the place the app opens.
    more than one, the newest shows, with "See all drafts". The API keeps no
    step, so a draft with no departure time opens at step 2 and any other at
    step 5, where every step has Edit. If the drafts cannot be loaded, the
-   form opens without the card.
+   form opens without the card. Since
+   [spec 31](2026-11-26-one-ride-one-ticket.md) (3.11, item 6) every
+   draft is a row in one card there, under the heading "Drafts", the one
+   changed last first; more than three fold under "Show all drafts", and
+   "See all drafts" with its page is gone.
 3. **Step 2:** the times at the stops are worked out for you and folded: "Times
    at the 3 stops", a line with each stop and its time, and Change. Change
    unfolds the stop times to change them. A problem with a stop's time
@@ -611,7 +615,7 @@ depend on gender; the Icelandic review can change it.
 | 3 | Clear X in text fields | Small, inside the field (Martin, 2026-11-15) |
 | 4 | Signed out, what do My rides, Offer and Profile show? | A short page with Sign in, so the menu never changes (3.1, item 3) (Martin, 2026-11-15) |
 | 5 | Is the tab bar on screens opened on top? | No on phones (back button instead); the top bar is on every screen on wide screens (3.1, item 2) (Martin, 2026-11-15) |
-| 6 | Where do drafts live? | On Offer, as "Continue your draft" (3.6, item 2) (Martin, 2026-11-15) |
+| 6 | Where do drafts live? | On Offer, as "Continue your draft" (3.6, item 2) (Martin, 2026-11-15). Since spec 31 all of them are listed there, as rows |
 | 7 | Request trips: pay where? | From My rides, under Needs you, when the driver says yes (3.7, item 2) (Martin, 2026-11-15) |
 | 8 | Where is Sign out? | On Profile too, under the rows; Sign out on all devices stays in Settings (3.4 item 4) (Martin, 2026-11-22) |
 | 9 | Pull to refresh | On the main lists, a booking and the driver's trip page, with a spinner and "Updated" (3.9) (Martin, 2026-11-22; "pull up" read as the usual pull down at the top) |

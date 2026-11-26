@@ -345,14 +345,17 @@ changes on a phone.
 
 ### 3.10 My rides
 
-1. The title and the Coming up / Past choice at the left.
+1. The title and the Coming up / Past choice at the left. Since
+   [spec 31](2026-11-26-one-ride-one-ticket.md) (3.10) "Offer a ride"
+   stands on the title's line, at the page's right edge.
 2. The rides as a grid in the same order: two columns in a window 900
    wide, three from about 1060. "Needs you" and "Coming up" are each a grid
    under its heading, so a ride that needs you comes first, as today.
    Cards in one row are equally tall.
 3. With no rides, and when they cannot be loaded, what stands in their
-   place (the line, Find a ride and Offer a ride, or the notice and Try
-   again) keeps the 480 column at the page's left.
+   place (the line and Find a ride, or the notice and Try again) keeps
+   the 480 column at the page's left. (Offer a ride was a second button
+   there until spec 31 moved it to the title.)
 
 ### 3.11 Messages
 
@@ -438,7 +441,8 @@ changes on a phone.
    column, so its side column holds Publish and what it waits for, and no
    "Your trip so far".
 5. Offer, the place in the menu, is step 1, with "Continue your draft" in
-   its main column. A draft that cannot be loaded is a page too (3.2, 8).
+   its main column (since spec 31, 3.11, the drafts as rows in one card
+   there). A draft that cannot be loaded is a page too (3.2, 8).
 6. What is typed, chosen or switched off on a step stays when the window
    turns narrow or wide: a step is one tree at every width, as a booking
    is (3.9, 4). The map and the button stand in their phone places

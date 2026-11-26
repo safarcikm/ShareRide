@@ -6,7 +6,7 @@ import { focused, postTripToSelfoss } from "./support/trips";
 
 // Spec 5's request from both sides on the web build, in two browsers: a new
 // driver posts Mjódd to N1 Selfoss for tomorrow, a passenger requests a
-// seat with a message, the driver accepts it from My trips, the passenger
+// seat with a message, the driver accepts it from My rides, the passenger
 // pays on the test sheet, and both see the seat confirmed. Each project posts its own trip, so phone and desktop runs never
 // meet. Screens left behind stay in the page, hidden, so text checks look
 // only at what shows.
@@ -50,9 +50,11 @@ test("a passenger requests a seat, the driver accepts, the passenger pays", asyn
     passenger.getByText(/^Bára has until \d\d:\d\d( tomorrow)? to answer\.$/).filter(visible),
   ).toBeVisible();
 
-  // My trips counts the request; the trip page shows who asks, and accepts.
+  // My trips' old address leads to My rides (spec 31, 3.10), where the
+  // ride's ticket says who asks; the ride shows the request, and accepts.
   await driver.goto("/drive/trips");
-  await driver.getByRole("button", { name: /, 1 request$/ }).click();
+  await expect(driver).toHaveURL("/my-rides");
+  await driver.getByRole("button", { name: /^You drive, .*, Answer Dóra's request$/ }).click();
   await expect(driver).toHaveURL(`/drive/trips/${tripId}`);
   await expect(driver.getByRole("heading", { name: "Needs you" })).toBeVisible();
   await expect(

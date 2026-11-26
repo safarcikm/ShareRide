@@ -1,27 +1,21 @@
-import { myTripsRoute, type MyTrip } from "@shareride/contracts";
-import { router } from "expo-router";
+import { myTripsRoute } from "@shareride/contracts";
 import { useCallback, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
 import { useMe, useSession } from "@/auth/session";
 import { PausedBanner } from "@/beta/config";
-import { Card } from "@/components/card";
-import { TextLink } from "@/components/text-link";
 import { offerRide } from "@/drive/offer-ride";
 import { useLanguage } from "@/i18n/language";
 import { useLoadedOnFocus } from "@/lib/use-loaded";
 import { SignInFirst } from "@/navigation/sign-in-first";
-import { spacing, typography } from "@/theme/tokens";
-import { usePalette } from "@/theme/use-palette";
 import { SuspendedAccount, suspensionNow } from "@/safety/suspended-account";
+import { DraftRows } from "@/trips/draft-rows";
 import { RouteStep } from "@/trips/route-step";
-import { resumeStep, stepHref } from "@/trips/steps";
-import { routeText } from "@/trips/texts";
 
 /**
  * Offer, a place of the menu (spec 16, 3.1 and 3.6). Signed in, it is step 1
- * of posting a trip, "Where are you driving?", with the newest draft to
- * continue on top; the car and licence are asked for at step 5. Signed out,
- * it asks to sign in, keeping the offer so Offer opens after signing up.
+ * of posting a trip, "Where are you driving?", with the drafts to continue
+ * on top (spec 31, 3.11, item 6); the car and licence are asked for at step
+ * 5. Signed out, it asks to sign in, keeping the offer so Offer opens after
+ * signing up.
  */
 export default function OfferScreen() {
   const { t } = useLanguage();
@@ -54,7 +48,7 @@ function OfferForm() {
   );
   // Loads again on coming back, with the draft just started or left.
   const { value } = useLoadedOnFocus(load);
-  // Without an answer the form still opens; only the draft to continue is missing.
+  // Without an answer the form still opens; only the drafts to continue are missing.
   const drafts =
     value?.ok === true
       ? value.data.trips
@@ -71,36 +65,9 @@ function OfferForm() {
       top={
         <>
           <PausedBanner part="trips" />
-          <ContinueDraft drafts={drafts} />
+          <DraftRows drafts={drafts} />
         </>
       }
     />
   );
 }
-
-/**
- * The draft changed last, which opens at the step where it was left, and
- * with more than one, a way to see them all (spec 16, 3.6, item 2).
- */
-function ContinueDraft({ drafts }: { readonly drafts: readonly MyTrip[] }) {
-  const { locale, t } = useLanguage();
-  const palette = usePalette();
-  const [newest] = drafts;
-  if (newest === undefined) return null;
-  const label = t("trip.continueDraft", { route: routeText(t, locale, newest) });
-  return (
-    <View style={styles.drafts}>
-      <Card
-        accessibilityLabel={label}
-        onPress={() => {
-          router.push(stepHref(newest.id, resumeStep(newest)));
-        }}
-      >
-        <Text style={[typography.bodyStrong, { color: palette.text }]}>{label}</Text>
-      </Card>
-      {drafts.length > 1 ? <TextLink label={t("trip.allDrafts")} href="/drive/trips" /> : null}
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({ drafts: { gap: spacing.sm } });

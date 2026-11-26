@@ -10,6 +10,8 @@ import {
   noteMaxLength,
   ok,
   plannedTimes,
+  reviewClosesAt,
+  reviewsOpenSince,
   routeLegPairs,
   runsOrRan,
   stopsToCopy,
@@ -23,17 +25,30 @@ import {
   type TripCancelReason,
   type TripDaySettings,
   type PriceSettings,
+  type ReviewSettings,
 } from "@shareride/domain";
-import { and, asc, desc, eq, gt, inArray, isNull, lte, ne, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, isNull, lte, ne, notExists, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { lockActive } from "../account/standing.ts";
 import type { DrivingService } from "../driving/index.ts";
 import { seatsTakenNow, takingsBookings } from "../bookings/seats.ts";
 import { nameOf, toSummary } from "../meeting-points/service.ts";
+import { shown } from "../privacy/hidden.ts";
 import { checkInsAt, driverCheckedInAt, shownWindow } from "../trip-day/check-ins.ts";
 import type { TripSettingsSource } from "../settings/trip-settings.ts";
 
-const { bookings, legs, meetingPoints, segments, trips, tripStops, users, vehicles } = schema;
+const {
+  bookings,
+  disputes,
+  legs,
+  meetingPoints,
+  reviews,
+  segments,
+  trips,
+  tripStops,
+  users,
+  vehicles,
+} = schema;
 
 // The two ends of a request, for who asks first (spec 31, 3.3).
 const askFromStops = alias(tripStops, "ask_from_stops");
@@ -143,9 +158,11 @@ export function createTripService(dependencies: {
   /** A draft is planned, and a trip published, by the values now. */
   readonly settings: TripSettingsSource;
   readonly tripDaySettings: TripDaySettings;
+  /** For how long a ride that is done can still be rated (R8.8). */
+  readonly reviewSettings: ReviewSettings;
   readonly driving: DrivingService;
 }): TripService {
-  const { db, clock, tripDaySettings, driving } = dependencies;
+  const { db, clock, tripDaySettings, reviewSettings, driving } = dependencies;
 
   /** The legs for these ordered pairs, as a lookup. */
   async function legsFor(q: Queryable, pairs: readonly (readonly [string, string])[]) {
@@ -176,7 +193,11 @@ export function createTripService(dependencies: {
     const ids = rows.map((row) => row.id);
     if (ids.length === 0) return [];
     const now = clock();
-    const [stopRows, segmentRows, askRows, occupancy, takings] = await Promise.all([
+    // A booking completes with its trip, so only a trip that is done has
+    // anyone to rate: a draft that is saved, or a list of rides to come,
+    // does not ask.
+    const done = rows.filter((row) => row.status === "completed").map((row) => row.id);
+    const [stopRows, segmentRows, askRows, rateRows, occupancy, takings] = await Promise.all([
       q
         .select({ stop: tripStops, point: meetingPoints })
         .from(tripStops)
@@ -224,6 +245,44 @@ export function createTripService(dependencies: {
           asc(bookings.createdAt),
           asc(bookings.id),
         ),
+      // The completed bookings whose passenger the driver can still rate
+      // (spec 31, 3.10), in the order they were made, as the review
+      // service would take a review of each now: within its days, not yet
+      // reviewed by the driver, no report waiting to be decided, and a
+      // passenger who has not left.
+      done.length === 0
+        ? []
+        : q
+            .select({
+              tripId: bookings.tripId,
+              bookingId: bookings.id,
+              completedAt: bookings.completedAt,
+            })
+            .from(bookings)
+            .innerJoin(users, eq(users.id, bookings.passengerId))
+            .where(
+              and(
+                inArray(bookings.tripId, done),
+                eq(bookings.status, "completed"),
+                gt(bookings.completedAt, reviewsOpenSince(now, reviewSettings)),
+                shown(users),
+                notExists(
+                  q
+                    .select({ id: reviews.id })
+                    .from(reviews)
+                    .where(
+                      and(eq(reviews.bookingId, bookings.id), eq(reviews.authorRole, "driver")),
+                    ),
+                ),
+                notExists(
+                  q
+                    .select({ id: disputes.id })
+                    .from(disputes)
+                    .where(and(eq(disputes.bookingId, bookings.id), isNull(disputes.outcome))),
+                ),
+              ),
+            )
+            .orderBy(asc(bookings.createdAt), asc(bookings.id)),
       seatsTakenNow(q, ids, now),
       takingsBookings(q, ids, now),
     ]);
@@ -253,6 +312,9 @@ export function createTripService(dependencies: {
       // The trip day is for a trip that runs, or ran (spec 8, 3.1).
       const runs = runsOrRan(row.status as MyTrip["status"]);
       const ask = askRows.find((request) => request.tripId === row.id);
+      const rate = rateRows.flatMap(({ tripId, bookingId, completedAt }) =>
+        tripId === row.id && completedAt !== null ? [{ bookingId, completedAt }] : [],
+      );
       return {
         id: row.id,
         status: row.status as MyTrip["status"],
@@ -306,6 +368,17 @@ export function createTripService(dependencies: {
                 seats: ask.seats,
                 from: nameOf({ nameIs: ask.fromIs, nameEn: ask.fromEn }),
                 to: nameOf({ nameIs: ask.toIs, nameEn: ask.toEn }),
+              },
+        toRate:
+          rate.length === 0
+            ? null
+            : {
+                bookingIds: rate.map(({ bookingId }) => bookingId),
+                // When the last of their times to review ends.
+                closesAt: reviewClosesAt(
+                  new Date(Math.max(...rate.map(({ completedAt }) => completedAt.getTime()))),
+                  reviewSettings,
+                ).toISOString(),
               },
         cancellation:
           row.status === "cancelled" && row.cancelReason !== null

@@ -216,7 +216,10 @@ Drivers do not edit segment prices one by one (decision 2,
    ([spec 28](2026-11-25-share-a-ride.md), 3.2).
 4. Until published, the trip is a draft. Drafts are saved as the driver goes,
    listed under "My trips", and deleted 30 days after their last change, or
-   when their departure has passed.
+   when their departure has passed. Since
+   [spec 31](2026-11-26-one-ride-one-ticket.md) (3.10 and 3.11) My trips
+   is gone: drafts are listed on Offer, over its form, and a published
+   ride stands in My rides.
 
 ### 3.9 Errors and edge cases
 

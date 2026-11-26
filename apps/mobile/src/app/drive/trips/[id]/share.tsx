@@ -21,11 +21,11 @@ type TripPage = {
 };
 
 /**
- * Share this ride (spec 28, 3.2), from My trips and the driver's trip
- * page: the title at the left over the ride as its ticket (spec 31, 3.19;
+ * Share this ride (spec 28, 3.2), from the page of a ride I drive: the
+ * title at the left over the ride as its ticket (spec 31, 3.19;
  * R31.2), then the panel, for a published trip that has not left (R28.4).
  * Any other says it cannot be shared, with a link to the trip; one that is
- * not the driver's, or not there, says so and links to My trips.
+ * not the driver's, or not there, says so and links to My rides.
  */
 export default function ShareRideScreen() {
   const { t } = useLanguage();
@@ -42,7 +42,7 @@ export default function ShareRideScreen() {
       {result?.ok === false && result.status === 404 ? (
         <>
           <Notice message={t("trip.notFound")} />
-          <TextLink label={t("trip.published.seeTrips")} href="/drive/trips" />
+          <TextLink label={t("trip.published.seeTrips")} href="/my-rides" />
         </>
       ) : result === undefined || !result.ok ? (
         <Loading failure={result} onRetry={reload} />

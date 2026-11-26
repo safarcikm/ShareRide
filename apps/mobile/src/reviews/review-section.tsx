@@ -10,7 +10,7 @@ import { now } from "@/lib/clock";
 import { firstNameOf } from "@/people/texts";
 import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
-import { heldBack } from "./held-back";
+import { canRate, heldBack } from "./held-back";
 import { Stars } from "./stars";
 
 /**
@@ -50,15 +50,16 @@ export function ReviewSection({
   const { review } = booking;
   if (review === null) return null;
   const closesAt = new Date(review.closesAt);
-  const open = review.mine === null && now() < closesAt;
-  const held = open ? heldBack(t, booking) : null;
+  const at = now();
+  // Why not yet, said only while the days last and nothing is sent.
+  const held = review.mine === null && at < closesAt ? heldBack(t, booking) : null;
   const label =
     booking.viewer === "driver"
       ? t("review.ratePassengerNamed", { name: firstNameOf(t, otherPerson(booking)) })
       : t("review.rateDriver");
   return (
     <>
-      {offer && open && held === null ? (
+      {offer && canRate(booking, at) ? (
         <View style={styles.offer}>
           <Button
             variant="secondary"

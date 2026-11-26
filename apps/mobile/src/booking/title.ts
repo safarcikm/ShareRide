@@ -10,7 +10,7 @@ import {
 import { compareDays, dayOf } from "@/lib/days";
 import { leavesText } from "@/my-rides/need-texts";
 import { firstNameOf } from "@/people/texts";
-import { heldBack } from "@/reviews/held-back";
+import { canRate } from "@/reviews/held-back";
 import { onTripDay } from "@/trip-day/passenger";
 import { statusKey } from "./status";
 import { answerUntilText, endedText, seatHeldText } from "./texts";
@@ -25,17 +25,6 @@ export interface BookingTitle {
   readonly title: string;
   /** What happens next; null where the status says it all. */
   readonly line: string | null;
-}
-
-/** Whether its passenger can review a completed booking now (spec 8, 3.7). */
-export function reviewOpen(t: Translate, booking: Booking, at: Date): boolean {
-  const { review } = booking;
-  return (
-    review !== null &&
-    review.mine === null &&
-    at.getTime() < new Date(review.closesAt).getTime() &&
-    heldBack(t, booking) === null
-  );
 }
 
 /**
@@ -116,7 +105,7 @@ export function bookingTitle(
     }
     case "completed": {
       const { review } = booking;
-      if (review === null || !reviewOpen(t, booking, at)) return said(state);
+      if (review === null || !canRate(booking, at)) return said(state);
       const closesAt = new Date(review.closesAt);
       return said(
         t("review.title"),

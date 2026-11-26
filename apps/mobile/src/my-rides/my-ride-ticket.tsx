@@ -11,7 +11,7 @@ import {
   type Translate,
 } from "@shareride/i18n";
 import { router } from "expo-router";
-import { Bell, CarFront, Check, Ticket } from "lucide-react-native";
+import { Bell, CarFront, Check, Star, Ticket, type LucideIcon } from "lucide-react-native";
 import type { ReactNode } from "react";
 import { StyleSheet, Text } from "react-native";
 import { statusKey, statusTag } from "@/booking/status";
@@ -24,8 +24,8 @@ import type { AppPath } from "@/navigation/link-props";
 import { firstNameOf } from "@/people/texts";
 import { typography, type Palette } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
-import { endsOf, needTagText } from "./need-texts";
-import { needOf, seatsTaken, type Ride } from "./rides";
+import { endsOf, needTagText, rateTagText } from "./need-texts";
+import { needOf, ratingOf, seatsTaken, type Ride } from "./rides";
 
 /** Where a ride lives: the booking (spec 5) or the driver's ride (spec 3). */
 export function rideHref(ride: Ride): AppPath {
@@ -51,8 +51,17 @@ interface Look {
   readonly spoken: readonly string[];
 }
 
-/** What needs me, as the yellow tag in a ticket's foot (spec 31, 3.10). */
-const needTag = (label: string) => <Tag kind="warning" label={label} icon={Bell} />;
+/**
+ * What a ride asks of me, in words with its icon: a bell for what needs
+ * me, a star for a rating still to give.
+ */
+interface Asked {
+  readonly label: string;
+  readonly icon: LucideIcon;
+}
+
+/** What is asked of me, as the yellow tag in a ticket's foot (spec 31, 3.10). */
+const askedTag = ({ label, icon }: Asked) => <Tag kind="warning" label={label} icon={icon} />;
 
 /**
  * A seat of mine: my part and what my seats cost, and under the tear line
@@ -65,7 +74,7 @@ function bookingLook(
   palette: Palette,
   booking: Booking,
   duration: string,
-  need: string | null,
+  asked: Asked | null,
 ): Look {
   const driver = firstNameOf(t, booking.driver);
   const seats = t("search.seatCount", { count: booking.seats });
@@ -95,16 +104,16 @@ function bookingLook(
       </>
     ),
     footEnd:
-      need === null ? (
+      asked === null ? (
         <Tag
           kind={statusTag(booking)}
           label={state}
           icon={booking.status === "confirmed" ? Check : undefined}
         />
       ) : (
-        needTag(need)
+        askedTag(asked)
       ),
-    spoken: [seats, amount, driver, need ?? state],
+    spoken: [seats, amount, driver, asked?.label ?? state],
   };
 }
 
@@ -121,7 +130,7 @@ function tripLook(
   palette: Palette,
   trip: MyTrip,
   duration: string,
-  need: string | null,
+  asked: Asked | null,
 ): Look {
   const between = trip.stops.length - 2;
   const look = {
@@ -152,17 +161,19 @@ function tripLook(
     note: null,
     mine: true,
     footStart: <Text style={[typography.label, { color: palette.text }]}>{taken}</Text>,
-    footEnd: need === null ? null : needTag(need),
-    spoken: need === null ? [taken] : [taken, need],
+    footEnd: asked === null ? null : askedTag(asked),
+    spoken: asked === null ? [taken] : [taken, asked.label],
   };
 }
 
 /**
  * A ride of mine as My rides and Find show it (spec 31, 3.3, 3.5 and 3.10;
  * R31.2): a ticket, marked "Passenger" or "You drive", whose foot says in
- * yellow what the ride needs from me. Pressing it opens the ride, where
- * that is done. With `fill`, in a grid, it is as tall as the tallest of
- * its row.
+ * yellow what the ride needs from me, or once it is done whose rating I can
+ * still give. Pressing it opens the ride, where that is done: a ticket
+ * that opened the rating itself would keep a ride that is done, with its
+ * messages and reports, out of reach until the rating is given. With
+ * `fill`, in a grid, it is as tall as the tallest of its row.
  */
 export function MyRideTicket({
   ride,
@@ -176,12 +187,19 @@ export function MyRideTicket({
   const { locale, t } = useLanguage();
   const palette = usePalette();
   const needs = needOf(ride, at);
-  const need = needs === null ? null : needTagText(t, ride, needs, at);
+  // A ride that is done needs nothing; a rating is asked in the same place.
+  const rating = needs === null ? ratingOf(ride, at) : null;
+  const asked: Asked | null =
+    needs !== null
+      ? { label: needTagText(t, ride, needs, at), icon: Bell }
+      : rating === null
+        ? null
+        : { label: rateTagText(t, rating), icon: Star };
   const duration = formatDuration((ride.endsAt.getTime() - ride.startsAt.getTime()) / 1000, locale);
   const look =
     ride.kind === "booking"
-      ? bookingLook(t, locale, palette, ride.booking, duration, need)
-      : tripLook(t, palette, ride.trip, duration, need);
+      ? bookingLook(t, locale, palette, ride.booking, duration, asked)
+      : tripLook(t, palette, ride.trip, duration, asked);
   const ends = endsOf(ride, locale);
   const clock = { from: formatClock(ride.startsAt), to: formatClock(ride.endsAt) };
   // Screen readers hear the day in full, and the ends as the results say them.
