@@ -1,8 +1,9 @@
 import { AccessibilityInfo } from "react-native";
-import { fireEvent, screen } from "expo-router/testing-library";
+import { fireEvent, screen, within } from "expo-router/testing-library";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
 import { driverApi, northMyTrip, northSegments } from "@/testing/bookings";
+import { filledButtons } from "@/testing/buttons";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
 import { searchApi } from "@/testing/search";
 import { blonduos, mosfellsbaer, tripsApi, volvo, yaris } from "@/testing/trips";
@@ -51,13 +52,38 @@ async function openEdit(
   return app;
 }
 
-/** Edit trip, then the link to one part of it, which opens its screen. */
-async function openPart(link: string, ...edit: Parameters<typeof openEdit>) {
+/** The row of Edit the ride that opens each part's screen, by that screen's title. */
+const rows = {
+  "Change the price": /^Price, /,
+  "Change the seats": /^Seats, /,
+  "Change the car": /^Car, /,
+  "Change how people book": /^How people book, /,
+  "Change the preferences and note": /^Preferences and note, /,
+  "Add a stop": /^Add a stop$/,
+  "Remove a stop": /^Remove a stop$/,
+} as const;
+type Part = keyof typeof rows;
+
+/** Edit trip, then the row of one part of it, which opens its screen. */
+async function openPart(part: Part, ...edit: Parameters<typeof openEdit>) {
   const app = await openEdit(...edit);
-  await fireEvent.press(screen.getByRole("link", { name: link }));
-  expect(await screen.findByRole("header", { name: link })).toBeVisible();
+  await fireEvent.press(screen.getByRole("link", { name: rows[part] }));
+  expect(await screen.findByRole("header", { name: part })).toBeVisible();
   return app;
 }
+
+/**
+ * The stops as Edit the ride lists them, a line each, whatever their times.
+ * (A pattern is matched with each run of spaces and line ends as one space.)
+ */
+const stopLines = (...names: string[]) =>
+  new RegExp(`^${names.map((name) => `\\d\\d:\\d\\d ${name}`).join(" ")}$`);
+
+/** What a screen reader says of each link in the card of rows, in order. */
+const rowNames = () =>
+  within(screen.getByTestId("action-rows"))
+    .getAllByRole("link")
+    .map((row) => String(row.props["accessibilityLabel"]));
 
 const changes = (client: FakeClient) =>
   client.calls
@@ -81,23 +107,67 @@ async function saveAndSeeIt() {
 }
 
 describe("Edit trip: the seats, price, car, booking mode and details (spec 6, 3.2)", () => {
-  it("lists each part of the trip, each with a way to change it", async () => {
+  it("lists each part of the ride as a row with what is set now (spec 31, 3.19)", async () => {
     await openEdit();
-    for (const [title, line, link] of [
-      ["Time", "Sunday 15 November", "Change the time"],
-      ["Stops", "BSÍ bus terminal → Borgarnes → Blönduós → Hof, Akureyri", "Add a stop"],
-      ["Stops", "BSÍ bus terminal → Borgarnes → Blönduós → Hof, Akureyri", "Remove a stop"],
-      ["Price", "100% · the whole route 4,500 ISK", "Change the price"],
-      ["Seats", "3 seats", "Change the seats"],
-      ["Car", "Toyota Yaris, white", "Change the car"],
-      ["How people book", "I approve each passenger", "Change how people book"],
-      ["Preferences and note", "Ask me", "Change the preferences and note"],
-    ] as const) {
-      expect(screen.getByRole("header", { name: title })).toBeVisible();
-      expect(screen.getByText(line)).toBeVisible();
-      expect(screen.getByRole("link", { name: link })).toBeVisible();
-    }
-    expect(screen.getByText("No note")).toBeVisible();
+    const head = within(screen.getByTestId("screen-head"));
+    expect(head.getByRole("header", { name: "Edit the ride" })).toBeVisible();
+    expect(head.getByRole("button", { name: "Back" })).toBeVisible();
+    expect(
+      head.getByText("Sunday 15 November at 09:00 · BSÍ bus terminal → Hof, Akureyri"),
+    ).toBeVisible();
+    expect(
+      head.getByText(
+        "Change one thing at a time. Before you save, you see what it means for your passengers.",
+      ),
+    ).toBeVisible();
+    expect(rowNames()).toEqual([
+      "Time, Sunday 15 November at 09:00",
+      "Add a stop",
+      "Remove a stop",
+      "Price, 100% · the whole route 4,500 ISK",
+      "Seats, 3 seats",
+      "Car, Toyota Yaris, white",
+      "How people book, I approve each passenger",
+      // As a passenger reads them on the ride, in one line.
+      "Preferences and note, Some chat, one suitcase, ask about pets, no smoking, no child seat. No note",
+    ]);
+    // The stops with their times stand over the two rows that change them;
+    // they are what is set, and open nothing themselves.
+    const card = within(screen.getByTestId("action-rows"));
+    expect(card.getByText("Stops")).toBeVisible();
+    expect(
+      card.getByText(
+        [
+          "09:00  BSÍ bus terminal",
+          "10:00  Borgarnes",
+          "12:05  Blönduós",
+          "14:00  Hof, Akureyri",
+        ].join("\n"),
+      ),
+    ).toBeVisible();
+    // A row each, not a heading with a loose link beside it.
+    expect(screen.queryByTestId("summary-section")).toBeNull();
+    expect(screen.queryByRole("link", { name: "Change the time" })).toBeNull();
+    // Nothing here is the screen's main button: every row opens a screen.
+    expect(filledButtons()).toBe(0);
+  });
+
+  it("has a part's title at the left, with the ride over it (spec 31, 3.19)", async () => {
+    await openPart("Change the seats");
+    const head = within(screen.getByTestId("screen-head"));
+    expect(head.getByRole("header", { name: "Change the seats" })).toBeVisible();
+    expect(head.getByRole("button", { name: "Back" })).toBeVisible();
+    expect(
+      head.getByText("Sunday 15 November at 09:00 · BSÍ bus terminal → Hof, Akureyri"),
+    ).toBeVisible();
+  });
+
+  it("says over the button why nothing was saved, where it is seen", async () => {
+    await openPart("Change the seats");
+    await fireEvent.press(screen.getByRole("button", { name: "Save the change" }));
+    expect(within(screen.getByTestId("bottom-bar")).getByRole("alert")).toHaveTextContent(
+      "This is what the ride has now. Change something first.",
+    );
   });
 
   it("changes the price level for new bookings, with the new prices before saving", async () => {
@@ -128,8 +198,8 @@ describe("Edit trip: the seats, price, car, booking mode and details (spec 6, 3.
     "Change the car",
     "Change how people book",
     "Change the preferences and note",
-  ])("says when nothing has changed, without saving (%s)", async (link) => {
-    const { client } = await openPart(link);
+  ] as const)("says when nothing has changed, without saving (%s)", async (part) => {
+    const { client } = await openPart(part);
     await fireEvent.press(screen.getByRole("button", { name: "Save the change" }));
     expect(
       await screen.findByText("This is what the ride has now. Change something first."),
@@ -170,7 +240,7 @@ describe("Edit trip: the seats, price, car, booking mode and details (spec 6, 3.
       },
     });
     await fireEvent.press(await screen.findByRole("link", { name: "Edit the ride" }));
-    await fireEvent.press(await screen.findByRole("link", { name: "Change the seats" }));
+    await fireEvent.press(await screen.findByRole("link", { name: rows["Change the seats"] }));
     expect(await screen.findByRole("header", { name: "Change the seats" })).toBeVisible();
     await fireEvent.press(screen.getByRole("button", { name: "One seat more" }));
     expect(screen.getByRole("button", { name: "One seat more" })).toBeDisabled();
@@ -448,9 +518,10 @@ describe("Edit trip: adding a stop (spec 6, 3.2; milestone 6 plan, decision 2)",
     focusMoves.mockRestore();
     expect(changes(client).at(-1)).toEqual({ preview: saved, body: addMosfellsbaer });
     await fireEvent.press(screen.getByRole("link", { name: "Edit the ride" }));
+    // Edit the ride lists the new stop with the others, each with its time.
     expect(
       await screen.findByText(
-        "BSÍ bus terminal → Mosfellsbær → Borgarnes → Blönduós → Hof, Akureyri",
+        stopLines("BSÍ bus terminal", "Mosfellsbær", "Borgarnes", "Blönduós", "Hof, Akureyri"),
       ),
     ).toBeVisible();
   });
@@ -587,7 +658,9 @@ describe("Edit trip: removing a stop (spec 6, 3.2; R6.5)", () => {
     focusMoves.mockRestore();
     expect(changes(client).at(-1)).toEqual({ preview: saved, body: removeBlonduos });
     await fireEvent.press(screen.getByRole("link", { name: "Edit the ride" }));
-    expect(await screen.findByText("BSÍ bus terminal → Borgarnes → Hof, Akureyri")).toBeVisible();
+    expect(
+      await screen.findByText(stopLines("BSÍ bus terminal", "Borgarnes", "Hof, Akureyri")),
+    ).toBeVisible();
   });
 
   it("asks which stop before checking", async () => {

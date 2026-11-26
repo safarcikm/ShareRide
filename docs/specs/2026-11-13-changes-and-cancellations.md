@@ -225,6 +225,14 @@ stop):
     and is told by push and email, never by SMS. A request is not told;
     it sees the change in the app. A part chosen on the trip before the
     stop went no longer matches, as in item 17.
+20. Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.19) Edit trip
+    is one card of rows, each with what is set now: Time, Stops (each
+    stop with its time, with the rows "Add a stop" and "Remove a stop"
+    under it), Price, Seats, Car, How people book, and Preferences and
+    note. A row opens its part's screen; the headings with a link beside
+    each ("Change the time") are gone. Every screen here has Back and its
+    title at the left with the trip over it, and why nothing was saved or
+    checked stands over the main button, in the bar.
 
 ### 3.3 Cancelling a trip (driver)
 
@@ -265,6 +273,10 @@ As built (milestone 6, PR 4b):
    and offers nothing more. It is listed under Past in My rides at once
    (3.1), marked Cancelled with the reason. A booking the driver cancelled
    alone before keeps its own reason.
+6. Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.19) the screen
+   has its title at the left over the ride as its ticket, and "Cancel the
+   ride" is the red main button, in the bar at the bottom, over "Keep the
+   ride"; why nothing was cancelled stands over them.
 
 ### 3.4 Cancelling one booking (driver)
 

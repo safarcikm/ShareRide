@@ -18,36 +18,42 @@ import { chooseTime, focused, postTripToSelfoss, timeField } from "./support/tri
 
 test.use({ locale: "en-GB" });
 
-/** The parts of a trip's summary on the screen in view; a screen under it stays in the page. */
-const shownParts = '[data-testid="summary-section"]';
+/** The card of rows on the screen in view; a screen under it stays in the page. */
+const shownRows = '[data-testid="action-rows"]';
 
-function partsOf(page: Page): Promise<number> {
+/** How many rows the card of rows in view holds: its links, and the stops, which only show. */
+function rowsOf(page: Page): Promise<number> {
   return page.evaluate(
-    (parts) =>
-      [...document.querySelectorAll(parts)].filter((part) => part.getClientRects().length > 0)
-        .length,
-    shownParts,
+    (rows) =>
+      [...document.querySelectorAll(rows)]
+        .filter((card) => card.getClientRects().length > 0)
+        .reduce((count, card) => count + card.children.length, 0),
+    shownRows,
   );
 }
 
-/** The links that reach past the left or right edge of the part they change. */
-function linksOutsideTheirPart(page: Page): Promise<string[]> {
+/** The words in the card of rows that reach past its left or right edge. */
+function wordsOutsideTheRows(page: Page): Promise<string[]> {
   return page.evaluate(
-    (parts) =>
-      [...document.querySelectorAll(parts)]
-        .filter((part) => part.getClientRects().length > 0)
-        .flatMap((part) => {
-          const box = part.getBoundingClientRect();
-          return [...part.querySelectorAll("a")]
-            .filter((link) => {
-              const at = link.getBoundingClientRect();
+    (rows) =>
+      [...document.querySelectorAll(rows)]
+        .filter((card) => card.getClientRects().length > 0)
+        .flatMap((card) => {
+          const box = card.getBoundingClientRect();
+          return [...card.querySelectorAll('[dir="auto"]')]
+            .filter((words) => {
+              const at = words.getBoundingClientRect();
               return at.left < box.left - 0.5 || at.right > box.right + 0.5;
             })
-            .map((link) => link.textContent);
+            .map((words) => words.textContent);
         }),
-    shownParts,
+    shownRows,
   );
 }
+
+/** The stops as Edit the ride lists them: a line each, with its time. */
+const stopLines = (...names: string[]) =>
+  new RegExp(`^${names.map((name) => `\\d\\d:\\d\\d\\s+${name}`).join("\\s+")}$`);
 
 /** A clock time ("09:00") `minutes` later. */
 function later(time: string, minutes: number): string {
@@ -70,16 +76,19 @@ test("a driver moves the departure 45 minutes, and the passenger cancels with a 
   await driver.getByRole("link", { name: "Edit the ride", exact: true }).click();
   await expect(driver).toHaveURL(new RegExp(`/drive/trips/${tripId}/edit$`));
   await expect(driver.getByRole("heading", { name: "Edit the ride" })).toBeVisible();
-  // On a narrow phone a part's link is wider than what its title leaves:
-  // it goes under the title, and never out of the card (spec 31, 3.18).
+  // Each part is a row with what is set now (spec 31, 3.19). On a narrow
+  // phone a value with no room beside its title goes under it, and never
+  // out of the card (3.18).
   const size = driver.viewportSize();
   if (testInfo.project.use.isMobile === true && size !== null) {
     await driver.setViewportSize({ width: 360, height: size.height });
-    await expect.poll(() => partsOf(driver)).toBe(7);
-    expect(await linksOutsideTheirPart(driver)).toEqual([]);
+    // Time, the stops with Add a stop and Remove a stop under them, Price,
+    // Seats, Car, How people book, Preferences and note.
+    await expect.poll(() => rowsOf(driver)).toBe(9);
+    expect(await wordsOutsideTheRows(driver)).toEqual([]);
     await driver.setViewportSize(size);
   }
-  await driver.getByRole("link", { name: "Change the time" }).click();
+  await driver.getByRole("link", { name: /^Time, / }).click();
   await expect(driver.getByRole("heading", { name: "Change the departure" })).toBeVisible();
   await expect(
     driver
@@ -167,7 +176,7 @@ test("a driver offers fewer seats and a higher price, each saved from Edit trip"
   };
 
   await edit();
-  await driver.getByRole("link", { name: "Change the seats" }).click();
+  await driver.getByRole("link", { name: /^Seats, / }).click();
   await expect(
     driver
       .getByText("1 seat is taken on part of the ride, so you can offer no fewer.", {
@@ -184,7 +193,7 @@ test("a driver offers fewer seats and a higher price, each saved from Edit trip"
   await expect(
     driver.getByText(/^100% · the whole route [\d,]+ ISK$/).filter(visible),
   ).toBeVisible();
-  await driver.getByRole("link", { name: "Change the price" }).click();
+  await driver.getByRole("link", { name: /^Price, / }).click();
   await expect(
     driver
       .getByText(
@@ -218,7 +227,7 @@ test("a driver changes the car, and the passenger reads it on the booking and in
   await expect(
     driver.getByText("Toyota Yaris, white", { exact: true }).filter(visible),
   ).toBeVisible();
-  await driver.getByRole("link", { name: "Change the car" }).click();
+  await driver.getByRole("link", { name: /^Car, / }).click();
   await expect(driver.getByRole("heading", { name: "Change the car" })).toBeVisible();
   await expect(
     driver
@@ -269,7 +278,7 @@ test("a driver adds a stop on the way, and the passenger reads it on the booking
   await driver.goto(`/drive/trips/${tripId}/edit`);
   await expect(
     driver
-      .getByText("Mjódd bus terminal → Olís Norðlingaholt → N1 Selfoss", { exact: true })
+      .getByText(stopLines("Mjódd bus terminal", "Olís Norðlingaholt", "N1 Selfoss"))
       .filter(visible),
   ).toBeVisible();
   await driver.getByRole("link", { name: "Add a stop" }).click();
@@ -318,9 +327,9 @@ test("a driver removes a stop nobody uses, and the passenger reads it on the boo
   await driver.goto(`/drive/trips/${tripId}/edit`);
   await expect(
     driver
-      .getByText("Mjódd bus terminal → Olís Norðlingaholt → N1 Hveragerði → N1 Selfoss", {
-        exact: true,
-      })
+      .getByText(
+        stopLines("Mjódd bus terminal", "Olís Norðlingaholt", "N1 Hveragerði", "N1 Selfoss"),
+      )
       .filter(visible),
   ).toBeVisible();
   await driver.getByRole("link", { name: "Remove a stop" }).click();

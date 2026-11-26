@@ -12,22 +12,13 @@ import {
 import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useState, type ReactNode } from "react";
 import { useSession } from "@/auth/session";
-import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
-import { Notice } from "@/components/notice";
+import { ActionNotice } from "@/components/notice";
 import { Screen } from "@/components/screen";
-import { TakesFocus } from "@/components/takes-focus";
 import { useLanguage } from "@/i18n/language";
 import { now } from "@/lib/clock";
 import { useLoaded } from "@/lib/use-loaded";
-import {
-  isChangeable,
-  NotChangeable,
-  NotLoaded,
-  refusalText,
-  TripHeading,
-  tripHref,
-} from "./changes";
+import { isChangeable, NotChangeable, NotLoaded, refusalText, TripHead, tripHref } from "./changes";
 
 /** A published trip that has not yet left: the one a part's screen changes. */
 export type TripToChange = MyTrip & { readonly departsAt: string };
@@ -116,24 +107,21 @@ export function ChangePartScreen({
   return (
     <Screen
       footer={
-        <Button
-          main
-          busy={busy}
-          label={t("trip.editSave")}
-          onPress={() => {
-            void save();
-          }}
-        />
+        <>
+          <ActionNotice says={notice} />
+          <Button
+            main
+            busy={busy}
+            label={t("trip.editSave")}
+            onPress={() => {
+              void save();
+            }}
+          />
+        </>
       }
     >
-      <BackButton fallback={editHref(trip.id)} />
-      <TripHeading trip={trip} title={title} />
+      <TripHead trip={trip} title={title} back={editHref(trip.id)} />
       {children}
-      {notice === null ? null : (
-        <TakesFocus key={notice}>
-          <Notice message={notice} />
-        </TakesFocus>
-      )}
     </Screen>
   );
 }

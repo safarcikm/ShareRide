@@ -60,12 +60,12 @@ async function openTrip(
   return { ...app, trips: api.trips };
 }
 
-/** The trip page, Edit trip, then Change the time. */
+/** The trip page, Edit trip, then the row of its time. */
 async function openTime(...trip: Parameters<typeof openTrip>) {
   const app = await openTrip(...trip);
   await fireEvent.press(await screen.findByRole("link", { name: "Edit the ride" }));
   expect(await screen.findByRole("header", { name: "Edit the ride" })).toBeVisible();
-  await fireEvent.press(screen.getByRole("link", { name: "Change the time" }));
+  await fireEvent.press(screen.getByRole("link", { name: /^Time, / }));
   expect(await screen.findByRole("header", { name: "Change the departure" })).toBeVisible();
   return app;
 }

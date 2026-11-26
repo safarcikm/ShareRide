@@ -6,13 +6,11 @@ import { useCallback, useState } from "react";
 import { StyleSheet, Text } from "react-native";
 import { useTimings } from "@/beta/config";
 import { useSession } from "@/auth/session";
-import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Calendar } from "@/components/calendar";
 import { Card } from "@/components/card";
-import { Notice } from "@/components/notice";
+import { ActionNotice } from "@/components/notice";
 import { Screen } from "@/components/screen";
-import { TakesFocus } from "@/components/takes-focus";
 import { Body, Heading } from "@/components/text";
 import { TimeField } from "@/components/time-field";
 import {
@@ -21,7 +19,7 @@ import {
   NotLoaded,
   refusalText,
   timeLines,
-  TripHeading,
+  TripHead,
 } from "@/driver-trip/changes";
 import { useLanguage } from "@/i18n/language";
 import { now } from "@/lib/clock";
@@ -116,18 +114,24 @@ function EditTime({ trip, departsAt }: { readonly trip: MyTrip; readonly departs
   return (
     <Screen
       footer={
-        <Button
-          main
-          busy={busy}
-          label={t("trip.editCheck")}
-          onPress={() => {
-            void check();
-          }}
-        />
+        <>
+          <ActionNotice says={notice} />
+          <Button
+            main
+            busy={busy}
+            label={t("trip.editCheck")}
+            onPress={() => {
+              void check();
+            }}
+          />
+        </>
       }
     >
-      <BackButton fallback={{ pathname: "/drive/trips/[id]/edit", params: { id: trip.id } }} />
-      <TripHeading trip={trip} title={t("trip.editTimeTitle")} />
+      <TripHead
+        trip={trip}
+        title={t("trip.editTimeTitle")}
+        back={{ pathname: "/drive/trips/[id]/edit", params: { id: trip.id } }}
+      />
       {booked ? (
         <Body align="start">
           {t("trip.editTimeBooked", { time: formatDuration(maxMoveMinutes * 60, locale) })}
@@ -176,11 +180,6 @@ function EditTime({ trip, departsAt }: { readonly trip: MyTrip; readonly departs
             ))}
         </Card>
       ) : null}
-      {notice === null ? null : (
-        <TakesFocus key={notice}>
-          <Notice message={notice} />
-        </TakesFocus>
-      )}
     </Screen>
   );
 }

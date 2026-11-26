@@ -597,8 +597,8 @@ As built, for the driver, on a phone
    and deleting a draft) leads to Offer.
 
 As built so far (the tickets; the title's button, the rating under Past
-and My trips follow in the second half of the driver's ride, plan, PR
-8b): a ticket of My rides holds no
+and My trips follow after the driver's ride, plan, PR 8c): a ticket of
+My rides holds no
 button of its own. What it needs is the yellow tag in its foot, and
 pressing the ticket opens where that is done. "Needs you" lists the ride
 whose deadline or leaving time is soonest first, as Find does.
@@ -663,8 +663,8 @@ As built, on a phone
 and on a laptop
 ([light](images/one-ride-one-ticket/built/driver-ride-laptop-light.webp)).
 The screens it opens (Edit the ride, cancelling the ride, sharing and
-"Message all passengers") follow in the second half, with My rides (plan,
-PR 8b).
+"Message all passengers") are in 3.19, as built in PR 8b; My rides
+follows (plan, PR 8c).
 
 - **The head:** Back leads to My rides when the page was opened by its
   address. The line under the title is the first of these that is true:
@@ -868,7 +868,9 @@ chosen:
 
 A web journey checks each of the last two in the browser: no link of Edit
 trip reaches past its part at 360 wide, and no picture starts under the
-top of the text beside it.
+top of the text beside it. (Since PR 8b Edit trip is a card of rows,
+3.19, and the journey checks that no words of a row reach past the card
+at 360 wide; the last step of posting keeps the links.)
 
 Pictures: Edit trip
 [before](images/one-ride-one-ticket/defects/edit-trip-before.webp) and
@@ -929,8 +931,7 @@ on a phone
 [rating](images/one-ride-one-ticket/built/rate-phone-light.webp),
 [blocking](images/one-ride-one-ticket/built/block-phone-light.webp) and
 [reporting](images/one-ride-one-ticket/built/report-phone-light.webp).
-Cancelling a ride comes in the second half of the driver's ride (plan,
-PR 8b).
+Cancelling a ride came with the screens the driver's ride opens (below).
 
 - **The head and the ticket:** cancelling a booking, "The driver didn't
   come", "Mark as no-show" and answering a report have Back and their
@@ -950,8 +951,9 @@ PR 8b).
   taken back either, but a red button there would warn people off saying
   what happened, and each of those screens is itself the question "are
   you sure?". "Decline request" on the driver's ride (3.12) is red too:
-  it takes away the seat that was asked for. The no-show screen is looked
-  at again with cancelling a ride (plan, PR 8b).
+  it takes away the seat that was asked for. So is "Cancel the ride". The
+  no-show screen was looked at again with cancelling a ride, and stays
+  moss (below).
 - **Why nothing happened** stands over the main button, in the bar, and
   takes focus: "Choose a reason.", "Choose what happened.", "Choose a
   rating from 1 to 5 stars.", a note or a description that is too long,
@@ -977,6 +979,61 @@ PR 8b).
 - **Reporting:** "Read the community rules" is a row under the form, and
   "Block Bára too", after a report about a person, is a red row, each
   with its icon.
+
+As built, the screens the driver's ride opens (plan, PR 8b): Edit the
+ride on a phone
+([light](images/one-ride-one-ticket/built/edit-ride-phone-light.webp),
+[dark, in Icelandic](images/one-ride-one-ticket/built/edit-ride-phone-dark.webp))
+and on a
+[laptop](images/one-ride-one-ticket/built/edit-ride-laptop-light.webp),
+and on a phone
+[cancelling the ride](images/one-ride-one-ticket/built/cancel-ride-phone-light.webp)
+and
+[sharing it](images/one-ride-one-ticket/built/share-ride-phone-light.webp).
+
+- **Edit the ride** has Back and its title at the left, the ride's day,
+  time and route in small text over it, and under it "Change one thing at
+  a time. Before you save, you see what it means for your passengers."
+  Its parts are one card of rows, each with its icon and what is set now:
+  Time ("Sunday 15 November at 09:00"); Stops, each stop on a line with
+  its time, which only shows and opens nothing, with the rows "Add a
+  stop" and "Remove a stop" under it (the second only where a stop
+  stands between the ends, R6.5); Price ("100% · the whole route 4,500
+  ISK"); Seats; Car; How people book, with the sign the ride's ticket has
+  for it; and Preferences and note: the preferences in one line, as a
+  passenger reads them on the ride ("Some chat, one suitcase, ask about
+  pets, no smoking, no child seat"), then the note or "No note". A value
+  with no room beside its title goes under it. The headings with a loose
+  link beside each ("Change the time") are gone; a screen reader hears
+  "Time, Sunday 15 November at 09:00".
+- **A part's screen and "Check the change"** keep their fields. Each has
+  Back and its title at the left with the ride over it. Why nothing was
+  saved or checked ("This is what the ride has now. Change something
+  first.", what the server refused) stands over the main button, in the
+  bar, with focus. It was at the end of the column, which on the time's
+  screen is under the calendar.
+- **Cancelling a ride** takes what cancelling a booking has: Back and
+  "Cancel your ride" at the left, and the ride as the ticket its page has
+  (the day, "You drive", the two ends, what the whole way costs and the
+  car; nothing in its corner) in the place of a small line. The reason,
+  who is affected and the note are as before. "Cancel the ride" is the red
+  main button, in the bar, over "Keep the ride", outlined; both wait while
+  it is cancelled. "Choose a reason." and what the server refused stand
+  over them, with focus.
+- **Sharing a ride** has the head at the left and the ride as the same
+  ticket, in the place of a card with its route and day; the panel of
+  spec 28 is under it. **Messaging all passengers** has the head at the
+  left, with "Each passenger gets it in their own chat. Passengers don't
+  see each other." as its line.
+- **"Mark as no-show", looked at again** (decision 17): its main button
+  stays moss. It tells the passenger and PuffinRide what happened; the
+  passenger can answer, and PuffinRide decides. It is the driver's side
+  of "The driver didn't come", which is moss too, and a red button would
+  warn a driver off saying what happened. What opens it stays a quiet
+  button beside the passenger at their stop on the trip day, shown once
+  "I'm here" was said there.
+
+My rides and My trips follow (plan, PR 8c).
 
 Not changed: signing in and joining (`/sign-in`, `/onboarding`, the
 invitation and email links), which are spec 29's; About, the legal

@@ -15,6 +15,11 @@ interface RowLook {
   readonly title: string;
   /** The current value, such as "Confirmed" or "English", in muted text. */
   readonly value?: string | undefined;
+  /**
+   * The value under the title wherever it is shown, not beside it: for a
+   * value of several lines, such as a ride's stops.
+   */
+  readonly stacked?: boolean;
   /** In a soft square before the title (spec 31, 3.3). */
   readonly icon?: LucideIcon | undefined;
   /** Cannot be undone: red, no chevron, and last in its card (R31.3). */
@@ -58,9 +63,9 @@ type RowKind =
  * A `Row` (spec 15, section 5.2; spec 31, 3.3): an icon in a soft square
  * when it has one, the title in `bodyStrong`, a value such as "Confirmed"
  * in `small` `textMuted` (under the title where the two have no room on
- * one line), and a chevron; at least 56 high, tinted
- * `primarySoft` while pressed and under the pointer. Rows go in a `Card`,
- * or in `ActionRows` with a line between them.
+ * one line, and always when `stacked`), and a chevron; at least 56 high,
+ * tinted `primarySoft` while pressed and under the pointer. Rows go in a
+ * `Card`, or in `ActionRows` with a line between them.
  *
  * What it does shows at its end: a chevron to the right opens a screen (a
  * link with `href`, as a document on About is, spec 30, 3.1) or does
@@ -71,7 +76,7 @@ type RowKind =
  * no tint, and it says so to a screen reader.
  */
 export function Row(props: RowLook & RowKind) {
-  const { title, value, icon, danger = false, accessibilityLabel } = props;
+  const { title, value, stacked = false, icon, danger = false, accessibilityLabel } = props;
   const palette = usePalette();
   const inRows = useInActionRows();
   // Only a row that does something can wait.
@@ -94,7 +99,7 @@ export function Row(props: RowLook & RowKind) {
           <Icon icon={icon} color={ink} />
         </View>
       )}
-      <View testID="row-words" style={styles.words}>
+      <View testID="row-words" style={[styles.words, stacked && styles.stacked]}>
         <Text style={[typography.bodyStrong, styles.title, { color: ink }]}>{title}</Text>
         {value === undefined ? null : (
           <Text style={[typography.small, styles.value, { color: palette.textMuted }]}>
@@ -220,6 +225,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     columnGap: spacing.sm,
   },
+  stacked: { flexDirection: "column", flexWrap: "nowrap", alignItems: "flex-start" },
   title: { flexGrow: 1, flexShrink: 1, flexBasis: "auto" },
   value: { flexShrink: 1 },
   under: { paddingBottom: spacing.ms },

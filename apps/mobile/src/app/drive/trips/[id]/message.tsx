@@ -4,11 +4,10 @@ import { useRef, useState } from "react";
 import { KeyboardAvoidingView, Platform, StyleSheet } from "react-native";
 import { errorText } from "@/auth/errors";
 import { useSession } from "@/auth/session";
-import { BackButton } from "@/components/back-button";
 import { Notice } from "@/components/notice";
 import { Screen } from "@/components/screen";
+import { ScreenHead } from "@/components/screen-head";
 import { TakesFocus } from "@/components/takes-focus";
-import { Body, Title } from "@/components/text";
 import { newClientId } from "@/chat/client-id";
 import { Composer } from "@/chat/composer";
 import type { Outgoing } from "@/chat/messages";
@@ -17,8 +16,9 @@ import { useLanguage } from "@/i18n/language";
 /**
  * Message all passengers (spec 7, 3.2, screen 3): one message, written or
  * quick, goes into each confirmed passenger's own conversation, so they
- * never see each other. A failed send keeps what was written and its
- * client ID, so sending it again never reaches anyone twice.
+ * never see each other. The title is at the left, with that said under it
+ * (spec 31, 3.19). A failed send keeps what was written and its client ID,
+ * so sending it again never reaches anyone twice.
  */
 export default function MessageAllScreen() {
   const { t } = useLanguage();
@@ -72,9 +72,11 @@ export default function MessageAllScreen() {
       style={styles.fill}
     >
       <Screen footer={<Composer busy={busy} onSend={send} />}>
-        <BackButton fallback={{ pathname: "/drive/trips/[id]", params: { id } }} />
-        <Title>{t("chat.messageAll")}</Title>
-        <Body>{t("chat.messageAllHelp")}</Body>
+        <ScreenHead
+          title={t("chat.messageAll")}
+          line={t("chat.messageAllHelp")}
+          back={{ pathname: "/drive/trips/[id]", params: { id } }}
+        />
         {outcome === null ? null : (
           <TakesFocus key={outcome.count}>
             <Notice kind={outcome.kind} message={outcome.text} />

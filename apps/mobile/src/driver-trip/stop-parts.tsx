@@ -2,7 +2,6 @@
 // 3.2): lines of text, who is told, and why the change cannot be made.
 import type { TripChangeEffect } from "@shareride/contracts";
 import { StyleSheet, Text, View } from "react-native";
-import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
 import { Notice } from "@/components/notice";
@@ -13,7 +12,7 @@ import { useLanguage } from "@/i18n/language";
 import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 import { editHref, type TripToChange } from "./change-screen";
-import { TripHeading } from "./changes";
+import { TripHead } from "./changes";
 import { limitUsedText } from "./limit";
 
 export function Lines({ lines }: { readonly lines: readonly string[] }) {
@@ -100,8 +99,7 @@ export function Refused({
   const { t } = useLanguage();
   return (
     <Screen>
-      <BackButton fallback={editHref(trip.id)} />
-      <TripHeading trip={trip} title={title} />
+      <TripHead trip={trip} title={title} back={editHref(trip.id)} />
       <TakesFocus key={children}>
         <Notice message={children} />
       </TakesFocus>

@@ -828,6 +828,16 @@ describe("Where a chat starts (spec 7, 3.1 and 3.2)", () => {
     expect(screen.queryByRole("link", { name: "Message all passengers" })).toBeNull();
   });
 
+  it("has the title of messaging all passengers at the left, with what it does under it (spec 31, 3.19)", async () => {
+    await renderApp(`/drive/trips/${northMyTrip.id}/message`, { me: completeMe });
+    const head = within(await screen.findByTestId("screen-head"));
+    expect(head.getByRole("header", { name: "Message all passengers" })).toBeVisible();
+    expect(head.getByRole("button", { name: "Back" })).toBeVisible();
+    expect(
+      head.getByText("Each passenger gets it in their own chat. Passengers don't see each other."),
+    ).toBeVisible();
+  });
+
   it("sends the driver's message to all passengers; a retry after a failure sends it once", async () => {
     let answers = [() => failure(500, "internal_error"), () => ok(200, { sent: 2 })];
     const app = await renderApp(`/drive/trips/${northMyTrip.id}/message`, {

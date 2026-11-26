@@ -92,6 +92,9 @@ every confirmed passenger, and to each whose booking has completed with
 the trip (spec 8) while their conversation is open. It is posted as a
 separate message in each passenger's own conversation, so passengers never
 see each other or each other's replies. Quick messages work here too.
+Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.19) the screen has
+its title at the left, with "Each passenger gets it in their own chat.
+Passengers don't see each other." as the line under it.
 
 ### 3.3 Notifications (F2)
 

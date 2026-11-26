@@ -171,6 +171,9 @@ The panel shows only for a published trip that has not left. The screen of
 its own has "Share this ride" as its title, the trip's card and the panel
 without its heading; for any other trip it says "Only a published trip
 that hasn't left can be shared." with "See the trip", a link back to it.
+Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.19) the screen of its
+own has its title at the left, and the trip is the ticket the driver's
+ride has, with the car, in the place of the trip's card.
 
 ### 3.3 Facebook
 

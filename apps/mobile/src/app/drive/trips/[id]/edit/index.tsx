@@ -1,34 +1,46 @@
 import { listVehiclesRoute, myTripRoute } from "@shareride/contracts";
 import { routePrice } from "@shareride/domain";
-import { formatMoney } from "@shareride/i18n";
+import { capitalised, formatClock, formatDay, formatMoney } from "@shareride/i18n";
 import { useLocalSearchParams } from "expo-router";
+import {
+  Armchair,
+  CarFront,
+  Clock,
+  Coins,
+  Minus,
+  Plus,
+  Route,
+  SlidersHorizontal,
+  UserCheck,
+  Zap,
+} from "lucide-react-native";
 import { useCallback } from "react";
 import { useSession } from "@/auth/session";
-import { BackButton } from "@/components/back-button";
-import { Card } from "@/components/card";
+import { ActionRows } from "@/components/action-rows";
+import { Row } from "@/components/row";
 import { Screen } from "@/components/screen";
-import { Body } from "@/components/text";
 import { carSummary } from "@/driving/texts";
 import {
   isChangeable,
   NotChangeable,
   NotLoaded,
   timeLines,
-  TripHeading,
+  TripHead,
   tripHref,
 } from "@/driver-trip/changes";
 import { useLanguage } from "@/i18n/language";
 import { now } from "@/lib/clock";
 import { useLoadedOnFocus } from "@/lib/use-loaded";
-import { SummarySection } from "@/trips/summary-section";
-import { bookingModeKeys, levelText, preferenceTexts, stopsText } from "@/trips/texts";
+import { preferenceNeeds } from "@/trip-details/trip-parts";
+import { bookingModeKeys, levelText } from "@/trips/texts";
 
 /**
  * Edit trip (spec 6, 3.2; screen 3): what the published trip holds, one
- * part at a time, each opening its own screen; before saving, that screen
- * shows what the change means for passengers. The time, the price, the
- * seats, the car, how people book, the preferences and note, and the
- * stops, added or removed. It loads again each time it comes into view.
+ * part a row with what is set now (spec 31, 3.19), each opening its own
+ * screen; before saving, that screen shows what the change means for
+ * passengers. The time, the stops with the two rows that add and remove
+ * one under them, the price, the seats, the car, how people book, and the
+ * preferences and note. It loads again each time it comes into view.
  */
 export default function EditTripScreen() {
   const { locale, t } = useLanguage();
@@ -52,8 +64,8 @@ export default function EditTripScreen() {
   if (!isChangeable(trip.data, now())) {
     return <NotChangeable trip={trip.data} title={t("trip.edit")} />;
   }
-  const { departsAt } = trip.data;
-  const times = trip.data.stops.map((stop) => new Date(stop.plannedAt ?? departsAt));
+  const departure = new Date(trip.data.departsAt);
+  const times = trip.data.stops.map((stop) => new Date(stop.plannedAt ?? departure));
   const { priceLevel, seats, vehicleId, bookingMode, preferences, note } = trip.data;
   const car = cars.data.vehicles.find((known) => known.id === vehicleId);
   const part = (
@@ -62,59 +74,84 @@ export default function EditTripScreen() {
     pathname: `/drive/trips/[id]/edit/${name}` as const,
     params: { id },
   });
+  // As a passenger reads them on the ride, in one line: "Some chat, small bag, no pets".
+  const likes = preferenceNeeds(t, preferences)
+    .map(({ label }, index) =>
+      index === 0 ? label : label.charAt(0).toLocaleLowerCase(locale) + label.slice(1),
+    )
+    .join(", ");
+  const noted = note === "" ? t("trip.review.noNote") : note;
   return (
     <Screen>
-      <BackButton fallback={tripHref(id)} />
-      <TripHeading trip={trip.data} title={t("trip.edit")} />
-      <Body align="start">{t("trip.editIntro")}</Body>
-      <Card>
-        <SummarySection
+      <TripHead
+        trip={trip.data}
+        title={t("trip.edit")}
+        line={t("trip.editIntro")}
+        back={tripHref(id)}
+      />
+      <ActionRows>
+        <Row
+          icon={Clock}
           title={t("trip.editTime")}
-          lines={timeLines(t, locale, trip.data, times)}
-          link={{ label: t("trip.editTimeAction"), href: part("time") }}
-        />
-        <SummarySection
-          title={t("trip.editStops")}
-          lines={[stopsText(t, locale, trip.data)]}
-          link={{ label: t("trip.editAddStopAction"), href: part("stop") }}
-          // Only a stop between the ends can go (R6.5).
-          more={
-            trip.data.stops.length > 2
-              ? { label: t("trip.editRemoveStopAction"), href: part("remove-stop") }
-              : undefined
-          }
-        />
-        <SummarySection
-          title={t("trip.review.price")}
-          lines={[
-            t("trip.review.priceLine", {
-              level: levelText(t, priceLevel),
-              price: formatMoney(routePrice(trip.data.segments.map(({ price }) => price)), locale),
+          value={capitalised(
+            t("trip.mine.when", {
+              day: formatDay(departure, locale),
+              time: formatClock(departure),
             }),
-          ]}
-          link={{ label: t("trip.editPriceAction"), href: part("price") }}
+            locale,
+          )}
+          href={part("time")}
         />
-        <SummarySection
+        {/* What is set, over the two rows that change it: each stop with its time. */}
+        <Row
+          shows
+          stacked
+          icon={Route}
+          title={t("trip.editStops")}
+          value={timeLines(t, locale, trip.data, times).slice(1).join("\n")}
+        />
+        <Row icon={Plus} title={t("trip.editAddStopAction")} href={part("stop")} />
+        {/* Only a stop between the ends can go (R6.5). */}
+        {trip.data.stops.length > 2 ? (
+          <Row icon={Minus} title={t("trip.editRemoveStopAction")} href={part("remove-stop")} />
+        ) : null}
+        <Row
+          icon={Coins}
+          title={t("trip.review.price")}
+          value={t("trip.review.priceLine", {
+            level: levelText(t, priceLevel),
+            price: formatMoney(routePrice(trip.data.segments.map(({ price }) => price)), locale),
+          })}
+          href={part("price")}
+        />
+        <Row
+          icon={Armchair}
           title={t("trip.editSeats")}
-          lines={[t("trip.seats.count", { count: seats })]}
-          link={{ label: t("trip.editSeatsAction"), href: part("seats") }}
+          value={t("trip.seats.count", { count: seats })}
+          href={part("seats")}
         />
-        <SummarySection
+        <Row
+          icon={CarFront}
           title={t("trip.review.car")}
-          lines={[car === undefined ? t("trip.review.noCar") : carSummary(t, locale, car)]}
-          link={{ label: t("trip.editCarAction"), href: part("car") }}
+          value={car === undefined ? t("trip.review.noCar") : carSummary(t, locale, car)}
+          href={part("car")}
         />
-        <SummarySection
+        <Row
+          // The sign the ride's ticket has for how it is booked.
+          icon={bookingMode === "instant" ? Zap : UserCheck}
           title={t("trip.bookingMode.title")}
-          lines={[t(bookingModeKeys[bookingMode].title)]}
-          link={{ label: t("trip.editBookingAction"), href: part("booking") }}
+          value={t(bookingModeKeys[bookingMode].title)}
+          href={part("booking")}
         />
-        <SummarySection
+        <Row
+          stacked
+          icon={SlidersHorizontal}
           title={t("trip.editDetails")}
-          lines={[...preferenceTexts(t, preferences), note === "" ? t("trip.review.noNote") : note]}
-          link={{ label: t("trip.editDetailsAction"), href: part("details") }}
+          value={`${likes}\n${noted}`}
+          accessibilityLabel={`${t("trip.editDetails")}, ${likes}. ${noted}`}
+          href={part("details")}
         />
-      </Card>
+      </ActionRows>
     </Screen>
   );
 }

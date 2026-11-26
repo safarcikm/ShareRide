@@ -376,6 +376,23 @@ describe("Share this ride, a screen of its own (spec 28, 3.1 and 3.2)", () => {
     expect(await screen.findByRole("header", { name: "Share this ride" })).toBeVisible();
   });
 
+  it("has its title at the left over the ride as its ticket (spec 31, 3.19)", async () => {
+    await openDriver(`/drive/trips/${tripId}/share`);
+    const head = within(await screen.findByTestId("screen-head"));
+    expect(head.getByRole("header", { name: "Share this ride" })).toBeVisible();
+    expect(head.getByRole("button", { name: "Back" })).toBeVisible();
+    // The ride is the ticket its page has (R31.2), with nothing in its corner:
+    // this screen is where that button leads.
+    const ticket = within(await screen.findByTestId("driver-ride-ticket"));
+    expect(ticket.getByText("Sun 15 Nov")).toBeVisible();
+    expect(ticket.getByText("You drive")).toBeVisible();
+    expect(ticket.getByText("BSÍ bus terminal")).toBeVisible();
+    expect(ticket.getByText("Hof, Akureyri")).toBeVisible();
+    expect(ticket.getByText("Toyota Yaris, white")).toBeVisible();
+    expect(ticket.queryByRole("button")).toBeNull();
+    expect(screen.getByLabelText("Text for your post")).toHaveTextContent(englishPost);
+  });
+
   it("is not on the trip page once the trip has left", async () => {
     await openDriver(`/drive/trips/${tripId}`, [{ ...northTrip, status: "departed" }]);
     expect(await screen.findByTestId("driver-ride-ticket")).toBeVisible();

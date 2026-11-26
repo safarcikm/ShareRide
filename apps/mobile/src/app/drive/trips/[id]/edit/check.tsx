@@ -9,12 +9,10 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useSession } from "@/auth/session";
-import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
-import { Notice } from "@/components/notice";
+import { ActionNotice, Notice } from "@/components/notice";
 import { Screen } from "@/components/screen";
-import { TakesFocus } from "@/components/takes-focus";
 import { Body, Heading } from "@/components/text";
 import {
   isChangeable,
@@ -22,7 +20,7 @@ import {
   NotLoaded,
   refusalText,
   timeLines,
-  TripHeading,
+  TripHead,
   tripHref,
 } from "@/driver-trip/changes";
 import { useLanguage } from "@/i18n/language";
@@ -66,8 +64,7 @@ export default function CheckChangeScreen() {
   if (!effect.ok) {
     return (
       <Screen>
-        <BackButton fallback={timeHref(id)} />
-        <TripHeading trip={trip.data} title={title} />
+        <TripHead trip={trip.data} title={title} back={timeHref(id)} />
         <Notice message={refusalText(t, locale, trip.data, effect)} />
         <Button
           variant="secondary"
@@ -126,18 +123,20 @@ function CheckChange({
   return (
     <Screen
       footer={
-        <Button
-          main
-          busy={busy}
-          label={t("trip.editSave")}
-          onPress={() => {
-            void save();
-          }}
-        />
+        <>
+          <ActionNotice says={notice} />
+          <Button
+            main
+            busy={busy}
+            label={t("trip.editSave")}
+            onPress={() => {
+              void save();
+            }}
+          />
+        </>
       }
     >
-      <BackButton fallback={timeHref(trip.id)} />
-      <TripHeading trip={trip} title={t("trip.editReviewTitle")} />
+      <TripHead trip={trip} title={t("trip.editReviewTitle")} back={timeHref(trip.id)} />
       <Text style={[typography.bodyStrong, { color: palette.text }]}>
         {t("trip.changed", {
           old: formatClock(new Date(trip.departsAt)),
@@ -183,11 +182,6 @@ function CheckChange({
           </>
         )}
       </Card>
-      {notice === null ? null : (
-        <TakesFocus key={notice}>
-          <Notice message={notice} />
-        </TakesFocus>
-      )}
     </Screen>
   );
 }

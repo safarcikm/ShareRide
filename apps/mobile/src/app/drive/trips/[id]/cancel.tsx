@@ -1,10 +1,12 @@
 import type { CallFailure } from "@shareride/api-client";
 import {
   cancelTripRoute,
+  listVehiclesRoute,
   myTripRoute,
   tripBookingsRoute,
   type Booking,
   type MyTrip,
+  type Vehicle,
 } from "@shareride/contracts";
 import {
   checkNote,
@@ -13,7 +15,7 @@ import {
   tripCancelReasons,
   type TripCancelReason,
 } from "@shareride/domain";
-import { cancelReasonText, capitalised, formatClock, formatDay } from "@shareride/i18n";
+import { cancelReasonText } from "@shareride/i18n";
 import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
@@ -23,17 +25,18 @@ import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
 import { Chip } from "@/components/chip";
-import { Notice } from "@/components/notice";
+import { ActionNotice, Notice, useSaid } from "@/components/notice";
 import { Screen } from "@/components/screen";
+import { ScreenHead } from "@/components/screen-head";
 import { TakesFocus } from "@/components/takes-focus";
 import { TextField } from "@/components/text-field";
-import { Body, Title } from "@/components/text";
+import { Body } from "@/components/text";
+import { DriverRideTicket } from "@/driver-trip/ride-ticket";
 import { useLanguage } from "@/i18n/language";
 import { now } from "@/lib/clock";
 import { useLoaded } from "@/lib/use-loaded";
 import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
-import { routeText } from "@/trips/texts";
 
 /** The bookings that cancelling touches: those holding seats (rule S1). */
 type Held = Booking & { readonly status: "requested" | "accepted" | "confirmed" };
@@ -41,14 +44,18 @@ const isHeld = (booking: Booking): booking is Held =>
   booking.status === "requested" || booking.status === "accepted" || booking.status === "confirmed";
 
 /**
- * Cancelling a trip (spec 6, 3.3; screen 4), by its driver: a reason, who
- * is affected (everyone who paid gets a full refund, rule M2; requests,
+ * Cancelling a ride (spec 6, 3.3; screen 4), by its driver: the title at
+ * the left over the ride as its ticket (spec 31, 3.19), a reason, who is
+ * affected (everyone who paid gets a full refund, rule M2; requests,
  * unpaid bookings and free rides are told too), whether it shows on the
  * driver's profile (R6.7, worked out by the domain as the server does), and
- * an optional note to everyone on it. "Cancel trip" sends what it showed;
- * if someone paid or left meanwhile, it loads again, keeping the reason and
- * the note, to confirm again. Done, it goes back to the trip, which says so
- * with focus; "Keep the trip" goes back as it was.
+ * an optional note to everyone on it. "Cancel the ride" takes the ride
+ * away from everyone on it, so it is the red main button, in the bar
+ * (decision 17), over "Keep the ride"; why it did nothing stands over it.
+ * It sends what it showed; if someone paid or left meanwhile, it loads
+ * again, keeping the reason and the note, to confirm again. Done, it goes
+ * back to the ride, which says so with focus; "Keep the ride" goes back as
+ * it was.
  */
 export default function CancelTripScreen() {
   const { t } = useLanguage();
@@ -60,6 +67,8 @@ export default function CancelTripScreen() {
       Promise.all([
         session.call(myTripRoute, { params: { id } }),
         session.call(tripBookingsRoute, { params: { id } }),
+        // For the car on the ticket; the screen stands without it.
+        session.call(listVehiclesRoute, {}),
       ]),
     [session, id],
   );
@@ -78,13 +87,13 @@ export default function CancelTripScreen() {
       </Screen>
     );
   }
-  const [trip, onTrip] = loaded;
+  const [trip, onTrip, cars] = loaded;
+  const head = <ScreenHead title={t("trip.cancelTitle")} back={tripHref(id)} />;
   if (!trip.ok || !onTrip.ok) {
     const failure: CallFailure = trip.ok ? (onTrip as CallFailure) : trip;
     return (
       <Screen>
-        {back}
-        <Title>{t("trip.cancelTitle")}</Title>
+        {head}
         <Notice
           message={
             failure.status === 404
@@ -106,8 +115,7 @@ export default function CancelTripScreen() {
   ) {
     return (
       <Screen>
-        {back}
-        <Title>{t("trip.cancelTitle")}</Title>
+        {head}
         <Notice message={t("trip.notCancellable")} />
         <Button
           variant="secondary"
@@ -122,6 +130,11 @@ export default function CancelTripScreen() {
   return (
     <CancelTripForm
       trip={trip.data}
+      car={
+        cars.ok
+          ? (cars.data.vehicles.find((known) => known.id === trip.data.vehicleId) ?? null)
+          : null
+      }
       departsAt={departsAt}
       bookings={onTrip.data.bookings.filter(isHeld)}
       reason={reason}
@@ -153,6 +166,7 @@ function leave(id: string) {
 
 function CancelTripForm({
   trip,
+  car,
   departsAt,
   bookings,
   reason,
@@ -163,6 +177,8 @@ function CancelTripForm({
   onTermsChanged,
 }: {
   readonly trip: MyTrip;
+  /** For the ticket; null when it could not be loaded. */
+  readonly car: Vehicle | null;
   readonly departsAt: Date;
   readonly bookings: readonly Held[];
   readonly reason: TripCancelReason | null;
@@ -175,11 +191,11 @@ function CancelTripForm({
   /** Someone paid or left since it showed: load it again. */
   readonly onTermsChanged: () => void;
 }) {
-  const { locale, t } = useLanguage();
+  const { t } = useLanguage();
   const palette = usePalette();
   const session = useSession();
   const [busy, setBusy] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, say] = useSaid();
   // Checked as typed, as the server checks it: no contact details (R3.10).
   const noteProblem = checkNote(note.trim())[0];
   const noteError =
@@ -214,14 +230,14 @@ function CancelTripForm({
 
   const cancel = async () => {
     if (noteError !== undefined) {
-      setNotice(noteError);
+      say(noteError);
       return;
     }
     if (reason === null) {
-      setNotice(t("booking.cancelChooseReason"));
+      say(t("booking.cancelChooseReason"));
       return;
     }
-    setNotice(null);
+    say(null);
     setBusy(true);
     const answer = await session.call(cancelTripRoute, {
       params: { id: trip.id },
@@ -240,7 +256,7 @@ function CancelTripForm({
       onTermsChanged();
       return;
     }
-    setNotice(
+    say(
       answer.error.code === "trip_not_cancellable"
         ? t("trip.notCancellable")
         : errorText(t, answer),
@@ -250,9 +266,11 @@ function CancelTripForm({
   return (
     <Screen
       footer={
-        <View style={styles.actions}>
+        <>
+          <ActionNotice says={notice} />
           <Button
             main
+            variant="danger"
             busy={busy}
             label={t("trip.cancel")}
             onPress={() => {
@@ -260,30 +278,19 @@ function CancelTripForm({
             }}
           />
           <Button
-            variant="text"
+            variant="secondary"
+            fill
             disabled={busy}
             label={t("trip.keep")}
             onPress={() => {
               leave(trip.id);
             }}
           />
-        </View>
+        </>
       }
     >
-      <BackButton fallback={tripHref(trip.id)} />
-      <View>
-        <Text style={[typography.small, { color: palette.textMuted }]}>
-          {capitalised(
-            t("trip.mine.when", {
-              day: formatDay(departsAt, locale),
-              time: formatClock(departsAt),
-            }),
-            locale,
-          )}{" "}
-          · {routeText(t, locale, trip)}
-        </Text>
-        <Title align="start">{t("trip.cancelTitle")}</Title>
-      </View>
+      <ScreenHead title={t("trip.cancelTitle")} back={tripHref(trip.id)} />
+      <DriverRideTicket trip={trip} car={car} />
 
       {changed === null ? null : (
         <TakesFocus key={changed}>
@@ -305,7 +312,7 @@ function CancelTripForm({
               label={cancelReasonText(t, option)}
               selected={option === reason}
               onToggle={() => {
-                setNotice(null);
+                say(null);
                 onReason(option);
               }}
             />
@@ -337,7 +344,7 @@ function CancelTripForm({
         label={t("trip.cancelNote")}
         value={note}
         onChangeText={(text) => {
-          setNotice(null);
+          say(null);
           onNote(text);
         }}
         multiline
@@ -345,12 +352,6 @@ function CancelTripForm({
         help={t("trip.cancelNoteHelp", { max: noteMaxLength })}
         error={noteError}
       />
-
-      {notice === null ? null : (
-        <TakesFocus key={notice}>
-          <Notice message={notice} />
-        </TakesFocus>
-      )}
     </Screen>
   );
 }
@@ -358,5 +359,4 @@ function CancelTripForm({
 const styles = StyleSheet.create({
   reasons: { gap: spacing.sm },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  actions: { gap: spacing.xs },
 });

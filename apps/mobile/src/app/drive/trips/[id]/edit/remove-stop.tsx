@@ -5,16 +5,14 @@ import { router } from "expo-router";
 import { useCallback, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { useSession } from "@/auth/session";
-import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
-import { Notice } from "@/components/notice";
+import { ActionNotice } from "@/components/notice";
 import { RadioCard } from "@/components/radio-card";
 import { Screen } from "@/components/screen";
-import { TakesFocus } from "@/components/takes-focus";
 import { Body, Heading } from "@/components/text";
 import { editHref, WithTripToChange, type TripToChange } from "@/driver-trip/change-screen";
-import { refusalText, timeLines, TripHeading, tripHref } from "@/driver-trip/changes";
+import { refusalText, timeLines, TripHead, tripHref } from "@/driver-trip/changes";
 import { ForPassengers, LevelLowered, Lines, Refused } from "@/driver-trip/stop-parts";
 import { useLanguage } from "@/i18n/language";
 import { useLoaded } from "@/lib/use-loaded";
@@ -79,12 +77,14 @@ function ChooseStop({
     <Screen
       footer={
         between.length === 0 ? undefined : (
-          <Button main label={t("trip.editCheck")} onPress={check} />
+          <>
+            <ActionNotice says={notice} />
+            <Button main label={t("trip.editCheck")} onPress={check} />
+          </>
         )
       }
     >
-      <BackButton fallback={editHref(trip.id)} />
-      <TripHeading trip={trip} title={title} />
+      <TripHead trip={trip} title={title} back={editHref(trip.id)} />
       {between.length === 0 ? (
         <Body align="start">{t("trip.editNoStopToRemove")}</Body>
       ) : (
@@ -107,11 +107,6 @@ function ChooseStop({
             ))}
           </View>
         </>
-      )}
-      {notice === null ? null : (
-        <TakesFocus key={notice}>
-          <Notice message={notice} />
-        </TakesFocus>
       )}
     </Screen>
   );
@@ -148,8 +143,7 @@ function Preview({
   if (effect === undefined) {
     return (
       <Screen>
-        <BackButton fallback={editHref(trip.id)} />
-        <TripHeading trip={trip} title={title} />
+        <TripHead trip={trip} title={title} back={editHref(trip.id)} />
         <ActivityIndicator accessibilityLabel={t("common.loading")} color={palette.primary} />
       </Screen>
     );
@@ -209,18 +203,20 @@ function Preview({
   return (
     <Screen
       footer={
-        <Button
-          main
-          busy={busy}
-          label={t("trip.editSave")}
-          onPress={() => {
-            void save();
-          }}
-        />
+        <>
+          <ActionNotice says={notice} />
+          <Button
+            main
+            busy={busy}
+            label={t("trip.editSave")}
+            onPress={() => {
+              void save();
+            }}
+          />
+        </>
       }
     >
-      <BackButton fallback={editHref(trip.id)} />
-      <TripHeading trip={trip} title={title} />
+      <TripHead trip={trip} title={title} back={editHref(trip.id)} />
       <Text style={[typography.bodyStrong, { color: palette.text }]}>
         {t("trip.stopRemoved", { stop: stop.meetingPoint.name[locale] })}
       </Text>
@@ -252,11 +248,6 @@ function Preview({
       </Card>
       <LevelLowered effect={effect.data} />
       <ForPassengers told={told} requests={requests} stop="removed" />
-      {notice === null ? null : (
-        <TakesFocus key={notice}>
-          <Notice message={notice} />
-        </TakesFocus>
-      )}
     </Screen>
   );
 }
