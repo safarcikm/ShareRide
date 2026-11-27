@@ -1937,6 +1937,15 @@ releases follow [Semantic Versioning](https://semver.org/).
   and a draft whose meeting points went out of use says "No route yet"
   and opens at its route. Three new texts, and "Find another ride" is
   "Finna aðra ferð" in Icelandic wherever it stands.
+- On a laptop a ride you drive keeps My rides chosen in the menu, where
+  the ride is listed (spec 31, 3.22). The menu showed Offer there. The
+  screens the ride opens follow it: editing, cancelling, a message to
+  all passengers and sharing. This came after the release of
+  2026-11-27, and goes out with the next one.
+- Spec 31, "One ride, one ticket", is built, and on puffinride.is since
+  2026-11-27 (#257 to #278). Its section 3.22 says where the screens
+  differ from the drawings and what is left, and the pictures of the
+  build were taken again from the finished screens.
 - The web journeys never give two test accounts the same phone number: a
   run in ten did, and a sign-in journey then failed.
 - CI skips its code jobs (bundles, unit, integration and web tests, the API
