@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { mapSize, project, type Position } from "@shareride/ui/map";
 import { english, enterCodes, finishSignUp } from "./support/account";
 import { newPhoneNumber } from "./support/sms";
+import { focused } from "./support/trips";
 
 /** Phones show the map first and the list on a choice; wide screens show both. */
 async function showList(page: Page) {
@@ -122,6 +123,9 @@ test.describe("meeting points on the web", () => {
     await finishSignUp(page, english, "Freyja");
 
     await expect(page.getByRole("heading", { name: "What's wrong here?" })).toBeVisible();
+    // Send is the page's one main button, in the bar at the bottom (spec 31, R31.1).
+    const bar = page.getByTestId("bottom-bar").filter({ visible: true });
+    await expect(bar.getByRole("button", { name: "Send", exact: true })).toBeInViewport();
     await page.getByRole("button", { name: "Send", exact: true }).click();
     await expect(page.getByText("Choose what is wrong.")).toBeVisible();
     await page.getByRole("radio", { name: "It's in the wrong place on the map" }).click();
@@ -129,8 +133,11 @@ test.describe("meeting points on the web", () => {
       .getByRole("textbox", { name: "Tell us more (optional)" })
       .fill("The pin is across the road.");
     await page.getByRole("button", { name: "Send", exact: true }).click();
-    await expect(
-      page.getByRole("heading", { name: "Thank you. We'll check this meeting point." }),
-    ).toBeVisible();
+    // The thanks are the page's title, with focus, and the way back is the
+    // bar's button (3.19).
+    const thanks = "Thank you. We'll check this meeting point.";
+    await expect(page.getByRole("heading", { name: thanks })).toBeVisible();
+    await expect.poll(() => focused(page)).toContain(thanks);
+    await expect(bar.getByRole("button", { name: "Back", exact: true })).toBeInViewport();
   });
 });

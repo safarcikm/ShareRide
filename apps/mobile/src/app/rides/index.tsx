@@ -2,12 +2,12 @@ import { soonestTripsMaxLimit, soonestTripsRoute } from "@shareride/contracts";
 import { useCallback } from "react";
 import { ActivityIndicator } from "react-native";
 import { useSession, useSessionState } from "@/auth/session";
-import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Notice } from "@/components/notice";
 import { PuffinByPin } from "@/components/puffin-scenes";
 import { Screen } from "@/components/screen";
-import { Body, Title } from "@/components/text";
+import { ScreenHead } from "@/components/screen-head";
+import { Body } from "@/components/text";
 import { offerRide } from "@/drive/offer-ride";
 import { useLanguage } from "@/i18n/language";
 import { useLoaded } from "@/lib/use-loaded";
@@ -19,7 +19,8 @@ import { usePalette } from "@/theme/use-palette";
 /**
  * All rides leaving soon (spec 4, 3.8, item 3): the 50 soonest, each for
  * its whole route, from "See all rides" on the front page. Pulling down
- * loads them again (spec 16, 3.9).
+ * loads them again (spec 16, 3.9). The title is at the left with Back
+ * (spec 31, 3.17); with no rides, the words stand under the puffin.
  */
 export default function Rides() {
   const { t } = useLanguage();
@@ -34,8 +35,7 @@ export default function Rides() {
 
   return (
     <Screen siteFooter refresh={() => pull((loaded) => loaded.ok)}>
-      <BackButton />
-      <Title>{t("rides.title")}</Title>
+      <ScreenHead title={t("rides.title")} />
       {answer === undefined ? (
         <ActivityIndicator accessibilityLabel={t("common.loading")} color={palette.primary} />
       ) : !answer.ok ? (
@@ -67,7 +67,7 @@ export default function Rides() {
             />
           ))}
           {answer.data.results.length === soonestTripsMaxLimit ? (
-            <Body>{t("rides.limit")}</Body>
+            <Body align="start">{t("rides.limit")}</Body>
           ) : null}
         </>
       )}

@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { english, newEmail, signUp } from "./support/account";
 import { confirmCodeSubject, emailedCode, emailTo, linkIn } from "./support/email";
-import { postTripToSelfoss } from "./support/trips";
+import { focused, postTripToSelfoss } from "./support/trips";
 
 // An email on the web build (plan 4.6; spec 26, 3.7): a passenger signs up
 // with an email and sees it on Profile, changes it with a confirm code
@@ -64,7 +64,14 @@ test("a passenger changes their email and gets the Pay now email there", async (
   await passenger.goto(link);
   await expect(passenger.getByRole("heading", { name: "Your email is added" })).toBeVisible();
   await expect(passenger).toHaveURL(/\/verify-email$/);
-  await passenger.getByRole("link", { name: "Go to your profile" }).click();
+  // What the link did has focus, and the way on is the page's main
+  // button, a link, in the bar at the bottom (spec 31, 3.19).
+  await expect.poll(() => focused(passenger)).toContain("Your email is added");
+  await passenger
+    .getByTestId("bottom-bar")
+    .filter(visible)
+    .getByRole("link", { name: "Go to your profile" })
+    .click();
   await expect(emailRow(address)).toBeVisible();
   // The old address is told, in case it was not her (spec 26, R26.6).
   await emailTo(first, /^Your PuffinRide sign-in email changed$/);

@@ -15,7 +15,8 @@ import { useSession } from "@/auth/session";
 import { Button } from "@/components/button";
 import { Chip } from "@/components/chip";
 import { FieldError } from "@/components/field-error";
-import { Notice } from "@/components/notice";
+import { ActionNotice } from "@/components/notice";
+import { InBar } from "@/components/screen";
 import { TextField } from "@/components/text-field";
 import { useLanguage } from "@/i18n/language";
 import { spacing, typography } from "@/theme/tokens";
@@ -47,6 +48,8 @@ const isField = (path: unknown): path is Field =>
  * Add or edit a car (spec 3, screen 2): make with suggestions, model, a
  * colour from the list and the number plate, which can come later. The
  * rules are the domain's; the server checks them again and tidies the plate.
+ * "Save car" is the screen's main button, in its bar, with why it did not
+ * save over it (spec 31, R31.1 and 3.19).
  */
 export function CarForm({
   car,
@@ -159,8 +162,10 @@ export function CarForm({
         maxLength={12}
         autoCapitalize="characters"
       />
-      <Notice message={failure} />
-      <Button label={t("vehicle.save")} busy={busy} onPress={() => void save()} />
+      <InBar>
+        <ActionNotice says={failure} />
+        <Button main label={t("vehicle.save")} busy={busy} onPress={() => void save()} />
+      </InBar>
     </>
   );
 }

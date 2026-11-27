@@ -4,6 +4,7 @@ import { checkProfilePhoto } from "@shareride/domain";
 import { bytesFromBase64 } from "@/lib/base64";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
+import { filledButtons, inBar, inPage } from "@/testing/buttons";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
 import { photoSizeIs, resetManipulator } from "@/testing/image-manipulator";
 import { cameraAllowedIs, launchCameraAsync, photoPickedIs } from "@/testing/image-picker";
@@ -166,6 +167,36 @@ describe("my profile photo (spec 1, 3.5)", () => {
     expect(card.queryByTestId("avatar-photo", hidden)).toBeNull();
     expect(card.getByRole("button", { name: "Add a photo" })).toBeVisible();
     expect(screen.getByLabelText("First name")).toHaveDisplayValue("Annika");
+  });
+
+  it("has the photo page's main button in the bar, and the rest as rows with pictures (spec 31, R31.1)", async () => {
+    const app = await renderApp("/drive/photo", { me: withPhoto, setUp: drivingApi });
+    await findPersonCard("Anna");
+    expect(inBar().getByRole("button", { name: "Change photo" })).toHaveStyle({ minHeight: 56 });
+    expect(filledButtons()).toBe(1);
+    const rows = within(screen.getByTestId("action-rows"));
+    // A phone's camera, then removing, which is last.
+    expect(rows.getAllByRole("button").map((row) => String(row.props.accessibilityLabel))).toEqual([
+      "Take a photo",
+      "Remove photo",
+    ]);
+    for (const row of rows.getAllByRole("button")) {
+      expect(within(row).getByTestId("row-icon", hidden)).toBeTruthy();
+    }
+    // Why the main button did nothing is said over it.
+    picks(640, 640);
+    app.client.answer("/v1/me/photo", () => failure(503, "photo_storage_unavailable"), "put");
+    await fireEvent.press(inBar().getByRole("button", { name: "Change photo" }));
+    expect(await inBar().findByRole("alert")).toHaveTextContent(
+      "Your photo couldn't be saved. Try again in a moment.",
+    );
+    expect(inPage().queryByRole("alert")).toBeNull();
+    // A row does its own thing, and says so in the page.
+    app.client.answer("/v1/me/photo", () => ok(200, completeMe), "delete");
+    await fireEvent.press(rows.getByRole("button", { name: "Remove photo" }));
+    expect(await inPage().findByText("Photo removed.")).toBeVisible();
+    expect(inBar().getByRole("button", { name: "Add a photo" })).toBeVisible();
+    expect(inBar().queryByRole("alert")).toBeNull();
   });
 
   it("says PuffinRide hid my photo, which only I still see, and lets me add another (spec 9, 3.4.3)", async () => {

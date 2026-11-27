@@ -4,6 +4,7 @@ import type { DriverReadiness, Vehicle } from "@shareride/contracts";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
+import { filledButtons, inBar, inPage } from "@/testing/buttons";
 import { colors } from "@/theme/tokens";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
@@ -159,6 +160,30 @@ describe("Add a car (spec 3, 3.2)", () => {
   });
 });
 
+describe("My cars (spec 31, 3.19 and R31.1)", () => {
+  const hidden = { includeHiddenElements: true };
+
+  it("lists each car as a row with a picture, and Add a car as the last row", async () => {
+    await openCars({ cars: [yaris] });
+    const rows = within(screen.getByTestId("action-rows"));
+    const car = rows.getByRole("button", { name: "Toyota Yaris, white, No number plate yet" });
+    expect(within(car).getByTestId("row-icon", hidden)).toBeTruthy();
+    const add = rows.getByRole("button", { name: "Add a car" });
+    expect(within(add).getByTestId("row-icon", hidden)).toBeTruthy();
+    expect(rows.getAllByRole("button").at(-1)).toBe(add);
+    // Rows only: while it lists cars the page has no main button, and no bar.
+    expect(filledButtons()).toBe(0);
+    expect(screen.queryByTestId("bottom-bar")).toBeNull();
+  });
+
+  it("has Add a car as its main button, in the bar, while there is no car", async () => {
+    await openCars();
+    expect(screen.getByText("No cars yet. Add the car you drive.")).toBeVisible();
+    expect(inBar().getByRole("button", { name: "Add a car" })).toHaveStyle({ minHeight: 56 });
+    expect(screen.queryByTestId("action-rows")).toBeNull();
+  });
+});
+
 describe("Opened from a link", () => {
   it("goes on to My cars after adding a car", async () => {
     await renderApp("/drive/cars/new", { me: completeMe, setUp: (client) => driver(client) });
@@ -206,14 +231,19 @@ describe("Edit a car", () => {
     expect(
       await screen.findByText("We couldn't find this car. It may have been removed."),
     ).toBeVisible();
+    // Why Save did nothing is said over it, in the bar (spec 31, 3.19).
+    expect(inBar().getByRole("alert")).toHaveTextContent(
+      "We couldn't find this car. It may have been removed.",
+    );
+    expect(inPage().queryByRole("alert")).toBeNull();
   });
 
   it("removes a car after naming it", async () => {
     const app = await openCars({ cars: [yaris] });
     await fireEvent.press(screen.getByRole("button", { name: /^Toyota Yaris, white/ }));
-    const focus = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
+    const focus = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent").mockClear();
     const remove = await screen.findByRole("button", { name: "Remove car" });
-    // Opening the page moved no focus.
+    // Opening the page moved no focus (the count starts here: an earlier test moved some).
     expect(focus).not.toHaveBeenCalled();
     await fireEvent.press(remove);
     expect(screen.getByText("Remove Toyota Yaris? It stays on your past rides.")).toBeVisible();
@@ -241,8 +271,12 @@ describe("Edit a car", () => {
     const hidden = { includeHiddenElements: true };
     expect(within(remove).getByTestId("row-icon", hidden)).toBeTruthy();
     expect(within(remove).queryByTestId("row-chevron", hidden)).toBeNull();
-    const all = screen.getAllByText(/./).map((text) => String(text.props.children));
+    // Under it is only the bar, with Save.
+    const all = inPage()
+      .getAllByText(/./)
+      .map((text) => String(text.props.children));
     expect(all.at(-1)).toBe("Remove car");
+    expect(inBar().getByRole("button", { name: "Save car" })).toHaveStyle({ minHeight: 56 });
     // Asking first stands where the row stood, with nothing in the middle.
     await fireEvent.press(remove);
     expect(screen.getByText("Remove Toyota Yaris? It stays on your past rides.")).not.toHaveStyle({
@@ -305,5 +339,19 @@ describe("Driving licence (spec 3, 3.3)", () => {
     expect(
       app.client.calls.find((call) => call.path === "/v1/me/driver-licence-declaration")?.input,
     ).toEqual({ body: { declared: true }, accessToken: "sr_at_access-1" });
+  });
+
+  it("says over the button, in the bar, why the declaration was not saved (spec 31, 3.19)", async () => {
+    const app = await renderApp("/drive/licence", {
+      me: completeMe,
+      setUp: (client) => driver(client, { cars: [yaris] }),
+    });
+    await fireEvent.press(await screen.findByRole("checkbox", { name: /^I declare that I hold/ }));
+    app.client.answer("/v1/me/driver-licence-declaration", () => failure(500, "internal_error"));
+    await fireEvent.press(inBar().getByRole("button", { name: "Confirm" }));
+    expect(await inBar().findByRole("alert")).toHaveTextContent(
+      "Something went wrong on our side. Try again.",
+    );
+    expect(inPage().queryByRole("alert")).toBeNull();
   });
 });

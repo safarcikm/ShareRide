@@ -1175,6 +1175,19 @@ and signed-out screens with a puffin, the screens that say a seat is
 booked or a ride is published, and About keep a centred title. This
 changes Martin's choice of 2026-11-14 (spec 15, 5.1) and is decision 2.
 
+As built (plan, PR 12a): a screen test opens every page a signed-in
+member reaches, 86 pages and states, and looks where the title is. It is
+at the left on all but the ones named above and About's kin, the legal
+documents and Cookies, which the website says about itself. Under a title
+at the left nothing in the page's column is centred. What is centred
+there belongs to a control or a drawing: what a button says, the number
+between a stepper's two buttons, the month between a calendar's arrows,
+the price a passenger pays over its slider, a conversation's day and what
+PuffinRide says in it, and the words under a puffin. On Find on a phone,
+signed in, "Driving somewhere? Share the empty seats in your car." starts
+at the left, as the title does; signed out it stays centred with the
+rest.
+
 ### 3.18 Plain defects
 
 Fixed in a pull request of their own, before the rest and whatever is
@@ -1226,9 +1239,9 @@ ticket wherever it shows a ride (R31.2), and the tags of rule 6.
 | Edit trip (`/drive/trips/[id]/edit`) | Its parts become rows with what is set now: Time, Stops (with Add a stop and Remove a stop under it), Price, Seats, Car, How people book, Preferences and note. Each part's screen and "Check the change" keep their fields |
 | Sharing a ride, messaging all passengers | The head at the left |
 | A person's profile, its preview, Edit profile | The person's card as on Profile (3.14); Report and Block as rows, red and last (as built: last, and only Block red, decision 17) |
-| All rides (`/rides`), a place, a meeting point and their list | Rides as tickets; the rest as today. As built: a place and a meeting point list no rides today, so only All rides changed |
-| My cars, a car, the driving licence, the photo | The head at the left (as built: "Remove car" a red row, and the photo's page with the person's card) |
-| The pages under Settings, Notices, Send feedback, deleting the account | The head at the left (as built: Privacy's links a card of rows, and the button that deletes the account red) |
+| All rides (`/rides`), a place, a meeting point and their list | Rides as tickets; the rest as today. As built: a place and a meeting point list no rides today, so only All rides changed; since PR 12a all four and "What's wrong here?" have the head at the left |
+| My cars, a car, the driving licence, the photo | The head at the left (as built: "Remove car" a red row, and the photo's page with the person's card; since PR 12a the cars are rows with pictures, and each page's main button is in the bar) |
+| The pages under Settings, Notices, Send feedback, deleting the account | The head at the left (as built: Privacy's links a card of rows, and the button that deletes the account red; since PR 12a each page's main button is in the bar, and confirming with a code has one button and two rows) |
 
 As built, Booking a seat on a phone
 ([light](images/one-ride-one-ticket/built/book-phone-light.webp),
@@ -1475,27 +1488,112 @@ where something is taken away (R31.3, decision 17), and the outcome as
 the head with one main button after something was sent or deleted
 (R31.1).
 
-Left as they are, for the last pass (plan, PR 12): the page an email's
-link opens (`/verify-email`), whose titles stay centred; the list on My
-cars, a card of names with no pictures; Blocked people's list with an
-outlined "Unblock" on each; and the button that confirms removing a car,
-which is outlined. Main buttons that stand in the column and not in the
-bar: "Save" on Edit profile and on the forms of a car, the licence, the
-email and the password; "Delete my account"; "Add a car" while there is
-none; "Add email" where a page asks for one first; "Done" after a
-password is saved; "Add a photo" on the photo's page, with "Take a
-photo" and "Remove photo" under it in the phone apps; and the two
-buttons of the page an account that waits to be deleted lands on.
-Confirming with a code (deleting, a new file of my data, the email, the
-password) is a column of three buttons. Two filled buttons can show at
-once on "Download my data" (a file to download while a new one is
-confirmed) and on Notices (two appeals open). What must be settled
-before deleting is a card of rows with no pictures.
+As built, the last pass, part one (plan, PR 12a): what the paragraphs
+above left, and the pages no flow had taken. On a phone:
+[My cars](images/one-ride-one-ticket/built/cars-phone-light.webp),
+[a car](images/one-ride-one-ticket/built/edit-car-phone-light.webp),
+[Edit profile](images/one-ride-one-ticket/built/edit-profile-phone-light.webp),
+[Delete my account](images/one-ride-one-ticket/built/delete-account-phone-light.webp),
+[Download my data, with the code](images/one-ride-one-ticket/built/download-code-phone-light.webp),
+[the meeting points](images/one-ride-one-ticket/built/meeting-points-phone-light.webp),
+a meeting point
+([light](images/one-ride-one-ticket/built/meeting-point-phone-light.webp),
+[dark, in Icelandic](images/one-ride-one-ticket/built/meeting-point-phone-dark.webp)),
+["What's wrong here?"](images/one-ride-one-ticket/built/meeting-point-problem-phone-light.webp)
+and [All rides](images/one-ride-one-ticket/built/rides-phone-light.webp).
+
+- **One main button, in the bar, on every page** (R31.1). It was at the
+  end of the form or the column on these, where a phone shows it only
+  after scrolling: "Save profile" on Edit profile; "Save car" on a car and
+  on "Add a car"; "Confirm" on the driving licence; "Send the link" on
+  Email; "Save password", and "Done" once it is saved; "Delete my
+  account"; "Make my file" and "Download the file" on "Download my data";
+  "Add a photo" or "Change photo" on the photo's page; "Add a car" on My
+  cars while there is none; "Add email" where a page asks for one first
+  ("Ask about my data", "Choose a password"); "Keep my account" on the
+  page an account that waits to be deleted lands on; "Send appeal" on
+  Notices; and "Send" on "What's wrong here?". These pages stay one column
+  on a laptop and keep the bar there.
+- **Why the button did nothing** is said over it, in the bar, and takes
+  focus, as on the screens around a booking: what the server refused on
+  each of these pages. What a field has to say stays at the field: an
+  email that is no address, a password against the rules, a code of too
+  few digits, the box of the licence not ticked, no reason chosen.
+- **Confirming with a code** (deleting, a file of my data, a new email, a
+  password, and on Sign-in methods a Google or Apple account or a
+  passkey): the button that confirms is the page's main button while the
+  code is asked for, in the bar, red where it deletes the account. It is
+  there from the start and busy until the code is on its way, so the bar
+  does not come and go. "Send a new code" and "Cancel" are rows with
+  pictures under the field, in that order; they were two more buttons.
+  What the code's field says, and that a new code was sent, stay by the
+  field.
+- **Never two:** on "Download my data", while a new file is asked for
+  with a code beside a file that is ready, the code's button has the bar
+  and "Download the file" is not shown; Cancel brings it back. "Make a new
+  file" is a row with a picture under "A new file replaces this one." On
+  Notices one appeal is written at a time: opening a second notice's
+  appeal closes the first, and what was written there goes, as with
+  Cancel.
+- **My cars** lists the cars as rows with pictures, with "Add a car" as
+  the last row; it was a card of names with a button under it. With no
+  car yet, "Add a car" is the main button, in the bar.
+- **The photo's page:** "Take a photo", in the phone apps, and "Remove
+  photo", red and last (R31.3), are rows with pictures under the person's
+  card; they were buttons under the main one. What a row did or could not
+  do is said in the page, by the rows.
+- **The page an account that waits to be deleted lands on:** "Sign out"
+  is a row with a picture. Why signing out failed is said by the row, and
+  why the account was not kept over "Keep my account".
+- **A saved password:** "Your password is saved." is the page's title,
+  with focus, with nothing to go back to and "Done" as the main button; it
+  was a notice under the title "Choose a password".
+- **The page an email's link opens** (`/verify-email`): what the link did
+  is the title, at the left and with focus ("Your email is added", "This
+  link no longer works", "This email belongs to another account", "Open
+  the link from your email"), with its line under it and nothing to go
+  back to. The way on, "Go to your profile" or "Open PuffinRide", is the
+  page's main button, a link, in the bar; it was a text link under
+  centred words.
+- **All rides, a place, the meeting points and a meeting point** have
+  Back and their title at the left, with the line that stood centred
+  under the title as the head's line: what meeting points are, what kind
+  of place it is ("Town · South"), what and where a meeting point is
+  ("Fuel station · Mýrdalshreppur, South"). The other lines of a meeting
+  point (its name in the other language, "Also known as …", the season,
+  when it was last checked), the "Sample meeting point" tag and the map's
+  hint start at the left. With no rides, All rides keeps its puffin with
+  the words centred under it. Until a place or a meeting point is read,
+  or when it is not found, Back stands alone where the head has it.
+- **A meeting point's two actions** are rows with pictures at the end of
+  its page (rule 4): "Open in maps", then "Something wrong here?". They
+  were an outlined button and a text link, both centred. The page has no
+  main button. Both stay buttons, not links: one leaves the app, the other
+  asks to sign in first. That no maps app opened is said under the rows.
+- **"What's wrong here?"** has its title at the left with Back and the
+  meeting point's name as its line. Once sent, the thanks are the title,
+  with focus ("Thank you. We'll check this meeting point."), and "Back" is
+  the main button in the bar; they were a centred title with an outlined
+  button.
+
+Where a filled button is not in the bar, and stays so: the search card's
+on Find and on "Find a ride" (R31.1); "Find a ride" under the puffin of
+an empty My rides; and the round button that sends, at the end of the
+field in the bar of a conversation and of "Message all passengers"
+(3.13). The screen test names each.
+
+Left as they are: Blocked people's list, with an outlined "Unblock" on
+each line, which undoes something and is no row that leads on; the
+outlined button that confirms removing a car, in its card, as a filled
+red one would be the page's second beside "Save car"; what must be
+settled before deleting, a card of rows with no pictures; and "Not now"
+under the password's field, a text link. Sign-in methods keeps its own
+buttons (spec 29); only the code's form changed there, as everywhere.
 
 My rides came with PR 8c (3.10).
 
-Not changed: signing in and joining (`/sign-in`, `/onboarding`, the
-invitation and email links), which are spec 29's; About, the legal
+Not changed: signing in and joining (`/sign-in`, `/onboarding` and the
+invitation link), which are spec 29's; About, the legal
 documents, cookies and the public pages for search engines (specs 23 and
 30); the console.
 
@@ -1513,7 +1611,12 @@ declaration before publishing (spec 3, R3.1 and R3.2; spec 16, 3.6).
   request's Accept, "See the request"). A screen test counts them: one
   main button at most, and no filled button outside a `NeedsYouCard`.
   A screen that stays one column on a laptop (spec 18, 3.15) keeps the
-  bar there.
+  bar there. As built (PR 12a), the test opens every page a signed-in
+  member reaches and says where its filled button is: the bar; the
+  search card, on Find and on "Find a ride"; under the puffin of an empty
+  My rides; and, round, at the end of the field in a conversation's bar.
+  A part of a page that keeps its own state, as a form does, puts its
+  button in the screen's bar (`InBar`).
 - **R31.2** A ride is shown as a `RideTicket` wherever a member sees it in
   a list or as a summary.
 - **R31.3** An action that cannot be undone is a red row, last in its

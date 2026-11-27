@@ -29,6 +29,11 @@ after the reviews, with Block red and last; they were loose buttons under
 the person's card (3.1.1, 3.2.1 and 3.3.4). Blocked people, My reports
 and Notices have their title at the left.
 
+And, since its last pass (3.19, R31.1): on Notices one appeal is written
+at a time, with "Send appeal" as the page's one main button, at the
+bottom; opening another notice's appeal closes the first, as Cancel does
+(3.4.4).
+
 ## 1. Problem and goal
 
 Strangers share a car, often on long roads in winter. People must be able to

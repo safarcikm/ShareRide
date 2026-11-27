@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react-native";
+import { screen, within } from "@testing-library/react-native";
 
 /** A part on a screen under test, with the part that holds it. */
 interface Shown {
@@ -22,3 +22,9 @@ export function filledButtons(): number {
     .queryAllByTestId("filled-button")
     .filter((button) => !inside(button, "needs-you-card")).length;
 }
+
+/** The bar at the bottom of the screen in front, which holds its main button (spec 31, R31.1). */
+export const inBar = () => within(screen.getByTestId("bottom-bar"));
+
+/** The page above the bar: what scrolls. */
+export const inPage = () => within(screen.getByTestId("screen-scroll"));

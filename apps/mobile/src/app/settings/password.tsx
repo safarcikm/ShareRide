@@ -8,11 +8,10 @@ import { StyleSheet, View } from "react-native";
 import { errorText, formatWait } from "@/auth/errors";
 import { useMe, useSession } from "@/auth/session";
 import { Button } from "@/components/button";
-import { Notice } from "@/components/notice";
+import { ActionNotice } from "@/components/notice";
 import { PasswordField } from "@/components/password-field";
-import { Screen } from "@/components/screen";
+import { InBar, Screen } from "@/components/screen";
 import { ScreenHead } from "@/components/screen-head";
-import { TakesFocus } from "@/components/takes-focus";
 import { Body } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { BackToMenu } from "@/navigation/back-to-menu";
@@ -48,6 +47,11 @@ const apiProblems: Readonly<Record<string, PasswordProblem>> = {
  * the API asks for a confirm code and the form appears in place (R27.5).
  * Only for an account with a verified email, its user name. Opened from
  * Sign-in methods, after "Forgot your password?" and after sign-up.
+ *
+ * Each of its states has one main button, in the bottom bar (spec 31,
+ * R31.1): "Save password" with why it was not saved over it, the code's
+ * button with a code, "Add an email" without an email, and "Done" once
+ * saved, when "Your password is saved." is the title, with focus (3.19).
  */
 export default function PasswordScreen() {
   const me = useMe();
@@ -125,31 +129,32 @@ function PasswordForm({ me }: { readonly me: Me }) {
 
   if (me.email === null) {
     return (
-      <Screen>
-        {header}
-        <Body align="start">{t("password.emailRequired")}</Body>
-        <View style={styles.form}>
+      <Screen
+        footer={
           <Button
+            main
             label={t("settings.signInMethods.addEmail")}
             onPress={() => {
               router.push("/settings/email");
             }}
           />
-        </View>
+        }
+      >
+        {header}
+        <Body align="start">{t("password.emailRequired")}</Body>
       </Screen>
     );
   }
 
   if (saved) {
     return (
-      <Screen>
-        {header}
-        <TakesFocus>
-          <Notice kind="info" urgent={false} message={t("password.saved")} />
-        </TakesFocus>
-        <View style={styles.form}>
-          <Button label={t("common.done")} onPress={leave} />
-        </View>
+      <Screen footer={<Button main label={t("common.done")} onPress={leave} />}>
+        {/* The button pressed is gone: focus moves to what it did. */}
+        <ScreenHead
+          title={t("password.saved")}
+          back={null}
+          outcome={{ of: "saved", focus: true }}
+        />
       </Screen>
     );
   }
@@ -172,10 +177,12 @@ function PasswordForm({ me }: { readonly me: Me }) {
           purpose="new"
           onSubmitEditing={() => void save()}
         />
-        <Notice message={error} />
         {confirming === null ? (
           <>
-            <Button label={t("password.save")} busy={busy} onPress={() => void save()} />
+            <InBar>
+              <ActionNotice says={error} />
+              <Button main label={t("password.save")} busy={busy} onPress={() => void save()} />
+            </InBar>
             <View style={styles.notNow}>
               <Button variant="text" label={t("password.notNow")} onPress={leave} />
             </View>

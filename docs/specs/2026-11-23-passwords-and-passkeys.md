@@ -15,6 +15,14 @@ Amended by [spec 31](2026-11-26-one-ride-one-ticket.md) (3.14): Sign-in
 methods is opened from Profile, under Account, and has "Sign out on all
 devices" at its end; the texts that said "in Settings" say so (3.6).
 
+And, since its last pass (3.19, R31.1): on "Choose a password" (3.5)
+"Save password" is the page's one main button, at the bottom of the
+screen, with why it was not saved over it; once saved, "Your password is
+saved." is the page's title and "Done" is that button. Where a confirm
+code is asked for (R27.5), here and on Sign-in methods, the button that
+confirms is at the bottom too, with "Send a new code" and "Cancel" as
+rows under the field.
+
 ## 1. Problem and goal
 
 Martin, 2026-11-23, choosing how members sign in: "google, email and

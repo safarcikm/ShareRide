@@ -16,7 +16,7 @@ import { Card } from "@/components/card";
 import { Loading } from "@/components/loading";
 import { Notice } from "@/components/notice";
 import { Row } from "@/components/row";
-import { Screen } from "@/components/screen";
+import { InBar, Screen } from "@/components/screen";
 import { ScreenHead } from "@/components/screen-head";
 import { Body } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
@@ -34,7 +34,8 @@ type Check = { readonly ok: true; readonly data: DeletionCheck } | CallFailure;
  * deleting with a fresh code. Every session ends, this one too, and the
  * screen says when the data goes. The title is at the left, and the button
  * that deletes is red, before the code and with it, as it takes the
- * account away (spec 31, 3.19 and decision 17).
+ * account away, and is the page's one main button, in the bottom bar
+ * (spec 31, R31.1, 3.19 and decision 17).
  */
 export default function DeleteScreen() {
   const me = useMe();
@@ -132,14 +133,17 @@ function DeleteMyAccount({
             ) : (
               <>
                 <Body align="start">{t("privacy.delete.wait")}</Body>
-                <Button
-                  variant="danger"
-                  label={t("privacy.deleteConfirm")}
-                  onPress={() => {
-                    setError(null);
-                    setConfirming(true);
-                  }}
-                />
+                <InBar>
+                  <Button
+                    main
+                    variant="danger"
+                    label={t("privacy.deleteConfirm")}
+                    onPress={() => {
+                      setError(null);
+                      setConfirming(true);
+                    }}
+                  />
+                </InBar>
               </>
             )
           ) : (

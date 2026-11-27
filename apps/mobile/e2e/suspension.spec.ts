@@ -43,7 +43,12 @@ test("a suspended person reads why and appeals", async ({ page }) => {
 
   await page.getByRole("button", { name: "Appeal", exact: true }).click();
   await page.getByLabel("Why do you disagree?").fill("I was not there that day.");
-  await page.getByRole("button", { name: "Send appeal" }).click();
+  // Sending it is the page's one main button, in the bar at the bottom (spec 31, R31.1).
+  await page
+    .getByTestId("bottom-bar")
+    .filter(visible)
+    .getByRole("button", { name: "Send appeal" })
+    .click();
   await expect(page.getByText(/^Your appeal, sent /).filter(visible)).toBeVisible();
   await expect(
     page.getByText("PuffinRide will look at it and answer here.").filter(visible),

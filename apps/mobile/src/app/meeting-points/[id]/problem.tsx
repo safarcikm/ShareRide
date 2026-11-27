@@ -15,14 +15,12 @@ import { useCallback, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { errorText } from "@/auth/errors";
 import { useMe, useSession } from "@/auth/session";
-import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
-import { Notice } from "@/components/notice";
+import { ActionNotice, Notice } from "@/components/notice";
 import { RadioCard } from "@/components/radio-card";
 import { Screen } from "@/components/screen";
-import { TakesFocus } from "@/components/takes-focus";
+import { ScreenHead } from "@/components/screen-head";
 import { TextField } from "@/components/text-field";
-import { Body, Title } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { now } from "@/lib/clock";
 import { useLoaded } from "@/lib/use-loaded";
@@ -41,6 +39,12 @@ const detailsOf = (id: string): Href => ({ pathname: "/meeting-points/[id]", par
  * operator's queue. It needs an account, which has a verified phone number
  * (R2.8); signed out, it asks to sign in first and keeps the point, so
  * the form opens after signing in. Nothing is sent until "Send".
+ *
+ * The title is at the left with Back, and the point's name is the line
+ * under it (spec 31, 3.17). "Send" is the page's one main button, in the
+ * bottom bar, with why it was not sent over it (R31.1). Once sent, the
+ * thanks are the title, with focus, and the way back is the bar's button
+ * (3.19).
  */
 export default function MeetingPointProblemScreen() {
   const { t } = useLanguage();
@@ -72,10 +76,11 @@ function Problem({ id }: { readonly id: string }) {
     [id, session],
   );
   const { value: result, reload } = useLoaded(load);
+  const head = <ScreenHead title={t("meetingPoints.issue.title")} back={detailsOf(id)} />;
   if (result === undefined) {
     return (
       <Screen>
-        <BackButton fallback={detailsOf(id)} />
+        {head}
         <ActivityIndicator accessibilityLabel={t("common.loading")} color={palette.primary} />
       </Screen>
     );
@@ -85,7 +90,7 @@ function Problem({ id }: { readonly id: string }) {
     const gone = result.status === 404 || result.status === 400;
     return (
       <Screen>
-        <BackButton fallback={detailsOf(id)} />
+        {head}
         <Notice message={gone ? t("meetingPoints.issue.gone") : errorText(t, result)} />
         {gone ? null : <Button variant="secondary" label={t("common.retry")} onPress={reload} />}
       </Screen>
@@ -133,28 +138,48 @@ function ProblemForm({ point }: { readonly point: MeetingPointDetails }) {
 
   if (sent) {
     return (
-      <Screen>
-        <TakesFocus>
-          <Title>{t("meetingPoints.issue.thanks")}</Title>
-        </TakesFocus>
-        <Body>{t("meetingPoints.issue.thanksHelp")}</Body>
-        <Button
-          variant="secondary"
-          label={t("common.back")}
-          onPress={() => {
-            if (router.canGoBack()) router.back();
-            else router.replace(detailsOf(point.id));
-          }}
+      <Screen
+        footer={
+          <Button
+            main
+            label={t("common.back")}
+            onPress={() => {
+              if (router.canGoBack()) router.back();
+              else router.replace(detailsOf(point.id));
+            }}
+          />
+        }
+      >
+        {/* The button pressed is gone: focus moves to what it did. */}
+        <ScreenHead
+          title={t("meetingPoints.issue.thanks")}
+          line={t("meetingPoints.issue.thanksHelp")}
+          back={null}
+          outcome={{ of: "sent", focus: true }}
         />
       </Screen>
     );
   }
 
   return (
-    <Screen>
-      <BackButton fallback={detailsOf(point.id)} />
-      <Title>{t("meetingPoints.issue.title")}</Title>
-      <Body>{point.name[locale]}</Body>
+    <Screen
+      footer={
+        <>
+          <ActionNotice says={failed} />
+          <Button
+            main
+            label={t("meetingPoints.issue.send")}
+            busy={busy}
+            onPress={() => void send()}
+          />
+        </>
+      }
+    >
+      <ScreenHead
+        title={t("meetingPoints.issue.title")}
+        line={point.name[locale]}
+        back={detailsOf(point.id)}
+      />
       <View style={styles.group}>
         <Text style={[typography.label, { color: palette.text }]}>
           {t("meetingPoints.issue.what")}
@@ -190,8 +215,6 @@ function ProblemForm({ point }: { readonly point: MeetingPointDetails }) {
         help={t("meetingPoints.issue.noteHelp", { max: maxLength })}
         error={tooLong ? t("meetingPoints.issue.tooLong", { max: maxLength }) : undefined}
       />
-      <Button label={t("meetingPoints.issue.send")} busy={busy} onPress={() => void send()} />
-      <Notice message={failed} />
     </Screen>
   );
 }

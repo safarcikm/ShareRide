@@ -4,7 +4,7 @@ import { Dimensions } from "react-native";
 import { failure, ok, tokens, type FakeClient } from "@/testing/fake-client";
 import { completeMe, legalDocument, ownProfile, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
-import { filledButtons } from "@/testing/buttons";
+import { filledButtons, inBar, inPage } from "@/testing/buttons";
 import { meetingPoints } from "@/testing/meeting-points";
 import { annaProfile, findPersonCard, profileApi } from "@/testing/people";
 import { readyDriver, volvo, yaris } from "@/testing/trips";
@@ -497,8 +497,21 @@ describe("My profile (spec 31, 3.14)", () => {
     const all = screen.getAllByText(/./).map((text) => String(text.props.children));
     expect(all.indexOf("First name")).toBeGreaterThan(all.indexOf("Member since November 2026"));
     expect(filledButtons()).toBe(1);
+    expect(inBar().getByRole("button", { name: "Save profile" })).toHaveStyle({ minHeight: 56 });
     await fireEvent.press(head.getByRole("button", { name: "Back" }));
     expect(screen).toHavePathname("/profile");
+  });
+
+  it("says over Save, in the bar, why the profile was not saved (spec 31, 3.19)", async () => {
+    const app = await renderApp("/profile/edit", { me: completeMe, setUp: drivingApi });
+    await findPersonCard("Anna");
+    app.client.answer("/v1/me", () => failure(500, "internal_error"), "patch");
+    await fireEvent.press(inBar().getByRole("button", { name: "Save profile" }));
+    expect(await inBar().findByRole("alert")).toHaveTextContent(
+      "Something went wrong on our side. Try again.",
+    );
+    expect(inPage().queryByRole("alert")).toBeNull();
+    expect(screen).toHavePathname("/profile/edit");
   });
 
   it("ticks no language for someone who chose none, and shows the rest after the common ones", async () => {

@@ -1,5 +1,5 @@
-import { fireEvent, render, screen } from "@testing-library/react-native";
-import type { ReactElement } from "react";
+import { fireEvent, render, screen, within } from "@testing-library/react-native";
+import { useState, type ReactElement } from "react";
 import { Text } from "react-native";
 import { LanguageProvider } from "@/i18n/language";
 import { colors } from "@/theme/tokens";
@@ -7,7 +7,7 @@ import { Button } from "./button";
 import { Calendar } from "./calendar";
 import { PriceLevel } from "./price-level";
 import { RadioCard } from "./radio-card";
-import { Screen } from "./screen";
+import { InBar, Screen } from "./screen";
 import { StepProgress } from "./step-progress";
 import { Stepper } from "./stepper";
 import { Switch } from "./switch";
@@ -210,5 +210,116 @@ describe("Screen with a bottom bar", () => {
       minHeight: 56,
       alignSelf: "stretch",
     });
+  });
+
+  /** A part of a page that keeps what it holds itself, as a form does, with its main button. */
+  function Counter({ name = "Count" }: { readonly name?: string }) {
+    const [count, setCount] = useState(0);
+    return (
+      <>
+        <Text>Counted here</Text>
+        <InBar>
+          <Button
+            main
+            label={`${name} ${String(count)}`}
+            onPress={() => {
+              setCount(count + 1);
+            }}
+          />
+        </InBar>
+      </>
+    );
+  }
+
+  it("has no bar while nothing is put in it", async () => {
+    await inEnglish(
+      <Screen>
+        <Text>Content</Text>
+      </Screen>,
+    );
+    expect(screen.queryByTestId("bottom-bar")).toBeNull();
+  });
+
+  it("shows in the bar what a part of the page puts there with InBar, as that part has it now", async () => {
+    await inEnglish(
+      <Screen>
+        <Counter />
+      </Screen>,
+    );
+    const bar = within(screen.getByTestId("bottom-bar"));
+    // The button is in the bar and not where the part stands.
+    expect(bar.getByRole("button", { name: "Count 0" })).toHaveStyle({ minHeight: 56 });
+    expect(screen.getAllByRole("button")).toHaveLength(1);
+    expect(within(screen.getByTestId("screen-scroll")).getByText("Counted here")).toBeVisible();
+    expect(within(screen.getByTestId("screen-scroll")).queryByRole("button")).toBeNull();
+    // It stays the part's own: a press changes what the part holds.
+    await fireEvent.press(bar.getByRole("button", { name: "Count 0" }));
+    expect(bar.getByRole("button", { name: "Count 1" })).toBeVisible();
+    expect(screen.getAllByRole("button")).toHaveLength(1);
+  });
+
+  it("takes it out of the bar when the part goes, and the bar with it", async () => {
+    function Page() {
+      const [open, setOpen] = useState(true);
+      return (
+        <Screen>
+          <Button
+            variant="text"
+            label="Close"
+            onPress={() => {
+              setOpen(false);
+            }}
+          />
+          {open ? <Counter /> : null}
+        </Screen>
+      );
+    }
+    await inEnglish(<Page />);
+    expect(within(screen.getByTestId("bottom-bar")).getByText("Count 0")).toBeVisible();
+    await fireEvent.press(screen.getByRole("button", { name: "Close" }));
+    expect(screen.queryByText("Count 0")).toBeNull();
+    expect(screen.queryByTestId("bottom-bar")).toBeNull();
+  });
+
+  it("shows what one part puts there in place of another's, in the same press", async () => {
+    function Page() {
+      const [second, setSecond] = useState(false);
+      return (
+        <Screen>
+          <Button
+            variant="text"
+            label="Go on"
+            onPress={() => {
+              setSecond(true);
+            }}
+          />
+          {second ? <Counter key="second" name="Second" /> : <Counter key="first" name="First" />}
+        </Screen>
+      );
+    }
+    await inEnglish(<Page />);
+    await fireEvent.press(screen.getByRole("button", { name: "Go on" }));
+    const bar = within(screen.getByTestId("bottom-bar"));
+    expect(bar.getByRole("button", { name: "Second 0" })).toBeVisible();
+    expect(bar.queryByText("First 0")).toBeNull();
+  });
+
+  it("shows it after the screen's own footer", async () => {
+    await inEnglish(
+      <Screen footer={<Text>From the page</Text>}>
+        <Counter />
+      </Screen>,
+    );
+    const bar = screen.getByTestId("bottom-bar");
+    const texts = within(bar)
+      .getAllByText(/./)
+      .map((text) => String(text.props.children));
+    expect(texts).toEqual(["From the page", "Count 0"]);
+  });
+
+  it("leaves it where the part stands when there is no screen around it", async () => {
+    await inEnglish(<Counter />);
+    expect(screen.getByRole("button", { name: "Count 0" })).toBeVisible();
+    expect(screen.queryByTestId("bottom-bar")).toBeNull();
   });
 });

@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { english, enterCodes, finishSignUp, menuLink } from "./support/account";
 import { emailedCode, emailTo, signInCodeSubject } from "./support/email";
 import { newPhoneNumber } from "./support/sms";
+import { focused } from "./support/trips";
 
 // Spec 27's password journeys (section 8) on the web build, against the
 // test API: a new member adds a password straight after signing up and
@@ -26,8 +27,15 @@ async function choosePassword(page: Page, password: string, firstName: string) {
   await expect(page.getByRole("heading", { name: "Choose a password" })).toBeVisible();
   await page.getByLabel("New password").fill(password);
   await page.getByRole("button", { name: "Save password" }).click();
-  await expect(page.getByText("Your password is saved.").filter(visible)).toBeVisible();
-  await page.getByRole("button", { name: "Done" }).click();
+  // That it is saved is the page's title now, with focus, and the way on
+  // is the main button in the bar at the bottom (spec 31, 3.19).
+  await expect(page.getByRole("heading", { name: "Your password is saved." })).toBeVisible();
+  await expect.poll(() => focused(page)).toContain("Your password is saved.");
+  await page
+    .getByTestId("bottom-bar")
+    .filter(visible)
+    .getByRole("button", { name: "Done" })
+    .click();
   await expect(page.getByRole("heading", { name: english.hi(firstName) })).toBeVisible();
 }
 

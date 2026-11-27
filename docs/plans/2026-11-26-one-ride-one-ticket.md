@@ -1457,10 +1457,17 @@ As built, PR 11b (spec 31 says the same where a person sees it, in 3.19):
 
 `feat(look)`, spec 31, 3.17 and section 9.
 
+It is three pull requests. **12a** has items 1 and 2, with what they need
+of items 6 and 15: one main button, in the bar, and the title at the
+left, on every page (as built, below). **12b** has item 4 and what the
+other items say about focus, screen readers, large text and short
+windows. **12c** has the rest: items 3 and 5, the small things of items 6
+to 15 that are left, and item 16, where spec 31 becomes Built.
+
 1. **R31.1 everywhere:** one screen test walks every signed-in address and
-   counts the filled buttons.
+   counts the filled buttons. (Done, PR 12a.)
 2. **Titles:** every screen where you do something has `ScreenHead`; the
-   centred ones are the ones 3.17 names.
+   centred ones are the ones 3.17 names. (Done, PR 12a.)
 3. **Laptop, dark, Icelandic:** each rebuilt screen looked at in the three
    pictures and against its drawing; what differs is fixed or named.
 4. **Accessibility:** focus order follows the reading order on each
@@ -1479,7 +1486,8 @@ As built, PR 11b (spec 31 says the same where a person sees it, in 3.19):
    focus goes to the first ride; a chip is 40 high on the web, under the
    44 of a touch target; "New driver" is an amber tag, which rule 6 keeps
    for what needs someone; the reading order of the yellow card beside
-   the rides on a laptop; All rides' centred title; Find on a phone moves
+   the rides on a laptop; All rides' centred title (done, PR 12a); Find
+   on a phone moves
    down a ticket's height when my rides arrive after the rides leaving
    soon (room kept for them, or both shown together).
 7. **Small things PR 6's code review named:** a heading for the driver's
@@ -1632,8 +1640,95 @@ As built, PR 11b (spec 31 says the same where a person sees it, in 3.19):
     profile; the two small lines of the person's card are built alike
     in `profile/my-card.ts` and `people/profile-view.tsx`. Icelandic,
     for a native reader: "Prófíll" as the title of a person's profile.
+    **Of these, PR 12a did** the main buttons in the bar, the code's
+    form, the two filled buttons, My cars' rows, the page an account
+    that waits lands on and the page an email's link opens. **It kept**
+    Blocked people's outlined "Unblock" and the outlined button that
+    confirms removing a car, and says why (spec 31, 3.19). The rest is
+    still left.
 16. **Docs:** spec 31 becomes Built, with what differs from the drawings;
     spec 15 has the parts; the roadmap and the changelog.
+
+As built, PR 12a (spec 31 says the same where a person sees it, in 3.17,
+3.19 and R31.1):
+
+- **The walk** (`__tests__/every-page.test.tsx`, new): 86 pages and
+  states a signed-in member opens, each with the answers it reads. One
+  test holds the list against the files under `src/app`: a page is
+  walked, or named in `notWalked` with why (the layouts, sign-in and
+  onboarding, which are spec 29's, the public pages, and pages that only
+  lead on). For each page: at most one filled button outside a
+  `NeedsYouCard`, tall and in the bar, or where the page says (`button`:
+  the search card, under the puffin); the title not centred and in the
+  `ScreenHead`, or centred where 3.17 says (`centred`); and no centred
+  text under a title at the left but what a pressed thing says, the
+  words beside a puffin, and the four kinds `centredToo` names.
+- **`InBar`** (`components/screen.tsx`): a part of the page puts what it
+  holds in the `Screen`'s bottom bar. The screen keeps a slot
+  (`BarSlotContext`) that only the bar (`BottomBar`) listens to, so a
+  part that puts its button there again each time it is drawn draws
+  nothing else again. The screen's own `footer` comes first. With no
+  `Screen` around it, what it holds stays in place. What is in the bar
+  is drawn by the screen, so it reads no context a part between the two
+  provides.
+- **In the bar with `InBar`:** `ProfileForm` with the new `inBar` (Edit
+  profile; onboarding's form is as it was), `CarForm`,
+  `ConfirmWithCode`, `PhotoControls` when `prominent`, `AppealForm`
+  (`safety/notices.tsx`), and the buttons of `settings/email.tsx`,
+  `settings/password.tsx`, `settings/privacy/delete.tsx` and
+  `settings/privacy/download.tsx`. **With the screen's `footer`:**
+  `drive/licence.tsx`, `drive/cars/index.tsx` (while there is no car),
+  `account/deletion.tsx`, `meeting-points/[id]/problem.tsx`,
+  `verify-email.tsx`, and the states of `settings/password.tsx` and
+  `settings/privacy/ask.tsx` that ask for an email first. Each has an
+  `ActionNotice` over the button for what the server refused.
+- **`ConfirmWithCode`:** the confirm `Button` is `main` in `InBar`, busy
+  until the first code has an answer; an `ActionRows` holds "Send a new
+  code" (after the wait, `disabled` while sending or confirming) and
+  "Cancel". It serves Sign-in methods and the passkey's set-up too,
+  which changed only by this.
+- **One appeal at a time:** `app/notices.tsx` keeps which notice's appeal
+  is open (`appealing`); `Appeal` shows `AppealForm`, new, which holds
+  what is written and goes when it is left.
+- **`PhotoControls`** keeps which press failed (`error.of`): the main
+  button's is the bar's `ActionNotice`, a row's a `Notice` by the rows.
+- **Heads:** `ScreenHead` on `rides/index.tsx`, `places/[id].tsx`,
+  `meeting-points/index.tsx`, `meeting-points/[id]/index.tsx` and its
+  `problem.tsx`, and on `verify-email.tsx` and the saved password with an
+  `outcome`. A place and a meeting point keep a lone `BackButton` until
+  their name is read. `Body` is `align="start"` on those pages, and on
+  Find on a phone for a signed-in member's "Driving somewhere?".
+- **A meeting point's rows:** `meeting-points/[id]/index.tsx` ends with
+  an `ActionRows` of two `Row`s with `onPress`, "Open in maps" and
+  "Something wrong here?", in place of an outlined and a text button.
+- **For the tests:** `inBar()` and `inPage()` in `testing/buttons.ts`.
+- **No new page,** so nothing new in `notWhileDeleting`. No new text, no
+  change in the API, no migration, no new dependency.
+- **Tests:** the walk; `posting-parts.test.tsx` (`InBar`: shown in the
+  bar as the part has it now, taken out with the part, one in place of
+  another, after the footer, in place with no screen);
+  `driving.test.tsx`, `profile-and-settings.test.tsx`, `email.test.tsx`
+  (with the link's page), `password.test.tsx`, `privacy.test.tsx`,
+  `delete-account.test.tsx`, `profile-photo.test.tsx`, `notices.test.tsx`
+  and `meeting-point-problems.test.tsx` (the button in the bar, why it
+  did nothing over it and not in the page, the rows, the outcomes as
+  titles with focus); `meeting-points.test.tsx` (a meeting point's two
+  rows). Journeys: `driving.spec.ts`,
+  `delete-account.spec.ts`, `download-my-data.spec.ts`, `email.spec.ts`,
+  `password.spec.ts`, `meeting-points.spec.ts` and `suspension.spec.ts`
+  find the button in the bar, in the window without scrolling, and the
+  outcome with focus; `support/photo.ts` presses the photo page's button
+  in its bar. Pictures: `built/cars-phone-light`,
+  `built/download-code-phone-light`, `built/meeting-points-phone-light`,
+  `built/meeting-point-phone-light` and `-dark`,
+  `built/meeting-point-problem-phone-light`, `built/rides-phone-light`,
+  and `built/edit-profile-phone-light`,
+  `built/delete-account-phone-light` and `built/edit-car-phone-light`
+  again.
+- **Left for 12b,** from item 9: the bar does not yet ignore a press for
+  a moment after its main button changes. On these pages the outcome's
+  button ("Done", "Back", "Close") stands where the button just pressed
+  stood, as after a report.
 
 ## After merging
 

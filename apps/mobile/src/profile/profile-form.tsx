@@ -12,7 +12,8 @@ import { errorText } from "@/auth/errors";
 import { useSession } from "@/auth/session";
 import { Button } from "@/components/button";
 import { Chip } from "@/components/chip";
-import { Notice } from "@/components/notice";
+import { ActionNotice, Notice } from "@/components/notice";
+import { InBar } from "@/components/screen";
 import { TextField } from "@/components/text-field";
 import { useLanguage } from "@/i18n/language";
 import { spacing, typography } from "@/theme/tokens";
@@ -41,6 +42,8 @@ const commonLanguages = new Set<string>(["is", "en", "pl", "de", "es"]);
 /**
  * First name, about and spoken languages (spec 1, section 3.5), checked with
  * the same rules as the API before saving. Photo and email come later.
+ * With `inBar` the main button is the screen's, in its bottom bar, with why
+ * it did not save over it (spec 31, R31.1).
  */
 export function ProfileForm({
   me,
@@ -53,6 +56,7 @@ export function ProfileForm({
   beforeSave,
   waiting = false,
   suggestedFirstName = null,
+  inBar = false,
   children,
 }: {
   readonly me: Me;
@@ -80,6 +84,8 @@ export function ProfileForm({
    * Google or Apple gave a new account (spec 19, 3.3); the person can change it.
    */
   readonly suggestedFirstName?: string | null;
+  /** The main button goes in the screen's bottom bar, as the screen's one main button. */
+  readonly inBar?: boolean;
   /** Shown after the fields and before the main button. */
   readonly children?: ReactNode;
 }) {
@@ -244,12 +250,26 @@ export function ProfileForm({
         />
       )}
       {children}
-      <Notice message={error} />
-      <Button
-        label={submitLabel ?? t("profile.save")}
-        busy={busy || waiting}
-        onPress={() => void save()}
-      />
+      {inBar ? (
+        <InBar>
+          <ActionNotice says={error} />
+          <Button
+            main
+            label={submitLabel ?? t("profile.save")}
+            busy={busy || waiting}
+            onPress={() => void save()}
+          />
+        </InBar>
+      ) : (
+        <>
+          <Notice message={error} />
+          <Button
+            label={submitLabel ?? t("profile.save")}
+            busy={busy || waiting}
+            onPress={() => void save()}
+          />
+        </>
+      )}
     </View>
   );
 }

@@ -6,8 +6,8 @@ import { StyleSheet, View } from "react-native";
 import { errorText, formatWait } from "@/auth/errors";
 import { useMe, useSession } from "@/auth/session";
 import { Button } from "@/components/button";
-import { Notice } from "@/components/notice";
-import { Screen } from "@/components/screen";
+import { ActionNotice, Notice } from "@/components/notice";
+import { InBar, Screen } from "@/components/screen";
 import { ScreenHead } from "@/components/screen-head";
 import { TextField } from "@/components/text-field";
 import { Body } from "@/components/text";
@@ -23,7 +23,9 @@ import { spacing } from "@/theme/tokens";
  * signs in, so past the account's first 30 minutes a confirm code comes
  * first (spec 26, 3.7): the API asks for it, and the form appears. The
  * title is at the left, with what the email is for under it (spec 31,
- * 3.19).
+ * 3.19). "Send the link" is the page's one main button, in the bottom bar,
+ * with why no link went over it; with a code, the code's button has the
+ * bar (R31.1).
  */
 export default function EmailScreen() {
   const me = useMe();
@@ -131,9 +133,16 @@ function EmailForm({ me }: { readonly me: Me }) {
           maxLength={320}
           onSubmitEditing={() => void send(address)}
         />
-        <Notice message={error} />
         {confirming === null ? (
-          <Button label={t("addEmail.send")} busy={busy} onPress={() => void send(address)} />
+          <InBar>
+            <ActionNotice says={error} />
+            <Button
+              main
+              label={t("addEmail.send")}
+              busy={busy}
+              onPress={() => void send(address)}
+            />
+          </InBar>
         ) : (
           <ConfirmWithCode
             confirmLabel={t("addEmail.send")}
