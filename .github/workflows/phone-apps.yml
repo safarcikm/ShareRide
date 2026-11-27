@@ -14,7 +14,18 @@ on:
       - "packages/**"
       - "pnpm-lock.yaml"
       - ".github/workflows/phone-apps.yml"
+  # By hand, also for the store's screenshots (spec 32, 3.9): "store" runs
+  # maestro/store on an iPhone of the App Store's largest size, with a
+  # tidy status bar on both phones, in place of the checks.
   workflow_dispatch:
+    inputs:
+      journeys:
+        description: Which journeys
+        type: choice
+        options:
+          - checks
+          - store
+        default: checks
   # "Build the apps" runs these first, on the commit it builds (R32.3).
   workflow_call:
 
@@ -36,6 +47,8 @@ env:
   # The test API (apps/api/src/e2e-server.ts) writes texts and emails here.
   E2E_SMS_OUTBOX: ${{ github.workspace }}/e2e-sms.jsonl
   E2E_EMAIL_OUTBOX: ${{ github.workspace }}/e2e-email.jsonl
+  # The journeys' folder in apps/mobile: the checks, or the store's screens.
+  JOURNEYS: ${{ inputs.journeys == 'store' && 'maestro/store' || 'maestro' }}
 
 jobs:
   android:
@@ -149,12 +162,22 @@ jobs:
           # box hid the whole app from Maestro. Android closes such an app
           # instead; a crash of ours still fails the journey.
           adb -s emulator-5554 shell settings put global hide_error_dialogs 1
+          # The store's screens show a tidy status bar: Android's demo mode.
+          if [ "$JOURNEYS" = "maestro/store" ]; then
+            adb -s emulator-5554 shell settings put global sysui_demo_allowed 1
+            demo() { adb -s emulator-5554 shell am broadcast -a com.android.systemui.demo -e command "$@" > /dev/null; }
+            demo enter
+            demo clock -e hhmm 0941
+            demo battery -e level 100 -e plugged false
+            demo network -e wifi show -e level 4 -e mobile show -e datatype none -e level 4
+            demo notifications -e visible false
+          fi
           adb -s emulator-5554 install -r android/app/build/outputs/apk/release/app-release.apk
           # The app's own messages and every error, for when a journey fails.
           nohup adb -s emulator-5554 logcat -v time '*:E' ReactNativeJS:V ReactNative:V \
             > "$RUNNER_TEMP/logcat.txt" 2>&1 &
           status=0
-          bash maestro/run.sh emulator-5554 is.puffinride.app android || status=$?
+          bash maestro/run.sh emulator-5554 is.puffinride.app android "$JOURNEYS" || status=$?
           adb -s emulator-5554 emu kill || true
           exit "$status"
       - name: Keep the screenshots and Maestro's report
@@ -192,7 +215,9 @@ jobs:
           udid="$(xcrun simctl list devices available --json | node -e '
             const { devices } = JSON.parse(require("node:fs").readFileSync(0, "utf8"));
             const runtimes = Object.keys(devices).filter((r) => r.includes("iOS")).sort();
-            const phones = devices[runtimes.at(-1)].filter((d) => /^iPhone \d+$/.test(d.name));
+            // The store screens on the largest iPhone, the size the App Store asks for.
+            const model = process.env.JOURNEYS === "maestro/store" ? /^iPhone \d+ Pro Max$/ : /^iPhone \d+$/;
+            const phones = devices[runtimes.at(-1)].filter((d) => model.test(d.name));
             process.stdout.write((phones.at(-1) ?? devices[runtimes.at(-1)][0]).udid);
           ')"
           xcrun simctl boot "$udid"
@@ -256,11 +281,16 @@ jobs:
         working-directory: apps/mobile
         run: |
           xcrun simctl bootstatus "$SIM_UDID" -b > /dev/null
+          # The store's screens show a tidy status bar.
+          if [ "$JOURNEYS" = "maestro/store" ]; then
+            xcrun simctl status_bar "$SIM_UDID" override --time "9:41" --batteryState charged \
+              --batteryLevel 100 --wifiBars 3 --cellularMode active --cellularBars 4
+          fi
           app=ios/build/Build/Products/Release-iphonesimulator/PuffinRide.app
           xcrun simctl install "$SIM_UDID" "$app"
           bundle_id="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app/Info.plist")"
           status=0
-          bash maestro/run.sh "$SIM_UDID" "$bundle_id" ios || status=$?
+          bash maestro/run.sh "$SIM_UDID" "$bundle_id" ios "$JOURNEYS" || status=$?
           # The app's own messages, for when a journey fails.
           xcrun simctl spawn "$SIM_UDID" log show --last 40m --style compact \
             --predicate 'process == "PuffinRide"' > "$RUNNER_TEMP/app-ios.log" 2>&1 || true
