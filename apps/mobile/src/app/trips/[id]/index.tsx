@@ -489,7 +489,7 @@ function BookingBar({
   /**
    * On a wide screen: the seats stepper, beside the price it changes, the
    * line under the two, and a line under what can be done. A ride that was
-   * cancelled has neither the stepper nor the line.
+   * cancelled has none of the three: nothing is left to choose or to pay.
    */
   readonly panel?: {
     readonly seats: ReactNode;
@@ -502,6 +502,9 @@ function BookingBar({
   const me = useMe();
   const { part, myBooking } = trip;
   const free = part.total.amount === 0;
+  // A ride that was cancelled says so and no more: a price is for a seat
+  // that can be had (spec 31, 3.21).
+  const priced = part.state !== "cancelled";
   // The price for the seats and part on screen is on its way.
   const figureColour = pending ? palette.textMuted : palette.text;
   const status = (() => {
@@ -543,7 +546,9 @@ function BookingBar({
 
   // In the bar the action sits at the right of the price; in the panel it
   // is as wide as the card, under the price.
-  const actionStyle = panel === undefined ? styles.action : styles.panelAction;
+  // With no price beside it, what the bar says starts at the left.
+  const actionStyle =
+    panel !== undefined ? styles.panelAction : priced ? styles.action : styles.actionAlone;
   const action = (() => {
     if (myBooking !== null) {
       return (
@@ -594,14 +599,16 @@ function BookingBar({
   if (panel !== undefined) {
     return (
       <View style={styles.panel}>
-        <View style={styles.panelTop}>
-          <View style={styles.panelPrice} aria-busy={pending}>
-            <Text style={[typography.figure, { color: figureColour }]}>
-              {free ? t("results.free") : formatMoney(part.total, locale)}
-            </Text>
+        {priced ? (
+          <View style={styles.panelTop}>
+            <View style={styles.panelPrice} aria-busy={pending}>
+              <Text style={[typography.figure, { color: figureColour }]}>
+                {free ? t("results.free") : formatMoney(part.total, locale)}
+              </Text>
+            </View>
+            {panel.seats}
           </View>
-          {panel.seats}
-        </View>
+        ) : null}
         {panel.hint === null ? null : (
           <Text style={[typography.small, { color: palette.textMuted }]}>{panel.hint}</Text>
         )}
@@ -612,20 +619,22 @@ function BookingBar({
   }
   return (
     <View style={styles.bar}>
-      <View style={styles.price} aria-busy={pending}>
-        <Text style={[typography.figure, { color: figureColour }]}>
-          {free ? t("results.free") : formatMoney(part.total, locale)}
-        </Text>
-        <Text style={[typography.small, { color: palette.textMuted }]}>
-          {free || part.seats === 1
-            ? t("search.seatCount", { count: part.seats })
-            : // Short, so the button keeps its place beside it on a narrow phone.
-              t("booking.seatsTimesPrice", {
-                seats: String(part.seats),
-                price: formatMoney(part.pricePerSeat, locale),
-              })}
-        </Text>
-      </View>
+      {priced ? (
+        <View style={styles.price} aria-busy={pending}>
+          <Text style={[typography.figure, { color: figureColour }]}>
+            {free ? t("results.free") : formatMoney(part.total, locale)}
+          </Text>
+          <Text style={[typography.small, { color: palette.textMuted }]}>
+            {free || part.seats === 1
+              ? t("search.seatCount", { count: part.seats })
+              : // Short, so the button keeps its place beside it on a narrow phone.
+                t("booking.seatsTimesPrice", {
+                  seats: String(part.seats),
+                  price: formatMoney(part.pricePerSeat, locale),
+                })}
+          </Text>
+        </View>
+      ) : null}
       {action}
     </View>
   );
@@ -639,6 +648,7 @@ const styles = StyleSheet.create({
   bar: { flexDirection: "row", alignItems: "center", gap: spacing.md, flexWrap: "wrap" },
   price: { flexShrink: 0 },
   action: { flexGrow: 1, flexBasis: sizes.barAction, alignItems: "flex-end", gap: spacing.xs },
+  actionAlone: { flexGrow: 1, alignItems: "flex-start", gap: spacing.xs },
   panel: { gap: spacing.ms },
   panelTop: { flexDirection: "row", alignItems: "flex-end", gap: spacing.md },
   // The price is level with the buttons that change it, under their caption.

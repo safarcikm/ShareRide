@@ -1801,18 +1801,24 @@ Small things the reviews of the build named, mended at its end.
 
 - **An address the app does not have,** as an old link or one with a
   mistake in it, has a page of our own: the title "We can't find this
-  page" at the left, a line under it, and "Find a ride" as the main button
-  in the bar, which leads to Find. It is open to everyone, in the language
-  shown, and not for search engines. Before, the router showed its own
-  page: black, in English, with a link to a list of every address.
+  page" at the left, a line under it, the puffin of a screen with nothing
+  on it, and "Find a ride" as the main button in the bar, which leads to
+  Find. Find takes the page's place, so going back from Find does not
+  show the page again. Back, beside the title, leads where one came from,
+  or to Find for someone who opened the address itself. It is open to
+  everyone, in the language shown, and not for search engines. Before,
+  the router showed its own page: black, in English, with a link to a
+  list of every address. That list is turned off, so its address,
+  `/_sitemap`, shows this page too.
 - **"New driver"** in a ticket's foot and on the driver's card is a quiet
   tag, grey on the page's colour, where a rating would stand. It was
   amber, which rule 6 keeps for what is yours and now. On a request to a
   driver, "No reviews yet" stays in the yellow card's own amber.
-- **A ride that was cancelled** (3.7) has no seats to choose and no
-  "Where you sit". Its page keeps the ticket, who drove, the route and
-  "This ride was cancelled." where the button was. On a laptop the line
-  about free seats goes with the stepper.
+- **A ride that was cancelled** (3.7) has no seats to choose, no "Where
+  you sit" and no price: nothing is left to pay for. Its page keeps the
+  ticket, who drove, the route and "This ride was cancelled." in the bar,
+  from its left. On a laptop the price and the line about free seats go
+  with the stepper.
 - **After blocking someone** (spec 9, 3.2), the line under the title
   counts the bookings and requests the two still hold. One that is
   cancelled, withdrawn or declined from that screen stays as its ticket
@@ -1823,9 +1829,14 @@ Small things the reviews of the build named, mended at its end.
   use is taken off a draft (spec 3, 3.9), which can leave it one stop or
   none. Its row on Offer then says "No route yet" where it said " → ",
   and opens the draft at its route, with the one stop left as where it
-  starts.
-- **A notification** about beta news, or about a reply to my feedback,
-  opens its page when tapped in the phone apps. The tap did nothing.
+  starts. On a laptop "Your ride so far" keeps Time as a step to come:
+  one stop's time is not the ride's.
+- **A notification** about beta news, about a reply to my feedback, or
+  about an answer to a question on my data, opens its page when tapped
+  in the phone apps. The tap did nothing. The pages a notification may
+  open are one list now (`notificationScreens` in
+  `packages/contracts`), which the API names them from and the app
+  opens them by, so a page named on one side alone cannot happen again.
 - **"Find another ride"** has one name in Icelandic too, "Finna aðra
   ferð", on a booking that ended as after "You're booked" (3.4). The
   first said "Leita aftur", "Search again".
@@ -1833,6 +1844,12 @@ Small things the reviews of the build named, mended at its end.
 Kept as it is: on Find on a laptop the yellow card stands beside the
 rides, at their right, and the keyboard and a reader meet it after them,
 as the eye does.
+
+Left: an address the app does not have is answered as any page of the
+app is, with the status 200 and not 404, since the server does not know
+the app's addresses. Search engines are told not to list it, twice (the
+page's `noindex` and the server's `X-Robots-Tag`); a tool that checks
+links by their status would not see a dead one.
 
 As built:
 [an address the app does not have](images/one-ride-one-ticket/built/not-found-phone-light.webp)

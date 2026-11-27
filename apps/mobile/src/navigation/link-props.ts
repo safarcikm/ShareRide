@@ -37,18 +37,23 @@ interface Click {
  * a modifier key or the middle button is the browser's, such as a new tab;
  * a plain click opens the screen within the app. On a phone, a press that
  * opens the screen. Spread over a `Pressable` with the role `link`.
+ *
+ * With `replace` the screen takes the place of the one the link is on, so
+ * going back from it does not show that one again: for a link that is the
+ * way out of a page with nothing on it (spec 31, 3.21).
  */
-export function linkProps(href: AppPath): {
+export function linkProps(
+  href: AppPath,
+  how: "push" | "replace" = "push",
+): {
   readonly href?: string;
   readonly onPress: (event?: Click) => void;
 } {
-  if (Platform.OS !== "web") {
-    return {
-      onPress: () => {
-        router.push(href);
-      },
-    };
-  }
+  const open = () => {
+    if (how === "replace") router.replace(href);
+    else router.push(href);
+  };
+  if (Platform.OS !== "web") return { onPress: open };
   return {
     href: addressOf(href),
     onPress: (event) => {
@@ -60,7 +65,7 @@ export function linkProps(href: AppPath): {
         (event?.button ?? 0) !== 0;
       if (modified) return;
       event?.preventDefault?.();
-      router.push(href);
+      open();
     },
   };
 }

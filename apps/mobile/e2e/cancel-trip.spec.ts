@@ -108,5 +108,7 @@ test("a driver cancels a trip with three passengers, who each read why", async (
   ).toHaveCount(0);
   await expect(visitor.page.getByTestId("where-you-sit").filter(visible)).toHaveCount(0);
   await expect(visitor.page.getByText(/free on your part/).filter(visible)).toHaveCount(0);
+  // Nor a price: there is nothing to pay for.
+  await expect(visitor.page.getByText(/\d\sISK/).filter(visible)).toHaveCount(0);
   await Promise.all([dora, oli, siggi, visitor].map((person) => person.close()));
 });

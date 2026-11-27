@@ -2048,9 +2048,15 @@ where a person sees it):
 
 - **`app/+not-found.tsx`** (new): the router shows it for an address
   with no file. A `Screen` with the website's footer, `NoIndex`, a
-  `ScreenHead` with `notFound.title` and `notFound.line`, and
-  `welcome.findRide` as a main `Button` with `href="/"` in the bar. It
-  is in none of the root layout's lists, so it is open signed in or out.
+  `ScreenHead` with `notFound.title` and `notFound.line`, `PuffinByPin`,
+  and `welcome.findRide` as a main `Button` with `href="/"` in the bar.
+  The button `replaces`: `linkProps(href, "replace")` puts Find where
+  the page was, on the web and in the phone apps. It is in none of the
+  root layout's lists, so it is open signed in or out; someone whose
+  account is half set up is led on from Find, as from any link there.
+- **The router's own list of addresses is off:** `app.json` gives the
+  `expo-router` plugin `"sitemap": false`, so `/_sitemap` is an address
+  the app does not have.
 - **"New driver"** is a `plain` `Tag` in `search/result-ticket.tsx`
   (`DriverFoot`, which the preview's ticket uses too) and
   `trip-details/driver-card.tsx`. `request.noReviews` stays `warning`
@@ -2058,7 +2064,8 @@ where a person sees it):
 - **A cancelled ride** (`app/trips/[id]/index.tsx`): no `Stepper`, so
   the phone's ticket has no foot and no tear line, and the laptop's
   panel no stepper and no line about free seats (`panel.hint` can be
-  null); no `WhereYouSit`.
+  null); no `WhereYouSit`; and `BookingBar` shows no price (`priced`),
+  in the bar or in the panel, with its line starting at the left.
 - **`BlockPerson`** (`safety/block-person.tsx`) keeps each shared
   booking as it is now: `Together` tells it (`onChange`) what a
   withdrawal, a decline or coming back from cancelling made of it, and
@@ -2068,29 +2075,48 @@ where a person sees it):
   and `spacing.sm` around.
 - **A draft with fewer than two stops:** `routeText` says
   `trip.draftNoRoute`, `resumeStep` gives `route`, and `RouteStep`
-  starts with no end when the draft has one stop.
-- **`notifications/paths.ts`** opens `/settings/feedback` and
-  `/settings/beta-news`, the paths `apps/api` sends.
+  starts with no end when the draft has one stop, whose time is not
+  shown as the ride's (`savedRoute` needs two stops).
+- **`notificationScreens`** (`packages/contracts/src/notifications.ts`,
+  new): the six pages a notification may open that are not about one
+  record. `apps/api`'s `notifications/texts.ts` names its paths from it,
+  and the app's `notifications/paths.ts` opens what is in it. Before,
+  the app's own list lacked `/settings/feedback`, `/settings/beta-news`
+  and `/settings/privacy`. What the API sends is unchanged.
 - **Three new texts:** `notFound.title`, `notFound.line`,
   `trip.draftNoRoute`; and `booking.searchAgain` is "Finna aðra ferð"
-  in Icelandic, as `booking.findAnother` is. No change in the API, no migration, no new
-  dependency, no new colour or size.
-- **Tests:** `not-found.test.tsx` (new: the page, its button to Find,
-  an address deep in the app, Icelandic); `every-page.test.tsx` walks
+  in Icelandic, as `booking.findAnother` is. No change in what the API
+  answers or sends, no migration, no new dependency, no new colour or
+  size.
+- **Tests:** `not-found.test.tsx` (new: the page, its puffin, its
+  button to Find, which leaves nothing to go back to, an address deep in
+  the app, Icelandic, an account half set up); `link-props.test.ts` (a
+  link that takes its screen's place); `every-page.test.tsx` walks
   it; `result-ticket.test.tsx` and `trip-details.test.tsx` (the tag's
   colour; a cancelled ride on a phone and in a laptop's side column);
   `blocking.test.tsx` (two bookings, then one, then none, with focus
-  moved once); `chat.test.tsx` (the menu's ground); `post-a-trip.test.tsx`
-  (a draft with no stop and with one); `paths.test.ts`. Journeys:
-  `not-found.spec.ts` (new, in each language: two addresses, nothing of
-  the router's page, not for search engines, the bar's link to Find);
-  `cancel-trip.spec.ts` (a visitor on the cancelled ride's page).
-  Pictures: `built/not-found-phone-light` (new) and
+  moved once); `chat.test.tsx` (the menu's ground, and its rows' own);
+  `post-a-trip.test.tsx` (a draft with no stop, which has no time
+  either, and with one; no time beside a one-stop draft's route on a
+  laptop); `paths.test.ts` (every page of the shared list opens, and
+  each is a file under `app/`). Journeys: `not-found.spec.ts` (new, in
+  each language: three addresses, `/_sitemap` among them, nothing of
+  the router's pages, not for search engines, the bar's link to Find);
+  `cancel-trip.spec.ts` (a visitor on the cancelled ride's page, with
+  no price). Pictures: `built/not-found-phone-light` (new) and
   `built/chat-menu-phone-light` again.
+- **Code review** (one reviewer, before the pull request): ready with
+  fixes, none serious. Mended, tests first: `/_sitemap` still showed
+  the router's list; a cancelled ride kept its price; "Find a ride"
+  pushed, so back from Find showed the page again in the phone apps; a
+  one-stop draft showed "09:00 → 09:00" beside its route on a laptop;
+  nothing tied the app's list of notification pages to the API's.
 - **Left:** the Route row of "Check and publish" for a draft with fewer
-  than two stops; whether Notices, Report and the two block pages
-  should close for an account that waits to be deleted (item 15), which
-  is a question of spec 9 and spec 11 and not of the look.
+  than two stops; an unknown address answers 200, not 404 (spec 31,
+  3.21); whether Notices, Report and the two block pages should close
+  for an account that waits to be deleted (item 15), which is a
+  question of spec 9 and spec 11 and not of the look: Q31 in
+  [open questions](../strategy/open-questions.md).
 
 ## After merging
 

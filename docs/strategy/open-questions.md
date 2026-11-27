@@ -8,12 +8,13 @@ here, update or accept the linked ADR, and move the row to "Answered".
 
 ## Open
 
-A new question goes in a table here with the next free number (Q31
+A new question goes in a table here with the next free number (Q32
 onwards), a recommendation and the docs it affects.
 
 | #   | Question | Recommendation | Affects |
 | --- | -------- | -------------- | ------- |
 | Q29 | Feedback is kept 12 months after the beta ends, counted from when "Invite code required" was last turned off. Now that the beta is open and the switch is only a gate (ADR 0035), turning it on for a day against abuse and off again would start that count. Should the end of the beta be its own moment instead? | Yes: the operator sets the end of the beta at public launch (launch work, spec 20, section 10), and the switch stops counting. Until then, avoid turning the switch on and off again. | [privacy register](../compliance/privacy-gdpr.md) (Feedback), spec 12, spec 20 (3.4.5), `retention.ts` |
+| Q31 | While an account waits to be deleted, the app shows only when it goes and "Keep my account" (spec 11, 3.4.4), and Profile's pages are closed to it. Four pages are still open to such an account by their address: Notices from PuffinRide, Report, and the two pages that block a person. Should they close too? | Close Report and the two block pages, as the other pages are: "Keep my account" opens them again. Keep Notices open: a notice's email links there, and a person may want to read or appeal one before the account goes. | [spec 9](../specs/2026-11-13-safety-and-moderation.md), [spec 11](../specs/2026-11-13-privacy-self-service.md) (3.4.4), `navigation/member-screens.ts`, [spec 31's plan](../plans/2026-11-26-one-ride-one-ticket.md) (PR 12, item 15) |
 
 ## Answered
 

@@ -712,6 +712,9 @@ describe("A conversation's top, ride and field (spec 31, 3.13)", () => {
     const menu = top.getByTestId("top-menu");
     expect(menu).toHaveStyle({ backgroundColor: colors.light.background });
     expect(within(menu).getByTestId("action-rows")).toBeVisible();
+    expect(within(menu).getByRole("button", { name: "Report Anna" })).toHaveStyle({
+      backgroundColor: colors.light.surface,
+    });
 
     // The menu closes again, and nothing of it is left.
     await fireEvent.press(top.getByRole("button", { name: "More" }));

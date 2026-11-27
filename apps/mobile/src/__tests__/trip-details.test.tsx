@@ -484,6 +484,8 @@ describe("Trip details (spec 4, 3.6)", () => {
     // No seat is left to choose or to picture (spec 31, 3.7).
     expect(screen.queryByRole("button", { name: "One seat more" })).toBeNull();
     expect(screen.queryByText(/free on your part/)).toBeNull();
+    // Nor a price: nothing is left to pay for.
+    expect(screen.queryByText(/\d ISK/)).toBeNull();
     expect(ticket().queryByTestId("ticket-tear")).toBeNull();
     expect(screen.queryByTestId("where-you-sit")).toBeNull();
     expect(screen.queryByRole("header", { name: "Where you sit" })).toBeNull();
@@ -873,12 +875,14 @@ describe("Trip details on a laptop (spec 18, 3.7)", () => {
     const cancelling = side().queryByText(/^Free cancellation, with a full refund/);
     if (part.state === "cancelled") expect(cancelling).toBeNull();
     else expect(cancelling).toBeVisible();
-    // A ride that was cancelled has no seat to choose or to picture.
+    // A ride that was cancelled has no seat to choose or to picture, and
+    // no price, as nothing is left to pay for.
     const more = side().queryByRole("button", { name: "One seat more" });
     const free = side().queryByText(/free on your part/);
     const sit = screen.queryByTestId("where-you-sit");
-    expect([more, free, sit].map((shown) => shown !== null)).toEqual(
-      part.state === "cancelled" ? [false, false, false] : [true, true, true],
+    const price = side().queryByText(/^[\d,]+ ISK$/);
+    expect([more, free, sit, price].map((shown) => shown !== null)).toEqual(
+      part.state === "cancelled" ? [false, false, false, false] : [true, true, true, true],
     );
   });
 

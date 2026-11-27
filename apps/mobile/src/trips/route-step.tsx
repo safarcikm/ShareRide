@@ -260,8 +260,10 @@ export function RouteStep({
   const saved = trip === undefined ? {} : savedSoFar(t, locale, trip, "route", fromReview, quote);
   // The saved times are the saved route's: with other stops only the
   // departure stays, and the rest are counted anew when the route is saved.
+  // A draft with one stop left has no route, so its time is not the ride's.
   const savedRoute =
     trip !== undefined &&
+    trip.stops.length >= 2 &&
     trip.stops.length === ids.length &&
     trip.stops.every((stop, index) => stop.meetingPoint.id === ids[index]);
   // Once the stops on the way are known. A wide screen has it beside the step.

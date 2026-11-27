@@ -20,6 +20,7 @@ import {
   type SwitchKey,
   type TripRole,
 } from "@shareride/domain";
+import { notificationScreens } from "@shareride/contracts";
 import {
   cancelReasonText,
   capitalised,
@@ -239,13 +240,13 @@ export function isOperatorFacts(facts: {
 }
 
 /** The app's screen for downloading one's data (spec 11, 3.2). */
-export const downloadDataPath = "/settings/privacy/download";
+export const downloadDataPath = notificationScreens.downloadData;
 
 /** Where signing in while a deletion waits shows "Keep my account" (spec 11, 3.4.4). */
 export const deletionWaitPath = "/";
 
 /** Where a person asks about their data (spec 11, 3.6). */
-export const privacyPath = "/settings/privacy";
+export const privacyPath = notificationScreens.privacy;
 
 export interface NotificationText {
   readonly title: string;
@@ -378,13 +379,13 @@ function operatorText(facts: OperatorNoticeFacts, locale: Locale): NotificationT
 }
 
 /** The app's screen of the person's notices, where they read and appeal them (spec 9, R9.5). */
-export const noticesPath = "/notices";
+export const noticesPath = notificationScreens.notices;
 
 /** "My feedback", a page of Profile, where a reply shows (spec 12, 3.3.5). */
-export const myFeedbackPath = "/settings/feedback";
+export const myFeedbackPath = notificationScreens.feedback;
 
 /** "Beta news", opened from Profile's Notifications, where the announcements sent to the person are (plan 4.7). */
-export const betaNewsPath = "/settings/beta-news";
+export const betaNewsPath = notificationScreens.betaNews;
 
 /** An announcement's email: the message, then why they get it and how to stop it (spec 10, 7). */
 function announcementEmail(message: string, locale: Locale): string {
@@ -493,7 +494,7 @@ function accountText(facts: AccountNoticeFacts, locale: Locale): NotificationTex
       return {
         title: t("notify.reportClosed"),
         body: reportOutcomeText(t, facts.outcome),
-        path: "/settings/reports",
+        path: notificationScreens.reports,
       };
   }
 }

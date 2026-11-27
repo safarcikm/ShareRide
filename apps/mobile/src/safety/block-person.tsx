@@ -81,8 +81,8 @@ export function BlockPerson({
           <Together
             key={shared.id}
             booking={shared}
-            onChange={(now) => {
-              setTogether((all) => all?.map((one) => (one.id === now.id ? now : one)) ?? null);
+            onChange={(after) => {
+              setTogether((all) => all?.map((one) => (one.id === after.id ? after : one)) ?? null);
             }}
           />
         ))}

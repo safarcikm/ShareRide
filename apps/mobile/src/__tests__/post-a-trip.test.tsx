@@ -1425,15 +1425,25 @@ describe("Offer opens the form (spec 16, 3.6; spec 31, 3.11, item 6)", () => {
     expect(screen).toHavePathname(`/drive/trips/${newestId}/time`);
   });
 
+  /** A draft with one stop left: the server keeps its time as the first and the last. */
+  const oneLeft = () =>
+    plannedDraft({
+      id: plannedId,
+      stops: plannedDraft().stops.slice(0, 1),
+      arrivesAt: plannedDraft().departsAt,
+    });
+
   it("says a draft has no route yet once its meeting points went out of use, and opens it at the route", async () => {
     // The server takes a point that was retired off a draft (spec 3, 3.9).
-    const emptied = plannedDraft({ id: plannedId, stops: [] });
+    // With no stop left it has no times either.
+    const emptied = plannedDraft({ id: plannedId, stops: [], departsAt: null, arrivesAt: null });
     await open("/offer", [emptied]);
     const row = await screen.findByRole("link", {
-      name: "Continue your draft: No route yet, Sunday 15 November at 09:00",
+      name: "Continue your draft: No route yet, No time yet",
     });
     const rows = within(screen.getByTestId("draft-rows"));
     expect(rows.getByText("No route yet")).toBeVisible();
+    expect(rows.getByText("No time yet")).toBeVisible();
     expect(rows.queryByText(/→/)).toBeNull();
     await fireEvent.press(row);
     expect(screen).toHavePathname(`/drive/trips/${plannedId}/route`);
@@ -1444,8 +1454,7 @@ describe("Offer opens the form (spec 16, 3.6; spec 31, 3.11, item 6)", () => {
   });
 
   it("keeps the one stop a draft has left as where it starts, with the end to choose", async () => {
-    const oneLeft = plannedDraft({ id: plannedId, stops: plannedDraft().stops.slice(0, 1) });
-    await open("/offer", [oneLeft]);
+    await open("/offer", [oneLeft()]);
     await fireEvent.press(
       await screen.findByRole("link", {
         name: "Continue your draft: No route yet, Sunday 15 November at 09:00",
@@ -1672,6 +1681,19 @@ describe("Posting a trip on a laptop (spec 18, 3.13)", () => {
     expect(side().getByRole("button", { name: "Choose date and time" })).toBeVisible();
     expect(side().getByRole("image", { name: map })).toBeVisible();
     expect(screen.queryByTestId("bottom-bar")).toBeNull();
+  });
+
+  it("says no time beside the route of a draft with one stop left", async () => {
+    const draft = plannedDraft({
+      stops: plannedDraft().stops.slice(0, 1),
+      arrivesAt: plannedDraft().departsAt,
+    });
+    await open(`/drive/trips/${draft.id}/route`, [draft]);
+    expect(await main().findByRole("button", { name: "From: BSÍ bus terminal" })).toBeVisible();
+    // One stop is no route, so its time is not the ride's: the step is still to come.
+    expect(soFar().getByLabelText("Route: Step 1")).toBeVisible();
+    expect(soFar().getByLabelText("Time: Step 2")).toBeVisible();
+    expect(soFar().queryByText(/09:00/)).toBeNull();
   });
 
   it("shows the day and times as they are chosen", async () => {
