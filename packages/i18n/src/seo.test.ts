@@ -148,7 +148,7 @@ describe("the account deletion page (spec 32, section 5)", () => {
         "How to delete your PuffinRide account in the app or on the website, what we erase and what we keep, and for how long.",
     });
     expect(pageText(is, { kind: "deleteAccount" }).title).toBe(
-      "Eyddu PuffinRide-aðganginum þínum · PuffinRide",
+      "Eyða PuffinRide-aðgangi · PuffinRide",
     );
   });
 

@@ -69,6 +69,25 @@ describe("Delete your PuffinRide account", () => {
     expect(screen.getByText(/for 3 years after the report is closed/)).toBeVisible();
   });
 
+  it("gives the steps and what is erased and kept as lists, for screen readers", async () => {
+    await renderApp("/delete-account");
+    await screen.findByRole("header", { name: "Delete your PuffinRide account" });
+    for (const [name, items] of [
+      ["How to delete it", 4],
+      ["What we erase", 4],
+      ["What we keep, and for how long", 7],
+    ] as const) {
+      // A list is not an element of its own to a screen reader, so it is
+      // found by its name; on the website it is read as a list.
+      const list = screen.getByLabelText(name);
+      expect(list).toHaveProp("role", "list");
+      const entries = list.children.filter(
+        (child) => typeof child !== "string" && child.props.role === "listitem",
+      );
+      expect(entries).toHaveLength(items);
+    }
+  });
+
   it("offers Sign in to someone signed out, and the address to write to", async () => {
     await renderApp("/delete-account");
     await screen.findByRole("header", { name: "Delete your PuffinRide account" });
@@ -108,9 +127,7 @@ describe("Delete your PuffinRide account", () => {
   it("is in Icelandic for an Icelandic device", async () => {
     deviceLanguage("is-IS");
     await renderApp("/delete-account");
-    expect(
-      await screen.findByRole("header", { name: "Eyddu PuffinRide-aðganginum þínum" }),
-    ).toBeVisible();
+    expect(await screen.findByRole("header", { name: "Eyða PuffinRide-aðgangi" })).toBeVisible();
     expect(
       screen.getByText("2. Opnaðu „Prófíll“ og svo „Persónuvernd og gögnin þín“."),
     ).toBeVisible();

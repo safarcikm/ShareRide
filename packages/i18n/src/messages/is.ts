@@ -85,10 +85,10 @@ export const is = {
   "about.instagram": "PuffinRide á Instagram",
   // The account deletion page (spec 32, section 5), for Google Play and everyone.
   "deleteAccount.link": "Eyða aðganginum",
-  "deleteAccount.title": "Eyddu PuffinRide-aðganginum þínum",
+  "deleteAccount.title": "Eyða PuffinRide-aðgangi",
   "deleteAccount.intro":
     "Þú getur eytt PuffinRide-aðganginum þínum hvenær sem er, í PuffinRide-appinu eða á puffinride.is, og enginn þarf að samþykkja það. Hér sérðu hvernig, og hvað verður um gögnin þín.",
-  "deleteAccount.howTitle": "Svona eyðir þú honum",
+  "deleteAccount.howTitle": "Svona eyðir þú aðganginum",
   "deleteAccount.step1": "Skráðu þig inn í PuffinRide, í appinu eða á puffinride.is.",
   "deleteAccount.step2": "Opnaðu „{profile}“ og svo „{privacy}“.",
   "deleteAccount.step3":
@@ -103,24 +103,26 @@ export const is = {
   "deleteAccount.erasedSignIn":
     "Netfanginu, símanúmerinu, lykilorðinu, innskráningu með Face ID eða fingrafari og tækjunum sem þú skráðir þig inn á.",
   "deleteAccount.erasedRest":
-    "Bílunum þínum, stillingum og tilkynningum, og skrá með gögnunum þínum ef þú baðst um hana.",
+    "Stillingunum þínum, tilkynningum til þín, bílum sem engin ferð notaði, og skrá með gögnunum þínum ef þú baðst um hana.",
   "deleteAccount.erasedMessages":
-    "Skilaboðunum sem þú sendir. Þau sem fengu þau sjá „Skilaboðum eytt“ í staðinn.",
+    "Skilaboðunum sem þú sendir. Viðtakendur sjá „Skilaboðum eytt“ í staðinn.",
   "deleteAccount.keptTitle": "Það sem við geymum, og hve lengi",
   "deleteAccount.keptTrips":
-    "Fyrri ferðir þínar og bókanir, án nafnsins þíns, athugasemda eða bílnúmera, svo þau sem ferðuðust með þér haldi sinni sögu.",
+    "Fyrri ferðir þínar og bókanir, og tegund, gerð og litur bílanna sem þær notuðu, án nafnsins þíns, athugasemda eða bílnúmera, svo þau sem ferðuðust með þér haldi sinni sögu.",
   "deleteAccount.keptReviews":
     "Umsagnir sem þú skrifaðir, merktar sem skrifaðar af „fyrrverandi notanda“.",
   "deleteAccount.keptReports":
-    "Tilkynningar um aðganginn þinn og hvað við gerðum vegna þeirra, í 3 ár eftir að málinu er lokað, öryggis allra vegna. Í samtali sem tilkynning nær til getum við lesið skilaboðin þín þangað til.",
+    "Tilkynningar til okkar sem þú sendir eða sem varða þig, og hvað við gerðum vegna þeirra, í 3 ár eftir að tilkynningu er lokið, öryggis allra vegna. Í samtali sem tilkynning nær til getum við lesið skilaboðin þín þangað til.",
+  "deleteAccount.keptRequests":
+    "Það sem þú spurðir okkur um gögnin þín, og svör okkar, í 3 ár eftir svarið.",
   "deleteAccount.keptSuspended":
-    "Ef aðganginum þínum var lokað: einstefnukóða sem gerður er úr símanúmerinu þínu, þar til lokuninni hefði lokið og í mesta lagi í 3 ár, svo ekki sé hægt að skrá sig aftur með númerinu.",
-  "deleteAccount.keptLaw": "Það sem lög krefjast að við geymum, eins lengi og þau krefjast.",
+    "Ef aðganginum þínum var lokað: tætigildi (hash) af símanúmerinu þínu, sem ekki er hægt að snúa til baka, þar til lokunin hefði runnið út og í mesta lagi í 3 ár, svo ekki sé hægt að skrá sig aftur með númerinu.",
+  "deleteAccount.keptLaw": "Það sem okkur ber að geyma samkvæmt lögum, eins lengi og lög krefjast.",
   "deleteAccount.keptBackups":
-    "Afrit í öryggisafritum og tæknilegum annálum, sem hverfa innan 30 daga. Ef við endurheimtum einhvern tímann öryggisafrit eyðum við aðganginum þínum aftur.",
+    "Eintök í öryggisafritum og tæknilegum skrám, sem hverfa innan 30 daga. Ef við endurheimtum einhvern tímann öryggisafrit eyðum við aðganginum þínum aftur.",
   "deleteAccount.helpTitle": "Kemstu ekki inn?",
   "deleteAccount.help":
-    "Þú getur alltaf skráð þig inn með kóða í netfangið þitt. Ef það gengur ekki, skrifaðu okkur frá netfanginu á aðganginum þínum, eða segðu okkur símanúmerið þitt, og við svörum innan mánaðar.",
+    "Prófaðu „Gleymdirðu lykilorðinu?“ eða kóða í tölvupósti á innskráningarsíðunni. Ef það gengur ekki, skrifaðu okkur frá netfanginu á aðganginum þínum og við svörum innan mánaðar.",
   "footer.label": "Um PuffinRide og skilmálana okkar",
   "footer.tagline": "Samakstur um allt Ísland",
   "footer.terms": "Skilmálar",

@@ -30,7 +30,7 @@ export default function DeleteAccountScreen() {
     <Text style={[typography.body, { color: palette.text }]}>{text}</Text>
   );
   const item = (text: string, mark: string) => (
-    <View key={text} style={styles.item}>
+    <View key={text} role="listitem" style={styles.item}>
       <Text aria-hidden style={[typography.body, styles.mark, { color: palette.textMuted }]}>
         {mark}
       </Text>
@@ -45,9 +45,13 @@ export default function DeleteAccountScreen() {
       {paragraph(t(page.intro))}
       <View style={styles.section}>
         <Heading>{t(page.howTitle)}</Heading>
-        {deleteAccountSteps(t).map((step, index) => (
-          <View key={step}>{paragraph(`${String(index + 1)}. ${step}`)}</View>
-        ))}
+        <View role="list" accessibilityLabel={t(page.howTitle)} style={styles.section}>
+          {deleteAccountSteps(t).map((step, index) => (
+            <View key={step} role="listitem">
+              {paragraph(`${String(index + 1)}. ${step}`)}
+            </View>
+          ))}
+        </View>
         {me === null ? (
           <Button variant="secondary" label={t("auth.signIn")} href="/sign-in" />
         ) : (
@@ -60,11 +64,15 @@ export default function DeleteAccountScreen() {
       </View>
       <View style={styles.section}>
         <Heading>{t(page.erasedTitle)}</Heading>
-        {page.erased.map((key) => item(t(key), "•"))}
+        <View role="list" accessibilityLabel={t(page.erasedTitle)} style={styles.section}>
+          {page.erased.map((key) => item(t(key), "•"))}
+        </View>
       </View>
       <View style={styles.section}>
         <Heading>{t(page.keptTitle)}</Heading>
-        {page.kept.map((key) => item(t(key), "•"))}
+        <View role="list" accessibilityLabel={t(page.keptTitle)} style={styles.section}>
+          {page.kept.map((key) => item(t(key), "•"))}
+        </View>
       </View>
       <View style={styles.section}>
         <Heading>{t(page.helpTitle)}</Heading>

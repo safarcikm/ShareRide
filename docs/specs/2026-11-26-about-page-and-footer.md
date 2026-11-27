@@ -60,7 +60,9 @@ column (spec 18, 3.2), as the legal documents are:
    points. That it is an open beta. A link, "How carpooling works", to
    Carpool in Iceland (spec 23, 3.9).
 2. **Terms and policies:** a card of four rows, as the old page had: Terms
-   of Service, Community Rules, Privacy Policy and Cookies.
+   of Service, Community Rules, Privacy Policy and Cookies. Under it, a
+   link, "Delete your account", to the page that says how (spec 32,
+   section 5), which the stores ask for.
 3. **Who runs PuffinRide:** "PuffinRide is run by Martin Safarcik, Skinnar,
    851 Hella, Iceland.", the words of the published Terms (section 1.1).
    When the company is registered, a new version of the Terms names it, and

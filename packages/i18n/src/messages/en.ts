@@ -102,23 +102,25 @@ export const en = {
   "deleteAccount.erasedSignIn":
     "Your email address, phone number, password, Face ID or fingerprint sign-in, and the devices you signed in on.",
   "deleteAccount.erasedRest":
-    "Your cars, settings and notifications, and any file of your data you asked for.",
+    "Your settings, the notifications we sent you, cars no ride used, and any file of your data you asked for.",
   "deleteAccount.erasedMessages":
     "The messages you sent. The people you wrote to see “Message deleted” instead.",
   "deleteAccount.keptTitle": "What we keep, and for how long",
   "deleteAccount.keptTrips":
-    "Your past rides and bookings, without your name, notes or number plates, so the people you travelled with keep their history.",
+    "Your past rides and bookings, and the make, model and colour of the cars they used, without your name, notes or number plates, so the people you travelled with keep their history.",
   "deleteAccount.keptReviews": "Reviews you wrote, shown as written by “a former member”.",
   "deleteAccount.keptReports":
-    "Reports about your account and what we did about them, for 3 years after the report is closed, for everyone's safety. In a conversation a report covers, we can read your messages until then.",
+    "Reports you made or that are about you, and what we did about them, for 3 years after the report is closed, for everyone's safety. In a conversation a report covers, we can read your messages until then.",
+  "deleteAccount.keptRequests":
+    "What you asked us about your data, and our answers, for 3 years after the answer.",
   "deleteAccount.keptSuspended":
-    "If your account was suspended: a one-way code made from your phone number, until the suspension would have ended and for 3 years at most, so the number can't sign up again.",
+    "If your account was suspended: a one-way hash of your phone number, until the suspension would have ended and for 3 years at most, so the number can't sign up again.",
   "deleteAccount.keptLaw": "Anything the law requires us to keep, for as long as it requires.",
   "deleteAccount.keptBackups":
     "Copies in our backups and technical logs, which are gone within 30 days. If we ever restore a backup, we erase your account again.",
   "deleteAccount.helpTitle": "Can't sign in?",
   "deleteAccount.help":
-    "You can always sign in with a code to your email address. If that doesn't work, write to us from the email address on your account, or tell us your phone number, and we'll answer within a month.",
+    "Try “Forgot your password?” or a code by email on the sign-in screen. If that doesn't work, write to us from the email address on your account, and we'll answer within a month.",
   "footer.label": "About PuffinRide and our terms",
   "footer.tagline": "Carpooling across Iceland",
   "footer.terms": "Terms",

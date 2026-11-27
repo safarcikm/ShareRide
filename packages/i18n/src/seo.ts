@@ -207,6 +207,7 @@ export const deleteAccountPage: {
     "deleteAccount.keptTrips",
     "deleteAccount.keptReviews",
     "deleteAccount.keptReports",
+    "deleteAccount.keptRequests",
     "deleteAccount.keptSuspended",
     "deleteAccount.keptLaw",
     "deleteAccount.keptBackups",

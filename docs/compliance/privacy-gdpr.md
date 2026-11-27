@@ -182,8 +182,8 @@ agreements below are still to sign
   ([spec 23](../specs/2026-11-22-google-analytics-and-search.md), R23.3), and
   loads only after the visitor accepts (R23.1).
 - Search engines index only production's public pages that hold no
-  person's data: Find, the meeting points, the places, the legal texts and
-  Cookies.
+  person's data: Find, Carpool in Iceland, the meeting points, the places,
+  About, the page on deleting an account, the legal texts and Cookies.
   Every other answer, and every answer off production, carries
   `X-Robots-Tag: noindex`; Find's rides leaving soon are kept out of
   snippets, and link previews name nobody

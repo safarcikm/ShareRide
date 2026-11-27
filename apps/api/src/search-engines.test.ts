@@ -394,7 +394,7 @@ describe("the page's head (spec 23, 3.6)", () => {
       head,
     );
     const noscript = /<noscript>([\s\S]*)<\/noscript>/.exec(page)?.[1] ?? "";
-    expect(noscript).toContain("<h1>Eyddu PuffinRide-aðganginum þínum</h1>");
+    expect(noscript).toContain("<h1>Eyða PuffinRide-aðgangi</h1>");
     expect(noscript).toContain(
       "<ol><li>Skráðu þig inn í PuffinRide, í appinu eða á puffinride.is.</li>",
     );
