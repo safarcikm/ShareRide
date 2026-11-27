@@ -40,6 +40,11 @@ import { SiteFooter } from "./site-footer";
  * content sits in a centred column (spec 1, section 5). A `footer`, such as
  * a step's main button, stays at the bottom while the rest scrolls: the
  * `BottomBar` of spec 15, section 5.2.
+ * A `header`, as the top of a conversation is (spec 31, 3.13), stays at the
+ * top the same way, on the surface's colour with a line under it, and the
+ * room the screen leaves for the status bar has that colour too. What
+ * stands `overFooter`, as a conversation's quick answers do, stays over the
+ * bar on the screen's own ground.
  * Wide screens show an `aside`, such as a map, beside the column; phones
  * leave it out, and the screen shows it its own way (see `useWideScreen`).
  * With `width="page"`, wide screens give the content a page instead of the
@@ -64,7 +69,9 @@ import { SiteFooter } from "./site-footer";
  */
 export function Screen({
   children,
+  header,
   footer,
+  overFooter,
   aside,
   width = "column",
   stickToEnd = false,
@@ -76,7 +83,9 @@ export function Screen({
   siteFooter = false,
 }: {
   readonly children: ReactNode;
+  readonly header?: ReactNode;
   readonly footer?: ReactNode;
+  readonly overFooter?: ReactNode;
   readonly aside?: ReactNode;
   readonly width?: "column" | "page";
   readonly stickToEnd?: boolean;
@@ -93,14 +102,31 @@ export function Screen({
   const safeEdges = useContext(ScreenEdgesContext);
   // The height the screen scrolls in: the window less any bar above it.
   const [viewHeight, setViewHeight] = useState<number | null>(null);
-  const sticking = useStickToEnd(scrollRef, stickToEnd, endKey);
+  const { onLayout: followsEnd, ...sticking } = useStickToEnd(scrollRef, stickToEnd, endKey);
   const refreshing = useRefresh({ refresh, asked: refreshAsked, scrollRef });
   return (
     <SafeAreaView
       testID="screen-safe-area"
       edges={safeEdges}
-      style={[styles.safeArea, { backgroundColor: topColour ?? palette.background }]}
+      style={[
+        styles.safeArea,
+        {
+          backgroundColor:
+            topColour ?? (header === undefined ? palette.background : palette.surface),
+        },
+      ]}
     >
+      {header === undefined ? null : (
+        <View
+          testID="screen-top-bar"
+          style={[
+            styles.top,
+            { backgroundColor: palette.surface, borderBottomColor: palette.border },
+          ]}
+        >
+          <View style={styles.barColumn}>{header}</View>
+        </View>
+      )}
       {/* The scroll and, over its top, what a refresh shows. */}
       <View
         testID="screen-scroll-area"
@@ -111,15 +137,12 @@ export function Screen({
           ref={scrollRef}
           testID="screen-scroll"
           refreshControl={refreshing.control}
-          onLayout={
+          onLayout={(event) => {
             // Only the web's sticky aside and side column use the height. It
             // is measured from the start, as they can come later, with data.
-            Platform.OS === "web"
-              ? (event) => {
-                  setViewHeight(event.nativeEvent.layout.height);
-                }
-              : undefined
-          }
+            if (Platform.OS === "web") setViewHeight(event.nativeEvent.layout.height);
+            followsEnd?.();
+          }}
           style={wide ? evenGutterOnWeb : undefined}
           contentContainerStyle={[styles.scroll, { paddingBottom: spacing.md + keyboardRoom }]}
           keyboardShouldPersistTaps="handled"
@@ -152,6 +175,11 @@ export function Screen({
         </ScrollView>
         {refreshing.mark}
       </View>
+      {overFooter === undefined ? null : (
+        <View testID="over-bar" style={[styles.overBar, { backgroundColor: palette.background }]}>
+          <View style={styles.barColumn}>{overFooter}</View>
+        </View>
+      )}
       {footer === undefined ? null : (
         <View
           testID="bottom-bar"
@@ -170,17 +198,32 @@ type ViewRef = ComponentRef<typeof View>;
  * What a scroll takes to open at its end and stay there as it grows, as a
  * conversation does (`on`): it follows only while the reader is at the
  * end, not while they read further up, and a new `endKey`, such as my own
- * message on its way, brings it back to the end whatever they read.
+ * message on its way, brings it back to the end whatever they read. It
+ * stays at its end too when it gets less height itself, as when the field
+ * under it grows with a second line: the last message is not left under
+ * the bar.
+ *
+ * The reader leaves the end by going up, and only so. A browser says a
+ * scroll's sizes as they are when the scroll is heard, which can be after
+ * what it holds grew and before its new size is told: being short of the
+ * end then is not the reader's doing, and the scroll still follows.
  */
 export function useStickToEnd(
   scrollRef: RefObject<ComponentRef<typeof ScrollView> | null>,
   on: boolean,
   endKey: string | undefined,
-) {
+): {
+  readonly scrollEventThrottle?: number;
+  readonly onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
+  readonly onContentSizeChange?: () => void;
+  readonly onLayout?: () => void;
+} {
   // Whether the reader is at the end, and whether to go there at the next
   // change in size whatever they read.
   const atEnd = useRef(true);
   const toEnd = useRef(false);
+  // How far down the last scroll was.
+  const lastY = useRef(0);
   useLayoutEffect(() => {
     if (endKey !== undefined) toEnd.current = true;
   }, [endKey]);
@@ -191,14 +234,23 @@ export function useStickToEnd(
             scrollEventThrottle: 100,
             onScroll: ({ nativeEvent }: NativeSyntheticEvent<NativeScrollEvent>) => {
               const { contentOffset, layoutMeasurement, contentSize } = nativeEvent;
-              atEnd.current =
-                contentOffset.y + layoutMeasurement.height >= contentSize.height - spacing.xxl;
+              const wentUp = contentOffset.y < lastY.current - 1;
+              lastY.current = contentOffset.y;
+              if (contentOffset.y + layoutMeasurement.height >= contentSize.height - spacing.xxl) {
+                atEnd.current = true;
+              } else if (wentUp) {
+                atEnd.current = false;
+              }
             },
             onContentSizeChange: () => {
               if (!atEnd.current && !toEnd.current) return;
               toEnd.current = false;
               atEnd.current = true;
               scrollRef.current?.scrollToEnd({ animated: false });
+            },
+            // Its own height changed and what it holds did not.
+            onLayout: () => {
+              if (atEnd.current) scrollRef.current?.scrollToEnd({ animated: false });
             },
           }
         : {},
@@ -345,6 +397,13 @@ const styles = StyleSheet.create({
   scroll: { flexGrow: 1, alignItems: "center", padding: spacing.md },
   column: { flex: 1, width: "100%", maxWidth: maxContentWidth, gap: spacing.md },
   page: { flex: 1, width: "100%", maxWidth: pageMaxWidth, gap: spacing.md },
+  top: {
+    borderBottomWidth: controlOutline,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.ms,
+    alignItems: "center",
+  },
+  overBar: { paddingHorizontal: spacing.md, paddingBottom: spacing.sm, alignItems: "center" },
   bar: { borderTopWidth: controlOutline, padding: spacing.md, alignItems: "center" },
   barColumn: { width: "100%", maxWidth: maxContentWidth, gap: spacing.sm },
   wide: {

@@ -1547,6 +1547,11 @@ export const is = {
   "chat.notOpenYet": "Spjallið opnast þegar bókunin er staðfest.",
   "chat.choose": "Veldu spjall",
   "chat.nowOpen": "Spjall: {name}",
+  "chat.more": "Meira",
+  "chat.driver": "Bílstjóri",
+  "chat.driverWithCar": "Bílstjóri · {car}",
+  "chat.passenger": "Farþegi",
+  "chat.rideWhen": "{day} kl. {time}",
   "chat.sentTo": "{count, plural, one {Sent til # farþega.} other {Sent til # farþega.}}",
   "chat.noPassengers":
     "Enginn fær skilaboðin: enginn farþegi er staðfestur eða spjallið við hann er lokað.",

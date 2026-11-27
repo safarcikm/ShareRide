@@ -26,6 +26,8 @@ import { passengerRow } from "@/testing/driver-trip";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
 import { tripsApi } from "@/testing/trips";
 import { aProfileId, newcomer } from "@/testing/people";
+import { filledButtons } from "@/testing/buttons";
+import { colors } from "@/theme/tokens";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
 jest.mock("@/auth/token-store", () => {
@@ -108,7 +110,6 @@ describe("A conversation (spec 7, 3.1)", () => {
   it("shows the safety tip, the request message, then the messages oldest first, with Seen under my last read one", async () => {
     const { client } = await openConversation({ messages: [onMyWay, openedLine, seen, hi] });
     expect(await screen.findByRole("header", { name: "Anna" })).toBeVisible();
-    expect(screen.getByText("Sunday 15 November · Borgarnes → Blönduós")).toBeVisible();
     expect(
       screen.getByText("Pay only in the app. PuffinRide never asks for card details in a chat."),
     ).toBeVisible();
@@ -560,7 +561,8 @@ describe("A conversation (spec 7, 3.1)", () => {
     scrollToEnd.mockClear();
     await grows(5000);
     expect(scrollToEnd).toHaveBeenCalledTimes(1);
-    // Up at the top, earlier messages come in above: the screen stays where I read.
+    // Up from the end to the top, earlier messages come in above: the screen stays where I read.
+    await readAt(4200, 5000);
     await readAt(0, 5000);
     await fireEvent.press(screen.getByRole("button", { name: "Show earlier messages" }));
     await grows(5400);
@@ -573,6 +575,70 @@ describe("A conversation (spec 7, 3.1)", () => {
     await readAt(4680, 5480);
     await grows(5560);
     expect(scrollToEnd).toHaveBeenCalledTimes(3);
+  });
+
+  it("stays at its end when the bar under it grows, as the field does with a second line", async () => {
+    const scrollToEnd = (ScrollView.prototype as unknown as { scrollToEnd: jest.Mock }).scrollToEnd;
+    await openConversation();
+    const scroll = await screen.findByTestId("screen-scroll");
+    // Less height for the same messages: nothing about their size says so.
+    const shrinksTo = (height: number) =>
+      act(async () => {
+        await fireEvent(scroll, "layout", {
+          nativeEvent: { layout: { x: 0, y: 0, width: 400, height } },
+        });
+      });
+    scrollToEnd.mockClear();
+    await shrinksTo(500);
+    expect(scrollToEnd).toHaveBeenCalledTimes(1);
+    // Reading further up, I stay where I read.
+    const readAt = (y: number) =>
+      fireEvent.scroll(scroll, {
+        nativeEvent: {
+          contentOffset: { x: 0, y },
+          layoutMeasurement: { width: 400, height: 500 },
+          contentSize: { width: 400, height: 5000 },
+        },
+      });
+    await readAt(4500);
+    await readAt(0);
+    await shrinksTo(476);
+    expect(scrollToEnd).toHaveBeenCalledTimes(1);
+  });
+
+  it("stays at its end when a scroll is told after the conversation grew, and only going up leaves the end", async () => {
+    const scrollToEnd = (ScrollView.prototype as unknown as { scrollToEnd: jest.Mock }).scrollToEnd;
+    await openConversation();
+    const scroll = await screen.findByTestId("screen-scroll");
+    const grows = (height: number) =>
+      act(async () => {
+        await fireEvent(scroll, "contentSizeChange", 400, height);
+      });
+    const toldAt = (y: number, height: number) =>
+      fireEvent.scroll(scroll, {
+        nativeEvent: {
+          contentOffset: { x: 0, y },
+          layoutMeasurement: { width: 400, height: 600 },
+          contentSize: { width: 400, height },
+        },
+      });
+    await grows(1100);
+    scrollToEnd.mockClear();
+    // A browser says a scroll's sizes as they are when the scroll is heard,
+    // which can be after the conversation grew and before its new size is
+    // told. I did not move: it is not me who left the end.
+    await toldAt(500, 1500);
+    await grows(1500);
+    expect(scrollToEnd).toHaveBeenCalledTimes(1);
+    // Going up is what leaves it.
+    await toldAt(900, 1500);
+    await toldAt(300, 1500);
+    await grows(1600);
+    expect(scrollToEnd).toHaveBeenCalledTimes(1);
+    // Down again, short of the end, I am still reading further up.
+    await toldAt(600, 1600);
+    await grows(1700);
+    expect(scrollToEnd).toHaveBeenCalledTimes(1);
   });
 
   it("shows earlier messages a page at a time", async () => {
@@ -615,6 +681,275 @@ describe("A conversation (spec 7, 3.1)", () => {
     expect(await screen.findByText("The chat opens once the booking is confirmed.")).toBeVisible();
     await fireEvent.press(screen.getByRole("button", { name: "Try again" }));
     expect(await screen.findByText("The messages could not be loaded.")).toBeVisible();
+  });
+});
+
+describe("A conversation's top, ride and field (spec 31, 3.13)", () => {
+  const driving = { ...chatBooking, viewer: "driver" as const };
+
+  it("keeps Back, the name and who they are over the conversation, with Report and Block in a menu", async () => {
+    await openConversation();
+    const top = within(await screen.findByTestId("screen-top-bar"));
+    expect(top.getByRole("button", { name: "Back" })).toBeVisible();
+    expect(top.getByRole("header", { name: "Anna" })).toBeVisible();
+    expect(top.getByText("Driver, White Toyota Yaris")).toBeVisible();
+    // Not the first things seen (spec 31, section 1): they are in the menu.
+    expect(screen.queryByRole("button", { name: "Report Anna" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Block Anna" })).toBeNull();
+
+    await fireEvent.press(top.getByRole("button", { name: "More", expanded: false }));
+    expect(top.getByRole("button", { name: "More", expanded: true })).toBeVisible();
+    expect(top.getByRole("button", { name: "Report Anna" })).toBeVisible();
+    // Blocking takes something away: red, and last (R31.3). Reporting is not red.
+    const rows = within(top.getByTestId("action-rows"));
+    expect(rows.getByText("Report Anna")).toHaveStyle({ color: colors.light.text });
+    expect(rows.getByText("Block Anna")).toHaveStyle({ color: colors.light.error });
+    expect(
+      rows.getAllByRole("button").map((row) => row.props.accessibilityLabel as string),
+    ).toEqual(["Report Anna", "Block Anna"]);
+
+    // The menu closes again, and nothing of it is left.
+    await fireEvent.press(top.getByRole("button", { name: "More" }));
+    expect(top.getByRole("button", { name: "More", expanded: false })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Report Anna" })).toBeNull();
+  });
+
+  it("reaches Report in two presses", async () => {
+    await openConversation({}, (client) => {
+      bookingApi(client, () => chatBooking);
+    });
+    await fireEvent.press(await screen.findByRole("button", { name: "More" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Report Anna" }));
+    expect(await screen.findByRole("header", { name: "Report Anna" })).toBeVisible();
+    expect(screen).toHaveSearchParams({ kind: "user", id: bookingId });
+  });
+
+  it("reaches Block in two presses, and has the menu closed on coming back", async () => {
+    await openConversation({}, (client) => {
+      bookingApi(client, () => chatBooking);
+    });
+    await fireEvent.press(await screen.findByRole("button", { name: "More" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Block Anna" }));
+    expect(await screen.findByRole("header", { name: "Block Anna?" })).toBeVisible();
+    expect(screen).toHavePathname(`/bookings/${bookingId}/block`);
+    await fireEvent.press(screen.getByRole("button", { name: "Back" }));
+    expect(await screen.findByRole("button", { name: "More", expanded: false })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Block Anna" })).toBeNull();
+  });
+
+  it("offers only Report in the menu once I blocked them", async () => {
+    await openConversation({ canWrite: false, blockedByMe: true });
+    await fireEvent.press(await screen.findByRole("button", { name: "More" }));
+    expect(screen.getByRole("button", { name: "Report Anna" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Block Anna" })).toBeNull();
+  });
+
+  it("says Passenger under a passenger's name, and Driver alone for a driver whose car is not shown", async () => {
+    const first = await openConversation({ booking: driving });
+    const top = within(await screen.findByTestId("screen-top-bar"));
+    expect(top.getByRole("header", { name: "Gunna" })).toBeVisible();
+    expect(top.getByText("Passenger")).toBeVisible();
+    await first.unmount();
+
+    await openConversation({ booking: { ...chatBooking, car: null } });
+    expect(await screen.findByText("Driver")).toBeVisible();
+    expect(screen.queryByText(/Toyota/)).toBeNull();
+  });
+
+  it("shows the ride as one line under the name, which opens the passenger's booking", async () => {
+    await openConversation({}, (client) => {
+      bookingApi(client, () => chatBooking);
+    });
+    const top = within(await screen.findByTestId("screen-top-bar"));
+    const ride = top.getByRole("link", {
+      name: "Sunday 15 November at 10:00, Borgarnes to Blönduós",
+    });
+    expect(within(ride).getByText("Sun 15 Nov, 10:00")).toBeVisible();
+    expect(within(ride).getByText(/Borgarnes → Blönduós/)).toBeVisible();
+    await fireEvent.press(ride);
+    expect(screen).toHavePathname(`/bookings/${bookingId}`);
+  });
+
+  it('says the ride\'s day and time as Icelandic does, with "kl." before the time', async () => {
+    jest
+      .mocked(readPreference)
+      .mockImplementation((key) => Promise.resolve(key === "language" ? "is" : null));
+    try {
+      await openConversation();
+      const top = within(await screen.findByTestId("screen-top-bar"));
+      expect(top.getByText("Sun. 15. nóv. kl. 10:00")).toBeVisible();
+      expect(top.getByText("Bílstjóri · Hvítur Toyota Yaris")).toBeVisible();
+    } finally {
+      jest.mocked(readPreference).mockImplementation(() => Promise.resolve(null));
+    }
+  });
+
+  it("opens the driver's ride from the ride line when I drive", async () => {
+    await openConversation({ booking: driving }, (client) => {
+      tripsApi(client, [northMyTrip]);
+      driverApi(client, [driving]);
+    });
+    await fireEvent.press(
+      await screen.findByRole("link", {
+        name: "Sunday 15 November at 10:00, Borgarnes to Blönduós",
+      }),
+    );
+    expect(screen).toHavePathname(`/drive/trips/${driving.trip.id}`);
+  });
+
+  it("has the safety line first in the conversation, as a quiet line and not a card", async () => {
+    await openConversation();
+    const line = await screen.findByTestId("safety-line");
+    expect(
+      within(line).getByText(
+        "Pay only in the app. PuffinRide never asks for card details in a chat.",
+      ),
+    ).toHaveStyle({ color: colors.light.textMuted });
+    // Over the messages, and it scrolls with them: the top keeps its place.
+    const scroll = within(screen.getByTestId("screen-scroll"));
+    expect(scroll.getByTestId("safety-line")).toBe(line);
+    expect(within(screen.getByTestId("screen-top-bar")).queryByTestId("safety-line")).toBeNull();
+    const read = scroll
+      .getAllByText(/./)
+      .map((text) => (Array.isArray(text.props.children) ? "" : String(text.props.children)));
+    expect(read[0]).toBe("Pay only in the app. PuffinRide never asks for card details in a chat.");
+  });
+
+  it("stands the picture and the two buttons at the top of a name of several lines, and lets a long place name break", async () => {
+    await openConversation();
+    const head = await screen.findByTestId("conversation-head");
+    // The picture stands with the name, not at the middle of a tall block (spec 31, 3.18).
+    const row = within(head).getByTestId("avatar", { includeHiddenElements: true }).parent;
+    expect(row).toHaveStyle({ flexDirection: "row", alignItems: "flex-start" });
+    // Each of the two buttons has the picture's height to stand in the middle of.
+    for (const name of ["Back", "More"]) {
+      expect(within(head).getByRole("button", { name }).parent).toHaveStyle({
+        height: 48,
+        justifyContent: "center",
+      });
+    }
+    // A word wider than the line is broken; it does not push the line wider than the screen.
+    expect(within(head).getByText(/Borgarnes → Blönduós/)).toHaveStyle({ flex: 1, minWidth: 0 });
+  });
+
+  // Text twice as large with long names on a narrow phone makes the top
+  // several times as tall; staying, it left the messages no room at all.
+  const high = (height: number) => ({
+    nativeEvent: { layout: { x: 0, y: 0, width: 328, height } },
+  });
+  /** The height the conversation has, and how tall its top is with the menu closed. */
+  const measured = async (frame: number, top: number) => {
+    await fireEvent(screen.getByTestId("conversation-frame"), "layout", high(frame));
+    await fireEvent(screen.getByTestId("conversation-head"), "layout", high(top));
+  };
+
+  it("lets a top that leaves the rest too little of the screen scroll with the conversation", async () => {
+    await openConversation();
+    const head = await screen.findByTestId("conversation-head");
+    expect(within(screen.getByTestId("screen-top-bar")).getByTestId("conversation-head")).toBe(
+      head,
+    );
+    // 740 high with a top of 600: 140 for the messages, the quick messages and the bar.
+    await measured(740, 600);
+    expect(screen.queryByTestId("screen-top-bar")).toBeNull();
+    const reading = within(screen.getByTestId("screen-scroll"));
+    expect(reading.getByRole("button", { name: "Back" })).toBeVisible();
+    expect(reading.getByRole("header", { name: "Anna" })).toBeVisible();
+    expect(reading.getByRole("button", { name: "More", expanded: false })).toBeVisible();
+    expect(
+      reading.getByRole("link", { name: "Sunday 15 November at 10:00, Borgarnes to Blönduós" }),
+    ).toBeVisible();
+    // First in the conversation, over the safety line.
+    const read = reading
+      .getAllByText(/./)
+      .map((text) => (Array.isArray(text.props.children) ? "" : String(text.props.children)));
+    expect(read.indexOf("Anna")).toBeGreaterThanOrEqual(0);
+    expect(read.indexOf("Anna")).toBeLessThan(
+      read.indexOf("Pay only in the app. PuffinRide never asks for card details in a chat."),
+    );
+    // The field and the quick messages keep their places.
+    expect(
+      within(screen.getByTestId("bottom-bar")).getByLabelText("Write a message"),
+    ).toBeVisible();
+    expect(
+      within(screen.getByTestId("over-bar")).getByRole("button", { name: "Thank you!" }),
+    ).toBeVisible();
+
+    // With room again, as when the phone is turned upright, it stays.
+    await measured(740, 136);
+    expect(
+      within(screen.getByTestId("screen-top-bar")).getByRole("header", { name: "Anna" }),
+    ).toBeVisible();
+    // On a phone on its side the same top leaves too little.
+    await measured(360, 136);
+    expect(screen.queryByTestId("screen-top-bar")).toBeNull();
+  });
+
+  it("measures the top without its menu, and keeps the menu open when the top moves", async () => {
+    await openConversation();
+    await fireEvent.press(await screen.findByRole("button", { name: "More" }));
+    // The menu makes the top taller: that is not counted.
+    await measured(740, 600);
+    const top = within(screen.getByTestId("screen-top-bar"));
+    expect(top.getByRole("button", { name: "More", expanded: true })).toBeVisible();
+    expect(top.getByRole("button", { name: "Block Anna" })).toBeVisible();
+    // The window turns short with the menu open: the top moves, and its menu with it.
+    await fireEvent(screen.getByTestId("conversation-frame"), "layout", high(360));
+    expect(screen.queryByTestId("screen-top-bar")).toBeNull();
+    const reading = within(screen.getByTestId("screen-scroll"));
+    expect(reading.getByRole("button", { name: "More", expanded: true })).toBeVisible();
+    expect(reading.getByRole("button", { name: "Block Anna" })).toBeVisible();
+  });
+
+  it("takes no measure from a screen that is hidden, which says it is 0 high", async () => {
+    await openConversation();
+    await screen.findByTestId("conversation-head");
+    // Under Report or the booking, on the web, the screen is not drawn. A
+    // top that stays is not moved there, to move back on return.
+    await measured(740, 136);
+    await measured(0, 0);
+    expect(
+      within(screen.getByTestId("screen-top-bar")).getByRole("header", { name: "Anna" }),
+    ).toBeVisible();
+    // Nor is one that scrolls with the conversation taken out of it.
+    await measured(740, 600);
+    expect(screen.queryByTestId("screen-top-bar")).toBeNull();
+    await measured(0, 0);
+    expect(screen.queryByTestId("screen-top-bar")).toBeNull();
+  });
+
+  it("has one field with its words inside it and a round Send, the screen's one filled button", async () => {
+    const { client } = await openConversation();
+    const bar = within(await screen.findByTestId("bottom-bar"));
+    const field = bar.getByLabelText("Write a message");
+    expect(field).toHaveProp("placeholder", "Write a message");
+    // One line high, and five lines at the most, each with its outline counted.
+    expect(field).toHaveStyle({ minHeight: 52, maxHeight: 5 * 24 + 2 * 12 + 2 * 2 });
+    // No label over the field: the words are in it.
+    expect(screen.queryByText("Write a message")).toBeNull();
+    const send = bar.getByRole("button", { name: "Send" });
+    expect(filledButtons()).toBe(1);
+    expect(screen.getByTestId("filled-button")).toBe(send);
+    // Only an icon: "Send" is its name, not a word on it.
+    expect(screen.queryByText("Send")).toBeNull();
+
+    await fireEvent.changeText(field, "Where shall I wait?");
+    await fireEvent.press(send);
+    await waitFor(() => {
+      expect(sends(client).map(({ text }) => text)).toEqual(["Where shall I wait?"]);
+    });
+    expect(bar.getByLabelText("Write a message")).toHaveDisplayValue("");
+  });
+
+  it("keeps the quick answers as chips over the bar, not in it", async () => {
+    const { client } = await openConversation();
+    const bar = within(await screen.findByTestId("bottom-bar"));
+    expect(bar.queryByRole("button", { name: "I'm at the meeting point" })).toBeNull();
+    const chips = within(screen.getByTestId("over-bar"));
+    await fireEvent.press(chips.getByRole("button", { name: "I'm at the meeting point" }));
+    await waitFor(() => {
+      expect(sends(client).map(({ quick }) => quick)).toEqual([{ key: "atPoint" }]);
+    });
   });
 });
 
@@ -682,7 +1017,13 @@ describe("Conversations list (spec 7, 3.1, item 9)", () => {
         chatServer(client);
       },
     });
-    expect(await screen.findByRole("header", { name: "Messages" })).toBeVisible();
+    // A list: its title is at the left, with no Back on a place of the menu (spec 31, 3.17).
+    const head = within(await screen.findByTestId("screen-head"));
+    expect(head.getByRole("header", { name: "Messages" })).toBeVisible();
+    expect(head.queryByRole("button", { name: "Back" })).toBeNull();
+    // Under each name, the ride's day and route (spec 31, 3.13, item 4).
+    expect(screen.getByText("Sunday 15 November · Borgarnes → Blönduós")).toBeVisible();
+    expect(screen.getByText("Sunday 15 November · BSÍ bus terminal → Borgarnes")).toBeVisible();
     expect(screen.getByText("2 unread")).toBeVisible();
     expect(
       screen.getByRole("button", {
@@ -836,6 +1177,20 @@ describe("Where a chat starts (spec 7, 3.1 and 3.2)", () => {
     expect(
       head.getByText("Each passenger gets it in their own chat. Passengers don't see each other."),
     ).toBeVisible();
+  });
+
+  it("has the same field and round Send to message all, the screen's one filled button, with the quick messages in the bar", async () => {
+    await renderApp(`/drive/trips/${northMyTrip.id}/message`, { me: completeMe });
+    const bar = within(await screen.findByTestId("bottom-bar"));
+    const field = bar.getByLabelText("Write a message");
+    expect(field).toHaveProp("placeholder", "Write a message");
+    expect(field).toHaveStyle({ minHeight: 52 });
+    expect(screen.queryByText("Write a message")).toBeNull();
+    expect(filledButtons()).toBe(1);
+    expect(screen.getByTestId("filled-button")).toBe(bar.getByRole("button", { name: "Send" }));
+    // One over the other, both in the bar.
+    expect(bar.getByRole("button", { name: "I'm at the meeting point" })).toBeVisible();
+    expect(screen.queryByTestId("over-bar")).toBeNull();
   });
 
   it("sends the driver's message to all passengers; a retry after a failure sends it once", async () => {
@@ -1008,9 +1363,19 @@ describe("Messages on a laptop (spec 18, 3.11)", () => {
     const open = screen.getByTestId("panes-open");
     expect(await within(open).findByRole("header", { name: "Anna" })).toBeVisible();
     expect(screen).toHavePathname(conversationPage);
-    expect(within(open).getByText("Sunday 15 November · Borgarnes → Blönduós")).toBeVisible();
+    // The same top as on a phone (spec 31, 3.13), and no bar of the phone's.
+    expect(within(open).getByText("Driver, White Toyota Yaris")).toBeVisible();
+    expect(
+      within(open).getByRole("link", {
+        name: "Sunday 15 November at 10:00, Borgarnes to Blönduós",
+      }),
+    ).toBeVisible();
+    expect(screen.queryByTestId("screen-top-bar")).toBeNull();
+    expect(within(open).queryByRole("button", { name: "Report Anna" })).toBeNull();
+    await fireEvent.press(within(open).getByRole("button", { name: "More" }));
     expect(within(open).getByRole("button", { name: "Report Anna" })).toBeVisible();
     expect(within(open).getByRole("button", { name: "Block Anna" })).toBeVisible();
+    await fireEvent.press(within(open).getByRole("button", { name: "More" }));
     expect(within(open).getByText("By the pumps.")).toBeVisible();
     expect(within(open).getByLabelText("Write a message")).toBeVisible();
     expect(screen.queryByTestId("bottom-bar")).toBeNull();
@@ -1088,6 +1453,36 @@ describe("Messages on a laptop (spec 18, 3.11)", () => {
       await fireEvent(screen.getByTestId("pane-scroll"), "contentSizeChange", 700, 5000);
     });
     expect(scrollToEnd).toHaveBeenCalledTimes(1);
+  });
+
+  it("lets a top too tall for its pane scroll with the conversation, by the pane's height and not the window's", async () => {
+    await openApp(conversationPage);
+    const open = await screen.findByTestId("panes-open");
+    await within(open).findByTestId("conversation-head");
+    const high = (height: number) => ({
+      nativeEvent: { layout: { x: 0, y: 0, width: 800, height } },
+    });
+    const measured = async (pane: number, top: number) => {
+      await fireEvent(within(open).getByTestId("conversation-frame"), "layout", high(pane));
+      await fireEvent(within(open).getByTestId("conversation-head"), "layout", high(top));
+    };
+    const reading = () => within(screen.getByTestId("pane-scroll"));
+    expect(reading().queryByRole("header", { name: "Anna" })).toBeNull();
+    // The window is 800 high. Under the app's bar and in its card the pane
+    // has 500, of which a top of 136 leaves 364.
+    await measured(500, 136);
+    expect(reading().getByRole("header", { name: "Anna" })).toBeVisible();
+    expect(reading().getByRole("button", { name: "More", expanded: false })).toBeVisible();
+    expect(within(open).getAllByTestId("conversation-head")).toHaveLength(1);
+    // The field and the quick messages keep their places under it.
+    expect(within(open).getByLabelText("Write a message")).toBeVisible();
+    expect(
+      within(screen.getByTestId("over-bar")).getByRole("button", { name: "Thank you!" }),
+    ).toBeVisible();
+    // A taller window: the top stays over the pane again.
+    await measured(560, 136);
+    expect(reading().queryByRole("header", { name: "Anna" })).toBeNull();
+    expect(within(open).getByRole("header", { name: "Anna" })).toBeVisible();
   });
 
   it("shows the two panes for a chat opened from a booking, and Back returns to the booking", async () => {

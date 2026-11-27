@@ -1,7 +1,8 @@
 import { StyleSheet, View } from "react-native";
 import { useMe } from "@/auth/session";
 import { Screen, useWideScreen } from "@/components/screen";
-import { Body, Title } from "@/components/text";
+import { ScreenHead } from "@/components/screen-head";
+import { Body } from "@/components/text";
 import { ConversationList, useConversations } from "@/chat/conversation-list";
 import { Panes } from "@/chat/panes";
 import { useLanguage } from "@/i18n/language";
@@ -13,8 +14,9 @@ import { spacing } from "@/theme/tokens";
  * screen 1). One row per confirmed booking, the latest message first, with
  * the other person, the trip day and part, the last message and the unread
  * count. It loads again each time it comes into view, and sets the badge
- * from the same answer. On a phone, pulling down loads it again (spec 16,
- * 3.9). Signed out, it asks to sign in.
+ * from the same answer. On a phone its title is at the left, as a list's
+ * is (spec 31, 3.17), and pulling down loads it again (spec 16, 3.9).
+ * Signed out, it asks to sign in.
  *
  * On a wide screen the list is the left pane of a card, and the right pane
  * asks to choose a conversation (spec 18, 3.11). None opens by itself:
@@ -45,7 +47,7 @@ function Conversations() {
   }
   return (
     <Screen refresh={state.pull}>
-      <Title>{t("chat.title")}</Title>
+      <ScreenHead title={t("chat.title")} back={null} />
       <ConversationList state={state} />
     </Screen>
   );

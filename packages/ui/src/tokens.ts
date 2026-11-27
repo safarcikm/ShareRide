@@ -394,6 +394,13 @@ export const gridCardMinWidth = 320;
 export const halfMinWidth = 280;
 /** The list of conversations beside the open one (spec 18, 3.11). */
 export const listPaneWidth = 360;
+/**
+ * What the top of a conversation leaves of the height the conversation has
+ * (a phone's screen, a laptop's pane) for the messages, the quick messages
+ * and the bar, at the least, while it stays. A top that leaves less scrolls
+ * with the conversation (spec 31, 3.13).
+ */
+export const roomUnderTop = 400;
 
 /** Stroke width of Lucide icons. */
 export const iconStroke = 2.4;

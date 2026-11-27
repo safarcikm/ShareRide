@@ -57,6 +57,8 @@ test("a passenger blocks a driver, loses their trips, and unblocks them", async 
   await passenger.getByRole("link", { name: "Message Bára" }).click();
   await expect(passenger).toHaveURL(/\/messages\/[0-9a-f-]+$/);
   const chat = passenger.url();
+  // In the menu of the conversation's top (spec 31, 3.13).
+  await passenger.getByRole("button", { name: "More", exact: true }).click();
   await passenger.getByRole("button", { name: "Block Bára" }).click();
   await expect(passenger.getByRole("heading", { name: "Block Bára?" })).toBeVisible();
   // The button that blocks is in the bar, in view (spec 31, 3.19).

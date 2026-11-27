@@ -42,17 +42,19 @@ export async function secondPage(browser: Browser, testInfo: TestInfo) {
 /**
  * Bára posts a trip for tomorrow, without the suggested stops named in
  * `skip`, Dóra requests a seat to the stop numbered `to`, Bára accepts and
- * Dóra pays, as in the request journey. Gives the trip, the booking's
- * address, and Dóra's number and the email she gave at sign-up.
+ * Dóra pays, as in the request journey. It leaves less than a day from now,
+ * or at `leaves` where the hour shows in a picture. Gives the trip, the
+ * booking's address, and Dóra's number and the email she gave at sign-up.
  */
 export async function confirmedBooking(
   driver: Page,
   passenger: Page,
   skip: readonly string[] = [],
   to = 1,
+  leaves = withinADay(),
 ) {
   await signUp(driver, english, "Bára");
-  const tripId = await postTripToSelfoss(driver, withinADay(), skip);
+  const tripId = await postTripToSelfoss(driver, leaves, skip);
   const { phone, email } = await signUp(passenger, english, "Dóra");
   await askForSeat(passenger, tripId, to);
   await driver.goto(`/drive/trips/${tripId}`);

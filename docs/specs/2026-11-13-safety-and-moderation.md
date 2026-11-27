@@ -83,7 +83,9 @@ decision, with every operator action logged.
 ### 3.2 Blocking (G2)
 
 1. From a profile or a chat: "Block". Blocking is silent: the other person is
-   not told.
+   not told. Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.13) a
+   chat has Report and Block in the menu of its top, "More", with Block
+   red and last.
 2. Both people stop seeing each other's trips in search and trip pages, and
    neither can request or book the other's trips. Their chats become
    read-only (spec 7).

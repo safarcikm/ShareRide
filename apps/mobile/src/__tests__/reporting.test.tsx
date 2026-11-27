@@ -256,6 +256,7 @@ describe("Reporting from a conversation (spec 9, 3.1.1)", () => {
   it("reports the person through the booking, then offers to block them too", async () => {
     const { client } = await openConversation();
     expect(screen.getByText("Press and hold a message to report it.")).toBeVisible();
+    await fireEvent.press(screen.getByRole("button", { name: "More" }));
     await fireEvent.press(screen.getByRole("button", { name: "Report Anna" }));
     expect(await screen.findByRole("header", { name: "Report Anna" })).toBeVisible();
     // Anna is named from the booking, not from the address.

@@ -887,6 +887,95 @@ follows (plan, PR 8c).
 4. The list of conversations keeps its rows; each shows the ride's day and
    route under the name.
 
+As built (plan, PR 10), on a phone: a conversation
+([light](images/one-ride-one-ticket/built/chat-phone-light.webp),
+[dark, in Icelandic](images/one-ride-one-ticket/built/chat-phone-dark.webp)),
+[its menu open](images/one-ride-one-ticket/built/chat-menu-phone-light.webp),
+[three lines written](images/one-ride-one-ticket/built/chat-writing-phone-light.webp)
+and
+[the list](images/one-ride-one-ticket/built/messages-phone-light.webp);
+on a laptop,
+[a conversation beside the list](images/one-ride-one-ticket/built/chat-laptop-light.webp).
+
+- **The top stays** while the messages scroll under it, on white with a
+  line under it. Until now Back, the name, Report and Block were the
+  first lines of the conversation, which opens at its end: they were out
+  of view from the first message on. It has Back, with no fill here, the
+  picture (the app's 48, where the drawing has 40), the name as the
+  screen's title, and under the name "Driver, White Toyota Yaris",
+  "Driver" alone while the booking names no car, or "Passenger".
+  Icelandic has a dot between the two, "Bílstjóri · Hvítur Toyota
+  Yaris", as the colour's capital letter would read wrong after a comma.
+  Back and the menu's button are level with the picture's middle, and
+  the three stand at the top of a name of several lines (3.18).
+- **When the top would leave too little room,** it is the first thing in
+  the conversation instead, on a card, and scrolls with it as it did
+  before: when it leaves the messages, the quick answers and the bar
+  less than 400 of the height the conversation has, which is a phone's
+  screen, or its pane on a laptop. That is text twice as large with long
+  names on a narrow phone, where the top alone is 600 high, or a phone
+  on its side. The menu, open for a moment, is not counted, and stays
+  open if the top moves while it is, as when a phone is turned.
+- **The menu** is a button of three dots at the right, named "More",
+  which says for a screen reader whether it is open. Pressed, two rows
+  unfold under the top's first line and push the ride's line down:
+  "Report Bára" with a flag, and "Block Bára", red and last (decision
+  17). Each closes the menu and opens its own screen, which asks first
+  (3.19; spec 9, 3.1 and 3.2), so each is two presses away and neither
+  is the first thing seen. Pressed again, the menu folds. Once I blocked
+  them it holds Report alone.
+- **The ride's line** is a ticket icon, the short day and the time in
+  bold, and the part of the way the booking is for with the arrow, as
+  the list's rows write it: "Sat 28 Nov, 17:30 Mjódd bus terminal → N1
+  Selfoss", and in Icelandic "Lau. 28. nóv. kl. 17:30", as it says a
+  time after a day. Long names wrap to another line and are not cut,
+  and a name wider than the line breaks inside it. It is one link, read out
+  "Saturday 28 November at 17:30, Mjódd bus terminal to N1 Selfoss": to
+  the booking for its passenger, and for the driver to their ride, which
+  has the passenger on it.
+- **The safety line** is the first thing in the conversation, as a quiet
+  line with a shield, small and muted, where it was a blue notice. Its
+  words are as they were, for paying in the app and for paying the
+  driver in person (ADR 0038). Then "You blocked Bára" where that is so,
+  how to report a message, and "Sent with the request" over the
+  request's message, which the drawing leaves out and the conversation
+  keeps (spec 7, 3.1, item 1).
+- **The quick answers** are chips over the bar, on the screen's ground,
+  and no longer in the bar: one row that scrolls sideways on a phone,
+  wrapping on a laptop. "I'm running late" asks how many minutes in
+  their place, as before.
+- **The field** is in the bar: one line, 52 high as the app's fields
+  are (the drawing has 48), round at its ends, with "Write a message" in
+  it until something is written. Those words are its name for a screen
+  reader too; the label over it is gone. It grows with what is written,
+  to about five lines, and scrolls inside from there; emptied or sent,
+  it is one line again. As it grows the conversation stays at its end,
+  so the last message is not under the bar while an answer to it is
+  written. **Send** is a round filled button as high as the
+  field, with a paper plane and the name "Send": the screen's one main
+  button (R31.1). It stays at the field's foot as the field grows, and
+  turns to a spinner while "Message all passengers" sends.
+- **A conversation that is closed,** or with a block between the two, or
+  read by someone suspended, has one line in the bar that says so, and
+  neither field nor chips.
+- **The list** keeps its rows, with the ride's day and the booking's part
+  under the name ("Saturday 28 November · Mjódd bus terminal → N1
+  Selfoss"). On a phone its title, "Messages", is at the left (3.17).
+- **On a laptop** the open conversation's pane has the same top, with
+  Report and Block in its menu too; they stood beside the name there
+  (spec 18, 3.11).
+- **"Message all passengers"** (3.19) has the same field and round Send
+  in its bar, with the chips over them, in the bar too.
+- `look.spec.ts` opens a conversation on a phone 360 wide with a long
+  name and long place names, with the text as set and twice as large:
+  the top holds what is in it, staying with the text as set and
+  scrolling with the conversation twice as large; the field and Send are
+  whole in the bar, and a line written twice as large is whole in the
+  field, with the conversation still at its end after the field grew for
+  it; and the messages keep at least a third of the window. Twice as
+  large there, the field shows "Write a" of "Write a message" until
+  something is written (plan, PR 12's list).
+
 ### 3.14 Profile and settings
 
 1. **One page.** The person's card (the picture with its controls for
@@ -1395,6 +1484,9 @@ Texts added while building, as they are in the app:
 | The seats card | Seats; {taken} of {seats} taken; at the busiest, {from} to {to} | Sæti; {taken} af {seats} upptekið (upptekin); þar sem mest er, {from} → {to} |
 | A request's message | “{message}” | „{message}“ |
 | Before "I'm here" opens, for the driver | At {stop} you can say you're here from {time}. | {stop}: þú getur sagt að þú sért á staðnum frá kl. {time}. |
+| Under the name in a conversation | Driver; Driver, {car}; Passenger | Bílstjóri; Bílstjóri · {car}; Farþegi |
+| The menu of a conversation's top | More | Meira |
+| The day and the time on a conversation's ride line | {day}, {time} | {day} kl. {time} |
 
 Texts that exist are reused where they say the same: "Rate the driver",
 "Rate your passenger", "Pay", "Delete draft", "My reports", "Notices",

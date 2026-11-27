@@ -1795,6 +1795,21 @@ releases follow [Semantic Versioning](https://semver.org/).
   way · 110%"), and the row for the day and times there is called
   "Time", as on the road. Opened by its address, the last step's Back
   leads to the price, the step before it; it led to the seats.
+- A conversation has a top that stays (spec 31, 3.13): Back, the other
+  person's picture and name with "Driver, White Toyota Yaris" or
+  "Passenger", and a menu, "More", that holds Report and Block, with
+  Block red and last. Until now those were the first lines of the
+  conversation and out of view from the first message on. Under them the
+  ride is one line that opens the booking, or the ride for its driver.
+  The safety tip is a quiet line with a shield, first in the
+  conversation. The quick messages are chips over the bar, and the field
+  in the bar is one line with "Write a message" in it that grows as it is
+  written in, with a round Send beside it; "Message all passengers" has
+  the same field. The conversation stays at its end as the field grows,
+  so the last message is not under the bar while an answer is written. A
+  top too tall for the room the conversation has, as with text twice as
+  large and long names, scrolls with it. Messages has its title at the
+  left on a phone.
 - The web journeys never give two test accounts the same phone number: a
   run in ten did, and a sign-in journey then failed.
 - CI skips its code jobs (bundles, unit, integration and web tests, the API

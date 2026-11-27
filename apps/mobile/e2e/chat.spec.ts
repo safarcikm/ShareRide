@@ -9,8 +9,11 @@ import { postTripToSelfoss } from "./support/trips";
 // and the passenger pays. Then they write to each other: the driver sees the
 // passenger's message counted on Messages in the menu, answers
 // with a quick message in Icelandic, which the passenger reads in English,
-// and the passenger sees "Seen" once the driver has opened the chat. Each
-// project posts its own trip, so phone and desktop runs never meet.
+// and the passenger sees "Seen" once the driver has opened the chat. On the
+// way: the conversation's top with who it is with, the ride as a link and
+// Report and Block in its menu, and the field that grows as it is written
+// in (spec 31, 3.13). Each project posts its own trip, so phone and desktop
+// runs never meet.
 
 test.use({ locale: "en-GB" });
 
@@ -73,10 +76,43 @@ test("the driver and passenger of a confirmed booking message each other", async
     conversation.getByText("Booking confirmed. You can message each other here.").filter(visible),
   ).toBeVisible();
   await expect(passenger.getByLabel("You, Sent with the request: A small rucksack.")).toBeVisible();
-  await passenger.getByLabel("Write a message").fill("Where shall I wait?");
+
+  // Its top: who it is with, and the ride as a link to the booking, with
+  // the part of the way Dóra booked.
+  await expect(conversation.getByRole("heading", { name: "Bára" })).toBeInViewport();
+  await expect(conversation.getByText(/^Driver, \S/).filter(visible)).toBeInViewport();
+  const ride = conversation.getByRole("link", {
+    name: /^\S+ \d+ \S+ at 17:30, Mjódd bus terminal to Olís Norðlingaholt$/,
+  });
+  await expect(ride).toBeInViewport();
+  await expect(ride).toHaveAttribute("href", /^\/bookings\/[0-9a-f-]+$/);
+  // Report and Block are in its menu, two presses away, and out of the way again.
+  const more = conversation.getByRole("button", { name: "More", exact: true });
+  await expect(conversation.getByRole("button", { name: "Report Bára" })).toHaveCount(0);
+  await more.click();
+  await expect(more).toHaveAttribute("aria-expanded", "true");
+  await expect(conversation.getByRole("button", { name: "Report Bára" })).toBeVisible();
+  await expect(conversation.getByRole("button", { name: "Block Bára" })).toBeVisible();
+  await more.click();
+  await expect(conversation.getByRole("button", { name: "Block Bára" })).toHaveCount(0);
+
+  // The field has one line, grows with what is written, and is one line
+  // again once the message went; Send is the round button beside it.
+  const field = passenger.getByLabel("Write a message");
+  const height = async () => Math.round((await field.boundingBox())?.height ?? 0);
+  const oneLine = await height();
+  expect(oneLine).toBeLessThanOrEqual(56);
+  await expect(field).toHaveAttribute("placeholder", "Write a message");
+  await field.fill("I have a rucksack.\nAnd a pair of skis.\nIs that fine?");
+  await expect.poll(height).toBeGreaterThanOrEqual(oneLine + 40);
+  await field.fill("Where shall I wait?");
+  await expect.poll(height).toBe(oneLine);
   await passenger.getByRole("button", { name: "Send", exact: true }).click();
   await expect(passenger.getByLabel(/^You, \d\d:\d\d: Where shall I wait\?$/)).toBeVisible();
-  await expect(passenger.getByLabel("Write a message")).toHaveValue("");
+  await expect(field).toHaveValue("");
+  await expect.poll(height).toBe(oneLine);
+  // The top stayed where it was while the conversation went to its end.
+  await expect(conversation.getByRole("heading", { name: "Bára" })).toBeInViewport();
 
   // The driver's Messages place counts it.
   await driver.goto("/");
@@ -94,6 +130,11 @@ test("the driver and passenger of a confirmed booking message each other", async
   await driver.goto(`/drive/trips/${tripId}`);
   await driver.getByRole("button", { name: "Senda skilaboð: Dóra" }).click();
   await expect(driver.getByLabel(/^Dóra, \d\d:\d\d: Where shall I wait\?$/)).toBeVisible();
+  // For the driver the top says who Dóra is, and its ride line opens the ride.
+  await expect(driver.getByText("Farþegi", { exact: true }).filter(visible)).toBeInViewport();
+  await expect(
+    driver.getByRole("link", { name: /, Mjódd til Olís Norðlingaholt/ }).filter(visible),
+  ).toHaveAttribute("href", `/drive/trips/${tripId}`);
   await driver.getByRole("button", { name: "Ég er á mótsstaðnum" }).click();
   await expect(driver.getByLabel(/^Þú, \d\d:\d\d: Ég er á mótsstaðnum$/)).toBeVisible();
 

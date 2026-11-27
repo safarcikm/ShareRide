@@ -823,4 +823,98 @@ test.describe("pictures", () => {
     await expect(page.getByRole("button", { name: /^You drive, / }).filter(visible)).toBeVisible();
     await shoot("offer-published", "light");
   });
+
+  // Messages as built (spec 31, 3.13): a conversation with its top, the
+  // ride as one line, the quiet safety line, the chips and the field; its
+  // menu open; the field with three lines written; the same in Icelandic
+  // at night; and the list. On a laptop, the conversation beside the list.
+  test("Messages (spec 31)", async ({ page, browser }, info) => {
+    test.setTimeout(300_000);
+    const folder = join(root ?? "", "one-ride-one-ticket", "built");
+    mkdirSync(folder, { recursive: true });
+    const wide = info.project.name === "desktop";
+    const window = wide ? { width: 1280, height: 720 } : (page.viewportSize() ?? null);
+    if (window === null) throw new Error("The page has no size");
+    await page.setViewportSize(window);
+    const { userAgent, isMobile, hasTouch, baseURL } = info.project.use;
+    const other = await browser.newContext({
+      viewport: window,
+      deviceScaleFactor: 2,
+      userAgent,
+      isMobile,
+      hasTouch,
+      baseURL,
+      locale: "en-GB",
+    });
+    const dora = await other.newPage();
+    // At half past five, whenever the pictures are taken.
+    const { tripId, booking } = await confirmedBooking(page, dora, [], 3, "17:30");
+    const chat = `/messages/${booking.split("/").at(-1) ?? ""}`;
+    const visible = { visible: true };
+    const kind = wide ? "laptop" : "phone";
+    // A conversation is as tall as the window: its top and its bar stay.
+    const shoot = async (name: string, scheme: "light" | "dark") => {
+      await dora.mouse.move(0, 0);
+      await dora.waitForTimeout(500);
+      await dora.screenshot({
+        path: join(folder, `${name}-${kind}-${scheme}.png`),
+        scale: wide ? "css" : "device",
+      });
+    };
+
+    // Dóra asks where to wait, and Bára answers from her ride.
+    await dora.goto(chat);
+    await expect(dora.getByRole("heading", { name: "Bára" }).filter(visible)).toBeVisible();
+    await dora.getByLabel("Write a message").filter(visible).fill("Where shall I wait?");
+    await dora.getByRole("button", { name: "Send", exact: true }).filter(visible).click();
+    await expect(dora.getByLabel(/^You, \d\d:\d\d: Where shall I wait\?$/)).toBeVisible();
+    await page.goto(`/drive/trips/${tripId}`);
+    await page.getByRole("button", { name: "Message Dóra" }).click();
+    await expect(page.getByLabel(/^Dóra, \d\d:\d\d: Where shall I wait\?$/)).toBeVisible();
+    await page
+      .getByLabel("Write a message")
+      .filter(visible)
+      .fill("By the bus shelter, on the side of the shops.");
+    await page.getByRole("button", { name: "Send", exact: true }).filter(visible).click();
+    await expect(dora.getByLabel(/^Bára, \d\d:\d\d: By the bus shelter/)).toBeVisible({
+      timeout: 15_000,
+    });
+    await expect(dora.getByLabel(/Where shall I wait\? Seen$/)).toBeVisible({ timeout: 15_000 });
+    await shoot("chat", "light");
+    if (wide) {
+      await other.close();
+      return;
+    }
+
+    // The menu of its top, open.
+    await dora.getByRole("button", { name: "More", exact: true }).filter(visible).click();
+    await expect(dora.getByRole("button", { name: "Block Bára" }).filter(visible)).toBeVisible();
+    await shoot("chat-menu", "light");
+    await dora.getByRole("button", { name: "More", exact: true }).filter(visible).click();
+
+    // Three lines written: the field has grown, and Send stays at its foot.
+    await dora
+      .getByLabel("Write a message")
+      .filter(visible)
+      .fill("I have a small rucksack and a pair of skis.\nIs that fine?\nI can also take the bus.");
+    await shoot("chat-writing", "light");
+    await dora.getByLabel("Write a message").filter(visible).fill("");
+
+    // The list of conversations.
+    await dora.goto("/messages");
+    await expect(dora.getByRole("heading", { name: "Messages" }).filter(visible)).toBeVisible();
+    await expect(dora.getByRole("button", { name: /^Bára, / }).filter(visible)).toBeVisible();
+    await shoot("messages", "light");
+
+    // In Icelandic, at night.
+    await dora.emulateMedia({ colorScheme: "dark" });
+    await dora.goto("/");
+    await dora.getByRole("button", { name: "Change the language to Icelandic" }).click();
+    await expect(dora.getByRole("button", { name: "Skipta yfir í ensku" })).toBeVisible();
+    await dora.goto(chat);
+    await expect(dora.getByRole("heading", { name: "Bára" }).filter(visible)).toBeVisible();
+    await expect(dora.getByLabel(/^Bára, \d\d:\d\d: By the bus shelter/)).toBeVisible();
+    await shoot("chat", "dark");
+    await other.close();
+  });
 });

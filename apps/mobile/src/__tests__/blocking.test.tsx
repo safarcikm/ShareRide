@@ -75,7 +75,9 @@ async function openConversation(
 
 /** Opens Block from the conversation and confirms it. */
 async function blockFromChat(name: string) {
-  await fireEvent.press(await screen.findByRole("button", { name: `Block ${name}` }));
+  // In the menu of the conversation's top (spec 31, 3.13).
+  await fireEvent.press(await screen.findByRole("button", { name: "More" }));
+  await fireEvent.press(screen.getByRole("button", { name: `Block ${name}` }));
   expect(await screen.findByRole("header", { name: `Block ${name}?` })).toBeVisible();
   await fireEvent.press(screen.getByRole("button", { name: `Block ${name}` }));
 }
@@ -83,7 +85,8 @@ async function blockFromChat(name: string) {
 describe("Blocking from a conversation (spec 9, 3.2)", () => {
   it("asks first, then blocks, and offers to cancel the booking we share", async () => {
     const { client } = await openConversation(paidBooking, [paidBooking]);
-    await fireEvent.press(await screen.findByRole("button", { name: "Block Anna" }));
+    await fireEvent.press(await screen.findByRole("button", { name: "More" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Block Anna" }));
 
     expect(await screen.findByRole("header", { name: "Block Anna?" })).toBeVisible();
     expect(
@@ -112,7 +115,8 @@ describe("Blocking from a conversation (spec 9, 3.2)", () => {
 
   it("asks with its title at the left and Block as the one main button, red, in the bar (spec 31, 3.19)", async () => {
     await openConversation(paidBooking, [paidBooking]);
-    await fireEvent.press(await screen.findByRole("button", { name: "Block Anna" }));
+    await fireEvent.press(await screen.findByRole("button", { name: "More" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Block Anna" }));
     await screen.findByRole("header", { name: "Block Anna?" });
     const head = within(screen.getByTestId("screen-head"));
     expect(head.getByRole("header", { name: "Block Anna?" })).toBeVisible();
@@ -131,7 +135,8 @@ describe("Blocking from a conversation (spec 9, 3.2)", () => {
   it("says who is blocked as the title, with focus, and shows the bookings we share as tickets", async () => {
     const focus = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
     await openConversation(paidBooking, [paidBooking]);
-    await fireEvent.press(await screen.findByRole("button", { name: "Block Anna" }));
+    await fireEvent.press(await screen.findByRole("button", { name: "More" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Block Anna" }));
     await screen.findByRole("header", { name: "Block Anna?" });
     focus.mockClear();
     await fireEvent.press(screen.getByRole("button", { name: "Block Anna" }));
@@ -255,6 +260,9 @@ describe("Blocking from a conversation (spec 9, 3.2)", () => {
     expect(
       screen.getByText("You blocked Anna. You can unblock them in Settings, under Safety."),
     ).toBeVisible();
+    // The menu has Report left, and no Block.
+    await fireEvent.press(screen.getByRole("button", { name: "More" }));
+    expect(screen.getByRole("button", { name: "Report Anna" })).toBeVisible();
     expect(screen.queryByRole("button", { name: "Block Anna" })).toBeNull();
   });
 
