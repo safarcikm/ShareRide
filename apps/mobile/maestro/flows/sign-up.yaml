@@ -55,8 +55,9 @@ name: Sign up
     text: "6-digit code"
     index: 1
 - inputText: ${output.code}
+# The step's title can be scrolled out of sight on Android; its fields are not.
 - extendedWaitUntil:
-    visible: "Last step: about you"
+    visible: "Languages you speak"
     timeout: 20000
 - tapOn:
     text: "First name"
