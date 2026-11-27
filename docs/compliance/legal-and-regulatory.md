@@ -59,8 +59,11 @@ Actions:
 ## 3. Company and operations
 
 - Choose the company form, most likely a private limited company (ehf.),
-  registered with the Register of Enterprises at Skatturinn. Check the
-  current minimum share capital (**verify**).
+  registered with the Register of Enterprises at Skatturinn: at least
+  500 000 kr share capital, paid in at registration, and a 140 500 kr fee
+  (checked 2026-11-27). The nonprofit forms and why they fit less well are
+  in [ways to make money](../strategy/2026-11-27-ways-to-make-money.md#3-would-a-nonprofit-work)
+  (open question Q32).
 - The company is the **data controller**, the contracting party in the terms,
   the publisher in the app stores and, later, the payment provider's merchant.
   It should exist before the beta.
@@ -76,7 +79,11 @@ Actions:
   accountant). Explain the answer in the help centre.
 - **Platform:** VAT on any passenger service fee (Iceland's
   standard rate applies unless an exemption fits, **verify**), and income tax
-  on profits.
+  on profits. Passenger transport that is not public transport carries the
+  11% rate, and so does a travel agent's help in selling it; whether the fee
+  counts as that or as an ordinary 24% service is for the accountant.
+  Registration for VAT is needed once taxable sales pass 2 000 000 kr in 12
+  months ([ways to make money](../strategy/2026-11-27-ways-to-make-money.md#21-passenger-service-fee-adr-0014)).
 - Receipts for passengers and annual statements for drivers, since payments
   run through the app from the beta.
 
@@ -167,3 +174,7 @@ Actions:
    Irrespective of Gender (No. 150/2020), as a difference in treatment
    justified by safety? Must people registered as neutral be included, and
    do we need to offer men-only trips too?
+10. If PuffinRide earns from employers, regions, events or sponsors instead
+    of a fee on each ride, does that change the answers to questions 1 and
+    3? Would a nonprofit form change them
+    ([ways to make money](../strategy/2026-11-27-ways-to-make-money.md#35-does-a-nonprofit-help-with-the-taxi-law))?

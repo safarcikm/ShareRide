@@ -414,6 +414,9 @@ Exit criteria: public in both stores; support and moderation routines running.
 
 ## Phase 5: Grow and monetise
 
+The options and a suggested order are in
+[ways to make money](2026-11-27-ways-to-make-money.md).
+
 - [ ] Passenger service fee: set the amount from beta data
       ([ADR 0014](../decisions/0014-passenger-service-fee-from-launch.md))
 - [ ] Recurring trips for commuters

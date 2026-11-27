@@ -8,13 +8,14 @@ here, update or accept the linked ADR, and move the row to "Answered".
 
 ## Open
 
-A new question goes in a table here with the next free number (Q32
+A new question goes in a table here with the next free number (Q33
 onwards), a recommendation and the docs it affects.
 
 | #   | Question | Recommendation | Affects |
 | --- | -------- | -------------- | ------- |
 | Q29 | Feedback is kept 12 months after the beta ends, counted from when "Invite code required" was last turned off. Now that the beta is open and the switch is only a gate (ADR 0035), turning it on for a day against abuse and off again would start that count. Should the end of the beta be its own moment instead? | Yes: the operator sets the end of the beta at public launch (launch work, spec 20, section 10), and the switch stops counting. Until then, avoid turning the switch on and off again. | [privacy register](../compliance/privacy-gdpr.md) (Feedback), spec 12, spec 20 (3.4.5), `retention.ts` |
 | Q31 | While an account waits to be deleted, the app shows only when it goes and "Keep my account" (spec 11, 3.4.4), and Profile's pages are closed to it. Four pages are still open to such an account by their address: Notices from PuffinRide, Report, and the two pages that block a person. Should they close too? | Close Report and the two block pages, as the other pages are: "Keep my account" opens them again. Keep Notices open: a notice's email links there, and a person may want to read or appeal one before the account goes. | [spec 9](../specs/2026-11-13-safety-and-moderation.md), [spec 11](../specs/2026-11-13-privacy-self-service.md) (3.4.4), `navigation/member-screens.ts`, [spec 31's plan](../plans/2026-11-26-one-ride-one-ticket.md) (PR 12, item 15) |
+| Q32 | Which legal form should PuffinRide have: an ehf. (private limited company) or a nonprofit (a public benefit association under Act 110/2021, or a self-owning institution under Act 33/1999)? Martin trades as an individual today. | An ehf., registered early in 2027. A nonprofit could pay Martin a normal salary, but carpooling is not on the Income Tax Act's public-benefit list, so it would pay 37.6% on any surplus instead of 20%, could not take tax-deductible gifts, could not claim the R&D tax credit (35% of development costs), and Martin would share control with a board and own nothing. The ehf. is also needed for the Innovation Fund contract, the store accounts and card payments. Write the cost-sharing purpose into its statutes. See [ways to make money](2026-11-27-ways-to-make-money.md#3-would-a-nonprofit-work). | [legal and regulatory](../compliance/legal-and-regulatory.md) (3, 9), [roadmap](roadmap.md) (legal and company), [ADR 0051](../decisions/0051-store-apps-in-martins-name-until-the-company.md) |
 
 ## Answered
 

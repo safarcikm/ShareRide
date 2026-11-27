@@ -8,6 +8,7 @@ Everything needed to understand, build and run PuffinRide. Start with the
 - [Development strategy](strategy/development-strategy.md): the whole plan on a few pages
 - [Roadmap](strategy/roadmap.md): phases, tracks and exit criteria
 - [Open questions](strategy/open-questions.md): decisions still to make, with recommendations
+- [Ways to make money](strategy/2026-11-27-ways-to-make-money.md): fees, employers, regions, grants, and whether a nonprofit would work (2026-11-27)
 
 ## Product
 
