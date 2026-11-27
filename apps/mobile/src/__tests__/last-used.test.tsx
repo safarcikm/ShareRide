@@ -44,8 +44,11 @@ beforeEach(() => {
   mockDevice.available.mockReset().mockReturnValue(Promise.resolve(true));
 });
 
-/** Step 1 with Google, Apple, Face ID and the email all offered, unless `providers` says less. */
-async function openSignIn(providers: readonly ("google" | "apple")[] = ["google", "apple"]) {
+/** Step 1 with Google, Apple, passkeys and the email all offered, unless told less. */
+async function openSignIn(
+  providers: readonly ("google" | "apple")[] = ["google", "apple"],
+  passkeySignIn = true,
+) {
   await renderApp("/sign-in", {
     setUp: (client) => {
       client.answer("/v1/config", () =>
@@ -58,7 +61,7 @@ async function openSignIn(providers: readonly ("google" | "apple")[] = ["google"
           reliabilityMonths: 12,
           signInProviders: providers,
           emailSignIn: true,
-          passkeySignIn: true,
+          passkeySignIn,
         }),
       );
     },
@@ -89,17 +92,6 @@ describe("The way used last time first (spec 29, 3.5)", () => {
       "or with your email",
       "Send code",
     ]);
-  });
-
-  it("has no Face ID button: a passkey is in the email field's suggestions (3.7)", async () => {
-    await openSignIn();
-    await settled([
-      "Continue with Google",
-      "Continue with Apple",
-      "or with your email",
-      "Send code",
-    ]);
-    expect(screen.queryByRole("button", { name: "Face ID or fingerprint" })).toBeNull();
   });
 
   it("puts Google first after Google", async () => {
@@ -145,6 +137,17 @@ describe("The way used last time first (spec 29, 3.5)", () => {
     mockPreferences.set("last-sign-in", "google");
     await openSignIn(["apple"]);
     await settled(["Continue with Apple", "or with your email", "Send code"]);
+  });
+
+  it("keeps today's order after a passkey when the server has none", async () => {
+    mockPreferences.set("last-sign-in", "passkey");
+    await openSignIn(["google", "apple"], false);
+    await settled([
+      "Continue with Google",
+      "Continue with Apple",
+      "or with your email",
+      "Send code",
+    ]);
   });
 
   it("marks nothing when the email is the only way", async () => {

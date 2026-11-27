@@ -38,10 +38,10 @@ import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
 /**
- * Step 1 of signing in or up: Continue with Google or Apple, Face ID or
- * fingerprint where the device has it, or the email, which gets a code
- * (spec 26, 3.1), or signs in with its password when one is typed (spec 27,
- * 3.1), under the ride kept on the way. After
+ * Step 1 of signing in or up: Continue with Google or Apple, or the email,
+ * which gets a code (spec 26, 3.1), signs in with its password when one is
+ * typed (spec 27, 3.1), or offers a passkey among its suggestions (spec 29,
+ * 3.1 and 3.7), under the ride kept on the way. After
  * an email or a Google or Apple account no account has, it asks for the
  * phone number, with a line on top saying why (spec 19, 3.3; spec 26,
  * 3.3): a text goes only to a number on its way into an account.
@@ -67,12 +67,9 @@ function passwordErrorText(t: Translate, failure: CallFailure): string {
  * item 2): the same for a passkey removed as for the console's (spec 29, 3.4).
  */
 function passkeyErrorText(t: Translate, failure: CallFailure): string {
-  const { code, retryAfterSeconds = 0 } = failure.error;
+  const { code } = failure.error;
   if (code === "passkey_invalid" || code === "passkey_unknown") return t("passkey.unknown");
   if (code === "passkey_expired") return t("passkey.expired");
-  if (code === "rate_limited") {
-    return t("error.passwordTries", { wait: formatWait(t, retryAfterSeconds) });
-  }
   return errorText(t, failure);
 }
 
@@ -85,7 +82,7 @@ function ChooseHowScreen() {
   const { locale, t } = useLanguage();
   const session = useSession();
   const flow = useSignInFlow();
-  const { signInProviders, emailSignIn } = useConfig();
+  const { signInProviders, emailSignIn, passkeySignIn } = useConfig();
   const providerWindow = useProviderWindow();
   const passkeyOffered = usePasskeysOffered();
   const [fieldError, setFieldError] = useState<string>();
@@ -232,7 +229,11 @@ function ChooseHowScreen() {
   // The ways wait for it, so nothing moves under a finger. A passkey is
   // picked in the email field, so after one the form comes first (3.7).
   const ordered = last !== undefined;
-  const first = firstWay(last ?? null, { providers: signInProviders, email: emailSignIn });
+  const first = firstWay(last ?? null, {
+    providers: signInProviders,
+    passkey: passkeySignIn,
+    email: emailSignIn,
+  });
   const formFirst = first === "email" || first === "password" || first === "passkey";
   const providerFirst = first === "google" || first === "apple" ? first : null;
   const providers =
@@ -304,7 +305,7 @@ function ChooseHowScreen() {
           <Notice message={error ?? flow.notice} />
           <Button
             label={t(password === "" ? "auth.email.send" : "auth.signIn")}
-            busy={busy}
+            busy={busy || passkeyBusy}
             disabled={providerBusy !== null || passkeyBusy}
             onPress={() => void send()}
           />

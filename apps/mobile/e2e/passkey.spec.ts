@@ -47,7 +47,7 @@ async function keptPasskeys({ session, authenticatorId }: DeviceLock): Promise<n
   return credentials.length;
 }
 
-/** A browser that cannot list passkeys among the email field's suggestions: the button only. */
+/** A browser that cannot list passkeys among the email field's suggestions: no quiet request. */
 async function withoutSuggestions(page: Page) {
   await page.addInitScript(() => {
     PublicKeyCredential.isConditionalMediationAvailable = () => Promise.resolve(false);

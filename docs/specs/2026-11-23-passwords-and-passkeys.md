@@ -114,7 +114,7 @@ button for Face ID or fingerprint:
 
 ### 3.3 Signing in with Face ID or fingerprint
 
-> [Spec 29](2026-11-25-easier-sign-in.md) adds to this section: the same sign-in from the email field (its 3.1), and `passkey_unknown` for a passkey the site no longer has, which the browser is told to forget (3.4).
+> [Spec 29](2026-11-25-easier-sign-in.md) changes this section: the same sign-in from the email field (its 3.1), and `passkey_unknown` for a passkey the site no longer has, which the browser is told to forget (3.4). Since 2026-11-27 step 1 has no "Face ID or fingerprint" button, so the email field's suggestions are the only way in with a passkey, and the button's sheet and its kept challenge are gone (3.7).
 
 1. "Face ID or fingerprint" asks the browser for a passkey. The browser
    shows its own sheet (Face ID, Touch ID, the fingerprint reader, Windows

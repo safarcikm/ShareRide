@@ -3,7 +3,9 @@ import type { SignInProvider, SignInWay } from "@shareride/domain";
 /** What step 1 offers now. */
 export interface OfferedWays {
   readonly providers: readonly SignInProvider[];
-  /** The email form: the email code, a password, and a passkey among its suggestions. */
+  /** The server has passkeys, offered among the email field's suggestions. */
+  readonly passkey: boolean;
+  /** The email form: the email code and a password. */
   readonly email: boolean;
 }
 
@@ -21,6 +23,7 @@ export function firstWay(last: SignInWay | null, offered: OfferedWays): SignInWa
     case "apple":
       return offered.providers.includes(last) ? last : null;
     case "passkey":
+      return offered.passkey && offered.email ? last : null;
     case "password":
     case "email":
       return offered.email ? last : null;

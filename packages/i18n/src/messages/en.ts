@@ -174,7 +174,7 @@ export const en = {
   "auth.or": "or",
   /** The way this browser signed in last time (spec 29, 3.5). */
   "auth.lastUsed": "Last used",
-  /** Sign in with a passkey on this device (spec 27, 3.1 and 3.3). */
+  /** A passkey on this device, as a way to sign in (spec 27, 3.6). */
   "auth.passkey": "Face ID or fingerprint",
   "auth.email.label": "Email",
   "auth.email.send": "Send code",

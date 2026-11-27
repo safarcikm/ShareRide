@@ -100,7 +100,7 @@ export interface SessionManager {
     email: string,
     password: string,
   ): Promise<CallResult<typeof passwordSignInRoute>>;
-  /** Options for the device's passkey sheet, to sign in with Face ID or fingerprint (spec 27, 3.3). */
+  /** Options for the email field's passkey suggestions, to sign in with Face ID or fingerprint (spec 29, 3.1). */
   passkeyOptions(): Promise<CallResult<typeof passkeySignInOptionsRoute>>;
   /** Signs in with the device's answer; a passkey that is not a member's is refused. */
   signInWithPasskey(

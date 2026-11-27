@@ -87,7 +87,7 @@ Google One Tap, magic links.
    item 3 says.
 3. Nothing else changes: a browser with no passkey for PuffinRide shows its
    usual suggestions, and typing an email works as before. A refused
-   passkey shows spec 27's messages above the button.
+   passkey shows spec 27's messages above Send code.
 4. The options' challenge lasts 5 minutes; while step 1 stays open, new
    options replace them a little before then (my call: no message, so a
    suggestion picked later still works). Leaving step 1, Google or Apple
@@ -192,14 +192,15 @@ Google One Tap, magic links.
 Martin, 2026-11-27, looking at step 1 on his iPhone: "I think we should
 hide the Face ID/passkey, aren't the password managers handling this
 nowadays". They are: Safari, Chrome, Edge and Firefox list a site's
-passkeys among the email field's suggestions (3.1), and save one by
-themselves after a password (3.3).
+passkeys among the email field's suggestions (3.1), and Safari and Chrome
+save one by themselves after a password (3.3).
 
 1. Step 1 has no "Face ID or fingerprint" button. Google and Apple, if
    offered, then "or with your email", then the email form.
-2. A passkey is picked from the email field's suggestions (3.1). On a
-   browser that cannot list passkeys there, a member signs in with the
-   email code, a password, Google or Apple, as before.
+2. A passkey is picked from the email field's suggestions (3.1), the only
+   way in with one. A browser that cannot list passkeys there, and a server
+   with email sign-in off, offer no passkey sign-in: the member uses the
+   email code, a password, Google or Apple.
 3. Setting a passkey up stays as it is: "Sign in faster next time" after
    sign-up, the offer after another way in (3.2), the browser's own save
    (3.3) and Sign-in methods in Profile.
