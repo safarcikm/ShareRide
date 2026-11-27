@@ -28,6 +28,9 @@ sentry-auth-token
 # Native build folders (Expo prebuild output)
 ios/
 android/
+# ...but not the store kit's screenshots from each phone (marketing/stores)
+!marketing/stores/screens/ios/
+!marketing/stores/screens/android/
 
 # Logs and caches
 __pycache__/
