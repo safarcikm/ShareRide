@@ -117,7 +117,8 @@ from a workflow button.
 - [x] Each problem the screenshots show, with a Maestro step or a screen
   test that fails first. One PR per kind of problem. The first green runs
   (2026-11-27, both phones, all six journeys) showed only the status bar
-  above.
+  above. Their screens: [iPhone](../specs/images/phone-apps/first-run-iphone.jpg)
+  and [Android](../specs/images/phone-apps/first-run-android.jpg).
 
 ## PR 4: store-ready settings (`feat(mobile)`)
 
