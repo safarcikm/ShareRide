@@ -5,9 +5,11 @@
 This spec builds on [spec 27](2026-11-23-passwords-and-passkeys.md) and
 amends its 3.1 (the sign-in screen), 3.3 (signing in with Face ID or
 fingerprint) and 3.6 (removing a device), and [spec 16](2026-11-15-one-home-and-simpler-flows.md),
-3.5, item 1 (the steps of signing up). No new ADR: it changes no rule of
-[ADR 0016](../decisions/0016-own-sign-in-module.md) or
-[ADR 0048](../decisions/0048-member-passkeys-on-the-device-only.md).
+3.5, item 1 (the steps of signing up). It changes no rule of
+[ADR 0016](../decisions/0016-own-sign-in-module.md).
+[ADR 0050](../decisions/0050-passkey-saved-by-the-browser-after-a-password.md)
+amends [ADR 0048](../decisions/0048-member-passkeys-on-the-device-only.md)
+for 3.3 only: the browser's own save checks neither presence nor Face ID.
 Related: [security](../engineering/security.md#sign-in-and-sessions),
 [privacy and GDPR](../compliance/privacy-gdpr.md).
 
@@ -122,13 +124,20 @@ Google One Tap, magic links.
 1. After signing in with a password, where the browser can save a passkey
    by itself (WebAuthn conditional create: Chrome and Safari with their own
    password managers), the app asks it to, quietly. The browser decides:
-   usually when its password manager filled the password.
+   usually when its password manager filled the password. Not on a browser
+   known to have a passkey (3.2, item 5), and not within 30 days of "Not
+   now" there (my call: the person said no to Face ID on it).
 2. When it saves one, the browser says so in its own way, the passkey is
    added as in Settings, the usual email goes (R27.7), and 3.2 is not
    shown. When it does not, nothing is shown and 3.2 applies as for any
    other sign-in.
-3. The fresh sign-in is the proof (R27.5). It counts towards the 10 devices
-   (R27.8): with 10 set up, nothing happens.
+3. The fresh sign-in is the proof (R27.5), and only it: the app asks for
+   quiet options, which the API gives only to a session signed in less than
+   10 minutes ago, and saves the answer to them without "user present" or
+   "user verified", which the browser's own save never gives (ADR 0050). It
+   counts towards the 10 devices (R27.8): with 10 set up, nothing happens.
+4. A browser that has not decided within 3 seconds is stopped, and 3.2
+   applies.
 
 ### 3.4 Telling the browser about passkeys we no longer know
 
@@ -183,13 +192,16 @@ Google One Tap, magic links.
 
 ## 5. Data and API
 
-No migration.
+One migration (0064, for 3.3): the passkey challenges' check also allows
+`register_quiet`, the challenge of quiet options (ADR 0050).
 
 | Endpoint                      | Change                                                                                                                        |
 | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | `POST /auth/passkey`          | New answer `passkey_unknown` (400) for a passkey that is in neither members' nor operators' passkeys (3.4, item 2)            |
 | `POST /auth/passkey/options`  | Limit 60 per 10 minutes per network address (R29.6)                                                                           |
 | `GET /me/sign-in-methods`     | Each passkey gains `credentialId`, the browser's own ID for it (not secret: the browser sends it with every sign-in) (3.4)   |
+| `POST /me/passkeys/options`   | Takes `quiet`: options for the browser's own save, only for a session signed in less than 10 minutes ago, else `confirm_required` (403) whatever the code (3.3) |
+| `POST /me/passkeys`           | An answer to quiet options is saved without "user present" or "user verified"; any other still needs both (3.3, ADR 0050)    |
 
 The browser's storage (`localStorage` on the website, secure storage in the
 apps, through the app's preferences): `last-sign-in` (one of `google`,
@@ -211,6 +223,10 @@ their `via`; nothing new is logged in the app.
 - **Passkeys stay unphishable:** the suggestion comes from the browser and
   only for puffinride.is. The quiet request ends before any other sign-in
   starts.
+- **The browser's own save** (3.3) checks no one, so it is allowed only
+  with its own challenge, straight after a sign-in; a passkey made that way
+  still needs Face ID, a fingerprint or the device's code at every sign-in
+  (ADR 0050).
 - **The Signal API never removes an operator's passkey:** only a removed
   member's passkey, or one in neither table, is reported (R29.4).
 - **The higher options limit** keeps the table bounded: the hourly clean-up
@@ -238,7 +254,8 @@ speaker):
   way and what the screen offers.
 - **API integration:** `passkey_unknown` for a passkey in neither table,
   `passkey_invalid` for an operator's; `credentialId` in Sign-in methods;
-  the options limit of 60.
+  the options limit of 60; quiet options only straight after a sign-in,
+  and an answer without presence or verification saved for them only.
 - **App:** step 1 starts the quiet request where the fake device supports
   it, and signs in from it; the offer after an email code, not after a
   passkey, not for a new account, not within 30 days of "Not now", not with
@@ -250,7 +267,12 @@ speaker):
   the email field where Chromium's automation can pick it.
 - **Manual (Martin):** on puffinride.is, on an iPhone in Safari: tap the
   email field and pick the passkey; on a laptop, sign in with the email
-  code on a new browser and see the offer.
+  code on a new browser and see the offer. The browser's own save (3.3),
+  which no automated browser does: in Chrome with Google Password Manager,
+  and in Safari with iCloud Keychain (Passwords), sign in with a password
+  the password manager filled; the browser says it saved a passkey, the
+  "set up" email comes, the offer does not open, and the next sign-in
+  works with Face ID or Touch ID.
 
 ## 9. Out of scope
 
@@ -271,3 +293,4 @@ apps' builds); Google One Tap; magic links; staying signed in longer
 | 7   | Focus the email field on step 1?             | On a laptop only (my call: a phone's keyboard would cover the buttons)                                                                 |
 | 8   | Keep the last way after signing out?         | Yes (my call: it helps the next sign-in on that browser, and says nothing about who)                                                   |
 | 9   | Does "Not now" at sign-up count for 3.2?     | No: a new member's next sign-in asks once (my call: it is a different question, among a password and Face ID); leaving the offer without an answer asks again at the next sign-in, at most every 60 days |
+| 10  | Let the browser save a passkey by itself after a password? | Yes, with ADR 0050 for its missing checks. Martin, 2026-11-26 ("Yes, record it in a new ADR")                             |

@@ -121,7 +121,17 @@ How [ADR 0016](../decisions/0016-own-sign-in-module.md) is built, in
   did not; credential IDs are random, and each try uses up a challenge
   under the limit above. Setting one up needs the same proof as a password
   (R27.5), 10 devices at most, and the verified email is told; removing
-  one needs no proof. The app offers it only where `GET /v1/config` says
+  one needs no proof. After a password, the app asks the browser to save
+  one by itself (conditional create, spec 29, 3.3;
+  [ADR 0050](../decisions/0050-passkey-saved-by-the-browser-after-a-password.md)):
+  its options (`quiet`) go only to a session signed in less than 10
+  minutes ago, a confirm code does not stand in, they ask for user
+  verification only as preferred, their challenge is kept as
+  `register_quiet`, and only an answer to such a challenge is saved without
+  "user present" or "user verified". The app stops the browser's save
+  after 3 seconds, and tells the browser to forget a passkey it made that
+  the API refused. Every other setup and every
+  sign-in still needs user verification. The app offers it only where `GET /v1/config` says
   `passkeySignIn` and the browser reports a built-in authenticator; the
   phone apps do not yet.
 - **Codes:** 6 digits from `crypto.randomInt`, valid 10 minutes, 5 attempts.
