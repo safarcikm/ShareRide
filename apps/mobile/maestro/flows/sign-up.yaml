@@ -13,6 +13,10 @@ name: Sign up
     text: "Email"
     index: 1
 - inputText: ${output.email}
+# On a phone the keyboard covers the button.
+- hideKeyboard
+- scrollUntilVisible:
+    element: "Send code"
 - takeScreenshot: screenshots/04-sign-in
 - tapOn: "Send code"
 - retry:
@@ -34,6 +38,9 @@ name: Sign up
     text: "Mobile number"
     index: 1
 - inputText: ${output.phoneLocal}
+- hideKeyboard
+- scrollUntilVisible:
+    element: "Send code"
 - takeScreenshot: screenshots/05-phone-number
 - tapOn: "Send code"
 - retry:
