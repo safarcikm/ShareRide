@@ -260,7 +260,11 @@ test.describe("booking before having an account", () => {
     await expect(
       page.getByText("Þú ert að bóka", { exact: true }).filter({ visible: true }),
     ).toBeVisible();
-    await expect(page.getByText("Skref 1 af 3").filter({ visible: true })).toBeVisible();
+    // Signing in is not a step of signing up (spec 29, 3.6).
+    await expect(
+      page.getByRole("heading", { name: "Skráðu þig inn eða stofnaðu aðgang" }),
+    ).toBeVisible();
+    await expect(page.getByText("Skref 1 af 3")).toHaveCount(0);
     await enterCodes(page, icelandic, newPhoneNumber());
     await finishSignUp(page, icelandic, "Bjössi", "Stofna aðgang og bóka");
 
