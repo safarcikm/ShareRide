@@ -193,6 +193,11 @@ describe("Blocking from a conversation (spec 9, 3.2)", () => {
       });
     });
     await blockFromChat("Anna");
+    expect(
+      await screen.findByText(
+        "You still have 2 bookings together. You can cancel them under the usual rules.",
+      ),
+    ).toBeVisible();
     await fireEvent.press(await screen.findByRole("button", { name: `Cancel booking, ${part}` }));
     await fireEvent.press(await screen.findByRole("radio", { name: "Plans changed" }));
     await fireEvent.press(await screen.findByRole("button", { name: "Cancel booking" }));
@@ -202,6 +207,13 @@ describe("Blocking from a conversation (spec 9, 3.2)", () => {
     expect(await screen.findByText("Cancelled")).toBeVisible();
     expect(screen.queryByRole("button", { name: `Cancel booking, ${part}` })).toBeNull();
     expect(screen.getByRole("button", { name: `Cancel booking, ${laterPart}` })).toBeVisible();
+    // The title's line counts what is still held: one now.
+    expect(
+      screen.getByText(
+        "You still have a booking together. You can cancel it under the usual rules.",
+      ),
+    ).toBeVisible();
+    expect(screen.queryByText(/^You still have 2 bookings together/)).toBeNull();
   });
 
   it("withdraws a request we share, there and then", async () => {
@@ -211,9 +223,18 @@ describe("Blocking from a conversation (spec 9, 3.2)", () => {
     });
     await blockFromChat("Anna");
 
+    expect(await screen.findByText(/^You still have a booking together/)).toBeVisible();
+    const focus = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
+    focus.mockClear();
     await fireEvent.press(await screen.findByRole("button", { name: `Withdraw request, ${part}` }));
     expect(await screen.findByText("Withdrawn")).toBeVisible();
     expect(screen.queryByRole("button", { name: `Withdraw request, ${part}` })).toBeNull();
+    // Nothing is held together any more, and the title's line says so by
+    // going; the title stays, and focus goes to what happened, once.
+    expect(screen.queryByText(/^You still have/)).toBeNull();
+    expect(screen.getByRole("header", { name: "Anna is blocked." })).toBeVisible();
+    expect(focus).toHaveBeenCalledTimes(1);
+    focus.mockRestore();
     expect(
       callsTo(client, "/v1/bookings/{id}/withdraw", (input) => {
         return (input as { params: { id: string } }).params.id === otherRequest.id;

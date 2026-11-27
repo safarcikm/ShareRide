@@ -490,6 +490,8 @@ export const en = {
   "verifyEmail.noLink": "Open the link from your email",
   "verifyEmail.noLinkBody":
     "This page adds an email when it is opened from the link we sent. If you opened it already, your email is in Profile.",
+  "notFound.title": "We can't find this page",
+  "notFound.line": "The link may be old, or the address may have a mistake in it.",
   "comingSoon.title": "Coming soon",
   "comingSoon.body": "Finding and booking rides opens with the beta. Thank you for your patience.",
   "meetingPoints.open": "See the meeting points",
@@ -636,6 +638,7 @@ export const en = {
   "trip.continueDraft": "Continue your draft: {route}",
   "trip.allDrafts": "Show all drafts",
   "trip.draftNoTime": "No time yet",
+  "trip.draftNoRoute": "No route yet",
   "trip.route.title": "Where are you driving?",
   "trip.route.field": "{field}: {value}",
   "trip.route.choose": "Choose a meeting point",

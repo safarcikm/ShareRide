@@ -93,7 +93,7 @@ const journeys: readonly Journey[] = [
     passenger: "Farþegi",
     past: "Liðnar",
     nothing: "Ekkert framundan. Bókaðu sæti í ferð eða bjóddu laus sæti í bílnum þínum.",
-    searchAgain: "Leita aftur",
+    searchAgain: "Finna aðra ferð",
   },
 ];
 

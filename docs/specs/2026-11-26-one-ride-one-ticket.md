@@ -194,8 +194,8 @@ decision 17), added two: its edge and its fill under the pointer.
    they have no room (3.20). It takes the place of `StepProgress` on the posting
    steps (signing up keeps the bars). Its marks are not links: on the last posting step the rows open
    the earlier steps (3.11).
-3. **`NeedsYouCard`**: a card in `warningSoft` (the soft yellow of the
-   "New driver" tag) with a bottom edge in the car's yellow (`people.sun`):
+3. **`NeedsYouCard`**: a card in `warningSoft` (the soft yellow of an
+   amber tag) with a bottom edge in the car's yellow (`people.sun`):
    a yellow square with an icon, one bold line saying what is asked ("Dóra
    asks for 1 seat"), one line of detail in `warning` ("Mjódd to Selfoss,
    Fri 27 Nov. 11 h left to answer."), and one button. On the
@@ -397,11 +397,12 @@ and on a laptop
   your part"; the price is in the bar, with what each seat costs under it
   for more than one ("2 × 2,900 ISK").
 - A ride that was cancelled has no booking tag on the ticket and no row or
-  line about cancelling a booking: there is no seat to book.
+  line about cancelling a booking: there is no seat to book. Nor has it
+  seats to choose or "Where you sit" (3.21).
 - The driver's card: picture, name, rating or "New driver", and the
   reliability a member sees. The whole line opens the profile and is named
-  in one line for a screen reader ("See profile: Anna, 4.3 (3 ratings),
-  Reliability: 91%"). A ride's details carry no number of rides and
+  in one line for a screen reader ("Driver, See profile: Anna, 4.3 (3
+  ratings), Reliability: 91%"; "Driver" first since 3.20). A ride's details carry no number of rides and
   nothing about what is checked, and section 6 adds no data, so the card
   has neither; the profile it opens has both.
 - "Where you sit" says "2 of 3 seats are free. Seats are not numbered: you
@@ -1794,6 +1795,49 @@ and [its end, with the page's button](images/one-ride-one-ticket/built/short-win
 With the text twice as large on a phone 360 wide:
 ["Where you sit"](images/one-ride-one-ticket/built/large-text-where-you-sit-phone-light.webp).
 
+### 3.21 The last small things
+
+Small things the reviews of the build named, mended at its end.
+
+- **An address the app does not have,** as an old link or one with a
+  mistake in it, has a page of our own: the title "We can't find this
+  page" at the left, a line under it, and "Find a ride" as the main button
+  in the bar, which leads to Find. It is open to everyone, in the language
+  shown, and not for search engines. Before, the router showed its own
+  page: black, in English, with a link to a list of every address.
+- **"New driver"** in a ticket's foot and on the driver's card is a quiet
+  tag, grey on the page's colour, where a rating would stand. It was
+  amber, which rule 6 keeps for what is yours and now. On a request to a
+  driver, "No reviews yet" stays in the yellow card's own amber.
+- **A ride that was cancelled** (3.7) has no seats to choose and no
+  "Where you sit". Its page keeps the ticket, who drove, the route and
+  "This ride was cancelled." where the button was. On a laptop the line
+  about free seats goes with the stepper.
+- **After blocking someone** (spec 9, 3.2), the line under the title
+  counts the bookings and requests the two still hold. One that is
+  cancelled, withdrawn or declined from that screen stays as its ticket
+  and is no longer counted; with none left the line goes.
+- **Messages' menu** (3.13) stands on the page's colour, so its rows, a
+  white card, are set apart from the white bar they open in.
+- **A draft with no route left** (3.11). A meeting point that goes out of
+  use is taken off a draft (spec 3, 3.9), which can leave it one stop or
+  none. Its row on Offer then says "No route yet" where it said " → ",
+  and opens the draft at its route, with the one stop left as where it
+  starts.
+- **A notification** about beta news, or about a reply to my feedback,
+  opens its page when tapped in the phone apps. The tap did nothing.
+- **"Find another ride"** has one name in Icelandic too, "Finna aðra
+  ferð", on a booking that ended as after "You're booked" (3.4). The
+  first said "Leita aftur", "Search again".
+
+Kept as it is: on Find on a laptop the yellow card stands beside the
+rides, at their right, and the keyboard and a reader meet it after them,
+as the eye does.
+
+As built:
+[an address the app does not have](images/one-ride-one-ticket/built/not-found-phone-light.webp)
+and [Messages' menu](images/one-ride-one-ticket/built/chat-menu-phone-light.webp).
+
 ## 4. Rules
 
 No business rule changes. Booking, seats (rules S1 to S4), prices and their
@@ -2031,6 +2075,10 @@ changed is shown; the Icelandic says "í Prófílnum, undir …".
 | The email about a changed way to sign in | … sign out on all devices in Profile, under Sign-in methods, … | … skrá þig út á öllum tækjum í Prófílnum, undir Innskráningarleiðir, … |
 | The console, with no address to send to | Add one in PuffinRide, in Profile under Email. | Bættu því við í PuffinRide, í Prófílnum undir Netfang. |
 | Who a name is, for a screen reader (3.20) | Driver | Bílstjóri |
+| An address the app does not have (3.21) | We can't find this page | Við finnum ekki þessa síðu |
+| Its line | The link may be old, or the address may have a mistake in it. | Hlekkurinn gæti verið gamall eða villa í slóðinni. |
+| A draft with no route left (3.21) | No route yet | Engin leið enn |
+| On a booking that ended (3.21) | Find another ride | Finna aðra ferð (it was "Leita aftur") |
 
 Gone with Settings: its title and the row that opened it, "Your account",
 "Add an email" and "Change your email" as rows, "Go to Settings", the

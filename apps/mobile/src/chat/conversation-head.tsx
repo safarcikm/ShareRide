@@ -162,29 +162,33 @@ export function ConversationHead({
         </View>
       </View>
       {menu ? (
-        <ActionRows>
-          <Row
-            icon={Flag}
-            title={t("report.person", { name })}
-            onPress={() => {
-              // Closed again on coming back. No name in the address: the
-              // report screen reads it from the booking.
-              onMenu(false);
-              router.push({ pathname: "/report", params: { kind: "user", id: booking.id } });
-            }}
-          />
-          {conversation.blockedByMe ? null : (
+        // The rows are a white card, as the bar is: on the page's colour
+        // the card's edges show, as a ride's line under it does.
+        <View testID="top-menu" style={[styles.menu, { backgroundColor: palette.background }]}>
+          <ActionRows>
             <Row
-              danger
-              icon={Ban}
-              title={t("block.action", { name })}
+              icon={Flag}
+              title={t("report.person", { name })}
               onPress={() => {
+                // Closed again on coming back. No name in the address: the
+                // report screen reads it from the booking.
                 onMenu(false);
-                router.push({ pathname: "/bookings/[id]/block", params: { id: booking.id } });
+                router.push({ pathname: "/report", params: { kind: "user", id: booking.id } });
               }}
             />
-          )}
-        </ActionRows>
+            {conversation.blockedByMe ? null : (
+              <Row
+                danger
+                icon={Ban}
+                title={t("block.action", { name })}
+                onPress={() => {
+                  onMenu(false);
+                  router.push({ pathname: "/bookings/[id]/block", params: { id: booking.id } });
+                }}
+              />
+            )}
+          </ActionRows>
+        </View>
       ) : null}
       <RideLine conversation={conversation} />
     </View>
@@ -270,6 +274,7 @@ function RideLine({ conversation }: { readonly conversation: Conversation }) {
 
 const styles = StyleSheet.create({
   head: { gap: spacing.sm },
+  menu: { borderRadius: radii.card, padding: spacing.sm },
   // The picture and the two buttons stand at the top of a name of several
   // lines (spec 31, 3.18), each button level with the picture's middle.
   top: { flexDirection: "row", alignItems: "flex-start", gap: spacing.sm },

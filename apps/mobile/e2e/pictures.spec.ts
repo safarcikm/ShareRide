@@ -1236,4 +1236,20 @@ test.describe("pictures", () => {
     });
     await shoot("short-window-ride-end");
   });
+
+  test("the last small things: an address the app does not have (spec 31)", async ({
+    page,
+  }, info) => {
+    test.skip(info.project.name === "desktop", "A phone's picture");
+    const folder = join(root ?? "", "one-ride-one-ticket", "built");
+    mkdirSync(folder, { recursive: true });
+    await page.goto("/trips");
+    await expect(page.getByRole("heading", { name: "We can't find this page" })).toBeVisible();
+    await page.mouse.move(0, 0);
+    await page.waitForTimeout(500);
+    await page.screenshot({
+      path: join(folder, "not-found-phone-light.png"),
+      scale: "device",
+    });
+  });
 });

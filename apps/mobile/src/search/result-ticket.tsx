@@ -207,7 +207,7 @@ export function DriverFoot({
               <RatingLine rating={driver.rating} />
             </View>
           ) : (
-            <Tag kind="warning" label={t("results.newDriver")} />
+            <Tag kind="plain" label={t("results.newDriver")} />
           )}
         </>
       }

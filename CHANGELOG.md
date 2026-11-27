@@ -1583,6 +1583,9 @@ releases follow [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- A tap on a notification about beta news, or about a reply to feedback,
+  opens its page in the phone apps (`notifications/paths.ts`). The server
+  named the two pages and the app ignored them.
 - While an account waits to be deleted, Blocked people, My reports and
   the privacy request are closed as the other pages of Profile are (spec
   11, 3.4.4); their addresses still opened them. The pages that close are
@@ -1919,6 +1922,18 @@ releases follow [Semantic Versioning](https://semver.org/).
   One new text: "Driver", "Bílstjóri".
 - A chip is 44 high on the web, where nothing can be pressed beyond what
   is drawn (it was 40).
+- An address the app does not have has a page of our own (spec 31,
+  3.21): "We can't find this page", with "Find a ride" in the bar, in
+  both languages. The router's own page showed before: black, in
+  English, with a list of every address.
+- The last small things of the overhaul (spec 31, 3.21): "New driver" is
+  a quiet tag, as amber is kept for what needs someone; a ride that was
+  cancelled has no seats to choose and no "Where you sit"; after
+  blocking, the line about bookings together counts only what is still
+  held; Messages' menu stands on the page's colour, apart from its bar;
+  and a draft whose meeting points went out of use says "No route yet"
+  and opens at its route. Three new texts, and "Find another ride" is
+  "Finna aðra ferð" in Icelandic wherever it stands.
 - The web journeys never give two test accounts the same phone number: a
   run in ten did, and a sign-in journey then failed.
 - CI skips its code jobs (bundles, unit, integration and web tests, the API

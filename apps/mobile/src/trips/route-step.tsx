@@ -83,7 +83,10 @@ export function RouteStep({
   const session = useSession();
   const wide = useWideScreen();
   const [from, setFrom] = useState(trip?.stops[0]?.meetingPoint ?? null);
-  const [to, setTo] = useState(trip?.stops.at(-1)?.meetingPoint ?? null);
+  // The one stop a draft has left is where it starts, not its end too.
+  const [to, setTo] = useState(
+    trip === undefined || trip.stops.length < 2 ? null : (trip.stops.at(-1)?.meetingPoint ?? null),
+  );
   const [between, setBetween] = useState<readonly Stop[]>(
     trip?.stops.slice(1, -1).map(({ meetingPoint }) => ({ point: meetingPoint, on: true })) ?? [],
   );

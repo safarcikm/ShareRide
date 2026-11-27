@@ -20,6 +20,20 @@ describe("notificationPath", () => {
     expect(notificationPath({ path: `/bookings/${id}/cancel` })).toBeNull();
   });
 
+  it("opens the pages that are not about one record, as the server names them", () => {
+    for (const path of [
+      "/notices",
+      "/settings/reports",
+      "/settings/privacy/download",
+      // A reply to feedback, and beta news (spec 12, 3.3.5; plan 4.7).
+      "/settings/feedback",
+      "/settings/beta-news",
+    ]) {
+      expect(notificationPath({ path })).toBe(path);
+    }
+    expect(notificationPath({ path: "/settings/email" })).toBeNull();
+  });
+
   it("ignores anything else", () => {
     expect(notificationPath({ path: "https://example.com/" })).toBeNull();
     expect(notificationPath({ path: `//example.com/bookings/${id}` })).toBeNull();

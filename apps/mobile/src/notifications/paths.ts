@@ -2,15 +2,22 @@ const opens =
   /^\/(?:(?:bookings|drive\/trips|messages|meeting-points)\/[0-9a-f-]{36}|bookings\/[0-9a-f-]{36}\/rate)$/;
 
 /** Screens a notification opens that are not about one record. */
-const screens = new Set(["/settings/privacy/download", "/notices", "/settings/reports"]);
+const screens = new Set([
+  "/settings/privacy/download",
+  "/notices",
+  "/settings/reports",
+  "/settings/feedback",
+  "/settings/beta-news",
+]);
 
 /**
  * Where a notification leads (its `data.path`, set by the API): a booking,
  * a driver's trip, a conversation, the meeting point of a trip reminder
  * ("Directions", spec 7, 3.5), a booking's rating screen ("How was your
  * trip?", spec 20, 3.1.3), Download my data when the file is ready
- * (spec 11, 3.2), or Notices from ShareRide and My reports (spec 9).
- * Anything else is ignored.
+ * (spec 11, 3.2), Notices from PuffinRide and My reports (spec 9), My
+ * feedback when it has a reply (spec 12, 3.3.5) or Beta news. Anything
+ * else is ignored.
  */
 export function notificationPath(data: unknown): string | null {
   const path = typeof data === "object" && data !== null && "path" in data ? data.path : undefined;

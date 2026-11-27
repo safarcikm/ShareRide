@@ -1425,6 +1425,37 @@ describe("Offer opens the form (spec 16, 3.6; spec 31, 3.11, item 6)", () => {
     expect(screen).toHavePathname(`/drive/trips/${newestId}/time`);
   });
 
+  it("says a draft has no route yet once its meeting points went out of use, and opens it at the route", async () => {
+    // The server takes a point that was retired off a draft (spec 3, 3.9).
+    const emptied = plannedDraft({ id: plannedId, stops: [] });
+    await open("/offer", [emptied]);
+    const row = await screen.findByRole("link", {
+      name: "Continue your draft: No route yet, Sunday 15 November at 09:00",
+    });
+    const rows = within(screen.getByTestId("draft-rows"));
+    expect(rows.getByText("No route yet")).toBeVisible();
+    expect(rows.queryByText(/→/)).toBeNull();
+    await fireEvent.press(row);
+    expect(screen).toHavePathname(`/drive/trips/${plannedId}/route`);
+    // The step, over Offer: with Back, and both ends to choose.
+    expect(await screen.findByRole("button", { name: "Back" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "From: Choose a meeting point" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "To: Choose a meeting point" })).toBeVisible();
+  });
+
+  it("keeps the one stop a draft has left as where it starts, with the end to choose", async () => {
+    const oneLeft = plannedDraft({ id: plannedId, stops: plannedDraft().stops.slice(0, 1) });
+    await open("/offer", [oneLeft]);
+    await fireEvent.press(
+      await screen.findByRole("link", {
+        name: "Continue your draft: No route yet, Sunday 15 November at 09:00",
+      }),
+    );
+    expect(screen).toHavePathname(`/drive/trips/${plannedId}/route`);
+    expect(await screen.findByRole("button", { name: "From: BSÍ bus terminal" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "To: Choose a meeting point" })).toBeVisible();
+  });
+
   it("opens a draft with its times at the review, and Back leads to Offer", async () => {
     await open("/offer", [planned()]);
     await fireEvent.press(await screen.findByRole("link", { name: continuePlanned }));

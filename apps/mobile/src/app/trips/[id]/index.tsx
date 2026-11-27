@@ -254,23 +254,25 @@ function Trip({
   ) : null;
   // Under the ticket's tear line with how many are free; on a wide screen
   // beside the price in the side column, which has a line under the two.
-  const seatsStepper = (inPanel: boolean) => (
-    <Stepper
-      {...(inPanel
-        ? { caption: true }
-        : { beside: true, hint: t("trip.freeOnPart", { count: trip.part.freeSeats }) })}
-      label={t("trip.seats")}
-      value={seats}
-      min={1}
-      max={most}
-      onChange={(value) => {
-        router.setParams({ seats: String(value) });
-      }}
-      valueText={t("search.seatCount", { count: seats })}
-      fewerLabel={t("search.fewerSeats")}
-      moreLabel={t("search.moreSeats")}
-    />
-  );
+  // A ride that was cancelled has no seat to choose.
+  const seatsStepper = (inPanel: boolean) =>
+    cancelled ? undefined : (
+      <Stepper
+        {...(inPanel
+          ? { caption: true }
+          : { beside: true, hint: t("trip.freeOnPart", { count: trip.part.freeSeats }) })}
+        label={t("trip.seats")}
+        value={seats}
+        min={1}
+        max={most}
+        onChange={(value) => {
+          router.setParams({ seats: String(value) });
+        }}
+        valueText={t("search.seatCount", { count: seats })}
+        fewerLabel={t("search.fewerSeats")}
+        moreLabel={t("search.moreSeats")}
+      />
+    );
   const partTicket = (
     <PartTicket
       trip={trip}
@@ -289,7 +291,8 @@ function Trip({
       note={trip.note}
     />
   );
-  const whereYouSit = (
+  // Nor a seat to picture.
+  const whereYouSit = cancelled ? null : (
     <WhereYouSit
       offered={trip.seatsOffered}
       free={trip.part.freeSeats}
@@ -378,15 +381,18 @@ function Trip({
                   pending={pending}
                   panel={{
                     seats: seatsStepper(true),
-                    hint: t("trip.seatsHint", {
-                      free: trip.part.freeSeats,
-                      price:
-                        trip.part.pricePerSeat.amount === 0
-                          ? t("results.free")
-                          : t("trip.pricePerSeat", {
-                              price: formatMoney(trip.part.pricePerSeat, locale),
-                            }),
-                    }),
+                    // How many are free is said of a ride that still runs.
+                    hint: cancelled
+                      ? null
+                      : t("trip.seatsHint", {
+                          free: trip.part.freeSeats,
+                          price:
+                            trip.part.pricePerSeat.amount === 0
+                              ? t("results.free")
+                              : t("trip.pricePerSeat", {
+                                  price: formatMoney(trip.part.pricePerSeat, locale),
+                                }),
+                        }),
                     note:
                       paying === null ? null : (
                         <View style={styles.row}>
@@ -482,11 +488,12 @@ function BookingBar({
   readonly pending: boolean;
   /**
    * On a wide screen: the seats stepper, beside the price it changes, the
-   * line under the two, and a line under what can be done.
+   * line under the two, and a line under what can be done. A ride that was
+   * cancelled has neither the stepper nor the line.
    */
   readonly panel?: {
     readonly seats: ReactNode;
-    readonly hint: string;
+    readonly hint: string | null;
     readonly note: ReactNode;
   };
 }) {
@@ -595,7 +602,9 @@ function BookingBar({
           </View>
           {panel.seats}
         </View>
-        <Text style={[typography.small, { color: palette.textMuted }]}>{panel.hint}</Text>
+        {panel.hint === null ? null : (
+          <Text style={[typography.small, { color: palette.textMuted }]}>{panel.hint}</Text>
+        )}
         {action}
         {panel.note}
       </View>

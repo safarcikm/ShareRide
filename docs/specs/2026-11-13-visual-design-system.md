@@ -127,10 +127,10 @@ Tags (text on a tinted fill, all at least 5.3:1):
 | Tag | Light | Dark | Example |
 | --- | ----- | ---- | ------- |
 | Positive | `primary` on `primarySoft` | same | "Get in", "Instant booking", "Suggested price" |
-| Warning | `#8A4B00` on `#FFF3DC` | `#F2C46B` on `#2E2614` | "New driver", "Leaves in 30 min" |
+| Warning | `#8A4B00` on `#FFF3DC` | `#F2C46B` on `#2E2614` | "Leaves in 30 min", "No reviews yet" on a request |
 | Info | `#1F5F8B` on `#E1EDF6` | `#8FCBE6` on `#16303F` | "Request to book" |
 | Women only | `#6B3FA0` on `#F1EAFB` | `#CDB6F2` on `#2E2340` | "Women only" (spec 14) |
-| Plain | `textMuted` on `background` | same | "Declined", "Cancelled", "Passenger", "You drive" (spec 31, 3.3) |
+| Plain | `textMuted` on `background` | same | "Declined", "Cancelled", "Passenger", "You drive" (spec 31, 3.3); "New driver" (spec 31, 3.21) |
 | Problem | `error` on `errorSoft` | same | "No-show" (spec 31, 3.3) |
 
 What a tag's colour says (spec 31, 3.2, rule 6): moss is good news or what

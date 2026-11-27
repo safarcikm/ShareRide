@@ -7,6 +7,7 @@ import type * as TestApp from "@/testing/app";
 import { failure, ok } from "@/testing/fake-client";
 import { northResult, northStops, northTrip, searchApi, tripDetailsApi } from "@/testing/search";
 import { blonduos, borgarnes } from "@/testing/trips";
+import { colors } from "@/theme/tokens";
 import { getInAt, getOutAt } from "@/trip-details/route-list";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
@@ -146,7 +147,8 @@ describe("Trip details (spec 4, 3.6)", () => {
     expect(driver.getByText("Anna")).toBeVisible();
     // The card's heading, which says who Anna is (spec 31, 3.20).
     expect(driver.getByRole("header", { name: "Driver: Anna" })).toBe(driver.getByText("Anna"));
-    expect(driver.getByText("New driver")).toBeVisible();
+    // Quiet, as a rating is: amber is for what needs someone (spec 31, rule 6).
+    expect(driver.getByText("New driver")).toHaveStyle({ color: colors.light.textMuted });
     expect(driver.getByText("White Toyota Yaris")).toBeVisible();
     expect(driver.getByText("Number plate shown once your seat is confirmed")).toBeVisible();
     for (const need of [
@@ -479,6 +481,15 @@ describe("Trip details (spec 4, 3.6)", () => {
     expect(screen.queryByRole("button", { name: "Weather and roads" })).toBeNull();
     // A visitor has nothing to report with, so no rows are left.
     expect(screen.queryByTestId("action-rows")).toBeNull();
+    // No seat is left to choose or to picture (spec 31, 3.7).
+    expect(screen.queryByRole("button", { name: "One seat more" })).toBeNull();
+    expect(screen.queryByText(/free on your part/)).toBeNull();
+    expect(ticket().queryByTestId("ticket-tear")).toBeNull();
+    expect(screen.queryByTestId("where-you-sit")).toBeNull();
+    expect(screen.queryByRole("header", { name: "Where you sit" })).toBeNull();
+    // Who drove, and the route with its stops, are still there.
+    expect(screen.getByTestId("driver-card")).toBeVisible();
+    expect(screen.getByTestId("whole-route")).toBeVisible();
   });
 
   it("gets in or out at another stop on the route, and keeps the part in the address", async () => {
@@ -862,6 +873,13 @@ describe("Trip details on a laptop (spec 18, 3.7)", () => {
     const cancelling = side().queryByText(/^Free cancellation, with a full refund/);
     if (part.state === "cancelled") expect(cancelling).toBeNull();
     else expect(cancelling).toBeVisible();
+    // A ride that was cancelled has no seat to choose or to picture.
+    const more = side().queryByRole("button", { name: "One seat more" });
+    const free = side().queryByText(/free on your part/);
+    const sit = screen.queryByTestId("where-you-sit");
+    expect([more, free, sit].map((shown) => shown !== null)).toEqual(
+      part.state === "cancelled" ? [false, false, false] : [true, true, true],
+    );
   });
 
   it("leads someone who has booked the trip to their booking, from the side column", async () => {
