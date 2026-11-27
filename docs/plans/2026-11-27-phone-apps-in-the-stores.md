@@ -135,9 +135,9 @@ from a workflow button.
   numbers; `ios.bundleIdentifier` and `android.package` are
   `is.puffinride.app`; `version` `1.0.0`; `submit.production` sends iOS to
   TestFlight and Android to the `internal` track as a draft.
-- [ ] `submit.production.ios.ascAppId`, once Martin has made the app in App
+- [x] `submit.production.ios.ascAppId`, once Martin has made the app in App
   Store Connect (runbook, setup step 5): EAS Submit needs it with an API
-  key.
+  key. PuffinRide's Apple ID is `6840158626` (2026-11-27).
 - [x] `preview` stays as the team's staging Android APK only; the
   `.preview` iPhone app ID goes.
 - [x] Over-the-air updates: `expo-updates` (`npx expo install`), channels
@@ -173,8 +173,9 @@ its test), `apps/mobile/src/app/_layout.tsx`,
 - [ ] `/v1/config` gets `oldestAppVersion: string | null` from the setting
   `OLDEST_APP_VERSION`.
 - [ ] The app, on iOS and Android only, shows the update screen of spec
-  32, section 5, with the store links (`itms-apps://` for the App Store
-  once the app's Apple ID is known; `market://details?id=is.puffinride.app`
+  32, section 5, with the store links
+  (`itms-apps://apps.apple.com/app/id6840158626` for the App Store;
+  `market://details?id=is.puffinride.app`
   with the `https://play.google.com/...` fallback).
 - [ ] Conventions: a field or route an app reads stays until no supported
   version reads it.

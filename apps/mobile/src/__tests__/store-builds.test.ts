@@ -78,6 +78,10 @@ describe("The store builds", () => {
   });
 
   it("go to TestFlight and to Google Play's internal testing as a draft, never further", () => {
+    // PuffinRide in App Store Connect, made by Martin on 2026-11-27: its Apple
+    // ID (not a secret). EAS Submit sends the build there with the API key Expo
+    // keeps; TestFlight is as far as it goes.
+    expect(eas.submit["production"]?.ios).toEqual({ ascAppId: "6840158626" });
     expect(eas.submit["production"]?.android).toEqual({
       track: "internal",
       releaseStatus: "draft",
