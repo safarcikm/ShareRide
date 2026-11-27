@@ -210,12 +210,18 @@ const styles = StyleSheet.create({
   dotOfLine: { width: controlOutline, height: controlOutline, borderRadius: radii.pill },
   dot: { width: dotSize, height: dotSize, borderRadius: radii.pill, borderWidth: controlOutline },
   content: { flex: 1, paddingBottom: spacing.ms, gap: spacing.sm },
+  // "Get in" or "Get out" stands beside the stop's name, and goes under it
+  // where the name would be left with less than most of the row, as with
+  // large text on a narrow phone.
   stop: {
     flexDirection: "row",
+    flexWrap: "wrap",
     alignItems: "center",
-    gap: spacing.sm,
+    columnGap: spacing.sm,
+    rowGap: spacing.xs,
     minHeight: minTouchTarget,
   },
-  name: { flex: 1 },
+  // No wider than its row: a word longer than a line is broken, not run out.
+  name: { flexGrow: 1, flexShrink: 1, flexBasis: "60%", minWidth: 0 },
   choices: { gap: spacing.sm, alignItems: "flex-start" },
 });

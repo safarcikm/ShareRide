@@ -616,6 +616,64 @@ describe("Road", () => {
     },
   );
 
+  describe("with no room for its names, as with large text on a narrow phone", () => {
+    /** Tells a part how it was laid out, as the phone or the browser does. */
+    const laidOut = (testID: string, width: number, height: number, nth = 0) => {
+      const part = allHidden(testID)[nth];
+      if (part === undefined) throw new Error(`No ${testID} ${String(nth)}`);
+      return fireEvent(part, "layout", { nativeEvent: { layout: { x: 0, y: 0, width, height } } });
+    };
+    /** The road 328 wide with names of one line 18 high, then each name's width and height. */
+    const names = async (...sizes: readonly (readonly [width: number, height: number])[]) => {
+      await laidOut("road-names", 328, 18);
+      await laidOut("road-one-line", 40, 18);
+      for (const [index, [width, height]] of sizes.entries()) {
+        await laidOut("road-name", width, height, index);
+      }
+    };
+
+    it("keeps the names under their marks while each has one line and they fit beside each other", async () => {
+      await inApp(<Road steps={booking} current={1} />);
+      // With a gap of 8 between them, they fill the road.
+      await names([62, 18], [101, 18], [101, 18], [40, 18]);
+      expect(allHidden("road-now")).toHaveLength(0);
+      expect(hidden("road-names")).not.toHaveStyle({ opacity: 0 });
+      expect(hidden("road-names")).toHaveStyle({ columnGap: 8 });
+    });
+
+    it("says the step in a line under the road when a name takes two lines, as a phone breaks a word too long", async () => {
+      await inApp(<Road steps={booking} current={1} />);
+      await names([50, 18], [101, 36], [101, 36], [52, 18]);
+      // What a screen reader hears, for the eye: still one line to hear.
+      expect(hidden("road-now")).toHaveTextContent("Step 2 of 4: Confirmed");
+      expect(screen.getByRole("image", { name: "Step 2 of 4: Confirmed" })).toBeVisible();
+      expect(screen.queryByText("Step 2 of 4: Confirmed")).toBeNull();
+      // The names stay to be measured, out of sight and out of the way.
+      expect(hidden("road-names")).toHaveStyle({ opacity: 0, position: "absolute" });
+    });
+
+    it("says the step in a line when the names are wider than the road together, as a browser keeps each word whole", async () => {
+      await inApp(<Road steps={booking} current={2} />);
+      await names([76, 18], [125, 18], [104, 18], [70, 18]);
+      expect(hidden("road-now")).toHaveTextContent("Step 3 of 4: Trip day");
+    });
+
+    it("shows the names again once they have room", async () => {
+      await inApp(<Road steps={booking} current={1} />);
+      await names([50, 18], [101, 36], [101, 36], [52, 18]);
+      expect(allHidden("road-now")).toHaveLength(1);
+      await names([62, 18], [101, 18], [101, 18], [40, 18]);
+      expect(allHidden("road-now")).toHaveLength(0);
+      expect(hidden("road-names")).not.toHaveStyle({ opacity: 0 });
+    });
+
+    it("decides nothing before everything is measured", async () => {
+      await inApp(<Road steps={booking} current={1} />);
+      await laidOut("road-name", 101, 36, 1);
+      expect(allHidden("road-now")).toHaveLength(0);
+    });
+  });
+
   it("has nothing behind the car on the first step", async () => {
     await inApp(<Road steps={booking} current={0} />);
     expect(allHidden("road-gone")).toHaveLength(0);

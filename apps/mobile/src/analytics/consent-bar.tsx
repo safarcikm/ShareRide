@@ -5,7 +5,7 @@ import { Button } from "@/components/button";
 import { Body, Heading } from "@/components/text";
 import { TextLink } from "@/components/text-link";
 import { useLanguage } from "@/i18n/language";
-import { tabBarHeight } from "@/navigation/tab-bar";
+import { useTabBarHeight } from "@/navigation/tab-bar";
 import {
   controlOutline,
   edges,
@@ -33,12 +33,11 @@ export function ConsentBar({ wide }: { readonly wide: boolean }) {
   const { available, choice, choose } = useAnalytics();
   const segments = useSegments();
   const inMenu = segments[0] === "(tabs)";
+  const menuBar = useTabBarHeight(insets.bottom);
   if (!available || choice !== null || screenPattern(segments) === "/cookies") return null;
-  const bottom = wide
-    ? spacing.md
-    : (inMenu ? tabBarHeight(insets.bottom) : insets.bottom) + spacing.sm;
+  const bottom = wide ? spacing.md : (inMenu ? menuBar : insets.bottom) + spacing.sm;
   return (
-    <View style={[styles.layer, { bottom }]}>
+    <View testID="consent-layer" style={[styles.layer, { bottom }]}>
       <View style={[styles.width, wide && styles.wide]}>
         <View
           role="region"

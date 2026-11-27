@@ -1,4 +1,12 @@
-import { StyleSheet, Text, useColorScheme, View } from "react-native";
+import { useRef, useState } from "react";
+import {
+  StyleSheet,
+  Text,
+  useColorScheme,
+  View,
+  type LayoutChangeEvent,
+  type LayoutRectangle,
+} from "react-native";
 import Svg, { Line } from "react-native-svg";
 import { useLanguage } from "@/i18n/language";
 import { controlOutline, icelandScene, radii, sizes, spacing, typography } from "@/theme/tokens";
@@ -15,6 +23,9 @@ import { carHeight, PuffinsInCar } from "./puffin-scenes";
  *
  * It is a picture with one line for screen readers, "Step 2 of 4:
  * Confirmed". Its marks are not links.
+ *
+ * Where the names have no room, as with text twice as large on a narrow
+ * phone, that line stands under the road in their place, for the eye too.
  */
 export function Road({
   steps,
@@ -32,16 +43,10 @@ export function Road({
   const at = Math.min(Math.max(Math.trunc(current), 0), steps.length - 1);
   const spot = (index: number) => `${String((index / last) * 100)}%` as const;
   const gone = { backgroundColor: palette.primary };
+  const now = t("road.step", { step: at + 1, total: steps.length, name: steps[at] ?? "" });
+  const room = useRoomForNames(steps.length);
   return (
-    <View
-      accessible
-      accessibilityRole="image"
-      accessibilityLabel={t("road.step", {
-        step: at + 1,
-        total: steps.length,
-        name: steps[at] ?? "",
-      })}
-    >
+    <View accessible accessibilityRole="image" accessibilityLabel={now}>
       <View
         aria-hidden
         accessibilityElementsHidden
@@ -88,10 +93,24 @@ export function Road({
             <PuffinsInCar width={sizes.roadCar} />
           </View>
         </View>
-        <View style={styles.names}>
+        <View
+          testID="road-names"
+          onLayout={room.road}
+          style={[styles.names, room.none ? styles.unseen : null]}
+        >
+          <Text
+            testID="road-one-line"
+            numberOfLines={1}
+            onLayout={room.line}
+            style={[typography.caption, styles.oneLine]}
+          >
+            {oneLine}
+          </Text>
           {steps.map((name, index) => (
             <Text
               key={index}
+              testID="road-name"
+              onLayout={room.name(index)}
               style={[
                 typography.caption,
                 index === 0 ? styles.first : index === steps.length - 1 ? styles.last : styles.name,
@@ -102,9 +121,60 @@ export function Road({
             </Text>
           ))}
         </View>
+        {room.none ? (
+          <Text testID="road-now" style={[typography.caption, { color: palette.text }]}>
+            {now}
+          </Text>
+        ) : null}
       </View>
     </View>
   );
+}
+
+/** A line with no word on it: a space that is not left out. */
+const oneLine = "\u00A0";
+
+/** A size may differ by a part of a point from one measuring to the next. */
+const about = 1;
+
+/**
+ * Whether the names have room under the road, from how they were laid
+ * out. They have none when one of them takes more than a line, as a phone
+ * breaks a word too long for its place, or when they are wider than the
+ * road together, as a browser keeps each word whole and lets it run out.
+ * Nothing is decided before the road, a line and every name are measured,
+ * and they go on being measured while out of sight, so the names come
+ * back when they have room again.
+ */
+function useRoomForNames(count: number) {
+  const seen = useRef<{
+    road: number | null;
+    line: number | null;
+    names: (LayoutRectangle | undefined)[];
+  }>({ road: null, line: null, names: [] });
+  const [none, setNone] = useState(false);
+  const decide = () => {
+    const { road, line } = seen.current;
+    const names = seen.current.names.slice(0, count).filter((name) => name !== undefined);
+    if (road === null || line === null || names.length < count) return;
+    const wide = names.reduce((sum, name) => sum + name.width, spacing.sm * (count - 1));
+    setNone(wide > road + about || names.some((name) => name.height > line + about));
+  };
+  return {
+    none,
+    road: (event: LayoutChangeEvent) => {
+      seen.current.road = event.nativeEvent.layout.width;
+      decide();
+    },
+    line: (event: LayoutChangeEvent) => {
+      seen.current.line = event.nativeEvent.layout.height;
+      decide();
+    },
+    name: (index: number) => (event: LayoutChangeEvent) => {
+      seen.current.names[index] = event.nativeEvent.layout;
+      decide();
+    },
+  };
 }
 
 /** How far the road runs on past its first and its last step: half a car. */
@@ -153,8 +223,22 @@ const styles = StyleSheet.create({
   // Its wheels stand on the road's middle line.
   car: { position: "absolute", bottom: spacing.xs, marginLeft: -past },
   // Each name under its mark: the first and the last start and end with the
-  // road, the others are centred on theirs.
-  names: { flexDirection: "row" },
+  // road, the others are centred on theirs, and the same gap between every
+  // two keeps them there and apart.
+  names: { flexDirection: "row", alignItems: "flex-start", columnGap: spacing.sm },
+  // With no room, the names stay to be measured: over the picture, not seen,
+  // and cut where they run out of it, so the page is no wider for them.
+  unseen: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    overflow: "hidden",
+    opacity: 0,
+  },
+  // How high one line of a name is, with the phone's text size.
+  oneLine: { position: "absolute", opacity: 0 },
   first: { flexGrow: 1, flexShrink: 1, flexBasis: past, textAlign: "left" },
   name: { flexGrow: 2, flexShrink: 1, flexBasis: 0, textAlign: "center" },
   last: { flexGrow: 1, flexShrink: 1, flexBasis: past, textAlign: "right" },

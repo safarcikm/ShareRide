@@ -76,6 +76,18 @@ describe("The question about cookies", () => {
     expect(page.commands()).toEqual([]);
   });
 
+  it("stands over the menu's bar as the bar is laid out, which large text makes taller", async () => {
+    await renderApp("/", withAnalytics);
+    await screen.findByLabelText("Cookies");
+    // Until the bar is laid out, over its height as counted: its line, its
+    // padding and a tab.
+    expect(screen.getByTestId("consent-layer")).toHaveStyle({ bottom: 2 + 4 + 56 + 4 + 8 });
+    await fireEvent(screen.getByTestId("tab-bar"), "layout", {
+      nativeEvent: { layout: { x: 0, y: 580, width: 360, height: 160 } },
+    });
+    expect(screen.getByTestId("consent-layer")).toHaveStyle({ bottom: 160 + 8 });
+  });
+
   it("Accept loads Google's tag and counts the screen open now, by its pattern", async () => {
     await renderApp("/legal/privacy", withAnalytics);
     await fireEvent.press(await screen.findByRole("button", { name: "Accept" }));
