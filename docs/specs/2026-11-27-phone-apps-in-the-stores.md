@@ -119,6 +119,10 @@ Different by design:
   their Google address, which Google vouched for. Sign-in methods on the
   iPhone still lists a linked Google and can remove it, but does not offer to
   add one.
+  A member whose only way in is Google, with no email Google vouched for,
+  cannot sign in on the iPhone: the iPhone's sign-in screen says, under the
+  email field, that a member who joined with Google signs in with the email
+  code, and on the website once to add an email if that fails.
 
 ### 3.4 Push
 
