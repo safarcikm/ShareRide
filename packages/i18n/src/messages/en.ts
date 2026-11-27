@@ -928,6 +928,7 @@ export const en = {
   "trip.freeCancellationUntil": "Up to {time} before",
   "trip.paying": "Paying",
   "trip.payingInPerson": "Cash or bank transfer",
+  "trip.driver": "Driver",
   "trip.whereYouSit": "Where you sit",
   "trip.whereYouSitLine":
     "{free, plural, =0 {No seats are free} one {# of {offered} seats is free} other {# of {offered} seats are free}}. Seats are not numbered: you agree in the car.",

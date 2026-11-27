@@ -945,6 +945,8 @@ test.describe("A person's profile with a long name, 360 wide", () => {
     ).toBeVisible();
     const card = page.getByTestId("person-card").filter(shown);
     await expect(card.getByText(longName, { exact: true })).toBeVisible();
+    // The name heads the card, under the page's one title.
+    await expect(card.getByRole("heading", { name: longName, level: 2 })).toBeVisible();
     // The rating and both checks are on the card's one line, which wraps.
     const standing = card.getByTestId("person-card-standing");
     await expect(standing.getByText("Símanúmer staðfest")).toBeVisible();
@@ -1067,5 +1069,99 @@ test.describe("the menu, Find's name line and the road, 360 wide", () => {
       expect(head.screenWider).toBeLessThanOrEqual(0);
       expect(await pageWider(page)).toBeLessThanOrEqual(0);
     });
+  });
+});
+
+// A short window (spec 31, 3.20): a phone on its side, or a laptop zoomed
+// until its window is 320 by 256. A bar that stayed would take much of the
+// height, so it joins the end of the page and scrolls with it.
+test.describe("a short window", () => {
+  test.use({ locale: "en-GB" });
+
+  test("a ride's bar joins the end of its page, and stays again once the window is tall", async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== "phone", "A phone's column and bar.");
+    await signUp(page, english, "Lilja");
+    await openTrip(page, {
+      fromField: /^From: /,
+      fromLabel: "From",
+      from: "mjód",
+      fromPoint: /^Mjódd bus terminal,/,
+      toField: /^To: /,
+      toLabel: "To",
+      to: "selfo",
+      toPoint: /^N1 Selfoss,/,
+      search: "Find a ride",
+      result: /^Leaves Mjódd bus terminal at \d\d:\d\d, .*Sigga, New driver/,
+    });
+    const shown = { visible: true } as const;
+    const bar = page.getByTestId("bottom-bar").filter(shown);
+    const send = bar.getByRole("button", { name: "Send request", exact: true });
+    const scroll = page.getByTestId("screen-scroll").filter(shown);
+    const inPage = () =>
+      bar.evaluate((part) => part.closest('[data-testid="screen-scroll"]') !== null);
+    // On a phone held upright the bar stays under the page.
+    await expect(send).toBeInViewport();
+    expect(await inPage()).toBe(false);
+
+    for (const window of [
+      { width: 740, height: 360 },
+      { width: 320, height: 256 },
+    ]) {
+      await page.setViewportSize(window);
+      await expect.poll(inPage).toBe(true);
+      // The page has the window down to its lower edge, and starts at its top.
+      await scroll.evaluate((part) => {
+        part.scrollTo(0, 0);
+      });
+      const room = await box(scroll);
+      expect(room.y + room.height).toBeGreaterThanOrEqual(window.height - 1);
+      await expect(send).not.toBeInViewport();
+      // The button comes with the page's end, over the website's footer,
+      // whole in the window's width.
+      await send.scrollIntoViewIfNeeded();
+      await expect(send).toBeInViewport();
+      const button = await box(send);
+      expect(button.x).toBeGreaterThanOrEqual(0);
+      expect(button.x + button.width).toBeLessThanOrEqual(window.width);
+      const footer = await box(scroll.getByTestId("site-footer"));
+      expect(footer.y).toBeGreaterThanOrEqual(button.y + button.height);
+      expect(await pageWider(page)).toBeLessThanOrEqual(0);
+    }
+
+    await page.setViewportSize({ width: 360, height: 740 });
+    await expect.poll(inPage).toBe(false);
+    await expect(send).toBeInViewport();
+
+    // A phone's keyboard makes what is seen shorter, not the window the
+    // page is laid out in: the bar stays, or it would move under the
+    // fingers each time a field is written in. (No keyboard here: what is
+    // seen is told as 300 high, as a keyboard would leave it.)
+    await page.evaluate(async () => {
+      const seen = window.visualViewport;
+      if (seen === null) throw new Error("This browser tells nothing of what is seen");
+      Object.defineProperty(seen, "height", { configurable: true, get: () => 300 });
+      seen.dispatchEvent(new Event("resize"));
+      // Two frames: the app has drawn again with what it was told.
+      await new Promise((drawn) => requestAnimationFrame(() => requestAnimationFrame(drawn)));
+    });
+    expect(await inPage()).toBe(false);
+    await expect(send).toBeVisible();
+  });
+});
+
+// A chip is as high as a touch target on the web too, which has no touch
+// area beyond what is drawn (spec 15, 4.4).
+test.describe("chips", () => {
+  test.use({ locale: "en-GB" });
+
+  test("Coming up and Past on My rides are 44 high", async ({ page }) => {
+    await signUp(page, english, "Lilja");
+    await page.goto("/my-rides");
+    for (const name of ["Coming up", "Past"]) {
+      const chip = await box(page.getByRole("radio", { name, exact: true }));
+      expect(chip.height).toBeGreaterThanOrEqual(44);
+    }
   });
 });

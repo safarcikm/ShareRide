@@ -74,6 +74,7 @@ export function PreviewTicket({
       from={{ time: formatClock(from), place: first.meetingPoint.name[locale] }}
       to={{ time: formatClock(to), place: last.meetingPoint.name[locale] }}
       between={between > 0 ? t("ride.withStops", { duration, count: between }) : duration}
+      ends={{ from: t("trip.from"), to: t("trip.to") }}
       price={
         whole === null
           ? null

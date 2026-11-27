@@ -39,6 +39,7 @@ export function BookingTicket({ booking }: { readonly booking: Booking }) {
       from={{ time: formatClock(from), place: board.meetingPoint.name[locale] }}
       to={{ time: formatClock(to), place: alight.meetingPoint.name[locale] }}
       between={formatDuration((to.getTime() - from.getTime()) / 1000, locale)}
+      ends={{ from: t("trip.getIn"), to: t("trip.getOut") }}
       mine={booking.status === "confirmed" || booking.status === "completed"}
       foot={
         <TicketFoot

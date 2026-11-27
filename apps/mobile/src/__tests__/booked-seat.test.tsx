@@ -173,8 +173,10 @@ describe("a booked seat on a phone (spec 31, 3.8)", () => {
     expect(driver.getByText("White Toyota Yaris")).toBeVisible();
     expect(driver.getByLabelText("Number plate AB 123")).toBeVisible();
     expect(driver.getByText("AB 123")).toBeVisible();
-    // Her profile is still one press away.
-    expect(driver.getByRole("link", { name: /^See profile: Anna/ })).toBeVisible();
+    // Her profile is still one press away. A phone's screen reader stops at
+    // the link and not at the name in it, so the link says who Anna is
+    // (spec 31, 3.20).
+    expect(driver.getByRole("link", { name: /^Driver, See profile: Anna/ })).toBeVisible();
   });
 
   it("says when the plate comes before it is known, and has no Message before the seat is confirmed", async () => {

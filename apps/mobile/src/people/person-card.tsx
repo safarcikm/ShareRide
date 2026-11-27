@@ -4,6 +4,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { Avatar, besideAvatar } from "@/components/avatar";
 import { Card } from "@/components/card";
 import { Tag } from "@/components/tag";
+import { sectionLevel } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { RatingLine } from "@/people/standing";
 import { sizes, spacing, typography } from "@/theme/tokens";
@@ -26,7 +27,9 @@ export interface PersonStanding {
  * under it moves when it comes. Then what the screen puts under it, such as
  * the photo's controls on my own.
  *
- * The name is plain text: the screen's title stands over the card.
+ * The screen's title stands over the card. The name heads the card, an
+ * h2 on the web, so a screen reader's list of headings has the person
+ * between the title and what comes after, such as Reviews.
  */
 export function PersonCard({
   firstName,
@@ -55,7 +58,13 @@ export function PersonCard({
           <View style={[besideAvatar.row, styles.who]}>
             <Avatar firstName={firstName} colour={colour} photo={photo} />
             <View style={besideAvatar.text}>
-              <Text style={[typography.heading, { color: palette.text }]}>{firstName}</Text>
+              <Text
+                accessibilityRole="header"
+                {...sectionLevel}
+                style={[typography.heading, { color: palette.text }]}
+              >
+                {firstName}
+              </Text>
               {lines.map((line) => (
                 <Text key={line} style={[typography.small, { color: palette.textMuted }]}>
                   {line}

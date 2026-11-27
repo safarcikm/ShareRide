@@ -139,6 +139,7 @@ export function PartTicket({
           (new Date(alight.plannedAt).getTime() - new Date(board.plannedAt).getTime()) / 1000,
           locale,
         )}
+        ends={{ from: t("trip.getIn"), to: t("trip.getOut") }}
         unfolded={
           unfolding === null || unfolding.choices.length < 2 ? undefined : (
             // The stops stand under both ends, so focus goes to them from Change.

@@ -42,6 +42,14 @@ test("a driver cancels a trip with three passengers, who each read why", async (
       .getByText("2 more people with a booking or request are told too.", { exact: true })
       .filter(visible),
   ).toBeVisible();
+  // With no reason chosen nothing is cancelled: why stands over the red
+  // button, in the bar and in view, and has the keyboard.
+  const bar = driver.getByTestId("bottom-bar").filter(visible);
+  await bar.getByRole("button", { name: "Cancel the ride", exact: true }).click();
+  await expect(bar.getByRole("alert")).toHaveText("Choose a reason.");
+  await expect(bar.getByRole("alert")).toBeInViewport();
+  await expect.poll(() => focused(driver)).toContain("Choose a reason.");
+  await expect(driver).toHaveURL(new RegExp(`/drive/trips/${tripId}/cancel$`));
   const counts = driver.getByText("This cancellation shows on your profile", { exact: true });
   await driver.getByRole("radio", { name: "Weather" }).click();
   await expect(counts.filter(visible)).toHaveCount(0);

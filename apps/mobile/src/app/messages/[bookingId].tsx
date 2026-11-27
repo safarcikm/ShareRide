@@ -20,7 +20,7 @@ import { Notice } from "@/components/notice";
 import { Screen, useWideScreen } from "@/components/screen";
 import { Body } from "@/components/text";
 import { MessageField, QuickMessages } from "@/chat/composer";
-import { ConversationHead } from "@/chat/conversation-head";
+import { ConversationHead, useTopMenu } from "@/chat/conversation-head";
 import { ConversationList, useConversations } from "@/chat/conversation-list";
 import { MessageList } from "@/chat/message-list";
 import type { Outgoing } from "@/chat/messages";
@@ -112,7 +112,7 @@ function Open({
   // here, as moving the top draws it anew.
   const [room, setRoom] = useState<number | null>(null);
   const [topHeight, setTopHeight] = useState(0);
-  const [menu, setMenu] = useState(false);
+  const menu = useTopMenu();
   const topStays = room === null || room - topHeight >= roomUnderTop;
   const suspended = suspensionNow(useMe()) !== null;
   const { refresh: refreshList } = useUnread();
@@ -191,13 +191,7 @@ function Open({
     undefined;
 
   const head = (
-    <ConversationHead
-      conversation={conversation}
-      part={wide}
-      menu={menu}
-      onMenu={setMenu}
-      onRest={setTopHeight}
-    />
+    <ConversationHead conversation={conversation} part={wide} menu={menu} onRest={setTopHeight} />
   );
   // Reading stays open to a suspended person; sending does not (spec 9, 3.6.2).
   const writes = conversation.canWrite && !suspended;
@@ -262,6 +256,8 @@ function Open({
         // A screen under another is not drawn on the web: 0 is no measure.
         if (layout.height > 0) setRoom(layout.height);
       }}
+      // A touch beside the top closes its menu.
+      onTouchStart={menu.beside}
     >
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}

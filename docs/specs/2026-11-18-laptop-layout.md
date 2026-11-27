@@ -102,7 +102,9 @@ changes on a phone.
 4. Between 900 and 1144 the main column gives way first; nothing is cut and
    the page never scrolls sideways.
 5. Reading order for screen readers and the Tab key is the main column, then
-   the side column.
+   the side column. Since [spec 31](2026-11-26-one-ride-one-ticket.md)
+   (3.20) a side column at the left comes first, as the eye meets it: so
+   on Profile (3.12).
 6. On a screen with two columns, the title starts at the left, above the
    main column. Screens of one column keep their centred title (spec 15,
    5.1, alignment).
@@ -414,7 +416,9 @@ changes on a phone.
    short "Edit" and the photo's controls, and the main column the four
    groups of rows that hold what Settings held, then Sign out.
 3. The title starts at the left, over the card. The card stays in view
-   while the rows scroll.
+   while the rows scroll. The card comes before the rows for the keyboard
+   and a screen reader too (spec 31, 3.20); until then the rows came
+   first, though they stand at its right.
 4. Signed out, Profile stays one centred column.
 
 ### 3.13 Offer a ride

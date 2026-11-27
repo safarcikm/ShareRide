@@ -179,7 +179,15 @@ describe("My profile (spec 31, 3.14)", () => {
     expect(await screen.findByRole("link", { name: "Driving licence, Confirmed" })).toBeVisible();
     expect(await screen.findByRole("link", { name: "My cars, Toyota Yaris" })).toBeVisible();
     const headings = screen.getAllByRole("header").map((heading) => String(heading.props.children));
-    expect(headings).toEqual(["My profile", "Driving", "Account", "Safety and privacy", "Help"]);
+    // The name heads the card of who I am, as it does on anyone's profile (spec 31, 3.20).
+    expect(headings).toEqual([
+      "My profile",
+      "Anna",
+      "Driving",
+      "Account",
+      "Safety and privacy",
+      "Help",
+    ]);
     expect(screen.getByRole("header", { name: "Driving" })).not.toHaveStyle({
       textAlign: "center",
     });
@@ -606,8 +614,11 @@ describe("My profile on a laptop (spec 31, 3.16 item 5)", () => {
     expect(screen.getByRole("header", { name: "My profile" })).not.toHaveStyle({
       textAlign: "center",
     });
-    // The side column is drawn at the left; a reader still gets the rows first.
-    expect(screen.getByTestId("columns")).toHaveStyle({ flexDirection: "row-reverse" });
+    // The side column is at the left, and comes first for a reader and the
+    // keyboard too: who I am, then the rows.
+    expect(screen.getByTestId("columns")).toHaveStyle({ flexDirection: "row" });
+    const tree = JSON.stringify(screen.toJSON());
+    expect(tree.indexOf('"columns-side"')).toBeLessThan(tree.indexOf('"columns-main"'));
 
     const side = within(screen.getByTestId("columns-side"));
     const card = within(side.getByTestId("person-card"));

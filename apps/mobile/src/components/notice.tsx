@@ -81,9 +81,14 @@ export function useSaid(): readonly [Said | null, (message: string | null) => vo
  * Why a screen's main button did not do what it says, over that button: in
  * the bar it is seen without scrolling, on a phone too (spec 31, 3.8 and
  * 3.19). It takes focus when it appears, when it says something new, and
- * when another press gets the same words (`useSaid`). Plain words, as from
- * a call that failed, do for a notice that goes while the call is tried
- * again.
+ * when another press gets the same words (`useSaid`).
+ *
+ * The rule for its words (spec 31, 3.20): plain words only where the
+ * screen takes them away as the button is pressed again, as before a call
+ * to the server is tried once more, so the same words after it are a new
+ * notice and take focus again. What is said without leaving the press, as
+ * "Choose a reason.", comes from `useSaid`: plain words would stay as
+ * they are on a second press, and tell a screen reader nothing.
  */
 export function ActionNotice({ says }: { readonly says: Said | string | null }) {
   if (says === null) return null;

@@ -92,10 +92,11 @@ describe("beside the driver of a trip (spec 4, 3.4 and 3.6)", () => {
     });
     expect(await screen.findByText("4.3 (3 ratings)")).toBeVisible();
     expect(screen.getByText("Reliability: 91%")).toBeVisible();
-    // The driver's line is the link, and its name says all the line holds.
+    // The driver's line is the link, and its name says all the line holds,
+    // after who she is: a phone's screen reader stops at the link (3.20).
     expect(
       screen.getByRole("link", {
-        name: "See profile: Anna, 4.3 (3 ratings), Reliability: 91%",
+        name: "Driver, See profile: Anna, 4.3 (3 ratings), Reliability: 91%",
       }),
     ).toBeVisible();
   });
@@ -127,7 +128,7 @@ describe("beside the driver of a trip (spec 4, 3.4 and 3.6)", () => {
     expect(screen.getByText("Reliability: not enough rides yet")).toBeVisible();
     expect(
       screen.getByRole("link", {
-        name: "See profile: Anna, New driver, Reliability: not enough rides yet",
+        name: "Driver, See profile: Anna, New driver, Reliability: not enough rides yet",
       }),
     ).toBeVisible();
   });
@@ -147,7 +148,7 @@ describe("on a booking (spec 5)", () => {
     // The whole line about her is the link, and says all of it (spec 31, 3.7).
     await fireEvent.press(
       screen.getByRole("link", {
-        name: "See profile: Anna, 4.3 (3 ratings), Reliability: 91%",
+        name: "Driver, See profile: Anna, 4.3 (3 ratings), Reliability: 91%",
       }),
     );
     expect(await findPersonCard("Anna")).toBeVisible();

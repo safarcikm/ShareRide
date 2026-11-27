@@ -8,7 +8,7 @@ import { passengerRow } from "./support/driver-ride";
 import { twiceAsLarge } from "./support/layout";
 import { aPerson, personId, showPerson } from "./support/person";
 import { addPhotoBeforePublishing } from "./support/photo";
-import { chooseTime, postTripToSelfoss, tomorrow } from "./support/trips";
+import { chooseTime, openTrip, postTripToSelfoss, tomorrow } from "./support/trips";
 
 // Pictures of screens for the specs (docs/specs/images), kept in git with
 // the script that makes them. Not a check: skipped unless PICTURES_DIR names
@@ -1184,5 +1184,56 @@ test.describe("pictures", () => {
       row.scrollIntoView({ block: "start" });
     });
     await shoot("large-text-stops");
+
+    // "Where you sit": the words stay beside the car, in a narrow column (left, 12c).
+    const seats = page.getByTestId("where-you-sit").filter(visible);
+    await seats.evaluate((card) => {
+      card.scrollIntoView({ block: "center" });
+    });
+    await shoot("large-text-where-you-sit");
+  });
+
+  test("the last pass: a short window, a phone on its side (spec 31)", async ({ page }, info) => {
+    test.skip(info.project.name === "desktop", "A phone's pictures");
+    test.setTimeout(300_000);
+    const folder = join(root ?? "", "one-ride-one-ticket", "built");
+    mkdirSync(folder, { recursive: true });
+    const visible = { visible: true };
+    const shoot = async (name: string) => {
+      await page.mouse.move(0, 0);
+      await page.waitForTimeout(500);
+      await page.screenshot({ path: join(folder, `${name}-phone-light.png`), scale: "device" });
+    };
+    await signUp(page, english, "Dóra");
+    await openTrip(page, {
+      fromField: /^From: /,
+      fromLabel: "From",
+      from: "mjód",
+      fromPoint: /^Mjódd bus terminal,/,
+      toField: /^To: /,
+      toLabel: "To",
+      to: "selfo",
+      toPoint: /^N1 Selfoss,/,
+      search: "Find a ride",
+      result: /^Leaves Mjódd bus terminal at \d\d:\d\d, .*Sigga, New driver/,
+    });
+    await page.setViewportSize({ width: 740, height: 360 });
+
+    // A ride: nothing of the window is taken by a bar.
+    await expect(page.getByTestId("where-you-sit").filter(visible)).toBeVisible();
+    await page
+      .getByTestId("screen-scroll")
+      .filter(visible)
+      .evaluate((scroll) => {
+        scroll.scrollTo(0, 0);
+      });
+    await shoot("short-window-ride");
+    // And its end: the page's button after its last part.
+    // (As far down as the page goes: the bar cannot reach the window's top.)
+    const bar = page.getByTestId("bottom-bar").filter(visible);
+    await bar.evaluate((end) => {
+      end.scrollIntoView({ block: "start" });
+    });
+    await shoot("short-window-ride-end");
   });
 });

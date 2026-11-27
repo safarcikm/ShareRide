@@ -29,6 +29,7 @@ import {
   controlOutline,
   maxContentWidth,
   pageMaxWidth,
+  shortWindowUnder,
   sidePanelFrom,
   spacing,
 } from "@/theme/tokens";
@@ -37,6 +38,8 @@ import { usePalette } from "@/theme/use-palette";
 import { HeldWithMain } from "./press-guard";
 import { useRefresh, type Refresh } from "./refresh";
 import { SiteFooter } from "./site-footer";
+import { PutAgainContext } from "./takes-focus";
+import { useLaidOutHeight } from "./window-height";
 
 /**
  * A full screen with safe-area padding. On wide screens (web, tablets) the
@@ -109,6 +112,13 @@ export function Screen({
   const { onLayout: followsEnd, ...sticking } = useStickToEnd(scrollRef, stickToEnd, endKey);
   const refreshing = useRefresh({ refresh, asked: refreshAsked, scrollRef });
   const [inBar] = useState(barSlot);
+  // On a short window the bar joins the end of the page and scrolls with
+  // it (spec 31, 3.20). A conversation's field stays under its messages.
+  const barJoins = useShortWindow() && !stickToEnd;
+  // Once it has changed place, what a bar holds as it is put there is
+  // what the other held, and did not just appear (`PutAgainContext`).
+  const [place, setPlace] = useState({ joins: barJoins, moved: false });
+  if (place.joins !== barJoins) setPlace({ joins: barJoins, moved: true });
   return (
     <SafeAreaView
       testID="screen-safe-area"
@@ -175,6 +185,9 @@ export function Screen({
                 ) : (
                   <View style={styles.column}>{children}</View>
                 )}
+                {barJoins ? (
+                  <BottomBar footer={footer} inBar={inBar} joined moved={place.moved} />
+                ) : null}
                 {siteFooter && onWebsite() ? <SiteFooter /> : null}
               </ScreenViewHeightContext.Provider>
             </BarSlotContext.Provider>
@@ -187,7 +200,7 @@ export function Screen({
           <View style={styles.barColumn}>{overFooter}</View>
         </View>
       )}
-      <BottomBar footer={footer} inBar={inBar} />
+      {barJoins ? null : <BottomBar footer={footer} inBar={inBar} moved={place.moved} />}
     </SafeAreaView>
   );
 }
@@ -269,9 +282,28 @@ export function InBar({ children }: { readonly children: ReactNode }) {
  * painted. So a screen never shows a first frame without its bar.
  * (`useSyncExternalStore` listens only once the frame is painted.)
  */
-function BottomBar({ footer, inBar }: { readonly footer: ReactNode; readonly inBar: BarSlot }) {
+function BottomBar({
+  footer,
+  inBar,
+  joined = false,
+  moved = false,
+}: {
+  readonly footer: ReactNode;
+  readonly inBar: BarSlot;
+  /** At the end of the page, in its column, with no band of its own. */
+  readonly joined?: boolean;
+  /** The screen's bar changed place, and this is where it is now. */
+  readonly moved?: boolean;
+}) {
   const palette = usePalette();
   const [held, setHeld] = useState(inBar.held);
+  // A notice the bar held where it was takes no focus as it is put here:
+  // focus may be in a field that is being mended, with the keyboard up.
+  // What comes once the bar is in place takes it as anywhere.
+  const putAgain = useRef(moved);
+  useEffect(() => {
+    putAgain.current = false;
+  }, []);
   useLayoutEffect(() => {
     const look = () => {
       setHeld(inBar.held());
@@ -283,15 +315,21 @@ function BottomBar({ footer, inBar }: { readonly footer: ReactNode; readonly inB
   return (
     <View
       testID="bottom-bar"
-      style={[styles.bar, { backgroundColor: palette.surface, borderTopColor: palette.border }]}
+      style={
+        joined
+          ? styles.joinedBar
+          : [styles.bar, { backgroundColor: palette.surface, borderTopColor: palette.border }]
+      }
     >
       <View style={styles.barColumn}>
         {/* A second press meant for the bar's button lands on none of them (spec 31, 3.20). */}
         <HeldWithMain>
-          {footer}
-          {[...held].map(([key, part]) => (
-            <Fragment key={key}>{part}</Fragment>
-          ))}
+          <PutAgainContext.Provider value={putAgain}>
+            {footer}
+            {[...held].map(([key, part]) => (
+              <Fragment key={key}>{part}</Fragment>
+            ))}
+          </PutAgainContext.Provider>
         </HeldWithMain>
       </View>
     </View>
@@ -455,6 +493,14 @@ function useRevealing() {
   return { scrollRef, scroll, keyboardRoom: revealing ? keyboard : 0 };
 }
 
+/**
+ * Whether the window is short: a phone on its side, or a laptop zoomed far
+ * in. A keyboard over the page of a phone's browser does not make it so.
+ */
+export function useShortWindow() {
+  return useLaidOutHeight() < shortWindowUnder;
+}
+
 /** Whether the window is wide enough for a panel beside the column. */
 export function useWideScreen() {
   return useWindowDimensions().width >= sidePanelFrom;
@@ -511,6 +557,8 @@ const styles = StyleSheet.create({
   },
   overBar: { paddingHorizontal: spacing.md, paddingBottom: spacing.sm, alignItems: "center" },
   bar: { borderTopWidth: controlOutline, padding: spacing.md, alignItems: "center" },
+  // In the page's padding already, a step under what the page ends with.
+  joinedBar: { width: "100%", paddingTop: spacing.md, alignItems: "center" },
   barColumn: { width: "100%", maxWidth: maxContentWidth, gap: spacing.sm },
   wide: {
     flex: 1,

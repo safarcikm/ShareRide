@@ -1,8 +1,17 @@
 import type { Conversation } from "@shareride/contracts";
 import { capitalised, carText, formatClock, formatShortDay } from "@shareride/i18n";
-import { router } from "expo-router";
+import { router, useNavigation } from "expo-router";
 import { Ban, ChevronRight, EllipsisVertical, Flag, Ticket } from "lucide-react-native";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useCallback, useEffect, useMemo, useRef, useState, type ComponentRef } from "react";
+import {
+  AccessibilityInfo,
+  BackHandler,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { ActionRows } from "@/components/action-rows";
 import { Avatar, avatarSize, besideAvatar } from "@/components/avatar";
 import { BackButton } from "@/components/back-button";
@@ -32,8 +41,11 @@ import { otherPerson } from "./texts";
  * The name is the screen's title; beside my conversations on a wide screen
  * it is the title of a `part`, an h2 on the web (spec 18, 3.11).
  *
- * The screen holds whether the `menu` is open, as it can move the top
- * from its bar into the conversation and back, which draws it anew.
+ * The screen holds whether the `menu` is open (`useTopMenu`), as it can
+ * move the top from its bar into the conversation and back, which draws
+ * it anew. The menu closes by its button, by a row, and without choosing:
+ * by Escape and by Android's back, which put focus on its button again,
+ * and by a press beside the top (spec 31, 3.20).
  * `onRest` hears how tall the top is with its menu closed, each time that
  * changes: a top too tall for the room the conversation has scrolls with
  * it, and the menu, open for a moment, is not counted. A screen under
@@ -43,18 +55,64 @@ import { otherPerson } from "./texts";
 export function ConversationHead({
   conversation,
   part,
-  menu,
-  onMenu,
+  menu: { open: menu, set: onMenu, inTop },
   onRest,
 }: {
   readonly conversation: Conversation;
   readonly part: boolean;
-  readonly menu: boolean;
-  readonly onMenu: (open: boolean) => void;
+  readonly menu: TopMenu;
   readonly onRest?: (height: number) => void;
 }) {
   const { t } = useLanguage();
   const palette = usePalette();
+  const top = useRef<ComponentRef<typeof View>>(null);
+  const more = useRef<ComponentRef<typeof Pressable>>(null);
+  // Closed from the keyboard or by Android's back, focus is on the
+  // button that opened it, as its rows are gone.
+  const closeToButton = useCallback(() => {
+    onMenu(false);
+    const button = more.current;
+    if (button === null) return;
+    if (Platform.OS === "web") (button as unknown as { focus: () => void }).focus();
+    else AccessibilityInfo.sendAccessibilityEvent(button, "focus");
+  }, [onMenu]);
+  // Android's back closes the menu rather than leaving the conversation;
+  // not under another screen, which the ride's line may have opened.
+  const navigation = useNavigation();
+  useEffect(() => {
+    if (!menu) return undefined;
+    const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
+      if (!navigation.isFocused()) return false;
+      closeToButton();
+      return true;
+    });
+    return () => {
+      subscription.remove();
+    };
+  }, [menu, navigation, closeToButton]);
+  // On the web a press anywhere beside the top closes it, with a mouse
+  // too, and on the menu's bar or my conversations beside this one.
+  useEffect(() => {
+    if (!menu || Platform.OS !== "web") return undefined;
+    const pressed = (event: Event) => {
+      const head = top.current as unknown as Node | null;
+      if (head !== null && event.target instanceof Node && head.contains(event.target)) return;
+      onMenu(false);
+    };
+    document.addEventListener("pointerdown", pressed, true);
+    return () => {
+      document.removeEventListener("pointerdown", pressed, true);
+    };
+  }, [menu, onMenu]);
+  // On the web, Escape closes it wherever focus is in the top.
+  const escape: object =
+    Platform.OS === "web" && menu
+      ? {
+          onKeyDown: (event: { key: string }) => {
+            if (event.key === "Escape") closeToButton();
+          },
+        }
+      : {};
   const { booking } = conversation;
   const other = otherPerson(booking);
   const name = firstNameOf(t, other);
@@ -66,11 +124,14 @@ export function ConversationHead({
         : t("chat.driverWithCar", { car: carText(t, booking.car) });
   return (
     <View
+      ref={top}
       testID="conversation-head"
       style={styles.head}
       onLayout={({ nativeEvent: { layout } }) => {
         if (!menu && layout.height > 0) onRest?.(layout.height);
       }}
+      onTouchStart={inTop}
+      {...escape}
     >
       <View style={styles.top}>
         <View style={styles.beside}>
@@ -89,6 +150,7 @@ export function ConversationHead({
         </View>
         <View style={styles.beside}>
           <IconButton
+            ref={more}
             quiet
             icon={EllipsisVertical}
             label={t("chat.more")}
@@ -126,6 +188,39 @@ export function ConversationHead({
       ) : null}
       <RideLine conversation={conversation} />
     </View>
+  );
+}
+
+/** The menu of a conversation's top, as its screen holds it. */
+export interface TopMenu {
+  readonly open: boolean;
+  readonly set: (open: boolean) => void;
+  /** For the top: a touch that starts in it is not one beside it. */
+  readonly inTop: () => void;
+  /**
+   * For what holds the top and the conversation: a touch that starts in
+   * it and not in the top closes the menu. A touch tells the top first.
+   */
+  readonly beside: () => void;
+}
+
+/** Whether the menu of a conversation's top is open, and what closes it from beside the top. */
+export function useTopMenu(): TopMenu {
+  const [open, set] = useState(false);
+  const touchedTop = useRef(false);
+  return useMemo(
+    () => ({
+      open,
+      set,
+      inTop: () => {
+        touchedTop.current = true;
+      },
+      beside: () => {
+        if (!touchedTop.current) set(false);
+        touchedTop.current = false;
+      },
+    }),
+    [open],
   );
 }
 

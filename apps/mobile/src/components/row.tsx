@@ -1,6 +1,6 @@
 import { ChevronDown, ChevronRight, ChevronUp, type LucideIcon } from "lucide-react-native";
 import type { ReactNode } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { linkProps, type AppPath } from "@/navigation/link-props";
 import { useHover } from "@/theme/hover";
 import { ringInside } from "@/theme/ring-inside";
@@ -74,7 +74,8 @@ type RowKind =
  * link with `href`, as a document on About is, spec 30, 3.1) or does
  * something; a chevron down unfolds its `children` under it; a switch turns
  * something on and off; a row that only `shows` a value has nothing there
- * and is not a button. A `danger` row is red and has no chevron. A row
+ * and is not a button: a phone's screen reader reads it in one piece, the
+ * title and then the value. A `danger` row is red and has no chevron. A row
  * that does something can be `disabled` while it has to wait: muted, with
  * no tint, and it says so to a screen reader. While what it does is under
  * way it is `busy`: a spinner stands where the chevron was, on a red row
@@ -120,11 +121,21 @@ export function Row(props: RowLook & RowKind) {
   // the rows are the card of rows showing through.
   const ground = inRows ? { backgroundColor: palette.surface } : null;
   const shape = [styles.row, inRows ? styles.inRows : styles.inCard, ground];
-  if (props.shows === true) return <View style={shape}>{face}</View>;
+  const label = accessibilityLabel ?? (value === undefined ? title : `${title}, ${value}`);
+  if (props.shows === true) {
+    // One stop for a screen reader in a phone's app, not one for each
+    // text. The web reads the two after each other, and a name on a view
+    // with no role would count for nothing there.
+    const whole = Platform.OS === "web" ? {} : { accessible: true, accessibilityLabel: label };
+    return (
+      <View {...whole} style={shape}>
+        {face}
+      </View>
+    );
+  }
   // Its focus ring is drawn inside it there, where the card would cut it off.
   const ring = inRows ? ringInside : null;
 
-  const label = accessibilityLabel ?? (value === undefined ? title : `${title}, ${value}`);
   const tinted = ({ pressed }: { readonly pressed: boolean }) => [
     ...shape,
     pressed || hovered

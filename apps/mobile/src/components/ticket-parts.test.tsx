@@ -473,6 +473,27 @@ describe("RideTicket", () => {
     expect(screen.queryByRole("link")).toBeNull();
   });
 
+  it("says at which end each time stands, where the ticket is not one thing to press", async () => {
+    await render(
+      <RideTicket
+        day="Sat 28 Nov"
+        from={selfoss}
+        to={vik}
+        between="1 h 35 min"
+        ends={{ from: "Get in", to: "Get out" }}
+      />,
+    );
+    // A phone's screen reader reads each text by itself: the time says its end.
+    expect(screen.getByLabelText("Get in: 10:00")).toBe(screen.getByText("10:00"));
+    expect(screen.getByLabelText("Get out: 11:35")).toBe(screen.getByText("11:35"));
+    // Without the words a time is read as written.
+    await screen.rerender(
+      <RideTicket day="Sat 28 Nov" from={selfoss} to={vik} between="1 h 35 min" />,
+    );
+    expect(screen.queryByLabelText(/10:00/)).toBeNull();
+    expect(screen.getByText("10:00")).toBeVisible();
+  });
+
   it("keeps a moss edge under the pointer, darker when it is mine", async () => {
     const ticket = (mine: boolean) => (
       <RideTicket

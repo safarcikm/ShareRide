@@ -17,6 +17,11 @@ import { spaceKeyPresses } from "./space-key";
 /** Extra touch area above and below, so a 40 high chip is 44 to tap (spec 15, section 4.4). */
 const slop = (minTouchTarget - sizes.chipHeight) / 2;
 const hitSlop = { top: slop, bottom: slop, left: 0, right: 0 } as const;
+/**
+ * The web has no touch area beyond what is drawn, so there a chip is
+ * drawn as high as a touch target (spec 31, 3.20).
+ */
+const height = Platform.OS === "web" ? minTouchTarget : sizes.chipHeight;
 
 /**
  * A choice that can be turned on and off, such as a spoken language
@@ -113,7 +118,7 @@ export function Chip({
 
 const styles = StyleSheet.create({
   chip: {
-    minHeight: sizes.chipHeight,
+    minHeight: height,
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.xs,

@@ -438,6 +438,15 @@ describe("Row", () => {
     expect(screen.getByText("Confirmed")).toHaveStyle({ color: colors.light.textMuted });
     expect(screen.queryByTestId("row-chevron", { includeHiddenElements: true })).toBeNull();
   });
+
+  it("is read in one piece by a phone's screen reader when it only shows: the title, then the value", async () => {
+    await render(<Row shows title="Phone" value="Confirmed" />);
+    const row = screen.getByLabelText("Phone, Confirmed");
+    expect(row.props).toMatchObject({ accessible: true });
+    expect(within(row).getByText("Phone")).toBeVisible();
+    await screen.rerender(<Row shows title="Phone" />);
+    expect(screen.getByLabelText("Phone").props).toMatchObject({ accessible: true });
+  });
 });
 
 describe("ActionRows", () => {

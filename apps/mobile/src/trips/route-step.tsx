@@ -23,6 +23,7 @@ import { PuffinByPin } from "@/components/puffin-scenes";
 import { useWideScreen } from "@/components/screen";
 import { Switch } from "@/components/switch";
 import { Tag } from "@/components/tag";
+import { TakesFocus } from "@/components/takes-focus";
 import { Body, Heading } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { dayOf, isoDay } from "@/lib/days";
@@ -87,6 +88,8 @@ export function RouteStep({
     trip?.stops.slice(1, -1).map(({ meetingPoint }) => ({ point: meetingPoint, on: true })) ?? [],
   );
   const [picking, setPicking] = useState<Picking | null>(null);
+  // Once the screen that adds a stop has closed, until focus is back on its button.
+  const [addClosed, setAddClosed] = useState(false);
   // The ends whose points on the way are being looked up, and how that went.
   const [alongFor, setAlongFor] = useState<{ from: string; to: string } | null>(null);
   const [alongFailure, setAlongFailure] = useState<CallFailure | null>(null);
@@ -221,15 +224,20 @@ export function RouteStep({
   };
 
   // Adding a stop has a screen of its own; From and To drop down in place.
+  // It takes focus as it opens, and its button has it again once it
+  // closes, with a point or without (spec 31, 3.20).
   if (picking === "add") {
+    const close = () => {
+      setPicking(null);
+      setAddClosed(true);
+    };
     return (
       <PointPicker
         title={t("trip.route.addPoint")}
-        onCancel={() => {
-          setPicking(null);
-        }}
+        takesFocus
+        onCancel={close}
         onChoose={(point) => {
-          setPicking(null);
+          close();
           void add(point);
         }}
       />
@@ -388,14 +396,21 @@ export function RouteStep({
                   })}
                 </Card>
               )}
-              <Button
-                variant="secondary"
-                label={t("trip.route.addPoint")}
-                onPress={() => {
-                  setMessage(null);
-                  setPicking("add");
+              <TakesFocus
+                when={addClosed}
+                onFocused={() => {
+                  setAddClosed(false);
                 }}
-              />
+              >
+                <Button
+                  variant="secondary"
+                  label={t("trip.route.addPoint")}
+                  onPress={() => {
+                    setMessage(null);
+                    setPicking("add");
+                  }}
+                />
+              </TakesFocus>
             </>
           )}
           <QuoteSummary

@@ -1,4 +1,5 @@
 import type { LucideIcon } from "lucide-react-native";
+import type { ComponentRef, Ref } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
 import { useHover } from "@/theme/hover";
 import { chunky } from "@/theme/pressable";
@@ -27,7 +28,8 @@ import { Icon } from "./icon";
  * of them, and only a quiet one is `strong`.
  *
  * One that opens and closes something under it says whether it is open
- * (`expanded`), as the menu of a conversation's top does.
+ * (`expanded`), as the menu of a conversation's top does; its `ref` lets
+ * focus come back to it when that closes another way.
  */
 export function IconButton({
   icon,
@@ -43,6 +45,7 @@ export function IconButton({
   onHoverIn,
   onHoverOut,
   onFocus,
+  ref,
 }: {
   readonly icon: LucideIcon;
   readonly label: string;
@@ -58,6 +61,7 @@ export function IconButton({
   readonly onHoverIn?: () => void;
   readonly onHoverOut?: () => void;
   readonly onFocus?: () => void;
+  readonly ref?: Ref<ComponentRef<typeof Pressable>>;
 }) {
   const palette = usePalette();
   const inactive = disabled || busy;
@@ -75,6 +79,7 @@ export function IconButton({
   const ink = disabled || soft ? palette.textMuted : filled ? palette.onPrimary : palette.text;
   return (
     <Pressable
+      ref={ref}
       // A screen has at most one filled button (spec 31, R31.1): tests count them.
       testID={filled ? "filled-button" : undefined}
       accessibilityRole="button"
