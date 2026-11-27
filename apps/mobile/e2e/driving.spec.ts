@@ -10,7 +10,7 @@ test.describe("getting ready to drive on the web", () => {
   test("a new driver adds a car and confirms their licence", async ({ page }) => {
     await signUp(page, english, "Anna");
     await menuLink(page, english.profileTab).click();
-    await page.getByRole("button", { name: "My cars" }).click();
+    await page.getByRole("link", { name: "My cars" }).click();
     await expect(page.getByRole("heading", { name: "My cars" })).toBeVisible();
     await expect(page.getByText("No cars yet. Add the car you drive.")).toBeVisible();
 
@@ -40,7 +40,7 @@ test.describe("getting ready to drive on the web", () => {
     await expect(car).toContainText("TEST0001");
 
     await page.getByRole("button", { name: "Back", exact: true }).click();
-    await page.getByRole("button", { name: "Driving licence, Not confirmed yet" }).click();
+    await page.getByRole("link", { name: "Driving licence, Not confirmed yet" }).click();
     await expect(page.getByRole("heading", { name: "Your driving licence" })).toBeVisible();
     const declaration = page.getByRole("checkbox", {
       name: "I declare that I hold a valid driving licence for the cars I drive on PuffinRide",
@@ -52,7 +52,7 @@ test.describe("getting ready to drive on the web", () => {
     await declaration.press("Space");
     await expect(declaration).toBeChecked();
     await page.getByRole("button", { name: "Confirm", exact: true }).click();
-    const confirmed = page.getByRole("button", { name: "Driving licence, Confirmed" });
+    const confirmed = page.getByRole("link", { name: "Driving licence, Confirmed" });
     await expect(confirmed).toBeVisible();
 
     await page.reload();
