@@ -207,7 +207,9 @@ jobs:
       - name: The native project
         working-directory: apps/mobile
         run: npx expo prebuild --platform ios
-      # Only the processor's own architecture (arm64): half the build.
+      # Only the processor's own architecture (arm64): half the build. Signed
+      # the simulator's way (Sign to Run Locally, no Apple account): an
+      # unsigned app has no keychain, so the sign-in was lost on reopening.
       - name: Release build for the simulator against the test API
         working-directory: apps/mobile/ios
         env:
@@ -218,7 +220,7 @@ jobs:
           xcodebuild -workspace PuffinRide.xcworkspace -scheme PuffinRide \
             -configuration Release -sdk iphonesimulator \
             -destination "generic/platform=iOS Simulator" \
-            -derivedDataPath build CODE_SIGNING_ALLOWED=NO ARCHS="$(uname -m)" build \
+            -derivedDataPath build ARCHS="$(uname -m)" build \
             | tee "$RUNNER_TEMP/xcodebuild.log" | grep -E "^(\*\*|error|warning: .*deprecated)" || true
           test -d build/Build/Products/Release-iphonesimulator/PuffinRide.app
       - name: Start the test API
