@@ -106,12 +106,23 @@ jobs:
         run: |
           image="system-images;android-35;google_apis;x86_64"
           tools="$ANDROID_HOME/cmdline-tools/latest/bin"
+          # One place for the virtual phone, which avdmanager and the
+          # emulator otherwise look for in different folders.
+          export ANDROID_AVD_HOME="$HOME/.android/avd"
+          mkdir -p "$ANDROID_AVD_HOME"
+          echo "ANDROID_AVD_HOME=$ANDROID_AVD_HOME" >> "$GITHUB_ENV"
           yes | "$tools/sdkmanager" --licenses > /dev/null || true
           "$tools/sdkmanager" --install emulator platform-tools "$image" > /dev/null
           echo no | "$tools/avdmanager" create avd --force --name ci --package "$image" --device pixel_7
+          "$ANDROID_HOME/emulator/emulator" -list-avds | grep -qx ci
           nohup "$ANDROID_HOME/emulator/emulator" -avd ci -port 5554 -no-window -no-snapshot \
             -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none \
             > "$RUNNER_TEMP/emulator.log" 2>&1 &
+          sleep 10
+          if ! pgrep -f "qemu-system" > /dev/null; then
+            cat "$RUNNER_TEMP/emulator.log"
+            exit 1
+          fi
           echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
       # Shorter than the job, so the screenshots and logs below are kept
       # when a journey hangs.
@@ -119,7 +130,10 @@ jobs:
         timeout-minutes: 40
         working-directory: apps/mobile
         run: |
-          adb -s emulator-5554 wait-for-device
+          if ! timeout 300 adb -s emulator-5554 wait-for-device; then
+            cat "$RUNNER_TEMP/emulator.log"
+            exit 1
+          fi
           for _ in $(seq 1 150); do
             if [ "$(adb -s emulator-5554 shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ]; then break; fi
             sleep 2
