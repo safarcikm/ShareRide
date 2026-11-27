@@ -145,20 +145,22 @@ describe("Your email (plan 4.6)", () => {
     ).toBeVisible();
   });
 
-  it("is reached from Settings, under Your account", async () => {
-    await renderApp("/settings", { me: { ...completeMe, pendingEmail: "anna@example.com" } });
-    expect(await screen.findByRole("header", { name: "Your account" })).toBeVisible();
-    expect(
-      screen.getByText("Waiting for you to open the link sent to anna@example.com."),
-    ).toBeVisible();
-    await fireEvent.press(screen.getByRole("link", { name: "Add an email" }));
+  it("is reached from Profile, under Account, which says what it waits for", async () => {
+    await renderApp("/profile", { me: { ...completeMe, pendingEmail: "anna@example.com" } });
+    expect(await screen.findByRole("header", { name: "Account" })).toBeVisible();
+    await fireEvent.press(
+      screen.getByRole("link", {
+        name: "Email, Waiting for you to open the link sent to anna@example.com.",
+      }),
+    );
     expect(await screen.findByRole("header", { name: "Your email" })).toBeVisible();
+    expect(screen).toHavePathname("/settings/email");
   });
 
-  it("offers to change an email already added, in Settings", async () => {
-    await renderApp("/settings", { me: { ...completeMe, email: "anna@example.com" } });
-    expect(await screen.findByText("anna@example.com")).toBeVisible();
-    expect(screen.getByRole("link", { name: "Change your email" })).toBeVisible();
+  it("changes an email already added from the same row", async () => {
+    await renderApp("/profile", { me: { ...completeMe, email: "anna@example.com" } });
+    await fireEvent.press(await screen.findByRole("link", { name: "Email, anna@example.com" }));
+    expect(await screen.findByRole("header", { name: "Your email" })).toBeVisible();
   });
 });
 
@@ -187,7 +189,7 @@ describe("The link's page (plan 4.6)", () => {
     ).toEqual({ token: "sr_ev_test-1" });
     const meCalls = app.client.calls.filter((call) => call.path === "/v1/me").length;
     expect(meCalls).toBeGreaterThanOrEqual(2);
-    expect(screen.getByRole("link", { name: "Go to Settings" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Go to your profile" })).toBeVisible();
   });
 
   it("adds the email when nobody is signed in, and opens the app from there", async () => {
@@ -201,7 +203,7 @@ describe("The link's page (plan 4.6)", () => {
     expect(await screen.findByRole("header", { name: "This link no longer works" })).toBeVisible();
     expect(
       screen.getByText(
-        "A link works once, for 24 hours, and only the newest one. Ask for a new one in Settings.",
+        "A link works once, for 24 hours, and only the newest one. Ask for a new one in Profile, under Email.",
       ),
     ).toBeVisible();
   });
@@ -241,9 +243,9 @@ describe("The link's page (plan 4.6)", () => {
     const app = await openLink(() => ok(200, { email: "anna@example.com" }), completeMe);
     expect(await screen.findByRole("header", { name: "Your email is added" })).toBeVisible();
     await act(() => {
-      router.replace("/settings");
+      router.replace("/profile");
     });
-    expect(await screen.findByRole("header", { name: "Your account" })).toBeVisible();
+    expect(await screen.findByRole("header", { name: "Account" })).toBeVisible();
     await act(() => {
       router.replace(`/verify-email?token=sr_ev_test-${String(links)}`);
     });
@@ -260,7 +262,7 @@ describe("The link's page (plan 4.6)", () => {
     ).toBeVisible();
     expect(
       screen.getByText(
-        "This page adds an email when it is opened from the link we sent. If you opened it already, your email is in Settings.",
+        "This page adds an email when it is opened from the link we sent. If you opened it already, your email is in Profile.",
       ),
     ).toBeVisible();
     expect(app.client.calls.filter((call) => call.path === "/v1/email-verifications")).toEqual([]);

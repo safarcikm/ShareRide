@@ -18,7 +18,7 @@ import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
 /**
- * My feedback (spec 12, 3.3.5), in Settings: what I sent, the latest
+ * My feedback (spec 12, 3.3.5), a page of Profile: what I sent, the latest
  * first, with ShareRide's reply when there is one. Only I see this list.
  */
 export default function MyFeedbackScreen() {
@@ -37,7 +37,7 @@ function MyFeedback() {
 
   const header = (
     <>
-      <BackButton fallback="/settings" />
+      <BackButton fallback="/profile" />
       <Title>{t("feedback.mine")}</Title>
       <Body>{t("feedback.mineHelp")}</Body>
     </>

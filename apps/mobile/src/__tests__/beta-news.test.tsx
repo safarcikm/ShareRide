@@ -10,7 +10,7 @@ jest.mock("@/auth/token-store", () => {
 jest.mock("expo-localization", () => ({ getLocales: () => [{ languageTag: "en-GB" }] }));
 
 // Beta news (spec 10, 3.5; milestone 11, PR 10): the announcements sent
-// to me, under Settings.
+// to me, under Notifications on Profile.
 
 const sent = [
   {

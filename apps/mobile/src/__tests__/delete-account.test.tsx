@@ -80,8 +80,8 @@ async function openDeleteScreen({
   remove = () => ok(202, { deleteAfter }),
 }: Api = {}) {
   let looked = 0;
-  // Through Settings, which stays underneath and closes once signed out.
-  const app = await renderApp("/settings", {
+  // Through Profile, which stays underneath and asks to sign in once signed out.
+  const app = await renderApp("/profile", {
     me: completeMe,
     setUp: (client: FakeClient) => {
       client.answer("/v1/me/deletion-check", () =>
@@ -107,7 +107,7 @@ async function openDeleteScreen({
       }
     },
   });
-  await fireEvent.press(await screen.findByRole("button", { name: "Privacy and your data" }));
+  await fireEvent.press(await screen.findByRole("link", { name: "Privacy and your data" }));
   await fireEvent.press(await screen.findByRole("button", { name: "Delete my account" }));
   expect(await screen.findByRole("header", { name: "Delete my account" })).toBeVisible();
   return app;

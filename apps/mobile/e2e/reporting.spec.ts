@@ -4,7 +4,7 @@ import { focused, postTripToSelfoss } from "./support/trips";
 
 // Spec 9's reporting on the web build, in two browsers: a driver posts a
 // trip, another person reports it as not as listed, is thanked, and finds
-// the report in Settings, under My reports, still open. The driver is not
+// the report on Profile, under My reports, still open. The driver is not
 // offered to report their own trip. Each project posts its own trips, so
 // phone and desktop runs never meet.
 
@@ -60,8 +60,8 @@ test("a person reports a trip and finds it in My reports", async ({
     reporter.getByTestId("bottom-bar").filter(visible).getByRole("button", { name: "Back" }),
   ).toBeInViewport();
 
-  await reporter.goto("/settings");
-  await reporter.getByRole("button", { name: "My reports" }).click();
+  await reporter.goto("/profile");
+  await reporter.getByRole("link", { name: "My reports" }).click();
   await expect(reporter.getByText("Ride: Bára", { exact: true }).filter(visible)).toBeVisible();
   await expect(
     reporter.getByText(/^The ride wasn't as listed · Sent /).filter(visible),

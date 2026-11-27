@@ -1810,6 +1810,20 @@ releases follow [Semantic Versioning](https://semver.org/).
   top too tall for the room the conversation has, as with text twice as
   large and long names, scrolls with it. Messages has its title at the
   left on a phone.
+- Profile and Settings are one page (spec 31, 3.14). Profile has who you
+  are in a card, with your rating and what is checked as others see them,
+  Edit and the photo's controls, then rows in four groups, each row with
+  what is set now: Driving (My cars, Driving licence), Account (Email,
+  Phone number, Sign-in methods, Notifications, Language), Safety and
+  privacy (Privacy and your data, Blocked people, My reports, Notices)
+  and Help (Meeting points, Send feedback, My feedback, About PuffinRide,
+  Legal documents), and Sign out as its last row. The language and the
+  notifications each have a page of their own, the notifications' two
+  switches as rows of one card. "Sign out on all devices" is at the end
+  of Sign-in methods. `/settings` leads to Profile, and the texts and
+  emails that said "in Settings" say where the thing is on Profile. On a
+  laptop the card is the side column and the groups the main one. The
+  legal texts still say "Settings".
 - The web journeys never give two test accounts the same phone number: a
   run in ten did, and a sign-in journey then failed.
 - CI skips its code jobs (bundles, unit, integration and web tests, the API

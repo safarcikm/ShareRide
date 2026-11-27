@@ -228,8 +228,8 @@ describe("Send feedback (spec 12, 3.3)", () => {
     expect(await screen.findByRole("header", { name: "Send feedback" })).toBeVisible();
   });
 
-  it("opens from Settings, and from there shows My feedback", async () => {
-    await start("/settings", {
+  it("shows My feedback, from its row on Profile", async () => {
+    await start("/profile", {
       mine: [
         {
           ...received,
@@ -246,7 +246,7 @@ describe("Send feedback (spec 12, 3.3)", () => {
         },
       ],
     });
-    await fireEvent.press(await screen.findByRole("button", { name: "My feedback" }));
+    await fireEvent.press(await screen.findByRole("link", { name: "My feedback" }));
     expect(await screen.findByRole("header", { name: "My feedback" })).toBeVisible();
     expect(await screen.findByText("Something isn't working · 17 November 2026")).toBeVisible();
     expect(screen.getByText("The map does not move.")).toBeVisible();
@@ -304,9 +304,11 @@ describe("Shake to send feedback (spec 12, 3.3.1)", () => {
     expect(captureScreen).toHaveBeenCalledTimes(1);
   });
 
-  it("can be turned off in Settings, and stays off", async () => {
-    await start("/settings");
-    const toggle = await screen.findByRole("switch", { name: /^Shake to send feedback/ });
+  it("can be turned off on Profile, in a row under Send feedback, and stays off", async () => {
+    await start("/profile");
+    const toggle = await screen.findByRole("switch", {
+      name: "Shake to send feedback. Shaking your phone opens Send feedback.",
+    });
     expect(toggle).toBeChecked();
     await waitFor(() => {
       expect(listening()).toBe(1);

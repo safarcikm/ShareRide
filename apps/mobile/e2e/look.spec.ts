@@ -4,11 +4,13 @@ import {
   soonestTripsRoute,
   type Booking,
   type Conversation,
+  type Me,
   type MyTrip,
   type TripBookings,
   type TripDetails,
   type TripSearchResult,
 } from "@shareride/contracts";
+import { english, signUp } from "./support/account";
 import { confirmedBooking, requestSeat, secondPage } from "./support/cancelling";
 import { picturesUnderTheirText, ticketFit } from "./support/layout";
 import { openTrip } from "./support/trips";
@@ -808,5 +810,97 @@ test.describe("a ride I drive with long names, 360 wide", () => {
     }
     await dora.close();
     await einar.close();
+  });
+});
+
+// Spec 31, 3.14: Profile on the narrowest phone the app is made for, in
+// Icelandic, whose words are longer, for someone with a long name and a
+// long email.
+test.describe("Profile with a long name, 360 wide", () => {
+  test.use({ locale: "en-GB" });
+
+  const longName = "Sigurbjörg Aðalheiður";
+  const longEmail = "sigurbjorg.adalheidur.gudmundsdottir@example.com";
+  const shown = { visible: true } as const;
+
+  test("holds who I am with Edit, the photo's controls and every row with what is set, with the text as set and twice as large", async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== "phone", "A phone's column; laptops have two.");
+    test.slow();
+    await page.setViewportSize({ width: 360, height: 740 });
+    await signUp(page, english, "Anna");
+    // The account's long name and email, on their way to the page.
+    await page.route(
+      (url) => url.pathname === "/v1/me",
+      async (route) => {
+        const response = await route.fetch();
+        if (!["GET", "PATCH"].includes(route.request().method()) || !response.ok()) {
+          await route.fulfill({ response });
+          return;
+        }
+        const me = (await response.json()) as Me;
+        await route.fulfill({ response, json: { ...me, firstName: longName, email: longEmail } });
+      },
+    );
+    // The language is chosen on its own page.
+    await page.goto("/settings/language");
+    await page.getByRole("radio", { name: "Íslenska" }).filter(shown).click();
+    await expect(
+      page.getByRole("heading", { name: "Tungumál", exact: true }).filter(shown),
+    ).toBeVisible();
+    await page.goto("/profile");
+    const card = page.getByTestId("person-card").filter(shown);
+    await expect(card.getByText(longName)).toBeVisible();
+    await expect(card.getByTestId("person-card-standing")).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: `Netfang, ${longEmail}` }).filter(shown),
+    ).toBeVisible();
+    const groups = page.getByTestId("action-rows").filter(shown);
+    await expect(groups).toHaveCount(5);
+
+    for (const zoom of [1, 2] as const) {
+      if (zoom === 2) await twiceAsLarge(page);
+      // The card is whole in the window, with nothing past its edges and
+      // no text cut, and Edit inside it, beside the name or under it.
+      const who = await ticketFit(page, "person-card", "[dir]");
+      // Only the face of the photo's first button starts in the card's
+      // padding, so that its words start where the lines do (below).
+      const photoButton = ["Bæta við mynd", "button-face"];
+      expect(who.past.filter((part) => !photoButton.includes(part))).toEqual([]);
+      expect(who.cut).toEqual([]);
+      expect(who.beyondWindow).toBe(0);
+      const frame = await box(card);
+      const edit = await box(card.getByRole("button", { name: "Breyta prófíl" }));
+      expect(edit.x).toBeGreaterThanOrEqual(frame.x);
+      expect(edit.x + edit.width).toBeLessThanOrEqual(frame.x + frame.width + 1);
+      // The picture stands with the name, not at the middle of the lines.
+      expect((await picturesUnderTheirText(page)).under).toEqual([]);
+      // The photo's first button starts where the card's other lines do.
+      const add = await box(card.getByText("Bæta við mynd", { exact: true }));
+      const preview = await box(card.getByText("Sjáðu hvernig aðrir sjá þig", { exact: true }));
+      expect(Math.abs(add.x - preview.x)).toBeLessThanOrEqual(1);
+      // Each group of rows is whole in the window, with no text cut and
+      // nothing past its edges: a value with no room beside its title
+      // stands under it.
+      const rows = [];
+      for (let nth = 0; nth < 5; nth += 1) {
+        rows.push(await ticketFit(page, "action-rows", "[dir]", nth));
+      }
+      for (const group of rows) {
+        expect(group.past).toEqual([]);
+        expect(group.cut).toEqual([]);
+        expect(group.beyondWindow).toBe(0);
+        // Only a word longer than a whole line is broken, as the email is.
+        expect(group.needlessly).toEqual([]);
+      }
+      expect(who.needlessly).toEqual([]);
+      if (zoom === 1) {
+        // With the text as set every word of the card is whole, and the
+        // screen does not scroll sideways.
+        expect(who.brokenWords).toEqual([]);
+        expect(who.screenWider).toBeLessThanOrEqual(0);
+      }
+    }
   });
 });

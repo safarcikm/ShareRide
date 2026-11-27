@@ -10,7 +10,7 @@ import { SignInFlowProvider } from "@/sign-in/flow";
  * An invite link opens it with `?invite=` and the code is kept from there.
  * Once signed in, sign-in closes back to the menu; but not the page Google's
  * or Apple's window comes back to, which a signed-in person adding one in
- * Settings sees too (spec 19, 3.4).
+ * Sign-in methods sees too (spec 19, 3.4).
  */
 export default function SignInLayout() {
   const { invite } = useGlobalSearchParams<{ invite?: string }>();

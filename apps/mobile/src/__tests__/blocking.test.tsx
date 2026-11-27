@@ -258,7 +258,7 @@ describe("Blocking from a conversation (spec 9, 3.2)", () => {
     expect(screen).toHavePathname(`/messages/${paidBooking.id}`);
     expect(await screen.findByText("This chat is closed. You can still read it.")).toBeVisible();
     expect(
-      screen.getByText("You blocked Anna. You can unblock them in Settings, under Safety."),
+      screen.getByText("You blocked Anna. You can unblock them in Profile, under Blocked people."),
     ).toBeVisible();
     // The menu has Report left, and no Block.
     await fireEvent.press(screen.getByRole("button", { name: "More" }));
@@ -291,7 +291,7 @@ describe("Blocking from a conversation (spec 9, 3.2)", () => {
   });
 });
 
-describe("Blocked people in Settings (spec 9, 3.2, item 4)", () => {
+describe("Blocked people, from Profile (spec 9, 3.2, item 4)", () => {
   // The block's own ID: never Anna's.
   const blockedAnna: BlockedPerson = {
     id: "0190a1d6-0000-7000-8000-0000000000c1",
@@ -305,7 +305,7 @@ describe("Blocked people in Settings (spec 9, 3.2, item 4)", () => {
     answers: (client: FakeClient) => void = () => undefined,
   ) {
     let list = [...blocked];
-    const app = await renderApp("/settings", {
+    const app = await renderApp("/profile", {
       me: completeMe,
       setUp: (client) => {
         client.answer("/v1/me/blocks", () => ok(200, { blocked: list }), "get");
@@ -321,7 +321,7 @@ describe("Blocked people in Settings (spec 9, 3.2, item 4)", () => {
         answers(client);
       },
     });
-    await fireEvent.press(await screen.findByRole("button", { name: "Blocked people" }));
+    await fireEvent.press(await screen.findByRole("link", { name: "Blocked people" }));
     return app;
   }
 

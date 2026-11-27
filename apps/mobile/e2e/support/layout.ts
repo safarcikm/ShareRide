@@ -33,7 +33,8 @@ const placesOfTicket =
 /**
  * How a ticket holds what is in it (spec 31, review focus 3), for the first
  * ticket in view with this test id; or another part of a screen, such as
- * its head or its bar, with `words` choosing the texts to read in it:
+ * its head or its bar, with `words` choosing the texts to read in it, and
+ * `nth` another than the first of several:
  *
  * - `past`: the parts that reach past its edges. The notches of the tear
  *   line sit half outside the ticket on purpose and are not counted.
@@ -50,6 +51,8 @@ export function ticketFit(
   page: Page,
   testId: string,
   words = placesOfTicket,
+  /** Which of the parts in view with this test id, counted from 0. */
+  nth = 0,
 ): Promise<{
   readonly past: readonly string[];
   readonly cut: readonly string[];
@@ -59,10 +62,10 @@ export function ticketFit(
   readonly screenWider: number;
 }> {
   return page.evaluate(
-    ({ id, texts }) => {
-      const ticket = [...document.querySelectorAll<HTMLElement>(`[data-testid="${id}"]`)].find(
+    ({ id, texts, at }) => {
+      const ticket = [...document.querySelectorAll<HTMLElement>(`[data-testid="${id}"]`)].filter(
         (found) => found.getClientRects().length > 0,
-      );
+      )[at];
       if (ticket === undefined) throw new Error(`No ${id} in view`);
       const edge = ticket.getBoundingClientRect();
       const past = [...ticket.querySelectorAll<HTMLElement>("*")]
@@ -123,6 +126,6 @@ export function ticketFit(
       const screenWider = screen.scrollWidth - screen.clientWidth;
       return { past, cut, brokenWords, needlessly, beyondWindow, screenWider };
     },
-    { id: testId, texts: words },
+    { id: testId, texts: words, at: nth },
   );
 }

@@ -60,7 +60,7 @@ export default function VerifyEmailScreen() {
   const { value: result, reload } = useLoaded(verify);
 
   const onward = signedIn ? (
-    <TextLink label={t("verifyEmail.toSettings")} href="/settings" />
+    <TextLink label={t("verifyEmail.toProfile")} href="/profile" />
   ) : (
     <TextLink label={t("verifyEmail.toApp")} href="/" />
   );

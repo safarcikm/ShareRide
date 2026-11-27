@@ -7,7 +7,7 @@ import { focused, postTripToSelfoss } from "./support/trips";
 // confirmed booking blocks the driver from their chat, is offered to cancel
 // it, keeps it, and the chat becomes read-only for both. The driver's next trip is then
 // gone for the passenger, as if it did not exist, until the passenger
-// unblocks the driver in Settings. Each project posts its own trips, so
+// unblocks the driver from Profile. Each project posts its own trips, so
 // phone and desktop runs never meet.
 
 test.use({ locale: "en-GB" });
@@ -84,7 +84,7 @@ test("a passenger blocks a driver, loses their trips, and unblocks them", async 
   await expect(passenger.getByText(closed).filter(visible)).toBeVisible();
   await expect(
     passenger
-      .getByText("You blocked Bára. You can unblock them in Settings, under Safety.")
+      .getByText("You blocked Bára. You can unblock them in Profile, under Blocked people.")
       .filter(visible),
   ).toBeVisible();
   await expect(passenger.getByLabel("Write a message")).toBeHidden();
@@ -102,9 +102,9 @@ test("a passenger blocks a driver, loses their trips, and unblocks them", async 
       .filter(visible),
   ).toBeVisible();
 
-  // Unblocked in Settings, it is back.
-  await passenger.goto("/settings");
-  await passenger.getByRole("button", { name: "Blocked people" }).click();
+  // Unblocked from Profile, it is back.
+  await passenger.goto("/profile");
+  await passenger.getByRole("link", { name: "Blocked people" }).click();
   await expect(passenger.getByText("Bára", { exact: true }).filter(visible)).toBeVisible();
   await passenger.getByRole("button", { name: "Unblock Bára" }).click();
   await expect(passenger.getByText("Bára is unblocked.").filter(visible)).toBeVisible();

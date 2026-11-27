@@ -34,7 +34,7 @@ const outcomeText = (t: Translate, report: MyReport): string =>
   report.outcome === null ? t("report.open") : reportOutcomeText(t, report.outcome);
 
 /**
- * My reports (spec 9, 3.1.7), in Settings under Safety: what I reported,
+ * My reports (spec 9, 3.1.7), a page of Profile: what I reported,
  * when, and what ShareRide found, the latest first. Only I see this list.
  */
 export default function ReportsScreen() {
@@ -52,7 +52,7 @@ function Reports() {
 
   const header = (
     <>
-      <BackButton fallback="/settings" />
+      <BackButton fallback="/profile" />
       <Title>{t("reports.title")}</Title>
       <Body>{t("reports.help")}</Body>
     </>

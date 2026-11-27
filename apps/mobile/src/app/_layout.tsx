@@ -54,7 +54,7 @@ export default function RootLayout() {
  * account" (spec 11, 3.4.4). When the
  * session changes (signed in, a step done, signed out, or the session ended
  * elsewhere), screens that no longer fit close and the app returns to the
- * start, which leads on from there. Sign-in and Settings,
+ * start, which leads on from there. Sign-in and the pages of Profile
  * where the session changes, close themselves back to the menu instead: a
  * guard would open a second menu on top of the first. Fonts load at the same
  * time; if they fail, the app opens with the system fonts. Wide screens show
@@ -89,7 +89,7 @@ function Navigation() {
       <Stack.Screen name="search/index" />
       <Stack.Screen name="search/results" />
       <Stack.Screen name="trips/[id]/index" />
-      {/* Sign-in and Settings close themselves when the session changes (BackToMenu). */}
+      {/* Sign-in and Profile's pages close themselves when the session changes (BackToMenu). */}
       <Stack.Screen name="sign-in" />
       {/* An invite link: on to sign-in with its code. */}
       <Stack.Screen name="invite/[code]" />

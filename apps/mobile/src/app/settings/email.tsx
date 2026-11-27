@@ -93,7 +93,7 @@ function EmailForm({ me }: { readonly me: Me }) {
   const { pendingEmail } = me;
   return (
     <Screen>
-      <BackButton fallback="/settings" />
+      <BackButton fallback="/profile" />
       <Title>{t("addEmail.title")}</Title>
       <Body>{t("addEmail.intro")}</Body>
       {me.email === null ? null : <Body>{t("addEmail.current", { email: me.email })}</Body>}

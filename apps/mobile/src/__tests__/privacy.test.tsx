@@ -19,7 +19,7 @@ jest.mock("@/lib/preferences", () => ({
 }));
 jest.mock("@/privacy/open-download", () => ({ openDownload: jest.fn(() => Promise.resolve()) }));
 
-// Privacy in Settings and "Download my data" (spec 11, 3.2; plan 4.9, PR 5):
+// Privacy and your data, from Profile, and "Download my data" (spec 11, 3.2; plan 4.9, PR 5):
 // ask with a fresh code, wait while the file is made, and download it.
 
 const none: DataExport = { state: "none" };
@@ -94,14 +94,14 @@ async function typeCode(code: string) {
 }
 
 describe("Privacy (spec 11)", () => {
-  it("is in Settings, with Download my data and the privacy policy", async () => {
-    await renderApp("/settings", {
+  it("opens from Profile, with Download my data and the privacy policy", async () => {
+    await renderApp("/profile", {
       me: completeMe,
       setUp: (client) => {
         client.answer("/v1/me/export", () => ok(200, none), "get");
       },
     });
-    await fireEvent.press(await screen.findByRole("button", { name: "Privacy and your data" }));
+    await fireEvent.press(await screen.findByRole("link", { name: "Privacy and your data" }));
     expect(await screen.findByRole("header", { name: "Privacy" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Privacy Policy" })).toBeVisible();
     await fireEvent.press(screen.getByRole("button", { name: "Download my data" }));

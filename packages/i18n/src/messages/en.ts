@@ -242,7 +242,6 @@ export const en = {
   "auth.provider.dismiss": "Close the message",
   "beta.badge": "Beta",
   "beta.badgeFeedback": "Beta. Send feedback",
-  "feedback.heading": "Feedback",
   "feedback.title": "Send feedback",
   "feedback.intro":
     "Tell us what isn't working or what would make PuffinRide better. We read everything.",
@@ -265,7 +264,7 @@ export const en = {
   "feedback.send": "Send feedback",
   "feedback.tooMany": "You've sent a lot of feedback today. Try again in {wait}.",
   "feedback.thanks":
-    "Thank you. We got your feedback. If we reply, you'll see it under My feedback in Settings.",
+    "Thank you. We got your feedback. If we reply, you'll see it under My feedback in Profile.",
   "feedback.done": "Done",
   "feedback.mine": "My feedback",
   "feedback.mineHelp": "What you sent us and our replies. Only you see this.",
@@ -361,6 +360,13 @@ export const en = {
   "profile.saved": "Profile saved.",
   "profile.title": "My profile",
   "profile.edit": "Edit profile",
+  /** The button's words in the person's card on Profile; its name stays "Edit profile". */
+  "profile.editShort": "Edit",
+  /** The groups of rows on Profile (spec 31, 3.14). */
+  "profile.driving": "Driving",
+  "profile.account": "Account",
+  "profile.safety": "Safety and privacy",
+  "profile.help": "Help",
   "profile.phone": "Phone number",
   "profile.phoneHelp": "Only you can see your phone number.",
   "profile.speaks": "Speaks {languages}",
@@ -370,7 +376,6 @@ export const en = {
   "profile.licenceNotYet": "Not confirmed yet",
   "profile.welcome":
     "Sign in to book seats and offer rides, with your rides and messages in one place.",
-  "profile.inSettings": "Phone number, language and signing out on all devices are in Settings.",
   "profile.noCars": "No cars yet. Add the car you drive.",
   "profile.photo.add": "Add a photo",
   "profile.photo.take": "Take a photo",
@@ -389,16 +394,13 @@ export const en = {
   "profile.photo.off": "Photos can't be added yet.",
   "preview.title": "As others see you",
   "preview.intro": "This is your public profile. Your phone number is never part of it.",
-  "settings.title": "Settings",
-  "settings.open": "Settings",
   "settings.language": "Language",
   "settings.legal": "Legal documents",
   "settings.signOut": "Sign out",
   "settings.signOutAll": "Sign out on all devices",
   "settings.signOutAllHelp":
     "Use this if you lost a phone or signed in on a device other people use.",
-  /** Settings, Your account: the email row (spec 16, 3.8; plan 4.6). */
-  "settings.yourAccount": "Your account",
+  /** Profile, Account: the email row (spec 31, 3.14; plan 4.6). */
   "settings.email": "Email",
   "settings.signInMethods": "Sign-in methods",
   "settings.signInMethods.help":
@@ -428,7 +430,7 @@ export const en = {
   "settings.signInMethods.passwordRemoved": "Your password is removed.",
   /** Face ID or fingerprint, a passkey kept on each device (spec 27, 3.3 and 3.6). */
   "passkey.unknown":
-    "This device's sign-in isn't set up for your PuffinRide account. Use your email, then set it up again in Settings.",
+    "This device's sign-in isn't set up for your PuffinRide account. Use your email, then set it up again in Profile, under Sign-in methods.",
   "passkey.unknownDevice": "A browser",
   "passkey.notSetUp": "Not set up",
   "passkey.added": "Added {date}",
@@ -447,8 +449,6 @@ export const en = {
   "passkey.expired": "That took too long. Try again.",
   "passkey.failed":
     "Face ID or fingerprint couldn't be set up. Try again, or keep using your email.",
-  "settings.addEmail": "Add an email",
-  "settings.changeEmail": "Change your email",
   "settings.emailWaiting": "Waiting for you to open the link sent to {email}.",
   "settings.notifications": "Notifications",
   "settings.reminders": "Ride reminders",
@@ -481,15 +481,15 @@ export const en = {
   "verifyEmail.doneBody": "{email} is now the email of your PuffinRide account.",
   "verifyEmail.invalid": "This link no longer works",
   "verifyEmail.invalidBody":
-    "A link works once, for 24 hours, and only the newest one. Ask for a new one in Settings.",
+    "A link works once, for 24 hours, and only the newest one. Ask for a new one in Profile, under Email.",
   "verifyEmail.taken": "This email belongs to another account",
   "verifyEmail.takenBody":
-    "Another PuffinRide account already uses this address. Add a different one in Settings.",
-  "verifyEmail.toSettings": "Go to Settings",
+    "Another PuffinRide account already uses this address. Add a different one in Profile, under Email.",
+  "verifyEmail.toProfile": "Go to your profile",
   "verifyEmail.toApp": "Open PuffinRide",
   "verifyEmail.noLink": "Open the link from your email",
   "verifyEmail.noLinkBody":
-    "This page adds an email when it is opened from the link we sent. If you opened it already, your email is in Settings.",
+    "This page adds an email when it is opened from the link we sent. If you opened it already, your email is in Profile.",
   "comingSoon.title": "Coming soon",
   "comingSoon.body": "Finding and booking rides opens with the beta. Thank you for your patience.",
   "meetingPoints.open": "See the meeting points",
@@ -1079,7 +1079,6 @@ export const en = {
   "trip.own": "You're the driver of this ride.",
   "trip.share": "Share",
   "trip.shareText": "{route} on PuffinRide",
-  "safety.title": "Safety",
   "safety.weatherAndRoads": "Weather and roads",
   "safety.beforeYouGo": "Before you go: check the weather, road conditions and SafeTravel.",
   "safety.weather": "Weather (vedur.is)",
@@ -1094,7 +1093,7 @@ export const en = {
   "block.done": "{name} is blocked.",
   "block.together":
     "{count, plural, one {You still have a booking together. You can cancel it under the usual rules.} other {You still have # bookings together. You can cancel them under the usual rules.}}",
-  "block.youBlocked": "You blocked {name}. You can unblock them in Settings, under Safety.",
+  "block.youBlocked": "You blocked {name}. You can unblock them in Profile, under Blocked people.",
   "block.cancelLabel": "Cancel booking, {day}, {route}",
   "block.withdrawLabel": "Withdraw request, {day}, {route}",
   "block.declineLabel": "Decline request, {day}, {route}",
@@ -1137,7 +1136,7 @@ export const en = {
   "report.send": "Send report",
   "report.thanks": "Thank you. We look at every report.",
   "report.thanksHelp":
-    "We'll tell you what we found, in general terms, in Settings under Safety. The person you reported won't be told who reported them.",
+    "We'll tell you what we found, in general terms, in Profile under My reports. The person you reported won't be told who reported them.",
   "report.blockToo": "Block {name} too",
   "report.gone": "This can no longer be reported.",
   "report.windowClosed": "A problem with a booking can be reported until 24 hours after the ride.",
@@ -1705,7 +1704,7 @@ export const en = {
   "notify.feedbackRepliedEmail": "Thank you for the feedback you sent on {date}. Our reply:",
   "notify.feedbackOpen": "Open your feedback in PuffinRide",
   "announcement.footer": "You get this because you are a PuffinRide beta tester.",
-  "announcement.turnOff": "Turn off beta news in Settings.",
+  "announcement.turnOff": "Turn off beta news in Profile, under Notifications.",
   "announcement.open": "Open Beta news in PuffinRide",
   "announcement.test": "Test: {title}",
   "notify.switchStillOff": "A switch is still off",
@@ -1798,7 +1797,7 @@ export const en = {
   /** The email with the link that verifies an address (spec 1, 3.5). */
   "email.verifySubject": "Confirm your email for PuffinRide",
   "email.verifyBody":
-    "Open the link within 24 hours to confirm that this is your email address. After that, ask for a new one in Settings.",
+    "Open the link within 24 hours to confirm that this is your email address. After that, ask for a new one in Profile, under Email.",
   "email.verifyOpen": "Confirm my email",
   "email.verifyFooter":
     "You get this email because this address was entered in PuffinRide. If that was not you, ignore it: the address is not added.",
@@ -1823,7 +1822,7 @@ export const en = {
   "email.passkeyAddedSubject": "Face ID or fingerprint was set up for your PuffinRide account",
   "email.passkeyAddedOn": "It was set up on {device}. ",
   "email.signInChangeBody":
-    "If that was you, there's nothing to do. If it wasn't, sign in with your email code, change or remove your password and sign out on all devices under Settings, then tell us under Send feedback in the app.",
+    "If that was you, there's nothing to do. If it wasn't, sign in with your email code, change or remove your password and sign out on all devices in Profile, under Sign-in methods, then tell us under Send feedback in the app.",
   /** A device with Face ID or fingerprint, such as "Safari on iPhone" (spec 27, 3.6). */
   "passkey.device": "{browser} on {system}",
   "passkey.someBrowser": "a browser",
@@ -2318,7 +2317,7 @@ export const en = {
     "Soon after someone finishes signing up. Anyone who joins in the hour after that comes in the next email, so at most one an hour. How many, never who.",
   "admin.emails.address": "Emails go to {address}.",
   "admin.emails.noAddress":
-    "Your account has no confirmed email address, so nothing can be sent. Add one in PuffinRide under Settings.",
+    "Your account has no confirmed email address, so nothing can be sent. Add one in PuffinRide, in Profile under Email.",
   "admin.emails.saved": "Saved.",
   "admin.emails.saveFailed": "That didn't save. Try again.",
   "admin.emails.loadFailed": "Your email choices could not be loaded.",

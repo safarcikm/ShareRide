@@ -407,15 +407,15 @@ describe("Reporting from the driver's trip (spec 9, 3.1.1)", () => {
   });
 });
 
-describe("My reports in Settings (spec 9, 3.1.7)", () => {
+describe("My reports, from Profile (spec 9, 3.1.7)", () => {
   async function openReports(answer: () => unknown) {
-    await renderApp("/settings", {
+    await renderApp("/profile", {
       me: completeMe,
       setUp: (client) => {
         client.answer("/v1/me/reports", answer, "get");
       },
     });
-    await fireEvent.press(await screen.findByRole("button", { name: "My reports" }));
+    await fireEvent.press(await screen.findByRole("link", { name: "My reports" }));
   }
 
   it("lists what I reported, when, and what was found", async () => {

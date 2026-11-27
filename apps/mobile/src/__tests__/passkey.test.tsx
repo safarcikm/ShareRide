@@ -199,7 +199,7 @@ describe("Signing in with Face ID or fingerprint (spec 27, 3.1 and 3.3)", () => 
     await fireEvent.press(await screen.findByRole("button", { name: "Face ID or fingerprint" }));
     expect(
       await screen.findByText(
-        "This device's sign-in isn't set up for your PuffinRide account. Use your email, then set it up again in Settings.",
+        "This device's sign-in isn't set up for your PuffinRide account. Use your email, then set it up again in Profile, under Sign-in methods.",
       ),
     ).toBeVisible();
   });
@@ -243,7 +243,7 @@ const signedInAsAnna = (client: FakeClient) => {
   );
 };
 const notSetUp =
-  "This device's sign-in isn't set up for your PuffinRide account. Use your email, then set it up again in Settings.";
+  "This device's sign-in isn't set up for your PuffinRide account. Use your email, then set it up again in Profile, under Sign-in methods.";
 
 describe("Face ID in the email field (spec 29, 3.1)", () => {
   beforeEach(() => {
@@ -510,7 +510,7 @@ describe("Face ID in the email field (spec 29, 3.1)", () => {
 
   it("tells the browser after the button's passkey is unknown too, and this browser has none", async () => {
     quietRequests();
-    // Removed from another device's Settings since this browser signed in with it.
+    // Removed in another device's Sign-in methods since this browser signed in with it.
     mockPreferences.set("passkey-here", "credential-one");
     await openSignIn((client) => {
       client.answer("/v1/auth/passkey", () => failure(400, "passkey_unknown"));
@@ -570,7 +570,7 @@ async function openMethods(devices: MemberPasskey[], setUp?: (client: FakeClient
   return app;
 }
 
-describe("Face ID or fingerprint in Settings (spec 27, 3.6)", () => {
+describe("Face ID or fingerprint in Sign-in methods (spec 27, 3.6)", () => {
   it("lists each device, with when it was added and last used", async () => {
     await openMethods([iPhone]);
     expect(await screen.findByText("Safari on iPhone")).toBeVisible();

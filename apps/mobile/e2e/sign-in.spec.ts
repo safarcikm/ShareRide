@@ -56,7 +56,8 @@ test.describe("sign out on all devices", () => {
     await expect(other.getByRole("heading", { name: english.myProfile })).toBeVisible();
     expect(sentCount(phone.e164)).toBe(1);
 
-    await other.getByRole("button", { name: "Settings" }).click();
+    // At the end of Sign-in methods (spec 31, 3.14).
+    await other.getByRole("link", { name: /^Sign-in methods/ }).click();
     await other.getByRole("button", { name: "Sign out on all devices" }).click();
     await expect(other.getByRole("heading", { name: english.findTitle })).toBeVisible();
     await menuLink(other, english.profileTab).click();

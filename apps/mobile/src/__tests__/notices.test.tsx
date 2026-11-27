@@ -50,7 +50,7 @@ async function openNotices(notices: () => unknown, setUp?: (client: FakeClient) 
       setUp?.(client);
     },
   });
-  await fireEvent.press(await screen.findByRole("button", { name: "Notices" }));
+  await fireEvent.press(await screen.findByRole("link", { name: "Notices" }));
   return app;
 }
 

@@ -11,6 +11,10 @@ announcements, switches), [roadmap](../strategy/roadmap.md#phase-3-open-beta)
 [meeting points](../product/meeting-points.md#launch-corridors), for 6 to 8
 weeks).
 
+Amended by [spec 31](2026-11-26-one-ride-one-ticket.md) (3.14): Send
+feedback, the switch for shaking the phone and My feedback are rows of
+Profile, under Help, where they were on Profile and in Settings (3.3).
+
 ## 1. Problem and goal
 
 A ride-sharing beta only works if drivers and passengers on the same roads

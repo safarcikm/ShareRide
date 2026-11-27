@@ -1003,6 +1003,96 @@ on a laptop,
    in the phone apps only, as today.
 3. `/settings` leads to Profile. Signed out, Profile stays as it is.
 
+As built (plan, PR 11, the first of its two parts), on a phone: Profile
+([light](images/one-ride-one-ticket/built/profile-phone-light.webp),
+[dark, in Icelandic](images/one-ride-one-ticket/built/profile-phone-dark.webp)),
+[the language's page](images/one-ride-one-ticket/built/language-phone-light.webp),
+[the notifications' page](images/one-ride-one-ticket/built/notifications-phone-light.webp)
+and
+[Sign-in methods](images/one-ride-one-ticket/built/sign-in-methods-phone-light.webp);
+on a laptop,
+[Profile](images/one-ride-one-ticket/built/profile-laptop-light.webp).
+
+- **The title** is "My profile", as it was, at the left with no Back
+  (3.17). The drawing says "Profile", which is the place's name in the
+  menu.
+- **The person's card** has the picture, the name, and two small lines,
+  "Speaks English" and "Member since November 2026". **Edit** stands at
+  their right, a button with an outline whose name for a screen reader
+  stays "Edit profile"; it goes under them where the card has no room for
+  both. Then one line that wraps: the rating, "No ratings yet" or the
+  star with "4.3 (3 ratings)", and the tags "Phone verified" and "Email
+  verified". They are read from my own profile as anyone signed in sees
+  it, so the card and "See it as others do" never differ; until it is
+  read, and when it could not be, the line is left out. Then the photo's
+  controls at the left (Add a photo or Change photo, Remove photo, and
+  Take a photo in the phone apps), with their line of help and what they
+  say after a change, and the link "See it as others do". The drawing
+  counts rides beside the rating and has the tags as "Phone" and "Email":
+  the app counts ratings, and the tags keep the words a person's profile
+  has.
+- **The groups** are a heading and a card of rows each (3.3), every row
+  with its picture, and what is set now at its right:
+  - **Driving:** My cars with the cars' names ("Toyota Yaris"; several
+    with commas between them; nothing with none), and Driving licence
+    with "Confirmed" or "Not confirmed yet".
+  - **Account:** Email with the address, or "No email yet", or "Waiting
+    for you to open the link sent to …" while a new one waits; Phone
+    number, which only shows; Sign-in methods with the ways in use
+    ("Email, Google, Password, Face ID or fingerprint"); Notifications;
+    Language with the one in use. "Only you can see your phone number."
+    is a small line under the group. The row keeps the name the page has,
+    "Sign-in methods", where the drawing says "Ways to sign in".
+  - **Safety and privacy:** Privacy and your data, Blocked people, My
+    reports, Notices.
+  - **Help:** Meeting points; Send feedback, which opens the form as it
+    did; in the phone apps "Shake to send feedback", a row that is a
+    switch, with "Shaking your phone opens Send feedback." under its
+    name; My feedback; About PuffinRide; and Legal documents, which
+    unfolds the three documents as links under it. Its page has only led
+    to About since spec 30, so the row holds the documents themselves.
+  - **Sign out** is the one row of a last card, with its chevron as
+    drawn. It signs out of this device and returns to Find. It is not
+    red: signing in again undoes it (decision 17). While it signs out the
+    row is muted, and on the web a sign-out that failed says why under
+    it.
+- **A value with no room beside its title** goes under it, as a long
+  email does on a narrow phone; a title is never broken to make room. A
+  word longer than the row's line, as an email of fifty letters is on a
+  phone 360 wide, breaks inside the row; until now it reached past the
+  row's edge on the web.
+- **The language's page** has "Language" at the left with Back to
+  Profile, and the two languages as two cards to choose from, each
+  written in its own language and marked so for a screen reader. Choosing
+  one changes the app at once and saves it to the account; if saving
+  failed, the page says why in the language just chosen, and choosing it
+  again tries again.
+- **The notifications' page** has "Notifications" at the left with Back
+  to Profile. The two switches are two rows of one card, each with what
+  it does under its name: "Ride reminders" and "Beta news". Under the
+  card a small line says what is always on. The way to the beta news is
+  a row of a second card, "Beta news" with "What PuffinRide has told beta
+  testers in the last three months." under it. Why a change could not be
+  saved shows under the first card, and the switch goes back.
+- **"Sign out on all devices"** is the last thing on Sign-in methods,
+  under its card, with its line of help, also when the ways to sign in
+  could not be read. That page itself is spec 29's and is otherwise as it
+  was.
+- **`/settings`** leads to Profile, signed in or out, and the menu has no
+  Settings. Back on each page that Settings opened returns to Profile.
+- **On a laptop** (3.16, item 5) the title is over both columns, the
+  person's card is the side column, at the left, and the groups and Sign
+  out are the main one.
+- **Texts that named Settings** now say where the thing is on Profile
+  (section 8). The legal texts still say "Settings", in the Terms twice
+  and in the Privacy Notice four times: a new version of either is
+  Martin's to decide, and they are left as they are.
+
+Left for the second part (plan, PR 11b): a person's profile, its preview
+and Edit profile with this card, Report and Block as rows, and the heads
+at the left on the pages Profile opens (3.19), which still have their
+titles centred, as Sign-in methods does in its picture.
+
 ### 3.15 Sign-in
 
 Not changed here: [spec 29](2026-11-25-easier-sign-in.md) is changing that
@@ -1487,6 +1577,31 @@ Texts added while building, as they are in the app:
 | Under the name in a conversation | Driver; Driver, {car}; Passenger | Bílstjóri; Bílstjóri · {car}; Farþegi |
 | The menu of a conversation's top | More | Meira |
 | The day and the time on a conversation's ride line | {day}, {time} | {day} kl. {time} |
+| The button in the person's card on Profile, named "Edit profile" | Edit | Breyta |
+| Where a link that could not add an email leads | Go to your profile | Fara í prófílinn þinn |
+
+Texts that named Settings name the place on Profile since 3.14 was built:
+in the app, in three emails and in the console. Only the part that
+changed is shown; the Icelandic says "í Prófílnum, undir …".
+
+| Text | English | Icelandic |
+| ---- | ------- | --------- |
+| After sending feedback | … under My feedback in Profile. | … undir Ábendingarnar mínar í Prófílnum. |
+| A device's sign-in that is not set up | … set it up again in Profile, under Sign-in methods. | … settu hana svo upp aftur í Prófílnum, undir Innskráningarleiðir. |
+| An email link that no longer works | Ask for a new one in Profile, under Email. | Biddu um nýjan í Prófílnum, undir Netfang. |
+| An email another account uses | Add a different one in Profile, under Email. | Bættu öðru við í Prófílnum, undir Netfang. |
+| The email page opened without its link | … your email is in Profile. | … er netfangið þitt í Prófílnum. |
+| In a conversation with someone I blocked | You can unblock them in Profile, under Blocked people. | Þú getur opnað aftur í Prófílnum, undir Lokað á. |
+| After reporting | … in Profile under My reports. | … í Prófílnum, undir Tilkynningarnar mínar. |
+| The foot of a beta news email | Turn off beta news in Profile, under Notifications. | Þú getur slökkt á fréttum af beta-prófuninni í Prófílnum, undir Tilkynningar. |
+| The email that confirms an address | … ask for a new one in Profile, under Email. | … geturðu beðið um nýjan í Prófílnum, undir Netfang. |
+| The email about a changed way to sign in | … sign out on all devices in Profile, under Sign-in methods, … | … skrá þig út á öllum tækjum í Prófílnum, undir Innskráningarleiðir, … |
+| The console, with no address to send to | Add one in PuffinRide, in Profile under Email. | Bættu því við í PuffinRide, í Prófílnum undir Netfang. |
+
+Gone with Settings: its title and the row that opened it, "Your account",
+"Add an email" and "Change your email" as rows, "Go to Settings", the
+line on Profile that said what was in Settings, and the headings "Safety"
+and "Feedback".
 
 Texts that exist are reused where they say the same: "Rate the driver",
 "Rate your passenger", "Pay", "Delete draft", "My reports", "Notices",

@@ -174,9 +174,8 @@ describe("Step 3 of signing up, about you (spec 16, 3.5)", () => {
     });
     await fireEvent.press(screen.getByRole("tab", { name: "Profile" }));
     expect(await screen.findByRole("header", { name: "My profile" })).toBeVisible();
-    expect(
-      screen.getByText("Speaks English, Icelandic · Member since November 2026"),
-    ).toBeVisible();
+    expect(screen.getByText("Speaks English, Icelandic")).toBeVisible();
+    expect(screen.getByText("Member since November 2026")).toBeVisible();
   });
 
   it("keeps the answers when saving fails, and accepts the terms only once", async () => {

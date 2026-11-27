@@ -33,6 +33,14 @@ Related decisions: [ADR 0010](../decisions/0010-authentication-and-identity.md)
 (accepted), [ADR 0011](../decisions/0011-localization.md) (accepted),
 [privacy and GDPR](../compliance/privacy-gdpr.md).
 
+Amended by [spec 31](2026-11-26-one-ride-one-ticket.md) (3.14): Settings
+is no page any more. What it held is on Profile, as rows in four groups
+(Driving, Account, Safety and privacy, Help) with Sign out last, each row
+showing what is set now. The language and the notifications have a page
+each, "Sign out on all devices" is at the end of Sign-in methods, the
+phone number shows under Account, and `/settings` leads to Profile (3.7,
+3.8).
+
 ## 1. Problem and goal
 
 People share cars with strangers, so every user needs a reachable phone number

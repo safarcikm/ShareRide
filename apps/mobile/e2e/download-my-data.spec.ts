@@ -4,16 +4,16 @@ import { english, signUp } from "./support/account";
 import { confirmCodeSubject, emailedCode } from "./support/email";
 import { filesIn } from "./support/zip";
 
-// Download my data (spec 11, 3.2) on the web build: from Settings, ask with
+// Download my data (spec 11, 3.2) on the web build: from Profile, ask with
 // a fresh code sent by email, wait while the API makes the file, and
 // download the ZIP through the one-time link and open both of its files.
 
 test.use({ locale: "en-GB" });
 
-test("downloads my data from Settings", async ({ page }) => {
+test("downloads my data from Profile", async ({ page }) => {
   const { email } = await signUp(page, english, "Rósa");
-  await page.goto("/settings");
-  await page.getByRole("button", { name: "Privacy and your data" }).click();
+  await page.goto("/profile");
+  await page.getByRole("link", { name: "Privacy and your data" }).click();
   await expect(page.getByRole("heading", { name: "Privacy" })).toBeVisible();
   await page.getByRole("button", { name: "Download my data" }).click();
   await expect(page.getByRole("heading", { name: "Download my data" })).toBeVisible();

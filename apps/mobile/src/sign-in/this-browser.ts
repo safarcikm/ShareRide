@@ -38,7 +38,7 @@ export function markPasskeyHere(credentialId: string): Promise<void> {
 }
 
 /**
- * A passkey removed in Settings: when it is this browser's, or this
+ * A passkey removed in Sign-in methods: when it is this browser's, or this
  * browser's is unnamed, the browser is no longer known to have one.
  */
 export async function forgetPasskeyHere(credentialId: string): Promise<void> {

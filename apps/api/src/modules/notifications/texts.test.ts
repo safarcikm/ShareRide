@@ -656,7 +656,7 @@ describe("notification texts", () => {
       emailBody: [
         message,
         "",
-        "You get this because you are a PuffinRide beta tester. Turn off beta news in Settings.",
+        "You get this because you are a PuffinRide beta tester. Turn off beta news in Profile, under Notifications.",
       ].join("\n"),
     });
     // The push has the start of it, on one line.
@@ -664,7 +664,7 @@ describe("notification texts", () => {
     expect(text.body).toHaveLength(140);
     expect(text.body.endsWith("…")).toBe(true);
     expect(notificationText(news, "is", settings).emailBody).toContain(
-      "Þú færð þetta af því að þú tekur þátt í beta-prófun PuffinRide. Þú getur slökkt á fréttum af beta-prófuninni í stillingum.",
+      "Þú færð þetta af því að þú tekur þátt í beta-prófun PuffinRide. Þú getur slökkt á fréttum af beta-prófuninni í Prófílnum, undir Tilkynningar.",
     );
   });
 
@@ -686,7 +686,7 @@ describe("notification texts", () => {
         "",
         "Við bættum kortið.",
         "",
-        "Þú færð þetta af því að þú tekur þátt í beta-prófun PuffinRide. Þú getur slökkt á fréttum af beta-prófuninni í stillingum.",
+        "Þú færð þetta af því að þú tekur þátt í beta-prófun PuffinRide. Þú getur slökkt á fréttum af beta-prófuninni í Prófílnum, undir Tilkynningar.",
         "",
         "----",
         "",
@@ -694,7 +694,7 @@ describe("notification texts", () => {
         "",
         "We improved the map.",
         "",
-        "You get this because you are a PuffinRide beta tester. Turn off beta news in Settings.",
+        "You get this because you are a PuffinRide beta tester. Turn off beta news in Profile, under Notifications.",
       ].join("\n"),
     });
   });

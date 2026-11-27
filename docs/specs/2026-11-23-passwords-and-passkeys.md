@@ -11,6 +11,10 @@ Sign-in methods screen (3.6). Related: [ADR 0016](../decisions/0016-own-sign-in-
 console's passkeys), [security](../engineering/security.md#sign-in-and-sessions),
 [privacy and GDPR](../compliance/privacy-gdpr.md).
 
+Amended by [spec 31](2026-11-26-one-ride-one-ticket.md) (3.14): Sign-in
+methods is opened from Profile, under Account, and has "Sign out on all
+devices" at its end; the texts that said "in Settings" say so (3.6).
+
 ## 1. Problem and goal
 
 Martin, 2026-11-23, choosing how members sign in: "google, email and

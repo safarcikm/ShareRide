@@ -9,6 +9,10 @@ rights), [spec 1](2026-11-13-sign-in-and-profile.md) (account, settings),
 [spec 9](2026-11-13-safety-and-moderation.md) (suspensions, reports),
 [spec 13](2026-11-13-payments.md) (payment records).
 
+Amended by [spec 31](2026-11-26-one-ride-one-ticket.md) (3.14): the
+Privacy page is "Privacy and your data", a row of Profile under "Safety
+and privacy", where it was in Settings (3.1). The page is as it was.
+
 ## 1. Problem and goal
 
 People share their phone number, travel plans and messages with ShareRide.

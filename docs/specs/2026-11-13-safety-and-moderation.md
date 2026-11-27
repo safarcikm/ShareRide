@@ -18,6 +18,11 @@ stays in "Trip day"), and the actions are named "Find a ride", "Offer a
 ride" and "Publish ride". The keys keep their names;
 `packages/i18n/src/messages/en.ts` has the words as they are.
 
+Amended by spec 31 (3.14) too: My reports and Blocked people are rows of
+Profile, under "Safety and privacy", where they were in Settings (3.1,
+item 7; 3.2, item 4). The texts after reporting and in a conversation
+with someone blocked name them there.
+
 ## 1. Problem and goal
 
 Strangers share a car, often on long roads in winter. People must be able to

@@ -15,6 +15,10 @@ stays in "Trip day"), and the actions are named "Find a ride", "Offer a
 ride" and "Publish ride". The keys keep their names;
 `packages/i18n/src/messages/en.ts` has the words as they are.
 
+Amended by spec 31 (3.14) too: the two switches of 3.6 are on the
+notifications' page of Profile (`/settings/notifications`), as two rows
+of one card, with the line about what is always on under it.
+
 ## 1. Problem and goal
 
 A shared ride works only if the two people can find each other and hear at

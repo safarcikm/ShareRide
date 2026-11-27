@@ -835,9 +835,9 @@ async function expectButtonsInside(
   }
 }
 
-// My rides, a booking and Profile (spec 18, 3.10, 3.9 and 3.12): the rides
-// in a grid, a booking's ride beside where it stands, and who I am beside
-// my profile's rows.
+// My rides, a booking and Profile (spec 18, 3.10 and 3.9; spec 31, 3.16
+// item 5): the rides in a grid, a booking's ride beside where it stands,
+// and who I am beside my profile's groups of rows.
 test.describe("My rides, a booking and Profile", () => {
   test.use({ viewport: laptop(1280), locale: "en-GB" });
 
@@ -992,21 +992,28 @@ test.describe("My rides, a booking and Profile", () => {
     await expect(hers.getByRole("button", { name: /^Passenger, / })).toBeVisible();
     expect((await box(hers)).width).toBeLessThan(480);
 
-    // Profile: who I am in a card at the left, the rows beside it.
+    // Profile (spec 31, 3.16 item 5): who I am in a card at the left, the
+    // groups of rows beside it.
     await dora.goto("/profile");
     await expect(dora.getByRole("heading", { name: "My profile" }).filter(shown)).toBeVisible();
     const who = dora.getByTestId("columns-side").filter(shown);
     const rows = dora.getByTestId("columns-main").filter(shown);
+    await expect(who.getByTestId("person-card")).toBeVisible();
     await expect(who.getByRole("button", { name: "Edit profile" })).toBeVisible();
-    await expect(rows.getByRole("button", { name: "Settings" })).toBeVisible();
+    await expect(rows.getByRole("heading", { name: "Safety and privacy" })).toBeVisible();
+    await expect(rows.getByRole("link", { name: "Language, English" })).toBeVisible();
+    await expect(rows.getByTestId("action-rows")).toHaveCount(5);
+    // No Settings any more, and the shake switch is for the phone apps.
+    await expect(dora.getByRole("link", { name: "Settings" })).toHaveCount(0);
+    await expect(dora.getByRole("switch")).toHaveCount(0);
     for (const width of widths) {
       await dora.setViewportSize(laptop(width));
       const whoBox = await box(who);
       const rowsBox = await box(rows);
       expect(rowsBox.x).toBeGreaterThan(whoBox.x + whoBox.width);
       expect(rowsBox.y).toBeCloseTo(whoBox.y, 0);
-      await expectButtonsInside(who, 2);
-      await expectButtonsInside(rows, 6);
+      await expectButtonsInside(who, 3);
+      await expectButtonsInside(rows, 16);
       await expectNoSidewaysScroll(dora);
     }
 
@@ -1017,8 +1024,8 @@ test.describe("My rides, a booking and Profile", () => {
     await expect(
       dora.getByRole("heading", { name: "Prófíllinn minn" }).filter(shown),
     ).toBeVisible();
-    await expectButtonsInside(who, 2);
-    await expectButtonsInside(rows, 6);
+    await expectButtonsInside(who, 3);
+    await expectButtonsInside(rows, 16);
     await expectNoSidewaysScroll(dora);
     await dora.goto(booking);
     await expect(dora.getByRole("heading", { name: "Sætið þitt er staðfest" })).toBeVisible();
