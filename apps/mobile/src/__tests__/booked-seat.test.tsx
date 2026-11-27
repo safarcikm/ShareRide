@@ -350,9 +350,12 @@ describe("a booked seat on a phone (spec 31, 3.8)", () => {
     await fireEvent.press(next());
     expect(screen).toHavePathname(`/bookings/${withdrawn.id}`);
     // Half a second later it leads on.
-    await waitFor(() => {
-      expect(next()).toBeEnabled();
-    });
+    await waitFor(
+      () => {
+        expect(next()).toBeEnabled();
+      },
+      { timeout: 3_000 },
+    );
     await fireEvent.press(next());
     await waitFor(() => {
       expect(screen).toHavePathname("/search/results");

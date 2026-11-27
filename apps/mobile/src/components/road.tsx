@@ -142,9 +142,12 @@ const about = 1;
  * out. They have none when one of them takes more than a line, as a phone
  * breaks a word too long for its place, or when they are wider than the
  * road together, as a browser keeps each word whole and lets it run out.
- * Nothing is decided before the road, a line and every name are measured,
- * and they go on being measured while out of sight, so the names come
- * back when they have room again.
+ * The web tells each width as a whole number, and some browsers round each
+ * alone: names that fill the road can count up to half a point wider
+ * each, which is allowed for. Nothing is decided before the road, a line
+ * and every name are measured, nor from a size of nothing, which the web
+ * tells of a screen under another. The names go on being measured while
+ * out of sight, so they come back when they have room again.
  */
 function useRoomForNames(count: number) {
   const seen = useRef<{
@@ -157,8 +160,10 @@ function useRoomForNames(count: number) {
     const { road, line } = seen.current;
     const names = seen.current.names.slice(0, count).filter((name) => name !== undefined);
     if (road === null || line === null || names.length < count) return;
+    const measured = [road, line, ...names.flatMap((name) => [name.width, name.height])];
+    if (measured.some((size) => size <= 0)) return;
     const wide = names.reduce((sum, name) => sum + name.width, spacing.sm * (count - 1));
-    setNone(wide > road + about || names.some((name) => name.height > line + about));
+    setNone(wide > road + about + count / 2 || names.some((name) => name.height > line + about));
   };
   return {
     none,

@@ -1,4 +1,5 @@
 import type { LucideIcon } from "lucide-react-native";
+import { useLayoutEffect, useRef, type ComponentRef, type RefObject } from "react";
 import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useHover } from "@/theme/hover";
 import { chunky } from "@/theme/pressable";
@@ -111,13 +112,26 @@ function look(variant: Variant, palette: Palette, disabled: boolean, hovered: bo
 }
 
 /**
- * On the web a pressable writes `aria-disabled` from `disabled` alone,
- * over the one given, so a held button would say nothing: the library's
- * older name for it is let through. A held button is not `disabled`, which
- * would take it out of the keyboard's order for the half second.
+ * On the web a held button says that it waits on its element itself. A
+ * pressable there writes `aria-disabled` from `disabled` alone, over the
+ * one given, and whatever the library takes for it makes a `<button>`
+ * `disabled` too: out of the keyboard's order for the half second, and
+ * its focus may go with it. So the attribute is set here after each
+ * drawing, and taken off when the wait is over. An inactive button's is
+ * the library's own.
  */
-const saidOnWeb = (held: boolean): object =>
-  Platform.OS === "web" && held ? { accessibilityDisabled: true } : {};
+function useSaidOnWeb(
+  part: RefObject<ComponentRef<typeof Pressable> | null>,
+  held: boolean,
+  inactive: boolean,
+) {
+  useLayoutEffect(() => {
+    if (Platform.OS !== "web" || inactive) return;
+    const element = part.current as unknown as Element | null;
+    if (held) element?.setAttribute("aria-disabled", "true");
+    else element?.removeAttribute("aria-disabled");
+  }, [part, held, inactive]);
+}
 
 /** A press as a link looks at it; a button looks at nothing. */
 interface Press {
@@ -163,9 +177,12 @@ export function Button({
   const palette = usePalette();
   const inactive = busy || disabled;
   // A main button takes no press just after one brought it (`PressGuard`).
-  const { held, pressed: tookPress } = useMainButton(main, accessibilityLabel ?? label);
+  const { held, pressed: tookPress } = useMainButton(main, accessibilityLabel ?? label, busy);
   const still = inactive || held;
-  const [hovered, hover] = useHover(still);
+  // A held button is under the pointer as it was: it keeps its look.
+  const [hovered, hover] = useHover(inactive);
+  const part = useRef<ComponentRef<typeof Pressable>>(null);
+  useSaidOnWeb(part, held, inactive);
   const {
     face,
     label: labelColor,
@@ -175,6 +192,7 @@ export function Button({
   } = look(variant, palette, disabled, hovered);
   return (
     <Pressable
+      ref={part}
       // A screen has at most one filled button (spec 31, R31.1): tests count them.
       testID={variant === "primary" || variant === "danger" ? "filled-button" : undefined}
       accessibilityRole={href === undefined ? "button" : "link"}
@@ -185,7 +203,6 @@ export function Button({
       aria-expanded={expanded}
       // Not `false`, which would say "not disabled" over aria-disabled on a phone.
       disabled={inactive ? true : undefined}
-      {...saidOnWeb(held)}
       {...taking(href === undefined ? { onPress } : linkProps(href), held, tookPress)}
       {...hover}
       style={({ pressed }) => [

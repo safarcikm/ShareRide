@@ -266,7 +266,8 @@ test.describe("a double press on a main button", () => {
     await openTrip(page, journey);
     const asked: string[] = [];
     page.on("request", (request) => {
-      if (request.method() === "POST" && new URL(request.url()).pathname.startsWith("/v1/bookings"))
+      // Booking the seats, and paying for a booking.
+      if (request.method() === "POST" && /\/bookings(\/|$)/.test(new URL(request.url()).pathname))
         asked.push(request.url());
     });
 
@@ -281,16 +282,33 @@ test.describe("a double press on a main button", () => {
     expect(asked).toEqual([]);
     await expect(page.getByRole("heading", { name: journey.sheet })).toBeHidden();
 
-    // While it waits a button says so, to a screen reader and to a
-    // journey's next click, and keeps its place for the keyboard.
+    // One press was taken, so one step back is the ride again: a second
+    // one on Book would have opened Check and pay twice.
     await page.goBack();
+    await expect(page).toHaveURL(/\/trips\/[\w-]+\?/);
     await expect(book).toBeEnabled();
-    const waits = await book.evaluate(async (button: HTMLElement) => {
+
+    // While it waits a button says so, to a screen reader and to a
+    // journey's next click. It is not disabled, which would take it out of
+    // the keyboard's order and could take its focus.
+    const waits = await book.evaluate(async (button: HTMLButtonElement) => {
+      button.focus();
       button.click();
+      // The press is drawn before anything else runs.
+      await Promise.resolve();
+      const atOnce = {
+        said: button.getAttribute("aria-disabled"),
+        disabled: button.disabled,
+        focused: document.activeElement === button,
+      };
       await new Promise((resolve) => setTimeout(resolve, 50));
-      return { said: button.getAttribute("aria-disabled"), tab: button.tabIndex };
+      return { atOnce, said: button.getAttribute("aria-disabled"), disabled: button.disabled };
     });
-    expect(waits).toEqual({ said: "true", tab: 0 });
+    expect(waits).toEqual({
+      atOnce: { said: "true", disabled: false, focused: true },
+      said: "true",
+      disabled: false,
+    });
     expect(asked).toEqual([]);
   });
 });

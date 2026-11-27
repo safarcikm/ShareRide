@@ -170,6 +170,7 @@ export function textsToSee(part: Locator): Promise<{
  * 3.1):
  *
  * - `places`: how many it shows.
+ * - `rows`: on how many rows they stand.
  * - `namesPast`: the names that reach past their own place.
  * - `over`: the pairs of places that stand over one another.
  * - `iconsOffLine`: the places whose icon is higher or lower than the
@@ -179,6 +180,7 @@ export function textsToSee(part: Locator): Promise<{
  */
 export function menuFit(page: Page): Promise<{
   readonly places: number;
+  readonly rows: number;
   readonly namesPast: readonly string[];
   readonly over: readonly string[];
   readonly iconsOffLine: readonly string[];
@@ -221,12 +223,45 @@ export function menuFit(page: Page): Promise<{
       ...edges.map((box) => Math.ceil(box.right - window.innerWidth)),
       ...edges.map((box) => Math.ceil(-box.left)),
     );
+    const tops: number[] = [];
+    for (const { box } of places) {
+      if (!tops.some((top) => Math.abs(top - box.top) <= 1)) tops.push(box.top);
+    }
     return {
       places: places.length,
+      rows: tops.length,
       namesPast: namesPast.map(said),
       over,
       iconsOffLine: iconsOffLine.map(said),
       beyondWindow,
     };
+  });
+}
+
+/**
+ * Text at 200% (WCAG 1.4.4), as a browser's text-only zoom sets it: the
+ * text there is, and the text drawn after, as when a part of the screen
+ * takes another place for the larger text.
+ */
+export async function twiceAsLarge(page: Page) {
+  await page.evaluate(() => {
+    document.documentElement.style.fontSize = "200%";
+    const enlarge = (text: HTMLElement) => {
+      if (text.dataset["twice"] !== undefined) return;
+      text.dataset["twice"] = "";
+      const style = getComputedStyle(text);
+      text.style.fontSize = `${String(parseFloat(style.fontSize) * 2)}px`;
+      text.style.lineHeight = `${String(parseFloat(style.lineHeight) * 2)}px`;
+    };
+    for (const text of document.querySelectorAll<HTMLElement>("[dir]")) enlarge(text);
+    new MutationObserver((changes) => {
+      for (const change of changes) {
+        for (const added of change.addedNodes) {
+          if (!(added instanceof HTMLElement)) continue;
+          if (added.matches("[dir]")) enlarge(added);
+          for (const text of added.querySelectorAll<HTMLElement>("[dir]")) enlarge(text);
+        }
+      }
+    }).observe(document.body, { childList: true, subtree: true });
   });
 }

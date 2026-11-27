@@ -1,5 +1,5 @@
 import type { TabTriggerSlotProps } from "expo-router/ui";
-import { useSyncExternalStore, type ReactNode } from "react";
+import { useEffect, useSyncExternalStore, type ReactNode } from "react";
 import { Platform, Pressable, StyleSheet, Text, View, type ViewProps } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Icon } from "@/components/icon";
@@ -32,6 +32,10 @@ const listen = (listener: () => void) => {
     listeners.delete(listener);
   };
 };
+const keep = (height: number | null) => {
+  laidOut = height;
+  for (const listener of listeners) listener();
+};
 
 /**
  * How high the bar is: as it was laid out, which is higher than counted
@@ -63,6 +67,13 @@ export function TabBar({
   const palette = usePalette();
   const { t } = useLanguage();
   const insets = useSafeAreaInsets();
+  // A bar that is gone has no height: the next one is counted until laid out.
+  useEffect(
+    () => () => {
+      keep(null);
+    },
+    [],
+  );
   if (hidden) return null;
   const role = onWeb
     ? ({ role: "navigation", "aria-label": t("nav.main") } as const)
@@ -74,8 +85,10 @@ export function TabBar({
       testID="tab-bar"
       onLayout={(event) => {
         rest.onLayout?.(event);
-        laidOut = event.nativeEvent.layout.height;
-        for (const listener of listeners) listener();
+        // The web tells a height of nothing for a bar out of sight, as
+        // under another screen: the height it had stays.
+        const { height } = event.nativeEvent.layout;
+        if (height > 0) keep(height);
       }}
       style={[
         style,
@@ -139,6 +152,9 @@ export function TabButton({
   );
 }
 
+/** How high a tab's icon in its pill and a name of one line are together. */
+const oneLineTab = iconSizes.button + spacing.xs * 2 + spacing.xs + typography.caption.lineHeight;
+
 const styles = StyleSheet.create({
   bar: {
     flexDirection: "row",
@@ -147,13 +163,15 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xs,
   },
   // From the top, so the icons stand in a line when a name takes two lines
-  // ("Ferðirnar mínar") and the others one.
+  // ("Ferðirnar mínar") and the others one; as far from it as puts an icon
+  // over a name of one line at the tab's middle.
   tab: {
     flex: 1,
     minHeight: sizes.tab,
     alignItems: "center",
     justifyContent: "flex-start",
     gap: spacing.xs,
+    paddingTop: (sizes.tab - oneLineTab) / 2,
     paddingHorizontal: spacing.xs,
   },
   pill: {

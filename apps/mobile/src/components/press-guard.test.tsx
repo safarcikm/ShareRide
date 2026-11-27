@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen } from "@testing-library/react-native";
 import { useState } from "react";
 import { Button } from "./button";
-import { PressGuard, useNewPageHolds } from "./press-guard";
+import { HeldWithMain, PressGuard, useNewPageHolds } from "./press-guard";
 
 // A screen's main button stands in the same place on every screen (spec
 // 31, R31.1), so a second press meant for one lands on the next: on the
@@ -284,7 +284,118 @@ describe("PressGuard", () => {
     expect(button("Save")).toBeDisabled();
   });
 
-  it("holds main buttons only: the others take a press at once, and start no hold", async () => {
+  it("holds the other buttons of a screen's bar with the main ones, and a press on one of them starts no hold", async () => {
+    // After "Send request" the bar has "See in My rides" over "Find another
+    // ride": the second stands where the button just pressed stood.
+    const see = jest.fn();
+    const find = jest.fn();
+    const inPage = jest.fn();
+    function Booking() {
+      const [sent, setSent] = useState(false);
+      return (
+        <>
+          <Button variant="text" label="Share" onPress={inPage} />
+          <HeldWithMain>
+            {sent ? (
+              <>
+                <Button main label="See in My rides" onPress={see} />
+                <Button variant="text" label="Find another ride" onPress={find} />
+              </>
+            ) : (
+              <Button
+                main
+                label="Send request"
+                onPress={() => {
+                  setSent(true);
+                }}
+              />
+            )}
+          </HeldWithMain>
+        </>
+      );
+    }
+    await render(
+      <PressGuard>
+        <Booking />
+      </PressGuard>,
+    );
+    await fireEvent.press(button("Send request"));
+    expect(button("Find another ride")).toBeDisabled();
+    await fireEvent.press(button("Find another ride"));
+    expect(find).not.toHaveBeenCalled();
+    // A button in the page is not in the way of a second press.
+    expect(button("Share")).toBeEnabled();
+    await fireEvent.press(button("Share"));
+    expect(inPage).toHaveBeenCalledTimes(1);
+
+    await later(500);
+    expect(button("Find another ride")).toBeEnabled();
+    await fireEvent.press(button("Find another ride"));
+    expect(find).toHaveBeenCalledTimes(1);
+    // Only a main button's press starts a hold.
+    expect(button("See in My rides")).toBeEnabled();
+    expect(button("Find another ride")).toBeEnabled();
+  });
+
+  it("lets a press wait ten seconds for what comes of it, and no longer", async () => {
+    let answer: () => void = () => undefined;
+    const back = jest.fn();
+    await render(
+      <PressGuard>
+        <Report onSend={() => new Promise<void>((resolve) => (answer = resolve))} onBack={back} />
+      </PressGuard>,
+    );
+    await fireEvent.press(button("Send report"));
+    // Nobody presses a second time for a press that long ago.
+    await later(10_001);
+    await act(async () => {
+      answer();
+      await Promise.resolve();
+    });
+    expect(button("Back to the ride")).toBeEnabled();
+    await fireEvent.press(button("Back to the ride"));
+    expect(back).toHaveBeenCalledTimes(1);
+  });
+
+  it("goes on waiting while the button pressed is busy under other words, for the button that comes then", async () => {
+    // "Book" turns to "Pay 800 kr." while it books, and the payment's own
+    // button comes after: that one is where the second press lands.
+    function Booking({ onPay }: { readonly onPay: () => void }) {
+      const [stage, setStage] = useState<"book" | "booking" | "paying">("book");
+      return (
+        <>
+          <Button
+            main
+            busy={stage !== "book"}
+            label={stage === "book" ? "Book" : "Pay 800 kr."}
+            onPress={() => {
+              setStage("booking");
+              setTimeout(() => {
+                setStage("paying");
+              }, 2_000);
+            }}
+          />
+          {stage === "paying" ? <Button main label="Pay now" onPress={onPay} /> : null}
+        </>
+      );
+    }
+    const pay = jest.fn();
+    await render(
+      <PressGuard>
+        <Booking onPay={pay} />
+      </PressGuard>,
+    );
+    await fireEvent.press(button("Book"));
+    await later(2_000);
+    expect(button("Pay now")).toBeDisabled();
+    await fireEvent.press(button("Pay now"));
+    expect(pay).not.toHaveBeenCalled();
+    await later(500);
+    await fireEvent.press(button("Pay now"));
+    expect(pay).toHaveBeenCalledTimes(1);
+  });
+
+  it("holds no button in the page but the main ones: the others take a press at once, and start no hold", async () => {
     const keep = jest.fn();
     const cancel = jest.fn();
     await render(
@@ -309,6 +420,19 @@ describe("PressGuard", () => {
         <Button main label="Save" onPress={jest.fn()} />
       </PressGuard>,
     );
+    const before = screen.getByTestId("button-face").props.style as unknown;
+    await fireEvent.press(button("Save"));
+    expect(button("Save")).toBeDisabled();
+    expect(screen.getByTestId("button-face").props.style).toEqual(before);
+  });
+
+  it("keeps the look of a held button under the pointer", async () => {
+    await render(
+      <PressGuard>
+        <Button main label="Save" onPress={jest.fn()} />
+      </PressGuard>,
+    );
+    await fireEvent(button("Save"), "hoverIn");
     const before = screen.getByTestId("button-face").props.style as unknown;
     await fireEvent.press(button("Save"));
     expect(button("Save")).toBeDisabled();

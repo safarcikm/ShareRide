@@ -270,7 +270,11 @@ describe("The tab bar's places", () => {
     await screen.findByRole("tab", { name: "Ferðirnar mínar" });
     const places = screen.getAllByRole("tab");
     expect(places).toHaveLength(5);
-    for (const place of places) expect(place).toHaveStyle({ justifyContent: "flex-start" });
+    // 2 from the top, where an icon over a name of one line (22 in a pill
+    // padded by 4, 4 between, and a line of 18) is at the middle of a tab 56 high.
+    for (const place of places) {
+      expect(place).toHaveStyle({ justifyContent: "flex-start", paddingTop: 2, minHeight: 56 });
+    }
   });
 });
 

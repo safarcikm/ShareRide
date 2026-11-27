@@ -12,7 +12,13 @@ import {
 } from "@shareride/contracts";
 import { english, icelandic, signUp } from "./support/account";
 import { confirmedBooking, requestSeat, secondPage } from "./support/cancelling";
-import { menuFit, picturesUnderTheirText, textsToSee, ticketFit } from "./support/layout";
+import {
+  menuFit,
+  picturesUnderTheirText,
+  textsToSee,
+  ticketFit,
+  twiceAsLarge,
+} from "./support/layout";
 import { aPerson, personId, showPerson } from "./support/person";
 import { openTrip } from "./support/trips";
 
@@ -184,34 +190,6 @@ for (const scheme of schemes) {
       expect((await outlineOf(field)).style).toBe("none");
       await expect(field).toHaveCSS("border-top-color", scheme.primary);
     });
-  });
-}
-
-/**
- * Text at 200% (WCAG 1.4.4), as a browser's text-only zoom sets it: the
- * text there is, and the text drawn after, as when a part of the screen
- * takes another place for the larger text.
- */
-async function twiceAsLarge(page: Page) {
-  await page.evaluate(() => {
-    document.documentElement.style.fontSize = "200%";
-    const enlarge = (text: HTMLElement) => {
-      if (text.dataset["twice"] !== undefined) return;
-      text.dataset["twice"] = "";
-      const style = getComputedStyle(text);
-      text.style.fontSize = `${String(parseFloat(style.fontSize) * 2)}px`;
-      text.style.lineHeight = `${String(parseFloat(style.lineHeight) * 2)}px`;
-    };
-    for (const text of document.querySelectorAll<HTMLElement>("[dir]")) enlarge(text);
-    new MutationObserver((changes) => {
-      for (const change of changes) {
-        for (const added of change.addedNodes) {
-          if (!(added instanceof HTMLElement)) continue;
-          if (added.matches("[dir]")) enlarge(added);
-          for (const text of added.querySelectorAll<HTMLElement>("[dir]")) enlarge(text);
-        }
-      }
-    }).observe(document.body, { childList: true, subtree: true });
   });
 }
 
@@ -493,13 +471,15 @@ test.describe("a booked seat with long names, 360 wide", () => {
       expect(button.x).toBeGreaterThanOrEqual(card.x - 1);
       expect(button.x + button.width).toBeLessThanOrEqual(card.x + card.width + 1);
       // The road names its steps, or says the one it is at in a line: no
-      // name stands over another or past the road.
-      const steps = await textsToSee(
-        page.getByRole("img", { name: /^Step \d of 4: / }).filter(shown),
-      );
-      expect(steps.shown.length).toBeGreaterThan(0);
-      expect(steps.over).toEqual([]);
-      expect(steps.past).toEqual([]);
+      // name stands over another or past the road. It measures its names
+      // and is drawn again, a moment after the text grew.
+      const road = page.getByRole("img", { name: /^Step \d of 4: / }).filter(shown);
+      await expect
+        .poll(async () => {
+          const steps = await textsToSee(road);
+          return { shown: steps.shown.length > 0, over: steps.over, past: steps.past };
+        })
+        .toEqual({ shown: true, over: [], past: [] });
       // The screen does not scroll sideways.
       expect(seat.screenWider).toBeLessThanOrEqual(0);
       if (zoom === 1) {
@@ -1038,6 +1018,8 @@ test.describe("the menu, Find's name line and the road, 360 wide", () => {
           // names take ("Ferðirnar mínar" has two as set).
           const menu = await menuFit(page);
           expect(menu.places).toBe(5);
+          // With the text as set the five stand beside each other.
+          if (zoom === 1) expect(menu.rows).toBe(1);
           expect(menu.namesPast).toEqual([]);
           expect(menu.over).toEqual([]);
           expect(menu.iconsOffLine).toEqual([]);

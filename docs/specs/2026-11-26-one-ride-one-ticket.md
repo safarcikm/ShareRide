@@ -1626,23 +1626,29 @@ reviews of earlier pull requests and left for the last pass.
 
 **A second press.** A screen's main button stands in the same place on
 every screen (R31.1), so a second press meant for one can land on the
-next: on the way back after an outcome, before the outcome is read ("Back
-to the ride" where "Send report" stood, "Find another ride" where
-"Withdraw request" stood), or on the next step's button ("Publish ride"
-after "Check your ride", "Send request" on Booking a seat after the
-ride's own).
+next: on the way on after an outcome, before the outcome is read ("Back
+to the ride" where "Send report" stood; "Find another ride", under "See
+in My rides", where "Send request" stood), or on the next step's button
+("Publish ride" after "Check your ride", "Send request" on Booking a seat
+after the ride's own).
 
 - For half a second after a main button took a press, no main button
-  takes one.
+  takes one, and no other button of a screen's bar: the one under the
+  main button stands where a lone main button stood.
 - From when that press opens another page the half second starts again,
   and once more from when a main button comes after it, or the same one
-  says other words, however long the answer or the page took.
+  says other words. A press waits ten seconds for that and no longer:
+  nobody presses a second time for a press that long ago. Words that
+  change while the button pressed is busy count when it takes a press
+  again.
 - A main button whose words change by themselves, as with the number of
-  seats, is not held. Other buttons, rows and links are never held, and
-  start no wait.
-- A held button looks as it did. To a screen reader it says that it is
-  not to be pressed, and it keeps its place for the keyboard. A main
-  button that is a link ("Add a car") opens nothing meanwhile.
+  seats, is not held. The buttons, rows and links of a page are never
+  held, and only a main button's press starts a wait. The round button
+  that sends a message is never held either.
+- A held button looks as it did, under the pointer too. To a screen
+  reader it says that it is not to be pressed, and it keeps its place and
+  its focus for the keyboard: it is not switched off. A main button that
+  is a link ("Add a car") opens nothing meanwhile.
 
 **Text twice as large** (WCAG 1.4.4), on a phone 360 wide. No screen that
 is measured scrolls sideways with it, and nothing stands over anything
@@ -1651,7 +1657,7 @@ else:
 - **The menu's bar.** Each place's name stays inside its place. On the
   web a place is never narrower than the longest word of its name, and
   the places go on a second row when they do not fit beside each other
-  (in English "Messages" and "Profile", under the other three). In the
+  (in English "Profile", under the other four). In the
   phone apps a word too long for its place is broken there. The icons of
   a row stand in a line whatever lines the names take: in Icelandic
   "Ferðirnar mínar" has two lines with the text as set, and its icon
@@ -1674,6 +1680,13 @@ else:
   where the name would be left with less than most of the row, and a name
   longer than a line is broken there. With long names the page was 209
   wider than the screen.
+
+As built, with the text twice as large on a phone 360 wide:
+[Find with the menu](images/one-ride-one-ticket/built/large-text-find-phone-light.webp),
+[a posting step with its road](images/one-ride-one-ticket/built/large-text-offer-phone-light.webp)
+and [a ride's stops](images/one-ride-one-ticket/built/large-text-stops-phone-light.webp).
+With the text as set, the Icelandic menu:
+[Find](images/one-ride-one-ticket/built/find-phone-dark.webp).
 
 Left for the next part: the order of focus, what screen readers hear,
 and short windows (plan, PR 12, items 6 to 15).
@@ -1700,7 +1713,8 @@ declaration before publishing (spec 3, R3.1 and R3.2; spec 16, 3.6).
   A part of a page that keeps its own state, as a form does, puts its
   button in the screen's bar (`InBar`). As it stands in the same place on
   every screen, a main button takes no press for half a second after one
-  was pressed (3.20).
+  was pressed, nor does another button of the bar (3.20). The round
+  button that sends a message is not held: it is pressed again and again.
 - **R31.2** A ride is shown as a `RideTicket` wherever a member sees it in
   a list or as a summary.
 - **R31.3** An action that cannot be undone is a red row, last in its

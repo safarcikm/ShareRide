@@ -1881,10 +1881,12 @@ releases follow [Semantic Versioning](https://semver.org/).
   (spec 31, 3.20; the last pass, part two). It stands in the same place
   on every screen, so a second press meant for "Send report" landed on
   "Back to the ride" before the outcome was read, and one meant for a
-  ride's "Send request" on the next page's. The wait starts again when
-  the press opens another page and when another main button comes of it.
-  A waiting button looks as it did and says to a screen reader that it is
-  not to be pressed.
+  ride's "Send request" on the next page's. The other buttons of a
+  screen's bar wait with it: "Find another ride" stands where "Send
+  request" stood. The wait starts again when the press opens another
+  page and when another main button comes of it. A waiting button looks
+  as it did, says to a screen reader that it is not to be pressed, and
+  keeps its place for the keyboard.
 - Text twice as large fits a phone 360 wide (spec 31, 3.20): the menu's
   names stay in their places, on two rows on the web where they must,
   with the icons in a line (also in Icelandic with the text as set, where

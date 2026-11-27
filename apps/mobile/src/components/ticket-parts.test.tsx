@@ -672,6 +672,28 @@ describe("Road", () => {
       await laidOut("road-name", 101, 36, 1);
       expect(allHidden("road-now")).toHaveLength(0);
     });
+
+    it("decides nothing from sizes of nothing, as the web gives for a screen under another", async () => {
+      await inApp(<Road steps={booking} current={1} />);
+      await names([62, 18], [101, 18], [101, 18], [40, 18]);
+      // The screen goes out of sight: each part measures nothing, one by one.
+      await laidOut("road-names", 0, 0);
+      expect(allHidden("road-now")).toHaveLength(0);
+      await laidOut("road-one-line", 0, 0);
+      for (const index of [0, 1, 2, 3]) await laidOut("road-name", 0, 0, index);
+      expect(allHidden("road-now")).toHaveLength(0);
+      // And comes back, the road first.
+      await laidOut("road-names", 328, 18);
+      await laidOut("road-one-line", 40, 18);
+      expect(allHidden("road-now")).toHaveLength(0);
+    });
+
+    it("keeps the names when each is counted up to half a point wider than it is, as some browsers round each width alone", async () => {
+      await inApp(<Road steps={booking} current={1} />);
+      // 61.5, 90.5, 90.5 and 61.5 fill the road with their gaps of 8.
+      await names([62, 18], [91, 18], [91, 18], [62, 18]);
+      expect(allHidden("road-now")).toHaveLength(0);
+    });
   });
 
   it("has nothing behind the car on the first step", async () => {

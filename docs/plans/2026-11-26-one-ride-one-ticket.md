@@ -1512,7 +1512,8 @@ the small things of items 6 to 15 that are left, and item 16, where spec
    reporting, rating, and "Find another ride" after withdrawing, from
    7a), so a second press meant for that one leaves the screen before
    the outcome is read: the bar ignores a press for a moment after its
-   main button changes (done, PR 12b, for every main button). On a short window (a phone on its side, or a
+   main button changes (done, PR 12b, for every main button and the
+   other buttons of a bar). On a short window (a phone on its side, or a
    laptop zoomed until the window is 320 by 256) the bar takes much of
    the height, about 88 with one button and 148 with two, more with a
    notice: under a height to be chosen the bar joins the end of the page.
@@ -1768,66 +1769,106 @@ where a person sees it):
   (holds for 500 ms, and waits for what comes of it), `opened` when the
   address changes (`useNewPageHolds(usePathname())`: holds again while a
   press waits), `changed` when a main button comes or its words change
-  (`useMainButton(main, words)` in `Button`: holds again, and the press
-  waits no more). A page change does not end the wait, so the button of a
-  page that shows it late is held from when it comes. With no guard
-  around it a button holds nothing; a guard inside another leaves the
-  holding to the outer one.
+  (`useMainButton(main, words, busy)` in `Button`: holds again, and the
+  press waits no more). A page change does not end the wait, so the
+  button of a page that shows it late is held from when it comes. A press
+  waits 10 s at most (the time it was taken is kept, not a flag), so one
+  that brought no main button, as "Find a ride" does, holds nothing
+  later. Words that change while the button is `busy` are told when it is
+  busy no more: "Book" turns to "Pay …" while it books, and the payment's
+  own button comes after. With no guard around it a button holds nothing;
+  a guard inside another leaves the holding to the outer one.
+- **`HeldWithMain`** (same file), around what `BottomBar` shows
+  (`components/screen.tsx`): a `Button` in it is held while the guard
+  holds, main or not. Only a main button's press starts a hold. Booked's
+  bar has "See in My rides" over "Find another ride", and the second
+  stands where "Send request" stood.
 - **`Button`:** while held, `onPress` does nothing (a link's press is
-  `preventDefault`ed), the look is unchanged, and `aria-disabled` is
-  true. `disabled` is passed only when the button is inactive, as an
-  explicit `false` says "not disabled" over `aria-disabled` on a phone.
-  On the web the library's `Pressable` writes `aria-disabled` from
-  `disabled` alone, over the one given, so a held button passes
-  `accessibilityDisabled` there: it is not `disabled`, which would take it
-  out of the keyboard's order. Playwright waits for a button that says so
-  before it clicks, which the journeys need: without it `publish` in
-  `support/trips.ts` clicked "Publish ride" inside the wait.
+  `preventDefault`ed), the look is unchanged (hover is forgotten only
+  when the button is inactive), and `aria-disabled` is true. `disabled`
+  is passed only when the button is inactive, as an explicit `false`
+  says "not disabled" over `aria-disabled` on a phone. On the web the
+  library's `Pressable` writes `aria-disabled` from `disabled` alone,
+  over the one given, and its older `accessibilityDisabled` makes a
+  `<button>` `disabled` as well, which takes it out of the keyboard's
+  order. So `useSaidOnWeb` sets `aria-disabled` on the element in a
+  layout effect while the button is held and active, and takes it off
+  after; an inactive button's is the library's own. Playwright waits for
+  a button that says so before it clicks, which the journeys need:
+  without it `publish` in `support/trips.ts` clicked "Publish ride"
+  inside the wait.
 - **For the tests:** `renderApp` renders the app in a `PressGuard` that
   holds for no time, as flow tests press faster than anyone;
   `holdsPresses: true` leaves the app's own guard on.
 - **The menu's bar** (`navigation/tab-bar.tsx`): `flexWrap` on the bar; a
   tab starts at its top (`justifyContent: "flex-start"`), so icons are
-  level, and on the web has `minWidth: "min-content"`. The bar tells its
-  height as laid out (`useTabBarHeight`, a small store fed by `onLayout`),
-  which `analytics/consent-bar.tsx` stands over; `tabBarHeight` counts it
-  until then.
+  level, and on the web has `minWidth: "min-content"`. Its `paddingTop`
+  is what centring gave a tab with a name of one line, so such a tab
+  stands where it stood. The bar tells its height as laid out
+  (`useTabBarHeight`, a small store fed by `onLayout`), which
+  `analytics/consent-bar.tsx` stands over; `tabBarHeight` counts it until
+  then, and again once the bar is gone. A height of 0 is not kept: the
+  web tells it of a bar under another screen (`display: none`).
 - **`Road`** (`components/road.tsx`): `useRoomForNames` keeps what
   `onLayout` says of the names' row, one line of a name (a text of one
   line, not seen) and each name. No room when a name is higher than a
-  line or the names with their gaps are wider than the row; nothing is
-  decided before all are measured. Then the names stay to be measured,
+  line or the names with their gaps are wider than the row by more than
+  1 and half a point for each name (the web tells whole widths, and
+  Safari and Firefox round each alone, so names that fill the row can
+  count wider); nothing is decided before all are measured, nor from a
+  size of 0, which the web tells of a screen under another. Then the
+  names stay to be measured,
   over the picture, not seen and cut at its edges, and `road-now` shows
   `road.step`'s words. The names' row has `columnGap: spacing.sm`, which
   keeps each name centred on its mark.
 - **Find's name line** (`app/(tabs)/index.tsx`): `flexWrap` on the line
   and on the name with Beta; the language in a view with `marginLeft:
   "auto"`.
-- **`RouteList`:** `flexWrap` on a stop's row; the name has `flexBasis:
-  "60%"` and `minWidth: 0`.
+- **`RouteList`:** `flexWrap` on a stop's row, with `alignContent:
+  "center"` so a row of one line stays in the middle of its height (on
+  the web a wrapping row starts its lines at the top); the name has
+  `flexBasis: "60%"` and `minWidth: 0`.
 - **No new page, no new text,** no change in the API, no migration, no
   new dependency.
-- **Tests:** `press-guard.test.tsx` (12: the half second, the button a
+- **Tests:** `press-guard.test.tsx` (16: the half second, the button a
   press brought in its place after a slow answer, other words on the
   same button, words that changed by themselves, a page a press opened,
   a page slow to show its button, a page no press opened, a link, the
-  other buttons, the look, no guard, a guard inside another);
-  `booked-seat.test.tsx` ("Find another ride" after withdrawing) and
-  `booking.test.tsx` (a double press on "Send request" sends nothing),
-  with the app's own guard; `ticket-parts.test.tsx` (the road: names
-  kept, one line when a name has two lines or they are too wide
-  together, names back with room, nothing before all is measured);
-  `menu.test.tsx` (tabs start at their top); `cookies.test.tsx` (the
-  question over the bar as laid out). Journeys: `look.spec.ts` measures
-  the sideways scroll with the text twice as large too, on Find, a
-  ride, a booked seat (with its road), the driver's ride, Profile and a
-  person's profile, and has three new ones for the menu in each
-  language with Find's name line, and the road of a posting step;
-  `booking.spec.ts` has a double click on "Book". `support/layout.ts`
-  has `textsToSee` and `menuFit`.
+  other buttons of a bar, ten seconds and no longer, words changed while
+  busy, the buttons of a page, the look, the look under the pointer, no
+  guard, a guard inside another); `booked-seat.test.tsx` ("Find another
+  ride" after withdrawing) and `booking.test.tsx` (a double press on
+  "Send request" sends nothing; "Find another ride" just after "Request
+  sent" leads nowhere), with the app's own guard;
+  `ticket-parts.test.tsx` (the road: names kept, one line when a name
+  has two lines or they are too wide together, names back with room,
+  nothing before all is measured, nothing from sizes of 0, widths
+  rounded one by one); `menu.test.tsx` (tabs start at their top, a
+  one-line tab where it stood); `cookies.test.tsx` (the question over
+  the bar as laid out, a height of 0 not kept, counted again once the
+  bar is gone).
+  Journeys: `look.spec.ts` measures the sideways scroll with the text
+  twice as large too, on Find, a ride (where a stop's one-line name is
+  level with its dot), a booked seat (with its road), the driver's ride,
+  Profile and a person's profile, and has three new ones for the menu in
+  each language with Find's name line, and the road of a posting step;
+  `booking.spec.ts` has a double click on "Book": one step back is the
+  ride again, nothing is asked of the server, and a waiting button says
+  so without being `disabled` and keeps its focus. `support/layout.ts`
+  has `twiceAsLarge`, `textsToSee` and `menuFit` (with the menu's rows:
+  one with the text as set). Pictures
+  (`pictures.spec.ts`, "text twice as large on a phone 360 wide"):
+  `built/large-text-find-phone-light`, `built/large-text-offer-phone-light`
+  and `built/large-text-stops-phone-light`, new; and
+  `built/find-phone-dark`, `built/my-rides-phone-dark` and
+  `built/profile-phone-dark` again, for the Icelandic menu's icons.
 - **Left** for its second pull request: focus order, screen readers,
-  short windows. Seen and left: a tab bar of two rows takes about a
-  quarter of a phone 740 high with the text twice as large.
+  short windows; and to hear on a phone and in NVDA what a screen reader
+  says of the button just pressed while it waits. Seen and left: a tab
+  bar of two rows takes about a quarter of a phone 740 high with the
+  text twice as large; every `Button` reads the guard and is drawn again
+  twice for each main press; a first tap's pressed look ends when the
+  finger lifts.
 
 ## After merging
 

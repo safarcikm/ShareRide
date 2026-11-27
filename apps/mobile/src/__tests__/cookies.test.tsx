@@ -86,6 +86,24 @@ describe("The question about cookies", () => {
       nativeEvent: { layout: { x: 0, y: 580, width: 360, height: 160 } },
     });
     expect(screen.getByTestId("consent-layer")).toHaveStyle({ bottom: 160 + 8 });
+    // The web tells a height of nothing for a bar out of sight, as under
+    // another screen: that is not its height.
+    await fireEvent(screen.getByTestId("tab-bar"), "layout", {
+      nativeEvent: { layout: { x: 0, y: 0, width: 0, height: 0 } },
+    });
+    expect(screen.getByTestId("consent-layer")).toHaveStyle({ bottom: 160 + 8 });
+  });
+
+  it("counts the bar's height again once that bar is gone", async () => {
+    const first = await renderApp("/", withAnalytics);
+    await screen.findByLabelText("Cookies");
+    await fireEvent(screen.getByTestId("tab-bar"), "layout", {
+      nativeEvent: { layout: { x: 0, y: 580, width: 360, height: 160 } },
+    });
+    await first.unmount();
+    await renderApp("/", withAnalytics);
+    await screen.findByLabelText("Cookies");
+    expect(screen.getByTestId("consent-layer")).toHaveStyle({ bottom: 2 + 4 + 56 + 4 + 8 });
   });
 
   it("Accept loads Google's tag and counts the screen open now, by its pattern", async () => {
