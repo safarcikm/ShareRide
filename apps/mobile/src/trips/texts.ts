@@ -54,11 +54,21 @@ export function levelText(t: Translate, level: number): string {
   return level === 0 ? t("trip.priceLevel.free") : `${String(level)}%`;
 }
 
-/** "BSÍ bus terminal → Hof, Akureyri": a trip's first and last stop. */
+/**
+ * "BSÍ bus terminal → Hof, Akureyri": a trip's first and last stop. A
+ * draft can have fewer than two, as a meeting point that goes out of use
+ * is taken off it (spec 3, 3.9): "No route yet".
+ */
 export function routeText(t: Translate, locale: Locale, trip: MyTrip): string {
-  const first = trip.stops[0]?.meetingPoint.name[locale] ?? "";
-  const last = trip.stops.at(-1)?.meetingPoint.name[locale] ?? "";
-  return t("trip.stretch", { from: first, to: last });
+  const [first] = trip.stops;
+  const last = trip.stops.at(-1);
+  if (first === undefined || last === undefined || trip.stops.length < 2) {
+    return t("trip.draftNoRoute");
+  }
+  return t("trip.stretch", {
+    from: first.meetingPoint.name[locale],
+    to: last.meetingPoint.name[locale],
+  });
 }
 
 type QuoteProblem = Quote["problems"][number]["code"];

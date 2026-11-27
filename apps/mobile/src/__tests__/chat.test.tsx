@@ -707,11 +707,20 @@ describe("A conversation's top, ride and field (spec 31, 3.13)", () => {
     expect(
       rows.getAllByRole("button").map((row) => row.props.accessibilityLabel as string),
     ).toEqual(["Report Anna", "Block Anna"]);
+    // The rows are a white card, and so is the bar: the card stands on
+    // the page's colour, which sets it apart (spec 31, 3.13).
+    const menu = top.getByTestId("top-menu");
+    expect(menu).toHaveStyle({ backgroundColor: colors.light.background });
+    expect(within(menu).getByTestId("action-rows")).toBeVisible();
+    expect(within(menu).getByRole("button", { name: "Report Anna" })).toHaveStyle({
+      backgroundColor: colors.light.surface,
+    });
 
     // The menu closes again, and nothing of it is left.
     await fireEvent.press(top.getByRole("button", { name: "More" }));
     expect(top.getByRole("button", { name: "More", expanded: false })).toBeVisible();
     expect(screen.queryByRole("button", { name: "Report Anna" })).toBeNull();
+    expect(screen.queryByTestId("top-menu")).toBeNull();
   });
 
   it("reaches Report in two presses", async () => {

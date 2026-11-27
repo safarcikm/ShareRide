@@ -94,7 +94,7 @@ export function DriverCard({
           <RatingLine rating={driver.rating} />
         ) : (
           <View style={styles.tag}>
-            <Tag kind="warning" label={t("results.newDriver")} />
+            <Tag kind="plain" label={t("results.newDriver")} />
           </View>
         )}
         {/* The figure, like the profile, is for members signed in (spec 1, 3.5). */}

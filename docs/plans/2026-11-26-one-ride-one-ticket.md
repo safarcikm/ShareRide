@@ -1463,9 +1463,10 @@ left, on every page (as built, below). **12b** has item 4 and what the
 other items say about focus, screen readers, large text and short
 windows, in two pull requests: the first has the second press (item 9)
 and large text (items 4, 8 and 13; as built, below), the second focus,
-screen readers and short windows (as built, below). **12c** has the rest: items 3 and 5,
-the small things of items 6 to 15 that are left, and item 16, where spec
-31 becomes Built.
+screen readers and short windows (as built, below). **12c** has the
+rest, in two pull requests: the first the small things of items 6 to 15
+that are mended at the end (as built, below), the second items 3 and 5
+and item 16, where spec 31 becomes Built and says what is left.
 
 1. **R31.1 everywhere:** one screen test walks every signed-in address and
    counts the filled buttons. (Done, PR 12a.)
@@ -1493,8 +1494,10 @@ the small things of items 6 to 15 that are left, and item 16, where spec
    rides page, whose title takes focus); a chip is 40 high on the web,
    under the 44 of a touch target (done, PR 12b: 44 on the web); "New
    driver" is an amber tag, which rule 6 keeps
-   for what needs someone; the reading order of the yellow card beside
-   the rides on a laptop; All rides' centred title (done, PR 12a); Find
+   for what needs someone (done, PR 12c: a plain tag); the reading order
+   of the yellow card beside the rides on a laptop (kept, PR 12c: it
+   stands at their right and is read after them, as the eye meets it);
+   All rides' centred title (done, PR 12a); Find
    on a phone moves
    down a ticket's height when my rides arrive after the rides leaving
    soon (room kept for them, or both shown together).
@@ -1502,11 +1505,13 @@ the small things of items 6 to 15 that are left, and item 16, where spec
    card, and the heading before the picture in "Where you sit"; on
    Booking a seat, "driver" beside the driver's name for a screen reader
    (these three: done, PR 12b);
-   a cancelled ride's page without the seats stepper and "Where you sit".
+   a cancelled ride's page without the seats stepper and "Where you sit"
+   (done, PR 12c).
 8. **Small things PR 7a's code review named:** a ticket that is not
    pressed says which end is where I get in and where I get out, for a
    screen reader (done, PR 12b); "Find another ride" in Icelandic ("Leita aftur" today,
-   and spec 5's table says "Search again"); an Icelandic reader looks at
+   and spec 5's table says "Search again"; done, PR 12c: "Finna aðra
+   ferð", as after "You're booked"); an Icelandic reader looks at
    the status words as titles ("Afbókuð", "Útrunnin", "Dregin til baka",
    "Mætti ekki"), and at "bílstjóri" beside "ökumaður"; with text at 200%
    on a phone 360 wide the road's four labels run into each other
@@ -1524,7 +1529,8 @@ the small things of items 6 to 15 that are left, and item 16, where spec
    notice: under a height to be chosen the bar joins the end of the page
    (done, PR 12b: under 480).
    After blocking, "You still have a booking together" stays the title's
-   line once that booking is cancelled. `BookingHead`, `bookingWords`,
+   line once that booking is cancelled (done, PR 12c: the line counts
+   what is still held). `BookingHead`, `bookingWords`,
    `backTo` and `leave` serve bookings, reviews and blocking from
    `trip-day/report-screen.tsx`: `@/booking/` is their home.
 10. **Small things PR 8a's code review named:** on the driver's trip
@@ -1557,8 +1563,10 @@ the small things of items 6 to 15 that are left, and item 16, where spec
     app opens since My trips went; after "Show all drafts" focus goes to
     a view around the first draft that came, not to its link, so Enter
     does nothing until Tab (`TakesFocus`, the app's way everywhere: one
-    fix for all; done, PR 12b); a draft whose stops were all retired reads " → ", and
-    the Route row of its last step " to " (PR 9's `routeChecked`).
+    fix for all; done, PR 12b); a draft whose stops were all retired reads " → "
+    (done, PR 12c: "No route yet", and it opens at its route), and
+    the Route row of its last step " to " (PR 9's `routeChecked`; left:
+    that step is now reached by its address only).
 13. **Left from offering a ride (PR 9):** on the last step, why
     deleting a draft failed is said over Publish, in the bar, away from
     the card that asked; the ride's ticket there is not pressed and
@@ -1593,7 +1601,8 @@ the small things of items 6 to 15 that are left, and item 16, where spec
     closes by its button, not by Escape or a press beside it (done, PR
     12b, with Android's back), and its
     rows are a white card on the white bar, which an edge or a tint
-    would set apart; when the top moves between its bar and the
+    would set apart (done, PR 12c: the card stands on the page's
+    colour); when the top moves between its bar and the
     conversation, as the window turns, the keyboard's focus in it is
     lost, and a top too tall is drawn in the bar for one frame before
     it is measured; on a window under 400 high the two bars still take
@@ -1623,7 +1632,7 @@ the small things of items 6 to 15 that are left, and item 16, where spec
     on a
     notification about beta news or about feedback opens no page, as
     `notifications/paths.ts` names neither `/settings/beta-news` nor
-    `/settings/feedback`; the photo's controls lose what they said when
+    `/settings/feedback` (done, PR 12c); the photo's controls lose what they said when
     the window turns wide or narrow; a row that only shows, as the phone
     number, is read as two texts by a phone's screen reader (done, PR
     12b); the two
@@ -2031,7 +2040,83 @@ where a person sees it):
 - **Found on the way, for 12c:** an address the app does not have, as
   `/trips`, shows the router's own page: black, "Unmatched Route", with
   a link to a list of every address. The app has no `+not-found` page:
-  one in its look, with the title at the left and "Find a ride".
+  one in its look, with the title at the left and "Find a ride" (done,
+  PR 12c).
+
+As built, PR 12c, the first of its two (spec 31, 3.21, says the same
+where a person sees it):
+
+- **`app/+not-found.tsx`** (new): the router shows it for an address
+  with no file. A `Screen` with the website's footer, `NoIndex`, a
+  `ScreenHead` with `notFound.title` and `notFound.line`, `PuffinByPin`,
+  and `welcome.findRide` as a main `Button` with `href="/"` in the bar.
+  The button `replaces`: `linkProps(href, "replace")` puts Find where
+  the page was, on the web and in the phone apps. It is in none of the
+  root layout's lists, so it is open signed in or out; someone whose
+  account is half set up is led on from Find, as from any link there.
+- **The router's own list of addresses is off:** `app.json` gives the
+  `expo-router` plugin `"sitemap": false`, so `/_sitemap` is an address
+  the app does not have.
+- **"New driver"** is a `plain` `Tag` in `search/result-ticket.tsx`
+  (`DriverFoot`, which the preview's ticket uses too) and
+  `trip-details/driver-card.tsx`. `request.noReviews` stays `warning`
+  on the request's tint.
+- **A cancelled ride** (`app/trips/[id]/index.tsx`): no `Stepper`, so
+  the phone's ticket has no foot and no tear line, and the laptop's
+  panel no stepper and no line about free seats (`panel.hint` can be
+  null); no `WhereYouSit`; and `BookingBar` shows no price (`priced`),
+  in the bar or in the panel, with its line starting at the left.
+- **`BlockPerson`** (`safety/block-person.tsx`) keeps each shared
+  booking as it is now: `Together` tells it (`onChange`) what a
+  withdrawal, a decline or coming back from cancelling made of it, and
+  holds no copy. The title's line counts those that `holdsSeats`.
+- **Messages' menu** (`chat/conversation-head.tsx`): the `ActionRows`
+  stand in a view `top-menu`, in `background` with the card's corners
+  and `spacing.sm` around.
+- **A draft with fewer than two stops:** `routeText` says
+  `trip.draftNoRoute`, `resumeStep` gives `route`, and `RouteStep`
+  starts with no end when the draft has one stop, whose time is not
+  shown as the ride's (`savedRoute` needs two stops).
+- **`notificationScreens`** (`packages/contracts/src/notifications.ts`,
+  new): the six pages a notification may open that are not about one
+  record. `apps/api`'s `notifications/texts.ts` names its paths from it,
+  and the app's `notifications/paths.ts` opens what is in it. Before,
+  the app's own list lacked `/settings/feedback`, `/settings/beta-news`
+  and `/settings/privacy`. What the API sends is unchanged.
+- **Three new texts:** `notFound.title`, `notFound.line`,
+  `trip.draftNoRoute`; and `booking.searchAgain` is "Finna aðra ferð"
+  in Icelandic, as `booking.findAnother` is. No change in what the API
+  answers or sends, no migration, no new dependency, no new colour or
+  size.
+- **Tests:** `not-found.test.tsx` (new: the page, its puffin, its
+  button to Find, which leaves nothing to go back to, an address deep in
+  the app, Icelandic, an account half set up); `link-props.test.ts` (a
+  link that takes its screen's place); `every-page.test.tsx` walks
+  it; `result-ticket.test.tsx` and `trip-details.test.tsx` (the tag's
+  colour; a cancelled ride on a phone and in a laptop's side column);
+  `blocking.test.tsx` (two bookings, then one, then none, with focus
+  moved once); `chat.test.tsx` (the menu's ground, and its rows' own);
+  `post-a-trip.test.tsx` (a draft with no stop, which has no time
+  either, and with one; no time beside a one-stop draft's route on a
+  laptop); `paths.test.ts` (every page of the shared list opens, and
+  each is a file under `app/`). Journeys: `not-found.spec.ts` (new, in
+  each language: three addresses, `/_sitemap` among them, nothing of
+  the router's pages, not for search engines, the bar's link to Find);
+  `cancel-trip.spec.ts` (a visitor on the cancelled ride's page, with
+  no price). Pictures: `built/not-found-phone-light` (new) and
+  `built/chat-menu-phone-light` again.
+- **Code review** (one reviewer, before the pull request): ready with
+  fixes, none serious. Mended, tests first: `/_sitemap` still showed
+  the router's list; a cancelled ride kept its price; "Find a ride"
+  pushed, so back from Find showed the page again in the phone apps; a
+  one-stop draft showed "09:00 → 09:00" beside its route on a laptop;
+  nothing tied the app's list of notification pages to the API's.
+- **Left:** the Route row of "Check and publish" for a draft with fewer
+  than two stops; an unknown address answers 200, not 404 (spec 31,
+  3.21); whether Notices, Report and the two block pages should close
+  for an account that waits to be deleted (item 15), which is a
+  question of spec 9 and spec 11 and not of the look: Q31 in
+  [open questions](../strategy/open-questions.md).
 
 ## After merging
 

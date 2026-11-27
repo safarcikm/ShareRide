@@ -83,7 +83,10 @@ export function RouteStep({
   const session = useSession();
   const wide = useWideScreen();
   const [from, setFrom] = useState(trip?.stops[0]?.meetingPoint ?? null);
-  const [to, setTo] = useState(trip?.stops.at(-1)?.meetingPoint ?? null);
+  // The one stop a draft has left is where it starts, not its end too.
+  const [to, setTo] = useState(
+    trip === undefined || trip.stops.length < 2 ? null : (trip.stops.at(-1)?.meetingPoint ?? null),
+  );
   const [between, setBetween] = useState<readonly Stop[]>(
     trip?.stops.slice(1, -1).map(({ meetingPoint }) => ({ point: meetingPoint, on: true })) ?? [],
   );
@@ -257,8 +260,10 @@ export function RouteStep({
   const saved = trip === undefined ? {} : savedSoFar(t, locale, trip, "route", fromReview, quote);
   // The saved times are the saved route's: with other stops only the
   // departure stays, and the rest are counted anew when the route is saved.
+  // A draft with one stop left has no route, so its time is not the ride's.
   const savedRoute =
     trip !== undefined &&
+    trip.stops.length >= 2 &&
     trip.stops.length === ids.length &&
     trip.stops.every((stop, index) => stop.meetingPoint.id === ids[index]);
   // Once the stops on the way are known. A wide screen has it beside the step.

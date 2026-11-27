@@ -299,7 +299,7 @@ Events: `BookingRequested`, `BookingAccepted`, `BookingConfirmed`,
 | `booking.requestSentTitle`, `booking.answerBy` (were one line, `booking.requestSent`, until spec 31 made the first the page's title) | Request sent; {driver} has until {time} to answer. | Beiðni send; {driver} hefur til {time} til að svara. |
 | `booking.declined` | The driver couldn't take this request | Ökumaðurinn gat ekki tekið þessari beiðni |
 | `booking.expired` | The driver didn't answer in time | Ökumaðurinn svaraði ekki í tæka tíð |
-| `booking.searchAgain` | Search again | Leita aftur |
+| `booking.searchAgain` | Find another ride (spec 31; it was "Search again") | Finna aðra ferð (it was "Leita aftur") |
 | `booking.withdraw` | Withdraw request | Draga beiðni til baka |
 | `request.accept` | Accept | Samþykkja |
 | `request.decline` | Decline | Hafna |

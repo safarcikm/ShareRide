@@ -254,23 +254,25 @@ function Trip({
   ) : null;
   // Under the ticket's tear line with how many are free; on a wide screen
   // beside the price in the side column, which has a line under the two.
-  const seatsStepper = (inPanel: boolean) => (
-    <Stepper
-      {...(inPanel
-        ? { caption: true }
-        : { beside: true, hint: t("trip.freeOnPart", { count: trip.part.freeSeats }) })}
-      label={t("trip.seats")}
-      value={seats}
-      min={1}
-      max={most}
-      onChange={(value) => {
-        router.setParams({ seats: String(value) });
-      }}
-      valueText={t("search.seatCount", { count: seats })}
-      fewerLabel={t("search.fewerSeats")}
-      moreLabel={t("search.moreSeats")}
-    />
-  );
+  // A ride that was cancelled has no seat to choose.
+  const seatsStepper = (inPanel: boolean) =>
+    cancelled ? undefined : (
+      <Stepper
+        {...(inPanel
+          ? { caption: true }
+          : { beside: true, hint: t("trip.freeOnPart", { count: trip.part.freeSeats }) })}
+        label={t("trip.seats")}
+        value={seats}
+        min={1}
+        max={most}
+        onChange={(value) => {
+          router.setParams({ seats: String(value) });
+        }}
+        valueText={t("search.seatCount", { count: seats })}
+        fewerLabel={t("search.fewerSeats")}
+        moreLabel={t("search.moreSeats")}
+      />
+    );
   const partTicket = (
     <PartTicket
       trip={trip}
@@ -289,7 +291,8 @@ function Trip({
       note={trip.note}
     />
   );
-  const whereYouSit = (
+  // Nor a seat to picture.
+  const whereYouSit = cancelled ? null : (
     <WhereYouSit
       offered={trip.seatsOffered}
       free={trip.part.freeSeats}
@@ -378,15 +381,18 @@ function Trip({
                   pending={pending}
                   panel={{
                     seats: seatsStepper(true),
-                    hint: t("trip.seatsHint", {
-                      free: trip.part.freeSeats,
-                      price:
-                        trip.part.pricePerSeat.amount === 0
-                          ? t("results.free")
-                          : t("trip.pricePerSeat", {
-                              price: formatMoney(trip.part.pricePerSeat, locale),
-                            }),
-                    }),
+                    // How many are free is said of a ride that still runs.
+                    hint: cancelled
+                      ? null
+                      : t("trip.seatsHint", {
+                          free: trip.part.freeSeats,
+                          price:
+                            trip.part.pricePerSeat.amount === 0
+                              ? t("results.free")
+                              : t("trip.pricePerSeat", {
+                                  price: formatMoney(trip.part.pricePerSeat, locale),
+                                }),
+                        }),
                     note:
                       paying === null ? null : (
                         <View style={styles.row}>
@@ -482,11 +488,12 @@ function BookingBar({
   readonly pending: boolean;
   /**
    * On a wide screen: the seats stepper, beside the price it changes, the
-   * line under the two, and a line under what can be done.
+   * line under the two, and a line under what can be done. A ride that was
+   * cancelled has none of the three: nothing is left to choose or to pay.
    */
   readonly panel?: {
     readonly seats: ReactNode;
-    readonly hint: string;
+    readonly hint: string | null;
     readonly note: ReactNode;
   };
 }) {
@@ -495,6 +502,9 @@ function BookingBar({
   const me = useMe();
   const { part, myBooking } = trip;
   const free = part.total.amount === 0;
+  // A ride that was cancelled says so and no more: a price is for a seat
+  // that can be had (spec 31, 3.21).
+  const priced = part.state !== "cancelled";
   // The price for the seats and part on screen is on its way.
   const figureColour = pending ? palette.textMuted : palette.text;
   const status = (() => {
@@ -536,7 +546,9 @@ function BookingBar({
 
   // In the bar the action sits at the right of the price; in the panel it
   // is as wide as the card, under the price.
-  const actionStyle = panel === undefined ? styles.action : styles.panelAction;
+  // With no price beside it, what the bar says starts at the left.
+  const actionStyle =
+    panel !== undefined ? styles.panelAction : priced ? styles.action : styles.actionAlone;
   const action = (() => {
     if (myBooking !== null) {
       return (
@@ -587,15 +599,19 @@ function BookingBar({
   if (panel !== undefined) {
     return (
       <View style={styles.panel}>
-        <View style={styles.panelTop}>
-          <View style={styles.panelPrice} aria-busy={pending}>
-            <Text style={[typography.figure, { color: figureColour }]}>
-              {free ? t("results.free") : formatMoney(part.total, locale)}
-            </Text>
+        {priced ? (
+          <View style={styles.panelTop}>
+            <View style={styles.panelPrice} aria-busy={pending}>
+              <Text style={[typography.figure, { color: figureColour }]}>
+                {free ? t("results.free") : formatMoney(part.total, locale)}
+              </Text>
+            </View>
+            {panel.seats}
           </View>
-          {panel.seats}
-        </View>
-        <Text style={[typography.small, { color: palette.textMuted }]}>{panel.hint}</Text>
+        ) : null}
+        {panel.hint === null ? null : (
+          <Text style={[typography.small, { color: palette.textMuted }]}>{panel.hint}</Text>
+        )}
         {action}
         {panel.note}
       </View>
@@ -603,20 +619,22 @@ function BookingBar({
   }
   return (
     <View style={styles.bar}>
-      <View style={styles.price} aria-busy={pending}>
-        <Text style={[typography.figure, { color: figureColour }]}>
-          {free ? t("results.free") : formatMoney(part.total, locale)}
-        </Text>
-        <Text style={[typography.small, { color: palette.textMuted }]}>
-          {free || part.seats === 1
-            ? t("search.seatCount", { count: part.seats })
-            : // Short, so the button keeps its place beside it on a narrow phone.
-              t("booking.seatsTimesPrice", {
-                seats: String(part.seats),
-                price: formatMoney(part.pricePerSeat, locale),
-              })}
-        </Text>
-      </View>
+      {priced ? (
+        <View style={styles.price} aria-busy={pending}>
+          <Text style={[typography.figure, { color: figureColour }]}>
+            {free ? t("results.free") : formatMoney(part.total, locale)}
+          </Text>
+          <Text style={[typography.small, { color: palette.textMuted }]}>
+            {free || part.seats === 1
+              ? t("search.seatCount", { count: part.seats })
+              : // Short, so the button keeps its place beside it on a narrow phone.
+                t("booking.seatsTimesPrice", {
+                  seats: String(part.seats),
+                  price: formatMoney(part.pricePerSeat, locale),
+                })}
+          </Text>
+        </View>
+      ) : null}
       {action}
     </View>
   );
@@ -630,6 +648,7 @@ const styles = StyleSheet.create({
   bar: { flexDirection: "row", alignItems: "center", gap: spacing.md, flexWrap: "wrap" },
   price: { flexShrink: 0 },
   action: { flexGrow: 1, flexBasis: sizes.barAction, alignItems: "flex-end", gap: spacing.xs },
+  actionAlone: { flexGrow: 1, alignItems: "flex-start", gap: spacing.xs },
   panel: { gap: spacing.ms },
   panelTop: { flexDirection: "row", alignItems: "flex-end", gap: spacing.md },
   // The price is level with the buttons that change it, under their caption.

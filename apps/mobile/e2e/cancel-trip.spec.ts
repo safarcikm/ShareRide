@@ -8,7 +8,8 @@ import { focused } from "./support/trips";
 // and has not paid yet, and Siggi's request waits. The driver cancels the
 // trip with a reason and a note. Dóra gets a full refund, Óli's booking is
 // cancelled with nothing to refund, Siggi's request is declined, and each
-// reads why on their booking (rule M2, R6.6).
+// reads why on their booking (rule M2, R6.6). A visitor then opens the
+// ride's own page (spec 31, 3.7).
 
 test.use({ locale: "en-GB" });
 
@@ -90,5 +91,24 @@ test("a driver cancels a trip with three passengers, who each read why", async (
       person === dora ? 1 : 0,
     );
   }
-  await Promise.all([dora, oli, siggi].map((person) => person.close()));
+
+  // A visitor who follows the ride's link reads that it was cancelled, with
+  // who drove and the route; no seat is left to choose or to picture.
+  const visitor = await secondPage(browser, testInfo);
+  await visitor.page.goto(`/trips/${tripId}?from=0&to=1`);
+  await expect(
+    visitor.page.getByText("This ride was cancelled.", { exact: true }).filter(visible),
+  ).toBeVisible();
+  await expect(
+    visitor.page.getByRole("heading", { name: "Driver: Bára" }).filter(visible),
+  ).toBeVisible();
+  await expect(visitor.page.getByTestId("whole-route").filter(visible)).toBeVisible();
+  await expect(
+    visitor.page.getByRole("button", { name: "One seat more" }).filter(visible),
+  ).toHaveCount(0);
+  await expect(visitor.page.getByTestId("where-you-sit").filter(visible)).toHaveCount(0);
+  await expect(visitor.page.getByText(/free on your part/).filter(visible)).toHaveCount(0);
+  // Nor a price: there is nothing to pay for.
+  await expect(visitor.page.getByText(/\d\sISK/).filter(visible)).toHaveCount(0);
+  await Promise.all([dora, oli, siggi, visitor].map((person) => person.close()));
 });

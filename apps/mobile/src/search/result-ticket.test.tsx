@@ -35,7 +35,8 @@ describe("ResultTicket", () => {
     expect(hidden("ticket-tear")).toBeTruthy();
     const foot = within(screen.getByTestId("ticket-foot"));
     expect(foot.getByText("Anna")).toBeVisible();
-    expect(foot.getByText("New driver")).toHaveStyle({ color: colors.light.warning });
+    // Quiet, where a rating would be: it asks nothing of anyone (spec 31, rule 6).
+    expect(foot.getByText("New driver")).toHaveStyle({ color: colors.light.textMuted });
     expect(foot.getByText("3 seats left")).toBeVisible();
   });
 

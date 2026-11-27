@@ -8,7 +8,7 @@ import {
 } from "@shareride/contracts";
 import { holdsSeats } from "@shareride/domain";
 import { router, useFocusEffect, type Href } from "expo-router";
-import { useCallback, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
 import { errorText } from "@/auth/errors";
 import { useSession } from "@/auth/session";
@@ -64,18 +64,27 @@ export function BlockPerson({
   }
 
   if (together !== null) {
+    // What the two still hold: one cancelled, withdrawn or declined from
+    // here is still shown, and no longer counted.
+    const held = together.filter((shared) => holdsSeats(shared.status)).length;
     return (
       // The way back is the one thing left to do: the main button.
       <Screen footer={<Button main label={done.label} onPress={done.go} />}>
         {/* The button pressed is gone: focus moves to what it did. */}
         <ScreenHead
           title={t("block.done", { name })}
-          line={together.length === 0 ? undefined : t("block.together", { count: together.length })}
+          line={held === 0 ? undefined : t("block.together", { count: held })}
           back={null}
           outcome={{ of: "blocked", focus: true }}
         />
         {together.map((shared) => (
-          <Together key={shared.id} booking={shared} />
+          <Together
+            key={shared.id}
+            booking={shared}
+            onChange={(after) => {
+              setTogether((all) => all?.map((one) => (one.id === after.id ? after : one)) ?? null);
+            }}
+          />
         ))}
       </Screen>
     );
@@ -120,15 +129,28 @@ export function BlockPerson({
  * A booking or request the two still have together, as its ticket (R31.2)
  * with its way out under it: a request is withdrawn or declined here; a
  * booking is cancelled on its own screen, with its reasons and refund, and
- * is loaded again on coming back.
+ * is loaded again on coming back. `onChange` tells the screen what it is
+ * now, which keeps it and counts what is still held.
  */
-function Together({ booking }: { readonly booking: Booking }) {
+function Together({
+  booking: current,
+  onChange: setCurrent,
+}: {
+  readonly booking: Booking;
+  readonly onChange: (booking: Booking) => void;
+}) {
   const { locale, t } = useLanguage();
   const session = useSession();
-  const [current, setCurrent] = useState(booking);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
   const seenBefore = useRef(false);
+  const { id } = current;
+  // The screen gives a new `onChange` each time it is drawn; coming back
+  // reads the booking once, not once for each.
+  const changed = useRef(setCurrent);
+  useEffect(() => {
+    changed.current = setCurrent;
+  });
   useFocusEffect(
     useCallback(() => {
       // Back from cancelling it, or from anywhere else: as it is now.
@@ -136,10 +158,10 @@ function Together({ booking }: { readonly booking: Booking }) {
         seenBefore.current = true;
         return;
       }
-      void session.call(bookingRoute, { params: { id: booking.id } }).then((result) => {
-        if (result.ok) setCurrent(result.data);
+      void session.call(bookingRoute, { params: { id } }).then((result) => {
+        if (result.ok) changed.current(result.data);
       });
-    }, [session, booking.id]),
+    }, [session, id]),
   );
   const { day, part: route } = bookingWords(t, locale, current);
   const passenger = current.viewer === "passenger";

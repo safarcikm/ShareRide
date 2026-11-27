@@ -28,7 +28,7 @@ type Variant = "primary" | "danger" | "secondary" | "text";
 
 type ButtonProps = ButtonLook &
   (
-    | { readonly onPress: () => void; readonly href?: never }
+    | { readonly onPress: () => void; readonly href?: never; readonly replaces?: never }
     | {
         /**
          * Opens this screen: a link, an `<a href>` on the web that search
@@ -36,6 +36,11 @@ type ButtonProps = ButtonLook &
          */
         readonly href: AppPath;
         readonly onPress?: never;
+        /**
+         * The screen takes this one's place, so going back from it does not
+         * show this one again: the way out of a page with nothing on it.
+         */
+        readonly replaces?: boolean;
       }
   );
 
@@ -166,6 +171,7 @@ export function Button({
   icon,
   onPress,
   href,
+  replaces = false,
   accessibilityLabel,
   variant = "primary",
   busy = false,
@@ -203,7 +209,11 @@ export function Button({
       aria-expanded={expanded}
       // Not `false`, which would say "not disabled" over aria-disabled on a phone.
       disabled={inactive ? true : undefined}
-      {...taking(href === undefined ? { onPress } : linkProps(href), held, tookPress)}
+      {...taking(
+        href === undefined ? { onPress } : linkProps(href, replaces ? "replace" : "push"),
+        held,
+        tookPress,
+      )}
       {...hover}
       style={({ pressed }) => [
         styles.outer,

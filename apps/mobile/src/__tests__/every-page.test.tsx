@@ -614,6 +614,8 @@ const pages: readonly Page[] = [
   { path: "/legal", title: "About PuffinRide", main: null, setUp: mine, centred: true },
   { path: "/legal/terms", title: "Terms of Service", main: null, setUp: mine, centred: true },
   { path: "/cookies", title: "Cookies", main: null, setUp: mine, centred: true },
+  // An address the app does not have.
+  { path: "/trips", title: "We can't find this page", main: "Find a ride", setUp: nothing },
 ];
 
 /**
@@ -644,8 +646,12 @@ const notWalked: Readonly<Record<string, string>> = {
   "drive/trips/index.tsx": "leads to My rides",
 };
 
-/** The places of the menu, whose files are not named as their addresses. */
+/**
+ * The places of the menu, whose files are not named as their addresses,
+ * and the page of an address that has no file.
+ */
 const menu: Readonly<Record<string, string>> = {
+  "/trips": "+not-found.tsx",
   "/": "(tabs)/index.tsx",
   "/my-rides": "(tabs)/my-rides.tsx",
   "/offer": "(tabs)/offer.tsx",
