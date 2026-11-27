@@ -186,8 +186,8 @@ Questions or ideas? Write to admin@puffinride.is.
 | 1. `1-find` | Share your ride across Iceland | Verum samferða um Ísland |
 | 2. `4-results` | Book the whole way, or just part of it | Alla leiðina eða bara hluta hennar |
 | 3. `3-ride` | See who's driving before you book | Sjáðu hver keyrir áður en þú bókar |
-| 4. `5-meeting-points` | More than 100 meeting points | Yfir 100 mótsstaðir um allt land |
-| 5. `2-leaving-soon` | Rides leaving soon, all over Iceland | Ferðir sem fara bráðum, um allt land |
+| 4. `2-leaving-soon` | See the rides leaving soon | Sjáðu ferðir sem fara bráðum |
+| 5. `6-how-it-works` | Find a ride, book a seat, meet and go | Finndu far, bókaðu sæti og farðu af stað |
 | 6. `7-offer` | Driving anyway? Offer the empty seats | Á leiðinni? Bjóddu lausu sætin |
 
 Feature graphic: "Share your ride", "Carpooling across Iceland"; "Verum samferða", "Samakstur um allt Ísland".

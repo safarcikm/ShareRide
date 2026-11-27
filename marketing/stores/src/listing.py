@@ -148,14 +148,14 @@ SCREENS = [
         "is": "Sjáðu hver keyrir áður en þú bókar",
     },
     {
-        "file": "5-meeting-points",
-        "en": "More than 100 meeting points",
-        "is": "Yfir 100 mótsstaðir um allt land",
+        "file": "2-leaving-soon",
+        "en": "See the rides leaving soon",
+        "is": "Sjáðu ferðir sem fara bráðum",
     },
     {
-        "file": "2-leaving-soon",
-        "en": "Rides leaving soon, all over Iceland",
-        "is": "Ferðir sem fara bráðum, um allt land",
+        "file": "6-how-it-works",
+        "en": "Find a ride, book a seat, meet and go",
+        "is": "Finndu far, bókaðu sæti og farðu af stað",
     },
     {
         "file": "7-offer",
@@ -163,6 +163,8 @@ SCREENS = [
         "is": "Á leiðinni? Bjóddu lausu sætin",
     },
 ]
+# Not used: 5-meeting-points. The test API's meeting points are samples, and
+# the screen says so; it joins when the store journeys run with the real ones.
 
 # Spec 32, 3.9: the addresses both stores ask for.
 ADDRESSES = {
