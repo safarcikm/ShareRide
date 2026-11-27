@@ -1,0 +1,22 @@
+# Find and Profile in Icelandic, then back to English.
+appId: ${APP_ID}
+name: In Icelandic
+---
+- launchApp
+- tapOn:
+    id: "tab-index"
+- tapOn: "Change the language to Icelandic"
+- extendedWaitUntil:
+    visible: "Hæ Gunna"
+    timeout: 20000
+- takeScreenshot: screenshots/15-find-icelandic
+- tapOn:
+    id: "tab-profile"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/16-profile-icelandic
+- tapOn:
+    id: "tab-index"
+- tapOn: "Skipta yfir í ensku"
+- extendedWaitUntil:
+    visible: "Hi Gunna"
+    timeout: 20000

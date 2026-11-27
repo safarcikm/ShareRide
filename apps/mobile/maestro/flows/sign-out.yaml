@@ -1,0 +1,20 @@
+# Sign out from the end of Profile: the app goes back to Find, signed out,
+# and Profile offers Sign in again.
+appId: ${APP_ID}
+name: Sign out
+---
+- launchApp
+- tapOn:
+    id: "tab-profile"
+- scrollUntilVisible:
+    element: "Sign out"
+    timeout: 20000
+- tapOn: "Sign out"
+- extendedWaitUntil:
+    visible: "Share your ride"
+    timeout: 20000
+- takeScreenshot: screenshots/17-signed-out-again
+- tapOn:
+    id: "tab-profile"
+- assertVisible: "Sign in"
+- takeScreenshot: screenshots/18-profile-signed-out-again

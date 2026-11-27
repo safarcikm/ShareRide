@@ -56,5 +56,8 @@ expo-env.d.ts
 
 # Playwright output
 test-results/
+# The phone journeys' screenshots and reports (apps/mobile/maestro/run.sh)
+apps/mobile/screenshots/
+apps/mobile/maestro-results/
 playwright-report/
 apps/api/email-previews/

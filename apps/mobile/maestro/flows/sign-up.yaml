@@ -1,0 +1,90 @@
+# Sign up as spec 26 has it: an email and its code, the phone number and its
+# code, then about you. A field's label is drawn above it and is also its
+# name, so the field is the second match (index 1).
+appId: ${APP_ID}
+name: Sign up
+---
+- launchApp
+- tapOn:
+    id: "tab-profile"
+- tapOn: "Sign in"
+- runScript: ../scripts/new-person.js
+- tapOn:
+    text: "Email"
+    index: 1
+- inputText: ${output.email}
+# On a phone the keyboard covers the button. A tap on the field's label, plain
+# text, closes it (Maestro's hideKeyboard cannot on the iPhone).
+- tapOn:
+    text: "Email"
+    index: 0
+- scrollUntilVisible:
+    element: "Send code"
+- takeScreenshot: screenshots/04-sign-in
+- tapOn: "Send code"
+- retry:
+    maxRetries: 5
+    commands:
+      - waitForAnimationToEnd
+      - runScript:
+          file: ../scripts/latest-code.js
+          env:
+            TO: ${output.email}
+- tapOn:
+    text: "6-digit code"
+    index: 1
+- inputText: ${output.code}
+- extendedWaitUntil:
+    visible: "Add your phone number"
+    timeout: 20000
+- tapOn:
+    text: "Mobile number"
+    index: 1
+- inputText: ${output.phoneLocal}
+- tapOn:
+    text: "Mobile number"
+    index: 0
+- scrollUntilVisible:
+    element: "Send code"
+- takeScreenshot: screenshots/05-phone-number
+- tapOn: "Send code"
+- retry:
+    maxRetries: 5
+    commands:
+      - waitForAnimationToEnd
+      - runScript:
+          file: ../scripts/latest-code.js
+          env:
+            TO: ${output.phoneE164}
+- tapOn:
+    text: "6-digit code"
+    index: 1
+- inputText: ${output.code}
+# The step's title can be scrolled out of sight on Android; its fields are not.
+- extendedWaitUntil:
+    visible: "Languages you speak"
+    timeout: 20000
+- tapOn:
+    text: "First name"
+    index: 1
+- inputText: "Gunna"
+- tapOn:
+    text: "First name"
+    index: 0
+- takeScreenshot: screenshots/06-about-you
+- scrollUntilVisible:
+    element: "I am 18 or older"
+- tapOn: "I am 18 or older"
+- tapOn: "I accept the Terms of Service and the Community Rules"
+- scrollUntilVisible:
+    element: "Create account"
+- tapOn: "Create account"
+- extendedWaitUntil:
+    visible: "Sign in faster next time"
+    timeout: 20000
+- takeScreenshot: screenshots/07-sign-in-faster
+- tapOn: "Not now"
+- extendedWaitUntil:
+    visible: "Hi Gunna"
+    timeout: 20000
+- takeScreenshot: screenshots/08-find-signed-in

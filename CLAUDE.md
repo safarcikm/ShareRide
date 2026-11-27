@@ -90,6 +90,7 @@ pnpm --filter @shareride/api dev       # migrate, seed, run the API on port 3000
 pnpm --filter @shareride/mobile dev    # the app: Expo dev server (w = web, QR = Expo Go)
 pnpm --filter @shareride/mobile export # bundles for iOS, Android and web (dist/)
 pnpm --filter @shareride/mobile e2e:web  # build the web app; Playwright journeys against a test API
+apps/mobile/maestro/run.sh <device> <app ID> <android|ios>  # phone journeys on an emulator or simulator, with the test API on port 3001 (phone-apps.yml)
 pnpm --filter @shareride/admin dev     # the operator console at localhost:5173/admin/ (run the API with ADMIN_ORIGIN=http://localhost:5173)
 pnpm --filter @shareride/admin build   # the console's build (dist/); the API serves it at /admin when ADMIN_APP_DIR points at it
 pnpm --filter @shareride/api clean-up  # delete sign-in records, drafts, chats, notification logs, console sign-in records and data exports past retention, and erase deleted accounts (hourly on servers)

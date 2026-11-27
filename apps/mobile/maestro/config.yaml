@@ -1,0 +1,18 @@
+# The phone journeys (spec 32, 3.7): the release build of the app on an
+# Android emulator and an iPhone simulator, against the test API
+# (apps/api/src/e2e-server.ts) on the same machine. Run from apps/mobile:
+#   maestro test maestro -e APP_ID=is.puffinride.app -e API_URL=http://localhost:3001
+# The flows run in this order and share the app's state: the first one
+# starts from a fresh install. The order goes by each flow's name, not its
+# file, and stops at the first flow that fails.
+flows:
+  - flows/*
+executionOrder:
+  continueOnFailure: false
+  flowsOrder:
+    - Signed out
+    - Sign up
+    - Find a ride
+    - The tabs
+    - In Icelandic
+    - Sign out

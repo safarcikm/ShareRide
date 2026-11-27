@@ -1,0 +1,21 @@
+# A ride leaving soon, from Find: its page, then back to Find.
+appId: ${APP_ID}
+name: Find a ride
+---
+- launchApp
+- extendedWaitUntil:
+    visible: "Hi Gunna"
+    timeout: 60000
+- scrollUntilVisible:
+    element:
+      id: "trip-result"
+    timeout: 20000
+- tapOn:
+    id: "trip-result"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/09-ride
+- scrollUntilVisible:
+    element: "Book"
+    timeout: 20000
+- takeScreenshot: screenshots/10-ride-book
+- back

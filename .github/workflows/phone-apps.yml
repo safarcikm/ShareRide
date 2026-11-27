@@ -1,0 +1,274 @@
+name: Phone apps
+
+# The Android and iPhone apps as real release builds, on an emulator and the
+# simulator, against the test API on the same machine (spec 32, 3.7; ADR
+# 0051). Maestro walks the journeys in apps/mobile/maestro and keeps a
+# screenshot of each screen. Free while the repository is public: GitHub
+# does not count minutes on public repositories, macOS included.
+
+on:
+  pull_request:
+    paths:
+      - "apps/mobile/**"
+      - "apps/api/**"
+      - "packages/**"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/phone-apps.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: phone-apps-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  EXPO_NO_TELEMETRY: "1"
+  MAESTRO_CLI_NO_ANALYTICS: "1"
+  MAESTRO_VERSION: "2.13.0"
+  # A fresh emulator or simulator on a CI machine is slow to start Maestro's
+  # driver: the first iPhone run gave up after two minutes, five seconds
+  # before the driver answered. Ten minutes, in milliseconds.
+  MAESTRO_DRIVER_STARTUP_TIMEOUT: "600000"
+  # The test API (apps/api/src/e2e-server.ts) writes texts and emails here.
+  E2E_SMS_OUTBOX: ${{ github.workspace }}/e2e-sms.jsonl
+  E2E_EMAIL_OUTBOX: ${{ github.workspace }}/e2e-email.jsonl
+
+jobs:
+  android:
+    name: Android app on an emulator
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    services:
+      postgres:
+        image: postgis/postgis:18-3.7
+        env:
+          POSTGRES_USER: shareride
+          POSTGRES_PASSWORD: shareride-ci-only
+          POSTGRES_DB: shareride_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U shareride -d shareride_test"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 30
+    env:
+      TEST_DATABASE_URL: postgres://shareride:shareride-ci-only@localhost:5432/shareride_test
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
+        with:
+          distribution: zulu
+          java-version: "17"
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Start the test API
+        env:
+          PORT: "3001"
+        run: |
+          nohup pnpm --filter @shareride/api e2e:serve > "$RUNNER_TEMP/api.log" 2>&1 &
+      # Plain http to the test API is allowed in this build only (R32.1).
+      - name: The native project
+        working-directory: apps/mobile
+        env:
+          E2E_CLEARTEXT: "1"
+        run: npx expo prebuild --platform android --no-install
+      - name: Release build against the test API
+        working-directory: apps/mobile/android
+        env:
+          # The emulator's name for this machine.
+          EXPO_PUBLIC_API_URL: http://10.0.2.2:3001
+          NODE_ENV: production
+        run: ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=x86_64
+      - name: Install Maestro
+        run: |
+          curl --fail --silent --show-error --location --output "$RUNNER_TEMP/maestro.zip" \
+            "https://github.com/mobile-dev-inc/maestro/releases/download/cli-$MAESTRO_VERSION/maestro.zip"
+          unzip -q "$RUNNER_TEMP/maestro.zip" -d "$HOME"
+          echo "$HOME/maestro/bin" >> "$GITHUB_PATH"
+      - name: Let the emulator use the processor's virtualisation
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      # The emulator is started here, not with an emulator action: the one
+      # tried waited forever after the journeys, for an emulator that did
+      # not stop.
+      - name: Start the Android emulator
+        run: |
+          image="system-images;android-35;google_apis;x86_64"
+          tools="$ANDROID_HOME/cmdline-tools/latest/bin"
+          # One place for the virtual phone, which avdmanager and the
+          # emulator otherwise look for in different folders.
+          export ANDROID_AVD_HOME="$HOME/.android/avd"
+          mkdir -p "$ANDROID_AVD_HOME"
+          echo "ANDROID_AVD_HOME=$ANDROID_AVD_HOME" >> "$GITHUB_ENV"
+          yes | "$tools/sdkmanager" --licenses > /dev/null || true
+          "$tools/sdkmanager" --install emulator platform-tools "$image" > /dev/null
+          echo no | "$tools/avdmanager" create avd --force --name ci --package "$image" --device pixel_7
+          "$ANDROID_HOME/emulator/emulator" -list-avds | grep -qx ci
+          nohup "$ANDROID_HOME/emulator/emulator" -avd ci -port 5554 -no-window -no-snapshot \
+            -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none \
+            > "$RUNNER_TEMP/emulator.log" 2>&1 &
+          sleep 10
+          if ! pgrep -f "qemu-system" > /dev/null; then
+            cat "$RUNNER_TEMP/emulator.log"
+            exit 1
+          fi
+          echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
+      # Shorter than the job, so the screenshots and logs below are kept
+      # when a journey hangs.
+      - name: The journeys on the emulator
+        timeout-minutes: 40
+        working-directory: apps/mobile
+        run: |
+          if ! timeout 300 adb -s emulator-5554 wait-for-device; then
+            cat "$RUNNER_TEMP/emulator.log"
+            exit 1
+          fi
+          for _ in $(seq 1 150); do
+            if [ "$(adb -s emulator-5554 shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ]; then break; fi
+            sleep 2
+          done
+          adb -s emulator-5554 shell input keyevent 82
+          for scale in window_animation_scale transition_animation_scale animator_duration_scale; do
+            adb -s emulator-5554 shell settings put global "$scale" 0
+          done
+          adb -s emulator-5554 install -r android/app/build/outputs/apk/release/app-release.apk
+          # The app's own messages and every error, for when a journey fails.
+          nohup adb -s emulator-5554 logcat -v time '*:E' ReactNativeJS:V ReactNative:V \
+            > "$RUNNER_TEMP/logcat.txt" 2>&1 &
+          status=0
+          bash maestro/run.sh emulator-5554 is.puffinride.app android || status=$?
+          adb -s emulator-5554 emu kill || true
+          exit "$status"
+      - name: Keep the screenshots and Maestro's report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: phone-android
+          path: |
+            apps/mobile/screenshots/
+            apps/mobile/maestro-results/
+            ${{ runner.temp }}/api.log
+            ${{ runner.temp }}/emulator.log
+            ${{ runner.temp }}/logcat.txt
+          if-no-files-found: warn
+          retention-days: 14
+
+  ios:
+    name: iPhone app on the simulator
+    runs-on: macos-latest
+    timeout-minutes: 90
+    env:
+      TEST_DATABASE_URL: postgres://shareride@localhost:5432/shareride_test
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      # The simulator starts while the app builds.
+      - name: Start the iPhone simulator
+        run: |
+          udid="$(xcrun simctl list devices available --json | node -e '
+            const { devices } = JSON.parse(require("node:fs").readFileSync(0, "utf8"));
+            const runtimes = Object.keys(devices).filter((r) => r.includes("iOS")).sort();
+            const phones = devices[runtimes.at(-1)].filter((d) => /^iPhone \d+$/.test(d.name));
+            process.stdout.write((phones.at(-1) ?? devices[runtimes.at(-1)][0]).udid);
+          ')"
+          xcrun simctl boot "$udid"
+          echo "SIM_UDID=$udid" >> "$GITHUB_ENV"
+      # macOS runners have no containers: PostgreSQL 18 and PostGIS from
+      # Homebrew, installed while the app builds (it takes some minutes).
+      - name: PostgreSQL 18 with PostGIS, while the app builds
+        run: |
+          cat > "$RUNNER_TEMP/pg-setup.sh" <<'EOF'
+          set -euo pipefail
+          brew install --quiet postgresql@18 postgis
+          pg="$(brew --prefix postgresql@18)/bin"
+          "$pg/initdb" --pgdata "$RUNNER_TEMP/pg" --username shareride --auth trust
+          "$pg/pg_ctl" --pgdata "$RUNNER_TEMP/pg" --log "$RUNNER_TEMP/pg.log" --wait start
+          "$pg/createdb" --username shareride shareride_test
+          EOF
+          nohup bash -c 'if bash "$RUNNER_TEMP/pg-setup.sh"; then touch "$RUNNER_TEMP/pg-ready"; else touch "$RUNNER_TEMP/pg-failed"; fi' \
+            > "$RUNNER_TEMP/pg-setup.log" 2>&1 &
+      - name: The native project
+        working-directory: apps/mobile
+        run: npx expo prebuild --platform ios
+      # Only the processor's own architecture (arm64): half the build. Signed
+      # the simulator's way (Sign to Run Locally, no Apple account): an
+      # unsigned app has no keychain, so the sign-in was lost on reopening.
+      - name: Release build for the simulator against the test API
+        working-directory: apps/mobile/ios
+        env:
+          EXPO_PUBLIC_API_URL: http://localhost:3001
+          NODE_ENV: production
+        run: |
+          set -o pipefail
+          xcodebuild -workspace PuffinRide.xcworkspace -scheme PuffinRide \
+            -configuration Release -sdk iphonesimulator \
+            -destination "generic/platform=iOS Simulator" \
+            -derivedDataPath build ARCHS="$(uname -m)" build \
+            | tee "$RUNNER_TEMP/xcodebuild.log" | grep -E "^(\*\*|error|warning: .*deprecated)" || true
+          test -d build/Build/Products/Release-iphonesimulator/PuffinRide.app
+      - name: Start the test API
+        env:
+          PORT: "3001"
+        run: |
+          for _ in $(seq 1 180); do
+            if [ -f "$RUNNER_TEMP/pg-ready" ] || [ -f "$RUNNER_TEMP/pg-failed" ]; then break; fi
+            sleep 5
+          done
+          if [ ! -f "$RUNNER_TEMP/pg-ready" ]; then
+            cat "$RUNNER_TEMP/pg-setup.log"
+            exit 1
+          fi
+          nohup pnpm --filter @shareride/api e2e:serve > "$RUNNER_TEMP/api.log" 2>&1 &
+      - name: Install Maestro
+        run: |
+          curl --fail --silent --show-error --location --output "$RUNNER_TEMP/maestro.zip" \
+            "https://github.com/mobile-dev-inc/maestro/releases/download/cli-$MAESTRO_VERSION/maestro.zip"
+          unzip -q "$RUNNER_TEMP/maestro.zip" -d "$HOME"
+          echo "$HOME/maestro/bin" >> "$GITHUB_PATH"
+      # Shorter than the job, so the screenshots and logs below are kept
+      # when a journey hangs.
+      - name: The journeys on the simulator
+        timeout-minutes: 40
+        working-directory: apps/mobile
+        run: |
+          xcrun simctl bootstatus "$SIM_UDID" -b > /dev/null
+          app=ios/build/Build/Products/Release-iphonesimulator/PuffinRide.app
+          xcrun simctl install "$SIM_UDID" "$app"
+          bundle_id="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app/Info.plist")"
+          status=0
+          bash maestro/run.sh "$SIM_UDID" "$bundle_id" ios || status=$?
+          # The app's own messages, for when a journey fails.
+          xcrun simctl spawn "$SIM_UDID" log show --last 40m --style compact \
+            --predicate 'process == "PuffinRide"' > "$RUNNER_TEMP/app-ios.log" 2>&1 || true
+          exit "$status"
+      - name: Keep the screenshots and Maestro's report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: phone-ios
+          path: |
+            apps/mobile/screenshots/
+            apps/mobile/maestro-results/
+            ${{ runner.temp }}/api.log
+            ${{ runner.temp }}/pg-setup.log
+            ${{ runner.temp }}/app-ios.log
+            ${{ runner.temp }}/xcodebuild.log
+          if-no-files-found: warn
+          retention-days: 14
