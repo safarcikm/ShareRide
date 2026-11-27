@@ -13,8 +13,11 @@ name: Sign up
     text: "Email"
     index: 1
 - inputText: ${output.email}
-# On a phone the keyboard covers the button.
-- hideKeyboard
+# On a phone the keyboard covers the button. A tap on the field's label, plain
+# text, closes it (Maestro's hideKeyboard cannot on the iPhone).
+- tapOn:
+    text: "Email"
+    index: 0
 - scrollUntilVisible:
     element: "Send code"
 - takeScreenshot: screenshots/04-sign-in
@@ -38,7 +41,9 @@ name: Sign up
     text: "Mobile number"
     index: 1
 - inputText: ${output.phoneLocal}
-- hideKeyboard
+- tapOn:
+    text: "Mobile number"
+    index: 0
 - scrollUntilVisible:
     element: "Send code"
 - takeScreenshot: screenshots/05-phone-number
@@ -63,7 +68,9 @@ name: Sign up
     text: "First name"
     index: 1
 - inputText: "Gunna"
-- hideKeyboard
+- tapOn:
+    text: "First name"
+    index: 0
 - takeScreenshot: screenshots/06-about-you
 - scrollUntilVisible:
     element: "I am 18 or older"
