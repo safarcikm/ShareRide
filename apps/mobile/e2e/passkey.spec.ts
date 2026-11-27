@@ -175,7 +175,7 @@ test("after a password, a browser that saves no passkey by itself offers Face ID
   await page.getByLabel("New password").fill("puffins fly north in May");
   await page.getByRole("button", { name: "Save password" }).click();
   await page.getByRole("button", { name: "Done" }).click();
-  await expect(page.getByRole("heading", { name: english.findTitle })).toBeVisible();
+  await expect(page.getByRole("heading", { name: english.hi("Hekla") })).toBeVisible();
   await signOut(page);
 
   // Chromium, with no password of its own saved, never decides: the app
