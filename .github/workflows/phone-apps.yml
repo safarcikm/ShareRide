@@ -27,6 +27,10 @@ env:
   EXPO_NO_TELEMETRY: "1"
   MAESTRO_CLI_NO_ANALYTICS: "1"
   MAESTRO_VERSION: "2.13.0"
+  # A fresh emulator or simulator on a CI machine is slow to start Maestro's
+  # driver: the first iPhone run gave up after two minutes, five seconds
+  # before the driver answered. Ten minutes, in milliseconds.
+  MAESTRO_DRIVER_STARTUP_TIMEOUT: "600000"
   # The test API (apps/api/src/e2e-server.ts) writes texts and emails here.
   E2E_SMS_OUTBOX: ${{ github.workspace }}/e2e-sms.jsonl
   E2E_EMAIL_OUTBOX: ${{ github.workspace }}/e2e-email.jsonl
@@ -95,7 +99,10 @@ jobs:
             | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
+      # Shorter than the job, so the screenshots and logs below are kept
+      # when a journey hangs.
       - name: The journeys on the emulator
+        timeout-minutes: 40
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
           api-level: 35
@@ -136,22 +143,35 @@ jobs:
           cache: pnpm
       - name: Install
         run: pnpm install --frozen-lockfile
-      # macOS runners have no containers: PostgreSQL 18 and PostGIS from Homebrew.
-      - name: PostgreSQL 18 with PostGIS
+      # The simulator starts while the app builds.
+      - name: Start the iPhone simulator
         run: |
+          udid="$(xcrun simctl list devices available --json | node -e '
+            const { devices } = JSON.parse(require("node:fs").readFileSync(0, "utf8"));
+            const runtimes = Object.keys(devices).filter((r) => r.includes("iOS")).sort();
+            const phones = devices[runtimes.at(-1)].filter((d) => /^iPhone \d+$/.test(d.name));
+            process.stdout.write((phones.at(-1) ?? devices[runtimes.at(-1)][0]).udid);
+          ')"
+          xcrun simctl boot "$udid"
+          echo "SIM_UDID=$udid" >> "$GITHUB_ENV"
+      # macOS runners have no containers: PostgreSQL 18 and PostGIS from
+      # Homebrew, installed while the app builds (it takes some minutes).
+      - name: PostgreSQL 18 with PostGIS, while the app builds
+        run: |
+          cat > "$RUNNER_TEMP/pg-setup.sh" <<'EOF'
+          set -euo pipefail
           brew install --quiet postgresql@18 postgis
           pg="$(brew --prefix postgresql@18)/bin"
           "$pg/initdb" --pgdata "$RUNNER_TEMP/pg" --username shareride --auth trust
           "$pg/pg_ctl" --pgdata "$RUNNER_TEMP/pg" --log "$RUNNER_TEMP/pg.log" --wait start
           "$pg/createdb" --username shareride shareride_test
-      - name: Start the test API
-        env:
-          PORT: "3001"
-        run: |
-          nohup pnpm --filter @shareride/api e2e:serve > "$RUNNER_TEMP/api.log" 2>&1 &
+          EOF
+          nohup bash -c 'if bash "$RUNNER_TEMP/pg-setup.sh"; then touch "$RUNNER_TEMP/pg-ready"; else touch "$RUNNER_TEMP/pg-failed"; fi' \
+            > "$RUNNER_TEMP/pg-setup.log" 2>&1 &
       - name: The native project
         working-directory: apps/mobile
         run: npx expo prebuild --platform ios
+      # Only the processor's own architecture (arm64): half the build.
       - name: Release build for the simulator against the test API
         working-directory: apps/mobile/ios
         env:
@@ -162,30 +182,39 @@ jobs:
           xcodebuild -workspace PuffinRide.xcworkspace -scheme PuffinRide \
             -configuration Release -sdk iphonesimulator \
             -destination "generic/platform=iOS Simulator" \
-            -derivedDataPath build CODE_SIGNING_ALLOWED=NO build \
+            -derivedDataPath build CODE_SIGNING_ALLOWED=NO ARCHS="$(uname -m)" build \
             | tee "$RUNNER_TEMP/xcodebuild.log" | grep -E "^(\*\*|error|warning: .*deprecated)" || true
           test -d build/Build/Products/Release-iphonesimulator/PuffinRide.app
+      - name: Start the test API
+        env:
+          PORT: "3001"
+        run: |
+          for _ in $(seq 1 180); do
+            if [ -f "$RUNNER_TEMP/pg-ready" ] || [ -f "$RUNNER_TEMP/pg-failed" ]; then break; fi
+            sleep 5
+          done
+          if [ ! -f "$RUNNER_TEMP/pg-ready" ]; then
+            cat "$RUNNER_TEMP/pg-setup.log"
+            exit 1
+          fi
+          nohup pnpm --filter @shareride/api e2e:serve > "$RUNNER_TEMP/api.log" 2>&1 &
       - name: Install Maestro
         run: |
           curl --fail --silent --show-error --location --output "$RUNNER_TEMP/maestro.zip" \
             "https://github.com/mobile-dev-inc/maestro/releases/download/cli-$MAESTRO_VERSION/maestro.zip"
           unzip -q "$RUNNER_TEMP/maestro.zip" -d "$HOME"
           echo "$HOME/maestro/bin" >> "$GITHUB_PATH"
+      # Shorter than the job, so the screenshots and logs below are kept
+      # when a journey hangs.
       - name: The journeys on the simulator
+        timeout-minutes: 40
         working-directory: apps/mobile
         run: |
-          udid="$(xcrun simctl list devices available --json | node -e '
-            const { devices } = JSON.parse(require("node:fs").readFileSync(0, "utf8"));
-            const runtimes = Object.keys(devices).filter((r) => r.includes("iOS")).sort();
-            const phones = devices[runtimes.at(-1)].filter((d) => /^iPhone \d+$/.test(d.name));
-            process.stdout.write((phones.at(-1) ?? devices[runtimes.at(-1)][0]).udid);
-          ')"
-          xcrun simctl boot "$udid"
-          xcrun simctl bootstatus "$udid" -b
-          xcrun simctl install "$udid" ios/build/Build/Products/Release-iphonesimulator/PuffinRide.app
-          bundle_id="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' \
-            ios/build/Build/Products/Release-iphonesimulator/PuffinRide.app/Info.plist)"
-          bash maestro/run.sh "$udid" "$bundle_id" ios
+          xcrun simctl bootstatus "$SIM_UDID" -b > /dev/null
+          app=ios/build/Build/Products/Release-iphonesimulator/PuffinRide.app
+          xcrun simctl install "$SIM_UDID" "$app"
+          bundle_id="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app/Info.plist")"
+          bash maestro/run.sh "$SIM_UDID" "$bundle_id" ios
       - name: Keep the screenshots and Maestro's report
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -195,6 +224,7 @@ jobs:
             apps/mobile/screenshots/
             apps/mobile/maestro-results/
             ${{ runner.temp }}/api.log
+            ${{ runner.temp }}/pg-setup.log
             ${{ runner.temp }}/xcodebuild.log
           if-no-files-found: warn
           retention-days: 14
