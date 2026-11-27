@@ -4,6 +4,8 @@ name: Signed out
 ---
 - launchApp:
     clearState: true
+# What the app shows first, whatever it is.
+- takeScreenshot: screenshots/00-launched
 - extendedWaitUntil:
     visible: "Share your ride"
     timeout: 120000
