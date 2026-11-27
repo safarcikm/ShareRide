@@ -216,9 +216,11 @@ not secret), `docs/operations/production.md`.
 
 ## PR 8: the store kit and the deletion page (`feat(stores)`)
 
-- [ ] `/delete-account` on the website (spec 32, section 5), in the
-  sitemap, linked from About; test first in `about.test.tsx`'s style and
-  the server's `search-engines.test.ts`.
+- [x] `/delete-account` on the website (spec 32, section 5), in the
+  sitemap, linked from About; test first in `about.test.tsx`'s style
+  (`delete-account-page.test.tsx`) and the server's
+  `search-engines.test.ts`. The steps name Profile, Privacy and your data
+  and Delete my account with the app's own texts.
 - [ ] `marketing/stores/`: the store texts (Google Play in Icelandic and
   English, the App Store in English), the screenshots from PR 2's runs at
   each store's sizes, the Google Play feature graphic and icon (script

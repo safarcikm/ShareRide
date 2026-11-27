@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { aboutPage, carpoolPage, pageText } from "./seo.ts";
+import { aboutPage, carpoolPage, deleteAccountPage, deleteAccountSteps, pageText } from "./seo.ts";
 import { createTranslator } from "./translator.ts";
 
 const en = createTranslator("en");
@@ -137,5 +137,39 @@ describe("the About page (spec 30, 3.1 and 3.4)", () => {
         /\b(pay|paid|payment|price|fee|fees|cost|costs|cheap|money|ISK|kr|greiða|greiðsl\w*|verð\w*|gjald\w*|kostnað\w*|ódýr\w*|krónu\w*)\b/iu,
       );
     }
+  });
+});
+
+describe("the account deletion page (spec 32, section 5)", () => {
+  it("has its own title and description, naming the app as the stores do", () => {
+    expect(pageText(en, { kind: "deleteAccount" })).toEqual({
+      title: "Delete your PuffinRide account · PuffinRide",
+      description:
+        "How to delete your PuffinRide account in the app or on the website, what we erase and what we keep, and for how long.",
+    });
+    expect(pageText(is, { kind: "deleteAccount" }).title).toBe(
+      "Eyddu PuffinRide-aðganginum þínum · PuffinRide",
+    );
+  });
+
+  it("names the places to go as the app names them, in both languages", () => {
+    expect(deleteAccountPage.path).toBe("/delete-account");
+    expect(deleteAccountSteps(en)[1]).toBe(
+      `Open ${en("nav.profile")}, then ${en("settings.privacy")}.`,
+    );
+    expect(deleteAccountSteps(en)[2]).toContain(en("privacy.delete"));
+    expect(deleteAccountSteps(is)[1]).toBe(
+      `Opnaðu „${is("nav.profile")}“ og svo „${is("settings.privacy")}“.`,
+    );
+    expect(deleteAccountSteps(is)[2]).toContain(is("privacy.delete"));
+  });
+
+  it("gives the same address as About, and links to the Privacy Policy", () => {
+    expect(deleteAccountPage.email).toBe(aboutPage.email);
+    expect(deleteAccountPage.privacyPolicy.href).toBe("/legal/privacy");
+    expect(aboutPage.deleteAccount).toEqual({
+      label: "deleteAccount.link",
+      href: "/delete-account",
+    });
   });
 });

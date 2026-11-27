@@ -1605,6 +1605,14 @@ releases follow [Semantic Versioning](https://semver.org/).
   stretch. Each ride in `GET /v1/me/trips` says who asks in the request
   that closes first (`firstRequest`: the first name, the seats and the two
   stops' names), for "Dóra asks for 1 seat".
+- Delete your PuffinRide account (spec 32, section 5), a public page at
+  `/delete-account` in Icelandic and English, as Google Play asks of apps
+  with accounts: how to delete an account in the app or on the website
+  (Profile, then Privacy and your data, then Delete my account, named as
+  the app names them), what happens next, what is erased, what is kept and
+  for how long, and where to write. Signed out it offers Sign in, signed in
+  Delete my account itself. It is in the sitemap, the server writes its
+  text for crawlers that do not run the app, and About links to it.
 
 ### Fixed
 
