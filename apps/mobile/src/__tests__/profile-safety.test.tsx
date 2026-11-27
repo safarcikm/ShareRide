@@ -1,4 +1,4 @@
-import { fireEvent, screen } from "expo-router/testing-library";
+import { fireEvent, screen, within } from "expo-router/testing-library";
 import type { FileReportBody } from "@shareride/contracts";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
@@ -10,8 +10,10 @@ import {
   annaProfileId,
   annaReviews,
   aProfileReview,
+  findPersonCard,
   profileApi,
 } from "@/testing/people";
+import { colors } from "@/theme/tokens";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
 jest.mock("@/auth/token-store", () => {
@@ -80,8 +82,20 @@ async function openProfile(
       );
     },
   });
-  await screen.findByRole("header", { name: "Anna" });
+  await findPersonCard("Anna");
   return app;
+}
+
+/** The last card of rows on the screen, and each row's words in order. */
+function lastRows() {
+  const rows = screen.getAllByTestId("action-rows").at(-1);
+  if (rows === undefined) throw new Error("No card of rows");
+  return {
+    rows,
+    titles: within(rows)
+      .getAllByTestId("row-words")
+      .map((words) => String(within(words).getByText(/./).props.children)),
+  };
 }
 
 async function sendReport(category: string) {
@@ -90,12 +104,34 @@ async function sendReport(category: string) {
 }
 
 describe("Report and Block on a profile (spec 9, 3.1.1 and 3.2.1)", () => {
-  it("offers Report, Block and the community rules on another person's profile", async () => {
+  it("offers the community rules, Report and Block on another person's profile", async () => {
     await openProfile();
-    expect(screen.getByRole("button", { name: "Report Anna" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Block Anna" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Report Anna" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Block Anna" })).toBeVisible();
     await fireEvent.press(screen.getByRole("link", { name: "Read the community rules" }));
     expect(screen).toHavePathname("/legal/community-rules");
+  });
+
+  it("has them as rows of the page's last card, Block red and last (spec 31, 3.19 and R31.3)", async () => {
+    await openProfile();
+    await screen.findByText("On time and careful.");
+    const { rows, titles } = lastRows();
+    expect(titles).toEqual(["Read the community rules", "Report Anna", "Block Anna"]);
+    // Each row has its picture; only Block is red, and it has no chevron.
+    const hidden = { includeHiddenElements: true };
+    expect(within(rows).getAllByTestId("row-icon", hidden)).toHaveLength(3);
+    const report = within(rows).getByRole("link", { name: "Report Anna" });
+    const block = within(rows).getByRole("link", { name: "Block Anna" });
+    expect(within(report).getByText("Report Anna")).toHaveStyle({ color: colors.light.text });
+    expect(within(report).getByTestId("row-chevron", hidden)).toBeTruthy();
+    expect(within(block).getByText("Block Anna")).toHaveStyle({ color: colors.light.error });
+    expect(within(block).queryByTestId("row-chevron", hidden)).toBeNull();
+    // They come after the reviews: nothing of the profile is under them.
+    const all = screen.getAllByText(/./).map((text) => String(text.props.children));
+    expect(all.indexOf("Read the community rules")).toBeGreaterThan(
+      all.indexOf("On time and careful."),
+    );
+    expect(all.slice(all.indexOf("Block Anna") + 1)).toEqual([]);
   });
 
   it("offers no Report or Block on my own profile, nor when I see it as others do", async () => {
@@ -105,10 +141,13 @@ describe("Report and Block on a profile (spec 9, 3.1.1 and 3.2.1)", () => {
         profileApi(client, [myProfile]);
       },
     });
-    expect(await screen.findByRole("header", { name: "Sigga" })).toBeVisible();
+    expect(await findPersonCard("Sigga")).toBeVisible();
     expect(await screen.findByText("On time and careful.")).toBeVisible();
-    expect(screen.queryByRole("button", { name: "Report Sigga" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Block Sigga" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Report Sigga" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Block Sigga" })).toBeNull();
+    // Nor the rules, which stand with them: the one card of rows is the figure's.
+    expect(screen.queryByRole("link", { name: "Read the community rules" })).toBeNull();
+    expect(screen.getAllByTestId("action-rows")).toHaveLength(1);
 
     await renderApp("/profile/preview", {
       me: completeMe,
@@ -117,8 +156,9 @@ describe("Report and Block on a profile (spec 9, 3.1.1 and 3.2.1)", () => {
       },
     });
     expect(await screen.findByText("On time and careful.")).toBeVisible();
-    expect(screen.queryByRole("button", { name: "Report Sigga" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Block Sigga" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Report Sigga" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Block Sigga" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Read the community rules" })).toBeNull();
   });
 
   it("lets me report a review about me from my own profile", async () => {
@@ -169,7 +209,7 @@ describe("Report and Block on a profile (spec 9, 3.1.1 and 3.2.1)", () => {
 
   it("reports a person from their profile, then offers to block them too", async () => {
     const { client } = await openProfile();
-    await fireEvent.press(screen.getByRole("button", { name: "Report Anna" }));
+    await fireEvent.press(screen.getByRole("link", { name: "Report Anna" }));
     expect(await screen.findByRole("header", { name: "Report Anna" })).toBeVisible();
     // The address names the profile, as the profile's own does: never a user ID.
     expect(screen).toHaveSearchParams({ kind: "profile", id: annaProfileId });
@@ -236,8 +276,9 @@ describe("Report and Block on a profile (spec 9, 3.1.1 and 3.2.1)", () => {
 
   it("asks first, then blocks, lists what we still share, and goes back to the profile", async () => {
     const { client } = await openProfile({ together: [paidBooking] });
-    await fireEvent.press(screen.getByRole("button", { name: "Block Anna" }));
+    await fireEvent.press(screen.getByRole("link", { name: "Block Anna" }));
     expect(await screen.findByRole("header", { name: "Block Anna?" })).toBeVisible();
+    expect(screen).toHavePathname(`/people/${annaProfileId}/block`);
     expect(blocksSent(client)).toEqual([]);
 
     await fireEvent.press(screen.getByRole("button", { name: "Block Anna" }));
@@ -256,18 +297,18 @@ describe("Report and Block on a profile (spec 9, 3.1.1 and 3.2.1)", () => {
 
     await fireEvent.press(screen.getByRole("button", { name: "Back to the profile" }));
     expect(screen).toHavePathname(`/people/${annaProfileId}`);
-    expect(await screen.findByRole("header", { name: "Anna" })).toBeVisible();
+    expect(await findPersonCard("Anna")).toBeVisible();
   });
 
   it("says when blocking failed, and when the person is not there any more", async () => {
     await openProfile({ block: () => failure(500, "internal") });
-    await fireEvent.press(screen.getByRole("button", { name: "Block Anna" }));
+    await fireEvent.press(screen.getByRole("link", { name: "Block Anna" }));
     await fireEvent.press(await screen.findByRole("button", { name: "Block Anna" }));
     expect(await screen.findByText("We couldn't block this person. Try again.")).toBeVisible();
 
     // Left between opening the screen and pressing: trying again would not help.
     await openProfile({ block: () => failure(404, "not_found") });
-    await fireEvent.press(screen.getByRole("button", { name: "Block Anna" }));
+    await fireEvent.press(screen.getByRole("link", { name: "Block Anna" }));
     await fireEvent.press(await screen.findByRole("button", { name: "Block Anna" }));
     expect(
       await screen.findByText("This profile isn't available. The person may have left PuffinRide."),

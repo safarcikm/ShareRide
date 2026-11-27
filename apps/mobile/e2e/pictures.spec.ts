@@ -5,6 +5,7 @@ import { apiUrl } from "../playwright.config";
 import { english, signUp } from "./support/account";
 import { confirmedBooking, requestSeat, secondPage } from "./support/cancelling";
 import { passengerRow } from "./support/driver-ride";
+import { aPerson, personId, showPerson } from "./support/person";
 import { addPhotoBeforePublishing } from "./support/photo";
 import { chooseTime, postTripToSelfoss, tomorrow } from "./support/trips";
 
@@ -33,6 +34,29 @@ async function showWhole(page: Page, width: number) {
   });
   await page.setViewportSize({ width, height: Math.max(Math.ceil(height), 720) });
   await page.waitForTimeout(500);
+}
+
+/**
+ * Draws the whole of the open screen into `folder`, as
+ * `<name>-phone-light.png` on a phone and `<name>-laptop-light.png` on a
+ * laptop, and gives the window its size back.
+ */
+function shooter(
+  page: Page,
+  folder: string,
+  window: { readonly width: number; readonly height: number },
+  wide: boolean,
+) {
+  return async (name: string, scheme: "light" | "dark") => {
+    await showWhole(page, window.width);
+    // Away from the rows: one under the pointer would show as hovered.
+    await page.mouse.move(0, 0);
+    await page.screenshot({
+      path: join(folder, `${name}-${wide ? "laptop" : "phone"}-${scheme}.png`),
+      scale: wide ? "css" : "device",
+    });
+    await page.setViewportSize(window);
+  };
 }
 
 /**
@@ -932,17 +956,7 @@ test.describe("pictures", () => {
     if (window === null) throw new Error("The page has no size");
     await page.setViewportSize(window);
     const visible = { visible: true };
-    const kind = wide ? "laptop" : "phone";
-    const shoot = async (name: string, scheme: "light" | "dark") => {
-      await showWhole(page, window.width);
-      // Away from the rows: one under the pointer would show as hovered.
-      await page.mouse.move(0, 0);
-      await page.screenshot({
-        path: join(folder, `${name}-${kind}-${scheme}.png`),
-        scale: wide ? "css" : "device",
-      });
-      await page.setViewportSize(window);
-    };
+    const shoot = shooter(page, folder, window, wide);
     const heading = (name: string) =>
       page.getByRole("heading", { name, exact: true }).filter(visible);
     const row = (name: string | RegExp) => page.getByRole("link", { name }).filter(visible);
@@ -985,5 +999,78 @@ test.describe("pictures", () => {
     await expect(row("Bílarnir mínir, Toyota Yaris")).toBeVisible();
     await expect(page.getByTestId("person-card-standing").filter(visible)).toBeVisible();
     await shoot("profile", "dark");
+  });
+
+  // Spec 31, 3.19, the second half of Profile and settings: a person's
+  // profile, with the person in the card and Report and Block as the last
+  // rows; Edit profile with the same card; and pages Profile opens, their
+  // titles at the left: Privacy with its red last row, deleting the account
+  // with its red button, and a car with Remove as a red row. The person
+  // looked at is made up (support/person.ts).
+  test("a person's profile and the pages Profile opens (spec 31)", async ({ page }, info) => {
+    test.setTimeout(300_000);
+    const folder = join(root ?? "", "one-ride-one-ticket", "built");
+    mkdirSync(folder, { recursive: true });
+    const wide = info.project.name === "desktop";
+    const window = wide ? { width: 1280, height: 720 } : (page.viewportSize() ?? null);
+    if (window === null) throw new Error("The page has no size");
+    await page.setViewportSize(window);
+    const visible = { visible: true };
+    const shoot = shooter(page, folder, window, wide);
+    const heading = (name: string) =>
+      page.getByRole("heading", { name, exact: true }).filter(visible);
+    const person = () => page.getByTestId("person-card").filter(visible);
+
+    await signUp(page, english, "Dóra");
+    await showPerson(page, aPerson());
+    await page.goto(`/people/${personId}`);
+    await expect(heading("Profile")).toBeVisible();
+    await expect(person().getByText("Bára", { exact: true })).toBeVisible();
+    await expect(page.getByText("Easy to travel with.").filter(visible)).toBeVisible();
+    await expect(page.getByRole("link", { name: "Block Bára" }).filter(visible)).toBeVisible();
+    await shoot("person", "light");
+    if (wide) return;
+
+    // Edit profile, with who she is now over the form.
+    await page.goto("/profile/edit");
+    await expect(heading("Edit profile")).toBeVisible();
+    await expect(person().getByText("Dóra", { exact: true })).toBeVisible();
+    await shoot("edit-profile", "light");
+
+    // Privacy and your data, then deleting the account: nothing is open yet.
+    await page.goto("/settings/privacy");
+    await expect(heading("Privacy")).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: "Delete my account" }).filter(visible),
+    ).toBeVisible();
+    await shoot("privacy", "light");
+    await page.goto("/settings/privacy/delete");
+    await expect(
+      page.getByRole("button", { name: "Delete my account" }).filter(visible),
+    ).toBeVisible();
+    await shoot("delete-account", "light");
+
+    // A car, once she has posted a ride with one.
+    await postTripToSelfoss(page, "17:30");
+    await page.goto("/drive/cars");
+    await expect(heading("My cars")).toBeVisible();
+    await page
+      .getByRole("button", { name: /^Toyota Yaris/ })
+      .filter(visible)
+      .click();
+    await expect(heading("Edit your car")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Remove car" }).filter(visible)).toBeVisible();
+    await shoot("edit-car", "light");
+
+    // The person again, in Icelandic, at night.
+    await page.emulateMedia({ colorScheme: "dark" });
+    await page.goto("/settings/language");
+    await page.getByRole("radio", { name: "Íslenska" }).filter(visible).click();
+    await expect(heading("Tungumál")).toBeVisible();
+    await page.goto(`/people/${personId}`);
+    await expect(heading("Prófíll")).toBeVisible();
+    await expect(page.getByRole("link", { name: "Loka á: Bára" }).filter(visible)).toBeVisible();
+    await expect(page.getByText("Easy to travel with.").filter(visible)).toBeVisible();
+    await shoot("person", "dark");
   });
 });

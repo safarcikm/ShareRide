@@ -7,7 +7,7 @@ import { useMe, useSession } from "@/auth/session";
 import { Button } from "@/components/button";
 import { Notice } from "@/components/notice";
 import { Screen } from "@/components/screen";
-import { Body, Title } from "@/components/text";
+import { ScreenHead } from "@/components/screen-head";
 import { useLanguage } from "@/i18n/language";
 import { spacing } from "@/theme/tokens";
 
@@ -15,6 +15,8 @@ import { spacing } from "@/theme/tokens";
  * While an account waits to be deleted (spec 11, 3.4.4; plan 4.5): signing
  * in shows only when it goes, with "Keep my account", which brings it back
  * as it was, and "Sign out". The root layout opens nothing else meanwhile.
+ * What is going on is the title, at the left, with nothing to go back to
+ * (spec 31, 3.19).
  */
 export default function DeletionWaitingScreen() {
   const { locale, t } = useLanguage();
@@ -50,8 +52,11 @@ export default function DeletionWaitingScreen() {
 
   return (
     <Screen>
-      <Title>{t("privacy.deletionScheduled", { date })}</Title>
-      <Body>{t("privacy.waiting.body")}</Body>
+      <ScreenHead
+        title={t("privacy.deletionScheduled", { date })}
+        line={t("privacy.waiting.body")}
+        back={null}
+      />
       <View style={styles.actions}>
         <Notice message={error} />
         {/* One at a time: a sign-out while keeping would leave no tokens. */}

@@ -264,8 +264,8 @@ export const is = {
     "Sent með: útgáfa appsins, gerð síma eða vafra, skjárinn sem þú varst á og tungumálið þitt.",
   "feedback.send": "Senda ábendingu",
   "feedback.tooMany": "Þú hefur sent margar ábendingar í dag. Reyndu aftur eftir {wait}.",
-  "feedback.thanks":
-    "Takk fyrir. Við fengum ábendinguna þína. Ef við svörum sérðu svarið undir Ábendingarnar mínar í Prófílnum.",
+  "feedback.thanks": "Takk fyrir. Við fengum ábendinguna þína.",
+  "feedback.thanksHelp": "Ef við svörum sérðu svarið undir Ábendingarnar mínar í Prófílnum.",
   "feedback.done": "Lokið",
   "feedback.mine": "Ábendingarnar mínar",
   "feedback.mineHelp": "Það sem þú sendir okkur og svör okkar. Aðeins þú sérð þetta.",
@@ -1461,6 +1461,7 @@ export const is = {
   "request.timeLeft": "{time} eftir til að svara",
   "request.timeUp": "Tíminn til að svara er liðinn",
   "request.memberSince": "Meðlimur frá {month} {year}",
+  "people.title": "Prófíll",
   "people.formerMember": "Fyrrverandi notandi",
   "people.open": "Skoða prófíl",
   "people.openOf": "Skoða prófíl: {name}",

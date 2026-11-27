@@ -1,36 +1,27 @@
-import { peopleColourOf } from "@shareride/domain";
-import { StyleSheet, View } from "react-native";
 import { useMe } from "@/auth/session";
-import { Avatar } from "@/components/avatar";
-import { BackButton } from "@/components/back-button";
 import { Screen } from "@/components/screen";
-import { Body, Title } from "@/components/text";
+import { ScreenHead } from "@/components/screen-head";
 import { backTo } from "@/driving/back-to";
 import { useLanguage } from "@/i18n/language";
+import { PersonCard } from "@/people/person-card";
+import { myCardOf } from "@/profile/my-card";
 import { PhotoControls } from "@/profile/photo-controls";
-import { spacing } from "@/theme/tokens";
 
 /**
  * A profile photo before publishing (spec 1, 3.5; spec 16, 3.6, item 5),
  * opened from step 5 of posting a trip. Once a photo is added it goes back
- * there, which loads again.
+ * there, which loads again. The title is at the left, with why under it,
+ * and who the photo is of stands in the person's card, as on Profile
+ * (spec 31, 3.19), over the photo's controls.
  */
 export default function DriverPhotoScreen() {
-  const { t } = useLanguage();
+  const { locale, t } = useLanguage();
   const me = useMe();
   if (me === null) return null;
   return (
     <Screen>
-      <BackButton fallback="/profile" />
-      <Title>{t("driver.photo.title")}</Title>
-      <Body>{t("driver.photo.intro")}</Body>
-      <View style={styles.avatar}>
-        <Avatar
-          firstName={me.firstName ?? ""}
-          colour={peopleColourOf(me.id)}
-          photo={me.photo?.url ?? null}
-        />
-      </View>
+      <ScreenHead title={t("driver.photo.title")} line={t("driver.photo.intro")} back="/profile" />
+      <PersonCard {...myCardOf(me, t, locale)} />
       <PhotoControls
         me={me}
         prominent
@@ -41,7 +32,3 @@ export default function DriverPhotoScreen() {
     </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  avatar: { alignItems: "center", paddingVertical: spacing.sm },
-});

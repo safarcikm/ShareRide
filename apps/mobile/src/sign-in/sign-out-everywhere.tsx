@@ -25,7 +25,7 @@ export function SignOutEverywhere() {
         busy={signingOut === "all"}
         onPress={() => void signOut(true)}
       />
-      <Body>{t("settings.signOutAllHelp")}</Body>
+      <Body align="start">{t("settings.signOutAllHelp")}</Body>
       <Notice message={error} />
     </View>
   );

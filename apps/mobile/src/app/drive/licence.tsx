@@ -3,20 +3,20 @@ import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { errorText } from "@/auth/errors";
 import { useSession } from "@/auth/session";
-import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Checkbox } from "@/components/checkbox";
 import { FieldError } from "@/components/field-error";
 import { Notice } from "@/components/notice";
 import { Screen } from "@/components/screen";
-import { Body, Title } from "@/components/text";
+import { ScreenHead } from "@/components/screen-head";
 import { backTo } from "@/driving/back-to";
 import { useLanguage } from "@/i18n/language";
 import { spacing } from "@/theme/tokens";
 
 /**
  * The driving licence declaration (spec 3, screen 3 and 3.3): one tick, and
- * only its date is kept.
+ * only its date is kept. The title is at the left, with what we do not ask
+ * for under it (spec 31, 3.19).
  */
 export default function LicenceScreen() {
   const { t } = useLanguage();
@@ -41,9 +41,7 @@ export default function LicenceScreen() {
 
   return (
     <Screen>
-      <BackButton fallback="/profile" />
-      <Title>{t("licence.title")}</Title>
-      <Body>{t("licence.intro")}</Body>
+      <ScreenHead title={t("licence.title")} line={t("licence.intro")} back="/profile" />
       <View style={styles.group}>
         <Checkbox
           label={t("licence.declare")}

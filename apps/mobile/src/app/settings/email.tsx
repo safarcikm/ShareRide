@@ -5,12 +5,12 @@ import { useRef, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { errorText, formatWait } from "@/auth/errors";
 import { useMe, useSession } from "@/auth/session";
-import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Notice } from "@/components/notice";
 import { Screen } from "@/components/screen";
+import { ScreenHead } from "@/components/screen-head";
 import { TextField } from "@/components/text-field";
-import { Body, Title } from "@/components/text";
+import { Body } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { BackToMenu } from "@/navigation/back-to-menu";
 import { ConfirmWithCode } from "@/privacy/confirm-with-code";
@@ -21,7 +21,9 @@ import { spacing } from "@/theme/tokens";
  * the address, and it is the account's once the link is opened. The
  * address is checked with the API's own rule before sending. The email
  * signs in, so past the account's first 30 minutes a confirm code comes
- * first (spec 26, 3.7): the API asks for it, and the form appears.
+ * first (spec 26, 3.7): the API asks for it, and the form appears. The
+ * title is at the left, with what the email is for under it (spec 31,
+ * 3.19).
  */
 export default function EmailScreen() {
   const me = useMe();
@@ -93,10 +95,10 @@ function EmailForm({ me }: { readonly me: Me }) {
   const { pendingEmail } = me;
   return (
     <Screen>
-      <BackButton fallback="/profile" />
-      <Title>{t("addEmail.title")}</Title>
-      <Body>{t("addEmail.intro")}</Body>
-      {me.email === null ? null : <Body>{t("addEmail.current", { email: me.email })}</Body>}
+      <ScreenHead title={t("addEmail.title")} line={t("addEmail.intro")} back="/profile" />
+      {me.email === null ? null : (
+        <Body align="start">{t("addEmail.current", { email: me.email })}</Body>
+      )}
       {pendingEmail === null ? null : (
         <View style={styles.waiting}>
           <Notice

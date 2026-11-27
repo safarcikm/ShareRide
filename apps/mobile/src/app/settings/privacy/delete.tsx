@@ -11,14 +11,14 @@ import { useCallback, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { errorText } from "@/auth/errors";
 import { useMe, useSession } from "@/auth/session";
-import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
 import { Loading } from "@/components/loading";
 import { Notice } from "@/components/notice";
 import { Row } from "@/components/row";
 import { Screen } from "@/components/screen";
-import { Body, Title } from "@/components/text";
+import { ScreenHead } from "@/components/screen-head";
+import { Body } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { BackToMenu } from "@/navigation/back-to-menu";
 import { openPlace } from "@/navigation/open-place";
@@ -32,7 +32,9 @@ type Check = { readonly ok: true; readonly data: DeletionCheck } | CallFailure;
  * each opened where it is cancelled under the normal rules (spec 6), and
  * looked at again on coming back; what happens; then, once nothing is open,
  * deleting with a fresh code. Every session ends, this one too, and the
- * screen says when the data goes.
+ * screen says when the data goes. The title is at the left, and the button
+ * that deletes is red, before the code and with it, as it takes the
+ * account away (spec 31, 3.19 and decision 17).
  */
 export default function DeleteScreen() {
   const me = useMe();
@@ -96,8 +98,7 @@ function DeleteMyAccount({
 
   return (
     <Screen>
-      <BackButton fallback="/settings/privacy" />
-      <Title>{t("privacy.delete")}</Title>
+      <ScreenHead title={t("privacy.delete")} back="/settings/privacy" />
       <Body align="start">{t("privacy.deleteExplain")}</Body>
       {check === undefined ? (
         <Loading />
@@ -119,6 +120,7 @@ function DeleteMyAccount({
           {check.data.allowed ? (
             confirming ? (
               <ConfirmWithCode
+                danger
                 confirmLabel={t("privacy.deleteConfirm")}
                 sentUntil={codeWait}
                 onSent={setCodeWait}
@@ -131,6 +133,7 @@ function DeleteMyAccount({
               <>
                 <Body align="start">{t("privacy.delete.wait")}</Body>
                 <Button
+                  variant="danger"
                   label={t("privacy.deleteConfirm")}
                   onPress={() => {
                     setError(null);
@@ -242,21 +245,26 @@ function Settle({ item }: { readonly item: OpenItem }) {
 function Deleted({ deleteAfter }: { readonly deleteAfter: string }) {
   const { locale, t } = useLanguage();
   return (
-    <Screen>
-      <Title>
-        {t("privacy.deletionScheduled", {
-          date: formatDayAndMonth(new Date(deleteAfter), locale),
-        })}
-      </Title>
-      <Body>{t("privacy.delete.signedOut")}</Body>
-      <View style={styles.group}>
+    <Screen
+      footer={
         <Button
+          main
           label={t("common.close")}
           onPress={() => {
             openPlace("/");
           }}
         />
-      </View>
+      }
+    >
+      {/* The button pressed is gone: focus moves to what it did. */}
+      <ScreenHead
+        title={t("privacy.deletionScheduled", {
+          date: formatDayAndMonth(new Date(deleteAfter), locale),
+        })}
+        line={t("privacy.delete.signedOut")}
+        back={null}
+        outcome={{ of: "deleted", focus: true }}
+      />
     </Screen>
   );
 }

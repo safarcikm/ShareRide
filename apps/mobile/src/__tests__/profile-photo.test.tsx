@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from "expo-router/testing-library";
+import { fireEvent, screen, waitFor, within } from "expo-router/testing-library";
 import type { Me } from "@shareride/contracts";
 import { checkProfilePhoto } from "@shareride/domain";
 import { bytesFromBase64 } from "@/lib/base64";
@@ -8,7 +8,7 @@ import { failure, ok, type FakeClient } from "@/testing/fake-client";
 import { photoSizeIs, resetManipulator } from "@/testing/image-manipulator";
 import { cameraAllowedIs, launchCameraAsync, photoPickedIs } from "@/testing/image-picker";
 import { meetingPoints } from "@/testing/meeting-points";
-import { annaProfile, annaProfileId, newcomer, profileApi } from "@/testing/people";
+import { annaProfile, annaProfileId, findPersonCard, newcomer, profileApi } from "@/testing/people";
 import { northResult, northTrip, tripDetailsApi } from "@/testing/search";
 import { readyDriver, yaris } from "@/testing/trips";
 
@@ -147,6 +147,27 @@ describe("my profile photo (spec 1, 3.5)", () => {
     expect(screen.getByRole("button", { name: "Add a photo" })).toBeVisible();
   });
 
+  it("adds and removes my photo on Edit profile, in the person's card, and keeps what I was writing (spec 31, 3.19)", async () => {
+    const app = await renderApp("/profile/edit", { me: completeMe, setUp: drivingApi });
+    const card = within(await findPersonCard("Anna"));
+    await fireEvent.changeText(screen.getByLabelText("First name"), "Annika");
+    picks(1200, 900);
+    app.client.answer("/v1/me/photo", () => ok(200, withPhoto), "put");
+    await fireEvent.press(card.getByRole("button", { name: "Add a photo" }));
+    expect(await card.findByText("Photo saved.")).toBeVisible();
+    expect(card.getByTestId("avatar-photo", hidden)).toHaveProp("source", { uri: link });
+    // The card says what is saved; the form keeps what is being written.
+    expect(card.getByText("Anna")).toBeVisible();
+    expect(screen.getByLabelText("First name")).toHaveDisplayValue("Annika");
+
+    app.client.answer("/v1/me/photo", () => ok(200, completeMe), "delete");
+    await fireEvent.press(card.getByRole("button", { name: "Remove photo" }));
+    expect(await card.findByText("Photo removed.")).toBeVisible();
+    expect(card.queryByTestId("avatar-photo", hidden)).toBeNull();
+    expect(card.getByRole("button", { name: "Add a photo" })).toBeVisible();
+    expect(screen.getByLabelText("First name")).toHaveDisplayValue("Annika");
+  });
+
   it("says PuffinRide hid my photo, which only I still see, and lets me add another (spec 9, 3.4.3)", async () => {
     await openProfile({ ...completeMe, photo: { url: link, hidden: true } });
     expect(
@@ -203,7 +224,7 @@ describe("photos beside names (spec 1, 3.5)", () => {
         profileApi(client, [{ ...annaProfile, photo: link }]);
       },
     });
-    expect(await screen.findByRole("header", { name: "Anna" })).toBeVisible();
-    expect(screen.getByTestId("avatar-photo", hidden)).toHaveProp("source", { uri: link });
+    const card = await findPersonCard("Anna");
+    expect(within(card).getByTestId("avatar-photo", hidden)).toHaveProp("source", { uri: link });
   });
 });

@@ -12,12 +12,12 @@ import { apiBaseUrl } from "@/auth/api";
 import { errorText, formatWait } from "@/auth/errors";
 import { useMe, useSession } from "@/auth/session";
 import { Announcer } from "@/components/announcer";
-import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Loading } from "@/components/loading";
 import { Notice } from "@/components/notice";
 import { Screen } from "@/components/screen";
-import { Body, Title } from "@/components/text";
+import { ScreenHead } from "@/components/screen-head";
+import { Body } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { BackToMenu } from "@/navigation/back-to-menu";
 import { ConfirmWithCode } from "@/privacy/confirm-with-code";
@@ -155,9 +155,11 @@ function DownloadMyData() {
 
   return (
     <Screen>
-      <BackButton fallback="/settings/privacy" />
-      <Title>{t("privacy.download")}</Title>
-      <Body>{t("privacy.download.intro")}</Body>
+      <ScreenHead
+        title={t("privacy.download")}
+        line={t("privacy.download.intro")}
+        back="/settings/privacy"
+      />
       <Announcer message={announcement} />
       {latest === undefined ? (
         <Loading />

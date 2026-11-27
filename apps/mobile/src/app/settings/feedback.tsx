@@ -5,12 +5,12 @@ import { useCallback } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { useMe, useSession } from "@/auth/session";
 import { useOpenFeedback } from "@/beta/feedback";
-import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
 import { Notice } from "@/components/notice";
 import { Screen } from "@/components/screen";
-import { Body, Title } from "@/components/text";
+import { ScreenHead } from "@/components/screen-head";
+import { Body } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { useLoadedOnFocus } from "@/lib/use-loaded";
 import { BackToMenu } from "@/navigation/back-to-menu";
@@ -20,6 +20,8 @@ import { usePalette } from "@/theme/use-palette";
 /**
  * My feedback (spec 12, 3.3.5), a page of Profile: what I sent, the latest
  * first, with ShareRide's reply when there is one. Only I see this list.
+ * The title is at the left, with what the page is under it (spec 31,
+ * 3.19).
  */
 export default function MyFeedbackScreen() {
   const me = useMe();
@@ -36,11 +38,7 @@ function MyFeedback() {
   const { value: answer, reload } = useLoadedOnFocus(load);
 
   const header = (
-    <>
-      <BackButton fallback="/profile" />
-      <Title>{t("feedback.mine")}</Title>
-      <Body>{t("feedback.mineHelp")}</Body>
-    </>
+    <ScreenHead title={t("feedback.mine")} line={t("feedback.mineHelp")} back="/profile" />
   );
   if (answer === undefined) {
     return (
@@ -65,7 +63,7 @@ function MyFeedback() {
     <Screen>
       {header}
       {feedback.length === 0 ? (
-        <Body>{t("feedback.mineNone")}</Body>
+        <Body align="start">{t("feedback.mineNone")}</Body>
       ) : (
         feedback.map((item) => (
           <Card key={item.id}>

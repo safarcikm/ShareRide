@@ -3,11 +3,11 @@ import { useCallback, useState } from "react";
 import { ActivityIndicator } from "react-native";
 import { useMe, useSession } from "@/auth/session";
 import { Announcer } from "@/components/announcer";
-import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Notice } from "@/components/notice";
 import { Screen } from "@/components/screen";
-import { Body, Title } from "@/components/text";
+import { ScreenHead } from "@/components/screen-head";
+import { Body } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { useLoaded } from "@/lib/use-loaded";
 import { BackToMenu } from "@/navigation/back-to-menu";
@@ -17,7 +17,8 @@ import { usePalette } from "@/theme/use-palette";
 /**
  * Notices from ShareRide (spec 9, 3.4.4; milestone 9 decision 1), in
  * Profile and where a notice's push opens: what ShareRide did about me and
- * why, the latest first, each with its appeal. Open while suspended.
+ * why, the latest first, each with its appeal. Open while suspended. The
+ * title is at the left, with what the page is under it (spec 31, 3.19).
  */
 export default function NoticesScreen() {
   const me = useMe();
@@ -35,13 +36,7 @@ function Notices() {
   const [changed, setChanged] = useState<Readonly<Record<string, NoticeData>>>({});
   const [announcement, setAnnouncement] = useState<{ text: string; count: number } | null>(null);
 
-  const header = (
-    <>
-      <BackButton fallback="/profile" />
-      <Title>{t("notices.title")}</Title>
-      <Body>{t("notices.help")}</Body>
-    </>
-  );
+  const header = <ScreenHead title={t("notices.title")} line={t("notices.help")} back="/profile" />;
   if (answer === undefined) {
     return (
       <Screen>
@@ -65,7 +60,7 @@ function Notices() {
       {header}
       <Announcer message={announcement} />
       {notices.length === 0 ? (
-        <Body>{t("notices.none")}</Body>
+        <Body align="start">{t("notices.none")}</Body>
       ) : (
         notices.map((notice) => (
           <NoticeCard

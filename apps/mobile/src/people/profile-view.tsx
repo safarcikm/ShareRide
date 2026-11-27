@@ -7,52 +7,51 @@ import {
 } from "@shareride/contracts";
 import { formatMonth } from "@shareride/i18n";
 import { router } from "expo-router";
-import { ShieldCheck } from "lucide-react-native";
+import { Ban, BookOpen, Flag, ShieldCheck } from "lucide-react-native";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { useSession } from "@/auth/session";
 import { useReliabilityMonths } from "@/beta/config";
-import { Avatar } from "@/components/avatar";
+import { ActionRows } from "@/components/action-rows";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
 import { Chip } from "@/components/chip";
-import { Icon } from "@/components/icon";
 import { Notice } from "@/components/notice";
+import { Row } from "@/components/row";
 import { TakesFocus } from "@/components/takes-focus";
-import { Tag } from "@/components/tag";
-import { TextLink } from "@/components/text-link";
-import { Body, Heading, Title } from "@/components/text";
+import { Body, Heading } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { useLoaded } from "@/lib/use-loaded";
 import { languagesText } from "@/people/languages";
-import { RatingLine, reliabilityText } from "@/people/standing";
+import { PersonCard } from "@/people/person-card";
+import { reliabilityText } from "@/people/standing";
 import { firstNameOf, memberSinceText, monthOf } from "@/people/texts";
 import { Stars } from "@/reviews/stars";
-import { iconSizes, minTouchTarget, spacing, typography } from "@/theme/tokens";
+import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
 type Role = "driver" | "passenger";
 
 /**
  * A person's public profile (spec 1, 3.5; spec 8, screen 7), as anyone
- * signed in sees it: who they are, their rating and reliability figure,
- * and the reviews they were given. "See it as others do" shows the same,
- * under its own title, so the name is a heading there (`nameAs`). Each
- * review I did not write offers Report review, so a review about me can
- * be reported from my own profile too. Someone else's (`others`) also
- * offers Report and Block, and the community rules (spec 9, 3.1.1, 3.2.1
- * and 3.3.4).
+ * signed in sees it, under the screen's head (spec 31, 3.19): who they are
+ * in the person's card, as on Profile, with their rating and what is
+ * checked on its one line and what they wrote about themselves under it;
+ * the reliability figure as a row that unfolds; and the reviews they were
+ * given. "See it as others do" shows the same. Each review I did not write
+ * offers Report review, so a review about me can be reported from my own
+ * profile too. Someone else's (`others`) ends with a card of rows: the
+ * community rules, Report, and Block, red and last (spec 9, 3.1.1, 3.2.1
+ * and 3.3.4; spec 31, R31.3).
  */
 export function ProfileView({
   profileId,
-  nameAs = "title",
   others = false,
 }: {
   readonly profileId: string;
-  readonly nameAs?: "title" | "heading";
   readonly others?: boolean;
 }) {
-  const { t } = useLanguage();
+  const { locale, t } = useLanguage();
   const palette = usePalette();
   const session = useSession();
   const load = useCallback(
@@ -76,15 +75,26 @@ export function ProfileView({
     );
   }
   const profile = answer.data;
+  const languages = languagesText(profile, locale);
   return (
     <>
-      <Person profile={profile} nameAs={nameAs} />
-      {others ? <Safety profile={profile} /> : null}
-      <Card>
-        <RatingLine rating={profile.rating} strong />
-        <ReliabilityFigure reliability={profile.reliability} />
-      </Card>
+      <PersonCard
+        firstName={profile.firstName}
+        colour={profile.colour}
+        photo={profile.photo}
+        lines={[
+          ...(languages === "" ? [] : [t("profile.speaks", { languages })]),
+          memberSinceText(t, locale, monthOf(profile.memberSince)),
+        ]}
+        standing={profile}
+      >
+        {profile.about === null ? null : <Body align="start">{profile.about}</Body>}
+      </PersonCard>
+      <ActionRows>
+        <ReliabilityRow reliability={profile.reliability} />
+      </ActionRows>
       <ProfileReviews key={profileId} profileId={profileId} />
+      {others ? <Safety profile={profile} /> : null}
     </>
   );
 }
@@ -92,136 +102,73 @@ export function ProfileView({
 /** The API's answer for a profile no longer there, or never there. */
 const gone = (status: number) => status === 404 || status === 400;
 
-function Person({
-  profile,
-  nameAs,
-}: {
-  readonly profile: PublicProfile;
-  readonly nameAs: "title" | "heading";
-}) {
-  const { locale, t } = useLanguage();
-  const palette = usePalette();
-  const languages = languagesText(profile, locale);
-  return (
-    <Card>
-      <View style={styles.person}>
-        <Avatar firstName={profile.firstName} colour={profile.colour} photo={profile.photo} />
-        <View style={styles.grow}>
-          {nameAs === "title" ? (
-            <Title align="start">{profile.firstName}</Title>
-          ) : (
-            <Heading>{profile.firstName}</Heading>
-          )}
-          {languages === "" ? null : (
-            <Text style={[typography.small, { color: palette.textMuted }]}>
-              {t("profile.speaks", { languages })}
-            </Text>
-          )}
-          <Text style={[typography.small, { color: palette.textMuted }]}>
-            {memberSinceText(t, locale, monthOf(profile.memberSince))}
-          </Text>
-        </View>
-      </View>
-      {profile.phoneVerified || profile.emailVerified ? (
-        <View style={styles.tags}>
-          {profile.phoneVerified ? <Tag kind="positive" label={t("people.phoneVerified")} /> : null}
-          {profile.emailVerified ? <Tag kind="positive" label={t("people.emailVerified")} /> : null}
-        </View>
-      ) : null}
-      {profile.about === null ? null : <Body align="start">{profile.about}</Body>}
-    </Card>
-  );
-}
-
 /**
- * Report and Block, each asking first on its own screen (spec 9, 3.1 and
- * 3.2), and the community rules one tap away (3.3.4). The addresses name
- * the profile, as its own does: never the person's user ID.
+ * The community rules one tap away (spec 9, 3.3.4), then Report and Block,
+ * each asking first on its own screen (3.1 and 3.2): rows of the page's
+ * last card, Block red and last, as it takes something away (spec 31,
+ * R31.3 and decision 17). The addresses name the profile, as its own does:
+ * never the person's user ID.
  */
 function Safety({ profile }: { readonly profile: PublicProfile }) {
   const { t } = useLanguage();
   const name = profile.firstName;
+  const { profileId } = profile;
   return (
-    <View style={styles.safety}>
-      <View style={styles.actions}>
-        <Button
-          variant="text"
-          label={t("report.person", { name })}
-          onPress={() => {
-            router.push({
-              pathname: "/report",
-              params: { kind: "profile", id: profile.profileId },
-            });
-          }}
-        />
-        <Button
-          variant="text"
-          label={t("block.action", { name })}
-          onPress={() => {
-            router.push({
-              pathname: "/people/[profileId]/block",
-              params: { profileId: profile.profileId },
-            });
-          }}
-        />
-      </View>
-      <TextLink label={t("report.rules")} href="/legal/community-rules" align="start" />
-    </View>
+    <ActionRows>
+      <Row icon={BookOpen} title={t("report.rules")} href="/legal/community-rules" />
+      <Row
+        icon={Flag}
+        title={t("report.person", { name })}
+        href={{ pathname: "/report", params: { kind: "profile", id: profileId } }}
+      />
+      <Row
+        danger
+        icon={Ban}
+        title={t("block.action", { name })}
+        href={{ pathname: "/people/[profileId]/block", params: { profileId } }}
+      />
+    </ActionRows>
   );
 }
 
 /**
- * The share kept, or that there are not enough trips yet (3.8.1); tapping
- * it shows the counts behind it, by role (3.8.3).
+ * The share kept, or that there are not enough trips yet (3.8.1), as a row
+ * that unfolds the counts behind it, by role (3.8.3).
  */
-function ReliabilityFigure({
-  reliability,
-}: {
-  readonly reliability: PublicProfile["reliability"];
-}) {
+function ReliabilityRow({ reliability }: { readonly reliability: PublicProfile["reliability"] }) {
   const { t } = useLanguage();
   const palette = usePalette();
   const [open, setOpen] = useState(false);
   const months = useReliabilityMonths();
-  const label = reliabilityText(t, reliability.percent);
   const { driver, passenger } = reliability.byRole;
   return (
-    <View style={styles.figure}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={label}
-        aria-expanded={open}
-        onPress={() => {
-          setOpen((shown) => !shown);
-        }}
-        style={styles.line}
-      >
-        <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-          <Icon icon={ShieldCheck} color={palette.text} size={iconSizes.inline} />
-        </View>
-        <Text style={[typography.bodyStrong, styles.grow, { color: palette.text }]}>{label}</Text>
-      </Pressable>
-      {open ? (
-        <View style={styles.counts}>
-          <Text style={[typography.small, { color: palette.text }]}>
-            {t("people.reliabilityCounts", {
-              kept: reliability.kept,
-              total: reliability.counted,
-              months,
-            })}
-          </Text>
-          <Text style={[typography.small, { color: palette.textMuted }]}>
-            {t("people.reliabilityAsDriver", { kept: driver.kept, total: driver.counted })}
-          </Text>
-          <Text style={[typography.small, { color: palette.textMuted }]}>
-            {t("people.reliabilityAsPassenger", {
-              kept: passenger.kept,
-              total: passenger.counted,
-            })}
-          </Text>
-        </View>
-      ) : null}
-    </View>
+    <Row
+      icon={ShieldCheck}
+      title={reliabilityText(t, reliability.percent)}
+      expanded={open}
+      onToggle={() => {
+        setOpen((shown) => !shown);
+      }}
+    >
+      <View style={styles.counts}>
+        <Text style={[typography.small, { color: palette.text }]}>
+          {t("people.reliabilityCounts", {
+            kept: reliability.kept,
+            total: reliability.counted,
+            months,
+          })}
+        </Text>
+        <Text style={[typography.small, { color: palette.textMuted }]}>
+          {t("people.reliabilityAsDriver", { kept: driver.kept, total: driver.counted })}
+        </Text>
+        <Text style={[typography.small, { color: palette.textMuted }]}>
+          {t("people.reliabilityAsPassenger", {
+            kept: passenger.kept,
+            total: passenger.counted,
+          })}
+        </Text>
+      </View>
+    </Row>
   );
 }
 
@@ -426,15 +373,7 @@ function ReviewItem({
 }
 
 const styles = StyleSheet.create({
-  person: { flexDirection: "row", alignItems: "center", gap: spacing.ms },
-  grow: { flex: 1, gap: spacing.xs },
-  tags: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  // The figure is pressed, so it is at least a touch target high.
-  line: { flexDirection: "row", alignItems: "center", gap: spacing.sm, minHeight: minTouchTarget },
-  figure: { gap: spacing.xs },
   counts: { gap: spacing.xs },
   section: { gap: spacing.ms },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  safety: { gap: spacing.xs },
-  actions: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
 });

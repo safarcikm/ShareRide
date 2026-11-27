@@ -4,7 +4,14 @@ import type * as TestApp from "@/testing/app";
 import { ok } from "@/testing/fake-client";
 import { bookingApi, driverApi, northBooking, northMyTrip, northStop } from "@/testing/bookings";
 import { unfoldPassenger } from "@/testing/driver-trip";
-import { aProfileId, annaProfile, annaProfileId, newcomer, profileApi } from "@/testing/people";
+import {
+  aProfileId,
+  annaProfile,
+  annaProfileId,
+  findPersonCard,
+  newcomer,
+  profileApi,
+} from "@/testing/people";
 import { northResult, northTrip, resultOn, searchApi, tripDetailsApi } from "@/testing/search";
 import { blonduos, borgarnes, tripsApi } from "@/testing/trips";
 
@@ -143,7 +150,7 @@ describe("on a booking (spec 5)", () => {
         name: "See profile: Anna, 4.3 (3 ratings), Reliability: 91%",
       }),
     );
-    expect(await screen.findByRole("header", { name: "Anna" })).toBeVisible();
+    expect(await findPersonCard("Anna")).toBeVisible();
     expect(screen).toHavePathname(`/people/${annaProfileId}`);
   });
 
@@ -198,7 +205,7 @@ describe("a passenger, for the driver (spec 5, 3.3 and 3.7)", () => {
     await fireEvent.press(
       screen.getByRole("link", { name: "See profile: Gunna, 4.3 (3 ratings), Reliability: 91%" }),
     );
-    expect(await screen.findByRole("header", { name: "Gunna" })).toBeVisible();
+    expect(await findPersonCard("Gunna")).toBeVisible();
   });
 
   it("says when the person asking has no reviews yet", async () => {

@@ -4,13 +4,13 @@ import { useCallback } from "react";
 import { ActivityIndicator } from "react-native";
 import { errorText } from "@/auth/errors";
 import { useSession } from "@/auth/session";
-import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
 import { Notice } from "@/components/notice";
 import { Row } from "@/components/row";
 import { Screen } from "@/components/screen";
-import { Body, Title } from "@/components/text";
+import { ScreenHead } from "@/components/screen-head";
+import { Body } from "@/components/text";
 import { carSummary } from "@/driving/texts";
 import { useLanguage } from "@/i18n/language";
 import { useLoadedOnFocus } from "@/lib/use-loaded";
@@ -18,7 +18,8 @@ import { usePalette } from "@/theme/use-palette";
 
 /**
  * My cars (spec 16, 3.4 item 2): each car with its number plate, opening
- * to edit it, and Add a car. Loads again on coming back from either.
+ * to edit it, and Add a car. Loads again on coming back from either. The
+ * title is at the left (spec 31, 3.19).
  */
 export default function MyCarsScreen() {
   const { locale, t } = useLanguage();
@@ -28,8 +29,7 @@ export default function MyCarsScreen() {
   const { value, reload } = useLoadedOnFocus(load);
   return (
     <Screen>
-      <BackButton fallback="/profile" />
-      <Title>{t("profile.myCars")}</Title>
+      <ScreenHead title={t("profile.myCars")} back="/profile" />
       {value === undefined ? (
         <ActivityIndicator accessibilityLabel={t("common.loading")} color={palette.primary} />
       ) : !value.ok ? (
@@ -38,7 +38,7 @@ export default function MyCarsScreen() {
           <Button variant="secondary" label={t("common.retry")} onPress={reload} />
         </>
       ) : value.data.vehicles.length === 0 ? (
-        <Body>{t("profile.noCars")}</Body>
+        <Body align="start">{t("profile.noCars")}</Body>
       ) : (
         <Card>
           {value.data.vehicles.map((car) => (

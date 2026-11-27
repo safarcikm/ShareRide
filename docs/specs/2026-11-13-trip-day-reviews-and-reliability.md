@@ -17,6 +17,11 @@ stays in "Trip day"), and the actions are named "Find a ride", "Offer a
 ride" and "Publish ride". The keys keep their names;
 `packages/i18n/src/messages/en.ts` has the words as they are.
 
+Amended by spec 31 (3.19) too: on a person's profile (screen 7) the
+rating is on the one line of the person's card, with what is checked, and
+the reliability figure is a row of its own that unfolds its counts. The
+reviews are as they were.
+
 ## 1. Problem and goal
 
 On the day, the driver and the passenger have to find each other at a meeting

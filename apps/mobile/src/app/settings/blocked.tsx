@@ -4,13 +4,13 @@ import { useCallback, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { useMe, useSession } from "@/auth/session";
 import { Avatar } from "@/components/avatar";
-import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
 import { Notice } from "@/components/notice";
 import { Screen } from "@/components/screen";
+import { ScreenHead } from "@/components/screen-head";
 import { TakesFocus } from "@/components/takes-focus";
-import { Body, Title } from "@/components/text";
+import { Body } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { useLoaded } from "@/lib/use-loaded";
 import { BackToMenu } from "@/navigation/back-to-menu";
@@ -20,6 +20,8 @@ import { usePalette } from "@/theme/use-palette";
 /**
  * Blocked people (spec 9, 3.2, item 4), a page of Profile: whom I blocked and
  * since when, the latest first, each with Unblock. Only I see this list.
+ * The title is at the left, with what a block does under it (spec 31,
+ * 3.19).
  */
 export default function BlockedScreen() {
   const me = useMe();
@@ -57,13 +59,7 @@ function Blocked() {
     }));
   }
 
-  const header = (
-    <>
-      <BackButton fallback="/profile" />
-      <Title>{t("blocks.title")}</Title>
-      <Body>{t("blocks.help")}</Body>
-    </>
-  );
+  const header = <ScreenHead title={t("blocks.title")} line={t("blocks.help")} back="/profile" />;
   if (answer === undefined) {
     return (
       <Screen>
@@ -95,7 +91,7 @@ function Blocked() {
         </TakesFocus>
       )}
       {people.length === 0 ? (
-        <Body>{t("blocks.none")}</Body>
+        <Body align="start">{t("blocks.none")}</Body>
       ) : (
         <Card>
           {people.map((person) => (

@@ -16,6 +16,7 @@ import { useSession } from "@/auth/session";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
 import { Notice } from "@/components/notice";
+import { sectionLevel } from "@/components/text";
 import { TextField } from "@/components/text-field";
 import { useLanguage } from "@/i18n/language";
 import { spacing, typography } from "@/theme/tokens";
@@ -63,7 +64,7 @@ export function NoticeCard({
   return (
     <Card>
       <View style={styles.notice}>
-        <Text accessibilityRole="header" style={strong}>
+        <Text accessibilityRole="header" {...sectionLevel} style={strong}>
           {noticeTitle(t, locale, notice)}
         </Text>
         <Text style={muted}>
