@@ -1,0 +1,77 @@
+# Sign up as spec 26 has it: an email and its code, the phone number and its
+# code, then about you. A field's label is drawn above it and is also its
+# name, so the field is the second match (index 1).
+appId: ${APP_ID}
+name: Sign up
+---
+- launchApp
+- tapOn:
+    text: "Profile"
+    childOf:
+      id: "tab-bar"
+- tapOn: "Sign in"
+- runScript: ../scripts/new-person.js
+- tapOn:
+    text: "Email"
+    index: 1
+- inputText: ${output.email}
+- takeScreenshot: screenshots/04-sign-in
+- tapOn: "Send code"
+- retry:
+    maxRetries: 5
+    commands:
+      - waitForAnimationToEnd
+      - runScript:
+          file: ../scripts/latest-code.js
+          env:
+            TO: ${output.email}
+- tapOn:
+    text: "6-digit code"
+    index: 1
+- inputText: ${output.code}
+- extendedWaitUntil:
+    visible: "Add your phone number"
+    timeout: 20000
+- tapOn:
+    text: "Mobile number"
+    index: 1
+- inputText: ${output.phoneLocal}
+- takeScreenshot: screenshots/05-phone-number
+- tapOn: "Send code"
+- retry:
+    maxRetries: 5
+    commands:
+      - waitForAnimationToEnd
+      - runScript:
+          file: ../scripts/latest-code.js
+          env:
+            TO: ${output.phoneE164}
+- tapOn:
+    text: "6-digit code"
+    index: 1
+- inputText: ${output.code}
+- extendedWaitUntil:
+    visible: "Last step: about you"
+    timeout: 20000
+- tapOn:
+    text: "First name"
+    index: 1
+- inputText: "Gunna"
+- hideKeyboard
+- takeScreenshot: screenshots/06-about-you
+- scrollUntilVisible:
+    element: "I am 18 or older"
+- tapOn: "I am 18 or older"
+- tapOn: "I accept the Terms of Service and the Community Rules"
+- scrollUntilVisible:
+    element: "Create account"
+- tapOn: "Create account"
+- extendedWaitUntil:
+    visible: "Sign in faster next time"
+    timeout: 20000
+- takeScreenshot: screenshots/07-sign-in-faster
+- tapOn: "Not now"
+- extendedWaitUntil:
+    visible: "Hi Gunna"
+    timeout: 20000
+- takeScreenshot: screenshots/08-find-signed-in

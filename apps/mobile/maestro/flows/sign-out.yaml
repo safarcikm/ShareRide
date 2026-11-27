@@ -1,0 +1,17 @@
+# Sign out from the end of Profile, back to the signed-out Profile.
+appId: ${APP_ID}
+name: Sign out
+---
+- launchApp
+- tapOn:
+    text: "Profile"
+    childOf:
+      id: "tab-bar"
+- scrollUntilVisible:
+    element: "Sign out"
+    timeout: 20000
+- tapOn: "Sign out"
+- extendedWaitUntil:
+    visible: "Sign in"
+    timeout: 20000
+- takeScreenshot: screenshots/17-signed-out-again

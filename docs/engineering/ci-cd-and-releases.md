@@ -16,14 +16,18 @@ Runs on GitHub Actions for every pull request and every push to `main`.
 | Integration tests with PostgreSQL and PostGIS | | Yes |
 | Translation completeness | | Yes |
 | Build API image and app bundles; start the image and smoke-test it | | Yes |
-| End-to-end (Playwright web; Maestro mobile) | | Yes, for app changes |
+| End-to-end (Playwright web; Maestro on an Android emulator and an iPhone simulator, `phone-apps.yml`) | | Yes, for app changes |
 | Dependency review and CodeQL | | Needs a paid GitHub security plan on a private repository; `pnpm audit` for high and critical advisories runs instead |
 | Secret scanning | GitHub setting | GitHub setting |
 
 The code checks run in `.github/workflows/ci.yml`, first added job by job
 in milestone 1 ([plan](../plans/2026-11-13-milestone-1-phone-sign-in.md)).
 Turborepo runs the lint, type check and unit tests of every package; CI
-keeps no Turborepo cache between runs. Third-party actions are pinned to a
+keeps no Turborepo cache between runs. The phone journeys run in their own workflow,
+`.github/workflows/phone-apps.yml`, on pull requests that touch the app, the
+API or the packages, and by hand: a release build of each app against the
+test API on the same machine, with the screenshots kept as the run's
+artifacts ([spec 32, 3.7](../specs/2026-11-27-phone-apps-in-the-stores.md#37-builds-and-checks)). Third-party actions are pinned to a
 full commit SHA, with the version in a comment, and kept current by
 Dependabot.
 

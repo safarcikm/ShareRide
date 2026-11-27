@@ -1,0 +1,21 @@
+# Find, the front page, for someone who has not signed in, then Profile.
+appId: ${APP_ID}
+name: Signed out
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Share your ride"
+    timeout: 120000
+- takeScreenshot: screenshots/01-find-signed-out
+- scrollUntilVisible:
+    element:
+      id: "trip-result"
+    timeout: 20000
+- takeScreenshot: screenshots/02-find-leaving-soon
+- tapOn:
+    text: "Profile"
+    childOf:
+      id: "tab-bar"
+- assertVisible: "Sign in"
+- takeScreenshot: screenshots/03-profile-signed-out

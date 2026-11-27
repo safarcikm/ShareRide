@@ -21,7 +21,9 @@
 // trip as another sample driver, for the console's reports journey.
 // `POST /e2e/feedback-reply` with `{ "phone": "+354…", "reply": "…" }`
 // replies to the newest feedback that person sent, as the console does, for
-// the feedback journey. Never use any of them for anything else.
+// the feedback journey. `GET /e2e/latest-code?to=…` gives the newest code
+// texted or emailed to a number or an address, for the phone apps'
+// journeys. Never use any of them for anything else.
 import { randomBytes } from "node:crypto";
 import { appendFileSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -97,10 +99,15 @@ async function ageSends() {
     .update(rateLimitEvents)
     .set({ createdAt: sql`${rateLimitEvents.createdAt} - interval '31 seconds'` });
 }
+// The newest code sent to each email address or number, for the phone
+// apps' journeys (apps/mobile/maestro), which cannot read the outbox files.
+const latestCodes = new Map<string, string>();
 const sms: SmsSender = {
   async send(message) {
     await ageSends();
     appendFileSync(outbox, `${JSON.stringify(message)}\n`);
+    const code = /\b(\d{6})\b/.exec(message.text)?.[1];
+    if (code !== undefined) latestCodes.set(message.to, code);
   },
 };
 
@@ -109,6 +116,9 @@ const email: EmailSender = {
     await ageSends();
     const { to, subject, text } = message;
     appendFileSync(emailOutbox, `${JSON.stringify({ to, subject, text })}\n`);
+    // A code's email leads its subject with the code (spec 26, 3.2).
+    const code = /^(\d{6}) /.exec(subject)?.[1];
+    if (code !== undefined) latestCodes.set(to, code);
     return { id: `e2e-${message.idempotencyKey}` };
   },
 };
@@ -278,6 +288,14 @@ app.post("/e2e/report", async (c) => {
     description,
   });
   return result.ok ? c.json(result.value, 201) : c.json({ error: result.error.code }, 409);
+});
+
+// The newest code texted or emailed to `to` (a number in +354 form or an
+// email address), for the phone apps' journeys: `{ "code": "123456" }`, or
+// 404 while none was sent.
+app.get("/e2e/latest-code", (c) => {
+  const code = latestCodes.get(c.req.query("to") ?? "");
+  return code === undefined ? c.json({ error: "No code yet." }, 404) : c.json({ code });
 });
 
 // ShareRide's one reply to a person's newest feedback, as the console sends

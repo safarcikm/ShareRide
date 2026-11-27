@@ -1,0 +1,29 @@
+# Each place in the menu, signed in.
+appId: ${APP_ID}
+name: The tabs
+---
+- launchApp
+- tapOn:
+    text: "My rides"
+    childOf:
+      id: "tab-bar"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/11-my-rides
+- tapOn:
+    text: "Offer"
+    childOf:
+      id: "tab-bar"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/12-offer
+- tapOn:
+    text: "Messages"
+    childOf:
+      id: "tab-bar"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/13-messages
+- tapOn:
+    text: "Profile"
+    childOf:
+      id: "tab-bar"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/14-profile
