@@ -278,8 +278,9 @@ export const memberPasskeys = pgTable(
 
 /**
  * A challenge waiting for a member's passkey: to sign in, or to set one up
- * (`register`, with whose). Used once, good for 5 minutes; the hourly
- * clean-up deletes the rest an hour after they expired.
+ * (`register`, with whose; `register_quiet` when the browser saves it by
+ * itself after a password, ADR 0050). Used once, good for 5 minutes; the
+ * hourly clean-up deletes the rest an hour after they expired.
  */
 export const memberPasskeyChallenges = pgTable(
   "member_passkey_challenges",
@@ -297,7 +298,7 @@ export const memberPasskeyChallenges = pgTable(
     index("member_passkey_challenges_expires_index").on(table.expiresAt),
     check(
       "member_passkey_challenges_purpose_check",
-      sql`${table.purpose} in ('sign_in', 'register')`,
+      sql`${table.purpose} in ('sign_in', 'register', 'register_quiet')`,
     ),
   ],
 );

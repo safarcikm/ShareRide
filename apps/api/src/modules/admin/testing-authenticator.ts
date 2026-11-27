@@ -46,8 +46,15 @@ export interface TestAuthenticatorOptions {
 
 export interface TestAuthenticator {
   readonly credentialId: string;
-  /** Answers navigator.credentials.create with these options. */
-  register(options: { challenge: string; user?: { id: string } }): Record<string, unknown>;
+  /**
+   * Answers navigator.credentials.create with these options; `quiet`, as a
+   * browser saving a passkey by itself, with neither "user present" nor
+   * "user verified" (ADR 0050).
+   */
+  register(
+    options: { challenge: string; user?: { id: string } },
+    how?: { readonly quiet?: boolean },
+  ): Record<string, unknown>;
   /** Answers navigator.credentials.get with these options. */
   authenticate(options: { challenge: string }): Record<string, unknown>;
   /** Sets the signature counter, to act like a cloned key. */
@@ -94,14 +101,15 @@ export function createTestAuthenticator(options: TestAuthenticatorOptions): Test
   return {
     credentialId: b64url(credentialId),
 
-    register({ challenge, user }) {
+    register({ challenge, user }, how = {}) {
       userHandle = user?.id;
+      const checked = how.quiet === true ? 0 : 0x01 | verified;
       const idLength = Buffer.alloc(2);
       idLength.writeUInt16BE(credentialId.length);
       const authData = Buffer.concat([
         rpIdHash,
         // User present, user verified (unless left out), attested credential data.
-        Uint8Array.from([0x01 | verified | 0x40]),
+        Uint8Array.from([checked | 0x40]),
         counterBytes(),
         Buffer.alloc(16),
         idLength,

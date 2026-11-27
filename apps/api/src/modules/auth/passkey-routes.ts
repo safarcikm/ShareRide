@@ -77,18 +77,24 @@ export function registerPasskeyRoutes(
   });
 
   app.openapi(toOpenApiRoute(passkeySetupOptionsRoute, requireAuth), async (c) => {
-    const { code } = validated(c, "json", passkeySetupOptionsRoute.request.body);
+    const { code, quiet } = validated(c, "json", passkeySetupOptionsRoute.request.body);
     const { userId, sessionId } = authOf(c);
     const result = await passkeys.setupOptions({
       userId,
       sessionId,
       ...(code === undefined ? {} : { code }),
+      ...(quiet === undefined ? {} : { quiet }),
     });
     if (result.ok) return c.json({ options: result.value }, 200);
     const { error } = result;
     switch (error.code) {
       case "confirm_required":
-        return errorResponse(c, 403, error.code, "Send a confirm code first.");
+        return errorResponse(
+          c,
+          403,
+          error.code,
+          quiet === true ? "Only straight after signing in." : "Send a confirm code first.",
+        );
       case "too_many":
         return errorResponse(c, 409, error.code, tooManyMessage);
       default:

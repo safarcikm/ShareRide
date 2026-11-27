@@ -101,6 +101,14 @@ async function setUp(who: Member, device: TestAuthenticator) {
   return added.body;
 }
 
+/** Options for the browser to save a passkey by itself (spec 29, 3.3). */
+async function quietOptions(who: Member, code?: string) {
+  return api.client.call(passkeySetupOptionsRoute, {
+    accessToken: who.accessToken,
+    body: { quiet: true, ...(code === undefined ? {} : { code }) },
+  });
+}
+
 async function signIn(device: TestAuthenticator) {
   const options = await api.client.call(passkeySignInOptionsRoute, { body: {} });
   if (!options.ok) throw new Error(options.error.code);
@@ -353,6 +361,116 @@ describe("setting up Face ID or fingerprint (spec 27, 3.6)", () => {
     expect(
       await addPasskey(gunnar, elsewhere.register(options.data.options as Options)),
     ).toMatchObject({ status: 400, body: { error: { code: "passkey_invalid" } } });
+  });
+});
+
+describe("a passkey the browser saves by itself after a password (spec 29, 3.3; ADR 0050)", () => {
+  it("saves the browser's answer to quiet options without presence or verification, and tells the email", async () => {
+    const anna = await member();
+    const options = await quietOptions(anna);
+    expect(options).toMatchObject({
+      ok: true,
+      status: 200,
+      data: {
+        options: {
+          attestation: "none",
+          authenticatorSelection: {
+            authenticatorAttachment: "platform",
+            residentKey: "required",
+            userVerification: "preferred",
+          },
+        },
+      },
+    });
+    if (!options.ok) return;
+    const device = authenticator();
+    const added = await addPasskey(anna, device.register(options.data.options, { quiet: true }));
+    expect(added).toMatchObject({ status: 201, body: { credentialId: device.credentialId } });
+    expect(api.email.sent.map((email) => email.subject)).toEqual([
+      "Face ID or fingerprint was set up for your PuffinRide account",
+    ]);
+    // Signing in with it still needs the device to check the person.
+    expect(await signIn(device)).toMatchObject({ ok: true, status: 200 });
+    device.skipUserVerification();
+    expect(await signIn(device)).toMatchObject({
+      ok: false,
+      status: 400,
+      error: { code: "passkey_invalid" },
+    });
+  });
+
+  it("refuses an answer without presence or verification to the usual options", async () => {
+    const bjorn = await member();
+    const options = await setupOptions(bjorn);
+    if (!options.ok) throw new Error(options.error.code);
+    expect(
+      await addPasskey(bjorn, authenticator().register(options.data.options, { quiet: true })),
+    ).toMatchObject({ status: 400, body: { error: { code: "passkey_invalid" } } });
+    expect(
+      await api.connection.db
+        .select()
+        .from(memberPasskeys)
+        .where(eq(memberPasskeys.userId, bjorn.userId)),
+    ).toEqual([]);
+  });
+
+  it("refuses an answer to someone else's quiet options, and never signs in with one", async () => {
+    const owner = await member();
+    const other = await member();
+    const options = await quietOptions(owner);
+    if (!options.ok) throw new Error(options.error.code);
+    const answer = authenticator().register(options.data.options, { quiet: true });
+    expect(await addPasskey(other, answer)).toMatchObject({
+      status: 400,
+      body: { error: { code: "passkey_invalid" } },
+    });
+    // The challenge is used up, and a quiet one is no sign-in challenge.
+    const again = await quietOptions(owner);
+    if (!again.ok) throw new Error(again.error.code);
+    const device = authenticator();
+    device.register(again.data.options, { quiet: true });
+    expect(
+      await api.client.call(passkeySignInRoute, {
+        body: {
+          credential: device.authenticate(again.data.options as Options) as never,
+          device: { platform: "web" },
+        },
+      }),
+    ).toMatchObject({ ok: false, status: 400, error: { code: "passkey_expired" } });
+  });
+
+  it("gives quiet options only straight after signing in, never for a confirm code", async () => {
+    const cecilia = await member();
+    api.advance(10 * 60);
+    expect(await quietOptions(cecilia)).toMatchObject({
+      ok: false,
+      status: 403,
+      error: { code: "confirm_required" },
+    });
+    const code = await confirmCode(cecilia);
+    expect(await quietOptions(cecilia, code)).toMatchObject({
+      ok: false,
+      status: 403,
+      error: { code: "confirm_required" },
+    });
+  });
+
+  it("saves none with 10 devices set up (R27.8)", async () => {
+    const dora = await member();
+    await api.connection.db.insert(memberPasskeys).values(
+      Array.from({ length: 10 }, (_, i) => ({
+        userId: dora.userId,
+        credentialId: `credential-of-quiet-dora-${String(i)}`,
+        publicKey: "AA",
+        backedUp: false,
+        userHandle: "handle-of-dora",
+      })),
+    );
+    expect(await quietOptions(dora)).toMatchObject({
+      ok: false,
+      status: 409,
+      error: { code: "too_many" },
+    });
   });
 });
 

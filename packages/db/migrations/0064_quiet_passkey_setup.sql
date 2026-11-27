@@ -1,0 +1,2 @@
+ALTER TABLE "member_passkey_challenges" DROP CONSTRAINT "member_passkey_challenges_purpose_check";--> statement-breakpoint
+ALTER TABLE "member_passkey_challenges" ADD CONSTRAINT "member_passkey_challenges_purpose_check" CHECK ("member_passkey_challenges"."purpose" in ('sign_in', 'register', 'register_quiet'));

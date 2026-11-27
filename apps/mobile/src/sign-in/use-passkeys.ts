@@ -7,7 +7,12 @@ import {
 import { useEffect, useState } from "react";
 import type { SessionManager } from "@/auth/session-manager";
 import { useConfig } from "@/beta/config";
-import { devicePasskeys, passkeyFailure, type PasskeyOptions } from "./passkey";
+import {
+  devicePasskeys,
+  passkeyFailure,
+  type PasskeyOptions,
+  type PasskeyRegistration,
+} from "./passkey";
 import { markPasskeyHere, unnamedPasskey } from "./this-browser";
 
 /**
@@ -69,17 +74,20 @@ export async function passkeySetUpOptions(
 }
 
 /**
- * The device's own sheet with those options, then the passkey saved. The
- * verified email is told (R27.7). This browser is then known to have one
- * (spec 29, 3.2, item 5), as it is when it refuses a second one.
+ * The device's own sheet with those options, or the browser saving one by
+ * itself (`make`), then the passkey saved. The verified email is told
+ * (R27.7). This browser is then known to have one (spec 29, 3.2, item 5),
+ * as it is when it refuses a second one.
  */
 export async function savePasskey(
   session: Pick<SessionManager, "call">,
   options: PasskeyOptions,
+  make: (options: PasskeyOptions) => Promise<PasskeyRegistration> = (asked) =>
+    devicePasskeys.create(asked),
 ): Promise<SetUpOutcome> {
   let credential;
   try {
-    credential = await devicePasskeys.create(options);
+    credential = await make(options);
   } catch (error) {
     const failure = passkeyFailure(error);
     if (failure === "already") await markPasskeyHere(unnamedPasskey);

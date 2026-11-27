@@ -40,6 +40,16 @@ export interface DevicePasskeys {
   /** Stops the request that is waiting, quiet or not. */
   cancel(): void;
   /**
+   * Whether the browser can save a passkey by itself after a password
+   * (spec 29, 3.3): a built-in lock and conditional create.
+   */
+  quietCreateAvailable(): Promise<boolean>;
+  /**
+   * Asks the browser to save a passkey by itself, with no sheet; throws when
+   * it does not, or has not decided within a few seconds.
+   */
+  createQuietly(options: PasskeyOptions): Promise<PasskeyRegistration>;
+  /**
    * Tells the browser this site has no passkey `credentialId` any more, so
    * it stops offering it (spec 29, 3.4). Never throws, and waits a second at most.
    */

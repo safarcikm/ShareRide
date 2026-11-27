@@ -200,17 +200,27 @@ export const passkeySetupOptionsRoute = defineRoute({
   summary: "Start setting up Face ID or fingerprint on this device (spec 27, 3.6)",
   tags: ["me"],
   auth: true,
-  request: { body: z.object({ code: freshCodeSchema }) },
+  request: {
+    body: z.object({
+      code: freshCodeSchema,
+      /**
+       * For the browser to save a passkey by itself after a password (spec
+       * 29, 3.3; ADR 0050): only straight after signing in, never for a code.
+       */
+      quiet: z.boolean().optional(),
+    }),
+  },
   responses: {
     200: {
       description:
-        "Options for navigator.credentials.create: a passkey kept on the device, not the account's others",
+        "Options for navigator.credentials.create: a passkey kept on the device, not the account's others; with quiet, for the browser's own save (mediation conditional)",
       schema: webAuthnOptionsResponseSchema,
     },
     400: confirmCodeErrors[400],
     401: unauthenticated,
     403: {
-      description: "confirm_required: send a confirm code (R27.5)",
+      description:
+        "confirm_required: send a confirm code (R27.5); with quiet, the sign-in is too old and nothing stands in",
       ...errors,
     },
     409: { description: "too_many: 10 devices are set up already (R27.8)", ...errors },

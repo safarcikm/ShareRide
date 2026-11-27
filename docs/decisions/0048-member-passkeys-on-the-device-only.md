@@ -1,7 +1,10 @@
 # 0048. Face ID or fingerprint for members: passkeys kept on the device
 
 - **Status:** Accepted (2026-11-23, by Martin: "biometrics like fingerprint
-  or Face ID (can we have that on web?)" and "but no hardware key tho")
+  or Face ID (can we have that on web?)" and "but no hardware key tho");
+  user verification at setup amended by
+  [ADR 0050](0050-passkey-saved-by-the-browser-after-a-password.md) (a
+  passkey the browser saves by itself after a password)
 - **Date:** 2026-11-23
 - **Deciders:** Martin
 - **Related:** [ADR 0028](0028-operator-console-web-app-and-passkeys.md)
