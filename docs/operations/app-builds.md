@@ -93,7 +93,7 @@ in a chat; each goes only where its step says.
    `puffinride`, full access. Then **App Information** shows its **Apple
    ID**, a number. Send it to the build thread: it is not a secret, and it
    goes in `eas.json` as `ascAppId`, which builds need to send to
-   TestFlight.
+   TestFlight. Done 2026-11-27: PuffinRide's Apple ID is `6840158626`.
 6. **Google Play**, once the account is approved: the app in the Play
    Console, and a service account so builds reach internal testing by
    themselves (sent separately, with the account).

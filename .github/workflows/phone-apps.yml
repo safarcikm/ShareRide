@@ -144,6 +144,11 @@ jobs:
           for scale in window_animation_scale transition_animation_scale animator_duration_scale; do
             adb -s emulator-5554 shell settings put global "$scale" 0
           done
+          # No "isn't responding" boxes from the phone's own apps: on a busy
+          # runner the Pixel Launcher once stalled during the install, and its
+          # box hid the whole app from Maestro. Android closes such an app
+          # instead; a crash of ours still fails the journey.
+          adb -s emulator-5554 shell settings put global hide_error_dialogs 1
           adb -s emulator-5554 install -r android/app/build/outputs/apk/release/app-release.apk
           # The app's own messages and every error, for when a journey fails.
           nohup adb -s emulator-5554 logcat -v time '*:E' ReactNativeJS:V ReactNative:V \
