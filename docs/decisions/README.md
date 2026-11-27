@@ -81,3 +81,4 @@ Statuses: `Proposed`, `Accepted`, `Rejected`, `Deprecated`, `Superseded by ADR N
 | [0048](0048-member-passkeys-on-the-device-only.md) | Face ID or fingerprint for members: passkeys kept on the device | Accepted (user verification at setup amended by 0050) |
 | [0049](0049-draw-link-preview-pictures-with-resvg.md) | Draw link preview pictures on the server with resvg | Accepted |
 | [0050](0050-passkey-saved-by-the-browser-after-a-password.md) | A passkey the browser saves by itself after a password | Accepted |
+| [0051](0051-store-apps-in-martins-name-until-the-company.md) | The store apps in Martin's name until the company, checked on emulators first | Accepted (accounts); Proposed (the rest) |
