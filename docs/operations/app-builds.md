@@ -56,14 +56,35 @@ in a chat; each goes only where its step says.
    Choose the **production** profile, then sign in with the Apple ID of the
    developer account and the six-digit code Apple shows on the iPhone. Then:
 
-   - **Build Credentials**, **Set up all the required credentials**: yes to
+   - **Build Credentials: Manage everything needed to build your
+     project**, then **All: Set up all the required credentials**: yes to
      every question, so Expo registers the app ID `is.puffinride.app` and
      makes the distribution certificate and the provisioning profile.
-   - **Push Notifications**, **Set up a push key**: yes, a new one.
-   - **App Store Connect**, **Set up your project to use an API Key for EAS
-     Submit**: yes, a new one.
+   - **Go back**, **Push Notifications: Manage your Apple Push
+     Notifications Key**, **Set up your project to use Push
+     Notifications**: yes, a new one. "All" does not make it, and a build
+     from GitHub cannot ask.
+   - **Go back**, **App Store Connect: Manage your API Key**, **Set up your
+     project to use an API Key for EAS Submit**: yes, a new one.
 
-   Expo keeps all three; nothing goes in the repository.
+   In the same session, Android's upload key and push key (the Firebase
+   file from [Android build with push](#android-build-with-push), step 4):
+
+   ```sh
+   npx eas-cli@27.11.0 credentials --platform android
+   ```
+
+   - The **production** profile, then **Keystore: Manage everything needed
+     to build your project**, **Set up a new keystore**, with the suggested
+     name.
+   - **Go back**, **Google Service Account**, **Manage your Google Service
+     Account Key for Push Notifications (FCM V1)**, **Set up a Google
+     Service Account Key for Push Notifications (FCM V1)**, and the full
+     path to the Firebase file. Then delete the file from the PC.
+
+   Expo keeps them all; nothing goes in the repository. (The expo.dev
+   page for a new Android app identifier asks to upload an upload key, so
+   use the command line instead.)
 5. **The app in App Store Connect.** At
    [appstoreconnect.apple.com](https://appstoreconnect.apple.com), **Apps**,
    **+**, **New App**: platform iOS, name **PuffinRide** (if it is taken,
@@ -80,8 +101,10 @@ in a chat; each goes only where its step says.
    `google-services.json` goes on expo.dev, **Project settings**,
    **Environment variables**, as `GOOGLE_SERVICES_JSON`, type **File**,
    visibility **Secret**, environments **production** and **preview**.
-   The FCM V1 key: as in [Android build with push](#android-build-with-push),
-   step 4.
+   The FCM V1 key: made as in [Android build with push](#android-build-with-push),
+   step 4, and given to Expo in step 4 above. The Firebase project's ID is
+   `puffinride-b0d56`; the Google sign-in project (`puffinride-515516`) is
+   another one.
 
 The organisation `puffinride.is` on Google Cloud blocks service account
 keys (`iam.disableServiceAccountKeyCreation`), which both the FCM key and
@@ -193,12 +216,12 @@ Firebase project's key.
    so it is never committed.
 4. **The push key.** Back in Firebase, open the gear, **Project settings**,
    **Service accounts**, then **Generate new private key** and **Generate
-   key** (the organisation policy above may block it first). On expo.dev,
-   open **Credentials**, **Android**, the application identifier
-   `is.puffinride.app`, then under **Service credentials**, **FCM V1
-   service account key**, choose **Add a service account key**, upload the
-   downloaded file and **Save**. Then delete the file from the PC: Expo
-   keeps the key, and Firebase can make a new one.
+   key** (the organisation policy above blocks it until switched off for
+   the project). Give the file to Expo from the PC, as setup step 4 says,
+   then delete it: Expo keeps the key, and Firebase can make a new one.
+   Once the app identifier `is.puffinride.app` exists on expo.dev, the key
+   can also be changed there: **Credentials**, **Android**,
+   `is.puffinride.app`, **FCM V1 service account key**.
 5. **Recommended: only the API may push.** On expo.dev, in the account's
    settings under [Access tokens](https://expo.dev/settings/access-tokens),
    make a token and add it to Render's environment groups as
