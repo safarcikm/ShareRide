@@ -14,7 +14,7 @@ test("asks about my data, answered at the account's email", async ({ page }) => 
   const { email: address } = await signUp(page, english, "Rósa");
   await page.goto("/profile");
   await page.getByRole("link", { name: "Privacy and your data" }).click();
-  await page.getByRole("button", { name: "Ask about my data" }).click();
+  await page.getByRole("link", { name: "Ask about my data" }).click();
   await expect(page.getByRole("heading", { name: "Ask about my data" })).toBeVisible();
   await expect(page.getByText(`We answer at ${address}.`).filter(visible)).toBeVisible();
   await page.getByRole("radio", { name: /^Ask a question/ }).click();

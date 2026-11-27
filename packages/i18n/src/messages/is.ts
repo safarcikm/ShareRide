@@ -1461,6 +1461,7 @@ export const is = {
   "request.timeLeft": "{time} eftir til að svara",
   "request.timeUp": "Tíminn til að svara er liðinn",
   "request.memberSince": "Meðlimur frá {month} {year}",
+  "people.title": "Prófíll",
   "people.formerMember": "Fyrrverandi notandi",
   "people.open": "Skoða prófíl",
   "people.openOf": "Skoða prófíl: {name}",

@@ -1837,6 +1837,25 @@ releases follow [Semantic Versioning](https://semver.org/).
   choices of a language are saved one after the other and end on the
   last. Back from Beta news opened by itself leads to Notifications. The
   legal texts still say "Settings".
+- A person's profile and the pages Profile opens follow the same rules
+  (spec 31, 3.19). A person's profile has the title "Profile" at the left
+  with Back, and who they are in the card Profile has: the picture, the
+  name, what they speak and since when, the rating and what is checked,
+  and what they wrote about themselves. The reliability figure is a row
+  that unfolds its counts. "Read the community rules", Report and Block
+  are rows of the page's last card, after the reviews, with Block red and
+  last; they were loose buttons right under the card. "As others see
+  you" and Edit profile have the same card, Edit profile with the
+  photo's controls in it. My cars, a car, the driving licence, the
+  photo, Email, the password, Sign-in methods, Beta news, Blocked
+  people, My reports, Notices, Send feedback, My feedback and the pages
+  of Privacy have Back and their title at the left, with their help as
+  the line under it. Privacy is a card of rows with pictures, "Delete my
+  account" red and last, and the buttons that delete the account are
+  red. "Remove car" is a red row, last on a car's page. After sending
+  feedback, a question about your data or deleting the account, what
+  happened is the title's line and the way on is the one main button at
+  the bottom.
 - The web journeys never give two test accounts the same phone number: a
   run in ten did, and a sign-in journey then failed.
 - CI skips its code jobs (bundles, unit, integration and web tests, the API

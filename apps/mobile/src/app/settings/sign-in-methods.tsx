@@ -22,14 +22,14 @@ import { StyleSheet, Text, View } from "react-native";
 import { errorText } from "@/auth/errors";
 import { useMe, useSession } from "@/auth/session";
 import { useConfig } from "@/beta/config";
-import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
 import { Loading } from "@/components/loading";
 import { Notice } from "@/components/notice";
 import { Screen } from "@/components/screen";
+import { ScreenHead } from "@/components/screen-head";
 import { TakesFocus } from "@/components/takes-focus";
-import { Body, Title } from "@/components/text";
+import { Body } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { useLoaded } from "@/lib/use-loaded";
 import { BackToMenu } from "@/navigation/back-to-menu";
@@ -242,12 +242,13 @@ function SignInMethods({
     tell(errorText(t, result), true);
   }
 
+  // At the left, as on every page Profile leads to (spec 31, 3.19).
   const header = (
-    <>
-      <BackButton fallback="/profile" />
-      <Title>{t("settings.signInMethods")}</Title>
-      <Body>{t("settings.signInMethods.help")}</Body>
-    </>
+    <ScreenHead
+      title={t("settings.signInMethods")}
+      line={t("settings.signInMethods.help")}
+      back="/profile"
+    />
   );
   const methods = changed ?? methodsOf(answer);
   const password =

@@ -81,7 +81,13 @@ test("after the trip, both review the other, and then each sees the other's revi
   // in the rating, and the trip counts on Bára's reliability (spec 8, screen 7).
   await passenger.goto(`/trips/${tripId}`);
   await passenger.getByRole("link", { name: "See profile: Bára" }).filter(visible).click();
-  await expect(passenger.getByRole("heading", { name: "Bára" }).filter(visible)).toBeVisible();
+  // The title is "Profile"; her name is in the person's card (spec 31, 3.19).
+  await expect(
+    passenger.getByRole("heading", { name: "Profile", exact: true }).filter(visible),
+  ).toBeVisible();
+  await expect(
+    passenger.getByTestId("person-card").filter(visible).getByText("Bára", { exact: true }),
+  ).toBeVisible();
   await expect(text(passenger, "5.0 (1 rating)")).toBeVisible();
   await expect(text(passenger, "Lovely drive, right on time.")).toBeVisible();
   await passenger

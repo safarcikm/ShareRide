@@ -7,13 +7,13 @@ import { useRef, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { errorText, formatWait } from "@/auth/errors";
 import { useMe, useSession } from "@/auth/session";
-import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Notice } from "@/components/notice";
 import { PasswordField } from "@/components/password-field";
 import { Screen } from "@/components/screen";
+import { ScreenHead } from "@/components/screen-head";
 import { TakesFocus } from "@/components/takes-focus";
-import { Body, Title } from "@/components/text";
+import { Body } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { BackToMenu } from "@/navigation/back-to-menu";
 import { ConfirmWithCode } from "@/privacy/confirm-with-code";
@@ -120,18 +120,14 @@ function PasswordForm({ me }: { readonly me: Me }) {
     else setError(describe(result));
   }
 
-  const header = (
-    <>
-      <BackButton fallback="/settings/sign-in-methods" />
-      <Title>{t("password.title")}</Title>
-    </>
-  );
+  // At the left, as on every page Profile leads to (spec 31, 3.19).
+  const header = <ScreenHead title={t("password.title")} back="/settings/sign-in-methods" />;
 
   if (me.email === null) {
     return (
       <Screen>
         {header}
-        <Body>{t("password.emailRequired")}</Body>
+        <Body align="start">{t("password.emailRequired")}</Body>
         <View style={styles.form}>
           <Button
             label={t("settings.signInMethods.addEmail")}

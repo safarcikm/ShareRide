@@ -6,7 +6,7 @@ import { completeMe, legalDocument, ownProfile, renderApp } from "@/testing/app"
 import type * as TestApp from "@/testing/app";
 import { filledButtons } from "@/testing/buttons";
 import { meetingPoints } from "@/testing/meeting-points";
-import { annaProfile, profileApi } from "@/testing/people";
+import { annaProfile, findPersonCard, profileApi } from "@/testing/people";
 import { readyDriver, volvo, yaris } from "@/testing/trips";
 import { colors, typography } from "@/theme/tokens";
 
@@ -453,7 +453,7 @@ describe("My profile (spec 31, 3.14)", () => {
     await fireEvent.press(screen.getByRole("link", { name: "See it as others do" }));
     expect(await screen.findByRole("header", { name: "As others see you" })).toBeVisible();
     expect(screen).toHavePathname("/profile/preview");
-    expect(await screen.findByRole("header", { name: "Anna" })).toBeVisible();
+    expect(await findPersonCard("Anna")).toBeVisible();
     expect(screen.getByText("Speaks Icelandic, English")).toBeVisible();
     expect(screen.getByText("Member since November 2026")).toBeVisible();
     expect(screen.getByText(completeMe.about ?? "")).toBeVisible();
@@ -475,6 +475,30 @@ describe("My profile (spec 31, 3.14)", () => {
       body: { firstName: "Anna", about: "Usually with a dog.", languages: ["is"] },
       accessToken: "sr_at_access-1",
     });
+  });
+
+  it("has Edit profile's title at the left, and who I am with the photo's controls in a card (spec 31, 3.19)", async () => {
+    await renderApp("/profile/edit", { me: completeMe, setUp: drivingApi });
+    const card = within(await findPersonCard("Anna"));
+    const head = within(screen.getByTestId("screen-head"));
+    expect(head.getByRole("header", { name: "Edit profile" })).not.toHaveStyle({
+      textAlign: "center",
+    });
+    expect(card.getByText("Speaks Icelandic, English")).toBeVisible();
+    expect(card.getByText("Member since November 2026")).toBeVisible();
+    expect(card.getByRole("button", { name: "Add a photo" })).toBeVisible();
+    // The card is whom the form is about: nothing in it leads away from the
+    // form, and it has no rating to read.
+    expect(card.queryByRole("button", { name: "Edit profile" })).toBeNull();
+    expect(card.queryByRole("link", { name: "See it as others do" })).toBeNull();
+    expect(screen.queryByTestId("person-card-standing")).toBeNull();
+    expect(screen.queryByTestId("person-card-standing-room")).toBeNull();
+    // The form is under the card, and Save is the screen's one main button (R31.1).
+    const all = screen.getAllByText(/./).map((text) => String(text.props.children));
+    expect(all.indexOf("First name")).toBeGreaterThan(all.indexOf("Member since November 2026"));
+    expect(filledButtons()).toBe(1);
+    await fireEvent.press(head.getByRole("button", { name: "Back" }));
+    expect(screen).toHavePathname("/profile");
   });
 
   it("ticks no language for someone who chose none, and shows the rest after the common ones", async () => {

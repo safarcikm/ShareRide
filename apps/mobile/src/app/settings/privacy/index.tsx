@@ -1,18 +1,19 @@
-import { router } from "expo-router";
-import { StyleSheet, View } from "react-native";
+import { Download, FileText, MessageCircleQuestion, Trash2 } from "lucide-react-native";
 import { useMe } from "@/auth/session";
-import { BackButton } from "@/components/back-button";
-import { Card } from "@/components/card";
+import { ActionRows } from "@/components/action-rows";
 import { Row } from "@/components/row";
 import { Screen } from "@/components/screen";
-import { Body, Title } from "@/components/text";
+import { ScreenHead } from "@/components/screen-head";
 import { useLanguage } from "@/i18n/language";
 import { BackToMenu } from "@/navigation/back-to-menu";
-import { spacing } from "@/theme/tokens";
 
 /**
  * Privacy and your data, a page of Profile (spec 11; plan 4.9): Download
- * my data, Delete my account, Ask about my data and the privacy policy.
+ * my data, Ask about my data, the privacy policy and Delete my account.
+ * The title is at the left with what the page is under it, and its rows
+ * are a card of rows, each with its picture, as Profile's are; deleting
+ * the account takes it away, so its row is red and last (spec 31, 3.19 and
+ * R31.3).
  */
 export default function PrivacyScreen() {
   const { t } = useLanguage();
@@ -20,39 +21,13 @@ export default function PrivacyScreen() {
   if (me === null) return <BackToMenu />;
   return (
     <Screen>
-      <BackButton fallback="/profile" />
-      <Title>{t("privacy.title")}</Title>
-      <Body>{t("privacy.intro")}</Body>
-      <View style={styles.rows}>
-        <Card>
-          <Row
-            title={t("privacy.download")}
-            onPress={() => {
-              router.push("/settings/privacy/download");
-            }}
-          />
-          <Row
-            title={t("privacy.delete")}
-            onPress={() => {
-              router.push("/settings/privacy/delete");
-            }}
-          />
-          <Row
-            title={t("privacy.ask")}
-            onPress={() => {
-              router.push("/settings/privacy/ask");
-            }}
-          />
-          <Row
-            title={t("legal.privacy")}
-            onPress={() => {
-              router.push("/legal/privacy");
-            }}
-          />
-        </Card>
-      </View>
+      <ScreenHead title={t("privacy.title")} line={t("privacy.intro")} back="/profile" />
+      <ActionRows>
+        <Row icon={Download} title={t("privacy.download")} href="/settings/privacy/download" />
+        <Row icon={MessageCircleQuestion} title={t("privacy.ask")} href="/settings/privacy/ask" />
+        <Row icon={FileText} title={t("legal.privacy")} href="/legal/privacy" />
+        <Row danger icon={Trash2} title={t("privacy.delete")} href="/settings/privacy/delete" />
+      </ActionRows>
     </Screen>
   );
 }
-
-const styles = StyleSheet.create({ rows: { marginTop: spacing.md } });

@@ -37,6 +37,7 @@ const codeFailures = new Set(["code_invalid", "code_expired", "code_attempts_exc
  */
 export function ConfirmWithCode({
   confirmLabel,
+  danger = false,
   onConfirm,
   describe,
   sentUntil,
@@ -45,6 +46,8 @@ export function ConfirmWithCode({
 }: {
   /** The button that confirms, such as "Make my file". */
   readonly confirmLabel: string;
+  /** What it confirms takes something away, as deleting the account does: the button is red. */
+  readonly danger?: boolean;
   /** Runs the action with the code: done, or why not. */
   readonly onConfirm: (code: string) => Promise<{ readonly ok: true } | CallFailure>;
   /** Words for a failure that is the action's own, such as one file a day. */
@@ -209,7 +212,12 @@ export function ConfirmWithCode({
       ) : null}
       <Notice message={message} kind={notice?.kind === "resent" ? "info" : "error"} />
       {asked ? (
-        <Button label={confirmLabel} busy={confirming} onPress={() => void confirm(code)} />
+        <Button
+          variant={danger ? "danger" : "primary"}
+          label={confirmLabel}
+          busy={confirming}
+          onPress={() => void confirm(code)}
+        />
       ) : null}
       {!asked ? null : secondsLeft > 0 ? (
         <Body align="start">{t("auth.code.resendIn", { wait: formatWait(t, secondsLeft) })}</Body>

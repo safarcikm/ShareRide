@@ -103,8 +103,8 @@ describe("Privacy (spec 11)", () => {
     });
     await fireEvent.press(await screen.findByRole("link", { name: "Privacy and your data" }));
     expect(await screen.findByRole("header", { name: "Privacy" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Privacy Policy" })).toBeVisible();
-    await fireEvent.press(screen.getByRole("button", { name: "Download my data" }));
+    expect(screen.getByRole("link", { name: "Privacy Policy" })).toBeVisible();
+    await fireEvent.press(screen.getByRole("link", { name: "Download my data" }));
     expect(await screen.findByRole("header", { name: "Download my data" })).toBeVisible();
   });
 

@@ -36,6 +36,11 @@ ticket over one card of rows with Change, and what is still missing as
 one yellow card (3.8, item 1); "Your ride is published" shows the ride as
 its ticket.
 
+Amended by spec 31 (3.19) too: My cars, a car, "Add a car" and the
+driving licence have Back and their title at the left, with their help
+as the line under it, and "Remove car" is a red row, last on a car's page
+(screens 2 and 3).
+
 Amended by [spec 31](2026-11-26-one-ride-one-ticket.md) (3.4): in English
 a member now reads "ride" where the texts quoted here say "trip" (which
 stays in "Trip day"), and the actions are named "Find a ride", "Offer a

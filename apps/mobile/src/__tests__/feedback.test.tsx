@@ -1,6 +1,7 @@
-import { act, fireEvent, screen, waitFor } from "expo-router/testing-library";
+import { act, fireEvent, screen, waitFor, within } from "expo-router/testing-library";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
+import { filledButtons } from "@/testing/buttons";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
 import { listening, shake } from "@/testing/sensors";
 import { captureScreen, screenshotIs } from "@/testing/view-shot";
@@ -141,6 +142,30 @@ describe("Send feedback (spec 12, 3.3)", () => {
     ]);
     await fireEvent.press(screen.getByRole("button", { name: "Done" }));
     expect(await screen.findByRole("header", { name: "My profile" })).toBeVisible();
+  });
+
+  it("says thanks in the head, at the left, with Done as the one main button (spec 31, 3.19)", async () => {
+    await start("/profile");
+    await openFromProfile();
+    await fireEvent.press(screen.getByRole("radio", { name: "Something isn't working" }));
+    await fireEvent.changeText(screen.getByLabelText("Your message"), "The map does not move.");
+    await fireEvent.press(screen.getByRole("button", { name: "Send feedback" }));
+    const thanks = await screen.findByText(/^Thank you\. We got your feedback\./);
+    const head = within(screen.getByTestId("screen-head"));
+    expect(head.getByRole("header", { name: "Send feedback" })).not.toHaveStyle({
+      textAlign: "center",
+    });
+    expect(head.getByText(/^Thank you\. We got your feedback\./)).toBe(thanks);
+    expect(thanks).not.toHaveStyle({ textAlign: "center" });
+    // Nothing to go back to: the form is sent.
+    expect(head.queryByRole("button", { name: "Back" })).toBeNull();
+    expect(filledButtons()).toBe(1);
+    // The way to what I sent is a row under it.
+    await fireEvent.press(
+      within(screen.getByTestId("action-rows")).getByRole("button", { name: "My feedback" }),
+    );
+    expect(await screen.findByRole("header", { name: "My feedback" })).toBeVisible();
+    expect(screen).toHavePathname("/settings/feedback");
   });
 
   it("sends no picture once the person removed it", async () => {

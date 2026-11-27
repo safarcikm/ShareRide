@@ -38,6 +38,12 @@ its last row; "Sign out on all devices" is at the end of Sign-in methods
 (3.4, items 3 and 4; 3.8, item 4). The line that said what was in
 Settings (`profile.inSettings`) is gone.
 
+Amended by spec 31 (3.19) as well: "As others see you" has its title at
+the left with "This is your public profile. Your phone number is never
+part of it." as the line under it, and under them the person's card as on
+Profile; it has no second heading with the name (3.4, item 1). The
+photo's page shows the same card over the photo's controls (3.6, item 5).
+
 ## 1. Problem and goal
 
 Walking through the app on 2026-11-15 found these problems:

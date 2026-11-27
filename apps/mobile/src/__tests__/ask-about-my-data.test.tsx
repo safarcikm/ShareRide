@@ -1,7 +1,8 @@
-import { fireEvent, screen } from "expo-router/testing-library";
+import { fireEvent, screen, within } from "expo-router/testing-library";
 import type { Me } from "@shareride/contracts";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
+import { filledButtons } from "@/testing/buttons";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
@@ -50,7 +51,7 @@ async function write(text: string) {
 describe("Ask about my data (spec 11, 3.6)", () => {
   it("is in Privacy", async () => {
     await renderApp("/settings/privacy", { me: withEmail });
-    await fireEvent.press(await screen.findByRole("button", { name: "Ask about my data" }));
+    await fireEvent.press(await screen.findByRole("link", { name: "Ask about my data" }));
     expect(await screen.findByRole("header", { name: "Ask about my data" })).toBeVisible();
   });
 
@@ -70,6 +71,22 @@ describe("Ask about my data (spec 11, 3.6)", () => {
     ]);
     await fireEvent.press(screen.getByRole("button", { name: "Back to Privacy" }));
     expect(await screen.findByRole("header", { name: "Privacy" })).toBeVisible();
+  });
+
+  it("says thanks in the head, at the left, with the way back as the one main button (spec 31, 3.19)", async () => {
+    await openAsk();
+    await fireEvent.press(screen.getByRole("radio", { name: /^Ask a question/ }));
+    await write("Why do you keep my old rides?");
+    await fireEvent.press(screen.getByRole("button", { name: "Send" }));
+    const thanks = await screen.findByText("Thank you. We'll answer by email within a month.");
+    const head = within(screen.getByTestId("screen-head"));
+    expect(head.getByRole("header", { name: "Ask about my data" })).not.toHaveStyle({
+      textAlign: "center",
+    });
+    expect(head.getByText("Thank you. We'll answer by email within a month.")).toBe(thanks);
+    expect(thanks).not.toHaveStyle({ textAlign: "center" });
+    expect(head.queryByRole("button", { name: "Back" })).toBeNull();
+    expect(filledButtons()).toBe(1);
   });
 
   it("offers each kind with what it means", async () => {

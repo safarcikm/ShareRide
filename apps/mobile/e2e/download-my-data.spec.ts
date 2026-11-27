@@ -15,7 +15,7 @@ test("downloads my data from Profile", async ({ page }) => {
   await page.goto("/profile");
   await page.getByRole("link", { name: "Privacy and your data" }).click();
   await expect(page.getByRole("heading", { name: "Privacy" })).toBeVisible();
-  await page.getByRole("button", { name: "Download my data" }).click();
+  await page.getByRole("link", { name: "Download my data" }).click();
   await expect(page.getByRole("heading", { name: "Download my data" })).toBeVisible();
 
   const code = await emailedCode(email, confirmCodeSubject, () =>

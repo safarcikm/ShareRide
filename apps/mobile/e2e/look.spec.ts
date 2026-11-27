@@ -13,6 +13,7 @@ import {
 import { english, signUp } from "./support/account";
 import { confirmedBooking, requestSeat, secondPage } from "./support/cancelling";
 import { picturesUnderTheirText, ticketFit } from "./support/layout";
+import { aPerson, personId, showPerson } from "./support/person";
 import { openTrip } from "./support/trips";
 
 // The look from spec 15 in a real browser: centred buttons that fit their label, the
@@ -902,5 +903,90 @@ test.describe("Profile with a long name, 360 wide", () => {
         expect(who.screenWider).toBeLessThanOrEqual(0);
       }
     }
+  });
+});
+
+// Spec 31, 3.19: a person's profile on the narrowest phone the app is made
+// for, in Icelandic, whose words are longer, for someone with a long name
+// who wrote a lot about herself and speaks four languages. All made up.
+test.describe("A person's profile with a long name, 360 wide", () => {
+  test.use({ locale: "en-GB" });
+
+  const longName = "Sigurbjörg Aðalheiður";
+  const shown = { visible: true } as const;
+  const person = aPerson({
+    firstName: longName,
+    languages: ["is", "en", "pl", "de"],
+    about:
+      "Ég keyri á milli Reykjavíkur og Akureyrar flestar helgar, með hundinn í aftursætinu. Spjalla gjarnan á leiðinni, eða þegi ef þú vilt sofa.",
+    rating: { average: 4.3, count: 12 },
+  });
+
+  test("holds its head, the person's card, the figure's row and the rows that report and block, with the text as set and twice as large", async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== "phone", "A phone's column; a laptop has room.");
+    test.slow();
+    await page.setViewportSize({ width: 360, height: 740 });
+    await signUp(page, english, "Anna");
+    await showPerson(page, person);
+    // The language is chosen on its own page.
+    await page.goto("/settings/language");
+    await page.getByRole("radio", { name: "Íslenska" }).filter(shown).click();
+    await expect(
+      page.getByRole("heading", { name: "Tungumál", exact: true }).filter(shown),
+    ).toBeVisible();
+    await page.goto(`/people/${personId}`);
+    await expect(
+      page.getByRole("heading", { name: "Prófíll", exact: true }).filter(shown),
+    ).toBeVisible();
+    const card = page.getByTestId("person-card").filter(shown);
+    await expect(card.getByText(longName, { exact: true })).toBeVisible();
+    // The rating and both checks are on the card's one line, which wraps.
+    const standing = card.getByTestId("person-card-standing");
+    await expect(standing.getByText("Símanúmer staðfest")).toBeVisible();
+    await expect(standing.getByText("Netfang staðfest")).toBeVisible();
+    // The figure's row, then, after the reviews, the rules, Report and Block.
+    const rows = page.getByTestId("action-rows").filter(shown);
+    await expect(rows).toHaveCount(2);
+    const block = rows.nth(1).getByRole("link", { name: `Loka á: ${longName}` });
+    await expect(block).toBeVisible();
+    await expect(rows.nth(1).getByRole("link")).toHaveCount(3);
+
+    for (const zoom of [1, 2] as const) {
+      if (zoom === 2) await twiceAsLarge(page);
+      // Each part is whole in the window, with nothing past its edges and
+      // no text cut; a name with no room on a row's line goes on with the
+      // next, and only a word longer than a whole line is broken.
+      const head = await ticketFit(page, "screen-head", "h1");
+      const who = await ticketFit(page, "person-card", "[dir]");
+      const figure = await ticketFit(page, "action-rows", "[dir]", 0);
+      const safety = await ticketFit(page, "action-rows", "[dir]", 1);
+      for (const part of [head, who, figure, safety]) {
+        expect(part.past).toEqual([]);
+        expect(part.cut).toEqual([]);
+        expect(part.beyondWindow).toBe(0);
+        expect(part.needlessly).toEqual([]);
+      }
+      // The picture stands with the name, not at the middle of the lines.
+      expect((await picturesUnderTheirText(page)).under).toEqual([]);
+      // Block is the last thing on the page: nothing stands under its card.
+      const last = await box(rows.nth(1));
+      const blockRow = await box(block);
+      expect(blockRow.y + blockRow.height).toBeGreaterThanOrEqual(last.y + last.height - 2);
+      if (zoom === 1) {
+        // With the text as set every word is whole, and the screen does
+        // not scroll sideways.
+        for (const part of [head, who, figure, safety]) expect(part.brokenWords).toEqual([]);
+        expect(who.screenWider).toBeLessThanOrEqual(0);
+      }
+    }
+    // Unfolded, twice as large, the counts behind the figure are whole in its card.
+    await rows.nth(0).getByRole("button").click();
+    await expect(rows.nth(0).getByRole("button")).toHaveAttribute("aria-expanded", "true");
+    const counts = await ticketFit(page, "action-rows", "[dir]", 0);
+    expect(counts.past).toEqual([]);
+    expect(counts.cut).toEqual([]);
+    expect(counts.beyondWindow).toBe(0);
   });
 });

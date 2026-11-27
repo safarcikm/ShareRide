@@ -1,6 +1,7 @@
 // Public profiles and their reviews, for screen tests. Not used by the app
 // itself. All made up.
 import type { ProfileReview, PublicProfile, Standing } from "@shareride/contracts";
+import { screen, waitFor, within } from "@testing-library/react-native";
 import { failure, ok, type FakeClient } from "./fake-client";
 
 /** No ratings yet, and too few trips for the figure: how a new member stands. */
@@ -107,5 +108,18 @@ export function profileApi(
     const profile = found(input);
     if (profile === "invalid") return failure(400, "validation_failed");
     return profile === undefined ? failure(404, "not_found") : page(input);
+  });
+}
+
+/**
+ * The person's card on the screen in front, once it shows `firstName`: a
+ * person's profile, its preview and Edit profile have the name there, as
+ * plain text under the screen's title (spec 31, 3.14 and 3.19).
+ */
+export function findPersonCard(firstName: string) {
+  return waitFor(() => {
+    const card = screen.getByTestId("person-card");
+    within(card).getByText(firstName);
+    return card;
   });
 }

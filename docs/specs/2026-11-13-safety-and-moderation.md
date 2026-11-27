@@ -23,6 +23,12 @@ Profile, under "Safety and privacy", where they were in Settings (3.1,
 item 7; 3.2, item 4). The texts after reporting and in a conversation
 with someone blocked name them there.
 
+Amended by spec 31 (3.19) as well: on a person's profile "Read the
+community rules", Report and Block are rows of the page's last card,
+after the reviews, with Block red and last; they were loose buttons under
+the person's card (3.1.1, 3.2.1 and 3.3.4). Blocked people, My reports
+and Notices have their title at the left.
+
 ## 1. Problem and goal
 
 Strangers share a car, often on long roads in winter. People must be able to

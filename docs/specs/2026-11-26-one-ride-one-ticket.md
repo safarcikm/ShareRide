@@ -1096,10 +1096,10 @@ on a laptop,
   and in the Privacy Notice four times: a new version of either is
   Martin's to decide, and they are left as they are.
 
-Left for the second part (plan, PR 11b): a person's profile, its preview
-and Edit profile with this card, Report and Block as rows, and the heads
-at the left on the pages Profile opens (3.19), which still have their
-titles centred, as Sign-in methods does in its picture.
+The second part (plan, PR 11b) gave this card to a person's profile, its
+preview and Edit profile, made Report and Block rows, and put the heads at
+the left on the pages Profile opens: 3.19, as built. Sign-in methods'
+picture above was taken again then, with its title at the left.
 
 ### 3.15 Sign-in
 
@@ -1225,10 +1225,10 @@ ticket wherever it shows a ride (R31.2), and the tags of rule 6.
 | Rating (`/bookings/[id]/rate`) | The head at the left; the stars and fields as today |
 | Edit trip (`/drive/trips/[id]/edit`) | Its parts become rows with what is set now: Time, Stops (with Add a stop and Remove a stop under it), Price, Seats, Car, How people book, Preferences and note. Each part's screen and "Check the change" keep their fields |
 | Sharing a ride, messaging all passengers | The head at the left |
-| A person's profile, its preview, Edit profile | The person's card as on Profile (3.14); Report and Block as rows, red and last |
+| A person's profile, its preview, Edit profile | The person's card as on Profile (3.14); Report and Block as rows, red and last (as built: last, and only Block red, decision 17) |
 | All rides (`/rides`), a place, a meeting point and their list | Rides as tickets; the rest as today. As built: a place and a meeting point list no rides today, so only All rides changed |
-| My cars, a car, the driving licence, the photo | The head at the left |
-| The pages under Settings, Notices, Send feedback, deleting the account | The head at the left |
+| My cars, a car, the driving licence, the photo | The head at the left (as built: "Remove car" a red row, and the photo's page with the person's card) |
+| The pages under Settings, Notices, Send feedback, deleting the account | The head at the left (as built: Privacy's links a card of rows, and the button that deletes the account red) |
 
 As built, Booking a seat on a phone
 ([light](images/one-ride-one-ticket/built/book-phone-light.webp),
@@ -1373,7 +1373,109 @@ and
   button beside the passenger at their stop on the trip day, shown once
   "I'm here" was said there.
 
-My rides and My trips follow (plan, PR 8c).
+As built, a person's profile, its preview and Edit profile, and the pages
+Profile opens (plan, PR 11, the second of its two parts). On a phone: a
+person's profile
+([light](images/one-ride-one-ticket/built/person-phone-light.webp),
+[dark, in Icelandic](images/one-ride-one-ticket/built/person-phone-dark.webp)),
+[Edit profile](images/one-ride-one-ticket/built/edit-profile-phone-light.webp),
+[Privacy](images/one-ride-one-ticket/built/privacy-phone-light.webp),
+[Delete my account](images/one-ride-one-ticket/built/delete-account-phone-light.webp)
+and [a car](images/one-ride-one-ticket/built/edit-car-phone-light.webp);
+on a laptop,
+[a person's profile](images/one-ride-one-ticket/built/person-laptop-light.webp).
+The person in them is made up by the journey that takes them.
+
+- **A person's profile** has the title "Profile" ("Prófíll") at the left
+  with Back, also while it is read and when the person is not there. The
+  name was the title; it is now in the person's card, so the page has one
+  title and the name is read after it. The card is Profile's (3.14)
+  without Edit and the photo's controls: the picture, the name, "Speaks
+  English, Icelandic" and "Member since November 2026", then the one line
+  with the rating and the tags "Phone verified" and "Email verified", and
+  under it what the person wrote about themselves, at the left. Someone
+  who left is not found, as before: "This profile isn't available. The
+  person may have left PuffinRide." under the same head.
+- **The reliability figure** is a row in a card of its own, with a shield
+  for its picture: "Reliability: 96%" or "Reliability: not enough rides
+  yet". Pressing it unfolds the three lines of counts under it, as
+  pressing the line did before; its chevron now shows that it does. It
+  shared a card with the rating, which is in the person's card now.
+- **The reviews** are as they were: the heading, the three chips, each
+  review a card with "Report review" on the ones I did not write, and
+  "Show more reviews".
+- **The rules, Report and Block** are the page's last card, on anyone's
+  profile but my own, each a row with its picture: "Read the community
+  rules", "Report Bára" and "Block Bára". Only Block is red, and it is
+  last: it takes something away, where a report tells PuffinRide
+  (decision 17), as in a conversation's menu (3.13). They were two loose
+  buttons side by side and a link, right under the person's card; they
+  now come after the reviews, so reading about a person comes before
+  acting on them. Report and Block each open the page they opened
+  before, which asks first.
+- **"As others see you"**, the preview, is the same page under its own
+  head: the title at the left, "This is your public profile. Your phone
+  number is never part of it." as its line, and Back to Profile. It has
+  no second heading with my name and no rows to report or block.
+- **Edit profile** has its title at the left with Back, then the person's
+  card with what is saved now and the photo's controls in it, as on
+  Profile, then the form as it was. The card changes with the photo at
+  once, and with the form once that is saved. It has no Edit, no rating
+  and no link to the preview: Profile has those.
+- **These three stay one column on a laptop** (spec 18, 3.15), no wider
+  than a text reads well.
+- **The head is at the left on the pages Profile opens**, with Back, and
+  the line of help that stood centred under the title is the head's line:
+  My cars, a car and "Add a car"; the driving licence ("Your driving
+  licence"); the photo ("Your profile photo"); Email ("Your email");
+  "Choose a password"; Sign-in methods; Beta news; Blocked people; My
+  reports; Notices; Send feedback and My feedback; Privacy, "Download my
+  data", "Ask about my data" and "Delete my account". What a page says
+  when it holds nothing yet ("You haven't blocked anyone.") starts at
+  the left too. Sign-in methods is spec 29's and took only the head; its
+  "Sign out on all devices" has its help at the left.
+- **Privacy** is a card of rows, each with its picture: "Download my
+  data", "Ask about my data", "Privacy Policy" and, red and last, "Delete
+  my account" (R31.3). The rows had no pictures, and deleting was the
+  second of them, in the colour of the others.
+- **Deleting the account:** the button that asks for it, "Delete my
+  account", is red, and so is the one that confirms it with the code: it
+  takes the account away (decision 17). Once it is done the outcome is
+  the head, with focus: "Your account will be deleted on 27 December." as
+  the title, "You're signed out on every device. …" as its line, and
+  "Close" as the one main button, in the bar. The page an account that
+  waits to be deleted lands on has the same title at the left, with what
+  waiting means as its line; its two buttons, "Keep my account" and "Sign
+  out", are as they were.
+- **A car:** "Remove car" is a red row in a card of its own, the last
+  thing on the page (R31.3), in the place of a loose link. It asks first,
+  naming the car, as before.
+- **The photo's page** shows the person's card over the photo's controls,
+  in the place of the picture alone, centred: a driver sees the card
+  others will see. "Add a photo" stays the page's one main button.
+- **After sending feedback or a question about my data** the thanks are
+  the head's line, with focus, under the page's title, and the way on is
+  the one main button, in the bar: "Done", or "Back to Privacy". "My
+  feedback" is a row under the head. The title and the thanks were
+  centred, with the buttons under them in the column.
+
+Where this differs from the table: Report is not red, as above. The
+pages took more than the head where a rule asked for it: rows in place
+of a column of buttons on Privacy (rule 4), a red row or a red button
+where something is taken away (R31.3, decision 17), and the outcome as
+the head with one main button after something was sent or deleted
+(R31.1).
+
+Left as they are, for the last pass (plan, PR 12): the page an email's
+link opens (`/verify-email`), whose titles stay centred; the list on My
+cars, a card of names with no pictures; Blocked people's list with an
+outlined "Unblock" on each; "Save" on Edit profile and on the forms of a
+car, the licence, the email and the password, at the end of the form
+and not in the bar; the two buttons of the page an account that waits to
+be deleted lands on; and the button that confirms removing a car, which
+is outlined.
+
+My rides came with PR 8c (3.10).
 
 Not changed: signing in and joining (`/sign-in`, `/onboarding`, the
 invitation and email links), which are spec 29's; About, the legal
@@ -1587,6 +1689,7 @@ Texts added while building, as they are in the app:
 | The day and the time on a conversation's ride line | {day}, {time} | {day} kl. {time} |
 | The button in the person's card on Profile, named "Edit profile" | Edit | Breyta |
 | Where the page an email's link opens leads on, signed in, whether or not the email was added | Go to your profile | Fara í prófílinn þinn |
+| The title of a person's profile | Profile | Prófíll |
 
 Texts that named Settings name the place on Profile since 3.14 was built:
 in the app, in three emails and in the console. Only the part that
@@ -1675,4 +1778,4 @@ Working choices, for Martin to change:
 | 14 | Naming who asks for a seat, on Find and My rides | A ride in my list gains `firstRequest` in the API (section 6). For "Rate your passenger" under Past it also gains `toRate`, the passengers its driver can still rate (3.10) |
 | 15 | Drafts | All of them are listed on Offer; the page of drafts goes with My trips (3.11, item 6) |
 | 16 | Filled buttons | One main button a screen; the button of a `NeedsYouCard` is the only other filled one (R31.1) |
-| 17 | Which main buttons are red | The ones that take something away: "Cancel booking", "Cancel the ride", "Withdraw request", "Block Bára", and "Decline request" on the driver's ride. The ones that tell PuffinRide what happened stay moss, so that red does not warn anyone off a report: "Tell PuffinRide", "Mark as no-show", "Send answer", "Send review", "Send report" (3.19, R31.3) |
+| 17 | Which main buttons are red | The ones that take something away: "Cancel booking", "Cancel the ride", "Withdraw request", "Block Bára", "Delete my account", and "Decline request" on the driver's ride. The ones that tell PuffinRide what happened stay moss, so that red does not warn anyone off a report: "Tell PuffinRide", "Mark as no-show", "Send answer", "Send review", "Send report" (3.19, R31.3) |

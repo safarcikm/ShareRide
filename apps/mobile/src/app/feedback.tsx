@@ -1,20 +1,23 @@
 import { sendFeedbackRoute } from "@shareride/contracts";
 import { checkFeedback, feedbackKinds, feedbackRules, type FeedbackKind } from "@shareride/domain";
 import { router } from "expo-router";
+import { Inbox } from "lucide-react-native";
 import { useRef, useState } from "react";
 import { Image, Platform, StyleSheet, View } from "react-native";
 import { thisDevice } from "@/auth/api";
 import { errorText, formatWait } from "@/auth/errors";
 import { useMe, useSession } from "@/auth/session";
 import { takeFeedbackStart } from "@/beta/feedback";
-import { BackButton } from "@/components/back-button";
+import { ActionRows } from "@/components/action-rows";
 import { Button } from "@/components/button";
 import { Notice } from "@/components/notice";
 import { RadioCard } from "@/components/radio-card";
+import { Row } from "@/components/row";
 import { Screen } from "@/components/screen";
+import { ScreenHead } from "@/components/screen-head";
 import { TakesFocus } from "@/components/takes-focus";
 import { TextField } from "@/components/text-field";
-import { Body, Title } from "@/components/text";
+import { Body } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { BackToMenu } from "@/navigation/back-to-menu";
 import { controlOutline, radii, sizes, spacing } from "@/theme/tokens";
@@ -29,6 +32,9 @@ const osVersion = platform === "web" ? "" : String(Platform.Version);
  * phones, a picture of the screen the person came from, which they see
  * before sending and can remove. The app's version, the platform, the
  * screen's name and the language go with it, and nothing else (R12.5).
+ * The title is at the left with what to write under it; once sent, the
+ * head says thanks, with Done as the one main button and My feedback as a
+ * row (spec 31, 3.19).
  */
 export default function FeedbackScreen() {
   const me = useMe();
@@ -115,9 +121,7 @@ function FeedbackForm({ onSent }: { readonly onSent: () => void }) {
         />
       }
     >
-      <BackButton fallback="/profile" />
-      <Title>{t("feedback.title")}</Title>
-      <Body align="start">{t("feedback.intro")}</Body>
+      <ScreenHead title={t("feedback.title")} line={t("feedback.intro")} back="/profile" />
       <View accessibilityRole="radiogroup" accessibilityLabel={title} style={styles.group}>
         {feedbackKinds.map((each) => (
           <RadioCard
@@ -174,27 +178,34 @@ function FeedbackForm({ onSent }: { readonly onSent: () => void }) {
 function Thanks() {
   const { t } = useLanguage();
   return (
-    <Screen>
-      <Title>{t("feedback.title")}</Title>
-      <TakesFocus>
-        <Body>{t("feedback.thanks")}</Body>
-      </TakesFocus>
-      <View style={styles.group}>
+    <Screen
+      footer={
         <Button
+          main
           label={t("feedback.done")}
           onPress={() => {
             if (router.canGoBack()) router.back();
             else router.replace("/profile");
           }}
         />
-        <Button
-          variant="secondary"
-          label={t("feedback.mine")}
+      }
+    >
+      {/* The button pressed is gone: focus moves to what it did. */}
+      <ScreenHead
+        title={t("feedback.title")}
+        line={t("feedback.thanks")}
+        back={null}
+        outcome={{ of: "sent", focus: true }}
+      />
+      <ActionRows>
+        <Row
+          icon={Inbox}
+          title={t("feedback.mine")}
           onPress={() => {
             router.replace("/settings/feedback");
           }}
         />
-      </View>
+      </ActionRows>
     </Screen>
   );
 }

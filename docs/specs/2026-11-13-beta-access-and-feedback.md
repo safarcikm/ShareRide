@@ -15,6 +15,11 @@ Amended by [spec 31](2026-11-26-one-ride-one-ticket.md) (3.14): Send
 feedback, the switch for shaking the phone and My feedback are rows of
 Profile, under Help, where they were on Profile and in Settings (3.3).
 
+Amended by spec 31 (3.19) too: Send feedback and My feedback have Back
+and their title at the left. After sending, the thanks are the line under
+the title, "Done" is the one main button, at the bottom, and "My
+feedback" is a row (3.3).
+
 ## 1. Problem and goal
 
 A ride-sharing beta only works if drivers and passengers on the same roads

@@ -5,7 +5,7 @@ import {
   publicProfileRoute,
   type Me,
 } from "@shareride/contracts";
-import { formatPhoneNumber, peopleColourOf } from "@shareride/domain";
+import { formatPhoneNumber } from "@shareride/domain";
 import { router } from "expo-router";
 import {
   Ban,
@@ -45,13 +45,11 @@ import { Heading } from "@/components/text";
 import { TextLink } from "@/components/text-link";
 import { useLanguage } from "@/i18n/language";
 import { useSaveLanguage } from "@/i18n/use-save-language";
-import { dayOf } from "@/lib/days";
 import { useLoadedOnFocus } from "@/lib/use-loaded";
 import { openPlace } from "@/navigation/open-place";
 import { SignInFirst } from "@/navigation/sign-in-first";
-import { languagesText } from "@/people/languages";
 import { PersonCard } from "@/people/person-card";
-import { memberSinceText } from "@/people/texts";
+import { myCardOf } from "@/profile/my-card";
 import { PhotoControls } from "@/profile/photo-controls";
 import { providerNames } from "@/sign-in/provider-window";
 import { sizes, spacing, typography } from "@/theme/tokens";
@@ -152,16 +150,9 @@ function MyProfile({ me }: { readonly me: Me }) {
           .join(", ")
       : "";
 
-  const languages = languagesText(me, locale);
   const person = (
     <PersonCard
-      firstName={me.firstName ?? ""}
-      colour={peopleColourOf(me.id)}
-      photo={me.photo?.url ?? null}
-      lines={[
-        ...(languages === "" ? [] : [t("profile.speaks", { languages })]),
-        memberSinceText(t, locale, dayOf(new Date(me.memberSince))),
-      ]}
+      {...myCardOf(me, t, locale)}
       standing={standing === undefined ? "reading" : standing.ok ? standing.data : undefined}
       action={
         <Button

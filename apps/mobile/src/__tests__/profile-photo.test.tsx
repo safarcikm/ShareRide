@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from "expo-router/testing-library";
+import { fireEvent, screen, waitFor, within } from "expo-router/testing-library";
 import type { Me } from "@shareride/contracts";
 import { checkProfilePhoto } from "@shareride/domain";
 import { bytesFromBase64 } from "@/lib/base64";
@@ -8,7 +8,7 @@ import { failure, ok, type FakeClient } from "@/testing/fake-client";
 import { photoSizeIs, resetManipulator } from "@/testing/image-manipulator";
 import { cameraAllowedIs, launchCameraAsync, photoPickedIs } from "@/testing/image-picker";
 import { meetingPoints } from "@/testing/meeting-points";
-import { annaProfile, annaProfileId, newcomer, profileApi } from "@/testing/people";
+import { annaProfile, annaProfileId, findPersonCard, newcomer, profileApi } from "@/testing/people";
 import { northResult, northTrip, tripDetailsApi } from "@/testing/search";
 import { readyDriver, yaris } from "@/testing/trips";
 
@@ -203,7 +203,7 @@ describe("photos beside names (spec 1, 3.5)", () => {
         profileApi(client, [{ ...annaProfile, photo: link }]);
       },
     });
-    expect(await screen.findByRole("header", { name: "Anna" })).toBeVisible();
-    expect(screen.getByTestId("avatar-photo", hidden)).toHaveProp("source", { uri: link });
+    const card = await findPersonCard("Anna");
+    expect(within(card).getByTestId("avatar-photo", hidden)).toHaveProp("source", { uri: link });
   });
 });

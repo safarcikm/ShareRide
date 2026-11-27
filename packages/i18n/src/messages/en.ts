@@ -1446,6 +1446,7 @@ export const en = {
   "request.timeLeft": "{time} left to answer",
   "request.timeUp": "The time to answer ran out",
   "request.memberSince": "Member since {month} {year}",
+  "people.title": "Profile",
   "people.formerMember": "A former member",
   "people.open": "See profile",
   "people.openOf": "See profile: {name}",

@@ -1,8 +1,9 @@
-import { fireEvent, screen } from "expo-router/testing-library";
+import { fireEvent, screen, within } from "expo-router/testing-library";
 import type { DriverReadiness, Vehicle } from "@shareride/contracts";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
+import { colors } from "@/theme/tokens";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
 jest.mock("@/auth/token-store", () => {
@@ -219,6 +220,25 @@ describe("Edit a car", () => {
     expect(await screen.findByText("No cars yet. Add the car you drive.")).toBeVisible();
     expect(app.driver.cars()).toEqual([]);
     expect(screen.queryByText("Toyota Yaris, white")).toBeNull();
+  });
+
+  it("has Remove car as a red row, the last thing on the page (spec 31, R31.3)", async () => {
+    await openCars({ cars: [yaris] });
+    await fireEvent.press(screen.getByRole("button", { name: /^Toyota Yaris, white/ }));
+    const rows = within(await screen.findByTestId("action-rows"));
+    const remove = rows.getByRole("button", { name: "Remove car" });
+    expect(within(remove).getByText("Remove car")).toHaveStyle({ color: colors.light.error });
+    const hidden = { includeHiddenElements: true };
+    expect(within(remove).getByTestId("row-icon", hidden)).toBeTruthy();
+    expect(within(remove).queryByTestId("row-chevron", hidden)).toBeNull();
+    const all = screen.getAllByText(/./).map((text) => String(text.props.children));
+    expect(all.at(-1)).toBe("Remove car");
+    // Asking first stands where the row stood, with nothing in the middle.
+    await fireEvent.press(remove);
+    expect(screen.getByText("Remove Toyota Yaris? It stays on your past rides.")).not.toHaveStyle({
+      textAlign: "center",
+    });
+    expect(screen.queryByTestId("action-rows")).toBeNull();
   });
 
   it("keeps a car that is on a trip that has not ended, and says why", async () => {

@@ -9,12 +9,12 @@ import {
 import { useCallback } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { useMe, useSession } from "@/auth/session";
-import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
 import { Notice } from "@/components/notice";
 import { Screen } from "@/components/screen";
-import { Body, Title } from "@/components/text";
+import { ScreenHead } from "@/components/screen-head";
+import { Body } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { useLoaded } from "@/lib/use-loaded";
 import { BackToMenu } from "@/navigation/back-to-menu";
@@ -36,6 +36,8 @@ const outcomeText = (t: Translate, report: MyReport): string =>
 /**
  * My reports (spec 9, 3.1.7), a page of Profile: what I reported,
  * when, and what ShareRide found, the latest first. Only I see this list.
+ * The title is at the left, with what the page is under it (spec 31,
+ * 3.19).
  */
 export default function ReportsScreen() {
   const me = useMe();
@@ -50,13 +52,7 @@ function Reports() {
   const load = useCallback(() => session.call(myReportsRoute, {}), [session]);
   const { value: answer, reload } = useLoaded(load);
 
-  const header = (
-    <>
-      <BackButton fallback="/profile" />
-      <Title>{t("reports.title")}</Title>
-      <Body>{t("reports.help")}</Body>
-    </>
-  );
+  const header = <ScreenHead title={t("reports.title")} line={t("reports.help")} back="/profile" />;
   if (answer === undefined) {
     return (
       <Screen>
@@ -79,7 +75,7 @@ function Reports() {
     <Screen>
       {header}
       {reports.length === 0 ? (
-        <Body>{t("reports.none")}</Body>
+        <Body align="start">{t("reports.none")}</Body>
       ) : (
         reports.map((report) => (
           <Card key={report.id}>

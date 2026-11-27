@@ -1,8 +1,10 @@
-import { fireEvent, screen } from "expo-router/testing-library";
+import { fireEvent, screen, within } from "expo-router/testing-library";
 import type { DeletionCheck, Me } from "@shareride/contracts";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
+import { filledButtons } from "@/testing/buttons";
+import { colors } from "@/theme/tokens";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
 jest.mock("@/auth/token-store", () => {
@@ -108,7 +110,7 @@ async function openDeleteScreen({
     },
   });
   await fireEvent.press(await screen.findByRole("link", { name: "Privacy and your data" }));
-  await fireEvent.press(await screen.findByRole("button", { name: "Delete my account" }));
+  await fireEvent.press(await screen.findByRole("link", { name: "Delete my account" }));
   expect(await screen.findByRole("header", { name: "Delete my account" })).toBeVisible();
   return app;
 }
@@ -124,9 +126,27 @@ describe("Delete my account (spec 11, 3.4)", () => {
         client.answer("/v1/me/deletion-check", () => ok(200, allowed));
       },
     });
-    await fireEvent.press(await screen.findByRole("button", { name: "Delete my account" }));
+    await fireEvent.press(await screen.findByRole("link", { name: "Delete my account" }));
     expect(await screen.findByRole("header", { name: "Delete my account" })).toBeVisible();
     expect(screen).toHavePathname("/settings/privacy/delete");
+  });
+
+  it("is the Privacy page's last row, and the red one (spec 31, R31.3)", async () => {
+    await renderApp("/settings/privacy", { me: completeMe });
+    const rows = within(await screen.findByTestId("action-rows"));
+    expect(
+      rows
+        .getAllByTestId("row-words")
+        .map((words) => String(within(words).getByText(/./).props.children)),
+    ).toEqual(["Download my data", "Ask about my data", "Privacy Policy", "Delete my account"]);
+    const hidden = { includeHiddenElements: true };
+    expect(rows.getAllByTestId("row-icon", hidden)).toHaveLength(4);
+    const last = rows.getByRole("link", { name: "Delete my account" });
+    expect(within(last).getByText("Delete my account")).toHaveStyle({
+      color: colors.light.error,
+    });
+    expect(within(last).queryByTestId("row-chevron", hidden)).toBeNull();
+    expect(rows.getAllByTestId("row-chevron", hidden)).toHaveLength(3);
   });
 
   it("lists what is still open before it can be deleted, and nothing to delete with", async () => {
@@ -198,11 +218,20 @@ describe("Delete my account (spec 11, 3.4)", () => {
       ),
     ).toBeVisible();
     expect(callsTo(app, "/v1/me/confirm-code")).toEqual([]);
+    // It takes the account away: the one main button is red (decision 17).
+    const red = { backgroundColor: colors.light.error };
+    const start = screen.getByRole("button", { name: "Delete my account" });
+    expect(within(start).getByTestId("button-face")).toHaveStyle(red);
+    expect(filledButtons()).toBe(1);
 
-    await fireEvent.press(screen.getByRole("button", { name: "Delete my account" }));
+    await fireEvent.press(start);
     expect(
       await screen.findByText("We sent a code by text message to your number ending in 00."),
     ).toBeVisible();
+    // So is the button that deletes with the code.
+    const confirm = await screen.findByRole("button", { name: "Delete my account" });
+    expect(within(confirm).getByTestId("button-face")).toHaveStyle(red);
+    expect(filledButtons()).toBe(1);
     await fireEvent.changeText(await screen.findByLabelText("6-digit code"), "123456");
 
     expect(
@@ -218,6 +247,16 @@ describe("Delete my account (spec 11, 3.4)", () => {
     ]);
     // Every session ended on the API's side; this device forgets its own.
     expect(app.store.value).toBeNull();
+    // What happened is the head, at the left, with nothing to go back to.
+    const head = within(screen.getByTestId("screen-head"));
+    expect(
+      head.getByRole("header", { name: "Your account will be deleted on 20 November." }),
+    ).not.toHaveStyle({ textAlign: "center" });
+    expect(head.getByText(/^You're signed out on every device\./)).not.toHaveStyle({
+      textAlign: "center",
+    });
+    expect(head.queryByRole("button", { name: "Back" })).toBeNull();
+    expect(filledButtons()).toBe(1);
 
     await fireEvent.press(screen.getByRole("button", { name: "Close" }));
     expect(await screen.findByRole("tab", { name: "Find" })).toBeVisible();
@@ -271,6 +310,20 @@ describe("While the deletion waits (spec 11, 3.4.4)", () => {
     expect(screen.getByRole("button", { name: "Keep my account" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Sign out" })).toBeVisible();
     expect(screen.queryByRole("tab", { name: "Find" })).toBeNull();
+  });
+
+  it("says so at the left, with nothing to go back to (spec 31, 3.19)", async () => {
+    await openApp();
+    const head = within(screen.getByTestId("screen-head"));
+    expect(
+      head.getByRole("header", { name: "Your account will be deleted on 20 November." }),
+    ).not.toHaveStyle({ textAlign: "center" });
+    expect(head.getByText(/^Nobody can see your profile or rides/)).not.toHaveStyle({
+      textAlign: "center",
+    });
+    expect(head.queryByRole("button", { name: "Back" })).toBeNull();
+    // Keeping the account is the one main button; Sign out is beside it.
+    expect(filledButtons()).toBe(1);
   });
 
   it.each([
