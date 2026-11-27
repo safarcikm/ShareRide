@@ -25,7 +25,7 @@ test.describe("sign up in English", () => {
     const { text } = await signUp(page, english, "Anna");
     expect(text).toContain("is your PuffinRide code");
     await page.reload();
-    await expect(page.getByRole("heading", { name: english.findTitle })).toBeVisible();
+    await expect(page.getByRole("heading", { name: english.hi("Anna") })).toBeVisible();
     await menuLink(page, english.profileTab).click();
     await expect(page.getByRole("heading", { name: english.myProfile })).toBeVisible();
   });
@@ -50,13 +50,14 @@ test.describe("sign out on all devices", () => {
     const otherDevice = await browser.newContext({ locale: "en-GB" });
     const other = await otherDevice.newPage();
     await signIn(other, english, email);
-    // Signing in leads to Find, with the menu as it was.
-    await expect(other.getByRole("heading", { name: english.findTitle })).toBeVisible();
+    // Signing in leads to Find, which greets her, with the menu as it was.
+    await expect(other.getByRole("heading", { name: english.hi("Sigga") })).toBeVisible();
     await menuLink(other, english.profileTab).click();
     await expect(other.getByRole("heading", { name: english.myProfile })).toBeVisible();
     expect(sentCount(phone.e164)).toBe(1);
 
-    await other.getByRole("button", { name: "Settings" }).click();
+    // At the end of Sign-in methods (spec 31, 3.14).
+    await other.getByRole("link", { name: /^Sign-in methods/ }).click();
     await other.getByRole("button", { name: "Sign out on all devices" }).click();
     await expect(other.getByRole("heading", { name: english.findTitle })).toBeVisible();
     await menuLink(other, english.profileTab).click();
@@ -73,12 +74,22 @@ test.describe("sign out on all devices", () => {
 test.describe("sign out from Profile", () => {
   test.use({ locale: "en-GB" });
 
-  test("signs out of this device from Profile, and stays signed out after a reload", async ({
+  test("says why a sign-out failed, then signs out of this device, and stays signed out after a reload", async ({
     page,
   }) => {
     await signUp(page, english, "Gunna");
     await menuLink(page, english.profileTab).click();
     await expect(page.getByRole("heading", { name: english.myProfile })).toBeVisible();
+
+    // A sign-out that cannot reach PuffinRide says why under the row, and
+    // she stays signed in (spec 31, 3.14).
+    await page.route("**/v1/auth/sign-out", (route) => route.abort(), { times: 1 });
+    await page.getByRole("button", { name: "Sign out", exact: true }).click();
+    await expect(
+      page.getByText("We couldn't reach PuffinRide. Check your connection and try again."),
+    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: english.myProfile })).toBeVisible();
+
     await page.getByRole("button", { name: "Sign out", exact: true }).click();
     await expect(page.getByRole("heading", { name: english.findTitle })).toBeVisible();
     await page.reload();

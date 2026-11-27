@@ -19,6 +19,10 @@ phone step also finishes an email sign-in and sends its text only for a
 waiting sign-in (3.3, R26.2), the confirm code of 3.4 goes by email when the
 account has one (R26.7), and R19.3 widens to a new email (R26.5).
 
+Amended by [spec 31](2026-11-26-one-ride-one-ticket.md) (3.14): Sign-in
+methods is a row of Profile, under Account, which says the ways in use;
+Settings is gone.
+
 ## 1. Problem and goal
 
 Martin, 2026-11-22: "I want to be able to log in/create account with google

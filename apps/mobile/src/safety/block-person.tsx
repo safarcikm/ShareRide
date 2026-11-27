@@ -7,33 +7,36 @@ import {
   type Booking,
 } from "@shareride/contracts";
 import { holdsSeats } from "@shareride/domain";
-import { capitalised, formatDay } from "@shareride/i18n";
-import { router, useFocusEffect } from "expo-router";
-import { useCallback, useRef, useState, type ReactNode } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { router, useFocusEffect, type Href } from "expo-router";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { StyleSheet, View } from "react-native";
 import { errorText } from "@/auth/errors";
 import { useSession } from "@/auth/session";
+import { BookingTicket } from "@/booking/booking-ticket";
 import { canCancel, statusKey } from "@/booking/status";
 import { Button } from "@/components/button";
-import { Card } from "@/components/card";
-import { Notice } from "@/components/notice";
+import { ActionNotice, Notice } from "@/components/notice";
 import { Screen } from "@/components/screen";
+import { ScreenHead } from "@/components/screen-head";
 import { TakesFocus } from "@/components/takes-focus";
-import { Body, Title } from "@/components/text";
+import { Body } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { now } from "@/lib/clock";
-import { spacing, typography } from "@/theme/tokens";
-import { usePalette } from "@/theme/use-palette";
+import { spacing } from "@/theme/tokens";
+import { bookingWords } from "@/trip-day/report-screen";
 
 /** What blocking answers, from a booking or from a profile: the same. */
 type Blocked = CallResult<typeof blockFromBookingRoute>;
 
 /**
- * Blocking a person (spec 9, 3.2; screen 3): it asks first, then blocks
- * silently. Then it lists the bookings and requests the two still have
- * together, each with the usual way out: cancel, withdraw or decline (spec
- * 9 decision 1). Blocking alone changes no refund. `done` leads back to
- * where blocking started.
+ * Blocking a person (spec 9, 3.2; screen 3): it asks first, with the title
+ * at the left and "Block Anna" as the red main button in the bar (spec 31,
+ * 3.19), then blocks silently. Then the title says who is blocked, with
+ * focus, and under it are the bookings and requests the two still have
+ * together, each as a ticket with the usual way out: cancel, withdraw or
+ * decline (spec 9 decision 1). Blocking alone changes no refund. `back` is
+ * where Back leads when there is nothing to go back to; `done` leads back
+ * to where blocking started, and is then the main button.
  */
 export function BlockPerson({
   name,
@@ -43,7 +46,7 @@ export function BlockPerson({
   done,
 }: {
   readonly name: string;
-  readonly back: ReactNode;
+  readonly back: Href;
   readonly block: () => Promise<Blocked>;
   /** What a "not found" means here: trying again would not help. */
   readonly gone: string;
@@ -61,55 +64,93 @@ export function BlockPerson({
   }
 
   if (together !== null) {
+    // What the two still hold: one cancelled, withdrawn or declined from
+    // here is still shown, and no longer counted.
+    const held = together.filter((shared) => holdsSeats(shared.status)).length;
     return (
-      <Screen>
-        <TakesFocus>
-          <Title>{t("block.done", { name })}</Title>
-        </TakesFocus>
-        {together.length === 0 ? null : (
-          <>
-            <Body>{t("block.together", { count: together.length })}</Body>
-            {together.map((shared) => (
-              <Together key={shared.id} booking={shared} />
-            ))}
-          </>
-        )}
-        <Button variant="secondary" label={done.label} onPress={done.go} />
+      // The way back is the one thing left to do: the main button.
+      <Screen footer={<Button main label={done.label} onPress={done.go} />}>
+        {/* The button pressed is gone: focus moves to what it did. */}
+        <ScreenHead
+          title={t("block.done", { name })}
+          line={held === 0 ? undefined : t("block.together", { count: held })}
+          back={null}
+          outcome={{ of: "blocked", focus: true }}
+        />
+        {together.map((shared) => (
+          <Together
+            key={shared.id}
+            booking={shared}
+            onChange={(after) => {
+              setTogether((all) => all?.map((one) => (one.id === after.id ? after : one)) ?? null);
+            }}
+          />
+        ))}
       </Screen>
     );
   }
 
+  const head = (
+    <>
+      <ScreenHead title={t("block.title", { name })} back={back} />
+      <Body align="start">{t("block.confirm")}</Body>
+    </>
+  );
+  if (state === "gone") {
+    // Pressing again would not help: no button, and why takes its place.
+    return (
+      <Screen>
+        {head}
+        <ActionNotice says={gone} />
+      </Screen>
+    );
+  }
   return (
-    <Screen>
-      {back}
-      <Title>{t("block.title", { name })}</Title>
-      <Body>{t("block.confirm")}</Body>
-      {/* Gone: pressing again would not help. */}
-      {state === "gone" ? null : (
-        <Button
-          label={t("block.action", { name })}
-          busy={state === "blocking"}
-          onPress={() => void confirm()}
-        />
-      )}
-      <Notice message={state === "failed" ? t("block.failed") : state === "gone" ? gone : null} />
+    <Screen
+      footer={
+        <>
+          <ActionNotice says={state === "failed" ? t("block.failed") : null} />
+          <Button
+            main
+            variant="danger"
+            label={t("block.action", { name })}
+            busy={state === "blocking"}
+            onPress={() => void confirm()}
+          />
+        </>
+      }
+    >
+      {head}
     </Screen>
   );
 }
 
 /**
- * A booking or request the two still have together, with its way out: a
- * request is withdrawn or declined here; a booking is cancelled on its own
- * screen, with its reasons and refund, and is loaded again on coming back.
+ * A booking or request the two still have together, as its ticket (R31.2)
+ * with its way out under it: a request is withdrawn or declined here; a
+ * booking is cancelled on its own screen, with its reasons and refund, and
+ * is loaded again on coming back. `onChange` tells the screen what it is
+ * now, which keeps it and counts what is still held.
  */
-function Together({ booking }: { readonly booking: Booking }) {
+function Together({
+  booking: current,
+  onChange: setCurrent,
+}: {
+  readonly booking: Booking;
+  readonly onChange: (booking: Booking) => void;
+}) {
   const { locale, t } = useLanguage();
-  const palette = usePalette();
   const session = useSession();
-  const [current, setCurrent] = useState(booking);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
   const seenBefore = useRef(false);
+  const { id } = current;
+  // The screen gives a new `onChange` each time it is drawn; coming back
+  // reads the booking once, not once for each.
+  const changed = useRef(setCurrent);
+  useEffect(() => {
+    changed.current = setCurrent;
+  });
   useFocusEffect(
     useCallback(() => {
       // Back from cancelling it, or from anywhere else: as it is now.
@@ -117,16 +158,12 @@ function Together({ booking }: { readonly booking: Booking }) {
         seenBefore.current = true;
         return;
       }
-      void session.call(bookingRoute, { params: { id: booking.id } }).then((result) => {
-        if (result.ok) setCurrent(result.data);
+      void session.call(bookingRoute, { params: { id } }).then((result) => {
+        if (result.ok) changed.current(result.data);
       });
-    }, [session, booking.id]),
+    }, [session, id]),
   );
-  const day = capitalised(formatDay(new Date(current.board.plannedAt), locale), locale);
-  const route = t("search.route", {
-    from: current.board.meetingPoint.name[locale],
-    to: current.alight.meetingPoint.name[locale],
-  });
+  const { day, part: route } = bookingWords(t, locale, current);
   const passenger = current.viewer === "passenger";
 
   async function answer() {
@@ -146,6 +183,7 @@ function Together({ booking }: { readonly booking: Booking }) {
     action = (
       <Button
         variant="secondary"
+        fill
         label={t(passenger ? "booking.withdraw" : "request.declineConfirm")}
         accessibilityLabel={t(passenger ? "block.withdrawLabel" : "block.declineLabel", {
           day,
@@ -159,6 +197,7 @@ function Together({ booking }: { readonly booking: Booking }) {
     action = (
       <Button
         variant="secondary"
+        fill
         label={t("booking.cancel")}
         accessibilityLabel={t("block.cancelLabel", { day, route })}
         onPress={() => {
@@ -169,11 +208,8 @@ function Together({ booking }: { readonly booking: Booking }) {
   }
 
   return (
-    <Card>
-      <View style={styles.what}>
-        <Text style={[typography.bodyStrong, { color: palette.text }]}>{day}</Text>
-        <Text style={[typography.small, { color: palette.textMuted }]}>{route}</Text>
-      </View>
+    <View style={styles.shared}>
+      <BookingTicket booking={current} />
       {holdsSeats(current.status) ? (
         action
       ) : (
@@ -183,10 +219,10 @@ function Together({ booking }: { readonly booking: Booking }) {
         </TakesFocus>
       )}
       <Notice message={failed} />
-    </Card>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  what: { gap: spacing.xs },
+  shared: { gap: spacing.sm },
 });

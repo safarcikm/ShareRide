@@ -22,7 +22,7 @@ import type { RateLimiter } from "../../platform/memory-rate-limiter.ts";
 import { accountSuspended } from "../account/standing.ts";
 import type { TripDetailsError, TripDetailsService } from "./details.ts";
 import { rideOf, stopPosition } from "./link-preview.ts";
-import { createRidePictures, type RidePictures } from "./ride-picture.ts";
+import { createRidePictures, storyFileName, type RidePictures } from "./ride-picture.ts";
 import type { SearchError, SearchService } from "./service.ts";
 
 export interface SearchRoutesDependencies {
@@ -36,17 +36,25 @@ export interface SearchRoutesDependencies {
   /** Refuses a suspended person: they cannot search (spec 9, 3.6.2). */
   readonly standing: (userId: string) => Promise<Result<void, AccountSuspended>>;
   /**
-   * Per IP address, for a ride's picture alone (spec 23, 3.10, item 4): link
-   * previews come from a few sites' readers, and a refused picture stays
-   * missing from their copy of the card.
+   * Per IP address, for a ride's pictures alone (spec 23, 3.10, item 4):
+   * link previews come from a few sites' readers, where a refused picture
+   * stays missing from their copy of the card, and stories from drivers'
+   * browsers, one fetch each (spec 28, 3.5), where a refused one can be
+   * fetched again.
    */
   readonly pictureLimiter: RateLimiter;
   /** The pictures the API keeps; a new set by default. */
   readonly pictures?: RidePictures;
 }
 
-/** The address of a shared ride's picture (spec 23, 3.10, item 4), for Hono. */
-const tripPreviewPicturePath = "/v1/trips/:id/preview.png";
+/**
+ * The addresses of a shared ride's pictures, for Hono: its link preview
+ * (spec 23, 3.10, item 4) and its story (spec 28, 3.5). Any site may show them.
+ */
+export const tripPicturePaths = {
+  preview: "/v1/trips/:id/preview.png",
+  story: "/v1/trips/:id/story.png",
+} as const;
 
 function searchError(c: Context, error: SearchError) {
   if (error.code === "same_place") {
@@ -139,38 +147,46 @@ export function registerSearchRoutes(
     return c.json({ results }, 200);
   });
 
-  // A shared ride's picture for its link preview (spec 23, 3.10, item 4): a
-  // file, so not in the OpenAPI document. Before /v1/trips/{id}, as above.
-  app.get(tripPreviewPicturePath, pictureLimited, async (c) => {
-    const id = c.req.param("id");
-    const isId = /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(id);
-    const lang = c.req.query("lang");
-    const found = isId
-      ? await details.details(
-          id,
-          {
-            board: stopPosition(c.req.query("fromStop")),
-            alight: stopPosition(c.req.query("toStop")),
-            seats: 1,
-          },
-          null,
-        )
-      : undefined;
-    const ride = found?.ok === true ? rideOf(found.value) : undefined;
-    if (ride === undefined) return errorResponse(c, 404, "not_found", "There is no such trip.");
-    const png = await pictures.picture(ride, lang !== undefined && isLocale(lang) ? lang : "en");
-    if (png === undefined) {
-      return errorResponse(c, 503, "busy", "Busy drawing other pictures. Try again shortly.", {
-        retryAfterSeconds: 2,
+  // A shared ride's pictures, for its link preview (spec 23, 3.10, item 4)
+  // and for a story (spec 28, 3.5): files, so not in the OpenAPI document.
+  // Before /v1/trips/{id}, as above.
+  for (const kind of ["preview", "story"] as const) {
+    app.get(tripPicturePaths[kind], pictureLimited, async (c) => {
+      const id = c.req.param("id");
+      const isId = /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(id);
+      const lang = c.req.query("lang");
+      const locale = lang !== undefined && isLocale(lang) ? lang : "en";
+      const found = isId
+        ? await details.details(
+            id,
+            {
+              board: stopPosition(c.req.query("fromStop")),
+              alight: stopPosition(c.req.query("toStop")),
+              seats: 1,
+            },
+            null,
+          )
+        : undefined;
+      const ride = found?.ok === true ? rideOf(found.value) : undefined;
+      if (ride === undefined) return errorResponse(c, 404, "not_found", "There is no such trip.");
+      const png = await pictures.picture(ride, locale, kind);
+      if (png === undefined) {
+        return errorResponse(c, 503, "busy", "Busy drawing other pictures. Try again shortly.", {
+          retryAfterSeconds: 2,
+        });
+      }
+      return c.body(new Uint8Array(png), 200, {
+        "Content-Type": "image/png",
+        // Sites read a card's picture once; the address changes with what it
+        // shows. A story is fetched when the driver shares it, as it is now.
+        "Cache-Control": kind === "preview" ? "public, max-age=3600" : "no-cache",
+        "X-Content-Type-Options": "nosniff",
+        ...(kind === "story" && c.req.query("download") === "1"
+          ? { "Content-Disposition": `attachment; filename="${storyFileName(ride, locale)}"` }
+          : {}),
       });
-    }
-    return c.body(new Uint8Array(png), 200, {
-      "Content-Type": "image/png",
-      // Sites read a card's picture once; the address changes with what it shows.
-      "Cache-Control": "public, max-age=3600",
-      "X-Content-Type-Options": "nosniff",
     });
-  });
+  }
 
   // Registered as the GET of /v1/trips/{id} only, so a draft's changes are not counted.
   app.openapi(toOpenApiRoute(tripDetailsRoute, every(limited, optionalAuth)), async (c) => {

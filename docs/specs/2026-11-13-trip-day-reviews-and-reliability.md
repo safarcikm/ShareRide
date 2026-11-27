@@ -11,6 +11,17 @@ G1 Ratings and reviews, G3 Reliability figure
 (notifications), [spec 13](2026-11-13-payments.md) (payouts and held
 bookings).
 
+Amended by [spec 31](2026-11-26-one-ride-one-ticket.md) (3.4): in English
+a member now reads "ride" where the texts quoted here say "trip" (which
+stays in "Trip day"), and the actions are named "Find a ride", "Offer a
+ride" and "Publish ride". The keys keep their names;
+`packages/i18n/src/messages/en.ts` has the words as they are.
+
+Amended by spec 31 (3.19) too: on a person's profile (screen 7) the
+rating is on the one line of the person's card, with what is checked, and
+the reliability figure is a row of its own that unfolds its counts. The
+reviews are as they were.
+
 ## 1. Problem and goal
 
 On the day, the driver and the passenger have to find each other at a meeting
@@ -55,6 +66,25 @@ view. It is built to be used while parked: large buttons and no typing needed.
   here" for the next stop; "Mark as no-show" after the wait time (3.3); a chat
   button per passenger and "Message all passengers" (spec 7).
 - "Before you go" and "share trip details" are spec 9.
+- Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.9) the passenger's
+  trip day has no heading of its own: the booking's title counts down
+  ("Leaves at 10:00", then "Leaves in 10 minutes", then "Trip day"), with
+  "Today at 10:00 from Borgarnes." under it, and says "Anna is at the
+  meeting point" once the driver said "I'm here". Where to stand comes
+  first, then the driver with **Message** and the number plate as a tag,
+  then the ride as a ticket and the rows. "I'm here" is in a bar at the
+  bottom of the screen, on the first screen with no scrolling (at the top
+  of the side column on a laptop). "The driver didn't come" is a link in
+  that bar: under "I'm here" while that can be pressed, and the bar's main
+  button after.
+- Since spec 31 (3.9 and 3.12) the driver's trip day is the first part of
+  the driver's ride: the stops with who gets in and out, then the
+  passengers, the ticket and the rows. "I'm here at Mjódd bus terminal"
+  is the main button, in the bar at the bottom (at the top of the side
+  column on a laptop), for the first stop that is open, with another open
+  stop outlined under it. Before a stop opens the bar says from when;
+  once said, it says the passengers were told, and so does the stop.
+  Message is the round button on a passenger's row.
 
 ### 3.2 "I'm here" (E2)
 
@@ -80,6 +110,11 @@ view. It is built to be used while parked: large buttons and no typing needed.
    reliability.
 4. If the passenger contests it, the booking's payout is held (spec 13) and
    the operator decides (3.5).
+5. Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.19) the screen
+   that marks a no-show, and the one that answers it, have their title at
+   the left over the passenger's part as a ticket, and their main button
+   ("Mark as no-show", "Send answer") in the bar at the bottom, with why
+   it did nothing over it.
 
 ### 3.4 The driver doesn't come
 
@@ -95,6 +130,12 @@ view. It is built to be used while parked: large buttons and no typing needed.
    reliability like a cancellation (spec 6), and any reviews of that booking
    are removed.
 4. If the driver contests it, the operator decides (3.5).
+5. Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.8 and 3.9) "The
+   driver didn't come" is in the bar on the trip day (3.1), and one of the
+   booking's rows once the ride is over, for as long as it can be said.
+   Its screen, and the driver's answer, have the title at the left over
+   the booked seat as a ticket, and "Tell PuffinRide" or "Send answer" as
+   the main button in the bar (3.19).
 
 ### 3.5 When the two sides disagree
 
@@ -146,6 +187,19 @@ complain further.
    deleted account's author show "A former member".
 6. People are reminded to review when the trip completes and once more after 3
    days, using the trip reminders switch (spec 7).
+7. Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.8) a passenger's
+   completed booking asks in its title, "How was your ride?", with until
+   when it can be reviewed under it, while it can; **Rate the driver** is
+   the page's main button, in the bar at the bottom. A review sent, the
+   other's review and why a ride cannot be reviewed show under the title,
+   as before. The rating's own screen (3.19) has "How was your ride?" at
+   the left, with the day over it and the part under it; "Send review" is
+   its main button, in the bar, with "Choose a rating from 1 to 5 stars."
+   over it when none is chosen; and once sent, or when the ride cannot be
+   reviewed, the way back is the main button. Under Past in My rides a
+   ride that is done says whose rating is still to give, on a seat and on
+   a ride I drove; its ticket opens the booking or the ride, which asks
+   for the rating (spec 31, 3.10).
 
 ### 3.8 Reliability (G3)
 

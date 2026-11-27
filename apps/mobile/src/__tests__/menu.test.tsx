@@ -113,24 +113,24 @@ describe("The menu (spec 16, 3.1)", () => {
     expect(screen.queryByTestId("puffin-by-pin")).toBeNull();
     expect(
       screen.getByText(
-        "Sign in to book seats, offer rides and keep your trips and messages in one place.",
+        "Sign in to book seats and offer rides, with your rides and messages in one place.",
       ),
     ).toBeVisible();
     expect(screen.getByRole("button", { name: "Sign in" })).toBeVisible();
     // The same rows as signed in.
     expect(screen.getByRole("button", { name: "Meeting points" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Terms, rules and privacy" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "About PuffinRide" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Change the language to Icelandic" })).toBeVisible();
   });
 
-  it("opens the legal documents from Profile when signed out", async () => {
+  it("opens the legal documents on About from Profile when signed out", async () => {
     await renderApp("/");
     await fireEvent.press(await screen.findByRole("tab", { name: "Profile" }));
-    await fireEvent.press(await screen.findByRole("button", { name: "Terms, rules and privacy" }));
-    expect(await screen.findByRole("button", { name: "Terms of Service" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Community Rules" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Privacy Policy" })).toBeVisible();
-    expect(screen).toHavePathname("/legal");
+    await fireEvent.press(await screen.findByRole("button", { name: "About PuffinRide" }));
+    expect(await screen.findByRole("link", { name: "Terms of Service" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Community Rules" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Privacy Policy" })).toBeVisible();
+    expect(screen).toHavePathname("/about");
   });
 
   it("opens a ride on top, with Back and without the tab bar", async () => {
@@ -221,7 +221,6 @@ describe("The menu (spec 16, 3.1)", () => {
     expect(await screen.findByRole("tab", { name: "Find", selected: true })).toBeVisible();
     expect(menuCopies(app.getRouterState())).toBe(1);
     await fireEvent.press(tab("Profile"));
-    await fireEvent.press(await screen.findByRole("button", { name: "Settings" }));
     await fireEvent.press(await screen.findByRole("button", { name: "Sign out" }));
     expect(await screen.findByRole("tab", { name: "Find", selected: true })).toBeVisible();
     expect(menuCopies(app.getRouterState())).toBe(1);
@@ -260,6 +259,21 @@ describe("The tab bar on phones", () => {
     expect(labels).toHaveLength(5);
     for (const label of labels) {
       expect((label.props as { numberOfLines?: number }).numberOfLines).toBeUndefined();
+    }
+  });
+});
+
+describe("The tab bar's places", () => {
+  it("start at the top of their tabs, so a name of two lines, as Ferðirnar mínar, lifts no icon over the others", async () => {
+    (getLocales as jest.Mock).mockReturnValue([{ languageTag: "is-IS" }]);
+    await renderApp("/");
+    await screen.findByRole("tab", { name: "Ferðirnar mínar" });
+    const places = screen.getAllByRole("tab");
+    expect(places).toHaveLength(5);
+    // 2 from the top, where an icon over a name of one line (22 in a pill
+    // padded by 4, 4 between, and a line of 18) is at the middle of a tab 56 high.
+    for (const place of places) {
+      expect(place).toHaveStyle({ justifyContent: "flex-start", paddingTop: 2, minHeight: 56 });
     }
   });
 });

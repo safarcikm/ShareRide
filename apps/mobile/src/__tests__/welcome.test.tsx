@@ -3,14 +3,19 @@ import { AccessibilityInfo, BackHandler, Dimensions } from "react-native";
 import { getLocales } from "expo-localization";
 import type { Booking, DriverReadiness, MyTrip } from "@shareride/contracts";
 import { readAppData, writeAppData } from "@/lib/app-data";
+import { now } from "@/lib/clock";
 import { completeMe, renderApp } from "@/testing/app";
 import {
   bookingApi,
+  driverApi,
   northBooking,
   northMyTrip,
   northSegments,
+  requestToDrive,
   unpaidBooking,
 } from "@/testing/bookings";
+import { filledButtons } from "@/testing/buttons";
+import { onTheDay } from "@/testing/trip-day";
 import type * as TestApp from "@/testing/app";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
 import {
@@ -22,7 +27,7 @@ import {
   soonRides,
   tripDetailsApi,
 } from "@/testing/search";
-import { blonduos, borgarnes } from "@/testing/trips";
+import { blonduos, borgarnes, tripsApi } from "@/testing/trips";
 import { bsi, hof, kef, meetingPoints } from "@/testing/meeting-points";
 import {
   colors,
@@ -48,10 +53,11 @@ jest.mock("@/lib/app-data", () => ({
   readAppData: jest.fn(() => Promise.resolve(null)),
   writeAppData: jest.fn(() => Promise.resolve()),
 }));
-// Saturday 14 November 2026, noon in Iceland.
-jest.mock("@/lib/clock", () => ({ now: () => new Date("2026-11-14T12:00:00Z") }));
+// Saturday 14 November 2026, noon in Iceland; a test may move the clock on.
+jest.mock("@/lib/clock", () => ({ now: jest.fn(() => new Date("2026-11-14T12:00:00Z")) }));
 
 const mockedGetLocales = getLocales as jest.Mock;
+const mockedNow = now as jest.Mock<Date, []>;
 const mockedRead = readAppData as jest.Mock;
 const mockedWrite = writeAppData as jest.Mock;
 
@@ -411,9 +417,9 @@ describe("Find: search, rides and offering (spec 16, 3.2; spec 4, 3.8)", () => {
     expect(screen.getByRole("link", { name: "See the meeting points" })).toBeVisible();
   });
 
-  it("is the same page for someone signed in", async () => {
+  it("has the same search and offer for someone signed in, under a greeting", async () => {
     await renderApp("/", { me: completeMe });
-    expect(await screen.findByRole("header", { name: "Share your ride" })).toBeVisible();
+    expect(await screen.findByRole("header", { name: "Hi Anna" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Find a ride" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Offer a ride" })).toBeVisible();
   });
@@ -568,8 +574,8 @@ describe("Find: search, rides and offering (spec 16, 3.2; spec 4, 3.8)", () => {
   });
 });
 
-describe("Your next ride (spec 16, 3.2 item 2)", () => {
-  /** Answers the rides coming up: my bookings and the trips I drive. */
+describe("Find, signed in (spec 31, 3.5)", () => {
+  /** Answers the rides coming up: my bookings and the rides I drive. */
   function comingUp(client: FakeClient, bookings: Booking[], trips: MyTrip[] = []) {
     client.answer("/v1/me/bookings", () => ok(200, { bookings }));
     client.answer("/v1/me/trips", () => ok(200, { trips }));
@@ -580,27 +586,55 @@ describe("Your next ride (spec 16, 3.2 item 2)", () => {
     board: { ...northBooking().board, plannedAt: "2026-11-16T10:00:00.000Z" },
     alight: { ...northBooking().alight, plannedAt: "2026-11-16T12:05:00.000Z" },
   });
+  /** Anna drives on Sunday at 09:00, nobody asking. */
+  const quietDrive: MyTrip = {
+    ...northMyTrip,
+    segments: northSegments([1, 1, 1]),
+    takings: { amount: 0, currency: "ISK" },
+    openRequests: 0,
+    requestsCloseAt: null,
+    firstRequest: null,
+    toRate: null,
+  };
+  /** The parts of Find in the order they stand: the card, the search, my ride, the rides. */
+  const parts = () =>
+    screen
+      .getAllByTestId(/^(needs-you-card|search-when|my-ride|trip-result)$/)
+      .map((part) => String(part.props.testID));
 
-  it("shows the soonest ride on top, with its status, and opens it", async () => {
+  it("greets me by name at the left, with my next ride as a ticket over the search", async () => {
     deviceLanguage("en-GB");
     await renderApp("/", {
       me: completeMe,
       setUp: (client) => {
+        soonestApi(client, soonRides(1));
         comingUp(client, [northBooking(), later]);
         bookingApi(client, () => northBooking());
       },
     });
+    // At the left, as the search card under it is.
+    expect(await screen.findByRole("header", { name: "Hi Anna" })).not.toHaveStyle({
+      textAlign: "center",
+    });
+    // The greeting is the title: what PuffinRide is, is for someone new.
+    expect(screen.queryByRole("header", { name: "Share your ride" })).toBeNull();
+    expect(screen.queryByText(/^Carpool across Iceland/)).toBeNull();
     expect(await screen.findByRole("header", { name: "Your next ride" })).toBeVisible();
     const ride = screen.getByRole("button", {
-      name: "Passenger, Sunday 15 November, Borgarnes → Blönduós, 10:00 to 12:05, Request sent, Anna, White Toyota Yaris, 1 seat, 2,900 ISK",
+      name: "Passenger, Sunday 15 November, Leaves Borgarnes at 10:00, arrives at Blönduós at 12:05, 2 h 5 min, 1 seat, 2,900 ISK, Anna, Waiting for Anna's answer",
     });
     expect(screen.queryByRole("button", { name: /^Passenger, Monday/ })).toBeNull();
+    await screen.findByTestId("trip-result");
+    expect(parts()).toEqual(["my-ride", "search-when", "trip-result"]);
+    // Nothing needs me: no yellow card, and the search has the one main button.
+    expect(screen.queryByTestId("needs-you-card")).toBeNull();
+    expect(filledButtons()).toBe(1);
     await fireEvent.press(ride);
-    expect(await screen.findByText("Request sent. Anna has until 22:00 to answer.")).toBeVisible();
+    expect(await screen.findByText("Anna has until 22:00 to answer.")).toBeVisible();
     expect(screen).toHavePathname(`/bookings/${northBooking().id}`);
   });
 
-  it("asks to pay when the next ride waits for payment", async () => {
+  it("puts a seat to pay for first, in the yellow card, whose button opens it", async () => {
     deviceLanguage("en-GB");
     await renderApp("/", {
       me: completeMe,
@@ -609,41 +643,82 @@ describe("Your next ride (spec 16, 3.2 item 2)", () => {
         bookingApi(client, () => unpaidBooking);
       },
     });
-    expect(await screen.findByText("Pay by 12:30 to keep your seat")).toBeVisible();
-    await fireEvent.press(screen.getByRole("button", { name: "Pay 2,900 ISK" }));
-    expect(await screen.findByText("Pay 2,900 ISK to confirm your seat")).toBeVisible();
+    const card = within(await screen.findByTestId("needs-you-card"));
+    expect(card.getByText("Pay to keep your seat")).toBeVisible();
+    expect(card.getByText("Borgarnes to Blönduós, Sun 15 Nov. Pay by 12:30.")).toBeVisible();
+    // The card is about my next ride, which is not shown a second time.
+    expect(parts()).toEqual(["needs-you-card", "search-when"]);
+    expect(screen.queryByRole("header", { name: "Your next ride" })).toBeNull();
+    // One filled button outside the card (R31.1): Find a ride.
+    expect(filledButtons()).toBe(1);
+    await fireEvent.press(card.getByRole("link", { name: "Pay 2,900 ISK" }));
+    expect(await screen.findByRole("header", { name: "Pay to keep your seat" })).toBeVisible();
+    expect(screen).toHavePathname(`/bookings/${unpaidBooking.id}`);
   });
 
-  it("shows a trip I drive with the seats taken", async () => {
+  it("names who asks for a seat on a ride I drive, and opens the ride to answer", async () => {
     deviceLanguage("en-GB");
     await renderApp("/", {
       me: completeMe,
       setUp: (client) => {
-        comingUp(
-          client,
-          [later],
-          [
-            {
-              ...northMyTrip,
-              segments: northSegments([1, 1, 1]),
-              takings: { amount: 0, currency: "ISK" },
-              openRequests: 0,
-              requestsCloseAt: null,
-            },
-          ],
-        );
+        comingUp(client, [], [northMyTrip]);
+        tripsApi(client, [northMyTrip]);
+        driverApi(client, [requestToDrive]);
       },
     });
-    expect(
-      await screen.findByRole("button", {
-        name: "Driving, Sunday 15 November, BSÍ bus terminal → Hof, Akureyri, 09:00 to 14:00, 1 of 3 seats taken, Seats free on every stretch: 2",
-      }),
-    ).toBeVisible();
+    const card = within(await screen.findByTestId("needs-you-card"));
+    expect(card.getByText("Gunna asks for 1 seat")).toBeVisible();
+    expect(card.getByText("Borgarnes to Blönduós, Sun 15 Nov. 10 h left to answer.")).toBeVisible();
+    await fireEvent.press(card.getByRole("link", { name: "See the request" }));
+    expect(await screen.findByText("“One small bag.”")).toBeVisible();
+    expect(screen).toHavePathname(`/drive/trips/${northMyTrip.id}`);
   });
 
-  it("shows a ride already under way as the next ride", async () => {
+  it("says when a ride on its trip day leaves", async () => {
     deviceLanguage("en-GB");
-    // Gunna boarded at 11:00 today and is out at 13:00; it is noon.
+    await renderApp("/", {
+      me: completeMe,
+      setUp: (client) => {
+        comingUp(client, [onTheDay()]);
+      },
+    });
+    const card = within(await screen.findByTestId("needs-you-card"));
+    expect(card.getByText("Leaves at 10:00")).toBeVisible();
+    expect(card.getByText("Borgarnes to Blönduós, Sun 15 Nov.")).toBeVisible();
+    expect(card.getByRole("link", { name: "See your ride" })).toBeVisible();
+  });
+
+  it("keeps counting while Find stays open, and drops a need whose deadline passes", async () => {
+    jest.useFakeTimers();
+    try {
+      deviceLanguage("en-GB");
+      await renderApp("/", {
+        me: completeMe,
+        setUp: (client) => {
+          comingUp(client, [], [northMyTrip]);
+        },
+      });
+      const card = within(await screen.findByTestId("needs-you-card"));
+      const left = (time: string) => `Borgarnes to Blönduós, Sun 15 Nov. ${time} left to answer.`;
+      expect(card.getByText(left("10 h"))).toBeVisible();
+      // An hour and a half on, nothing pressed: the card says what is left now.
+      mockedNow.mockReturnValue(new Date("2026-11-14T13:30:00Z"));
+      await act(() => jest.advanceTimersByTimeAsync(30_000));
+      expect(card.getByText(left("8 h 30 min"))).toBeVisible();
+      // The request closes at 22:00: after that it is not mine to answer.
+      mockedNow.mockReturnValue(new Date("2026-11-14T22:00:20Z"));
+      await act(() => jest.advanceTimersByTimeAsync(30_000));
+      expect(screen.queryByTestId("needs-you-card")).toBeNull();
+    } finally {
+      mockedNow.mockImplementation(() => new Date("2026-11-14T12:00:00Z"));
+      jest.useRealTimers();
+    }
+  });
+
+  it("shows Your next ride under the search when the card is about another ride", async () => {
+    deviceLanguage("en-GB");
+    // Gunna got in at 11:00 today and is out at 13:00; it is noon. The
+    // request is on tomorrow's ride.
     const underWay = northBooking({
       id: "0190a1d6-0000-7000-8000-0000000000c3",
       status: "confirmed",
@@ -653,23 +728,74 @@ describe("Your next ride (spec 16, 3.2 item 2)", () => {
     await renderApp("/", {
       me: completeMe,
       setUp: (client) => {
-        comingUp(client, [later, underWay]);
+        soonestApi(client, soonRides(1));
+        comingUp(client, [later, underWay], [northMyTrip]);
+      },
+    });
+    expect(await screen.findByText("Gunna asks for 1 seat")).toBeVisible();
+    expect(screen.getByRole("header", { name: "Your next ride" })).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: /^Passenger, Saturday 14 November, .*Seat confirmed$/ }),
+    ).toBeVisible();
+    await screen.findByTestId("trip-result");
+    expect(parts()).toEqual(["needs-you-card", "search-when", "my-ride", "trip-result"]);
+    expect(screen.queryByText(/^and \d+ more$/)).toBeNull();
+  });
+
+  it("shows the soonest need, and says how many more there are in My rides", async () => {
+    deviceLanguage("en-GB");
+    await renderApp("/", {
+      me: completeMe,
+      setUp: (client) => {
+        // To pay by 12:30 today; to answer by 22:00 today.
+        comingUp(client, [unpaidBooking], [northMyTrip]);
+      },
+    });
+    const card = within(await screen.findByTestId("needs-you-card"));
+    expect(card.getByText("Pay to keep your seat")).toBeVisible();
+    expect(screen.queryByText("Gunna asks for 1 seat")).toBeNull();
+    expect(screen.getAllByTestId("needs-you-card")).toHaveLength(1);
+    // The ride that leaves first is the one I drive, which the card is not about.
+    expect(screen.getByRole("button", { name: /^You drive, Sunday 15 November/ })).toBeVisible();
+    await fireEvent.press(screen.getByRole("link", { name: "and 1 more: open My rides" }));
+    expect(await screen.findByRole("header", { name: "Needs you" })).toBeVisible();
+    expect(screen).toHavePathname("/my-rides");
+  });
+
+  it("shows a ride I drive as my next ride, with the seats taken", async () => {
+    deviceLanguage("en-GB");
+    await renderApp("/", {
+      me: completeMe,
+      setUp: (client) => {
+        comingUp(client, [later], [quietDrive]);
       },
     });
     expect(
-      await screen.findByRole("button", { name: /^Passenger, Saturday 14 November, .*Confirmed/ }),
+      await screen.findByRole("button", {
+        name: "You drive, Sunday 15 November, Leaves BSÍ bus terminal at 09:00, arrives at Hof, Akureyri at 14:00, 5 h, 2 stops, 1 of 3 seats taken",
+      }),
     ).toBeVisible();
     expect(screen.queryByRole("button", { name: /^Passenger, Monday/ })).toBeNull();
   });
 
-  it("is left out signed out", async () => {
+  it("is the page of someone new when signed out, asking for no rides of mine", async () => {
     const { client } = await openFrontPage();
-    expect(await screen.findByRole("header", { name: "Share your ride" })).toBeVisible();
+    expect(await screen.findByRole("header", { name: "Share your ride" })).toHaveStyle({
+      textAlign: "center",
+    });
+    expect(screen.queryByRole("header", { name: /^Hi / })).toBeNull();
     expect(screen.queryByRole("header", { name: "Your next ride" })).toBeNull();
     expect(client.calls.map((call) => call.path)).not.toContain("/v1/me/bookings");
   });
 
-  it("is left out when nothing is coming up", async () => {
+  it("keeps the title of someone new until the account has a first name", async () => {
+    deviceLanguage("en-GB");
+    await renderApp("/", { me: { ...completeMe, firstName: null } });
+    expect(await screen.findByRole("header", { name: "Share your ride" })).toBeVisible();
+    expect(screen.queryByRole("header", { name: /^Hi/ })).toBeNull();
+  });
+
+  it("greets me with nothing under it when nothing is coming up", async () => {
     deviceLanguage("en-GB");
     const { client } = await renderApp("/", {
       me: completeMe,
@@ -677,14 +803,29 @@ describe("Your next ride (spec 16, 3.2 item 2)", () => {
         comingUp(fake, []);
       },
     });
-    expect(await screen.findByRole("header", { name: "Share your ride" })).toBeVisible();
+    expect(await screen.findByRole("header", { name: "Hi Anna" })).toBeVisible();
     await waitFor(() => {
       expect(client.calls.map((call) => call.path)).toContain("/v1/me/trips");
     });
     expect(screen.queryByRole("header", { name: "Your next ride" })).toBeNull();
+    expect(screen.queryByTestId("needs-you-card")).toBeNull();
+    expect(screen.queryByTestId("my-ride")).toBeNull();
   });
 
-  it("says when it could not be loaded, with a retry", async () => {
+  it("greets in Icelandic", async () => {
+    deviceLanguage("is-IS");
+    await renderApp("/", {
+      me: completeMe,
+      setUp: (client) => {
+        comingUp(client, [], [northMyTrip]);
+      },
+    });
+    expect(await screen.findByRole("header", { name: "Hæ Anna" })).toBeVisible();
+    expect(await screen.findByText("Gunna biður um 1 sæti")).toBeVisible();
+    expect(screen.getByRole("link", { name: "Sjá beiðnina" })).toBeVisible();
+  });
+
+  it("says when my rides could not be loaded, with a retry", async () => {
     deviceLanguage("en-GB");
     let tries = 0;
     await renderApp("/", {
@@ -734,7 +875,7 @@ describe("Find on a laptop (spec 18, 3.5)", () => {
     alight: { ...northResult.alight, position: 1, meetingPoint: bsi },
   });
   const map = () => within(screen.getByTestId("columns-side")).getByTestId("iceland-map");
-  const mapOf = (route: string) => `The trip on a map of Iceland: ${route}.`;
+  const mapOf = (route: string) => `The ride on a map of Iceland: ${route}.`;
   /** The map's drawn parts, which screen readers skip: the label says them. */
   const drawn = (testID: string) =>
     within(map()).queryAllByTestId(testID, { includeHiddenElements: true });
@@ -810,9 +951,15 @@ describe("Find on a laptop (spec 18, 3.5)", () => {
       nativeEvent: { layout: { x: 0, y: 0, width: 1144, height: 120 } },
     });
     expect(panel).toHaveStyle({ height: 120 + spacing.md + searchTop });
-    // The car drives on the hills at the start of the line, larger than beside the title.
+    // The car drives on the hills at the right of the line, larger than on a
+    // phone; the title stands at the left, kept clear of it (spec 31, 3.16).
     const hills = within(line).getByTestId("car-on-hills", { includeHiddenElements: true });
-    expect(hills).toHaveStyle({ position: "absolute", left: spacing.xl });
+    expect(hills).toHaveStyle({ position: "absolute", right: spacing.xxl * 2 });
+    expect(line).toHaveStyle({
+      paddingLeft: spacing.xl,
+      paddingRight: spacing.xxl * 2 + sizes.sceneCarWide + spacing.lg,
+    });
+    expect(screen.getByRole("header", { name: "Share your ride" })).toHaveStyle(typography.display);
     expect(
       within(hills).getByTestId("puffins-in-car", { includeHiddenElements: true }),
     ).toBeTruthy();
@@ -1062,8 +1209,41 @@ describe("Find on a laptop (spec 18, 3.5)", () => {
     expect(screen.getAllByRole("header", { name: "Your next ride" })).toHaveLength(1);
   });
 
-  it("closes the rides with Offer a ride as a line, not a card beside them", async () => {
+  it("says how it works beside the rides for someone new, with the offer under it (spec 31, 3.16)", async () => {
     await openFrontPage(withRides(soonRides(2)));
+    const main = within(await screen.findByTestId("columns-main"));
+    await main.findAllByTestId("trip-result");
+    const how = within(within(screen.getByTestId("columns-side")).getByTestId("how-it-works"));
+    expect(how.getByRole("header", { name: "How it works" })).toBeVisible();
+    // Three steps, each a number, a name and a line.
+    expect(how.getByText("1")).toBeVisible();
+    expect(how.getByText("Find a ride")).toBeVisible();
+    expect(how.getByText("Choose where from, where to and the day.")).toBeVisible();
+    expect(how.getByText("2")).toBeVisible();
+    expect(how.getByText("Book a seat")).toBeVisible();
+    expect(how.getByText("At once, or the driver says yes first.")).toBeVisible();
+    expect(how.getByText("3")).toBeVisible();
+    expect(how.getByText("Meet and go")).toBeVisible();
+    expect(how.getByText("Get in at a meeting point, at the time the ride shows.")).toBeVisible();
+    // The offer is here, once: no line under the rides says it again.
+    expect(how.getByText("Driving somewhere?")).toBeVisible();
+    expect(how.getByText("Offer the empty seats in your car.")).toBeVisible();
+    const offer = how.getByRole("button", { name: "Offer a ride" });
+    expect(within(offer).getByTestId("button-face")).toHaveStyle({
+      borderColor: colors.light.control,
+    });
+    expect(screen.getAllByRole("button", { name: "Offer a ride" })).toHaveLength(1);
+    expect(main.queryByTestId("offer-line")).toBeNull();
+    // The search has the page's one main button (R31.1).
+    expect(filledButtons()).toBe(1);
+
+    await fireEvent.press(offer);
+    expect(await screen.findByText("Sign in or create an account")).toBeVisible();
+  });
+
+  it("closes the rides with Offer a ride as a line for someone signed in, not a card beside them", async () => {
+    deviceLanguage("en-GB");
+    await renderApp("/", { me: completeMe, setUp: withRides(soonRides(2)) });
     const main = within(await screen.findByTestId("columns-main"));
     await main.findAllByTestId("trip-result");
     const line = within(main.getByTestId("offer-line"));
@@ -1074,14 +1254,8 @@ describe("Find on a laptop (spec 18, 3.5)", () => {
       borderColor: colors.light.control,
     });
     expect(screen.getAllByRole("button", { name: "Offer a ride" })).toHaveLength(1);
-    expect(
-      within(screen.getByTestId("columns-side")).queryByText(
-        "Driving somewhere? Share the empty seats in your car.",
-      ),
-    ).toBeNull();
-
-    await fireEvent.press(offer);
-    expect(await screen.findByText("Sign in or create an account")).toBeVisible();
+    // How it works is for someone new.
+    expect(screen.queryByTestId("how-it-works")).toBeNull();
   });
 
   it("shows every meeting point and the first ride's road on the map", async () => {
@@ -1104,10 +1278,10 @@ describe("Find on a laptop (spec 18, 3.5)", () => {
   /** The side column's parts that place the map, from the top. */
   const mapParts = () =>
     within(screen.getByTestId("columns-side"))
-      .getAllByTestId(/^(map-level|find-map)$/)
+      .getAllByTestId(/^(how-it-works|map-level|find-map)$/)
       .map((part) => part.props.testID as string);
 
-  it("starts the map level with the first row of rides, beside their heading's row", async () => {
+  it("has How it works over the map from the start, its heading's row beside Leaving soon", async () => {
     let answer: (value: unknown) => void = () => undefined;
     await openFrontPage((fake) => {
       fake.answer(
@@ -1118,23 +1292,36 @@ describe("Find on a laptop (spec 18, 3.5)", () => {
           }),
       );
     });
-    // From the start, so the map does not move when the rides come: a row
-    // as high as "Leaving soon", then the map where the cards will start.
-    await screen.findByTestId("columns-side");
-    expect(mapParts()).toEqual(["map-level", "find-map"]);
-    expect(screen.getByTestId("map-level")).toHaveStyle({ minHeight: 44 });
+    // From the start, so the map does not move when the rides come: the
+    // heading in a row as high as "Leaving soon", so the card under it
+    // starts where the tickets will.
+    const side = within(await screen.findByTestId("columns-side"));
+    expect(mapParts()).toEqual(["how-it-works", "find-map"]);
+    const heading = side.getByRole("header", { name: "How it works" });
+    expect(heading.parent).toHaveStyle({ minHeight: 44 });
     await act(() => {
       answer(ok(200, { results: soonRides(2) }));
     });
     expect(await screen.findAllByTestId("trip-result")).toHaveLength(2);
-    expect(mapParts()).toEqual(["map-level", "find-map"]);
+    expect(mapParts()).toEqual(["how-it-works", "find-map"]);
+    // Two rides have no "See all rides": the heading still stands in the
+    // middle of its row, level with the one beside it.
+    const soon = within(screen.getByTestId("columns-main")).getByRole("header", {
+      name: "Leaving soon",
+    });
+    expect(soon.parent).toHaveStyle({ minHeight: 44, alignContent: "center" });
   });
 
-  it("starts the map level with the offer card when no rides leave soon", async () => {
+  it("says the offer once when no rides leave soon: in the card where they would be", async () => {
     await openFrontPage(withRides([]));
-    await screen.findByRole("button", { name: "Offer a ride" });
-    // No heading in the main column, so none of its room beside it.
-    expect(mapParts()).toEqual(["find-map"]);
+    const main = within(await screen.findByTestId("columns-main"));
+    expect(await main.findByRole("button", { name: "Offer a ride" })).toBeVisible();
+    expect(mapParts()).toEqual(["how-it-works", "find-map"]);
+    // How it works keeps its three steps, and leaves the offer to the card.
+    const how = within(screen.getByTestId("how-it-works"));
+    expect(how.getByText("Meet and go")).toBeVisible();
+    expect(how.queryByText("Driving somewhere?")).toBeNull();
+    expect(screen.getAllByRole("button", { name: "Offer a ride" })).toHaveLength(1);
   });
 
   it("puts the map under Your next ride, whose heading is the row beside Leaving soon", async () => {
@@ -1307,8 +1494,11 @@ describe("Find on a laptop (spec 18, 3.5)", () => {
     });
     expect(drawn("map-dot-muted")).toHaveLength(4);
     expect(drawn("map-line-part")).toHaveLength(0);
-    expect(screen.queryByRole("button", { name: "Offer a ride" })).toBeNull();
+    // The offer is beside the rides, in How it works, from the start.
+    const side = within(screen.getByTestId("columns-side"));
+    expect(side.getByRole("button", { name: "Offer a ride" })).toBeVisible();
     const main = within(screen.getByTestId("columns-main"));
+    expect(main.queryByRole("button", { name: "Offer a ride" })).toBeNull();
     expect(main.getByRole("header", { name: "Leaving soon" })).toBeVisible();
     expect(main.getByLabelText("Loading")).toBeVisible();
 
@@ -1318,10 +1508,10 @@ describe("Find on a laptop (spec 18, 3.5)", () => {
     expect(await main.findAllByTestId("trip-result")).toHaveLength(2);
     expect(main.queryByLabelText("Loading")).toBeNull();
     expect(map()).toHaveProp("accessibilityLabel", mapOf("BSÍ bus terminal → Hof, Akureyri"));
-    expect(main.getByRole("button", { name: "Offer a ride" })).toBeVisible();
+    expect(screen.getAllByRole("button", { name: "Offer a ride" })).toHaveLength(1);
   });
 
-  it("shows no See all rides with six rides or fewer, and only the map beside them when signed out", async () => {
+  it("shows no See all rides with six rides or fewer, and nothing of mine beside them when signed out", async () => {
     await openFrontPage(withRides(soonRides(6)));
     const main = within(await screen.findByTestId("columns-main"));
     expect(await main.findAllByTestId("trip-result")).toHaveLength(6);

@@ -1,5 +1,6 @@
 import { expect, type Browser, type Page, type TestInfo } from "@playwright/test";
 import { english, signUp } from "./account";
+import { passengerRow } from "./driver-ride";
 import { postTripToSelfoss } from "./trips";
 
 // People and bookings for the cancelling journeys (spec 6): a trip for
@@ -40,22 +41,25 @@ export async function secondPage(browser: Browser, testInfo: TestInfo) {
 
 /**
  * Bára posts a trip for tomorrow, without the suggested stops named in
- * `skip`, Dóra requests a seat, Bára accepts and Dóra pays, as in the
- * request journey. Gives the trip, the booking's address, and Dóra's number
- * and the email she gave at sign-up.
+ * `skip`, Dóra requests a seat to the stop numbered `to`, Bára accepts and
+ * Dóra pays, as in the request journey. It leaves less than a day from now,
+ * or at `leaves` where the hour shows in a picture. Gives the trip, the
+ * booking's address, and Dóra's number and the email she gave at sign-up.
  */
 export async function confirmedBooking(
   driver: Page,
   passenger: Page,
   skip: readonly string[] = [],
+  to = 1,
+  leaves = withinADay(),
 ) {
   await signUp(driver, english, "Bára");
-  const tripId = await postTripToSelfoss(driver, withinADay(), skip);
+  const tripId = await postTripToSelfoss(driver, leaves, skip);
   const { phone, email } = await signUp(passenger, english, "Dóra");
-  await askForSeat(passenger, tripId);
+  await askForSeat(passenger, tripId, to);
   await driver.goto(`/drive/trips/${tripId}`);
   await driver.getByRole("button", { name: "Accept", exact: true }).click();
-  await expect(driver.getByLabel("Dóra, 1 seat, Waiting for payment")).toBeVisible();
+  await expect(passengerRow(driver, "Dóra", "Waiting for payment")).toBeVisible();
   await passenger.reload();
   await expect(passenger).toHaveURL(/\/bookings\/[0-9a-f-]+$/);
   const booking = passenger.url();
@@ -76,9 +80,9 @@ export async function requestSeat(page: Page, firstName: string, tripId: string)
   return askForSeat(page, tripId);
 }
 
-/** Someone signed in asks for a seat as `requestSeat` does. */
-export async function askForSeat(page: Page, tripId: string) {
-  await page.goto(`/trips/${tripId}?from=0&to=1`);
+/** Someone signed in asks for a seat as `requestSeat` does, or as far as the stop numbered `to`. */
+export async function askForSeat(page: Page, tripId: string, to = 1) {
+  await page.goto(`/trips/${tripId}?from=0&to=${to}`);
   await page.getByRole("button", { name: "Send request", exact: true }).click();
   await page.getByLabel("Message to the driver (optional)").fill("One small bag.");
   await page.getByRole("button", { name: "Send request", exact: true }).click();

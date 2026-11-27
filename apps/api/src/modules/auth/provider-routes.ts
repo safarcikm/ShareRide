@@ -94,7 +94,7 @@ const ticketMessages = {
 
 /**
  * Google and Apple sign-in (ADR 0034; spec 19): the browser window's start
- * and callback, the app's finish, and Sign-in methods in Settings.
+ * and callback, the app's finish, and Sign-in methods, a page of Profile.
  */
 export function registerProviderRoutes(
   app: OpenAPIHono<AppEnv>,

@@ -20,12 +20,12 @@ export default function CookiesScreen() {
   const { t } = useLanguage();
   const { available, choice, choose } = useAnalytics();
   return (
-    <Screen>
+    <Screen siteFooter>
       <PageHead
         title={t("seo.title", { page: t("cookies.title") })}
         description={t("seo.cookiesDescription")}
       />
-      <BackButton fallback="/legal" />
+      <BackButton fallback="/about" />
       <Title>{t("cookies.title")}</Title>
       <Body align="start">{t("cookies.needed")}</Body>
       {available ? (

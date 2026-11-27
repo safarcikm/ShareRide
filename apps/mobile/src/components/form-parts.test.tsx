@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react-native";
+import { SlidersHorizontal } from "lucide-react-native";
 import { colors } from "@/theme/tokens";
 import { AccessibilityInfo } from "react-native";
 import { Checkbox } from "./checkbox";
@@ -110,6 +111,52 @@ describe("Chip", () => {
     expect(screen.getByRole("radio", { name: "Blue" })).toBeChecked();
     expect(screen.getByRole("button", { name: "Toyota" })).toBeOnTheScreen();
     expect(screen.queryByRole("checkbox", { name: "Toyota" })).toBeNull();
+  });
+
+  it("has an icon before its label where the tick would be, and a name that holds the label (spec 31, 3.6)", async () => {
+    const { rerender } = await render(
+      <Chip
+        role="button"
+        icon={SlidersHorizontal}
+        label="Filters"
+        selected={false}
+        expanded={false}
+        onToggle={jest.fn()}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Filters" })).toBeCollapsed();
+    expect(icon("chip-icon")).toBeOnTheScreen();
+    // Selected, it keeps its icon and takes the chip's colour: no tick beside it.
+    await rerender(
+      <Chip
+        role="button"
+        icon={SlidersHorizontal}
+        label="Filters: 2 on"
+        selected
+        expanded
+        onToggle={jest.fn()}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Filters: 2 on" })).toHaveStyle({
+      backgroundColor: colors.light.primarySoft,
+      borderColor: colors.light.primary,
+    });
+    expect(icon("chip-icon")).toBeOnTheScreen();
+    expect(noIcon("chip-tick")).toBeNull();
+    // A label that does not say what it is has a longer name for screen readers.
+    await rerender(
+      <Chip
+        role="button"
+        label="Earliest"
+        name="Sort: Earliest"
+        selected={false}
+        expanded={false}
+        onToggle={jest.fn()}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Sort: Earliest" })).toBeOnTheScreen();
+    expect(screen.getByText("Earliest")).toBeOnTheScreen();
+    expect(screen.queryByText("Sort: Earliest")).toBeNull();
   });
 
   it("is tinted under the pointer, with its outline as it was (spec 18, 3.4)", async () => {

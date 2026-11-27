@@ -16,7 +16,7 @@ test("a driver posts the return of a trip from its page", async ({ page }) => {
   const tripId = await postTripToSelfoss(page, "08:00");
 
   await page.goto(`/drive/trips/${tripId}`);
-  await page.getByRole("button", { name: "Post the return trip" }).click();
+  await page.getByRole("button", { name: "Post the way back" }).click();
   await expect(page.getByRole("heading", { name: "When are you leaving?" })).toBeVisible();
   const [, returnId] = /\/drive\/trips\/([0-9a-f-]+)\/time/.exec(page.url()) ?? [];
   expect(returnId).toBeDefined();
@@ -28,17 +28,18 @@ test("a driver posts the return of a trip from its page", async ({ page }) => {
   await chooseTime(page, "Leaving N1 Selfoss at", "18:00");
   await page.getByRole("button", { name: "Choose seats" }).click();
   await page.getByRole("button", { name: "Set your price" }).click();
-  await page.getByRole("button", { name: "Review your trip" }).click();
-  await page.getByRole("button", { name: "Publish trip" }).click();
-  await expect(page.getByRole("heading", { name: "Your trip is published" })).toBeVisible();
+  await page.getByRole("button", { name: "Check your ride" }).click();
+  await page.getByRole("button", { name: "Publish ride" }).click();
+  await expect(page.getByRole("heading", { name: "Your ride is published" })).toBeVisible();
 
+  // The way back ends where the first one began.
   await page.goto(`/drive/trips/${returnId ?? ""}`);
   await expect(
-    page.getByRole("heading", { name: "N1 Selfoss → Mjódd bus terminal" }).filter(visible),
+    page.getByRole("heading", { name: "Your ride to Mjódd bus terminal" }).filter(visible),
   ).toBeVisible();
   // The trip it came from is as it was.
   await page.goto(`/drive/trips/${tripId}`);
   await expect(
-    page.getByRole("heading", { name: "Mjódd bus terminal → N1 Selfoss" }).filter(visible),
+    page.getByRole("heading", { name: "Your ride to N1 Selfoss" }).filter(visible),
   ).toBeVisible();
 });

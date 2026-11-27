@@ -57,7 +57,7 @@ test.describe("Continue with Google", () => {
     await page.getByRole("checkbox", { name: english.accept }).click();
     await page.getByRole("button", { name: english.createAccount, exact: true }).click();
     await notNow(page, english);
-    await expect(page.getByRole("heading", { name: english.findTitle })).toBeVisible();
+    await expect(page.getByRole("heading", { name: english.hi(person.firstName) })).toBeVisible();
 
     // Signed out, Google alone signs the member in again: no code.
     await menuLink(page, english.profileTab).click();
@@ -66,7 +66,7 @@ test.describe("Continue with Google", () => {
     await menuLink(page, english.profileTab).click();
     await page.getByRole("button", { name: english.signIn, exact: true }).click();
     await continueWithGoogle(page, person.label);
-    await expect(page.getByRole("heading", { name: english.findTitle })).toBeVisible();
+    await expect(page.getByRole("heading", { name: english.hi(person.firstName) })).toBeVisible();
     await menuLink(page, english.profileTab).click();
     await expect(page.getByRole("heading", { name: english.myProfile })).toBeVisible();
     await expect(
@@ -114,7 +114,7 @@ test.describe("Continue with Google", () => {
   });
 });
 
-test.describe("Sign-in methods in Settings", () => {
+test.describe("Sign-in methods, from Profile", () => {
   test.use({ locale: "en-GB" });
 
   test("adds Apple with a confirm code, then removes it", async ({ page }, testInfo) => {
@@ -123,8 +123,9 @@ test.describe("Sign-in methods in Settings", () => {
     // row shows it as it is; "Email hidden by Apple" has its screen test.
     const person = personOf(testInfo.project.name);
     const { email } = await signUp(page, english, "Gunna");
-    await page.goto("/settings");
-    await page.getByRole("button", { name: "Sign-in methods" }).click();
+    await page.goto("/profile");
+    // The row says the ways there are: the email she signed up with.
+    await page.getByRole("link", { name: "Sign-in methods, Email", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Sign-in methods" })).toBeVisible();
     await expect(page.getByText("Not linked")).toHaveCount(2);
 

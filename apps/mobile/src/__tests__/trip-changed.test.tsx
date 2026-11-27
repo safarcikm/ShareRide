@@ -92,7 +92,7 @@ describe("A trip that changed, as its passenger sees it (spec 6, 3.2; screen 7)"
     await fireEvent.press(screen.getByRole("button", { name: cancelFree }));
     expect(await screen.findByRole("header", { name: "Cancel your booking" })).toBeVisible();
     expect(screen).toHavePathname(`/bookings/${moved.id}/cancel`);
-    expect(screen.getByRole("radio", { name: "The trip changed" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "The ride changed" })).toBeChecked();
   });
 
   it("hides the offer on this device with Keep my booking, moving focus to the changes", async () => {
@@ -234,7 +234,7 @@ describe("A trip that changed, as its passenger sees it (spec 6, 3.2; screen 7)"
     expect(await screen.findByRole("button", { name: keep })).toBeVisible();
     expect(screen.queryByText(/full refund/)).toBeNull();
     await fireEvent.press(screen.getByRole("button", { name: "Cancel booking" }));
-    expect(await screen.findByRole("radio", { name: "The trip changed" })).toBeChecked();
+    expect(await screen.findByRole("radio", { name: "The ride changed" })).toBeChecked();
   });
 
   it("offers nothing to a booking not yet paid, which costs nothing to cancel", async () => {

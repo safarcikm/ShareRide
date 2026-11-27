@@ -1,8 +1,10 @@
-import { fireEvent, screen } from "expo-router/testing-library";
+import { fireEvent, screen, within } from "expo-router/testing-library";
+import { AccessibilityInfo } from "react-native";
 import type { Me } from "@shareride/contracts";
 import { failure, ok, tokens, type FakeClient } from "@/testing/fake-client";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
+import { filledButtons, inBar, inPage } from "@/testing/buttons";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
 jest.mock("@/auth/token-store", () => {
@@ -221,13 +223,25 @@ describe("Choosing a password (spec 27, 3.5)", () => {
     const field = screen.getByLabelText("New password");
     expect(field.props.autoComplete).toBe("new-password");
     expect(field.props.secureTextEntry).toBe(true);
+    const focus = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent").mockClear();
     await savePassword(strong);
-    expect(await screen.findByText("Your password is saved.")).toBeVisible();
+    // That it is saved is the page's title now, at the left and with
+    // focus, as the button pressed is gone (spec 31, 3.19).
+    const head = within(await screen.findByTestId("screen-head"));
+    expect(await head.findByRole("header", { name: "Your password is saved." })).not.toHaveStyle({
+      textAlign: "center",
+    });
+    expect(screen.queryByRole("header", { name: "Choose a password" })).toBeNull();
+    expect(focus).toHaveBeenCalledTimes(1);
+    focus.mockRestore();
     expect(callsTo(app.client, "/v1/me/password").map((call) => call.input["body"])).toEqual([
       { password: strong },
     ]);
     // Not kept on the screen once saved.
     expect(screen.queryByDisplayValue(strong)).toBeNull();
+    // The way on is the one main button, in the bar.
+    expect(inBar().getByRole("button", { name: "Done" })).toHaveStyle({ minHeight: 56 });
+    expect(filledButtons()).toBe(1);
     await fireEvent.press(screen.getByRole("button", { name: "Done" }));
     expect(await screen.findByRole("tab", { name: "Find" })).toBeVisible();
   });
@@ -257,6 +271,11 @@ describe("Choosing a password (spec 27, 3.5)", () => {
     expect(
       await screen.findByText("That's a lot of new passwords. Try again in 42 minutes."),
     ).toBeVisible();
+    // Over the button that did nothing, in the bar (spec 31, 3.19).
+    expect(inBar().getByRole("alert")).toHaveTextContent(
+      "That's a lot of new passwords. Try again in 42 minutes.",
+    );
+    expect(inPage().queryByRole("alert")).toBeNull();
   });
 
   it("asks for a confirm code when the sign-in is over 10 minutes old (R27.5)", async () => {
@@ -283,7 +302,7 @@ describe("Choosing a password (spec 27, 3.5)", () => {
     await renderApp("/settings/password", { me: completeMe });
     expect(await screen.findByText("Add an email first. It's your user name.")).toBeVisible();
     expect(screen.queryByLabelText("New password")).toBeNull();
-    await fireEvent.press(screen.getByRole("button", { name: "Add an email" }));
+    await fireEvent.press(inBar().getByRole("link", { name: "Add an email" }));
     expect(await screen.findByRole("header", { name: "Your email" })).toBeVisible();
   });
 });

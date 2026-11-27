@@ -1,7 +1,14 @@
 import type { MyTrip, Quote } from "@shareride/contracts";
 import { noteMaxLength } from "@shareride/domain";
 import { maxSeatsLastRead } from "@/beta/config";
-import type { Locale, MessageKey, Translate } from "@shareride/i18n";
+import {
+  capitalised,
+  formatClock,
+  formatDay,
+  type Locale,
+  type MessageKey,
+  type Translate,
+} from "@shareride/i18n";
 
 export const luggageKeys = {
   small_bag: "trip.prefs.luggage.small_bag",
@@ -34,33 +41,34 @@ export const bookingModeKeys = {
   instant: { title: "trip.bookingMode.instant", help: "trip.bookingMode.instantHelp" },
 } as const satisfies Record<MyTrip["bookingMode"], { title: MessageKey; help: MessageKey }>;
 
+/** When a ride leaves, as a line of its own: "Sunday 15 November at 09:00". */
+export function dayAtTime(t: Translate, locale: Locale, at: Date): string {
+  return capitalised(
+    t("trip.mine.when", { day: formatDay(at, locale), time: formatClock(at) }),
+    locale,
+  );
+}
+
 /** A price level as shown: "Free" at 0, otherwise "90%". */
 export function levelText(t: Translate, level: number): string {
   return level === 0 ? t("trip.priceLevel.free") : `${String(level)}%`;
 }
 
-/** The trip's preferences in words, in the order of the seats step. */
-export function preferenceTexts(t: Translate, preferences: MyTrip["preferences"]): string[] {
-  return [
-    t(luggageKeys[preferences.luggage]),
-    t(petKeys[preferences.pets]),
-    t(smokingKeys[preferences.smoking]),
-    t(childSeatKey(preferences.childSeat)),
-    t(chatKeys[preferences.chat]),
-  ];
-}
-
-/** Every stop of the trip in order: "BSÍ → Borgarnes → Hof". */
-export function stopsText(t: Translate, locale: Locale, trip: Pick<MyTrip, "stops">): string {
-  const [first = "", ...rest] = trip.stops.map((stop) => stop.meetingPoint.name[locale]);
-  return rest.reduce((route, name) => t("trip.stretch", { from: route, to: name }), first);
-}
-
-/** "BSÍ bus terminal → Hof, Akureyri": a trip's first and last stop. */
+/**
+ * "BSÍ bus terminal → Hof, Akureyri": a trip's first and last stop. A
+ * draft can have fewer than two, as a meeting point that goes out of use
+ * is taken off it (spec 3, 3.9): "No route yet".
+ */
 export function routeText(t: Translate, locale: Locale, trip: MyTrip): string {
-  const first = trip.stops[0]?.meetingPoint.name[locale] ?? "";
-  const last = trip.stops.at(-1)?.meetingPoint.name[locale] ?? "";
-  return t("trip.stretch", { from: first, to: last });
+  const [first] = trip.stops;
+  const last = trip.stops.at(-1);
+  if (first === undefined || last === undefined || trip.stops.length < 2) {
+    return t("trip.draftNoRoute");
+  }
+  return t("trip.stretch", {
+    from: first.meetingPoint.name[locale],
+    to: last.meetingPoint.name[locale],
+  });
 }
 
 type QuoteProblem = Quote["problems"][number]["code"];

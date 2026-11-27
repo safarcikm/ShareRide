@@ -19,6 +19,16 @@ under From and To shows towns and areas first, then meeting points, each
 under a small heading, with "Sample meeting points" once under the list
 (3.8).
 
+Amended by [spec 31](2026-11-26-one-ride-one-ticket.md) (3.17 and 3.19):
+the meeting points, a meeting point and a place have Back and their title
+at the left, with what stood centred under the title as the line under
+it, and the rest of the page starts at the left too (screens 1 and 2,
+3.4.3). A meeting point's "Open in maps" and "Something wrong here?" are
+rows with pictures at the end of its page. "What's wrong here?" has its title at the left with the meeting
+point's name under it and "Send" as its one main button, at the bottom;
+once sent, the thanks are the page's title and "Back" is that button
+(3.5).
+
 ## 1. Problem and goal
 
 Every trip is built from curated meeting points, so passengers must be able to

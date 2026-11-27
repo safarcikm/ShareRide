@@ -207,12 +207,12 @@ describe("notification texts", () => {
 
   it("ask how the trip was, opening the rating screen for the passenger and the trip for the driver (spec 20, 3.1.3)", () => {
     expect(text({ kind: "rate_trip", role: "passenger", name: "Jón" })).toEqual({
-      title: "How was your trip?",
+      title: "How was your ride?",
       body: "Rate the driver: Jón. BSÍ – Hof, Akureyri · Saturday 14 November at 09:00.",
       path: "/bookings/booking-1/rate",
     });
     expect(text({ kind: "rate_trip_driver" })).toEqual({
-      title: "How was your trip?",
+      title: "How was your ride?",
       body: "Rate your passengers. It helps other drivers choose.",
       path: "/drive/trips/trip-1",
     });
@@ -304,7 +304,7 @@ describe("notification texts", () => {
       refund: { amount: 5600, currency: "ISK" },
     } as const;
     expect(text(cancelled)).toEqual({
-      title: "Trip cancelled: Weather",
+      title: "Ride cancelled: Weather",
       body: "BSÍ – Hof, Akureyri · Saturday 14 November at 09:00. Full refund of 5,600 ISK.",
       path: "/bookings/booking-1",
     });
@@ -314,13 +314,13 @@ describe("notification texts", () => {
       body: "BSÍ – Hof, Akureyri · laugardagur 14. nóvember kl. 09:00. Leitaðu að annarri ferð.",
     });
     expect(smsText({ ...facts, ...cancelled }, "en")).toBe(
-      "PuffinRide: your trip on Saturday 14 November at 09:00 is cancelled. Full refund. Details in the app.",
+      "PuffinRide: your ride on Saturday 14 November at 09:00 is cancelled. Full refund. Details in the app.",
     );
     expect(smsText({ ...facts, ...cancelled }, "is")).toBe(
       "PuffinRide: Ferðinni þinni var aflýst: laugardagur 14. nóvember kl. 09:00. Full endurgreiðsla. Nánar í appinu.",
     );
     expect(smsText({ ...facts, ...cancelled, refund: { amount: 0, currency: "ISK" } }, "en")).toBe(
-      "PuffinRide: your trip on Saturday 14 November at 09:00 is cancelled. Details in the app.",
+      "PuffinRide: your ride on Saturday 14 November at 09:00 is cancelled. Details in the app.",
     );
   });
 
@@ -341,7 +341,7 @@ describe("notification texts", () => {
     });
     const far = { ...facts, ...moved, kind: "departure_moved_far" } as const;
     expect(smsText(far, "en")).toBe(
-      "PuffinRide: your trip on Saturday 14 November now leaves at 09:00. Keep it or cancel with a full refund in the app.",
+      "PuffinRide: your ride on Saturday 14 November now leaves at 09:00. Keep it or cancel with a full refund in the app.",
     );
     expect(smsText({ ...far, paid: false }, "is")).toBe(
       "PuffinRide: Ný brottför: laugardagur 14. nóvember kl. 09:00. Nánar í appinu.",
@@ -415,7 +415,7 @@ describe("notification texts", () => {
       body: "Vegavinna við innkeyrsluna.\nAftur í notkun: 30. nóvember 2026\nBSÍ – Hof, Akureyri · laugardagur 14. nóvember kl. 09:00. Bílstjórinn er beðinn um að velja annan viðkomustað.",
     });
     expect(smsText({ ...facts, ...paused }, "en")).toBe(
-      "PuffinRide: the meeting point for your trip on Saturday 14 November has changed. Details in the app.",
+      "PuffinRide: the meeting point for your ride on Saturday 14 November has changed. Details in the app.",
     );
     expect(smsText({ ...facts, ...paused }, "is")).toBe(
       "PuffinRide: Mótsstaður ferðarinnar þinnar hefur breyst: laugardagur 14. nóvember. Nánar í appinu.",
@@ -426,7 +426,7 @@ describe("notification texts", () => {
   it("ask the driver to choose another stop for the trip, at the time it stops there (spec 2, 3.6.4)", () => {
     expect(notificationText(pausedFacts, "en", defaultNotificationSettings)).toEqual({
       title: "Meeting point not in use for now: N1 Borgarnes",
-      body: "Road works at the entrance.\nChoose another stop for your trip: Saturday 14 November at 10:10.",
+      body: "Road works at the entrance.\nChoose another stop for your ride: Saturday 14 November at 10:10.",
       path: "/drive/trips/trip-1",
     });
     const until = { ...pausedFacts.point, until: "2026-11-30" };
@@ -443,7 +443,7 @@ describe("notification texts", () => {
       notificationText({ ...pausedFacts, point: retired }, "en", defaultNotificationSettings),
     ).toMatchObject({
       title: "Meeting point no longer in use: N1 Borgarnes",
-      body: "Road works at the entrance.\nChoose another stop for your trip: Saturday 14 November at 10:10.",
+      body: "Road works at the entrance.\nChoose another stop for your ride: Saturday 14 November at 10:10.",
     });
     expect(
       text({ kind: "meeting_point_changed", role: "passenger", pausedPoint: retired }, "is").title,
@@ -463,7 +463,7 @@ describe("notification texts", () => {
     });
     // By SMS within 24 hours of boarding, as a pause (spec 7, 3.4).
     expect(smsText({ ...facts, ...moved }, "en")).toBe(
-      "PuffinRide: the meeting point for your trip on Saturday 14 November has changed. Details in the app.",
+      "PuffinRide: the meeting point for your ride on Saturday 14 November has changed. Details in the app.",
     );
     expect(() => text({ ...moved, movedPoint: null })).toThrow(/needs the moved point/);
   });
@@ -471,7 +471,7 @@ describe("notification texts", () => {
   it("tell the driver a meeting point of the trip moved, at the time it stops there (spec 2, 3.6.6)", () => {
     expect(notificationText(movedFacts, "en", defaultNotificationSettings)).toEqual({
       title: "Meeting point moved: N1 Borgarnes",
-      body: "Your trip stops there: Saturday 14 November at 10:10. See where it is now before you go.",
+      body: "Your ride stops there: Saturday 14 November at 10:10. See where it is now before you go.",
       path: "/drive/trips/trip-1",
     });
     expect(notificationText(movedFacts, "is", defaultNotificationSettings)).toEqual({
@@ -488,7 +488,7 @@ describe("notification texts", () => {
   it("tell of unread messages by the trip's day, never their text, and open the chat (3.6, item 3)", () => {
     const secret = { text: "My door code is 4512" };
     expect(text({ kind: "unread_messages", role: "passenger", message: secret })).toEqual({
-      title: "You have unread messages about your trip on Saturday 14 November",
+      title: "You have unread messages about your ride on Saturday 14 November",
       body: "Open the chat in PuffinRide to read them.",
       path: "/messages/booking-1",
     });
@@ -539,8 +539,8 @@ describe("notification texts", () => {
 
   it("never say why PuffinRide cancelled a trip or booking (spec 9, 3.6.2)", () => {
     expect(text({ kind: "trip_cancelled", role: "passenger", cancelReason: null })).toEqual({
-      title: "PuffinRide cancelled the trip",
-      body: "BSÍ – Hof, Akureyri · Saturday 14 November at 09:00. Search for another ride.",
+      title: "PuffinRide cancelled the ride",
+      body: "BSÍ – Hof, Akureyri · Saturday 14 November at 09:00. Find another ride.",
       path: "/bookings/booking-1",
     });
     expect(
@@ -656,7 +656,7 @@ describe("notification texts", () => {
       emailBody: [
         message,
         "",
-        "You get this because you are a PuffinRide beta tester. Turn off beta news in Settings.",
+        "You get this because you are a PuffinRide beta tester. Turn off beta news in Profile, under Notifications.",
       ].join("\n"),
     });
     // The push has the start of it, on one line.
@@ -664,7 +664,7 @@ describe("notification texts", () => {
     expect(text.body).toHaveLength(140);
     expect(text.body.endsWith("…")).toBe(true);
     expect(notificationText(news, "is", settings).emailBody).toContain(
-      "Þú færð þetta af því að þú tekur þátt í beta-prófun PuffinRide. Þú getur slökkt á fréttum af beta-prófuninni í stillingum.",
+      "Þú færð þetta af því að þú tekur þátt í beta-prófun PuffinRide. Þú getur slökkt á fréttum af beta-prófuninni í Prófílnum, undir Tilkynningar.",
     );
   });
 
@@ -686,7 +686,7 @@ describe("notification texts", () => {
         "",
         "Við bættum kortið.",
         "",
-        "Þú færð þetta af því að þú tekur þátt í beta-prófun PuffinRide. Þú getur slökkt á fréttum af beta-prófuninni í stillingum.",
+        "Þú færð þetta af því að þú tekur þátt í beta-prófun PuffinRide. Þú getur slökkt á fréttum af beta-prófuninni í Prófílnum, undir Tilkynningar.",
         "",
         "----",
         "",
@@ -694,7 +694,7 @@ describe("notification texts", () => {
         "",
         "We improved the map.",
         "",
-        "You get this because you are a PuffinRide beta tester. Turn off beta news in Settings.",
+        "You get this because you are a PuffinRide beta tester. Turn off beta news in Profile, under Notifications.",
       ].join("\n"),
     });
   });

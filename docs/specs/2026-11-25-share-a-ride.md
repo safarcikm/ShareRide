@@ -14,6 +14,12 @@ No ADR: no new service, dependency or business rule. Facebook is opened as
 a plain link (3.3), and the story picture is drawn with resvg as the link
 preview is ([ADR 0049](../decisions/0049-draw-link-preview-pictures-with-resvg.md)).
 
+Amended by [spec 31](2026-11-26-one-ride-one-ticket.md) (3.4): in English
+a member now reads "ride" where the texts quoted here say "trip" (which
+stays in "Trip day"), and the actions are named "Find a ride", "Offer a
+ride" and "Publish ride". The keys keep their names;
+`packages/i18n/src/messages/en.ts` has the words as they are.
+
 ## 1. Problem and goal
 
 Martin, 2026-11-25: "I want to include a share icon on the route cards
@@ -79,9 +85,10 @@ is added (Martin asked, 2026-11-25).
 
 ### 3.1 The share icon on ride cards
 
-1. **Where:** every result card (`ResultCard`): search results, the front
-   page's "Leaving soon", All rides. And the driver's cards in My trips,
-   for a published trip that has not left (status `published`).
+1. **Where:** every ride found (`ResultTicket` since spec 31, `ResultCard`
+   before it): search results, the front page's "Leaving soon", All
+   rides. And the driver's cards in My trips, for a published trip that
+   has not left (status `published`), until My trips went (item 5).
 2. **How it looks:** a quiet icon button, drawn 36 round inside a 44
    button (the web has no `hitSlop`), the Share icon in `textMuted`, no
    fill or edge; `primarySoft` behind it under the pointer or pressed. It
@@ -103,9 +110,16 @@ is added (Martin asked, 2026-11-25).
    by hand under it, as the trip page does.
 5. **On a driver's card in My trips it opens Share this ride** (3.2) for
    that trip, since a driver wants the post text and the picture too.
+   Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.10) My trips is
+   gone, and a ride I drive is a ticket in My rides with no button of its
+   own: it is shared from its page (item 6).
 6. The trip page of a driver's own trip (spec 5's driver's trip) gets the
    same icon in its head, beside the trip's name, while the trip can be
-   changed (before the planned departure). It opens Share this ride.
+   changed (before the planned departure). It is named "Share this ride"
+   and opens Share this ride. Since
+   [spec 31](2026-11-26-one-ride-one-ticket.md) (3.12) the icon is in the
+   corner of the ride's ticket on that page, and on a phone "Share this
+   ride" is also one of the ride's rows.
 
 ### 3.2 Share this ride
 
@@ -114,8 +128,8 @@ Put to Martin as "Share your ride"; named "Share this ride" in the app, since
 
 A panel, on the **Your trip is published** screen (spec 3, screen 10) right
 after the ride's card, and on a screen of its own, **Share this ride**
-(`/drive/trips/{id}/share`), opened from My trips and the driver's trip
-page. On the published screen it replaces the "Share the trip" button.
+(`/drive/trips/{id}/share`), opened from My trips (until spec 31) and
+the driver's trip page. On the published screen it replaces the "Share the trip" button.
 
 It shares the whole trip: the link to the trip page from the first stop to
 the last, so passengers choose their part there.
@@ -124,9 +138,8 @@ From the top:
 
 1. **Share this ride** (heading) and "Post it where people look for rides,
    such as carpool groups on Facebook."
-2. **Share** (secondary button with the Share icon), only where the phone
-   or browser has a share window: it opens it with the post text (3.4)
-   and the link.
+2. **Share** (secondary button), only where the phone or browser has a
+   share window: it opens it with the post text (3.4) and the link.
 3. **Share on Facebook** (secondary button): opens Facebook's share window
    for the link, in a new tab on the web or the Facebook app or browser
    on a phone. Under it: "On your wall, in a group or in Messenger.
@@ -134,23 +147,40 @@ From the top:
    paste it in."
 4. **Text for your post**: the post text (3.4) in a box, as it will be
    pasted, with **Íslenska** and **English** chips above it to choose its
-   language (the app's language first), then **Copy text**. Copying says
-   "Text copied. Paste it into your post." Where the text cannot be copied,
-   the words in the box can be selected by hand.
+   language (the app's language until the driver picks one), then **Copy
+   text**.
+   Copying says "Text copied. Paste it into your post." Where the text
+   cannot be copied, it says "The text couldn't be copied. Select it in the
+   box to copy it.", and the words in the box can be selected by hand. The
+   apps have no clipboard of their own (that needs a package, for a later
+   change), so there Copy text is left out, the hint under Facebook says
+   "press and hold the text below to copy it", and Share (item 2) takes
+   the text to other apps.
 5. **Story on Instagram** (web only for now, 3.5): a small picture of the
    story (3.5), "A picture of your ride for your story. Instagram doesn't
    take links in posts, so add the link with a link sticker.", then
-   **Share picture** where the phone can share a file (it opens the share
-   window with the picture, where Instagram is one of the apps), otherwise
-   **Download picture**; and **Copy link** for the sticker.
+   **Share picture** where the browser can share a file (it opens the share
+   window with the picture, where Instagram is one of the apps),
+   **Download picture** in every browser (a laptop's browser may share a
+   file too, and the picture is then saved to post from a phone); and
+   **Copy link** for the sticker. When the picture cannot be made, it says
+   "The picture couldn't be made just now." with Try again; when it cannot
+   be shared, "The picture couldn't be shared here. Download it instead."
 6. **Follow PuffinRide on Facebook**, a link to PuffinRide's Facebook Page
    (3.6), opening in a new tab.
 
-Buttons sit one under the other on a phone; on a laptop the panel keeps
-the published screen's narrow column (spec 18). The panel shows only for a
-published trip that has not left; the screen of its own says otherwise
-"Only a published trip that hasn't left can be shared." with a link back
-to the trip.
+The panel is a card. Buttons sit one under the other on a phone; on a
+laptop the panel keeps the published screen's narrow column (spec 18).
+The panel shows only for a published trip that has not left. Since
+[spec 31](2026-11-26-one-ride-one-ticket.md) (3.11) the published screen
+itself opens only for such a trip: the address of one that has left opens
+that trip's page, which has nothing to share. The screen of
+its own has "Share this ride" as its title, the trip's card and the panel
+without its heading; for any other trip it says "Only a published trip
+that hasn't left can be shared." with "See the trip", a link back to it.
+Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.19) the screen of its
+own has its title at the left, and the trip is the ticket the driver's
+ride has, with the car, in the place of the trip's card.
 
 ### 3.3 Facebook
 
@@ -161,10 +191,10 @@ to the trip.
   chose to share.
 - The post's words are the person's own: the app never fills them in
   (Facebook does not allow it); the copy button and the hint make pasting
-  them one tap.
+  them one tap on the web, and a press and hold in the apps.
 - Pressing Facebook does not copy the text by itself: a browser may refuse
   to copy while it opens a new tab, and a separate Copy text button works
-  everywhere.
+  in every browser.
 - No Facebook or Instagram logos on the buttons: the words say where they
   go, and Meta's brand rules for its logos do not come into it.
 
@@ -197,9 +227,10 @@ what it shows (R23.8):
 
 - PuffinRide's icon and name at the top;
 - the route in large letters, one end under the other with an arrow down
-  between them, shrinking to fit, then shortened with "…";
-- the day and time, and the stops on the way (as many as fit, then
-  "and 2 more");
+  between them, shrinking to fit, then each end on up to two lines, then
+  shortened with "…";
+- the day and time, and the stops on the way on up to three lines (as
+  many as fit, then "and 2 more");
 - the front page's Iceland scene below: the pins, and the puffin driver in
   the yellow car with "Free seats" while the trip can be booked.
 
@@ -207,13 +238,19 @@ Words keep out of the top 270 and the bottom 340 pixels, where Instagram
 puts its own buttons. Its address is
 `/v1/trips/{id}/story.png?fromStop=…&toStop=…&lang=is`, answering as the
 preview's address does (404 where the preview is general), from the same
-pictures kept in memory and with the same limit; `&download=1` answers it
-as a file to save, named after the route, such as
-`puffinride-reykjavik-akureyri.png`.
+pictures kept in memory and with the same limit, but not kept by the
+browser (`Cache-Control: no-cache`), so a story shared after a change
+shows it; `&download=1` answers it as a file to save, named after the
+route, such as `puffinride-reykjavik-akureyri.png`. Any site may show a
+trip's pictures, the preview's and the story's
+(`Cross-Origin-Resource-Policy: cross-origin`, every other answer of the
+API keeps `same-origin`): they hold nothing about a person.
 
-On a phone's browser that can share files, the panel fetches the picture
-when it shows, so that Share picture opens the share window at once (a
-browser allows it only straight after the tap). In the apps (iOS and
+The panel fetches the picture once when it shows (giving up after 20
+seconds), so that Share picture opens the share window at once (a browser
+allows it only straight after the tap); the same picture is shown small
+and saved by Download picture, from the page, so a failed answer never
+takes the person away from it. In the apps (iOS and
 Android) the section is left out until they are in the stores: sharing a
 file there needs a package of its own (`expo-sharing`), for a later
 change.
@@ -255,7 +292,7 @@ People can now find it and book a seat.
 └──────────────────────────────────────┘
 Share this ride
 Post it where people look for rides, such as carpool groups on Facebook.
-[ ⇪ Share ]                        (where there is a share window)
+[ Share ]                          (where there is a share window)
 [ Share on Facebook ]
 On your wall, in a group or in Messenger. Facebook doesn't let apps
 write the post, so copy the text below and paste it in.
@@ -270,7 +307,7 @@ Text for your post              (Íslenska) (English)
 Story on Instagram
 [picture]  A picture of your ride for your story. Instagram doesn't
            take links in posts, so add the link with a link sticker.
-[ Share picture ] or [ Download picture ]   [ Copy link ]
+[ Share picture ] (where it can)   Download picture   [ Copy link ]
 Follow PuffinRide on Facebook
 See the trip page
 [ See my trips ]
@@ -287,13 +324,22 @@ A result card, with the icon in its corner:
 └──────────────────────────────────────────┘
 ```
 
-As built (pictures from `apps/mobile/e2e/pictures.spec.ts`):
+As built (pictures from `apps/mobile/e2e/pictures.spec.ts`, and the stories
+from `pnpm --filter @shareride/api story-pictures`):
 
 | Screen | Picture |
 | ------ | ------- |
-| A result card on a phone | ![A result card with the share icon in its corner](images/share-a-ride/result-card-phone.png) |
+| A ride found, on a phone (a ticket since spec 31) | ![A ride's ticket with the share icon in its corner](images/share-a-ride/result-card-phone.png) |
 | The front page on a laptop | ![Rides leaving soon, each with the share icon](images/share-a-ride/front-page-laptop.png) |
 | A result's link copied, on a laptop | ![The icon turned into a tick](images/share-a-ride/link-copied-laptop.png) |
+| Your trip is published, on a phone (no share window in that browser) | ![Share this ride after publishing: Share on Facebook, the post's text, Copy text, Follow PuffinRide](images/share-a-ride/published-phone.png) |
+| Share this ride on a laptop, in Icelandic | ![The screen of its own, with the post's text in Icelandic](images/share-a-ride/share-screen-laptop-is.png) |
+| The driver's ride on a phone (its ticket since spec 31) | ![The ride's name over its ticket, which has the share icon in its corner](images/share-a-ride/trip-page-head-phone.png) |
+| The driver's ride on a laptop | ![The ride's name, and beside the page its ticket with the share icon in its corner](images/share-a-ride/trip-page-head-laptop.png) |
+| Story on Instagram, in a browser that cannot share files | ![The story picture small, Download picture and Copy link](images/share-a-ride/story-section-phone.png) |
+| A story, short trip, Icelandic | ![The route Mjódd to N1 Selfossi, Föstudagur 27. nóvember kl. 09:00, a stop on the way, the scene with "Laus sæti"](images/share-a-ride/story-short-is.png) |
+| A story, long names, English, full | ![Each end of the route on two lines, no "Free seats" tag](images/share-a-ride/story-long-names-en.png) |
+| A story, many stops, Icelandic | ![Seven stops on the way on three lines](images/share-a-ride/story-many-stops-is.png) |
 
 ## 6. Data and API
 
@@ -326,9 +372,12 @@ As built (pictures from `apps/mobile/e2e/pictures.spec.ts`):
 | `shareRide.share` | Share | Deila |
 | `shareRide.facebook` | Share on Facebook | Deila á Facebook |
 | `shareRide.facebookHint` | On your wall, in a group or in Messenger. Facebook doesn't let apps write the post, so copy the text below and paste it in. | Á vegginn þinn, í hóp eða í Messenger. Facebook leyfir öppum ekki að skrifa færsluna, svo afritaðu textann hér fyrir neðan og límdu hann inn. |
+| `shareRide.facebookHintHold` | (in the apps) On your wall, in a group or in Messenger. Facebook doesn't let apps write the post, so press and hold the text below to copy it, then paste it in. | Á vegginn þinn, í hóp eða í Messenger. Facebook leyfir öppum ekki að skrifa færsluna, svo haltu fingri á textanum hér fyrir neðan til að afrita hann og límdu hann svo inn. |
 | `shareRide.postText` | Text for your post | Texti í færsluna |
+| `shareRide.postLanguage` | Language of the text | Tungumál textans |
 | `shareRide.copyText` | Copy text | Afrita texta |
 | `shareRide.textCopied` | Text copied. Paste it into your post. | Textinn var afritaður. Límdu hann í færsluna. |
+| `shareRide.copyFailed` | The text couldn't be copied. Select it in the box to copy it. | Ekki tókst að afrita textann. Veldu hann í reitnum til að afrita hann. |
 | `shareRide.post.offer` | Offering a ride: {route} | Býð far: {route} |
 | `shareRide.post.book` | Book a seat on PuffinRide: | Bókaðu sæti á PuffinRide: |
 | `shareRide.post.ask` | Ask for a seat on PuffinRide: | Óskaðu eftir sæti á PuffinRide: |
@@ -337,8 +386,11 @@ As built (pictures from `apps/mobile/e2e/pictures.spec.ts`):
 | `shareRide.sharePicture` | Share picture | Deila mynd |
 | `shareRide.downloadPicture` | Download picture | Sækja mynd |
 | `shareRide.copyLink` | Copy link | Afrita hlekk |
+| `shareRide.pictureFailed` | The picture couldn't be made just now. | Ekki tókst að búa til myndina í bili. |
+| `shareRide.pictureNotShared` | The picture couldn't be shared here. Download it instead. | Ekki tókst að deila myndinni hér. Sæktu hana í staðinn. |
 | `shareRide.follow` | Follow PuffinRide on Facebook | Fylgdu PuffinRide á Facebook |
 | `shareRide.notShareable` | Only a published trip that hasn't left can be shared. | Aðeins er hægt að deila birtri ferð sem er ekki lögð af stað. |
+| `shareRide.backToTrip` | See the trip | Sjá ferðina |
 
 The when and stops lines reuse `trip.mine.when` and `seo.tripStops`; `share.*`
 is spec 9's "Share trip details", so these keys are `shareRide.*`. The
@@ -352,7 +404,8 @@ Icelandic texts want a native read, as the ads did.
   open the trip; it copies and shows the tick without a share window; the
   driver's card and trip page open Share this ride; the panel shows Share
   only with a share window, changes the text's language, copies it, opens
-  Facebook, offers Share picture or Download picture on the web only, and
+  Facebook, offers Share picture where it can and Download picture on the
+  web only, says when the picture cannot be made or shared, and
   links to the Page; the screen of its own refuses a trip that has left.
 - API: `story.png` answers a PNG 1080 × 1920, 404 for a cancelled trip, a
   file with its name for `download=1`; long routes and many stops fit

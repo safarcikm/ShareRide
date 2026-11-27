@@ -28,6 +28,32 @@ for prices and seats), [domain model](../architecture/domain-model.md),
 [spec 1](2026-11-13-sign-in-and-profile.md),
 [spec 2](2026-11-13-meeting-points.md).
 
+Amended by [spec 31](2026-11-26-one-ride-one-ticket.md) (3.11): each
+step has the road with the puffins' car in place of "Step 2 of 5" and its
+bars, and its title at the left; the departure's wheel opens at 08:00 for
+a day other than today (3.5, item 5); the last step shows the ride as its
+ticket over one card of rows with Change, and what is still missing as
+one yellow card (3.8, item 1); "Your ride is published" shows the ride as
+its ticket.
+
+Amended by spec 31 (3.19) too: My cars, a car, "Add a car" and the
+driving licence have Back and their title at the left, the licence with
+its help as the line under it, and "Remove car" is a red row, last on a
+car's page (screens 2 and 3).
+
+And, since its last pass (3.19, R31.1): My cars lists the cars as rows
+with pictures, each a link, with "Add a car" as the last row, or as the
+page's main button while there is no car. "Save car", "Confirm" on the driving
+licence and "Add a photo" on the photo's page are each the page's one
+main button, at the bottom of the screen; on the photo's page "Take a
+photo" and "Remove photo" are rows.
+
+Amended by [spec 31](2026-11-26-one-ride-one-ticket.md) (3.4): in English
+a member now reads "ride" where the texts quoted here say "trip" (which
+stays in "Trip day"), and the actions are named "Find a ride", "Offer a
+ride" and "Publish ride". The keys keep their names;
+`packages/i18n/src/messages/en.ts` has the words as they are.
+
 ## 1. Problem and goal
 
 Passengers only find rides if drivers post them, and drivers only post if it
@@ -146,7 +172,11 @@ missing, and each item can be done from there:
    clock and minutes in 5-minute steps, so every time is on 5 minutes. A
    time saved before the wheel that is not on 5 minutes shows rounded up to
    the next 5 minutes. The departure's wheel starts at the earliest time
-   one can leave: the first 5 minutes at least 30 minutes from now.
+   one can leave: the first 5 minutes at least 30 minutes from now. Since
+   [spec 31](2026-11-26-one-ride-one-ticket.md) (3.11, item 2) that is
+   for today, and while no day is chosen; for another day it starts at
+   08:00 (at 03:40 at night it started at 04:10 for a ride the next
+   day).
 6. A driver cannot publish a trip that overlaps in time with another of their
    published trips.
 
@@ -202,13 +232,23 @@ Drivers do not edit segment prices one by one (decision 2,
 
 1. A summary shows the route on a map, stops and times, the price level and
    prices, seats, booking mode, car, preferences and note, each with "Edit".
+   Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.11, items 3 to
+   5) the summary is the ride as people will see it, as its ticket, over
+   one card of rows: Route, Time, Price, Seats and booking, Car, and
+   Preferences and note, each with what is set and "Change", which opens
+   its step. The stops' times are on the time step.
 2. "Publish" runs every check in section 4 again on the server and publishes
    the trip, or lists what must be fixed.
 3. After publishing, the trip page opens with "Share" (a link to the trip on
-   the web app) and "Post the return trip" (C6, spec 6).
+   the web app) and "Post the return trip" (C6, spec 6). "Share" is now
+   Share this ride, with Facebook and a post's text to copy
+   ([spec 28](2026-11-25-share-a-ride.md), 3.2).
 4. Until published, the trip is a draft. Drafts are saved as the driver goes,
    listed under "My trips", and deleted 30 days after their last change, or
-   when their departure has passed.
+   when their departure has passed. Since
+   [spec 31](2026-11-26-one-ride-one-ticket.md) (3.10 and 3.11) My trips
+   is gone: drafts are listed on Offer, over its form, and a published
+   ride stands in My rides.
 
 ### 3.9 Errors and edge cases
 
@@ -264,7 +304,8 @@ Phone first. The same screens work in the web app in a centred column.
    for the seats chosen (step 4)
 8. Note
 9. Review and publish
-10. Published: share and post the return trip
+10. Published: share ([spec 28](2026-11-25-share-a-ride.md)'s Share this
+    ride) and post the return trip
 
 ## 6. Data and API
 

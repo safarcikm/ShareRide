@@ -11,7 +11,7 @@ import { z } from "zod";
 import { moneySchema, timestampSchema } from "./common.ts";
 import { accountSuspendedResponse, errorResponseSchema } from "./errors.ts";
 import { dateSchema, localisedTextSchema, meetingPointSummarySchema } from "./meeting-points.ts";
-import { personPhotoSchema, ratingSchema, standingSchema } from "./people.ts";
+import { peopleColourSchema, personPhotoSchema, ratingSchema, standingSchema } from "./people.ts";
 import { defineRoute } from "./route.ts";
 import { tripPreferencesSchema } from "./trips.ts";
 
@@ -65,8 +65,17 @@ export const tripSearchResultSchema = z.object({
   total: moneySchema,
   /** Seats free on every stretch of the part (rule S3). */
   freeSeats: z.int().nonnegative(),
-  /** The rating, or a new driver before the first (spec 4, 3.4.1), and their photo (spec 1). */
-  driver: z.object({ firstName: z.string(), rating: ratingSchema, photo: personPhotoSchema }),
+  /**
+   * The rating, or a new driver before the first (spec 4, 3.4.1), their
+   * photo (spec 1), and the colour behind their initial without one, the
+   * same as on the trip's page (spec 31, 3.3).
+   */
+  driver: z.object({
+    firstName: z.string(),
+    rating: ratingSchema,
+    photo: personPhotoSchema,
+    colour: peopleColourSchema,
+  }),
   bookingMode: z.enum(bookingModes),
 });
 

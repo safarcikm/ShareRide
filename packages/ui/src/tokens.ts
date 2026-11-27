@@ -23,6 +23,9 @@ export const colors = {
     focus: "#1F5F8B",
     error: "#B3261E",
     onError: "#FFFFFF",
+    // A red main button's bottom edge, and its fill under the pointer (spec 31, 3.19).
+    errorEdge: "#7D1812",
+    errorHover: "#9A1F18",
     errorSoft: "#FCE8E6",
     infoSoft: "#E1EDF6",
     // Tag text on its tinted fill (spec 15, section 4.1). Info tags use infoSoft.
@@ -50,6 +53,8 @@ export const colors = {
     focus: "#8FCBE6",
     error: "#FFB4AB",
     onError: "#3B0905",
+    errorEdge: "#C7766C",
+    errorHover: "#FFC9C2",
     errorSoft: "#3B1A17",
     infoSoft: "#16303F",
     warning: "#F2C46B",
@@ -264,7 +269,7 @@ export const typeScale = {
 export const spacing = { xs: 4, sm: 8, ms: 12, md: 16, lg: 24, xl: 32, xxl: 48 } as const;
 
 /** Corner radii. */
-export const radii = { seat: 4, checkbox: 9, tag: 12, control: 16, card: 22, pill: 999 } as const;
+export const radii = { checkbox: 9, tag: 12, control: 16, card: 22, pill: 999 } as const;
 
 /** Widths of the solid bottom edge that makes parts look chunky. */
 export const edges = { card: 3, buttonPrimary: 4, buttonSecondary: 3 } as const;
@@ -277,6 +282,8 @@ export const sizes = {
   iconButton: 44,
   /** The round of a quiet icon button, drawn inside its 44 button (spec 28, 3.1). */
   iconButtonSmall: 36,
+  /** A story picture's width in Share this ride; it stands 16 by 9 (spec 28, 3.2). */
+  storyPreview: 108,
   checkbox: 26,
   /** The round mark of a radio card. */
   radio: 24,
@@ -298,8 +305,31 @@ export const sizes = {
   wheelWidth: 64,
   /** Narrowest the main action of a bottom bar gets before it moves under the price. */
   barAction: 200,
+  /** Narrowest the words of a line get before the button or link beside them moves under them. */
+  wordsBeside: 144,
+  /** Widest the car from above gets beside the words about its seats (spec 31, 3.7). */
+  carBeside: 176,
+  /** Narrowest it gets there, before the words move under it: the two fit a 360 wide phone. */
+  carBesideLeast: 120,
+  /** The small map beside the place where to stand (spec 31, 3.8). */
+  mapBeside: 104,
   /** A row that opens a screen, such as My cars on Profile. */
   row: 56,
+  /** The soft square behind a row's icon, and behind the icon of what needs you (spec 31, 3.3). */
+  rowIcon: 36,
+  /**
+   * The road that shows where things stand (spec 31, 3.3): the car on it,
+   * how high its lane is, and the round mark of a step.
+   */
+  roadCar: 60,
+  road: 12,
+  roadMark: 10,
+  /** The notch a ride ticket's tear line cuts into each edge (spec 31, 3.3). */
+  ticketNotch: 16,
+  /** A small picture of a person, as in a ride ticket's foot (spec 31, 3.3). */
+  avatarSmall: 28,
+  /** The square of one seat in the driver's line about the seats (spec 31, 3.12). */
+  seat: 28,
   /** A place of the menu's tab bar, and the pill behind its icon when chosen. */
   tab: 56,
   tabPill: 56,
@@ -314,20 +344,23 @@ export const sizes = {
    * The puffin scenes (spec 15, section 5.3): the car on a phone's front page,
    * on a wide page's title line (no higher than the title and the room
    * around it), and driving off when a seat is booked; the puffin by a pin
-   * on an empty screen, by its height.
+   * on an empty screen, and small beside the line that ends a list, by its
+   * height.
    */
   sceneCar: 170,
   sceneCarSmall: 88,
   sceneCarBooked: 200,
   /**
    * The Iceland scene (spec 15, section 5.3): its road on a phone; on a
-   * wide page the line of the title over it, taller than the title alone,
-   * and the car on its hills.
+   * wide page the line of the title over it, which holds the title with
+   * its line at the left and the car on its hills at the right (spec 31,
+   * 3.16).
    */
   sceneRoad: 22,
-  sceneLine: 96,
-  sceneCarWide: 116,
+  sceneLine: 132,
+  sceneCarWide: 170,
   scenePuffin: 120,
+  scenePuffinSmall: 60,
 } as const;
 
 /** Width of the outline on inputs, tick boxes and chips. */
@@ -344,6 +377,12 @@ export const maxContentWidth = 480;
  * beside a list (spec 15, section 4.8; spec 18, 3.2).
  */
 export const sidePanelFrom = 900;
+/**
+ * Under this height a window is short, as a phone on its side or a laptop
+ * zoomed far in: a screen's bottom bar joins the end of its page, which
+ * keeps the height (spec 31, 3.20).
+ */
+export const shortWindowUnder = 480;
 /** The menu at the side of the operator console. */
 export const sidePanelWidth = 320;
 /** From the same width, a map sits beside a list, at most this wide (spec 15, section 4.8). */
@@ -361,6 +400,13 @@ export const gridCardMinWidth = 320;
 export const halfMinWidth = 280;
 /** The list of conversations beside the open one (spec 18, 3.11). */
 export const listPaneWidth = 360;
+/**
+ * What the top of a conversation leaves of the height the conversation has
+ * (a phone's screen, a laptop's pane) for the messages, the quick messages
+ * and the bar, at the least, while it stays. A top that leaves less scrolls
+ * with the conversation (spec 31, 3.13).
+ */
+export const roomUnderTop = 400;
 
 /** Stroke width of Lucide icons. */
 export const iconStroke = 2.4;

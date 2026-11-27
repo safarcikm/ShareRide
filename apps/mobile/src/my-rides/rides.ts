@@ -1,5 +1,6 @@
 import type { Booking, MyTrip } from "@shareride/contracts";
-import { freeSeats } from "@shareride/domain";
+import { bookingNeed, freeSeats, soonestFirst, tripNeed, type Need } from "@shareride/domain";
+import { canRate } from "@/reviews/held-back";
 
 // My rides puts my bookings and the trips I drive in one list (spec 16, 3.3).
 
@@ -20,10 +21,8 @@ export type Ride =
       readonly endsAt: Date;
     };
 
-/** What a ride asks of me now: paying, answering requests, or nothing. */
-export type NeedsYou = "pay" | "answer" | null;
-
-const asBooking = (booking: Booking): Ride => ({
+/** A booking of mine as a ride, for its ticket where it shows on its own. */
+export const rideOfBooking = (booking: Booking): Ride => ({
   kind: "booking",
   booking,
   startsAt: new Date(booking.board.plannedAt),
@@ -31,15 +30,23 @@ const asBooking = (booking: Booking): Ride => ({
 });
 
 /**
- * A published or cancelled trip as a ride (spec 6, 3.1); a draft is not a
- * ride yet (3.3 item 7).
+ * A published or cancelled trip of mine as a ride (spec 6, 3.1), for its
+ * ticket where it shows on its own; a draft is not a ride yet (3.3 item 7).
  */
-function asTrip(trip: MyTrip): Ride[] {
-  if (trip.status === "draft" || trip.departsAt === null || trip.arrivesAt === null) return [];
-  return [
-    { kind: "trip", trip, startsAt: new Date(trip.departsAt), endsAt: new Date(trip.arrivesAt) },
-  ];
+export function rideOfTrip(trip: MyTrip): Ride | null {
+  if (trip.status === "draft" || trip.departsAt === null || trip.arrivesAt === null) return null;
+  return {
+    kind: "trip",
+    trip,
+    startsAt: new Date(trip.departsAt),
+    endsAt: new Date(trip.arrivesAt),
+  };
 }
+
+const asTrip = (trip: MyTrip): Ride[] => {
+  const ride = rideOfTrip(trip);
+  return ride === null ? [] : [ride];
+};
 
 /**
  * The bookings and trips the server listed for `when`, as one list: soonest
@@ -50,22 +57,78 @@ export function mergeRides(
   trips: readonly MyTrip[],
   when: When,
 ): Ride[] {
-  const rides = [...bookings.map(asBooking), ...trips.flatMap(asTrip)];
+  const rides = [...bookings.map(rideOfBooking), ...trips.flatMap(asTrip)];
   const order = when === "upcoming" ? 1 : -1;
   return rides.sort((a, b) => order * (a.startsAt.getTime() - b.startsAt.getTime()));
 }
 
+const dateOrNull = (time: string | null) => (time === null ? null : new Date(time));
+
 /**
- * A booking to pay while its payment deadline is still to come, or a trip
- * with requests to answer before they close (3.3 item 2).
+ * What a ride asks of me now, and by when (spec 31, 3.3 item 3): a seat to
+ * pay for, requests to answer, or its trip day; the rule is the domain's.
  */
-export function needsYou(ride: Ride, at: Date): NeedsYou {
-  const before = (deadline: string | null) =>
-    deadline !== null && new Date(deadline).getTime() > at.getTime();
+export function needOf(ride: Ride, at: Date): Need | null {
   if (ride.kind === "booking") {
-    return ride.booking.status === "accepted" && before(ride.booking.paymentDueAt) ? "pay" : null;
+    return bookingNeed(
+      {
+        status: ride.booking.status,
+        paymentDueAt: dateOrNull(ride.booking.paymentDueAt),
+        phase: ride.booking.tripDay?.phase ?? null,
+        boardsAt: ride.startsAt,
+      },
+      at,
+    );
   }
-  return ride.trip.openRequests > 0 && before(ride.trip.requestsCloseAt) ? "answer" : null;
+  return tripNeed(
+    {
+      openRequests: ride.trip.openRequests,
+      requestsCloseAt: dateOrNull(ride.trip.requestsCloseAt),
+      phase: ride.trip.phase,
+      departsAt: ride.startsAt,
+    },
+    at,
+  );
+}
+
+/**
+ * The rides that need me at `at`, each with what it needs, the soonest
+ * need first: by the deadline to answer or pay, or by the time to get in
+ * or leave, whenever the rides themselves start.
+ */
+export function needing(
+  rides: readonly Ride[],
+  at: Date,
+): { readonly ride: Ride; readonly need: Need }[] {
+  return soonestFirst(
+    rides.flatMap((ride) => {
+      const need = needOf(ride, at);
+      return need === null ? [] : [{ ride, need }];
+    }),
+  );
+}
+
+/** A rating a ride that is done still waits for from me. */
+export interface Rating {
+  /** Whom I rate: the driver of my seat, or the passengers of a ride I drove. */
+  readonly whom: "driver" | "passengers";
+  readonly count: number;
+}
+
+/**
+ * The rating a ride still waits for from me at `at` (spec 31, 3.10, item
+ * 3): the driver's on a seat of mine, while I can rate them, or my
+ * passengers' on a ride I drove, as the server counts them, until the last
+ * of their times ends. Not something that needs me (decision 9): it is
+ * said under Past, on the ride's own ticket, and given on the ride's page.
+ */
+export function ratingOf(ride: Ride, at: Date): Rating | null {
+  if (ride.kind === "booking") {
+    return canRate(ride.booking, at) ? { whom: "driver", count: 1 } : null;
+  }
+  const { toRate } = ride.trip;
+  if (toRate === null || at >= new Date(toRate.closesAt)) return null;
+  return { whom: "passengers", count: toRate.bookingIds.length };
 }
 
 const taken = (trip: MyTrip) => trip.segments.map((segment) => segment.seatsTaken);
@@ -76,10 +139,6 @@ const taken = (trip: MyTrip) => trip.segments.map((segment) => segment.seatsTake
  */
 export const seatsTaken = (trip: MyTrip): number =>
   trip.seats - freeSeats(trip.seats, taken(trip), 0, trip.segments.length);
-
-/** The seats still free on each stretch, in the trip's order (rule S3). */
-export const seatsFree = (trip: MyTrip): number[] =>
-  trip.segments.map((_, position) => freeSeats(trip.seats, taken(trip), position, position + 1));
 
 /** A key for a ride in a list: a booking and a trip never share one. */
 export const rideKey = (ride: Ride): string =>

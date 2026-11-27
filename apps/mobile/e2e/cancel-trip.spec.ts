@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { confirmedBooking, requestSeat, secondPage, visible } from "./support/cancelling";
+import { passengerRow } from "./support/driver-ride";
 import { focused } from "./support/trips";
 
 // Spec 6, 3.3, on the web build: a driver posts Mjódd to N1 Selfoss for
@@ -7,7 +8,8 @@ import { focused } from "./support/trips";
 // and has not paid yet, and Siggi's request waits. The driver cancels the
 // trip with a reason and a note. Dóra gets a full refund, Óli's booking is
 // cancelled with nothing to refund, Siggi's request is declined, and each
-// reads why on their booking (rule M2, R6.6).
+// reads why on their booking (rule M2, R6.6). A visitor then opens the
+// ride's own page (spec 31, 3.7).
 
 test.use({ locale: "en-GB" });
 
@@ -23,14 +25,14 @@ test("a driver cancels a trip with three passengers, who each read why", async (
   const unpaid = await requestSeat(oli.page, "Óli", tripId);
   await driver.reload();
   await driver.getByRole("button", { name: "Accept", exact: true }).click();
-  await expect(driver.getByLabel("Óli, 1 seat, Waiting for payment")).toBeVisible();
+  await expect(passengerRow(driver, "Óli", "Waiting for payment")).toBeVisible();
   const request = await requestSeat(siggi.page, "Siggi", tripId);
 
-  // Cancel trip, under the seats on each stretch, opens its own screen.
+  // Cancel the ride, the last and red row of the ride's rows, opens its own screen.
   await driver.reload();
-  await driver.getByRole("button", { name: "Cancel trip", exact: true }).click();
+  await driver.getByRole("link", { name: "Cancel the ride", exact: true }).click();
   await expect(driver).toHaveURL(new RegExp(`/drive/trips/${tripId}/cancel$`));
-  await expect(driver.getByRole("heading", { name: "Cancel your trip" })).toBeVisible();
+  await expect(driver.getByRole("heading", { name: "Cancel your ride" })).toBeVisible();
   await expect(
     driver
       .getByText("1 passenger gets a full refund and will be told now.", { exact: true })
@@ -41,27 +43,37 @@ test("a driver cancels a trip with three passengers, who each read why", async (
       .getByText("2 more people with a booking or request are told too.", { exact: true })
       .filter(visible),
   ).toBeVisible();
+  // With no reason chosen nothing is cancelled: why stands over the red
+  // button, in the bar and in view, and has the keyboard.
+  const bar = driver.getByTestId("bottom-bar").filter(visible);
+  await bar.getByRole("button", { name: "Cancel the ride", exact: true }).click();
+  await expect(bar.getByRole("alert")).toHaveText("Choose a reason.");
+  await expect(bar.getByRole("alert")).toBeInViewport();
+  await expect.poll(() => focused(driver)).toContain("Choose a reason.");
+  await expect(driver).toHaveURL(new RegExp(`/drive/trips/${tripId}/cancel$`));
   const counts = driver.getByText("This cancellation shows on your profile", { exact: true });
   await driver.getByRole("radio", { name: "Weather" }).click();
   await expect(counts.filter(visible)).toHaveCount(0);
   await driver.getByRole("radio", { name: "Car problem" }).click();
   await expect(counts.filter(visible)).toBeVisible();
   await driver.getByLabel("Note to passengers (optional)").fill("Sorry, the clutch went.");
-  await driver.getByRole("button", { name: "Cancel trip", exact: true }).click();
+  await driver.getByRole("button", { name: "Cancel the ride", exact: true }).click();
 
   // Back on the trip, it says so with focus, and offers nothing more.
   await expect(driver).toHaveURL(new RegExp(`/drive/trips/${tripId}\\?tripCancelled=1$`));
-  const outcome = "You cancelled this trip: Car problem";
+  const outcome = "You cancelled this ride: Car problem";
   await expect(driver.getByText(outcome, { exact: true }).filter(visible)).toBeVisible();
   await expect.poll(() => focused(driver)).toContain(outcome);
   await expect(
     driver.getByText("Your note: Sorry, the clutch went.", { exact: true }).filter(visible),
   ).toBeVisible();
-  await expect(driver.getByRole("button", { name: "Cancel trip", exact: true })).toBeHidden();
-  await expect(driver.getByLabel(/^Dóra, /)).toBeHidden();
+  await expect(
+    driver.getByRole("link", { name: "Cancel the ride", exact: true }).filter(visible),
+  ).toHaveCount(0);
+  await expect(driver.getByLabel(/^Dóra, /).filter(visible)).toHaveCount(0);
 
   // Each passenger reads why, with the note; only Dóra had paid.
-  const said = "Bára cancelled the trip: Car problem";
+  const said = "Bára cancelled the ride: Car problem";
   const refund = /^Full refund of [\d,]+ ISK, back to the card you paid with\.$/;
   for (const [person, booking] of [
     [dora, paid],
@@ -79,5 +91,24 @@ test("a driver cancels a trip with three passengers, who each read why", async (
       person === dora ? 1 : 0,
     );
   }
-  await Promise.all([dora, oli, siggi].map((person) => person.close()));
+
+  // A visitor who follows the ride's link reads that it was cancelled, with
+  // who drove and the route; no seat is left to choose or to picture.
+  const visitor = await secondPage(browser, testInfo);
+  await visitor.page.goto(`/trips/${tripId}?from=0&to=1`);
+  await expect(
+    visitor.page.getByText("This ride was cancelled.", { exact: true }).filter(visible),
+  ).toBeVisible();
+  await expect(
+    visitor.page.getByRole("heading", { name: "Driver: Bára" }).filter(visible),
+  ).toBeVisible();
+  await expect(visitor.page.getByTestId("whole-route").filter(visible)).toBeVisible();
+  await expect(
+    visitor.page.getByRole("button", { name: "One seat more" }).filter(visible),
+  ).toHaveCount(0);
+  await expect(visitor.page.getByTestId("where-you-sit").filter(visible)).toHaveCount(0);
+  await expect(visitor.page.getByText(/free on your part/).filter(visible)).toHaveCount(0);
+  // Nor a price: there is nothing to pay for.
+  await expect(visitor.page.getByText(/\d\sISK/).filter(visible)).toHaveCount(0);
+  await Promise.all([dora, oli, siggi, visitor].map((person) => person.close()));
 });

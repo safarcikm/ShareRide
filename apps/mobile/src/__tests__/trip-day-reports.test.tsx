@@ -1,12 +1,14 @@
-import { act, fireEvent, screen } from "expo-router/testing-library";
+import { act, fireEvent, screen, within } from "expo-router/testing-library";
 import { AccessibilityInfo } from "react-native";
 import type { AnswerDisputeBody, Booking, MyTrip } from "@shareride/contracts";
 import { renderApp, completeMe } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
 import { bookingApi, driverApi, northBooking, northMyTrip, paidBooking } from "@/testing/bookings";
+import { filledButtons } from "@/testing/buttons";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
 import { dispute, onTheDay, rider, tripOnTheDay } from "@/testing/trip-day";
 import { tripsApi } from "@/testing/trips";
+import { colors } from "@/theme/tokens";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
 jest.mock("@/auth/token-store", () => {
@@ -83,46 +85,76 @@ function answered(booking: Booking, body: AnswerDisputeBody) {
 
 const driverAbsent = { name: "The driver didn't come" } as const;
 
+/**
+ * The shape of a screen around a booking (spec 31, 3.19): Back and the
+ * title at the left, the ride as the booked seat's ticket under them in
+ * place of a line of small text, and the one main button in the bar. It
+ * tells PuffinRide what happened and takes nothing away: the moss button,
+ * not the red one (decision 17).
+ */
+function expectHeadTicketAndBar(title: string, main: string) {
+  const head = within(screen.getByTestId("screen-head"));
+  expect(head.getByRole("header", { name: title })).toBeVisible();
+  expect(head.getByRole("button", { name: "Back" })).toBeVisible();
+  const ticket = within(screen.getByTestId("booking-ticket"));
+  expect(ticket.getByText("Sun 15 Nov")).toBeVisible();
+  expect(ticket.getByText("Borgarnes")).toBeVisible();
+  expect(ticket.getByText("Blönduós")).toBeVisible();
+  expect(screen.queryByText(/Sunday 15 November · /)).toBeNull();
+  const button = within(screen.getByTestId("bottom-bar")).getByRole("button", { name: main });
+  expect(button).toHaveStyle({ minHeight: 56 });
+  expect(filledButtons()).toBe(1);
+  expect(screen.getByTestId("filled-button")).toBe(button);
+  expect(within(button).getByTestId("button-face")).toHaveStyle({
+    backgroundColor: colors.light.primary,
+  });
+}
+
+const inBar = () => within(screen.getByTestId("bottom-bar"));
+
 describe("The driver didn't come (spec 8, 3.4; R8.5)", () => {
   it("is offered on the trip day once the wait after the passenger's time has passed", async () => {
     await openBooking(onTheDay());
-    const report = await screen.findByRole("button", driverAbsent);
+    // In the bar, where "I'm here" is (spec 31, 3.9): it is the thing to do now.
+    const bar = within(await screen.findByTestId("bottom-bar"));
+    const report = bar.getByRole("link", driverAbsent);
     // After the chat: talking to the driver comes first.
-    const buttons = screen.getAllByRole("button");
-    expect(buttons.indexOf(report)).toBeGreaterThan(
-      buttons.indexOf(screen.getByRole("button", { name: "Message Anna" })),
+    const links = screen.getAllByRole("link");
+    expect(links.indexOf(report)).toBeGreaterThan(
+      links.indexOf(screen.getByRole("link", { name: "Message Anna" })),
     );
+    expect(screen.getAllByRole("link", driverAbsent)).toHaveLength(1);
   });
 
   it("is not offered during the wait", async () => {
     mockNow = new Date("2026-11-15T10:09:00Z");
     await openBooking(onTheDay());
     expect(await screen.findByRole("button", { name: "I'm here" })).toBeVisible();
-    expect(screen.queryByRole("button", driverAbsent)).toBeNull();
+    expect(screen.queryByRole("link", driverAbsent)).toBeNull();
   });
 
   it("is still offered after the trip completes, until 24 hours after", async () => {
     mockNow = new Date("2026-11-16T15:59:00Z");
     await openBooking(onTheDay({ phase: "completed" }, { status: "completed" }));
-    expect(await screen.findByRole("button", driverAbsent)).toBeVisible();
+    expect(await screen.findByRole("link", driverAbsent)).toBeVisible();
   });
 
   it("is gone more than 24 hours after the trip completed", async () => {
     mockNow = new Date("2026-11-16T16:01:00Z");
     await openBooking(onTheDay({ phase: "completed" }, { status: "completed" }));
     expect(await screen.findByText("Completed")).toBeVisible();
-    expect(screen.queryByRole("button", driverAbsent)).toBeNull();
+    expect(screen.queryByRole("link", driverAbsent)).toBeNull();
   });
 
   it("is not offered once the booking has a report", async () => {
     await openBooking(onTheDay({}, { dispute: dispute({ kind: "driver_absent" }) }));
     expect(await screen.findByRole("button", { name: "I'm here" })).toBeVisible();
-    expect(screen.queryByRole("button", driverAbsent)).toBeNull();
+    expect(screen.queryByRole("link", driverAbsent)).toBeNull();
   });
 
   it("says what happens next, takes a note only PuffinRide reads, and tells PuffinRide", async () => {
     const { client } = await openBooking(onTheDay());
-    await fireEvent.press(await screen.findByRole("button", driverAbsent));
+    await fireEvent.press(await screen.findByRole("link", driverAbsent));
     expect(await screen.findByRole("header", driverAbsent)).toBeVisible();
     expect(screen).toHavePathname(`/bookings/${bookingId}/driver-absent`);
     expect(screen.getByText("Tell PuffinRide that Anna didn't come?")).toBeVisible();
@@ -149,10 +181,17 @@ describe("The driver didn't come (spec 8, 3.4; R8.5)", () => {
     ]);
   });
 
+  it("has its title over the ride as a ticket, and Tell PuffinRide as the main button in the bar (spec 31, 3.19)", async () => {
+    await openBooking(onTheDay());
+    await fireEvent.press(await screen.findByRole("link", driverAbsent));
+    await screen.findByRole("header", driverAbsent);
+    expectHeadTicketAndBar("The driver didn't come", "Tell PuffinRide");
+  });
+
   it("sends no note when none was written, and says nothing of a refund for a free ride", async () => {
     const free = { amount: 0, currency: "ISK" } as const;
     const { client } = await openBooking(onTheDay({}, { total: free }));
-    await fireEvent.press(await screen.findByRole("button", driverAbsent));
+    await fireEvent.press(await screen.findByRole("link", driverAbsent));
     expect(await screen.findByText("Tell PuffinRide that Anna didn't come?")).toBeVisible();
     expect(screen.queryByText(/full refund/)).toBeNull();
     await fireEvent.press(screen.getByRole("button", { name: "Tell PuffinRide" }));
@@ -162,7 +201,7 @@ describe("The driver didn't come (spec 8, 3.4; R8.5)", () => {
 
   it("keeps a note over 500 characters from being sent", async () => {
     const { client } = await openBooking(onTheDay());
-    await fireEvent.press(await screen.findByRole("button", driverAbsent));
+    await fireEvent.press(await screen.findByRole("link", driverAbsent));
     await fireEvent.changeText(
       await screen.findByLabelText("Note for PuffinRide (optional)"),
       "x".repeat(501),
@@ -179,7 +218,7 @@ describe("The driver didn't come (spec 8, 3.4; R8.5)", () => {
     ],
     [
       failure(409, "report_too_late"),
-      "It's too late to report this: more than 24 hours have passed since the trip completed.",
+      "It's too late to report this: more than 24 hours have passed since the ride completed.",
     ],
     [
       failure(0, "network_error"),
@@ -187,16 +226,17 @@ describe("The driver didn't come (spec 8, 3.4; R8.5)", () => {
     ],
   ])("says why it could not tell PuffinRide (%#)", async (answer, said) => {
     await openBooking(onTheDay(), { report: () => answer });
-    await fireEvent.press(await screen.findByRole("button", driverAbsent));
+    await fireEvent.press(await screen.findByRole("link", driverAbsent));
     await fireEvent.press(await screen.findByRole("button", { name: "Tell PuffinRide" }));
-    expect(await screen.findByText(said)).toBeVisible();
+    // Over the button, where it is seen.
+    expect(await inBar().findByText(said)).toBeVisible();
   });
 
   it.each(["already_reported", "not_boarding", "not_found"])(
     "says the booking changed, with the way back to it (%s)",
     async (code) => {
       await openBooking(onTheDay(), { report: () => failure(409, code) });
-      await fireEvent.press(await screen.findByRole("button", driverAbsent));
+      await fireEvent.press(await screen.findByRole("link", driverAbsent));
       await fireEvent.press(await screen.findByRole("button", { name: "Tell PuffinRide" }));
       expect(await screen.findByText("This booking changed since you opened it.")).toBeVisible();
       await fireEvent.press(screen.getByRole("button", { name: "Back to the booking" }));
@@ -330,6 +370,14 @@ describe("Answering a no-show (spec 8, 3.3; R8.6)", () => {
       params: { id: disputeId },
       body: { answer: "contested", note: "I was by the pumps from 09:55." },
     });
+  });
+
+  it("has its title over the ride as a ticket, and Send answer as the main button in the bar (spec 31, 3.19)", async () => {
+    await openBooking(markedNoShow());
+    await fireEvent.press(await screen.findByRole("button", { name: "That's not right" }));
+    await screen.findByRole("header", { name: "Is this right?" });
+    expectHeadTicketAndBar("Is this right?", "Send answer");
+    expect(screen.getByText("Anna says you didn't come.")).toBeVisible();
   });
 
   it("moves focus to the outcome once the no-show stands", async () => {
@@ -498,6 +546,13 @@ describe("Marking a no-show (spec 8, 3.3; R8.4)", () => {
     expect(screen.queryByRole("button", markGunna)).toBeNull();
   });
 
+  it("has its title over the ride as a ticket, and Mark as no-show as the main button in the bar (spec 31, 3.19)", async () => {
+    await openDriverTrip(tripOnTheDay([0, 1]), riders());
+    await fireEvent.press(await screen.findByRole("button", markGunna));
+    await screen.findByRole("header", markGunna);
+    expectHeadTicketAndBar("Mark as no-show: Gunna", "Mark as no-show");
+  });
+
   it("confirms with what it does, takes a note for PuffinRide, and marks them", async () => {
     const { client } = await openDriverTrip(tripOnTheDay([0, 1]), riders());
     await fireEvent.press(await screen.findByRole("button", markGunna));
@@ -569,7 +624,7 @@ describe("Marking a no-show (spec 8, 3.3; R8.4)", () => {
     [failure(409, "driver_not_checked_in"), "To mark a no-show here, press “I'm here” first."],
     [
       failure(409, "trip_completed"),
-      "The trip has completed, so a no-show can no longer be marked.",
+      "The ride has completed, so a no-show can no longer be marked.",
     ],
   ])("says why it could not mark them (%#)", async (answer, said) => {
     await openDriverTrip(tripOnTheDay([0, 1]), riders(), { mark: () => answer });
@@ -579,13 +634,13 @@ describe("Marking a no-show (spec 8, 3.3; R8.4)", () => {
   });
 
   it.each(["already_reported", "not_confirmed"])(
-    "says the booking changed, with the way back to the trip (%s)",
+    "says the booking changed, with the way back to the ride (%s)",
     async (code) => {
       await openDriverTrip(tripOnTheDay([0, 1]), riders(), { mark: () => failure(409, code) });
       await fireEvent.press(await screen.findByRole("button", markGunna));
       await fireEvent.press(await screen.findByRole("button", { name: "Mark as no-show" }));
       expect(await screen.findByText("This booking changed since you opened it.")).toBeVisible();
-      await fireEvent.press(screen.getByRole("button", { name: "Back to the trip" }));
+      await fireEvent.press(screen.getByRole("button", { name: "Back to the ride" }));
       expect(screen).toHavePathname(`/drive/trips/${tripId}`);
     },
   );

@@ -31,12 +31,24 @@ test("a suspended person reads why and appeals", async ({ page }) => {
   await expect(
     page.getByText("Your account is suspended with no end date").filter(visible),
   ).toBeVisible();
+  // The page has one title; a notice's own title is a heading under it.
+  await expect(page.getByRole("heading", { level: 1 }).filter(visible)).toHaveText(["Notices"]);
+  await expect(
+    page
+      .getByRole("heading", { level: 2, name: /^Your account is suspended with no end date/ })
+      .filter(visible),
+  ).toBeVisible();
   await expect(page.getByText("Rule: Harassment").filter(visible)).toBeVisible();
   await expect(page.getByText(`Reason: ${reason}`).filter(visible)).toBeVisible();
 
   await page.getByRole("button", { name: "Appeal", exact: true }).click();
   await page.getByLabel("Why do you disagree?").fill("I was not there that day.");
-  await page.getByRole("button", { name: "Send appeal" }).click();
+  // Sending it is the page's one main button, in the bar at the bottom (spec 31, R31.1).
+  await page
+    .getByTestId("bottom-bar")
+    .filter(visible)
+    .getByRole("button", { name: "Send appeal" })
+    .click();
   await expect(page.getByText(/^Your appeal, sent /).filter(visible)).toBeVisible();
   await expect(
     page.getByText("PuffinRide will look at it and answer here.").filter(visible),

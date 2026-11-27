@@ -15,6 +15,7 @@ export * from "./result.ts";
 export * from "./roads/index.ts";
 export * from "./privacy/index.ts";
 export * from "./reviews/index.ts";
+export * from "./rides/index.ts";
 export * from "./safety/index.ts";
 export * from "./settings/index.ts";
 export * from "./time.ts";

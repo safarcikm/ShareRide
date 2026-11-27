@@ -18,6 +18,33 @@ Martin approved all six proposals on 2026-11-15. He also asked for times on a
 wheel in 5-minute steps and a small X inside text fields; those are built
 already (spec 3, 3.5 item 5; spec 15, `TimeField` and `PlaceDropdown`).
 
+Amended by [spec 31](2026-11-26-one-ride-one-ticket.md) (3.4): in English
+a member now reads "ride" where the texts quoted here say "trip" (which
+stays in "Trip day"), and the actions are named "Find a ride", "Offer a
+ride" and "Publish ride". The keys keep their names;
+`packages/i18n/src/messages/en.ts` has the words as they are.
+
+Amended by spec 31 (3.5, 3.6 and 3.10) too: signed in, Find greets by
+name with what needs me first (3.2, item 7); a ride of mine is a ticket
+that says in yellow what it needs, with no button under it (3.3, item 8);
+and the results' chips are one row with one Filters chip (3.8, item 2).
+A ride's details, Check and pay and "You're booked" show the ride as a
+ticket (3.7, item 6).
+
+Amended by spec 31 (3.14) as well: Profile and Settings are one page.
+Profile's rows stand in four groups with what is set now, the phone
+number, the language and the notifications among them, and Sign out is
+its last row; "Sign out on all devices" is at the end of Sign-in methods
+(3.4, items 3 and 4; 3.8, item 4). The line that said what was in
+Settings (`profile.inSettings`) is gone.
+
+Amended by spec 31 (3.19) as well: "As others see you" has its title at
+the left with "This is your public profile. Your phone number is never
+part of it." as the line under it, and under them the person's card as on
+Profile; it has no second heading with the name (3.4, item 1). The
+photo's page shows my picture and name in such a card, without the
+rating, over the photo's controls (3.6, item 5).
+
 ## 1. Problem and goal
 
 Walking through the app on 2026-11-15 found these problems:
@@ -82,7 +109,8 @@ say where you are and what happens next.
      the legal documents. Since 2026-11-22: "Sign in to book seats, offer
      rides and keep your trips and messages in one place." with Sign in,
      then the rows Meeting points and Terms, rules and privacy, as signed
-     in (3.4), then the language.
+     in (3.4), then the language. Since 2026-11-26 the second row is About
+     PuffinRide ([spec 30](2026-11-26-about-page-and-footer.md), 3.2).
    - My rides, Offer, Messages and Profile have the puffin by its pin over
      their title, as an empty screen does (spec 15, 5.3).
 4. Pressing the tab you are on takes that tab back to its main screen.
@@ -129,6 +157,20 @@ Find replaces both the front page and My profile as the place the app opens.
      further than your part, for example "Anna drives BSÍ → Akureyri".
 6. **Bottom:** "Driving somewhere? Share the empty seats in your car." with
    Offer a ride (a secondary button), and the meeting points link.
+7. Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.5), **signed
+   in**: the title is "Hi Bára" (Icelandic "Hæ Bára"), at the left, and
+   the line that says what PuffinRide is shows only to someone signed out
+   (and until an account has a first name). Under the title stands one
+   of: what needs me, as the yellow card ("Dóra asks for 1 seat", "2
+   requests to answer", "Bára said yes: pay to keep your seat", "Leaves in
+   40 minutes"), the soonest need first, whose button opens that ride,
+   with "and 2 more" under it opening My rides; or else my next ride, as
+   a ticket under "Your next ride". Then the search card. When the yellow
+   card is about another ride than my next one, "Your next ride" follows
+   the search. Then "Leaving soon", with "See all rides" at the right of
+   its heading. With nothing coming up the greeting stands alone over the
+   search. Rides are tickets (spec 4, 3.4, item 6), and the next ride is
+   the ticket My rides shows (3.3, item 8).
 
 ### 3.3 My rides (proposal 2)
 
@@ -138,6 +180,13 @@ Find replaces both the front page and My profile as the place the app opens.
      with Pay);
    - a trip you drive with requests to answer ("Answer by 08:10 tomorrow, or
      the requests close", with Answer requests).
+
+   Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.3, item 3) a ride
+   on its trip day needs you too, as a passenger and as a driver: its row
+   says "Trip day" and stands under "Needs you" with no button of its own,
+   as the row opens the ride. What needs you is one rule in
+   `packages/domain` (`bookingNeed`, `tripNeed`), which Find and My rides
+   share.
 3. After that, under "Coming up", every other booking and published trip
    you drive, soonest first. Each row says **Passenger** or **Driving**, its
    status, the date, times and route. A booking adds the driver and car and
@@ -154,6 +203,22 @@ Find replaces both the front page and My profile as the place the app opens.
 6. **Nothing coming up:** "Nothing coming up", with Find a ride and Offer a
    ride.
 7. Drafts are not rides, so they stay in Offer (3.6, item 2).
+8. Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.3, 3.5 item 4 and
+   3.10) a ride of mine is a **ticket**, in both lists and on Find. Beside
+   the day it says "Passenger" or "You drive". A seat of mine shows my
+   part, the price for my seats ("Free" where there is none) and, under
+   the tear line, the driver's picture and name with the seat's state:
+   "Waiting for Bára's answer" (blue), "Seat confirmed" (moss, with a moss
+   edge on the ticket), or the status of items 2 and 3. A ride I drive
+   shows the whole way as two ends with the stops between counted ("5 h, 2
+   stops"), no price, and "1 of 3 seats taken"; the seats free on each
+   stretch are on the ride's own page. A ride I cancelled says "Cancelled"
+   and why. What a ride needs from me is a **yellow tag** in the foot
+   ("Pay by 12:30", "Answer Dóra's request", "2 requests to answer",
+   "Leaves at 10:00", "Leaves in 40 minutes" within the hour before, "Trip
+   day" once the time has come), and takes the place of the state. The
+   ticket opens the ride, where that is done: no Pay or Answer requests
+   button stands under it. "Needs you" lists the soonest need first.
 
 ### 3.4 Profile (proposal 2)
 
@@ -162,7 +227,9 @@ Find replaces both the front page and My profile as the place the app opens.
 2. Rows, left-aligned: My cars, Driving licence ("Confirmed" or "Not
    confirmed yet"), Meeting points, Settings, and Terms, rules and privacy.
    My cars lists the cars, each opening to edit it, with Add a car. Terms,
-   rules and privacy lists the three documents. "See it as others do" shows
+   rules and privacy lists the three documents. Since 2026-11-26 the row is
+   **About PuffinRide**, a page that holds the documents and Cookies, who
+   runs PuffinRide and how to reach us ([spec 30](2026-11-26-about-page-and-footer.md)). "See it as others do" shows
    the public profile of spec 1: the avatar, first name, languages, "Member
    since" and About you, never the phone number.
 3. My cars and Driving licence replace the car and licence parts of "Before
@@ -229,8 +296,13 @@ Find replaces both the front page and My profile as the place the app opens.
    Mjódd → N1 Selfoss", which opens it at the step where you left off. With
    more than one, the newest shows, with "See all drafts". The API keeps no
    step, so a draft with no departure time opens at step 2 and any other at
-   step 5, where every step has Edit. If the drafts cannot be loaded, the
-   form opens without the card.
+   step 5, where every step has Edit (a row with Change since spec 31,
+   3.11). If the drafts cannot be loaded, the
+   form opens without the card. Since
+   [spec 31](2026-11-26-one-ride-one-ticket.md) (3.11, item 6) every
+   draft is a row in one card there, under the heading "Drafts", the one
+   changed last first; more than three fold under "Show all drafts", and
+   "See all drafts" with its page is gone.
 3. **Step 2:** the times at the stops are worked out for you and folded: "Times
    at the 3 stops", a line with each stop and its time, and Change. Change
    unfolds the stop times to change them. A problem with a stop's time
@@ -243,7 +315,12 @@ Find replaces both the front page and My profile as the place the app opens.
    publish" (or one): Your car, with Add a car, and Driving licence, with
    Confirm. Until both are done, Publish trip waits, and the text under it
    says why: "Add your car and confirm your licence to publish. Your trip is
-   saved as a draft until then."
+   saved as a draft until then." Since
+   [spec 31](2026-11-26-one-ride-one-ticket.md) (3.11, item 4) what is
+   missing is one yellow card under the ride's rows, in place of the list
+   with a box to tick for each: its title counts as before, its line says
+   what is done and what is left ("Photo and car are done. Your driving
+   licence is left."), and it has one button, for the next of them.
 5. Once profile photos exist ([plan](../plans/2026-11-22-profile-photos.md)),
    Profile photo, with Add a photo, joins Your car and Driving licence while
    photo storage is on.
@@ -322,6 +399,25 @@ Find replaces both the front page and My profile as the place the app opens.
    Needs you, to confirm your seat." (for a free ride, "your seat is
    confirmed"); "No answer in time? The request ends, and you pay nothing."
    Where to stand waits until the seat is confirmed.
+6. Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.7 and 3.19) the
+   ride is a ticket on all three screens.
+   - **The ride's page:** the title is the part's two places ("N1
+     Borgarnes to Olís Blönduós") under the day. "Your part of the ride"
+     is a ticket with the tag, Get in and Get out as its two ends with
+     Change at the right of each, and the seats under its tear line with
+     "2 free on your part"; the price for the seats chosen is in the
+     bar, with what each costs under it for more than one ("2 × 2,900
+     ISK"). Change unfolds the stops inside the ticket. "Who you ride with" is the
+     driver's card, and the seat view a card of its own, "Where you sit".
+     The cancellation line is a row, "Free cancellation" with "Up to 15
+     min before", which unfolds the sentence; with it stand "Weather and
+     roads" and "Report this ride".
+   - **Check and pay:** the card is a ticket: the day, the part with
+     times, the total with the seats times the price under it for more
+     than one seat, and the driver and the car in its foot.
+   - **You're booked and Request sent:** the ride shows as its ticket of
+     My rides, under the line about the day and time, and opens the
+     booking.
 
 ### 3.8 Small fixes (proposal 6)
 
@@ -338,7 +434,11 @@ Find replaces both the front page and My profile as the place the app opens.
 2. **Sorting and filtering apart:** "Sort: Earliest ▾" is one chip that opens
    Earliest and Cheapest under the chips, and "Book instantly only" is a
    separate filter chip, before the times of day. Choosing an order closes
-   them and gives focus back to the Sort chip.
+   them and gives focus back to the Sort chip. Since
+   [spec 31](2026-11-26-one-ride-one-ticket.md) (3.6) the chip shows
+   "Earliest ▾" and keeps "Sort: Earliest" as its name, and the filters
+   are under one **Filters** chip beside it, in one row with the number of
+   rides (spec 4, 3.4, item 7).
 3. **From and To list:** towns and areas come first, then meeting points, each
    under a small heading ("Towns and areas", "Meeting points"). The
    sample-data tag ("Sample meeting points") shows once under the list
@@ -437,6 +537,9 @@ No new tables. Changes to the API:
 - Each trip in `GET /v1/me/trips` says when its first open request closes
   (`requestsCloseAt`, null when none waits), for "Answer by 08:10 tomorrow,
   or the requests close".
+- Since [spec 31](2026-11-26-one-ride-one-ticket.md) (section 6) it also
+  says who asks in that request (`firstRequest`: the first name, the seats
+  and the names of the two stops; null when none waits).
 - "Your next ride" and My rides read `GET /v1/me/bookings` and
   `GET /v1/me/trips` and merge them in the app, soonest first.
 - Check and pay creates the booking (`POST /v1/trips/{id}/bookings`), then
@@ -532,7 +635,7 @@ depend on gender; the Icelandic review can change it.
 | 3 | Clear X in text fields | Small, inside the field (Martin, 2026-11-15) |
 | 4 | Signed out, what do My rides, Offer and Profile show? | A short page with Sign in, so the menu never changes (3.1, item 3) (Martin, 2026-11-15) |
 | 5 | Is the tab bar on screens opened on top? | No on phones (back button instead); the top bar is on every screen on wide screens (3.1, item 2) (Martin, 2026-11-15) |
-| 6 | Where do drafts live? | On Offer, as "Continue your draft" (3.6, item 2) (Martin, 2026-11-15) |
+| 6 | Where do drafts live? | On Offer, as "Continue your draft" (3.6, item 2) (Martin, 2026-11-15). Since spec 31 all of them are listed there, as rows |
 | 7 | Request trips: pay where? | From My rides, under Needs you, when the driver says yes (3.7, item 2) (Martin, 2026-11-15) |
 | 8 | Where is Sign out? | On Profile too, under the rows; Sign out on all devices stays in Settings (3.4 item 4) (Martin, 2026-11-22) |
 | 9 | Pull to refresh | On the main lists, a booking and the driver's trip page, with a spinner and "Updated" (3.9) (Martin, 2026-11-22; "pull up" read as the usual pull down at the top) |

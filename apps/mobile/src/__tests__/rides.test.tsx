@@ -72,7 +72,7 @@ describe("All rides leaving soon (spec 4, 3.8)", () => {
         });
       },
     });
-    expect(await screen.findByText("The trips could not be loaded.")).toBeVisible();
+    expect(await screen.findByText("The rides could not be loaded.")).toBeVisible();
     await fireEvent.press(screen.getByRole("button", { name: "Try again" }));
     expect(await screen.findAllByTestId("trip-result")).toHaveLength(2);
   });

@@ -6,13 +6,13 @@ import { useCallback, useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { errorText } from "@/auth/errors";
 import { useSession } from "@/auth/session";
-import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Chip } from "@/components/chip";
 import { Notice } from "@/components/notice";
 import { PageHead } from "@/components/page-head";
 import { Screen, useWideScreen } from "@/components/screen";
-import { Body, Heading, Title } from "@/components/text";
+import { ScreenHead } from "@/components/screen-head";
+import { Body, Heading } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { useLoaded } from "@/lib/use-loaded";
 import { IcelandMap } from "@/maps/iceland-map";
@@ -25,7 +25,9 @@ import { usePalette } from "@/theme/use-palette";
 /**
  * Meeting points (spec 2, screen 1) on our own map of Iceland (ADR 0024)
  * and as a list by region, with place search. Open to everyone. Wide
- * screens show the map beside the list; phones switch between them.
+ * screens show the map beside the list; phones switch between them. The
+ * title is at the left with Back, with what meeting points are as the line
+ * under it, and what the page says starts at the left too (spec 31, 3.17).
  */
 export default function MeetingPointsScreen() {
   const { t } = useLanguage();
@@ -36,11 +38,9 @@ export default function MeetingPointsScreen() {
   const [shown, setShown] = useState<"map" | "list">("map");
   const points = result?.ok === true ? result.data.meetingPoints : [];
   return (
-    <Screen aside={points.length === 0 ? undefined : <PointsMap points={points} />}>
+    <Screen siteFooter aside={points.length === 0 ? undefined : <PointsMap points={points} />}>
       <PageHead {...pageText(t, { kind: "meetingPoints" })} />
-      <BackButton />
-      <Title>{t("meetingPoints.title")}</Title>
-      <Body>{t("meetingPoints.intro")}</Body>
+      <ScreenHead title={t("meetingPoints.title")} line={t("meetingPoints.intro")} />
       <PlaceSearch
         onChoose={openSearchResult}
         whenIdle={
@@ -88,7 +88,7 @@ function Catalogue({
     );
   }
   const points = result.data.meetingPoints;
-  if (points.length === 0) return <Body>{t("meetingPoints.empty")}</Body>;
+  if (points.length === 0) return <Body align="start">{t("meetingPoints.empty")}</Body>;
 
   const byName = new Intl.Collator(locale);
   const sorted = [...points].sort((a, b) => byName.compare(a.name[locale], b.name[locale]));
@@ -162,7 +162,7 @@ function PointsMap({ points }: { readonly points: readonly MeetingPointSummary[]
         }}
       />
       {points.length === 0 ? null : chosen.length === 0 ? (
-        <Body>{t("meetingPoints.mapHint")}</Body>
+        <Body align="start">{t("meetingPoints.mapHint")}</Body>
       ) : (
         chosen.map((point) => <PointCard key={point.id} point={point} />)
       )}

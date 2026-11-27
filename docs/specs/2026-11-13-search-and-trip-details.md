@@ -17,6 +17,19 @@ S4), [architecture: search](../architecture/overview.md#search),
 [spec 2](2026-11-13-meeting-points.md) (place search),
 [spec 3](2026-11-13-post-a-trip.md) (what a trip contains).
 
+Amended by [spec 31](2026-11-26-one-ride-one-ticket.md) (3.4): in English
+a member now reads "ride" where the texts quoted here say "trip" (which
+stays in "Trip day"), and the actions are named "Find a ride", "Offer a
+ride" and "Publish ride". The keys keep their names;
+`packages/i18n/src/messages/en.ts` has the words as they are.
+
+Amended by spec 31 (3.5 and 3.6) too: a ride found is a ticket; the
+search form is the front page's one card (3.1); the results have one row
+with the order, one "Filters" chip and the number of rides, and end with
+a card that leads to All rides (3.4). A ride's details have my part as
+a ticket, then the driver, where I sit, the whole route and rows (3.6,
+item 10).
+
 ## 1. Problem and goal
 
 A passenger wants to get from one place to another on a day, and does not care
@@ -60,6 +73,10 @@ their part, the price, the driver and the car.
 3. Available without an account (spec 1, decision 1). Booking needs one
    (spec 5).
 4. The last five searches are kept on the device for one-tap repeat.
+5. Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.5, item 3) there
+   is one search form: `/search` shows the front page's search card, with
+   "Find a ride" in the card and no bar at the bottom, under the title
+   "Find a ride" at the left beside Back.
 
 ### 3.2 Which meeting points a search covers
 
@@ -116,6 +133,26 @@ page.
 4. Trips that are full on the searched part are not shown.
 5. Times are in Iceland time; if the phone uses another time zone, the screen
    says "Iceland time".
+6. Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.6) a result is a
+   ticket: the day with "Book instantly" or "Driver approves" beside it
+   and Share in the corner; the two stops with their times and the time
+   between; the price per seat with the total for more seats under it, or
+   "Free"; the driver's whole ride in small text under the stops; and under
+   the tear line the driver's picture, name and rating, or "New driver",
+   with the seats left at the right. A ticket always says its day, also
+   under a day's heading.
+7. Under the head is one row: the order as one chip ("Earliest", named
+   "Sort: Earliest" for screen readers), one **Filters** chip, and the
+   number of rides listed at the right, said by screen readers when it
+   changes. Filters opens the filters of item 3 under the row, where they
+   wrap, and stay open to choose another; the chip says how many are on
+   ("Filters: 2 on") and is moss while any is. The orders and the filters
+   are never open together. A day's heading no longer counts its rides.
+8. The list ends with a card: the puffin by its pin, "That's every ride
+   found" (or "These are the first 50 rides", with "Choose a day to see
+   others."), a line that says to try another day when one was searched,
+   and **All rides**, which opens every ride leaving soon (3.8). The
+   other days follow under it, as before.
 
 ### 3.5 Nothing matches
 
@@ -153,6 +190,14 @@ When there are no results (on a chosen date, or at all):
 9. **Other states:** full on this part (with "Try another part of the trip"),
    departed from the boarding stop, cancelled, or past the booking cut-off;
    each shown plainly instead of the booking button.
+10. Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.7) the screen
+    has this order: the day over the part's two places as the title, with
+    Share; "Your part of the ride" as a ticket, with Change on each end
+    and the seats; the driver's card with the car, the preferences and
+    the note; "Where you sit"; "The whole route" with the map and the
+    stops; and rows for free cancellation (or how a ride paid in person is
+    paid), "Weather and roads" and "Report this ride". What each holds is
+    as above.
 
 ### 3.7 Shared trip links
 
@@ -184,6 +229,9 @@ offer before they search (decision 5).
    than five. With 50, the screen says to search a route to find more.
 4. With no rides, or when they can't be loaded, the front page leaves the
    section out; it never says there are none.
+5. Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.5) each ride is a
+   ticket, as a result is (3.4, item 6), and "See all rides" stands at the
+   right of the heading on a phone too.
 
 ## 4. Rules
 
@@ -237,6 +285,12 @@ choose the boarding and alighting stops, price for a part (P1) and seats free
 for a part (S3). The SQL query narrows candidates; the domain functions decide,
 so the rules are tested once.
 
+Since [spec 31](2026-11-26-one-ride-one-ticket.md) a result's `driver`
+carries `colour`, the driver's people colour (spec 15, 4.2), which a
+ticket's foot shows behind the first letter where there is no photo. It
+is worked out from the driver's ID as everywhere else, and says nothing
+more about the person.
+
 Target: search answers in under 500 ms at the 95th percentile with 10 000
 upcoming trips.
 
@@ -263,7 +317,7 @@ upcoming trips.
 | `search.to` | To | Til |
 | `search.date` | Date | Dagsetning |
 | `search.seats` | Seats | Sæti |
-| `search.submit` | Search | Leita |
+| `welcome.findRide` (was `search.submit` "Search", until spec 31 made `/search` the front page's card) | Find a ride | Finna far |
 | `results.seatsLeft` | {count, plural, one {# seat left} other {# seats left}} | {count, plural, one {# sæti laust} other {# sæti laus}} |
 | `results.free` | Free | Ókeypis |
 | `results.newDriver` | New driver | Nýr ökumaður |
@@ -277,7 +331,7 @@ upcoming trips.
 | `results.otherDays` | Trips on other days | Ferðir aðra daga |
 | `results.nearbyPoints` | Trips from nearby meeting points | Ferðir frá nálægum mótsstöðum |
 | `results.noTripsYet` | No trips yet on this route | Engar ferðir enn á þessari leið |
-| `trip.yourPart` | Your part of the trip | Þinn hluti ferðarinnar |
+| `trip.yourPartOfRide` (was `trip.yourPart`, until spec 31 made it the ticket's caption) | Your part of the ride | Þinn hluti ferðarinnar |
 | `trip.payInApp` | Pay in the app once your booking is accepted. Free cancellation up to 15 minutes before departure. | Þú greiðir í appinu þegar bókunin hefur verið samþykkt. Ókeypis afbókun allt að 15 mínútum fyrir brottför. |
 | `trip.book` | Book | Bóka |
 | `trip.requestToBook` | Request to book | Óska eftir fari |

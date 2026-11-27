@@ -6,10 +6,10 @@ import {
   type TripDetails,
 } from "@shareride/contracts";
 import { contactDetailsIn, defaultBookingSettings, type Money } from "@shareride/domain";
-import { capitalised, formatDay, formatDuration, formatMoney } from "@shareride/i18n";
-import { Redirect, router, useLocalSearchParams } from "expo-router";
+import { capitalised, formatClock, formatDay, formatDuration, formatMoney } from "@shareride/i18n";
+import { Redirect, router, useLocalSearchParams, type Href } from "expo-router";
 import { CircleCheck } from "lucide-react-native";
-import { useCallback, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { errorText, formatWait } from "@/auth/errors";
 import { useMe, useSession } from "@/auth/session";
@@ -18,24 +18,27 @@ import { keepPendingBooking } from "@/booking/pending-booking";
 import { PaymentSheet, usePayment } from "@/booking/payment";
 import { bookErrorText, heldUntilText } from "@/booking/texts";
 import { PausedBanner, useMaxSeats, usePayInPerson, useTimings } from "@/beta/config";
+import { Avatar } from "@/components/avatar";
 import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
 import { Columns, PageColumn } from "@/components/columns";
 import { Icon } from "@/components/icon";
 import { Notice } from "@/components/notice";
+import { RideTicket, TicketFoot } from "@/components/ride-ticket";
 import { Screen, useWideScreen } from "@/components/screen";
+import { ScreenHead } from "@/components/screen-head";
+import { spokenAs } from "@/components/spoken";
 import { TakesFocus } from "@/components/takes-focus";
 import { TextField } from "@/components/text-field";
-import { Body, Title } from "@/components/text";
+import { Body } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { now } from "@/lib/clock";
 import { useLoaded } from "@/lib/use-loaded";
 import { SuspendedAccount, suspensionNow } from "@/safety/suspended-account";
 import { positionParam } from "@/trip-details/trip-link";
 import { carText } from "@/trip-details/texts";
-import { PartStop } from "@/trip-details/trip-parts";
-import { controlOutline, spacing, typography } from "@/theme/tokens";
+import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
 /**
@@ -89,19 +92,16 @@ function Book() {
   const pending = loaded?.query !== query || loaded.round !== round;
   // Without a screen behind (opened after signing up), Back opens the trip
   // with the same part and seats.
-  const back = (
-    <BackButton
-      fallback={{
-        pathname: "/trips/[id]",
-        params: {
-          id,
-          ...(params.from === undefined ? {} : { from: params.from }),
-          ...(params.to === undefined ? {} : { to: params.to }),
-          ...(params.seats === undefined ? {} : { seats: params.seats }),
-        },
-      }}
-    />
-  );
+  const backTo: Href = {
+    pathname: "/trips/[id]",
+    params: {
+      id,
+      ...(params.from === undefined ? {} : { from: params.from }),
+      ...(params.to === undefined ? {} : { to: params.to }),
+      ...(params.seats === undefined ? {} : { seats: params.seats }),
+    },
+  };
+  const back = <BackButton fallback={backTo} />;
 
   // A page while it loads and when it fails, as it is once loaded, so Back
   // does not move on a wide screen.
@@ -146,7 +146,7 @@ function Book() {
       trip={trip}
       shownPoints={{ from: params.fromPoint, to: params.toPoint }}
       pending={pending}
-      back={back}
+      backTo={backTo}
       onReload={() => {
         setRound((count) => count + 1);
       }}
@@ -178,8 +178,8 @@ const finished = (booking: Booking) => {
 };
 
 /**
- * Check and pay (spec 16, 3.7, items 2 and 3): the ride as it will be
- * booked, what happens next, and one button. For instant booking it is
+ * Check and pay (spec 16, 3.7, items 2 and 3; spec 31, 3.19): the part as
+ * it will be booked, as a ticket, what happens next, and one button. For instant booking it is
  * "Pay {total}", which books the seats and opens the payment at once. A
  * payment that does not finish leaves the seats held until the deadline
  * (rule M1), and Pay starts it again for the same booking. A request is
@@ -194,7 +194,7 @@ function BookForm({
   trip,
   shownPoints,
   pending,
-  back,
+  backTo,
   onReload,
 }: {
   readonly trip: TripDetails;
@@ -202,7 +202,8 @@ function BookForm({
   readonly shownPoints: { readonly from?: string | undefined; readonly to?: string | undefined };
   /** The trip's answer is for other seats, or is loading again. */
   readonly pending: boolean;
-  readonly back: ReactNode;
+  /** Where Back leads without a screen behind: the ride, with the same part and seats. */
+  readonly backTo: Href;
   readonly onReload: () => void;
 }) {
   const { locale, t } = useLanguage();
@@ -441,43 +442,78 @@ function BookForm({
     );
   })();
 
-  const title = (
-    <Title align="start">
-      {paysNow
-        ? t("booking.checkAndPay")
-        : instant
-          ? t("booking.titleInstant")
-          : t("booking.titleRequest")}
-    </Title>
+  const head = (
+    <ScreenHead
+      back={backTo}
+      title={
+        paysNow
+          ? t("booking.checkAndPay")
+          : instant
+            ? t("booking.titleInstant")
+            : t("booking.titleRequest")
+      }
+    />
   );
+  // My part as a ticket: what the seats cost stands where a ticket has its
+  // price, with the sum behind it, and the driver with the car in the foot.
   const ride = (
-    <Card>
-      <Text style={[typography.small, { color: palette.textMuted }]}>
-        {capitalised(formatDay(new Date(boardStop.plannedAt), locale), locale)}
-      </Text>
-      <PartStop stop={boardStop} getIn />
-      <PartStop stop={alightStop} getIn={false} />
-      <Text style={[typography.small, { color: palette.text }]}>
-        {trip.car === null
-          ? t("booking.driver", { driver })
-          : t("booking.driverAndCar", { driver, car: carText(t, trip.car) })}
-      </Text>
-      <View style={[styles.divider, { backgroundColor: palette.border }]} />
-      <Text style={[typography.small, { color: palette.textMuted }]}>
-        {free
-          ? t("search.seatCount", { count: part.seats })
-          : t("booking.seatsTimesPrice", {
-              seats: t("search.seatCount", { count: part.seats }),
-              price: formatMoney(part.pricePerSeat, locale),
-            })}
-      </Text>
-      <View style={styles.total}>
-        <Text style={[typography.label, { color: palette.text }]}>{t("booking.total")}</Text>
-        <Text style={[typography.figure, { color: palette.text }]}>
-          {free ? t("results.free") : shownTotal}
-        </Text>
-      </View>
-    </Card>
+    <RideTicket
+      testID="booking-ticket"
+      day={capitalised(formatDay(new Date(boardStop.plannedAt), locale), locale)}
+      from={{
+        time: formatClock(new Date(boardStop.plannedAt)),
+        place: boardStop.meetingPoint.name[locale],
+      }}
+      to={{
+        time: formatClock(new Date(alightStop.plannedAt)),
+        place: alightStop.meetingPoint.name[locale],
+      }}
+      between={formatDuration(
+        (new Date(alightStop.plannedAt).getTime() - new Date(boardStop.plannedAt).getTime()) / 1000,
+        locale,
+      )}
+      ends={{ from: t("trip.getIn"), to: t("trip.getOut") }}
+      price={{
+        amount: free ? t("results.free") : shownTotal,
+        // The sum behind the amount, where there is one: more seats than one.
+        unit:
+          free || part.seats === 1
+            ? t("search.seatCount", { count: part.seats })
+            : t("booking.seatsTimesPrice", {
+                seats: t("search.seatCount", { count: part.seats }),
+                price: formatMoney(part.pricePerSeat, locale),
+              }),
+      }}
+      foot={
+        <TicketFoot
+          // The eye has the picture and the car beside it to know the driver by.
+          startIs={t("trip.driver")}
+          start={
+            <>
+              <Avatar
+                small
+                firstName={driver}
+                colour={trip.driver.colour}
+                photo={trip.driver.photo}
+              />
+              <Text
+                {...spokenAs(t("trip.driver"), driver)}
+                style={[typography.label, { color: palette.text }]}
+              >
+                {driver}
+              </Text>
+            </>
+          }
+          end={
+            trip.car === null ? null : (
+              <Text style={[typography.small, { color: palette.textMuted }]}>
+                {carText(t, trip.car)}
+              </Text>
+            )
+          }
+        />
+      }
+    />
   );
   const notices = (
     <>
@@ -580,8 +616,7 @@ function BookForm({
   if (wide) {
     return (
       <Screen width="page">
-        {back}
-        {title}
+        {head}
         <Columns
           side={
             <>
@@ -600,9 +635,9 @@ function BookForm({
 
   return (
     <Screen footer={action}>
-      {back}
+      {/* Paused booking is said above the title on a phone (spec 18, 3.8). */}
       <PausedBanner part="bookings" />
-      {title}
+      {head}
       {ride}
       {notices}
       {reading}
@@ -611,8 +646,6 @@ function BookForm({
 }
 
 const styles = StyleSheet.create({
-  divider: { height: controlOutline / 2 },
-  total: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   problem: { gap: spacing.sm },
   ticks: { gap: spacing.sm },
   row: { flexDirection: "row", alignItems: "center", gap: spacing.sm },

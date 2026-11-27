@@ -6,7 +6,7 @@ import { errorResponseSchema } from "./errors.ts";
 import { confirmCodeErrors } from "./me.ts";
 import { defineRoute } from "./route.ts";
 
-// Sign-in methods in Settings (spec 19, 3.4): the Google and Apple accounts
+// Sign-in methods, a page of Profile (spec 19, 3.4): the Google and Apple accounts
 // linked to mine, adding one with a confirm code, and removing one.
 
 const errors = { schema: errorResponseSchema } as const;

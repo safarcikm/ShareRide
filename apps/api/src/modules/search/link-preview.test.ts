@@ -79,7 +79,7 @@ describe("what a ride's card says (spec 23, 3.10, item 2)", () => {
 
   it("says what PuffinRide is, and nothing about money", () => {
     expect(rideCard(ride, "en").description).toBe(
-      "A shared ride on PuffinRide, carpooling across Iceland. See the trip and book a seat.",
+      "A shared ride on PuffinRide, carpooling across Iceland. See the ride and book a seat.",
     );
     expect(rideCard(ride, "is").description).toBe(
       "Far á PuffinRide, samferða um Ísland. Sjáðu ferðina og bókaðu sæti.",

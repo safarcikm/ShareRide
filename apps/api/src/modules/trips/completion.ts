@@ -2,7 +2,7 @@
 // the API's minute job, next to the booking deadlines. A trip departs at its
 // first stop's planned time and completes 2 hours after its last, with its
 // confirmed bookings, which then hold no seats (rule S1).
-import { schema, type Database } from "@shareride/db";
+import { schema } from "@shareride/db";
 import {
   completesAt,
   completesWithTrip,
@@ -17,6 +17,7 @@ import {
   expireDueBookings,
   partOf,
   stopsOf,
+  type Queryable,
   type Transaction,
 } from "../bookings/seats.ts";
 import { recordEvents } from "../notifications/outbox.ts";
@@ -38,7 +39,7 @@ export interface TripsMoved {
  * run changes nothing.
  */
 export async function moveTripsOn(
-  db: Database,
+  db: Queryable,
   now: Date,
   settings: TripDaySettings,
 ): Promise<TripsMoved> {

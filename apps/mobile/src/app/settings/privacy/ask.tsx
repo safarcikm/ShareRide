@@ -5,14 +5,13 @@ import { useRef, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { errorText, formatWait } from "@/auth/errors";
 import { useMe, useSession } from "@/auth/session";
-import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Notice } from "@/components/notice";
 import { RadioCard } from "@/components/radio-card";
 import { Screen } from "@/components/screen";
+import { ScreenHead } from "@/components/screen-head";
 import { TakesFocus } from "@/components/takes-focus";
 import { TextField } from "@/components/text-field";
-import { Body, Title } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { BackToMenu } from "@/navigation/back-to-menu";
 import { spacing } from "@/theme/tokens";
@@ -23,7 +22,10 @@ const textMaxLength = 2000;
 /**
  * Ask about my data (spec 11, 3.6; plan 4.8 and 4.9): what it is about and
  * the text, answered by email within a month (R11.7). The answer goes by
- * email, so someone without a verified one adds it first.
+ * email, so someone without a verified one adds it first. The title is at
+ * the left with what one can ask under it; once sent, the thanks are the
+ * title, with focus, and the way back is the one main button (spec 31,
+ * 3.19).
  */
 export default function AskScreen() {
   const me = useMe();
@@ -98,9 +100,7 @@ function AskForm({ me, onSent }: { readonly me: Me; readonly onSent: () => void 
         />
       }
     >
-      <BackButton fallback="/settings/privacy" />
-      <Title>{t("privacy.ask")}</Title>
-      <Body align="start">{t("privacy.ask.intro")}</Body>
+      <ScreenHead title={t("privacy.ask")} line={t("privacy.ask.intro")} back="/settings/privacy" />
       <View accessibilityRole="radiogroup" accessibilityLabel={title} style={styles.group}>
         {privacyRequestKinds.map((each) => (
           <RadioCard
@@ -139,18 +139,10 @@ function AskForm({ me, onSent }: { readonly me: Me; readonly onSent: () => void 
 function EmailFirst() {
   const { t } = useLanguage();
   return (
-    <Screen>
-      <BackButton fallback="/settings/privacy" />
-      <Title>{t("privacy.ask")}</Title>
-      <Body align="start">{t("privacy.ask.intro")}</Body>
+    <Screen footer={<Button main label={t("privacy.ask.addEmail")} href="/settings/email" />}>
+      <ScreenHead title={t("privacy.ask")} line={t("privacy.ask.intro")} back="/settings/privacy" />
       <View style={styles.group}>
         <Notice kind="info" message={t("privacy.ask.emailFirst")} />
-        <Button
-          label={t("privacy.ask.addEmail")}
-          onPress={() => {
-            router.push("/settings/email");
-          }}
-        />
       </View>
     </Screen>
   );
@@ -159,19 +151,23 @@ function EmailFirst() {
 function Thanks() {
   const { t } = useLanguage();
   return (
-    <Screen>
-      <Title>{t("privacy.ask")}</Title>
-      <TakesFocus>
-        <Body>{t("privacy.askThanks")}</Body>
-      </TakesFocus>
-      <View style={styles.group}>
+    <Screen
+      footer={
         <Button
+          main
           label={t("privacy.ask.backToPrivacy")}
           onPress={() => {
             router.dismissTo("/settings/privacy");
           }}
         />
-      </View>
+      }
+    >
+      {/* The button pressed is gone: focus moves to what it did. */}
+      <ScreenHead
+        title={t("privacy.askThanks")}
+        back={null}
+        outcome={{ of: "sent", focus: true }}
+      />
     </Screen>
   );
 }

@@ -3,7 +3,15 @@ import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
 import { ok } from "@/testing/fake-client";
 import { bookingApi, driverApi, northBooking, northMyTrip, northStop } from "@/testing/bookings";
-import { aProfileId, annaProfile, annaProfileId, newcomer, profileApi } from "@/testing/people";
+import { unfoldPassenger } from "@/testing/driver-trip";
+import {
+  aProfileId,
+  annaProfile,
+  annaProfileId,
+  findPersonCard,
+  newcomer,
+  profileApi,
+} from "@/testing/people";
 import { northResult, northTrip, resultOn, searchApi, tripDetailsApi } from "@/testing/search";
 import { blonduos, borgarnes, tripsApi } from "@/testing/trips";
 
@@ -36,10 +44,10 @@ describe("beside the driver of a trip (spec 4, 3.4 and 3.6)", () => {
         setUp: (client) => {
           searchApi(client, {
             results: () => [
-              { ...northResult, driver: { firstName: "Anna", rating: rated.rating, photo: null } },
+              { ...northResult, driver: { ...northResult.driver, rating: rated.rating } },
               resultOn("2026-11-15", {
                 tripId: "0190a1d6-0000-7000-8000-0000000000f2",
-                driver: { firstName: "Bára", rating: newcomer.rating, photo: null },
+                driver: { firstName: "Bára", rating: newcomer.rating, photo: null, colour: 2 },
               }),
             ],
           });
@@ -84,7 +92,13 @@ describe("beside the driver of a trip (spec 4, 3.4 and 3.6)", () => {
     });
     expect(await screen.findByText("4.3 (3 ratings)")).toBeVisible();
     expect(screen.getByText("Reliability: 91%")).toBeVisible();
-    expect(screen.getByRole("link", { name: "See profile: Anna" })).toBeVisible();
+    // The driver's line is the link, and its name says all the line holds,
+    // after who she is: a phone's screen reader stops at the link (3.20).
+    expect(
+      screen.getByRole("link", {
+        name: "Driver, See profile: Anna, 4.3 (3 ratings), Reliability: 91%",
+      }),
+    ).toBeVisible();
   });
 
   it("says a driver is new, with not enough trips yet for members", async () => {
@@ -111,7 +125,12 @@ describe("beside the driver of a trip (spec 4, 3.4 and 3.6)", () => {
       },
     });
     expect(await screen.findByText("New driver")).toBeVisible();
-    expect(screen.getByText("Reliability: not enough trips yet")).toBeVisible();
+    expect(screen.getByText("Reliability: not enough rides yet")).toBeVisible();
+    expect(
+      screen.getByRole("link", {
+        name: "Driver, See profile: Anna, New driver, Reliability: not enough rides yet",
+      }),
+    ).toBeVisible();
   });
 });
 
@@ -126,8 +145,13 @@ describe("on a booking (spec 5)", () => {
     });
     expect(await screen.findByText("4.3 (3 ratings)")).toBeVisible();
     expect(screen.getByText("Reliability: 91%")).toBeVisible();
-    await fireEvent.press(screen.getByRole("link", { name: "See profile: Anna" }));
-    expect(await screen.findByRole("header", { name: "Anna" })).toBeVisible();
+    // The whole line about her is the link, and says all of it (spec 31, 3.7).
+    await fireEvent.press(
+      screen.getByRole("link", {
+        name: "Driver, See profile: Anna, 4.3 (3 ratings), Reliability: 91%",
+      }),
+    );
+    expect(await findPersonCard("Anna")).toBeVisible();
     expect(screen).toHavePathname(`/people/${annaProfileId}`);
   });
 
@@ -178,14 +202,19 @@ describe("a passenger, for the driver (spec 5, 3.3 and 3.7)", () => {
     await openTrip([gunna()]);
     expect(await screen.findByText("4.3 (3 ratings)")).toBeVisible();
     expect(screen.getByText("Reliability: 91%")).toBeVisible();
-    await fireEvent.press(screen.getByRole("link", { name: "See profile: Gunna" }));
-    expect(await screen.findByRole("header", { name: "Gunna" })).toBeVisible();
+    // The person on the card is the way to their profile, and says how they stand.
+    await fireEvent.press(
+      screen.getByRole("link", { name: "See profile: Gunna, 4.3 (3 ratings), Reliability: 91%" }),
+    );
+    expect(await findPersonCard("Gunna")).toBeVisible();
   });
 
   it("says when the person asking has no reviews yet", async () => {
     await openTrip([gunna(newcomer)]);
     expect(await screen.findByText("No reviews yet")).toBeVisible();
-    expect(screen.getByText("Reliability: not enough trips yet")).toBeVisible();
+    expect(screen.getByText("Reliability: not enough rides yet")).toBeVisible();
+    // How long they have been here stands in for the reviews.
+    expect(screen.getByText("Member since November 2026")).toBeVisible();
   });
 
   it("shows nothing of the kind for someone asking who is leaving PuffinRide", async () => {
@@ -217,7 +246,8 @@ describe("a passenger, for the driver (spec 5, 3.3 and 3.7)", () => {
         confirmed: { registration: "AB 123", whereToStand: null },
       }),
     ]);
-    expect(await screen.findByLabelText("Jón, 1 seat, Confirmed")).toBeVisible();
+    // Under their row, once it is unfolded (spec 31, 3.12, item 4).
+    await unfoldPassenger("Jón");
     expect(screen.getByRole("link", { name: "See profile: Jón" })).toBeVisible();
   });
 });

@@ -291,7 +291,7 @@ describe("suspending someone (spec 9, 3.6; R9.10)", () => {
     ]);
     expect(to(gunna)).toEqual([
       {
-        title: "PuffinRide cancelled the trip",
+        title: "PuffinRide cancelled the ride",
         body: expect.stringContaining("Full refund") as unknown,
       },
     ]);

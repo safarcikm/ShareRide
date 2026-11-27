@@ -13,6 +13,11 @@ Related: [ADR 0016](../decisions/0016-own-sign-in-module.md),
 [security](../engineering/security.md#sign-in-and-sessions),
 [privacy and GDPR](../compliance/privacy-gdpr.md).
 
+Amended by [spec 31](2026-11-26-one-ride-one-ticket.md) (3.14): Email
+and Sign-in methods are rows of Profile, under Account, where they were
+under "Your account" in Settings; the texts that sent someone to
+Settings for a new link name them there.
+
 ## 1. Problem and goal
 
 Martin, 2026-11-23, the day after PuffinRide opened to the public: "we can

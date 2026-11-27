@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react-native";
+import { Plus } from "lucide-react-native";
 import { StyleSheet } from "react-native";
 import { colors } from "@/theme/tokens";
 import { Button } from "./button";
@@ -17,6 +18,45 @@ describe("Button", () => {
       color: colors.light.onPrimary,
       fontFamily: "Fredoka_600SemiBold",
     });
+  });
+
+  it("is a red button with a darker edge where it takes something away (spec 31, 3.19)", async () => {
+    await render(<Button label="Cancel booking" variant="danger" onPress={jest.fn()} />);
+    expect(screen.getByRole("button", { name: "Cancel booking" })).toHaveStyle({
+      borderBottomWidth: 4,
+      borderBottomColor: colors.light.errorEdge,
+    });
+    expect(face()).toHaveStyle({ backgroundColor: colors.light.error });
+    expect(screen.getByText("Cancel booking")).toHaveStyle({ color: colors.light.onError });
+  });
+
+  it.each(["primary", "danger"] as const)(
+    "counts a %s button as filled, and no other (R31.1)",
+    async (variant) => {
+      await render(
+        <>
+          <Button label="Do it" variant={variant} onPress={jest.fn()} />
+          <Button label="Keep" variant="secondary" onPress={jest.fn()} />
+          <Button label="Back" variant="text" onPress={jest.fn()} />
+        </>,
+      );
+      expect(screen.getAllByTestId("filled-button")).toHaveLength(1);
+      expect(screen.getByTestId("filled-button")).toBe(
+        screen.getByRole("button", { name: "Do it" }),
+      );
+    },
+  );
+
+  it("shows an icon before the label, in the label's colour and unheard (spec 31, 3.10)", async () => {
+    await render(
+      <Button label="Offer a ride" variant="secondary" icon={Plus} onPress={jest.fn()} />,
+    );
+    const icon = screen.getByTestId("button-icon", { includeHiddenElements: true });
+    expect(icon).toHaveProp("aria-hidden", true);
+    // The first thing on the button's face, before its label.
+    expect(face().children[0]).toBe(icon);
+    // Named by its label alone.
+    expect(screen.getByRole("button", { name: "Offer a ride" })).toBeVisible();
   });
 
   it("outlines a secondary button in the control colour", async () => {
@@ -48,7 +88,7 @@ describe("Button", () => {
     expect(StyleSheet.flatten(button.props.style)).not.toHaveProperty("height");
   });
 
-  it.each(["primary", "secondary", "text"] as const)(
+  it.each(["primary", "danger", "secondary", "text"] as const)(
     "fits a %s button to its label, in the middle of the column",
     async (variant) => {
       await render(<Button label="Send code" variant={variant} onPress={jest.fn()} />);
@@ -69,6 +109,15 @@ describe("Button", () => {
       expect(screen.getByText("Continue")).toHaveStyle({ color: colors.light.onPrimary });
       await fireEvent(screen.getByRole("button"), "hoverOut");
       expect(face()).toHaveStyle({ backgroundColor: colors.light.primary });
+    });
+
+    it("turns a red button a step darker, and back", async () => {
+      await render(<Button label="Cancel booking" variant="danger" onPress={jest.fn()} />);
+      await fireEvent(screen.getByRole("button"), "hoverIn");
+      expect(face()).toHaveStyle({ backgroundColor: colors.light.errorHover });
+      expect(screen.getByText("Cancel booking")).toHaveStyle({ color: colors.light.onError });
+      await fireEvent(screen.getByRole("button"), "hoverOut");
+      expect(face()).toHaveStyle({ backgroundColor: colors.light.error });
     });
 
     it("tints a secondary button", async () => {

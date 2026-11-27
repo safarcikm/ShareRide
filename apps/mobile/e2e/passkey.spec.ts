@@ -17,7 +17,7 @@ test.use({ locale: "en-GB" });
 const visible = { visible: true } as const;
 const offerTitle = "Use Face ID or fingerprint next time?";
 const notSetUp =
-  "This device's sign-in isn't set up for your PuffinRide account. Use your email, then set it up again in Settings.";
+  "This device's sign-in isn't set up for your PuffinRide account. Use your email, then set it up again in Profile, under Sign-in methods.";
 
 interface DeviceLock {
   readonly session: CDPSession;
@@ -95,17 +95,17 @@ test("a new member sets up Face ID or fingerprint, signs in with it, then remove
   );
   expect(told.text).toContain("If that was you, there's nothing to do.");
   await page.getByRole("button", { name: "Done" }).click();
-  await expect(page.getByRole("heading", { name: english.findTitle })).toBeVisible();
+  await expect(page.getByRole("heading", { name: english.hi("Hekla") })).toBeVisible();
 
   // Signed out, the device's lock signs in with no email typed (3.3).
   await signOut(page);
   await openSignIn(page);
   await page.getByRole("button", { name: "Face ID or fingerprint", exact: true }).click();
-  await expect(page.getByRole("heading", { name: english.findTitle })).toBeVisible();
+  await expect(page.getByRole("heading", { name: english.hi("Hekla") })).toBeVisible();
   await menuLink(page, english.profileTab).click();
   await expect(page.getByText("Hekla", { exact: true }).filter(visible)).toBeVisible();
 
-  // Settings lists the device, used today, and removes it after asking (3.6).
+  // Sign-in methods lists the device, used today, and removes it after asking (3.6).
   await page.goto("/settings/sign-in-methods");
   await expect(page.getByText(/^Last used \d{1,2} \w+ \d{4}$/)).toBeVisible();
   await page.getByRole("button", { name: /^Remove Face ID or fingerprint for / }).click();
@@ -123,14 +123,14 @@ test("a member signs in from the email field's suggestions, with no tap (spec 29
   await addDeviceLock(page);
   await newMemberWithPasskey(page);
   await page.getByRole("button", { name: "Done" }).click();
-  await expect(page.getByRole("heading", { name: english.findTitle })).toBeVisible();
+  await expect(page.getByRole("heading", { name: english.hi("Hekla") })).toBeVisible();
   await signOut(page);
 
   // Step 1 hands its options to the browser as it opens; the device lock
   // answers as a person picking the passkey from the field would.
   await menuLink(page, english.profileTab).click();
   await page.getByRole("button", { name: english.signIn, exact: true }).click();
-  await expect(page.getByRole("heading", { name: english.findTitle })).toBeVisible();
+  await expect(page.getByRole("heading", { name: english.hi("Hekla") })).toBeVisible();
   await menuLink(page, english.profileTab).click();
   await expect(page.getByText("Hekla", { exact: true }).filter(visible)).toBeVisible();
 });
@@ -152,13 +152,13 @@ test("a member who signs in with the email code is offered Face ID, and uses it 
     page.getByText("Face ID or fingerprint is set up on this device.").filter(visible),
   ).toBeVisible();
   await page.getByRole("button", { name: "Done" }).click();
-  await expect(page.getByRole("heading", { name: english.findTitle })).toBeVisible();
+  await expect(page.getByRole("heading", { name: english.hi("Hekla") })).toBeVisible();
 
   // Next time the device's lock signs in, and nothing is offered.
   await signOut(page);
   await openSignIn(page);
   await page.getByRole("button", { name: "Face ID or fingerprint", exact: true }).click();
-  await expect(page.getByRole("heading", { name: english.findTitle })).toBeVisible();
+  await expect(page.getByRole("heading", { name: english.hi("Hekla") })).toBeVisible();
   await expect(page.getByRole("heading", { name: offerTitle })).toHaveCount(0);
 });
 

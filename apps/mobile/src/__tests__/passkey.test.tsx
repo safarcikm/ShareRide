@@ -203,7 +203,7 @@ describe("Signing in with Face ID or fingerprint (spec 27, 3.1 and 3.3)", () => 
     await fireEvent.press(await screen.findByRole("button", { name: "Face ID or fingerprint" }));
     expect(
       await screen.findByText(
-        "This device's sign-in isn't set up for your PuffinRide account. Use your email, then set it up again in Settings.",
+        "This device's sign-in isn't set up for your PuffinRide account. Use your email, then set it up again in Profile, under Sign-in methods.",
       ),
     ).toBeVisible();
   });
@@ -247,7 +247,7 @@ const signedInAsAnna = (client: FakeClient) => {
   );
 };
 const notSetUp =
-  "This device's sign-in isn't set up for your PuffinRide account. Use your email, then set it up again in Settings.";
+  "This device's sign-in isn't set up for your PuffinRide account. Use your email, then set it up again in Profile, under Sign-in methods.";
 
 describe("Face ID in the email field (spec 29, 3.1)", () => {
   beforeEach(() => {
@@ -514,7 +514,7 @@ describe("Face ID in the email field (spec 29, 3.1)", () => {
 
   it("tells the browser after the button's passkey is unknown too, and this browser has none", async () => {
     quietRequests();
-    // Removed from another device's Settings since this browser signed in with it.
+    // Removed in another device's Sign-in methods since this browser signed in with it.
     mockPreferences.set("passkey-here", "credential-one");
     await openSignIn((client) => {
       client.answer("/v1/auth/passkey", () => failure(400, "passkey_unknown"));
@@ -574,7 +574,7 @@ async function openMethods(devices: MemberPasskey[], setUp?: (client: FakeClient
   return app;
 }
 
-describe("Face ID or fingerprint in Settings (spec 27, 3.6)", () => {
+describe("Face ID or fingerprint in Sign-in methods (spec 27, 3.6)", () => {
   it("lists each device, with when it was added and last used", async () => {
     await openMethods([iPhone]);
     expect(await screen.findByText("Safari on iPhone")).toBeVisible();
@@ -662,6 +662,17 @@ describe("Face ID or fingerprint in Settings (spec 27, 3.6)", () => {
     expect(
       callsTo(app.client, "/v1/me/passkeys/options").map((call) => call.input["body"]),
     ).toEqual([{}, { code: "654321" }]);
+  });
+
+  it("keeps the confirm code's form whole in the page, with no bar (spec 31, 3.19)", async () => {
+    await openMethods([], (client) => {
+      client.answer("/v1/me/passkeys/options", () => failure(403, "confirm_required"));
+    });
+    await fireEvent.press(await screen.findByRole("button", { name: "Set up on this device" }));
+    expect(await screen.findByLabelText("6-digit code")).toBeVisible();
+    expect(screen.queryByTestId("bottom-bar")).toBeNull();
+    expect(screen.queryByTestId("action-rows")).toBeNull();
+    expect(screen.getByRole("button", { name: "Cancel" })).toBeVisible();
   });
 
   it("uses the confirmed options again when the sheet was closed, with no new code", async () => {

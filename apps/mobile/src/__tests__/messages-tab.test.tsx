@@ -101,7 +101,6 @@ describe("The Messages tab (spec 7, 3.1, item 9)", () => {
     });
     expect(await screen.findByRole("tab", { name: "Messages, 3 unread" })).toBeVisible();
     await fireEvent.press(screen.getByRole("tab", { name: "Profile" }));
-    await fireEvent.press(await screen.findByRole("button", { name: "Settings" }));
     await fireEvent.press(await screen.findByRole("button", { name: "Sign out" }));
     expect(await screen.findByRole("tab", { name: "Messages" })).toBeVisible();
     expect(screen.queryByTestId("count-badge", { includeHiddenElements: true })).toBeNull();

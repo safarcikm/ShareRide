@@ -1,6 +1,8 @@
 import {
   answerDisputeRoute,
   bookingRoute,
+  myTripRoute,
+  myTripsRoute,
   reportDriverAbsentRoute,
   reviewBookingRoute,
   type ReviewBody,
@@ -19,6 +21,7 @@ import { startTestApi, type TestApi } from "../../testing.ts";
 import {
   bookingHelpers,
   freshSampleTrips,
+  hours,
   sampleTrip,
   seedForBookings,
   type Member,
@@ -252,7 +255,7 @@ async function toldTo(member: Member) {
   return rows.map((row) => row.kind);
 }
 
-const reviewTitles = ["How was your trip?", "A review about you is now visible"];
+const reviewTitles = ["How was your ride?", "A review about you is now visible"];
 
 /** What push sent to the member about reviews: title, body and the page it opens. */
 function pushedTo(member: Member) {
@@ -438,6 +441,124 @@ describe("rating and reviewing (spec 8, 3.7; R8.8)", () => {
   });
 });
 
+describe("the passengers a driver can still rate (spec 31, 3.10)", () => {
+  /** What Jón's airport trip says he can still rate. */
+  async function toRate(jon: Member) {
+    const found = await api.client.call(myTripRoute, {
+      accessToken: jon.accessToken,
+      params: { id: airport },
+    });
+    if (!found.ok) throw new Error(found.error.code);
+    return found.data.toRate;
+  }
+
+  it("names each passenger's booking once the trip completes, and no longer what is rated or cannot be", async () => {
+    const jon = await driverOf(airport, "Jón");
+    const [gunna, dora, siggi] = [
+      await newMember("Gunna"),
+      await newMember("Dóra"),
+      await newMember("Siggi"),
+    ];
+    // One stretch each, booked a minute apart: the order they are named in.
+    const ids: string[] = [];
+    for (const [stop, member] of [gunna, dora, siggi].entries()) {
+      const booking = await booked(member.accessToken, airport, {
+        fromStop: stop,
+        toStop: stop + 1,
+      });
+      await paid(member.accessToken, booking.id);
+      ids.push(booking.id);
+      await later(60, jon, gunna, dora, siggi);
+    }
+    const [gunnas, doras, siggis] = ids as [string, string, string];
+    const completesAt = await completionOfAirport();
+    const closesAt = new Date(completesAt.getTime() + 14 * dayMs).toISOString();
+    // Nothing to rate while the trip runs.
+    expect(await toRate(jon)).toBeNull();
+    await until(completesAt, 30, jon, gunna, dora, siggi);
+    await minuteJob();
+    expect(await toRate(jon)).toEqual({ bookingIds: [gunnas, doras, siggis], closesAt });
+
+    // A passenger's review of Jón is not his of them.
+    await reviewed(dora, doras, { rating: 5 });
+    expect(await toRate(jon)).toEqual({ bookingIds: [gunnas, doras, siggis], closesAt });
+    await reviewed(jon, gunnas, { rating: 5 });
+    expect(await toRate(jon)).toEqual({ bookingIds: [doras, siggis], closesAt });
+
+    // Nothing new is written about someone who is leaving (spec 11).
+    await leaving(dora);
+    expect(await toRate(jon)).toEqual({ bookingIds: [siggis], closesAt });
+
+    // A review waits while a report on the booking is open (spec 8, 3.4).
+    const reported = await api.client.call(reportDriverAbsentRoute, {
+      accessToken: siggi.accessToken,
+      params: { id: siggis },
+      body: {},
+    });
+    if (!reported.ok) throw new Error(reported.error.code);
+    expect(await toRate(jon)).toBeNull();
+    await api.client.call(answerDisputeRoute, {
+      accessToken: jon.accessToken,
+      params: { id: reported.data.id },
+      body: { answer: "contested" },
+    });
+    await decide(reported.data.id, "rode");
+    expect(await toRate(jon)).toEqual({ bookingIds: [siggis], closesAt });
+  });
+
+  it("names each ride's own passengers in the list of past rides, which My rides reads", async () => {
+    const { vik } = sampleTrip;
+    const jon = await driverOf(airport, "Jón");
+    // The trip to Vík, a day later, is Jón's too.
+    await api.connection.db
+      .update(schema.trips)
+      .set({ driverId: jon.userId })
+      .where(eq(schema.trips.id, vik));
+    const [gunna, dora] = [await newMember("Gunna"), await newMember("Dóra")];
+    const toAirport = await booked(gunna.accessToken, airport, { fromStop: 0, toStop: 1 });
+    await paid(gunna.accessToken, toAirport.id);
+    const toVik = await booked(dora.accessToken, vik, { fromStop: 0, toStop: 1 });
+    await paid(dora.accessToken, toVik.id);
+    /** Each past ride of Jón's, with the bookings it says he can still rate. */
+    const past = async () => {
+      const listed = await api.client.call(myTripsRoute, {
+        accessToken: jon.accessToken,
+        query: { when: "past" },
+      });
+      if (!listed.ok) throw new Error(listed.error.code);
+      return new Map(listed.data.trips.map((trip) => [trip.id, trip.toRate?.bookingIds ?? null]));
+    };
+    // Three days on, both have completed.
+    await later(hours(72), jon, gunna, dora);
+    await minuteJob();
+    expect(await past()).toEqual(
+      new Map([
+        [airport, [toAirport.id]],
+        [vik, [toVik.id]],
+      ]),
+    );
+    // Rated: that ride has nobody left, and the other keeps its own.
+    await reviewed(jon, toAirport.id, { rating: 5 });
+    expect(await past()).toEqual(
+      new Map([
+        [airport, null],
+        [vik, [toVik.id]],
+      ]),
+    );
+  });
+
+  it("names them until 14 days after the trip completed, and not at that moment (R8.8)", async () => {
+    const { jon, gunna, bookingId, completesAt } = await afterTheTrip();
+    await until(completesAt, 14 * 24 * 60 - 1, jon, gunna);
+    expect(await toRate(jon)).toEqual({
+      bookingIds: [bookingId],
+      closesAt: new Date(completesAt.getTime() + 14 * dayMs).toISOString(),
+    });
+    await later(60, jon, gunna);
+    expect(await toRate(jon)).toBeNull();
+  });
+});
+
 describe("when a review shows (R8.9)", () => {
   it("shows a review nobody answered 14 days after completion, once", async () => {
     const { jon, gunna, bookingId, completesAt } = await afterTheTrip();
@@ -546,14 +667,14 @@ describe("asking for reviews (spec 8, 3.7.6 and 3.9)", () => {
     expect(await toldTo(jon)).toEqual(["rate_trip_driver"]);
     expect(pushedTo(gunna)).toEqual([
       {
-        title: "How was your trip?",
+        title: "How was your ride?",
         body: "Rate the driver: Jón. Hlemmur – Fjörður shopping centre · Saturday 14 November at 05:30.",
         path: `/bookings/${bookingId}/rate`,
       },
     ]);
     expect(pushedTo(jon)).toEqual([
       {
-        title: "How was your trip?",
+        title: "How was your ride?",
         body: "Rate your passengers. It helps other drivers choose.",
         path: `/drive/trips/${airport}`,
       },
@@ -610,11 +731,11 @@ describe("asking for reviews (spec 8, 3.7.6 and 3.9)", () => {
     await minuteJob();
     await worker().runOnce();
     const asked = {
-      subject: "How was your trip?",
+      subject: "How was your ride?",
       link: `Open in PuffinRide: ${webAppUrl}/bookings/${bookingId}/rate`,
     };
     const askedDriver = {
-      subject: "How was your trip?",
+      subject: "How was your ride?",
       link: `Open in PuffinRide: ${webAppUrl}/drive/trips/${airport}`,
     };
     expect(emailedTo("gunna-reviews@example.com")).toEqual([asked]);

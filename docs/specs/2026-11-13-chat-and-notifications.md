@@ -9,6 +9,16 @@ cancellations), [spec 13](2026-11-13-payments.md) (receipts and payouts),
 [spec 2](2026-11-13-meeting-points.md) (meeting points),
 [integrations](../architecture/integrations.md) (push, email and SMS).
 
+Amended by [spec 31](2026-11-26-one-ride-one-ticket.md) (3.4): in English
+a member now reads "ride" where the texts quoted here say "trip" (which
+stays in "Trip day"), and the actions are named "Find a ride", "Offer a
+ride" and "Publish ride". The keys keep their names;
+`packages/i18n/src/messages/en.ts` has the words as they are.
+
+Amended by spec 31 (3.14) too: the two switches of 3.6 are on the
+notifications' page of Profile (`/settings/notifications`), as two rows
+of one card, with the line about what is always on under it.
+
 ## 1. Problem and goal
 
 A shared ride works only if the two people can find each other and hear at
@@ -45,6 +55,8 @@ keep its cost down.
    only. It opens when the booking is confirmed (paid, or accepted for a free
    trip; spec 5). Before that, the request message (spec 5) is the only text
    that passes between them; it is shown at the top of the conversation.
+   Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.8) a passenger
+   opens it with **Message**, at the right of the driver on the booking.
 2. **Messages** are text only, 1 to 1 000 characters. Quick messages give one
    tap answers: "I'm running {5, 10, 15 or 30} minutes late", "I'm at the
    meeting point", "I'm on my way", "Where are you?", "See you soon", "Thank
@@ -77,6 +89,16 @@ keep its cost down.
     and as soon as a push for that conversation arrives; otherwise it relies on
     push. A live connection can replace polling later if usage needs it.
 
+Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.13) a conversation
+has a top that stays while the messages scroll: Back, the other person's
+picture and name with "Driver, White Toyota Yaris" or "Passenger", a menu
+that holds Report and Block (item 8), and the ride as one line that opens
+the booking, or the ride for its driver. The safety tip (item 5) is the
+first line of the conversation, quiet, with a shield. The quick messages
+(item 2) are chips over the bar; in the bar the field is one line with
+"Write a message" in it, grows as it is written in, and has a round Send
+beside it. The list (item 9) has its title at the left on a phone.
+
 ### 3.2 Message all passengers (driver)
 
 From the trip or the seat view (spec 6), the driver can send one message to
@@ -84,6 +106,10 @@ every confirmed passenger, and to each whose booking has completed with
 the trip (spec 8) while their conversation is open. It is posted as a
 separate message in each passenger's own conversation, so passengers never
 see each other or each other's replies. Quick messages work here too.
+Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.19) the screen has
+its title at the left, with "Each passenger gets it in their own chat.
+Passengers don't see each other." as the line under it, and (3.13) the
+field that grows with the round Send beside it, as a conversation has.
 
 ### 3.3 Notifications (F2)
 
@@ -207,7 +233,9 @@ fit two SMS parts.
 2. When someone books, posts a trip or is accepted while they have no device
    with push on (for example on the web) and no verified email, the app asks
    them to turn on notifications or add an email. They can skip; they then
-   see changes only in the app, plus any SMS from 3.4.
+   see changes only in the app, plus any SMS from 3.4. Since
+   [spec 31](2026-11-26-one-ride-one-ticket.md) (R31.1) the prompt's
+   buttons are outlined: a screen's filled button is its main one.
 3. **Unread messages by email:** for someone without push, a chat message
    still unread after 15 minutes is summarised by email ("You have unread
    messages about your trip on {date}"), at most once an hour per

@@ -1,4 +1,4 @@
-import { act, fireEvent, screen } from "expo-router/testing-library";
+import { act, fireEvent, screen, within } from "expo-router/testing-library";
 import { AccessibilityInfo } from "react-native";
 import type { DataExport, Me } from "@shareride/contracts";
 import { readPreference } from "@/lib/preferences";
@@ -7,6 +7,7 @@ import { openDownload } from "@/privacy/open-download";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
+import { filledButtons, inBar, inPage } from "@/testing/buttons";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
 jest.mock("@/auth/token-store", () => {
@@ -19,7 +20,7 @@ jest.mock("@/lib/preferences", () => ({
 }));
 jest.mock("@/privacy/open-download", () => ({ openDownload: jest.fn(() => Promise.resolve()) }));
 
-// Privacy in Settings and "Download my data" (spec 11, 3.2; plan 4.9, PR 5):
+// Privacy and your data, from Profile, and "Download my data" (spec 11, 3.2; plan 4.9, PR 5):
 // ask with a fresh code, wait while the file is made, and download it.
 
 const none: DataExport = { state: "none" };
@@ -94,17 +95,17 @@ async function typeCode(code: string) {
 }
 
 describe("Privacy (spec 11)", () => {
-  it("is in Settings, with Download my data and the privacy policy", async () => {
-    await renderApp("/settings", {
+  it("opens from Profile, with Download my data and the privacy policy", async () => {
+    await renderApp("/profile", {
       me: completeMe,
       setUp: (client) => {
         client.answer("/v1/me/export", () => ok(200, none), "get");
       },
     });
-    await fireEvent.press(await screen.findByRole("button", { name: "Privacy and your data" }));
+    await fireEvent.press(await screen.findByRole("link", { name: "Privacy and your data" }));
     expect(await screen.findByRole("header", { name: "Privacy" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Privacy Policy" })).toBeVisible();
-    await fireEvent.press(screen.getByRole("button", { name: "Download my data" }));
+    expect(screen.getByRole("link", { name: "Privacy Policy" })).toBeVisible();
+    await fireEvent.press(screen.getByRole("link", { name: "Download my data" }));
     expect(await screen.findByRole("header", { name: "Download my data" })).toBeVisible();
   });
 
@@ -125,7 +126,7 @@ describe("Download my data (spec 11, 3.2)", () => {
     const app = await openDownloadScreen();
     expect(
       screen.getByText(
-        "You get a ZIP file with what PuffinRide keeps about you: your account, trips, bookings, payments, messages and notifications. Other people appear by first name only. You can ask for one file a day.",
+        "You get a ZIP file with what PuffinRide keeps about you: your account, rides, bookings, payments, messages and notifications. Other people appear by first name only. You can ask for one file a day.",
       ),
     ).toBeVisible();
     expect(callsTo(app, "/v1/me/confirm-code")).toEqual([]);
@@ -144,6 +145,25 @@ describe("Download my data (spec 11, 3.2)", () => {
       { code: "123456" },
     ]);
     expect(screen.queryByLabelText("6-digit code")).toBeNull();
+  });
+
+  it("has asking, and then the code's button, as the one main button in the bar, with Cancel a row (spec 31, R31.1)", async () => {
+    await openDownloadScreen();
+    const make = inBar().getByRole("button", { name: "Make my file" });
+    expect(make).toHaveStyle({ minHeight: 56 });
+    await fireEvent.press(make);
+    await screen.findByLabelText("6-digit code");
+    // The button that asks with the code took its place.
+    expect(inBar().getByRole("button", { name: "Make my file" })).toHaveStyle({ minHeight: 56 });
+    expect(filledButtons()).toBe(1);
+    const cancel = within(screen.getByTestId("action-rows")).getByRole("button", {
+      name: "Cancel",
+    });
+    expect(within(cancel).getByTestId("row-icon", { includeHiddenElements: true })).toBeTruthy();
+    // What the code's field says stays under the field.
+    await typeCode("12345");
+    await fireEvent.press(inBar().getByRole("button", { name: "Make my file" }));
+    expect(inPage().getByText("Enter all 6 digits of the code.")).toBeVisible();
   });
 
   it("says when the code went to the account's email instead (spec 26, 3.6)", async () => {
@@ -191,6 +211,11 @@ describe("Download my data (spec 11, 3.2)", () => {
       expect(screen.queryByRole("button", { name: "Send a new code" })).toBeNull();
 
       await act(() => jest.advanceTimersByTimeAsync(30_000));
+      // A row over Cancel, in the card of rows under the code.
+      const rows = within(screen.getByTestId("action-rows"));
+      expect(
+        rows.getAllByRole("button").map((row) => String(row.props.accessibilityLabel)),
+      ).toEqual(["Send a new code", "Cancel"]);
       await fireEvent.press(screen.getByRole("button", { name: "Send a new code" }));
       expect(await screen.findByText("We sent a new code.")).toBeVisible();
       expect(callsTo(app, "/v1/me/confirm-code")).toHaveLength(2);
@@ -287,6 +312,15 @@ describe("Download my data (spec 11, 3.2)", () => {
     expect(openDownload).toHaveBeenCalledWith("http://localhost:3000/v1/exports/sr_dx_once");
   });
 
+  it("says over the button, in the bar, why the file did not open (spec 31, 3.19)", async () => {
+    await openDownloadScreen({ latest: [ready], link: () => failure(500, "internal_error") });
+    await fireEvent.press(inBar().getByRole("button", { name: "Download the file" }));
+    expect(await inBar().findByRole("alert")).toHaveTextContent(
+      "Something went wrong on our side. Try again.",
+    );
+    expect(inPage().queryByRole("alert")).toBeNull();
+  });
+
   it("shows what became of a file that can no longer be downloaded", async () => {
     await openDownloadScreen({
       latest: [ready, { ...ready, state: "expired", byteSize: null }],
@@ -305,8 +339,25 @@ describe("Download my data (spec 11, 3.2)", () => {
     await openDownloadScreen({ latest: [{ ...ready, nextAllowedAt: null }] });
     expect(screen.getByRole("button", { name: "Download the file" })).toBeVisible();
     expect(screen.getByText("A new file replaces this one.")).toBeVisible();
+    // Downloading is the main button, in the bar; a new file is a row.
+    expect(inBar().getByRole("button", { name: "Download the file" })).toHaveStyle({
+      minHeight: 56,
+    });
+    const makeNew = within(screen.getByTestId("action-rows")).getByRole("button", {
+      name: "Make a new file",
+    });
+    expect(within(makeNew).getByTestId("row-icon", { includeHiddenElements: true })).toBeTruthy();
+    expect(filledButtons()).toBe(1);
     await fireEvent.press(screen.getByRole("button", { name: "Make a new file" }));
     expect(await screen.findByLabelText("6-digit code")).toBeVisible();
+    // Asking for the new one is the step now: its button has the bar, and
+    // there are never two filled buttons (R31.1).
+    expect(inBar().getByRole("button", { name: "Make my file" })).toHaveStyle({ minHeight: 56 });
+    expect(screen.queryByRole("button", { name: "Download the file" })).toBeNull();
+    expect(filledButtons()).toBe(1);
+    // Leaving the code brings the file's own button back.
+    await fireEvent.press(screen.getByRole("button", { name: "Cancel" }));
+    expect(inBar().getByRole("button", { name: "Download the file" })).toBeVisible();
   });
 
   it("says when the last file expired, and asks again", async () => {

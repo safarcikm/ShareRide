@@ -24,7 +24,7 @@ export function passkeyName(t: Translate, passkey: Pick<MemberPasskey, "browser"
 }
 
 /**
- * Face ID or fingerprint in Settings, Sign-in methods (spec 27, 3.6): one
+ * Face ID or fingerprint in Sign-in methods (spec 27, 3.6): one
  * line per device, with when it was added and last used, and Remove, which
  * asks first, and tells this browser to forget it (spec 29, 3.4); "Not
  * set up" without one. "Set up on this device" shows where

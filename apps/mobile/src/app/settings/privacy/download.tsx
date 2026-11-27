@@ -6,18 +6,21 @@ import {
   type DataExport,
 } from "@shareride/contracts";
 import { formatClock, formatDayAndMonth, type Translate } from "@shareride/i18n";
+import { FilePlus } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { apiBaseUrl } from "@/auth/api";
 import { errorText, formatWait } from "@/auth/errors";
 import { useMe, useSession } from "@/auth/session";
+import { ActionRows } from "@/components/action-rows";
 import { Announcer } from "@/components/announcer";
-import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Loading } from "@/components/loading";
-import { Notice } from "@/components/notice";
-import { Screen } from "@/components/screen";
-import { Body, Title } from "@/components/text";
+import { ActionNotice, Notice } from "@/components/notice";
+import { Row } from "@/components/row";
+import { InBar, Screen } from "@/components/screen";
+import { ScreenHead } from "@/components/screen-head";
+import { Body } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { BackToMenu } from "@/navigation/back-to-menu";
 import { ConfirmWithCode } from "@/privacy/confirm-with-code";
@@ -35,6 +38,11 @@ type Latest = { readonly ok: true; readonly data: DataExport } | CallFailure;
  * seconds, says when it changes, and a push and an email say when it is
  * ready), then download it through a one-time link within 7 days. One file
  * a day.
+ *
+ * The page has one main button, in the bottom bar (spec 31, R31.1): "Make
+ * my file" before a file, the code's button while a file is asked for, and
+ * "Download the file" once one is ready, with why it did not open over it.
+ * Asking for a new file beside a ready one is a row.
  */
 export default function DownloadScreen() {
   const me = useMe();
@@ -155,9 +163,11 @@ function DownloadMyData() {
 
   return (
     <Screen>
-      <BackButton fallback="/settings/privacy" />
-      <Title>{t("privacy.download")}</Title>
-      <Body>{t("privacy.download.intro")}</Body>
+      <ScreenHead
+        title={t("privacy.download")}
+        line={t("privacy.download.intro")}
+        back="/settings/privacy"
+      />
       <Announcer message={announcement} />
       {latest === undefined ? (
         <Loading />
@@ -169,18 +179,20 @@ function DownloadMyData() {
       ) : (
         <View style={styles.group}>
           <Where latest={latest.data} text={status} />
-          {latest.data.state === "ready" ? (
-            <>
+          {latest.data.state === "ready" && !asking ? (
+            <InBar>
+              <ActionNotice says={error} />
               <Button
+                main
                 label={t("privacy.download.file")}
                 busy={opening}
                 onPress={() => void download()}
               />
-              <Notice message={error} />
-            </>
+            </InBar>
           ) : null}
           {asking ? (
             <ConfirmWithCode
+              inBar
               confirmLabel={t("privacy.download.make")}
               sentUntil={codeWait}
               onSent={setCodeWait}
@@ -201,6 +213,7 @@ function DownloadMyData() {
               latest={latest.data}
               when={when}
               onAsk={() => {
+                setError(null);
                 setAsking(true);
               }}
             />
@@ -264,11 +277,17 @@ function Ask({
     return (
       <>
         <Body align="start">{t("privacy.download.replaces")}</Body>
-        <Button variant="secondary" label={t("privacy.download.makeNew")} onPress={onAsk} />
+        <ActionRows>
+          <Row icon={FilePlus} title={t("privacy.download.makeNew")} onPress={onAsk} />
+        </ActionRows>
       </>
     );
   }
-  return <Button label={t("privacy.download.make")} onPress={onAsk} />;
+  return (
+    <InBar>
+      <Button main label={t("privacy.download.make")} onPress={onAsk} />
+    </InBar>
+  );
 }
 
 const styles = StyleSheet.create({ group: { gap: spacing.md, marginTop: spacing.md } });

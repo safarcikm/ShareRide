@@ -23,6 +23,7 @@ import { PuffinByPin } from "@/components/puffin-scenes";
 import { useWideScreen } from "@/components/screen";
 import { Switch } from "@/components/switch";
 import { Tag } from "@/components/tag";
+import { TakesFocus } from "@/components/takes-focus";
 import { Body, Heading } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { dayOf, isoDay } from "@/lib/days";
@@ -82,11 +83,16 @@ export function RouteStep({
   const session = useSession();
   const wide = useWideScreen();
   const [from, setFrom] = useState(trip?.stops[0]?.meetingPoint ?? null);
-  const [to, setTo] = useState(trip?.stops.at(-1)?.meetingPoint ?? null);
+  // The one stop a draft has left is where it starts, not its end too.
+  const [to, setTo] = useState(
+    trip === undefined || trip.stops.length < 2 ? null : (trip.stops.at(-1)?.meetingPoint ?? null),
+  );
   const [between, setBetween] = useState<readonly Stop[]>(
     trip?.stops.slice(1, -1).map(({ meetingPoint }) => ({ point: meetingPoint, on: true })) ?? [],
   );
   const [picking, setPicking] = useState<Picking | null>(null);
+  // Once the screen that adds a stop has closed, until focus is back on its button.
+  const [addClosed, setAddClosed] = useState(false);
   // The ends whose points on the way are being looked up, and how that went.
   const [alongFor, setAlongFor] = useState<{ from: string; to: string } | null>(null);
   const [alongFailure, setAlongFailure] = useState<CallFailure | null>(null);
@@ -221,15 +227,20 @@ export function RouteStep({
   };
 
   // Adding a stop has a screen of its own; From and To drop down in place.
+  // It takes focus as it opens, and its button has it again once it
+  // closes, with a point or without (spec 31, 3.20).
   if (picking === "add") {
+    const close = () => {
+      setPicking(null);
+      setAddClosed(true);
+    };
     return (
       <PointPicker
         title={t("trip.route.addPoint")}
-        onCancel={() => {
-          setPicking(null);
-        }}
+        takesFocus
+        onCancel={close}
         onChoose={(point) => {
-          setPicking(null);
+          close();
           void add(point);
         }}
       />
@@ -249,8 +260,10 @@ export function RouteStep({
   const saved = trip === undefined ? {} : savedSoFar(t, locale, trip, "route", fromReview, quote);
   // The saved times are the saved route's: with other stops only the
   // departure stays, and the rest are counted anew when the route is saved.
+  // A draft with one stop left has no route, so its time is not the ride's.
   const savedRoute =
     trip !== undefined &&
+    trip.stops.length >= 2 &&
     trip.stops.length === ids.length &&
     trip.stops.every((stop, index) => stop.meetingPoint.id === ids[index]);
   // Once the stops on the way are known. A wide screen has it beside the step.
@@ -388,14 +401,21 @@ export function RouteStep({
                   })}
                 </Card>
               )}
-              <Button
-                variant="secondary"
-                label={t("trip.route.addPoint")}
-                onPress={() => {
-                  setMessage(null);
-                  setPicking("add");
+              <TakesFocus
+                when={addClosed}
+                onFocused={() => {
+                  setAddClosed(false);
                 }}
-              />
+              >
+                <Button
+                  variant="secondary"
+                  label={t("trip.route.addPoint")}
+                  onPress={() => {
+                    setMessage(null);
+                    setPicking("add");
+                  }}
+                />
+              </TakesFocus>
             </>
           )}
           <QuoteSummary

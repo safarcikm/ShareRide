@@ -65,24 +65,35 @@ On the web, Playwright runs these journeys against the real API with a test
 database (`apps/api/src/e2e-server.ts`). That server writes text messages to a
 file the tests read the codes from, and moves its clock 31 seconds on with
 each code, so a test can sign in to the same account again at once. It writes
-emails to another file, and runs the notification worker every second. Journey 1
+emails to another file, and runs the notification worker every second. The
+journeys of the trip day and of reviews move one trip's times
+(`POST /e2e/trips/{id}/move`), never the clock the others share; the server
+then runs the minute jobs inside the transaction that holds that trip, as it
+has no next run to pick up a trip those jobs found held (the worker holds a
+trip while it writes that trip's notifications). Journey 1
 runs in English and Icelandic, with "sign out on all devices"
 (`apps/mobile/e2e/sign-in.spec.ts`). Journey 3 books part of an instant
 trip and pays with the test provider's sheet after a failed payment, in both
 languages, and signs up in the middle of booking
 (`apps/mobile/e2e/booking.spec.ts`). Journey 4 runs in two browsers: a new
 driver posts a trip, a passenger requests a seat on it, the driver accepts
-from "My trips", the passenger pays, and both see the seat confirmed
+from "My rides", the passenger pays, and both see the seat confirmed
 (`apps/mobile/e2e/driver-requests.spec.ts`). Until cancellations come
 (spec 6), journey 5 withdraws a request and finds it under "Past" in My
-rides (`apps/mobile/e2e/my-rides.spec.ts`). Find, where the app
+rides; before that, Find greets the passenger by name with the request
+as "Your next ride" (`apps/mobile/e2e/my-rides.spec.ts`). A ticket holds
+a ride between places with long names on a phone 360 wide, with the text
+as set and twice as large (`apps/mobile/e2e/look.spec.ts`; spec 31,
+review focus 3), and so do a ride's page, a booked seat with the screen
+that cancels it, and a ride you drive, with its request, its passengers
+and its seats. Find, where the app
 opens, shows a ride leaving soon and searches a route, leads from "Offer a
 ride" and from Sign in under Profile to signing in, and shows the menu of
 five places on every main screen, marking the one you are on
-(`apps/mobile/e2e/welcome.spec.ts`). A passenger adds an email in Settings,
+(`apps/mobile/e2e/welcome.spec.ts`). A passenger adds an email from Profile,
 opens the link from the email, and gets the "Pay now" email once a request
-is accepted (`apps/mobile/e2e/email.spec.ts`). Trip reminders are turned off
-in Settings and stay off after a reload
+is accepted (`apps/mobile/e2e/email.spec.ts`). Ride reminders are turned off
+on the notifications' page of Profile and stay off after a reload
 (`apps/mobile/e2e/notification-settings.spec.ts`). After posting a trip on
 the web, the driver is asked to add an email and closes it with "Not now"
 (`apps/mobile/e2e/post-a-trip.spec.ts`); so is the passenger after booking

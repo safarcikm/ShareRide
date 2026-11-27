@@ -35,7 +35,10 @@ test("a no-show nobody contests stands, with no refund", async ({
   // Bára says she is at Mjódd, then marks Dóra as a no-show, with a note.
   await driver.goto(`/drive/trips/${tripId}`);
   await driver.getByRole("button", { name: "I'm here at Mjódd bus terminal" }).click();
-  await expect(text(driver, "We've told your passengers you're here.")).toBeVisible();
+  // At the stop in the list, as well as where the button was.
+  await expect(driver.getByTestId("said-here").filter(visible)).toHaveText(
+    "We've told your passengers you're here.",
+  );
   await driver.getByRole("button", { name: "Mark as no-show: Dóra" }).click();
   await expect(
     text(
@@ -74,7 +77,7 @@ test("the driver didn't come and didn't answer: the booking is cancelled with a 
 
   // Dóra waited at Mjódd and tells PuffinRide that Bára didn't come.
   await passenger.goto(booking);
-  await passenger.getByRole("button", { name: "The driver didn't come" }).click();
+  await passenger.getByRole("link", { name: "The driver didn't come" }).click();
   await expect(text(passenger, "Tell PuffinRide that Bára didn't come?")).toBeVisible();
   await passenger.getByRole("button", { name: "Tell PuffinRide", exact: true }).click();
   await expect(

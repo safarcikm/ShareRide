@@ -31,7 +31,8 @@ export default function BlockFromProfileScreen() {
     () => session.call(blockFromProfileRoute, { params: { profileId }, body: {} }),
     [session, profileId],
   );
-  const back = <BackButton fallback={{ pathname: "/people/[profileId]", params: { profileId } }} />;
+  const profile = { pathname: "/people/[profileId]", params: { profileId } } as const;
+  const back = <BackButton fallback={profile} />;
 
   if (answer === undefined) {
     return (
@@ -55,13 +56,13 @@ export default function BlockFromProfileScreen() {
   return (
     <BlockPerson
       name={answer.data.firstName}
-      back={back}
+      back={profile}
       block={block}
       gone={t("people.notFound")}
       done={{
         label: t("block.backToProfile"),
         go: () => {
-          router.dismissTo({ pathname: "/people/[profileId]", params: { profileId } });
+          router.dismissTo(profile);
         },
       }}
     />

@@ -174,9 +174,8 @@ describe("Step 3 of signing up, about you (spec 16, 3.5)", () => {
     });
     await fireEvent.press(screen.getByRole("tab", { name: "Profile" }));
     expect(await screen.findByRole("header", { name: "My profile" })).toBeVisible();
-    expect(
-      screen.getByText("Speaks English, Icelandic · Member since November 2026"),
-    ).toBeVisible();
+    expect(screen.getByText("Speaks English, Icelandic")).toBeVisible();
+    expect(screen.getByText("Member since November 2026")).toBeVisible();
   });
 
   it("keeps the answers when saving fails, and accepts the terms only once", async () => {
@@ -347,7 +346,7 @@ describe("The button names what comes after step 3 (3.5 item 4)", () => {
         client.answer("/v1/trips/{id}", () => failure(0, "network_error"));
       },
     ],
-  ])("just says Create account when the trip %s", async (_case, setUp) => {
+  ])("just says Create account when the ride %s", async (_case, setUp) => {
     keepBooking();
     const app = await openAboutYou(undefined, testMe, setUp);
     await screen.findByText("Step 3 of 3");
@@ -407,7 +406,7 @@ describe("Only the part of step 3 that is left", () => {
 
 describe("On the web, step 3 asks for an email (spec 20, 3.3)", () => {
   const address = "dora@example.com";
-  const emailHelp = "We email you about your rides: requests, reminders and how your trip went.";
+  const emailHelp = "We email you about your rides: requests, reminders and how each one went.";
   const wrongEmail = "Enter an email address, such as anna@example.com.";
 
   beforeEach(() => {

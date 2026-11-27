@@ -38,6 +38,11 @@ const nearestWhenNoneInReach = 3;
 
 const localised = (is: string, en: string | null) => ({ is, en: en ?? is });
 
+/** A meeting point's name in both languages, the Icelandic one where it has no English one. */
+export function nameOf(point: Pick<MeetingPointRow, "nameIs" | "nameEn">) {
+  return localised(point.nameIs, point.nameEn);
+}
+
 export function toSummary(row: MeetingPointRow): MeetingPointSummary {
   return {
     id: row.id,

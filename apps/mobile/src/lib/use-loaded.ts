@@ -51,9 +51,16 @@ export function useLoaded<T>(load: () => Promise<T>): Loaded<T> {
 /**
  * Like `useLoaded`, but loads again each time the screen comes back into
  * view, such as after adding something on the next screen. The last result
- * stays on screen until the new one arrives.
+ * stays on screen until the new one arrives. With `ok`, a result read
+ * again that is not `ok` leaves the last one on screen too, unless there
+ * was none: for what a screen shows beside its own work, as the values of
+ * Profile's rows, which should not go because a call failed once. `ok`
+ * stays the same from render to render, as `load` does.
  */
-export function useLoadedOnFocus<T>(load: () => Promise<T>): Loaded<T> {
+export function useLoadedOnFocus<T>(
+  load: () => Promise<T>,
+  ok?: (loaded: T) => boolean,
+): Loaded<T> {
   const [value, setValue] = useState<T>();
   // Counts the times the screen came into view, and reloads.
   const [round, setRound] = useState(0);
@@ -62,7 +69,13 @@ export function useLoadedOnFocus<T>(load: () => Promise<T>): Loaded<T> {
       setRound((count) => count + 1);
     }, []),
   );
-  useEffect(() => (round === 0 ? undefined : loadInto(load, setValue)), [load, round]);
+  const keep = useCallback(
+    (loaded: T) => {
+      setValue((last) => (ok === undefined || last === undefined || ok(loaded) ? loaded : last));
+    },
+    [ok],
+  );
+  useEffect(() => (round === 0 ? undefined : loadInto(load, keep)), [load, round, keep]);
   const pull = usePull(load, setValue);
   return {
     value,

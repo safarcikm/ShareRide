@@ -12,6 +12,29 @@ H2 Users, trips and bookings, H3 Reports and audit log
 [legal](../compliance/legal-and-regulatory.md#7-platform-regulation)
 (Digital Services Act).
 
+Amended by [spec 31](2026-11-26-one-ride-one-ticket.md) (3.4): in English
+a member now reads "ride" where the texts quoted here say "trip" (which
+stays in "Trip day"), and the actions are named "Find a ride", "Offer a
+ride" and "Publish ride". The keys keep their names;
+`packages/i18n/src/messages/en.ts` has the words as they are.
+
+Amended by spec 31 (3.14) too: My reports and Blocked people are rows of
+Profile, under "Safety and privacy", where they were in Settings (3.1,
+item 7; 3.2, item 4). The texts after reporting and in a conversation
+with someone blocked name them there.
+
+Amended by spec 31 (3.19) as well: on a person's profile "Read the
+community rules", Report and Block are rows of the page's last card,
+after the reviews, with Block red and last; they were loose buttons under
+the person's card (3.1.1, 3.2.1 and 3.3.4). Blocked people, My reports
+and Notices have their title at the left.
+
+And, since its last pass (3.19, R31.1): on Notices one appeal is written
+at a time, with "Send appeal" as the page's one main button, at the
+bottom, and why it was not sent over it; opening another notice's appeal
+closes the first, as Cancel does, and what was written for a notice is
+kept until it is sent (3.4.4).
+
 ## 1. Problem and goal
 
 Strangers share a car, often on long roads in winter. People must be able to
@@ -67,11 +90,19 @@ decision, with every operator action logged.
    terms: "We've taken action" or "We found no breach of our rules". The
    reported person is never told who reported them.
 7. A user can see their own reports and their outcomes in Settings.
+8. Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.19) the report
+   screen has its title at the left and **Send report** as its main
+   button, in the bar at the bottom, with "Choose what happened." over it
+   when nothing is chosen; the community rules are a row under the form.
+   The thanks are the screen's title, with focus, and "Back" its main
+   button; after a report about a person, "Block Bára too" is a red row.
 
 ### 3.2 Blocking (G2)
 
 1. From a profile or a chat: "Block". Blocking is silent: the other person is
-   not told.
+   not told. Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.13) a
+   chat has Report and Block in the menu of its top, "More", with Block
+   red and last.
 2. Both people stop seeing each other's trips in search and trip pages, and
    neither can request or book the other's trips. Their chats become
    read-only (spec 7).
@@ -82,6 +113,12 @@ decision, with every operator action logged.
    be used to dodge the late-cancellation rules (decision 1).
 4. Blocked people are listed in Settings (spec 1), where they can be
    unblocked.
+5. Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.19) the screen
+   that asks, "Block Bára?", has **Block Bára** as its main button, in
+   red, in the bar at the bottom. Done, "Bára is blocked." is the title,
+   with focus; each ride still shared is its ticket with "Cancel booking",
+   "Withdraw request" or "Decline request" outlined under it (item 3), and
+   the way back to the conversation or the profile is the main button.
 
 ### 3.3 Safety information and trip sharing (G4)
 
@@ -93,12 +130,21 @@ decision, with every operator action logged.
    the weather forecast and warnings (vedur.is), road conditions
    (umferdin.is) and SafeTravel (safetravel.is), in the user's language where
    those sites offer it. These are links only; automatic warnings come later
-   (Phase 4, [integrations](../architecture/integrations.md)).
+   (Phase 4, [integrations](../architecture/integrations.md)). Since
+   [spec 31](2026-11-26-one-ride-one-ticket.md) (3.7) a ride's details
+   have them under a row, "Weather and roads", which unfolds the line and
+   the three links; so do a booking and its trip day (3.8 and 3.9), where
+   the Safety card became rows. So it did on the driver's ride (3.12):
+   "Share the ride's details", with a shield, and "Weather and roads" are
+   two of the ride's rows: the first until the ride leaves, as before, the
+   second until the last stop's time.
 3. **Share trip details:** from a booking or a trip, "Share trip" opens the
    phone's share sheet with a short text: date and time, from and to, the
    meeting point, the driver's first name, and the car's make, model, colour
    and number plate. Nothing is stored and no link is created; the person
-   chooses whom to send it to.
+   chooses whom to send it to. Since spec 31 (3.8) it is a row of a
+   booking, "Share the ride's details", and "Report a problem with this
+   ride" (3.1) is the row after the weather and the roads.
 4. The community rules (spec 1) are one tap away from the report screen and
    the profile.
 

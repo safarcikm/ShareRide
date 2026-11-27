@@ -152,7 +152,7 @@ describe("Push notifications (plan 4.5)", () => {
     await screen.findAllByRole("header");
     expect(screen).toHavePathname("/profile");
     await act(async () => {
-      mockNotifications.tap("/settings");
+      mockNotifications.tap("/settings/language");
       mockNotifications.tap("https://example.com/messages/x");
       await Promise.resolve();
     });

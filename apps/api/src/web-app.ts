@@ -154,6 +154,12 @@ export function createWebApp(
       c.header("Cache-Control", "no-cache");
       return undefined;
     }
+    // About took the old Terms, rules and privacy page's place (spec 30,
+    // 3.2): a saved or indexed link to it lands there, its language kept.
+    if (c.req.path === "/legal") {
+      const query = new URL(c.req.url).search;
+      return c.redirect(`/about${query}`, 301);
+    }
     // A screen, the front page too: the page with its head filled, never the
     // export's index.html as it is.
     const html = await readPage(root);

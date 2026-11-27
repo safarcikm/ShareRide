@@ -306,7 +306,7 @@ describe("a report's page (spec 9, 3.4.2)", () => {
     expect(reported.textContent).toContain("As a passenger: kept 1 of 1");
     const reporter = screen.getByRole("region", { name: "The person who reported: Bára" });
     expect(reporter.textContent).toContain("No ratings yet");
-    expect(reporter.textContent).toContain("Reliability: not enough trips yet");
+    expect(reporter.textContent).toContain("Reliability: not enough rides yet");
     expect(within(reporter).queryByText("Below the watch level")).toBeNull();
 
     // A former member's records are everyone's who left: none show.

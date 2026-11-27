@@ -30,9 +30,8 @@ export default function BlockScreen() {
     () => session.call(blockFromBookingRoute, { params: { id }, body: {} }),
     [session, id],
   );
-  const back = (
-    <BackButton fallback={{ pathname: "/messages/[bookingId]", params: { bookingId: id } }} />
-  );
+  const chat = { pathname: "/messages/[bookingId]", params: { bookingId: id } } as const;
+  const back = <BackButton fallback={chat} />;
 
   if (answer === undefined) {
     return (
@@ -54,13 +53,13 @@ export default function BlockScreen() {
   return (
     <BlockPerson
       name={firstNameOf(t, otherPerson(answer.data))}
-      back={back}
+      back={chat}
       block={block}
       gone={t("booking.notFound")}
       done={{
         label: t("block.backToChat"),
         go: () => {
-          router.dismissTo({ pathname: "/messages/[bookingId]", params: { bookingId: id } });
+          router.dismissTo(chat);
         },
       }}
     />

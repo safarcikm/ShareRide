@@ -21,7 +21,8 @@
     "operator": "node --env-file-if-exists=../../.env src/operator-cli.ts",
     "privacy": "node --env-file-if-exists=../../.env src/privacy-cli.ts",
     "sentry:check": "node --env-file-if-exists=../../.env src/sentry-check-cli.ts",
-    "email-previews": "node src/email-previews-cli.ts"
+    "email-previews": "node src/email-previews-cli.ts",
+    "story-pictures": "node src/story-pictures-cli.ts"
   },
   "dependencies": {
     "@hono/node-server": "catalog:",

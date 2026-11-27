@@ -6,15 +6,14 @@ import { StyleSheet, Text, View } from "react-native";
 import { errorText } from "@/auth/errors";
 import { useSession } from "@/auth/session";
 import { otherPerson } from "@/chat/texts";
-import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
 import { Chip } from "@/components/chip";
-import { Notice } from "@/components/notice";
+import { ActionNotice, Notice, useSaid } from "@/components/notice";
 import { Screen } from "@/components/screen";
 import { TakesFocus } from "@/components/takes-focus";
 import { TextField } from "@/components/text-field";
-import { Body, Title } from "@/components/text";
+import { Body } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { now } from "@/lib/clock";
 import { spacing, typography } from "@/theme/tokens";
@@ -22,7 +21,7 @@ import { usePalette } from "@/theme/use-palette";
 import { firstNameOf } from "@/people/texts";
 import {
   backTo,
-  BookingLine,
+  BookingHead,
   Changed,
   NotLoaded,
   noteBody,
@@ -35,11 +34,13 @@ const isAnswer = (value: string | undefined): value is DisputeAnswer =>
   value === "agreed" || value === "contested";
 
 /**
- * Answering a report about you (spec 8, screen 5): "That's right" or
- * "That's not right", chosen on the booking or the trip and changeable
- * here, with what each does and an optional note only ShareRide reads.
- * Done, it goes back to the booking or the trip, where focus moves to
- * what the answer did.
+ * Answering a report about you (spec 8, screen 5): the title over the ride
+ * as a ticket (spec 31, 3.19), then "That's right" or "That's not right",
+ * chosen on the booking or the trip and changeable here, with what each
+ * does and an optional note only ShareRide reads. "Send answer" is the
+ * main button, in the bar, with why it sent nothing over it. Done, it goes
+ * back to the booking or the trip, where focus moves to what the answer
+ * did.
  */
 export function AnswerScreen() {
   const { t } = useLanguage();
@@ -53,8 +54,7 @@ export function AnswerScreen() {
   if (booking.dispute === null || report?.state !== "to_answer") {
     return (
       <Screen>
-        <BackButton fallback={backTo(booking)} />
-        <Title>{t("dispute.question")}</Title>
+        <BookingHead booking={booking} title={t("dispute.question")} />
         {report?.state === "too_late" ? (
           <Notice message={t("dispute.windowClosed")} />
         ) : (
@@ -88,7 +88,7 @@ function AnswerForm({
   const [chosen, setChosen] = useState<DisputeAnswer | null>(given);
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, say] = useSaid();
   const [changed, setChanged] = useState(false);
   const name = firstNameOf(t, otherPerson(booking));
   const noShow = dispute.kind === "no_show";
@@ -98,14 +98,14 @@ function AnswerForm({
 
   const send = async () => {
     if (chosen === null) {
-      setNotice(t("dispute.chooseAnswer"));
+      say(t("dispute.chooseAnswer"));
       return;
     }
     if (problem !== undefined) {
-      setNotice(problem);
+      say(problem);
       return;
     }
-    setNotice(null);
+    say(null);
     setBusy(true);
     const answer = await session.call(answerDisputeRoute, {
       params: { id: dispute.id },
@@ -118,7 +118,7 @@ function AnswerForm({
     }
     switch (answer.error.code) {
       case "answer_window_closed":
-        setNotice(t("dispute.windowClosed"));
+        say(t("dispute.windowClosed"));
         return;
       case "already_answered":
       case "already_decided":
@@ -126,22 +126,14 @@ function AnswerForm({
         setChanged(true);
         return;
       case "validation_failed":
-        setNotice(t("trip.note.tooLong", { max: disputeNoteMaxLength }));
+        say(t("trip.note.tooLong", { max: disputeNoteMaxLength }));
         return;
       default:
-        setNotice(errorText(t, answer));
+        say(errorText(t, answer));
     }
   };
 
-  const head = (
-    <>
-      <BackButton fallback={backTo(booking)} />
-      <View>
-        <BookingLine booking={booking} />
-        <Title align="start">{t("dispute.question")}</Title>
-      </View>
-    </>
-  );
+  const head = <BookingHead booking={booking} title={t("dispute.question")} />;
   if (changed) {
     return (
       <Screen>
@@ -160,14 +152,17 @@ function AnswerForm({
   return (
     <Screen
       footer={
-        <Button
-          main
-          busy={busy}
-          label={t("dispute.send")}
-          onPress={() => {
-            void send();
-          }}
-        />
+        <>
+          <ActionNotice says={notice} />
+          <Button
+            main
+            busy={busy}
+            label={t("dispute.send")}
+            onPress={() => {
+              void send();
+            }}
+          />
+        </>
       }
     >
       {head}
@@ -186,7 +181,7 @@ function AnswerForm({
             label={option.label}
             selected={chosen === option.answer}
             onToggle={() => {
-              setNotice(null);
+              say(null);
               setChosen(option.answer);
             }}
           />
@@ -209,7 +204,7 @@ function AnswerForm({
         label={t("dispute.answerNote")}
         value={note}
         onChangeText={(text) => {
-          setNotice(null);
+          say(null);
           setNote(text);
         }}
         multiline
@@ -217,11 +212,6 @@ function AnswerForm({
         help={t("report.noteHelp", { max: disputeNoteMaxLength })}
         error={problem}
       />
-      {notice === null ? null : (
-        <TakesFocus key={notice}>
-          <Notice message={notice} />
-        </TakesFocus>
-      )}
     </Screen>
   );
 }

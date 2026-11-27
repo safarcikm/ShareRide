@@ -1,8 +1,10 @@
 import {
   createContext,
+  Fragment,
   useCallback,
   useContext,
   useEffect,
+  useId,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -27,17 +29,29 @@ import {
   controlOutline,
   maxContentWidth,
   pageMaxWidth,
+  shortWindowUnder,
   sidePanelFrom,
   spacing,
 } from "@/theme/tokens";
+import { onWebsite } from "@/lib/on-website";
 import { usePalette } from "@/theme/use-palette";
+import { HeldWithMain } from "./press-guard";
 import { useRefresh, type Refresh } from "./refresh";
+import { SiteFooter } from "./site-footer";
+import { PutAgainContext } from "./takes-focus";
+import { useLaidOutHeight } from "./window-height";
 
 /**
  * A full screen with safe-area padding. On wide screens (web, tablets) the
  * content sits in a centred column (spec 1, section 5). A `footer`, such as
  * a step's main button, stays at the bottom while the rest scrolls: the
- * `BottomBar` of spec 15, section 5.2.
+ * `BottomBar` of spec 15, section 5.2. A part of the page that keeps its
+ * own state, as a form does, puts its main button there with `InBar`.
+ * A `header`, as the top of a conversation is (spec 31, 3.13), stays at the
+ * top the same way, on the surface's colour with a line under it, and the
+ * room the screen leaves for the status bar has that colour too. What
+ * stands `overFooter`, as a conversation's quick answers do, stays over the
+ * bar on the screen's own ground.
  * Wide screens show an `aside`, such as a map, beside the column; phones
  * leave it out, and the screen shows it its own way (see `useWideScreen`).
  * With `width="page"`, wide screens give the content a page instead of the
@@ -56,10 +70,15 @@ import { useRefresh, type Refresh } from "./refresh";
  * takes no presses. With `topColour`, the room the screen leaves at its top
  * for the status bar or a notch has that colour, such as the backdrop's sky,
  * rather than the screen's.
+ * With `siteFooter`, a public page of the website ends with the website's
+ * footer (spec 30, 3.3), after the content and across the window, at the
+ * window's bottom edge when the page is shorter; the phone apps have none.
  */
 export function Screen({
   children,
+  header,
   footer,
+  overFooter,
   aside,
   width = "column",
   stickToEnd = false,
@@ -68,9 +87,12 @@ export function Screen({
   refreshAsked,
   backdrop,
   topColour,
+  siteFooter = false,
 }: {
   readonly children: ReactNode;
+  readonly header?: ReactNode;
   readonly footer?: ReactNode;
+  readonly overFooter?: ReactNode;
   readonly aside?: ReactNode;
   readonly width?: "column" | "page";
   readonly stickToEnd?: boolean;
@@ -79,6 +101,7 @@ export function Screen({
   readonly refreshAsked?: number | undefined;
   readonly backdrop?: ReactNode;
   readonly topColour?: string;
+  readonly siteFooter?: boolean;
 }) {
   const palette = usePalette();
   const wide = useWideScreen();
@@ -86,14 +109,39 @@ export function Screen({
   const safeEdges = useContext(ScreenEdgesContext);
   // The height the screen scrolls in: the window less any bar above it.
   const [viewHeight, setViewHeight] = useState<number | null>(null);
-  const sticking = useStickToEnd(scrollRef, stickToEnd, endKey);
+  const { onLayout: followsEnd, ...sticking } = useStickToEnd(scrollRef, stickToEnd, endKey);
   const refreshing = useRefresh({ refresh, asked: refreshAsked, scrollRef });
+  const [inBar] = useState(barSlot);
+  // On a short window the bar joins the end of the page and scrolls with
+  // it (spec 31, 3.20). A conversation's field stays under its messages.
+  const barJoins = useShortWindow() && !stickToEnd;
+  // Once it has changed place, what a bar holds as it is put there is
+  // what the other held, and did not just appear (`PutAgainContext`).
+  const [place, setPlace] = useState({ joins: barJoins, moved: false });
+  if (place.joins !== barJoins) setPlace({ joins: barJoins, moved: true });
   return (
     <SafeAreaView
       testID="screen-safe-area"
       edges={safeEdges}
-      style={[styles.safeArea, { backgroundColor: topColour ?? palette.background }]}
+      style={[
+        styles.safeArea,
+        {
+          backgroundColor:
+            topColour ?? (header === undefined ? palette.background : palette.surface),
+        },
+      ]}
     >
+      {header === undefined ? null : (
+        <View
+          testID="screen-top-bar"
+          style={[
+            styles.top,
+            { backgroundColor: palette.surface, borderBottomColor: palette.border },
+          ]}
+        >
+          <View style={styles.barColumn}>{header}</View>
+        </View>
+      )}
       {/* The scroll and, over its top, what a refresh shows. */}
       <View
         testID="screen-scroll-area"
@@ -104,15 +152,12 @@ export function Screen({
           ref={scrollRef}
           testID="screen-scroll"
           refreshControl={refreshing.control}
-          onLayout={
+          onLayout={(event) => {
             // Only the web's sticky aside and side column use the height. It
             // is measured from the start, as they can come later, with data.
-            Platform.OS === "web"
-              ? (event) => {
-                  setViewHeight(event.nativeEvent.layout.height);
-                }
-              : undefined
-          }
+            if (Platform.OS === "web") setViewHeight(event.nativeEvent.layout.height);
+            followsEnd?.();
+          }}
           style={wide ? evenGutterOnWeb : undefined}
           contentContainerStyle={[styles.scroll, { paddingBottom: spacing.md + keyboardRoom }]}
           keyboardShouldPersistTaps="handled"
@@ -124,35 +169,170 @@ export function Screen({
             </View>
           )}
           <ScreenScrollContext.Provider value={scroll}>
-            <ScreenViewHeightContext.Provider value={viewHeight}>
-              {aside !== undefined && wide ? (
-                <View style={styles.wide}>
-                  <View style={styles.asideColumn}>{children}</View>
-                  <View testID="aside" style={[styles.aside, stickyOnWeb(viewHeight)]}>
-                    {aside}
+            <BarSlotContext.Provider value={inBar}>
+              <ScreenViewHeightContext.Provider value={viewHeight}>
+                {aside !== undefined && wide ? (
+                  <View style={styles.wide}>
+                    <View style={styles.asideColumn}>{children}</View>
+                    <View testID="aside" style={[styles.aside, stickyOnWeb(viewHeight)]}>
+                      {aside}
+                    </View>
                   </View>
-                </View>
-              ) : width === "page" && wide ? (
-                <View testID="page" style={styles.page}>
-                  {children}
-                </View>
-              ) : (
-                <View style={styles.column}>{children}</View>
-              )}
-            </ScreenViewHeightContext.Provider>
+                ) : width === "page" && wide ? (
+                  <View testID="page" style={styles.page}>
+                    {children}
+                  </View>
+                ) : (
+                  <View style={styles.column}>{children}</View>
+                )}
+                {barJoins ? (
+                  <BottomBar footer={footer} inBar={inBar} joined moved={place.moved} />
+                ) : null}
+                {siteFooter && onWebsite() ? <SiteFooter /> : null}
+              </ScreenViewHeightContext.Provider>
+            </BarSlotContext.Provider>
           </ScreenScrollContext.Provider>
         </ScrollView>
         {refreshing.mark}
       </View>
-      {footer === undefined ? null : (
-        <View
-          testID="bottom-bar"
-          style={[styles.bar, { backgroundColor: palette.surface, borderTopColor: palette.border }]}
-        >
-          <View style={styles.barColumn}>{footer}</View>
+      {overFooter === undefined ? null : (
+        <View testID="over-bar" style={[styles.overBar, { backgroundColor: palette.background }]}>
+          <View style={styles.barColumn}>{overFooter}</View>
         </View>
       )}
+      {barJoins ? null : <BottomBar footer={footer} inBar={inBar} moved={place.moved} />}
     </SafeAreaView>
+  );
+}
+
+/**
+ * What the parts of a screen have put in its bar, each under its own key,
+ * in the order they came. Only the bar listens: a part that puts something
+ * there again, as it does each time it is drawn, draws nothing else again.
+ */
+interface BarSlot {
+  readonly put: (key: string, part: ReactNode) => void;
+  readonly take: (key: string) => void;
+  readonly held: () => ReadonlyMap<string, ReactNode>;
+  readonly listen: (changed: () => void) => () => void;
+}
+
+function barSlot(): BarSlot {
+  let held: ReadonlyMap<string, ReactNode> = new Map();
+  const listeners = new Set<() => void>();
+  const hold = (next: ReadonlyMap<string, ReactNode>) => {
+    held = next;
+    listeners.forEach((changed) => {
+      changed();
+    });
+  };
+  return {
+    put: (key, part) => {
+      hold(new Map(held).set(key, part));
+    },
+    take: (key) => {
+      const next = new Map(held);
+      if (next.delete(key)) hold(next);
+    },
+    held: () => held,
+    listen: (changed) => {
+      listeners.add(changed);
+      return () => {
+        listeners.delete(changed);
+      };
+    },
+  };
+}
+
+const BarSlotContext = createContext<BarSlot | null>(null);
+
+/**
+ * Shows what it holds in the bar at the bottom of the screen around it,
+ * and not where it stands: for the main button of a part that keeps its
+ * own state, such as a form's "Save" or the button that confirms with a
+ * code (spec 31, R31.1). The button stays the part's own, with the part's
+ * state. A screen's own `footer` comes before it. With no `Screen` around
+ * it, as in a part's own test, what it holds stays where it stands.
+ *
+ * What it holds is drawn by the screen: it reads nothing a part between
+ * the screen and here provides, such as a card of rows.
+ */
+export function InBar({ children }: { readonly children: ReactNode }) {
+  const slot = useContext(BarSlotContext);
+  const key = useId();
+  // Each time the part is drawn, as what it holds was made anew.
+  useLayoutEffect(() => {
+    slot?.put(key, children);
+  });
+  useLayoutEffect(
+    () => () => {
+      slot?.take(key);
+    },
+    [slot, key],
+  );
+  return slot === null ? children : null;
+}
+
+/**
+ * The bar at the bottom: the screen's `footer`, then what its parts put there.
+ *
+ * It listens from its layout effect on, and looks again there: the parts
+ * put what they hold in their layout effects, which run before the bar's
+ * when a screen first shows, and the bar is drawn again before anything is
+ * painted. So a screen never shows a first frame without its bar.
+ * (`useSyncExternalStore` listens only once the frame is painted.)
+ */
+function BottomBar({
+  footer,
+  inBar,
+  joined = false,
+  moved = false,
+}: {
+  readonly footer: ReactNode;
+  readonly inBar: BarSlot;
+  /** At the end of the page, in its column, with no band of its own. */
+  readonly joined?: boolean;
+  /** The screen's bar changed place, and this is where it is now. */
+  readonly moved?: boolean;
+}) {
+  const palette = usePalette();
+  const [held, setHeld] = useState(inBar.held);
+  // A notice the bar held where it was takes no focus as it is put here:
+  // focus may be in a field that is being mended, with the keyboard up.
+  // What comes once the bar is in place takes it as anywhere.
+  const putAgain = useRef(moved);
+  useEffect(() => {
+    putAgain.current = false;
+  }, []);
+  useLayoutEffect(() => {
+    const look = () => {
+      setHeld(inBar.held());
+    };
+    look();
+    return inBar.listen(look);
+  }, [inBar]);
+  if (footer === undefined && held.size === 0) return null;
+  return (
+    <View
+      testID="bottom-bar"
+      style={
+        joined
+          ? styles.joinedBar
+          : [styles.bar, { backgroundColor: palette.surface, borderTopColor: palette.border }]
+      }
+    >
+      <View style={styles.barColumn}>
+        {/* A second press meant for the bar's button lands on none of them (spec 31, 3.20). */}
+        <HeldWithMain>
+          <PutAgainContext.Provider value={putAgain}>
+            {footer}
+            {[...held].map(([key, part]) => (
+              <Fragment key={key}>{part}</Fragment>
+            ))}
+          </PutAgainContext.Provider>
+        </HeldWithMain>
+      </View>
+    </View>
   );
 }
 
@@ -162,17 +342,32 @@ type ViewRef = ComponentRef<typeof View>;
  * What a scroll takes to open at its end and stay there as it grows, as a
  * conversation does (`on`): it follows only while the reader is at the
  * end, not while they read further up, and a new `endKey`, such as my own
- * message on its way, brings it back to the end whatever they read.
+ * message on its way, brings it back to the end whatever they read. It
+ * stays at its end too when it gets less height itself, as when the field
+ * under it grows with a second line: the last message is not left under
+ * the bar.
+ *
+ * The reader leaves the end by going up, and only so. A browser says a
+ * scroll's sizes as they are when the scroll is heard, which can be after
+ * what it holds grew and before its new size is told: being short of the
+ * end then is not the reader's doing, and the scroll still follows.
  */
 export function useStickToEnd(
   scrollRef: RefObject<ComponentRef<typeof ScrollView> | null>,
   on: boolean,
   endKey: string | undefined,
-) {
+): {
+  readonly scrollEventThrottle?: number;
+  readonly onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
+  readonly onContentSizeChange?: () => void;
+  readonly onLayout?: () => void;
+} {
   // Whether the reader is at the end, and whether to go there at the next
   // change in size whatever they read.
   const atEnd = useRef(true);
   const toEnd = useRef(false);
+  // How far down the last scroll was.
+  const lastY = useRef(0);
   useLayoutEffect(() => {
     if (endKey !== undefined) toEnd.current = true;
   }, [endKey]);
@@ -183,14 +378,23 @@ export function useStickToEnd(
             scrollEventThrottle: 100,
             onScroll: ({ nativeEvent }: NativeSyntheticEvent<NativeScrollEvent>) => {
               const { contentOffset, layoutMeasurement, contentSize } = nativeEvent;
-              atEnd.current =
-                contentOffset.y + layoutMeasurement.height >= contentSize.height - spacing.xxl;
+              const wentUp = contentOffset.y < lastY.current - 1;
+              lastY.current = contentOffset.y;
+              if (contentOffset.y + layoutMeasurement.height >= contentSize.height - spacing.xxl) {
+                atEnd.current = true;
+              } else if (wentUp) {
+                atEnd.current = false;
+              }
             },
             onContentSizeChange: () => {
               if (!atEnd.current && !toEnd.current) return;
               toEnd.current = false;
               atEnd.current = true;
               scrollRef.current?.scrollToEnd({ animated: false });
+            },
+            // Its own height changed and what it holds did not.
+            onLayout: () => {
+              if (atEnd.current) scrollRef.current?.scrollToEnd({ animated: false });
             },
           }
         : {},
@@ -289,6 +493,14 @@ function useRevealing() {
   return { scrollRef, scroll, keyboardRoom: revealing ? keyboard : 0 };
 }
 
+/**
+ * Whether the window is short: a phone on its side, or a laptop zoomed far
+ * in. A keyboard over the page of a phone's browser does not make it so.
+ */
+export function useShortWindow() {
+  return useLaidOutHeight() < shortWindowUnder;
+}
+
 /** Whether the window is wide enough for a panel beside the column. */
 export function useWideScreen() {
   return useWindowDimensions().width >= sidePanelFrom;
@@ -337,7 +549,16 @@ const styles = StyleSheet.create({
   scroll: { flexGrow: 1, alignItems: "center", padding: spacing.md },
   column: { flex: 1, width: "100%", maxWidth: maxContentWidth, gap: spacing.md },
   page: { flex: 1, width: "100%", maxWidth: pageMaxWidth, gap: spacing.md },
+  top: {
+    borderBottomWidth: controlOutline,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.ms,
+    alignItems: "center",
+  },
+  overBar: { paddingHorizontal: spacing.md, paddingBottom: spacing.sm, alignItems: "center" },
   bar: { borderTopWidth: controlOutline, padding: spacing.md, alignItems: "center" },
+  // In the page's padding already, a step under what the page ends with.
+  joinedBar: { width: "100%", paddingTop: spacing.md, alignItems: "center" },
   barColumn: { width: "100%", maxWidth: maxContentWidth, gap: spacing.sm },
   wide: {
     flex: 1,

@@ -1,15 +1,17 @@
 import { expect, test } from "@playwright/test";
 import { apiUrl } from "../playwright.config";
 import { confirmedBooking, secondPage, visible } from "./support/cancelling";
+import { focused } from "./support/trips";
 
 // Spec 8's trip day, on the web build: Bára posts Mjódd to N1 Selfoss for
 // tomorrow and Dóra books and pays, as in the cancelling journeys. Then the
 // test API moves that one trip so it leaves Mjódd in 10 minutes (never the
 // clock the other journeys share), and both open it on the day: each says
 // "I'm here" with one tap and sees the other's, the passenger without
-// reloading. The window's edges and the
-// no-show are left to the API and screen tests. Each test posts its own
-// trip, so phone and desktop runs never meet.
+// reloading. The passenger's first screen has "I'm here" inside it, with
+// no scrolling (spec 31, 3.9). The window's edges and the no-show are left
+// to the API and screen tests. Each test posts its own trip, so phone and
+// desktop runs never meet.
 
 test.use({ locale: "en-GB" });
 
@@ -25,10 +27,28 @@ test("on the trip day, the passenger and the driver each say I'm here and see th
   });
   expect(moved.status()).toBe(204);
 
-  // The passenger's booking opens on the day: when and where, then "I'm here".
+  // The passenger's booking opens on the day (spec 31, 3.9): its title
+  // counts down, where to stand comes first, and "I'm here" is on the first
+  // screen, with no scrolling: in the bar at the bottom of a phone, at the
+  // top of the side column on a laptop.
   await passenger.goto(booking);
-  await expect(passenger.getByRole("heading", { name: "Trip day" })).toBeVisible();
-  await passenger.getByRole("button", { name: "I'm here", exact: true }).click();
+  const title = passenger.getByRole("heading", { name: /^Leaves in \d+ minutes?$/ });
+  await expect(title).toBeVisible();
+  const imHere = passenger.getByRole("button", { name: "I'm here", exact: true });
+  await expect(imHere).toBeVisible();
+  const screenful = passenger.viewportSize();
+  if (screenful === null) throw new Error("No viewport");
+  for (const part of [
+    title,
+    passenger.getByRole("heading", { name: "Where to stand" }).filter(visible),
+    imHere,
+  ]) {
+    await expect(part).toBeInViewport({ ratio: 1 });
+    const place = await part.boundingBox();
+    if (place === null) throw new Error("Not on screen");
+    expect(place.y + place.height).toBeLessThanOrEqual(screenful.height);
+  }
+  await imHere.click();
   await expect(
     passenger.getByText("We've told the driver you're here.", { exact: true }).filter(visible),
   ).toBeVisible();
@@ -39,14 +59,20 @@ test("on the trip day, the passenger and the driver each say I'm here and see th
     driver.getByText("Use this only when parked.", { exact: true }).filter(visible),
   ).toBeVisible();
   await expect(driver.getByLabel("Dóra, 1 seat, Here")).toBeVisible();
-  await driver.getByRole("button", { name: "I'm here at Mjódd bus terminal" }).click();
-  await expect(
-    driver.getByText("We've told your passengers you're here.", { exact: true }).filter(visible),
-  ).toBeVisible();
+  // The ride's one main button: in the bar at the bottom of a phone, at the
+  // top of the side column on a laptop (spec 31, 3.9, item 4). What it told
+  // takes its place, with focus, and the stop says so too.
+  const imHereAt = driver.getByTestId("driver-im-here").filter(visible);
+  await imHereAt.getByRole("button", { name: "I'm here at Mjódd bus terminal" }).click();
+  const told = "We've told your passengers you're here.";
+  await expect(imHereAt.getByText(told, { exact: true })).toBeVisible();
+  await expect.poll(() => focused(driver)).toContain(told);
+  await expect(driver.getByTestId("said-here").filter(visible)).toHaveText(told);
 
-  // And Dóra's page, left open, shows that Bára is there within half a minute.
+  // And Dóra's page, left open, says in its title that Bára is there, within
+  // half a minute.
   await expect(
-    passenger.getByText("Bára is at the meeting point", { exact: true }).filter(visible),
+    passenger.getByRole("heading", { name: "Bára is at the meeting point" }),
   ).toBeVisible({ timeout: 45_000 });
   await close();
 });

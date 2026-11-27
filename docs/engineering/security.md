@@ -114,7 +114,7 @@ How [ADR 0016](../decisions/0016-own-sign-in-module.md) is built, in
   3.1): where the browser can list passkeys among the email field's
   suggestions (conditional mediation), step 1 asks for options as it opens
   and every 4.5 minutes while it stays open, and the passkey picked there
-  is checked exactly as the button's is. Removing a device in Settings
+  is checked exactly as the button's is. Removing a device in Sign-in methods
   tells this browser too (the Signal API's `signalUnknownCredential`).
   The trade-off accepted: `passkey_unknown` tells a caller with no account
   that a credential ID is in neither table, which `passkey_invalid` alone
@@ -217,7 +217,7 @@ How [ADR 0016](../decisions/0016-own-sign-in-module.md) is built, in
   the app's secret, so a ticket caught on its way is useless. A newcomer
   gets a waiting sign-in (`sr_ps_`, 30 minutes) for the phone step. A link
   is made only after a code to the account's phone: the phone step's, or a
-  confirm code in Settings; never by email. The development stand-in is
+  confirm code in Sign-in methods; never by email. The development stand-in is
   refused under `NODE_ENV=production`. Logs carry the provider and the
   user ID, never the email, the provider's identifier or a token.
   On the web the window is a pop-up that hands its answer to the page that

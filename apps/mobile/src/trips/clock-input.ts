@@ -1,7 +1,7 @@
 // Times the driver chooses on the time step, as a clock in Iceland.
 import { defaultTripSettings, fromIceland, inIceland } from "@shareride/domain";
 import { minuteStep, roundUpClock, type Clock } from "@/lib/clock-time";
-import { addDays, dayOf, type Day } from "@/lib/days";
+import { addDays, compareDays, dayOf, type Day } from "@/lib/days";
 
 export type { Clock } from "@/lib/clock-time";
 
@@ -24,6 +24,20 @@ export function earliestDeparture(now: Date): Clock {
   const stepMs = minuteStep * 60_000;
   const earliest = now.getTime() + defaultTripSettings.minNoticeMinutes * 60_000;
   return clockOf(new Date(Math.ceil(earliest / stepMs) * stepMs));
+}
+
+/** Where a departure's wheel opens for a day that is not today. */
+const morning: Clock = { hour: 8, minute: 0 };
+
+/**
+ * Where the wheel of a departure with no time yet opens (spec 31, 3.11,
+ * item 2): at 08:00 for a day other than today, as nobody means the
+ * present time of another day (at 03:40 at night it opened at 04:10 for a
+ * ride the day after); for today, and before a day is chosen, at the first
+ * time one can leave at.
+ */
+export function firstDeparture(day: Day | null, now: Date): Clock {
+  return day !== null && compareDays(day, dayOf(now)) !== 0 ? morning : earliestDeparture(now);
 }
 
 /**

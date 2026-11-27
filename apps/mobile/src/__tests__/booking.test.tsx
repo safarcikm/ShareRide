@@ -5,6 +5,7 @@ import { readAppData, writeAppData } from "@/lib/app-data";
 import type { Me } from "@shareride/contracts";
 import { renderApp, completeMe } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
+import { filledButtons } from "@/testing/buttons";
 import { bookingApi, northBooking, paidBooking, unpaidBooking } from "@/testing/bookings";
 import { failure, ok, testMe, tokens, type FakeClient } from "@/testing/fake-client";
 import { northResult, northStops, northTrip, soonestApi, tripDetailsApi } from "@/testing/search";
@@ -64,9 +65,10 @@ const paymentFor = (booking: ReturnType<typeof northBooking>) => ({
 });
 
 // The first render in a file loads every screen of the app, and with no
-// cache (as in CI) compiles them too. Jest runs this file first, as the
-// largest, while every package's checks run at once, and that took the
-// first test past its 15 s. Load the app here, with time of its own.
+// cache (as in CI) compiles them too. Jest runs the largest files first,
+// this one among them, while every package's checks run at once, and that
+// took the first test past its 15 s. Load the app here, with time of its
+// own.
 beforeAll(async () => {
   const { unmount } = await renderApp("/");
   await unmount();
@@ -170,14 +172,31 @@ describe("Booking from trip details (spec 5, 3.1)", () => {
       fromPoint: borgarnes.id,
       toPoint: blonduos.id,
     });
-    expect(screen.getByText("Sunday 15 November")).toBeVisible();
-    expect(screen.getByText("10:00")).toBeVisible();
-    expect(screen.getByText("Borgarnes")).toBeVisible();
-    expect(screen.getByText("12:05")).toBeVisible();
-    expect(screen.getByText("Blönduós")).toBeVisible();
-    expect(screen.getByText("Driver: Anna · White Toyota Yaris")).toBeVisible();
-    expect(screen.getByText("2 seats × 2,900 ISK")).toBeVisible();
-    expect(screen.getByText("5,800 ISK")).toBeVisible();
+    // The head at the left, and my part as a ticket (spec 31, 3.19): the
+    // day, the two ends, what the seats cost, and the driver with the car.
+    expect(
+      within(screen.getByTestId("screen-head")).getByRole("header", { name: "Check and pay" }),
+    ).toBeVisible();
+    const ticket = within(screen.getByTestId("booking-ticket"));
+    expect(within(ticket.getByTestId("ticket-day")).getByText("Sunday 15 November")).toBeVisible();
+    expect(within(ticket.getByTestId("ticket-from")).getByText("10:00")).toBeVisible();
+    expect(within(ticket.getByTestId("ticket-from")).getByText("Borgarnes")).toBeVisible();
+    expect(ticket.getByText("2 h 5 min")).toBeVisible();
+    expect(within(ticket.getByTestId("ticket-to")).getByText("12:05")).toBeVisible();
+    expect(within(ticket.getByTestId("ticket-to")).getByText("Blönduós")).toBeVisible();
+    const price = within(ticket.getByTestId("ticket-price"));
+    expect(price.getByText("5,800 ISK")).toBeVisible();
+    expect(price.getByText("2 seats × 2,900 ISK")).toBeVisible();
+    const foot = within(ticket.getByTestId("ticket-foot"));
+    expect(foot.getByText("Anna")).toBeVisible();
+    expect(foot.getByText("White Toyota Yaris")).toBeVisible();
+    // Nothing on it is pressed: the part is changed on the ride's page.
+    expect(ticket.queryByRole("button")).toBeNull();
+    // So a screen reader is told what each text is: where I get in and
+    // out, and that Anna is the driver (spec 31, 3.20).
+    expect(ticket.getByLabelText("Get in: 10:00")).toBe(ticket.getByText("10:00"));
+    expect(ticket.getByLabelText("Get out: 12:05")).toBe(ticket.getByText("12:05"));
+    expect(foot.getByLabelText("Driver: Anna")).toBe(foot.getByText("Anna"));
     for (const tick of [
       "Your seat is confirmed as soon as you pay.",
       "Free cancellation, with a full refund, up to 15 min before you get in.",
@@ -191,6 +210,7 @@ describe("Booking from trip details (spec 5, 3.1)", () => {
     expect(screen.queryByLabelText("Message to the driver (optional)")).toBeNull();
     expect(screen.getByRole("button", { name: "Pay 5,800 ISK" })).toBeEnabled();
     expect(screen.queryByRole("button", { name: "Book" })).toBeNull();
+    expect(filledButtons()).toBe(1);
   });
 
   it("keeps the choice of someone signed out while they sign up", async () => {
@@ -327,6 +347,72 @@ describe("Booking from trip details (spec 5, 3.1)", () => {
     expect(stored.get("pending-booking")).toBe("");
   });
 
+  it("takes no press on the next page's Send request just after the ride's own was pressed: a double press sends nothing", async () => {
+    const { client } = await renderApp(`/trips/${id}?from=1&to=2`, {
+      me: completeMe,
+      // As in the app: tests press faster than anyone otherwise.
+      holdsPresses: true,
+      setUp: (fake) => {
+        tripDetailsApi(fake, () => ok(200, northTrip({ board: 1, alight: 2 })));
+        fake.answer("/v1/trips/{id}/bookings", () => ok(201, northBooking()), "post");
+        bookingApi(fake, () => northBooking());
+      },
+    });
+    const sent = () => client.calls.filter((call) => call.path === "/v1/trips/{id}/bookings");
+    const bar = await screen.findByTestId("bottom-bar");
+    await fireEvent.press(within(bar).getByRole("button", { name: "Send request" }));
+    // The page that checks the booking is open, with its own Send request
+    // where the ride's stood (spec 31, R31.1): it is held.
+    await waitFor(() => {
+      expect(screen).toHavePathname(`/trips/${id}/book`);
+    });
+    const send = () => screen.getByRole("button", { name: "Send request" });
+    expect(send()).toBeDisabled();
+    await fireEvent.press(send());
+    expect(sent()).toHaveLength(0);
+    // Half a second later it sends.
+    await waitFor(
+      () => {
+        expect(send()).toBeEnabled();
+      },
+      { timeout: 3_000 },
+    );
+    await fireEvent.press(send());
+    expect(await screen.findByRole("header", { name: "Request sent" })).toBeVisible();
+    expect(sent()).toHaveLength(1);
+  });
+
+  it("takes no press on Find another ride just after Send request brought it under the main button: Request sent stays to be read", async () => {
+    await renderApp(`/trips/${id}/book?from=1&to=2&seats=1`, {
+      me: completeMe,
+      holdsPresses: true,
+      setUp: (fake) => {
+        tripDetailsApi(fake, () => ok(200, northTrip({ board: 1, alight: 2 })));
+        fake.answer("/v1/trips/{id}/bookings", () => ok(201, northBooking()), "post");
+        bookingApi(fake, () => northBooking());
+      },
+    });
+    await fireEvent.press(await screen.findByRole("button", { name: "Send request" }));
+    expect(await screen.findByRole("header", { name: "Request sent" })).toBeVisible();
+    // The bar has "See in My rides" over "Find another ride", which stands
+    // where Send request stood (spec 31, 3.20): it is held with the main one.
+    const find = () => screen.getByRole("button", { name: "Find another ride" });
+    expect(find()).toBeDisabled();
+    await fireEvent.press(find());
+    expect(screen).toHavePathname(`/bookings/${bookingId}/booked`);
+    // Half a second later it leads on.
+    await waitFor(
+      () => {
+        expect(find()).toBeEnabled();
+      },
+      { timeout: 3_000 },
+    );
+    await fireEvent.press(find());
+    await waitFor(() => {
+      expect(screen).toHavePathname("/");
+    });
+  });
+
   it("shows the booking on trip details on coming back from it", async () => {
     let booked = false;
     await renderApp(`/trips/${id}?from=1&to=2`, {
@@ -361,7 +447,7 @@ describe("Booking from trip details (spec 5, 3.1)", () => {
     expect(screen.queryByTestId("puffins-in-car", { includeHiddenElements: true })).toBeNull();
     // Request sent took the place of Check and pay, so Back opens the trip.
     await fireEvent.press(screen.getByRole("button", { name: "Back" }));
-    expect(await screen.findByText("You have a booking on this trip.")).toBeVisible();
+    expect(await screen.findByText("You have a booking on this ride.")).toBeVisible();
     expect(screen).toHavePathname(`/trips/${id}`);
   });
 
@@ -406,9 +492,10 @@ describe("Booking from trip details (spec 5, 3.1)", () => {
       },
     });
     const bar = await screen.findByTestId("bottom-bar");
-    expect(within(bar).getByText("You have a booking on this trip.")).toBeVisible();
+    expect(within(bar).getByText("You have a booking on this ride.")).toBeVisible();
     await fireEvent.press(within(bar).getByRole("button", { name: "See your booking" }));
-    expect(await screen.findByText("Request sent. Anna has until 22:00 to answer.")).toBeVisible();
+    expect(await screen.findByText("Anna has until 22:00 to answer.")).toBeVisible();
+    expect(screen.getByRole("header", { name: "Request sent" })).toBeVisible();
     expect(screen).toHavePathname(`/bookings/${bookingId}`);
   });
 });
@@ -671,7 +758,8 @@ describe("The booking screen (spec 5, 3.1 and 3.2)", () => {
           northTrip({ board: 1, alight: 2 }, { myBooking: { id: bookingId, status: "requested" } }),
         ),
     });
-    expect(await screen.findByText("Request sent. Anna has until 22:00 to answer.")).toBeVisible();
+    expect(await screen.findByText("Anna has until 22:00 to answer.")).toBeVisible();
+    expect(screen.getByRole("header", { name: "Request sent" })).toBeVisible();
     expect(screen).toHavePathname(`/bookings/${bookingId}`);
   });
 
@@ -687,7 +775,7 @@ describe("The booking screen (spec 5, 3.1 and 3.2)", () => {
   it("says how long to wait when trips were opened too often", async () => {
     await openBooking({ trip: () => failure(429, "rate_limited", { retryAfterSeconds: 120 }) });
     expect(
-      await screen.findByText("Too many trips opened in a short time. Try again in 2 minutes."),
+      await screen.findByText("Too many rides opened in a short time. Try again in 2 minutes."),
     ).toBeVisible();
   });
 
@@ -753,10 +841,10 @@ describe("The booking screen (spec 5, 3.1 and 3.2)", () => {
     expect(await screen.findByText("Sorry, those seats were just taken")).toBeVisible();
     expect(screen.getByText("No seats are free on your part now.")).toBeVisible();
     // The trip's free seats are asked for again: the part is full now.
-    expect(await screen.findByText("Full on your part of the trip")).toBeVisible();
+    expect(await screen.findByText("Full on your part of the ride")).toBeVisible();
     expect(screen.queryByRole("button", { name: "Send request" })).toBeNull();
     expect(client.calls.filter((call) => call.path === "/v1/trips/{id}")).toHaveLength(2);
-    await fireEvent.press(screen.getByRole("button", { name: "Back to the trip" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Back to the ride" }));
     expect(screen).toHavePathname(`/trips/${id}`);
     expect(screen).toHaveSearchParams({ id, from: "1", to: "2", seats: "1" });
   });
@@ -793,8 +881,8 @@ describe("The booking screen (spec 5, 3.1 and 3.2)", () => {
     const bar = await screen.findByTestId("bottom-bar");
     await fireEvent.press(within(bar).getByRole("button", { name: "Send request" }));
     await fireEvent.press(await screen.findByRole("button", { name: "Send request" }));
-    await fireEvent.press(await screen.findByRole("button", { name: "Back to the trip" }));
-    expect(await screen.findByText("1 free on your part · 2,900 ISK per seat")).toBeVisible();
+    await fireEvent.press(await screen.findByRole("button", { name: "Back to the ride" }));
+    expect(await screen.findByText("1 free on your part")).toBeVisible();
     expect(screen).toHavePathname(`/trips/${id}`);
     expect(screen).toHaveSearchParams({ id, from: "1", to: "2", seats: "1" });
     // The trip page was the one beneath, so Back leaves the trip.
@@ -825,14 +913,17 @@ describe("The booking screen (spec 5, 3.1 and 3.2)", () => {
       booking: () => atHigher,
       pay: () => ok(200, paymentFor(atHigher)),
     });
-    expect(await screen.findByText("1 seat × 2,900 ISK")).toBeVisible();
+    const price = () => within(screen.getByTestId("ticket-price"));
+    expect(await screen.findByTestId("ticket-price")).toHaveTextContent("2,900 ISK1 seat");
     await fireEvent.press(screen.getByRole("button", { name: "Pay 2,900 ISK" }));
     expect(
       await screen.findByText("The price has changed to 3,100 ISK. Pay this price?"),
     ).toBeVisible();
-    // The price per seat is asked for again, and the button names the new total.
-    expect(await screen.findByText("1 seat × 3,100 ISK")).toBeVisible();
-    expect(screen.getByText("3,100 ISK")).toBeVisible();
+    // The ride is asked for again, and the ticket and the button name the new total.
+    expect(await price().findByText("3,100 ISK")).toBeVisible();
+    await waitFor(() => {
+      expect(client.calls.filter((call) => call.path === "/v1/trips/{id}")).toHaveLength(2);
+    });
     await fireEvent.press(screen.getByRole("button", { name: "Pay 3,100 ISK" }));
     expect(
       await screen.findByRole("header", { name: "Test payment: no money moves" }),
@@ -861,14 +952,14 @@ describe("The booking screen (spec 5, 3.1 and 3.2)", () => {
     await fireEvent.press(await screen.findByRole("button", { name: "Send request" }));
     expect(
       await screen.findByText(
-        "This trip can't take this booking right now. Go back and try fewer seats or a shorter part of the trip.",
+        "This ride can't take this booking right now. Go back and try fewer seats or a shorter part of the ride.",
       ),
     ).toBeVisible();
     // The price per seat is asked for again, in case it has fallen.
     await waitFor(() => {
       expect(client.calls.filter((call) => call.path === "/v1/trips/{id}")).toHaveLength(2);
     });
-    await fireEvent.press(screen.getByRole("button", { name: "Back to the trip" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Back to the ride" }));
     expect(screen).toHavePathname(`/trips/${id}`);
     expect(screen).toHaveSearchParams({ id, from: "1", to: "2", seats: "1" });
   });
@@ -876,11 +967,11 @@ describe("The booking screen (spec 5, 3.1 and 3.2)", () => {
   it.each([
     ["where to get in", `fromPoint=${bsi.id}&toPoint=${blonduos.id}`],
     ["where to get out", `fromPoint=${borgarnes.id}&toPoint=${borgarnes.id}`],
-  ])("books nothing when the trip page showed another place %s (spec 6, 3.2)", async (_, shown) => {
+  ])("books nothing when the ride page showed another place %s (spec 6, 3.2)", async (_, shown) => {
     const { client } = await openBooking({}, `/trips/${id}/book?from=1&to=2&seats=1&${shown}`);
     expect(
       await screen.findByText(
-        "The driver has changed the trip's stops. Go back to the trip to choose where you get in and out again.",
+        "The driver has changed the ride's stops. Go back to the ride to choose where you get in and out again.",
       ),
     ).toBeVisible();
     expect(screen.queryByRole("button", { name: "Send request" })).toBeNull();
@@ -912,7 +1003,7 @@ describe("The booking screen (spec 5, 3.1 and 3.2)", () => {
     await fireEvent.press(await screen.findByRole("button", { name: "Send request" }));
     expect(
       await screen.findByText(
-        "The driver has changed the trip's stops. Go back to the trip to choose where you get in and out again.",
+        "The driver has changed the ride's stops. Go back to the ride to choose where you get in and out again.",
       ),
     ).toBeVisible();
     expect(screen.queryByRole("button", { name: "Send request" })).toBeNull();
@@ -924,7 +1015,7 @@ describe("The booking screen (spec 5, 3.1 and 3.2)", () => {
     await fireEvent.press(await screen.findByRole("button", { name: "Send request" }));
     expect(
       await screen.findByText(
-        "The driver has changed the trip's stops. Go back to the trip to choose where you get in and out again.",
+        "The driver has changed the ride's stops. Go back to the ride to choose where you get in and out again.",
       ),
     ).toBeVisible();
   });
@@ -984,16 +1075,21 @@ describe("Check and pay and a request on a laptop (spec 18, 3.8)", () => {
     expect(main().getByText("0 of 300")).toBeVisible();
     expect(main().getByText(/^If you can't make it, cancel as early as you can\./)).toBeVisible();
 
-    expect(side().getByText("Sunday 15 November")).toBeVisible();
-    expect(side().getByText("10:00")).toBeVisible();
-    expect(side().getByText("Borgarnes")).toBeVisible();
-    expect(side().getByText("12:05")).toBeVisible();
-    expect(side().getByText("Blönduós")).toBeVisible();
-    expect(side().getByText("Driver: Anna · White Toyota Yaris")).toBeVisible();
-    expect(side().getByText("1 seat × 2,900 ISK")).toBeVisible();
-    expect(side().getByText("Total")).toBeVisible();
-    expect(side().getByText("2,900 ISK")).toBeVisible();
+    // The ride is a ticket there, with what the seats cost at its right.
+    const ticket = within(side().getByTestId("booking-ticket"));
+    expect(ticket.getByText("Sunday 15 November")).toBeVisible();
+    expect(ticket.getByText("10:00")).toBeVisible();
+    expect(ticket.getByText("Borgarnes")).toBeVisible();
+    expect(ticket.getByText("12:05")).toBeVisible();
+    expect(ticket.getByText("Blönduós")).toBeVisible();
+    expect(within(ticket.getByTestId("ticket-foot")).getByText("Anna")).toBeVisible();
+    expect(ticket.getByText("White Toyota Yaris")).toBeVisible();
+    const price = within(ticket.getByTestId("ticket-price"));
+    expect(price.getByText("2,900 ISK")).toBeVisible();
+    // One seat has no sum to show.
+    expect(price.getByText("1 seat")).toBeVisible();
     expect(side().getByRole("button", { name: "Send request" })).toBeEnabled();
+    expect(filledButtons()).toBe(1);
 
     // The side column takes the bottom bar's place, and each thing is there once.
     expect(screen.queryByTestId("bottom-bar")).toBeNull();
@@ -1040,7 +1136,7 @@ describe("Check and pay and a request on a laptop (spec 18, 3.8)", () => {
     expect(bookCalls(client)).toHaveLength(1);
     expect(paymentCalls(client)).toHaveLength(1);
     // The sheet takes the place of the button pressed, under the ride.
-    expect(side().getByText("Driver: Anna · White Toyota Yaris")).toBeVisible();
+    expect(side().getByTestId("booking-ticket")).toBeVisible();
     expect(screen.getAllByRole("button", { name: "Pay 2,900 ISK" })).toHaveLength(1);
     await fireEvent.press(side().getByRole("button", { name: "Pay 2,900 ISK" }));
     expect(await screen.findByRole("header", { name: "You're booked!" })).toBeVisible();
@@ -1069,8 +1165,8 @@ describe("Check and pay and a request on a laptop (spec 18, 3.8)", () => {
     });
     await fireEvent.press(await screen.findByRole("button", { name: "Send request" }));
     expect(await main().findByText("Sorry, those seats were just taken")).toBeVisible();
-    expect(main().getByRole("button", { name: "Back to the trip" })).toBeVisible();
-    expect(await side().findByText("Full on your part of the trip")).toBeVisible();
+    expect(main().getByRole("button", { name: "Back to the ride" })).toBeVisible();
+    expect(await side().findByText("Full on your part of the ride")).toBeVisible();
     expect(screen.queryByRole("button", { name: "Send request" })).toBeNull();
   });
 
@@ -1118,7 +1214,7 @@ describe("Check and pay and a request on a laptop (spec 18, 3.8)", () => {
 
   it("keeps the page, with Back in its place, when the trip cannot be loaded", async () => {
     await openBooking({ trip: () => failure(500, "internal_error") });
-    expect(await screen.findByText("The trip could not be loaded.")).toBeVisible();
+    expect(await screen.findByText("The ride could not be loaded.")).toBeVisible();
     expect(screen.getByTestId("page")).toBeVisible();
     const column = within(screen.getByTestId("page-column"));
     expect(column.getByRole("button", { name: "Try again" })).toBeVisible();
@@ -1134,6 +1230,12 @@ describe("You're booked and Request sent (spec 16, 3.7, items 4 and 5)", () => {
     expect(
       screen.getByText("Sunday 15 November. Anna picks you up at 10:00 at Borgarnes."),
     ).toBeVisible();
+    // The ride as the ticket it is in My rides (spec 31, 3.19), which opens it.
+    expect(
+      screen.getByRole("button", {
+        name: "Passenger, Sunday 15 November, Leaves Borgarnes at 10:00, arrives at Blönduós at 12:05, 2 h 5 min, 1 seat, 2,900 ISK, Anna, Seat confirmed",
+      }),
+    ).toBeVisible();
     expect(screen.getByRole("header", { name: "What happens next" })).toBeVisible();
     for (const step of [
       "Number plate AB 123",
@@ -1145,7 +1247,7 @@ describe("You're booked and Request sent (spec 16, 3.7, items 4 and 5)", () => {
     expect(screen.getByRole("header", { name: "Where to stand" })).toBeVisible();
     expect(screen.getByText("By the petrol pumps")).toBeVisible();
     const open = jest.spyOn(Linking, "openURL").mockResolvedValue(undefined);
-    await fireEvent.press(screen.getByRole("button", { name: "Open in maps" }));
+    await fireEvent.press(screen.getByRole("link", { name: "Open in maps" }));
     expect(open).toHaveBeenCalledWith(expect.stringMatching(/^https:\/\/maps\.apple\.com\/\?ll=/));
     open.mockRestore();
 
@@ -1195,7 +1297,7 @@ describe("You're booked and Request sent (spec 16, 3.7, items 4 and 5)", () => {
     await fireEvent.press(await screen.findByRole("button", { name: "Pay 2,900 ISK" }));
     expect(await screen.findByRole("header", { name: "You're booked!" })).toBeVisible();
     await fireEvent.press(screen.getByRole("button", { name: "Back" }));
-    expect(await screen.findByText("You have a booking on this trip.")).toBeVisible();
+    expect(await screen.findByText("You have a booking on this ride.")).toBeVisible();
     expect(screen).toHavePathname(`/trips/${id}`);
   });
 
@@ -1224,6 +1326,14 @@ describe("You're booked and Request sent (spec 16, 3.7, items 4 and 5)", () => {
     await fireEvent.press(await screen.findByRole("button", { name: "Send request" }));
     expect(await screen.findByRole("header", { name: "Request sent" })).toBeVisible();
     expect(screen.getByText("Anna has until 22:00 to answer.")).toBeVisible();
+    await fireEvent.press(
+      screen.getByRole("button", {
+        name: /^Passenger, Sunday 15 November, .*, Anna, Waiting for Anna's answer$/,
+      }),
+    );
+    expect(screen).toHavePathname(`/bookings/${bookingId}`);
+    await fireEvent.press(await screen.findByRole("button", { name: "Back" }));
+    expect(await screen.findByRole("header", { name: "Request sent" })).toBeVisible();
     for (const step of [
       "The answer shows in My rides.",
       "When Anna says yes, pay in My rides, under Needs you, to confirm your seat.",
@@ -1243,7 +1353,7 @@ describe("You're booked and Request sent (spec 16, 3.7, items 4 and 5)", () => {
         bookingApi(client, () => unpaidBooking);
       },
     });
-    expect(await screen.findByText("Pay 2,900 ISK to confirm your seat")).toBeVisible();
+    expect(await screen.findByRole("header", { name: "Pay to keep your seat" })).toBeVisible();
     expect(screen).toHavePathname(`/bookings/${bookingId}`);
   });
 
@@ -1287,9 +1397,10 @@ describe("Paying (spec 5, 3.5; rule M1)", () => {
 
   it("pays with the test sheet: a failed payment can be tried again, then the seat is confirmed", async () => {
     const { client } = await openUnpaid();
-    expect(await screen.findByText("Pay 2,900 ISK to confirm your seat")).toBeVisible();
-    expect(screen.getByText("Pay by 12:30 to keep your seat")).toBeVisible();
-    expect(screen.getByText("Waiting for payment")).toBeVisible();
+    // The title asks, and says until when; no tag says it a second time.
+    expect(await screen.findByRole("header", { name: "Pay to keep your seat" })).toBeVisible();
+    expect(screen.getByText("Your seat is held until 12:30.")).toBeVisible();
+    expect(screen.queryByText("Waiting for payment")).toBeNull();
 
     await fireEvent.press(screen.getByRole("button", { name: "Pay 2,900 ISK" }));
     expect(
@@ -1303,11 +1414,12 @@ describe("Paying (spec 5, 3.5; rule M1)", () => {
     await fireEvent.press(screen.getByRole("button", { name: "Pay 2,900 ISK" }));
     await screen.findByRole("header", { name: "Test payment: no money moves" });
     await fireEvent.press(screen.getByRole("button", { name: "Pay 2,900 ISK" }));
-    expect(await screen.findByText("Your seat is confirmed")).toBeVisible();
-    expect(screen.getByText("Number plate AB 123")).toBeVisible();
+    expect(await screen.findByRole("header", { name: "Your seat is confirmed" })).toBeVisible();
+    expect(screen.getByLabelText("Number plate AB 123")).toBeVisible();
     expect(screen.getByText("Where to stand")).toBeVisible();
     expect(screen.getByText("By the petrol pumps")).toBeVisible();
-    expect(screen.queryByText("Pay 2,900 ISK to confirm your seat")).toBeNull();
+    expect(screen.queryByRole("header", { name: "Pay to keep your seat" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Pay 2,900 ISK" })).toBeNull();
     expect(
       client.calls
         .filter((call) => call.path === "/v1/test-payments/{id}")
@@ -1315,7 +1427,7 @@ describe("Paying (spec 5, 3.5; rule M1)", () => {
     ).toEqual([{ outcome: "failed" }, { outcome: "succeeded" }]);
 
     const open = jest.spyOn(Linking, "openURL").mockResolvedValue(undefined);
-    await fireEvent.press(screen.getByRole("button", { name: "Open in maps" }));
+    await fireEvent.press(screen.getByRole("link", { name: "Open in maps" }));
     expect(open).toHaveBeenCalledWith(expect.stringMatching(/^https:\/\/maps\.apple\.com\/\?ll=/));
     open.mockRestore();
   });
@@ -1350,7 +1462,7 @@ describe("Paying (spec 5, 3.5; rule M1)", () => {
     });
     await fireEvent.press(await screen.findByRole("button", { name: "Pay 2,900 ISK" }));
     expect(await screen.findByText("This booking is no longer waiting for payment.")).toBeVisible();
-    expect(screen.getByText("Pay 2,900 ISK to confirm your seat")).toBeVisible();
+    expect(screen.getByRole("header", { name: "Pay to keep your seat" })).toBeVisible();
   });
 
   it("says when the driver didn't answer a request in time", async () => {
@@ -1440,21 +1552,19 @@ describe("A booking on a laptop (spec 18, 3.9)", () => {
     return texts;
   }
 
-  it("has the status, the driver, where to stand and safety in the main column, with the ride and the actions beside them", async () => {
+  it("has the road, the driver and where to stand in the main column, with the ride and the rows beside them", async () => {
     await renderApp(`/bookings/${bookingId}`, {
       me: completeMe,
       setUp: (client) => {
         bookingApi(client, () => paidBooking);
       },
     });
-    expect(await screen.findByText("Your seat is confirmed")).toBeVisible();
+    const title = await screen.findByRole("header", { name: "Your seat is confirmed" });
     expect(screen.getByTestId("page")).toBeVisible();
-    expect(screen.getByRole("header", { name: "Borgarnes → Blönduós" })).not.toHaveStyle({
-      textAlign: "center",
-    });
+    expect(title).not.toHaveStyle({ textAlign: "center" });
 
-    expect(main().getByText("Your seat is confirmed")).toBeVisible();
-    expect(main().getByText("Number plate AB 123")).toBeVisible();
+    expect(main().getByLabelText("Step 1 of 3: Confirmed")).toBeVisible();
+    expect(main().getByLabelText("Number plate AB 123")).toBeVisible();
     expect(main().getByRole("header", { name: "Where to stand" })).toBeVisible();
     expect(main().getByText("By the petrol pumps")).toBeVisible();
     // The driver and where to stand share a row where there is room, as
@@ -1462,21 +1572,20 @@ describe("A booking on a laptop (spec 18, 3.9)", () => {
     const [driver, stand, ...more] = within(main().getByTestId("grid")).getAllByTestId("grid-cell");
     if (driver === undefined || stand === undefined) throw new Error("Two cells expected");
     expect(more).toHaveLength(0);
-    expect(within(driver).getByText("Number plate AB 123")).toBeVisible();
+    expect(within(driver).getByLabelText("Number plate AB 123")).toBeVisible();
+    expect(within(driver).getByRole("link", { name: "Message Anna" })).toBeVisible();
     expect(within(stand).getByRole("header", { name: "Where to stand" })).toBeVisible();
     for (const cell of [driver, stand]) {
       expect(within(cell).getByTestId("card")).toHaveStyle({ flexGrow: 1 });
     }
 
     // The ride and its price first, then what can be done about it.
-    const [ride] = side().getAllByTestId("card");
-    if (ride === undefined) throw new Error("No card in the side column");
-    expect(within(ride).getByText("1 seat")).toBeVisible();
-    expect(within(ride).getByText("2,900 ISK")).toBeVisible();
-    // Safety ends the main column, as on trip details: the side column
-    // stays short enough to be whole in a laptop's window.
-    expect(main().getByRole("header", { name: "Safety" })).toBeVisible();
-    expect(side().queryByRole("header", { name: "Safety" })).toBeNull();
+    const ride = within(side().getByTestId("booking-ticket"));
+    expect(ride.getByText("1 seat")).toBeVisible();
+    expect(ride.getByText("2,900 ISK")).toBeVisible();
+    // The rows end the side column: the Safety card they were is gone.
+    expect(screen.queryByRole("header", { name: "Safety" })).toBeNull();
+    expect(main().queryByText("Weather and roads")).toBeNull();
     const texts = textsInOrder();
     const at = (text: string) => {
       const index = texts.indexOf(text);
@@ -1484,22 +1593,22 @@ describe("A booking on a laptop (spec 18, 3.9)", () => {
       return index;
     };
     // The main column is read first, then the side column, top to bottom.
-    expect(at("Your seat is confirmed")).toBeLessThan(at("Number plate AB 123"));
-    expect(at("Number plate AB 123")).toBeLessThan(at("Where to stand"));
-    expect(at("Where to stand")).toBeLessThan(at("Safety"));
-    expect(at("Safety")).toBeLessThan(at("2,900 ISK"));
-    expect(at("2,900 ISK")).toBeLessThan(at("Message Anna"));
-    expect(at("Message Anna")).toBeLessThan(at("Cancel booking"));
+    expect(at("Your seat is confirmed")).toBeLessThan(at("Message"));
+    expect(at("Message")).toBeLessThan(at("AB 123"));
+    expect(at("AB 123")).toBeLessThan(at("Where to stand"));
+    expect(at("Where to stand")).toBeLessThan(at("2,900 ISK"));
+    expect(at("2,900 ISK")).toBeLessThan(at("Share the ride's details"));
+    expect(at("Share the ride's details")).toBeLessThan(at("Weather and roads"));
+    expect(at("Weather and roads")).toBeLessThan(at("Cancel booking"));
     // Each once.
-    for (const name of ["Message Anna", "Cancel booking"]) {
-      expect(side().getByRole("button", { name })).toBeVisible();
-      expect(screen.getAllByRole("button", { name })).toHaveLength(1);
-    }
+    expect(side().getByRole("button", { name: "Cancel booking" })).toBeVisible();
+    expect(screen.getAllByRole("button", { name: "Cancel booking" })).toHaveLength(1);
+    expect(screen.getAllByRole("link", { name: "Message Anna" })).toHaveLength(1);
     expect(screen.getAllByText("2,900 ISK")).toHaveLength(1);
-    expect(screen.getAllByRole("header", { name: "Safety" })).toHaveLength(1);
+    expect(screen.getAllByText("Weather and roads")).toHaveLength(1);
   });
 
-  it("pays in the main column, and keeps the payment open when the window turns narrow and wide again", async () => {
+  it("pays at the top of the side column, and keeps the payment open when the window turns narrow and wide again", async () => {
     let booking = unpaidBooking;
     const { client } = await renderApp(`/bookings/${bookingId}`, {
       me: completeMe,
@@ -1512,30 +1621,32 @@ describe("A booking on a laptop (spec 18, 3.9)", () => {
         });
       },
     });
-    expect(await main().findByText("Pay 2,900 ISK to confirm your seat")).toBeVisible();
-    expect(main().getByText("Pay by 12:30 to keep your seat")).toBeVisible();
-    // The price stands with the ride, beside what to do now.
+    expect(await screen.findByRole("header", { name: "Pay to keep your seat" })).toBeVisible();
+    expect(screen.getByText("Your seat is held until 12:30.")).toBeVisible();
+    // The price stands with the ride, under what to do now.
     expect(side().getByText("2,900 ISK")).toBeVisible();
-    await fireEvent.press(main().getByRole("button", { name: "Pay 2,900 ISK" }));
+    expect(filledButtons()).toBe(1);
+    await fireEvent.press(side().getByRole("button", { name: "Pay 2,900 ISK" }));
     const sheet = { name: "Test payment: no money moves" } as const;
-    expect(await main().findByRole("header", sheet)).toBeVisible();
+    expect(await side().findByRole("header", sheet)).toBeVisible();
 
     await act(() => {
       Dimensions.set({ window: phone });
     });
     expect(screen.queryByTestId("page")).toBeNull();
-    expect(screen.getByRole("header", sheet)).toBeVisible();
+    expect(within(screen.getByTestId("bottom-bar")).getByRole("header", sheet)).toBeVisible();
     await act(() => {
       Dimensions.set({ window: laptop });
     });
-    expect(main().getByRole("header", sheet)).toBeVisible();
+    expect(side().getByRole("header", sheet)).toBeVisible();
     // Nothing was asked for again.
     expect(paymentCalls(client)).toEqual([unpaidBooking.id]);
     expect(loads(client)).toBe(1);
 
-    await fireEvent.press(main().getByRole("button", { name: "Pay 2,900 ISK" }));
-    expect(await main().findByText("Your seat is confirmed")).toBeVisible();
-    expect(side().getByRole("button", { name: "Message Anna" })).toBeVisible();
+    await fireEvent.press(side().getByRole("button", { name: "Pay 2,900 ISK" }));
+    expect(await screen.findByRole("header", { name: "Your seat is confirmed" })).toBeVisible();
+    expect(main().getByRole("link", { name: "Message Anna" })).toBeVisible();
+    expect(filledButtons()).toBe(0);
   });
 
   it("keeps the question about withdrawing a request open across the window's widths", async () => {
@@ -1545,22 +1656,24 @@ describe("A booking on a laptop (spec 18, 3.9)", () => {
         bookingApi(client, () => northBooking());
       },
     });
-    await fireEvent.press(await main().findByRole("button", { name: "Withdraw request" }));
-    expect(main().getByRole("button", { name: "Keep my request" })).toBeVisible();
+    await fireEvent.press(await side().findByRole("button", { name: "Withdraw request" }));
+    expect(side().getByRole("button", { name: "Keep my request" })).toBeVisible();
     // Nowhere to stand yet: the driver's card has the row to itself.
     expect(within(main().getByTestId("grid")).getAllByTestId("grid-cell")).toHaveLength(1);
     // No chat and no plate before the seat is confirmed; the ride is beside.
     expect(side().getByText("2,900 ISK")).toBeVisible();
-    expect(screen.queryByRole("button", { name: "Message Anna" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Message Anna" })).toBeNull();
 
     await act(() => {
       Dimensions.set({ window: phone });
     });
-    expect(screen.getByRole("button", { name: "Keep my request" })).toBeVisible();
+    expect(
+      within(screen.getByTestId("bottom-bar")).getByRole("button", { name: "Keep my request" }),
+    ).toBeVisible();
     await act(() => {
       Dimensions.set({ window: laptop });
     });
-    expect(main().getByRole("button", { name: "Keep my request" })).toBeVisible();
+    expect(side().getByRole("button", { name: "Keep my request" })).toBeVisible();
   });
 
   it("shows the driver a passenger's booking in the two columns, with no status or cancelling of the passenger's", async () => {
@@ -1570,16 +1683,17 @@ describe("A booking on a laptop (spec 18, 3.9)", () => {
         bookingApi(client, () => ({ ...paidBooking, viewer: "driver" }));
       },
     });
-    expect(await side().findByRole("button", { name: "Message Gunna" })).toBeVisible();
+    expect(await side().findByRole("link", { name: "Message Gunna" })).toBeVisible();
     expect(side().getByText("2,900 ISK")).toBeVisible();
-    expect(main().getByRole("header", { name: "Safety" })).toBeVisible();
-    expect(main().getByText("Number plate AB 123")).toBeVisible();
-    // The status, Pay and "Cancel booking" are the passenger's.
+    expect(side().getByText("Weather and roads")).toBeVisible();
+    expect(main().getByLabelText("Number plate AB 123")).toBeVisible();
+    // The passenger's title, Pay and "Cancel booking" are the passenger's.
     expect(screen.queryByText("Your seat is confirmed")).toBeNull();
     expect(screen.queryByRole("button", { name: "Cancel booking" })).toBeNull();
+    expect(filledButtons()).toBe(0);
     // Nothing stands in both columns.
     expect(screen.getAllByText("2,900 ISK")).toHaveLength(1);
-    expect(screen.getAllByText("Number plate AB 123")).toHaveLength(1);
+    expect(screen.getAllByLabelText("Number plate AB 123")).toHaveLength(1);
   });
 
   it("is a page while it loads and when it cannot be loaded, the notice in a column at its left", async () => {
@@ -1612,10 +1726,11 @@ describe("A booking on a laptop (spec 18, 3.9)", () => {
     expect(column.getByText("The booking could not be loaded.")).toBeVisible();
     expect(screen.getByTestId("page")).toBeVisible();
     await fireEvent.press(column.getByRole("button", { name: "Try again" }));
-    expect(await main().findByText("Your seat is confirmed")).toBeVisible();
+    expect(await screen.findByRole("header", { name: "Your seat is confirmed" })).toBeVisible();
+    expect(main().getByTestId("driver-card")).toBeVisible();
   });
 
-  it("is the phone's one column on a phone: the ride, the driver, the chat, where to stand, then cancelling", async () => {
+  it("is the phone's one column on a phone: the ride, the driver with the chat, where to stand, then the rows", async () => {
     await act(() => {
       Dimensions.set({ window: phone });
     });
@@ -1625,7 +1740,7 @@ describe("A booking on a laptop (spec 18, 3.9)", () => {
         bookingApi(client, () => paidBooking);
       },
     });
-    expect(await screen.findByText("Your seat is confirmed")).toBeVisible();
+    expect(await screen.findByRole("header", { name: "Your seat is confirmed" })).toBeVisible();
     expect(screen.queryByTestId("page")).toBeNull();
     expect(screen.queryByTestId("columns-side")).toBeNull();
     expect(screen.queryByTestId("grid")).toBeNull();
@@ -1639,10 +1754,10 @@ describe("A booking on a laptop (spec 18, 3.9)", () => {
       return index;
     };
     expect(at("Your seat is confirmed")).toBeLessThan(at("2,900 ISK"));
-    expect(at("2,900 ISK")).toBeLessThan(at("Number plate AB 123"));
-    expect(at("Number plate AB 123")).toBeLessThan(at("Message Anna"));
-    expect(at("Message Anna")).toBeLessThan(at("Where to stand"));
-    expect(at("Where to stand")).toBeLessThan(at("Safety"));
-    expect(at("Safety")).toBeLessThan(at("Cancel booking"));
+    expect(at("2,900 ISK")).toBeLessThan(at("Message"));
+    expect(at("Message")).toBeLessThan(at("AB 123"));
+    expect(at("AB 123")).toBeLessThan(at("Where to stand"));
+    expect(at("Where to stand")).toBeLessThan(at("Weather and roads"));
+    expect(at("Weather and roads")).toBeLessThan(at("Cancel booking"));
   });
 });

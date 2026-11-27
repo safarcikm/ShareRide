@@ -16,6 +16,16 @@ table changes. Phones keep every layout they have.
 Source: a walk through the web build at 1440 by 900 on 2026-11-18, 57
 screens, kept in the project files under `laptop-web/audit-today`.
 
+Amended by [spec 31](2026-11-26-one-ride-one-ticket.md) (3.4): in English
+a member now reads "ride" where the texts quoted here say "trip" (which
+stays in "Trip day"), and the actions are named "Find a ride", "Offer a
+ride" and "Publish ride". The keys keep their names;
+`packages/i18n/src/messages/en.ts` has the words as they are.
+
+Amended by spec 31 (3.14; 3.16, item 5) too: on a laptop Profile is the
+person's card in the side column and the groups of rows in the main one,
+with Settings gone (3.12).
+
 ## 1. Problem and goal
 
 On a laptop the app is a phone screen in the middle of the window:
@@ -92,7 +102,9 @@ changes on a phone.
 4. Between 900 and 1144 the main column gives way first; nothing is cut and
    the page never scrolls sideways.
 5. Reading order for screen readers and the Tab key is the main column, then
-   the side column.
+   the side column. Since [spec 31](2026-11-26-one-ride-one-ticket.md)
+   (3.20) a side column at the left comes first, as the eye meets it: so
+   on Profile (3.12).
 6. On a screen with two columns, the title starts at the left, above the
    main column. Screens of one column keep their centred title (spec 15,
    5.1, alignment).
@@ -100,7 +112,10 @@ changes on a phone.
    out anew. What the person typed, chose or opened to pay stays, and
    nothing loads again. Where the focus is, and a list opened in place
    (the stops under Change), may not stay (decision 11).
-8. A two-column screen is a page from the start: while it loads, and when
+8. Since 2026-11-26 a public page of the website ends with the website's
+   footer, under all of its columns and lined up with the page
+   ([spec 30, 3.3](2026-11-26-about-page-and-footer.md#33-the-footer)).
+9. A two-column screen is a page from the start: while it loads, and when
    it cannot be loaded, Back is where it will be once loaded. The notice
    and Try again keep the 480 column, at the left (`PageColumn`, spec 15).
 
@@ -189,6 +204,30 @@ changes on a phone.
    and its road; nothing on the page waits for them, and nothing says they
    are missing. A call that failed is made again each time the person
    comes back to Find, which stays open under the other screens.
+7. Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.16, item 1) the
+   **title stands at the left of the scene**, in the display size, with
+   its line under it, and the car drives on the hills at the right; the
+   title's line is taller for it (spec 15, 5.3). Signed in, the title
+   greets by name and has no line under it. The **side column** starts
+   with a heading in the row beside "Leaving soon", and under it:
+   - signed out, **"How it works"**: one card with three numbered steps
+     (Find a ride, Book a seat, Meet and go), and under a line "Driving
+     somewhere? Offer the empty seats in your car." with "Offer a ride" as
+     a secondary button. It takes the place of the line that closed the
+     rides (item 3, decision 17), so the offer is said once; with no rides
+     the card of item 5 says it, and "How it works" keeps its steps alone;
+   - signed in, **"Needs you"** with the yellow card, or else "Your next
+     ride" with the ticket; when the card is about another ride than my
+     next one, "Your next ride" follows it. With nothing coming up the
+     empty row of decision 18 stays, and the line of item 3 closes the
+     rides as before.
+
+   The map follows under these. So for someone new the map is no longer
+   whole in a window 720 high (item 3): "How it works" is, with its
+   button, and the map comes into view with the first scroll. Signed in
+   with nothing coming up the map is whole in that window, and the link
+   under it ends 25 under the window's edge, as the title's line is 36
+   taller.
 
 ### 3.6 Search results
 
@@ -196,7 +235,10 @@ changes on a phone.
    map beside it, up to 640 wide, staying in view.
 2. The list is as today: the search summary with Change, the chips, the days
    and their trips. The chips wrap onto a second line instead of scrolling
-   sideways.
+   sideways. Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.6) the
+   chips are one row, on a phone too: the order, one Filters chip and the
+   number of rides at the right; the filters open under the row, where
+   they wrap (spec 4, 3.4, item 7).
 3. The map shows the part of Iceland the trips found are in, with the
    stretch of one trip drawn along the roads and its two meeting points
    standing out: the first trip found, or the trip the pointer or the
@@ -235,6 +277,13 @@ changes on a phone.
    the price it changes.
 5. There is no bottom bar. While the trip loads, and when it cannot be
    loaded, the screen is already a page (3.2, 8).
+6. Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.7 and 3.16) the
+   main column is the ticket of my part, the driver's card, "Where you
+   sit" and the rows (Weather and roads, Report this ride), one under the
+   other. Get in and Get out are the ticket's two ends, each with Change,
+   so nothing in the main column stands in two halves any more, and
+   `Halves` is gone. The side column is the booking panel, as in item 3,
+   then "The whole route".
 
 ### 3.8 Check and pay, and a request
 
@@ -252,6 +301,9 @@ changes on a phone.
    window turns narrow or wide, and so does a payment that is open (3.2,
    7). When the trip cannot be loaded the screen is a page all the same
    (3.2, 8).
+4. Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.19) the ride in
+   the side column is a ticket: the day, the two stops, the total with the
+   seats under it, and the driver and the car in its foot.
 
 ### 3.9 A booking
 
@@ -280,17 +332,36 @@ changes on a phone.
    every width, and what a wide screen shows in the side column stands in
    its phone place otherwise. While the booking loads, and when it cannot
    be loaded, the screen is a page (3.2, 8).
+5. Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.8, 3.9 and 3.16,
+   item 2) the two columns hold other things. Across the top, at the left:
+   Back and the title, which says where the booking stands, with one line
+   under it. **Main column:** a report about it, what else a cancellation
+   says (the note, the refund), changes to the ride, the review and the prompt, as before; then the road, and the
+   driver (with Message) and where to stand in their row, where to stand
+   first on the trip day. **Side column:** the page's main button first,
+   where there is one (Pay and the payment, the question about
+   withdrawing, "I'm here" and "The driver didn't come", "Rate the
+   driver", "Find another ride"), then the ride as a ticket, then the
+   rows: sharing the ride's details, the weather and the roads, reporting
+   a problem, and "Cancel booking" or "Withdraw request" last, in red. The
+   Safety card is gone, so the side column is still whole in a window 1280
+   by 720. What is open or was said in the side column stays when the
+   window turns narrow, where it stands in the bar at the bottom, and
+   wide again: the page keeps it, as these parts move between the two.
 
 ### 3.10 My rides
 
-1. The title and the Coming up / Past choice at the left.
+1. The title and the Coming up / Past choice at the left. Since
+   [spec 31](2026-11-26-one-ride-one-ticket.md) (3.10) "Offer a ride"
+   stands on the title's line, at the page's right edge.
 2. The rides as a grid in the same order: two columns in a window 900
    wide, three from about 1060. "Needs you" and "Coming up" are each a grid
    under its heading, so a ride that needs you comes first, as today.
    Cards in one row are equally tall.
 3. With no rides, and when they cannot be loaded, what stands in their
-   place (the line, Find a ride and Offer a ride, or the notice and Try
-   again) keeps the 480 column at the page's left.
+   place (the line and Find a ride, or the notice and Try again) keeps
+   the 480 column at the page's left. (Offer a ride was a second button
+   there until spec 31 moved it to the title.)
 
 ### 3.11 Messages
 
@@ -300,7 +371,11 @@ changes on a phone.
    other person's name, the day and the stretch, then Report and Block, the
    messages, and at the bottom the quick messages and the field with Send.
    Where the pane has no room for both, Report and Block go under the
-   name.
+   name. Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.13) the
+   pane's top is a conversation's top as on a phone: Back, the picture,
+   the name with who they are, the menu that holds Report and Block, and
+   the ride as one line; the quick messages stand over the field, on the
+   pane's ground.
 2. Messages in the menu opens the list with "Choose a conversation" in the
    right pane. No conversation opens by itself, because opening one tells
    the other person their messages were seen. With no conversations, or
@@ -334,16 +409,24 @@ changes on a phone.
 2. **Main column:** the two groups of rows (My cars, Driving licence,
    Meeting points; Settings, Terms, rules and privacy, Send feedback,
    Notices), the line about what is in Settings, and Sign out, at the left
-   (spec 16, 3.4 item 4).
+   (spec 16, 3.4 item 4). Since 2026-11-26 Terms, rules and privacy is
+   About PuffinRide ([spec 30](2026-11-26-about-page-and-footer.md)).
+   Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.14) the side
+   column is the person's card, with the rating and what is checked, a
+   short "Edit" and the photo's controls, and the main column the four
+   groups of rows that hold what Settings held, then Sign out.
 3. The title starts at the left, over the card. The card stays in view
-   while the rows scroll.
+   while the rows scroll. The card comes before the rows for the keyboard
+   and a screen reader too (spec 31, 3.20); until then the rows came
+   first, though they stand at its right.
 4. Signed out, Profile stays one centred column.
 
 ### 3.13 Offer a ride
 
 1. A step is two columns, centred as a pair: a **main column** 480 wide,
-   as a phone's, with Back, the step's progress, the title at the left and
-   the fields; and the **side column** beside it. The pair is 904 wide, so
+   as a phone's, with Back, the step's progress (the road, since
+   [spec 31](2026-11-26-one-ride-one-ticket.md), 3.11), the title at the
+   left and the fields; and the **side column** beside it. The pair is 904 wide, so
    in a window 900 wide the main column gives way a little.
 2. **Side column,** from the top: "Your trip so far"; the step's main
    button with the lines that belong to it; and on the route step the map
@@ -351,7 +434,9 @@ changes on a phone.
    map, not under it as drawn: it keeps its place when a route is chosen
    and is whole in a small laptop's window (1280 by 720) on every step
    (decision 13). On wide screens these steps have no bottom bar.
-3. "Your trip so far" has a row each for the route, the day and times, the
+3. "Your trip so far" has a row each for the route, the day and times
+   (called "Time" since spec 31, as on the road and the last step; it was
+   "Date and times"), the
    seats and booking, and the price (in the order of the steps since
    2026-11-22, when the seats moved before the price; spec 3). The open
    step's row shows what is
@@ -366,16 +451,20 @@ changes on a phone.
    "Step 2". The rows are short whatever the trip: the route is its two
    ends and "2 stops on the way", the times are the day and the first and
    the last time (both days, each with its time, when the trip ends on a
-   later day), the price is the level and the whole route's price, the
+   later day), the price is the whole way's price and the level ("3,400 ISK
+   the whole way · 110%", kronur first since spec 31, 3.11), the
    seats are their number and how people book. So the card is as tall on a
    route of ten stops as on one of two, and the button under it does not
    move. Each row has one spoken label, with a word where the screen has
    an arrow: "Route: Mjódd bus terminal to N1 Selfoss, 2 stops on the way".
 4. The last step, Check and publish, has the whole trip in its main
    column, so its side column holds Publish and what it waits for, and no
-   "Your trip so far".
+   "Your trip so far". Since spec 31 (3.11) the main column is the ride
+   as its ticket, its rows, the yellow card for what is missing and
+   Delete draft.
 5. Offer, the place in the menu, is step 1, with "Continue your draft" in
-   its main column. A draft that cannot be loaded is a page too (3.2, 8).
+   its main column (since spec 31, 3.11, the drafts as rows in one card
+   there). A draft that cannot be loaded is a page too (3.2, 8).
 6. What is typed, chosen or switched off on a step stays when the window
    turns narrow or wide: a step is one tree at every width, as a booking
    is (3.9, 4). The map and the button stand in their phone places
@@ -401,6 +490,17 @@ changes on a phone.
    window turns narrow or wide: one tree at every width, as a booking (3.9,
    4). A trip that is cancelled, or cannot be loaded, is a page with one
    column at its left (3.2, 8).
+5. Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.12 and 3.16, item 3)
+   the head is Back and "Your ride to Selfoss", with one line under it.
+   Main column: what needs the driver, the passengers, and "Drive it
+   again" with the two rows that post the ride again. Side column: the
+   ride as a ticket, with sharing in its corner; the seats in one line;
+   and the rows Edit the ride, "Share the ride's details", "Weather and
+   roads" and Cancel the ride, in the place of the two buttons at the
+   head's right. The side column is still whole in a window 1280 by 720
+   (decision 14). On the trip day "I'm here" leads the side column and is
+   whole in that window; until the ride leaves, the rows at the column's
+   end are then reached by scrolling it in a window lower than 800.
 
 ### 3.15 What stays one column
 
@@ -409,7 +509,12 @@ two columns), a meeting point, a public profile, cars, the licence, edit
 profile, settings and privacy pages, the screens for changing a published
 trip, cancel, report, block and rating screens, notices and legal
 documents. They gain the lined-up top bar and
-the pointer states.
+the pointer states. Since [spec 31](2026-11-26-one-ride-one-ticket.md)
+(3.19) the screens around a booking (cancelling it, the reports and their
+answer, rating, blocking and reporting) have their main button in the bar
+at the bottom here too, as they have no side column for it; so have
+cancelling a ride and the screens for changing a published trip, whose
+Edit trip is one card of rows in that column.
 
 ## 4. Rules
 
@@ -475,7 +580,11 @@ Every other text is one the app has.
   dark in Icelandic. Pictures of every changed screen, before and now at
   1440 wide, are in the project files under `laptop-web/built`. On Find
   the journey also points at a ride and looks for it on the map, and
-  checks the map and the link under it are whole in a window 720 high.
+  checks what stands first in the side column is whole in a window 720
+  high: "How it works" for someone signed out (spec 31, 3.16; the map
+  under it is then partly below the fold), and the map for someone signed
+  in with nothing coming up (the link under it then ends just under the
+  window's edge).
 - By hand, still to do (Martin): a look at the main screens in a laptop's
   browser, and a keyboard-only pass through Find, results, a trip and
   Messages.

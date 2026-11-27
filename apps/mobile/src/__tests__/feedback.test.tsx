@@ -1,6 +1,8 @@
-import { act, fireEvent, screen, waitFor } from "expo-router/testing-library";
+import { act, fireEvent, screen, waitFor, within } from "expo-router/testing-library";
+import { AccessibilityInfo } from "react-native";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
+import { filledButtons } from "@/testing/buttons";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
 import { listening, shake } from "@/testing/sensors";
 import { captureScreen, screenshotIs } from "@/testing/view-shot";
@@ -143,6 +145,39 @@ describe("Send feedback (spec 12, 3.3)", () => {
     expect(await screen.findByRole("header", { name: "My profile" })).toBeVisible();
   });
 
+  it("says thanks as the title, at the left and with focus, with Done as the one main button in the bar (spec 31, 3.19)", async () => {
+    const focus = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
+    await start("/profile");
+    await openFromProfile();
+    await fireEvent.press(screen.getByRole("radio", { name: "Something isn't working" }));
+    await fireEvent.changeText(screen.getByLabelText("Your message"), "The map does not move.");
+    focus.mockClear();
+    await fireEvent.press(screen.getByRole("button", { name: "Send feedback" }));
+    // The outcome is the title, with where an answer will show under it;
+    // focus takes both, as the button pressed is gone.
+    const head = within(await screen.findByTestId("screen-head"));
+    const thanks = await head.findByRole("header", { name: "Thank you. We got your feedback." });
+    expect(thanks).not.toHaveStyle({ textAlign: "center" });
+    const where = head.getByText("If we reply, you'll see it under My feedback in Profile.");
+    expect(where).not.toHaveStyle({ textAlign: "center" });
+    expect(screen.queryByRole("header", { name: "Send feedback" })).toBeNull();
+    expect(focus).toHaveBeenCalledTimes(1);
+    focus.mockRestore();
+    // Nothing to go back to: the form is sent.
+    expect(head.queryByRole("button", { name: "Back" })).toBeNull();
+    // The way on is the one main button, in the bar.
+    const done = within(screen.getByTestId("bottom-bar")).getByRole("button", { name: "Done" });
+    expect(done).toHaveStyle({ minHeight: 56 });
+    expect(filledButtons()).toBe(1);
+    expect(screen.getByTestId("filled-button")).toBe(done);
+    // The way to what I sent is a row under it.
+    await fireEvent.press(
+      within(screen.getByTestId("action-rows")).getByRole("button", { name: "My feedback" }),
+    );
+    expect(await screen.findByRole("header", { name: "My feedback" })).toBeVisible();
+    expect(screen).toHavePathname("/settings/feedback");
+  });
+
   it("sends no picture once the person removed it", async () => {
     const app = await start("/profile");
     await openFromProfile();
@@ -228,8 +263,8 @@ describe("Send feedback (spec 12, 3.3)", () => {
     expect(await screen.findByRole("header", { name: "Send feedback" })).toBeVisible();
   });
 
-  it("opens from Settings, and from there shows My feedback", async () => {
-    await start("/settings", {
+  it("shows My feedback, from its row on Profile", async () => {
+    await start("/profile", {
       mine: [
         {
           ...received,
@@ -246,7 +281,7 @@ describe("Send feedback (spec 12, 3.3)", () => {
         },
       ],
     });
-    await fireEvent.press(await screen.findByRole("button", { name: "My feedback" }));
+    await fireEvent.press(await screen.findByRole("link", { name: "My feedback" }));
     expect(await screen.findByRole("header", { name: "My feedback" })).toBeVisible();
     expect(await screen.findByText("Something isn't working · 17 November 2026")).toBeVisible();
     expect(screen.getByText("The map does not move.")).toBeVisible();
@@ -304,9 +339,11 @@ describe("Shake to send feedback (spec 12, 3.3.1)", () => {
     expect(captureScreen).toHaveBeenCalledTimes(1);
   });
 
-  it("can be turned off in Settings, and stays off", async () => {
-    await start("/settings");
-    const toggle = await screen.findByRole("switch", { name: /^Shake to send feedback/ });
+  it("can be turned off on Profile, in a row under Send feedback, and stays off", async () => {
+    await start("/profile");
+    const toggle = await screen.findByRole("switch", {
+      name: "Shake to send feedback. Shaking your phone opens Send feedback.",
+    });
     expect(toggle).toBeChecked();
     await waitFor(() => {
       expect(listening()).toBe(1);

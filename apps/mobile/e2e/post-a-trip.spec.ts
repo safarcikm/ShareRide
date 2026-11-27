@@ -9,8 +9,11 @@ import { chooseTime, englishWheel, timeField, tomorrow, type WheelTexts } from "
  * and its rides leaving soon can show the same prices.
  */
 function shownText(page: Page, text: string) {
-  return page.getByText(text, { exact: true }).filter({ visible: true });
+  return page.getByText(text, { exact: true }).filter(shown);
 }
+
+/** Screens left behind stay in the page: only what is on show counts. */
+const shown = { visible: true } as const;
 
 // Spec 3's journey on the web build, against the test API and its sample
 // meeting points: a first-time driver posts Reykjavík to Akureyri, adds a
@@ -48,11 +51,21 @@ interface Journey {
   readonly lower: string;
   readonly lowerPrice: string;
   readonly reviewPrice: string;
+  /** What a screen reader hears of the road on step 1 and on step 5. */
+  readonly roadRoute: string;
+  readonly roadCheck: string;
+  /** Step 5's line over the ride as others will see it. */
+  readonly reviewLine: string;
+  /** The row of step 5 that opens the route. */
+  readonly routeRow: RegExp;
   readonly toSeats: string;
   readonly pets: string;
   readonly toReview: string;
   readonly reviewTitle: string;
   readonly missing: string;
+  /** The yellow card once the photo is added: what is done and what is left. */
+  readonly missingTwo: string;
+  readonly leftTwo: string;
   readonly photo: PhotoTexts;
   readonly addCar: string;
   readonly make: string;
@@ -64,9 +77,16 @@ interface Journey {
   readonly confirm: string;
   readonly publish: string;
   readonly published: string;
+  readonly shareRide: string;
+  readonly copyText: string;
+  readonly textCopied: string;
+  readonly post: RegExp;
+  readonly downloadPicture: string;
   readonly addEmailPrompt: string;
   readonly seeTrips: string;
-  readonly publishedTrips: string;
+  /** My rides' title, and what the name of a ride I drive starts with there. */
+  readonly myRides: string;
+  readonly myRide: RegExp;
 }
 
 const inEnglish: Journey = {
@@ -96,12 +116,19 @@ const inEnglish: Journey = {
   fullPrice: "5,600 ISK",
   lower: "Lower the price",
   lowerPrice: "4,600 ISK",
-  reviewPrice: "80% · the whole route 4,600 ISK",
+  reviewPrice: "4,600 ISK the whole way",
+  roadRoute: "Step 1 of 5: Route",
+  roadCheck: "Step 5 of 5: Check",
+  reviewLine: "This is how people will see your ride.",
+  routeRow:
+    /^Route, BSÍ bus terminal to Hof bus stop, Akureyri, with \d+ stops? on the way, Change$/,
   toSeats: "Choose seats",
   pets: "Pets welcome",
-  toReview: "Review your trip",
+  toReview: "Check your ride",
   reviewTitle: "Check and publish",
   missing: "Three things before you publish",
+  missingTwo: "Two things before you publish",
+  leftTwo: "Your photo is done. Your car and your driving licence are left.",
   photo: englishPhoto,
   addCar: "Add a car",
   make: "Make",
@@ -111,11 +138,17 @@ const inEnglish: Journey = {
   confirmLicence: "Confirm your licence",
   declaration: "I declare that I hold a valid driving licence for the cars I drive on PuffinRide",
   confirm: "Confirm",
-  publish: "Publish trip",
-  published: "Your trip is published",
-  addEmailPrompt: "Add an email so we can reach you if your trip changes.",
-  seeTrips: "See my trips",
-  publishedTrips: "Published",
+  publish: "Publish ride",
+  published: "Your ride is published",
+  shareRide: "Share this ride",
+  copyText: "Copy text",
+  downloadPicture: "Download picture",
+  textCopied: "Text copied. Paste it into your post.",
+  post: /^Offering a ride: .+\n.+\n(Stops on the way: .+\n)?(Book|Ask for) a seat on PuffinRide: http:\/\/localhost:\d+\/trips\/[0-9a-f-]+\?from=0&to=\d+$/u,
+  addEmailPrompt: "Add an email so we can reach you if your ride changes.",
+  seeTrips: "See my rides",
+  myRides: "My rides",
+  myRide: /^You drive, /,
 };
 
 const inIcelandic: Journey = {
@@ -145,12 +178,18 @@ const inIcelandic: Journey = {
   fullPrice: "5.600 kr.",
   lower: "Lækka verðið",
   lowerPrice: "4.600 kr.",
-  reviewPrice: "80% · öll leiðin 4.600 kr.",
+  reviewPrice: "4.600 kr. alla leið",
+  roadRoute: "Skref 1 af 5: Leið",
+  roadCheck: "Skref 5 af 5: Yfirfara",
+  reviewLine: "Svona sér fólk ferðina þína.",
+  routeRow: /^Leið, BSÍ til Hof, Akureyri, með \d+ viðkomust(?:að|öðum) á leiðinni, Breyta$/,
   toSeats: "Velja sæti",
   pets: "Gæludýr velkomin",
   toReview: "Fara yfir ferðina",
   reviewTitle: "Yfirfara og birta",
   missing: "Þrennt áður en þú birtir",
+  missingTwo: "Tvennt áður en þú birtir",
+  leftTwo: "Myndin er komin. Bíllinn og ökuskírteinið eru eftir.",
   photo: {
     reviewTitle: "Yfirfara og birta",
     addPhoto: "Bæta við mynd",
@@ -167,9 +206,15 @@ const inIcelandic: Journey = {
   confirm: "Staðfesta",
   publish: "Birta ferð",
   published: "Ferðin þín er birt",
+  shareRide: "Deildu þessari ferð",
+  copyText: "Afrita texta",
+  downloadPicture: "Sækja mynd",
+  textCopied: "Textinn var afritaður. Límdu hann í færsluna.",
+  post: /^Býð far: .+\n.+\n(Mótsstaðir á leiðinni: .+\n)?(Bókaðu|Óskaðu eftir) sæti á PuffinRide: http:\/\/localhost:\d+\/trips\/[0-9a-f-]+\?from=0&to=\d+$/u,
   addEmailPrompt: "Bættu við netfangi svo við getum látið þig vita ef ferðin breytist.",
   seeTrips: "Sjá ferðirnar mínar",
-  publishedTrips: "Birtar",
+  myRides: "Ferðirnar mínar",
+  myRide: /^Þú ekur, /,
 };
 
 async function choose(page: Page, field: string, label: string, typed: string, card: RegExp) {
@@ -183,8 +228,10 @@ async function postTrip(page: Page, journey: Journey) {
   // Offer opens straight on step 1 (spec 16, 3.6).
   await page.getByRole("button", { name: journey.offerRide }).click();
 
-  // 1. The route, with the meeting points on the way.
+  // 1. The route, with the meeting points on the way. The road stands
+  // where "Step 1 of 5" and its bars stood (spec 31, 3.11).
   await expect(page.getByRole("heading", { name: journey.routeTitle })).toBeVisible();
+  await expect(page.getByRole("img", { name: journey.roadRoute })).toBeVisible();
   await choose(page, journey.from, journey.fromLabel, "BSÍ", journey.start);
   await choose(page, journey.to, journey.toLabel, "Hof", journey.end);
   await expect(page.getByRole("switch", { name: journey.onTheWay })).toBeChecked();
@@ -231,13 +278,21 @@ async function postTrip(page: Page, journey: Journey) {
   await expect(page.getByText("80%", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: journey.toReview }).click();
 
-  // 5. Check: the photo, car and licence come first and are done from
-  // here; Publish waits for them.
+  // 5. Check: the ride as others will see it, each part as a row with
+  // Change, and one yellow card for the photo, car and licence, which are
+  // done from here; Publish waits for them (spec 31, 3.11, items 3 to 5).
   await expect(page.getByRole("heading", { name: journey.reviewTitle })).toBeVisible();
-  await expect(page.getByRole("heading", { name: journey.missing })).toBeVisible();
+  await expect(page.getByRole("img", { name: journey.roadCheck }).filter(shown)).toBeVisible();
+  await expect(shownText(page, journey.reviewLine)).toBeVisible();
+  await expect(page.getByTestId("preview-ticket").filter(shown)).toBeVisible();
+  await expect(page.getByRole("link", { name: journey.routeRow }).filter(shown)).toBeVisible();
+  await expect(shownText(page, journey.missing)).toBeVisible();
   await expect(page.getByRole("button", { name: journey.publish })).toBeDisabled();
   await addPhotoBeforePublishing(page, journey.photo);
   await expect(page.getByRole("heading", { name: journey.reviewTitle })).toBeVisible();
+  // The card names what is done and what is left, with the next one's button.
+  await expect(shownText(page, journey.missingTwo)).toBeVisible();
+  await expect(shownText(page, journey.leftTwo)).toBeVisible();
   await page.getByRole("button", { name: journey.addCar }).click();
   await page.getByLabel(journey.make).fill("Toyota");
   await page.getByLabel(journey.model).fill("Yaris");
@@ -249,27 +304,44 @@ async function postTrip(page: Page, journey: Journey) {
   await page.getByRole("button", { name: journey.confirm, exact: true }).click();
   await expect(page.getByRole("heading", { name: journey.reviewTitle })).toBeVisible();
   await expect(shownText(page, journey.reviewPrice)).toBeVisible();
-  await expect(page.getByRole("heading", { name: journey.missing })).toBeHidden();
+  await expect(page.getByTestId("needs-you-card").filter(shown)).toHaveCount(0);
 
   await page.getByRole("button", { name: journey.publish }).click();
+  await expect(page.getByRole("heading", { name: journey.published })).toBeVisible();
+  // The ride as the ticket it is in My rides (spec 31, 3.19).
+  await expect(page.getByRole("button", { name: journey.myRide }).filter(shown)).toBeVisible();
+  // Share this ride (spec 28, 3.2): the post's text, in the app's language, copied.
+  await expect(page.getByRole("heading", { name: journey.shareRide })).toBeVisible();
+  await page.getByRole("button", { name: journey.copyText }).click();
+  await expect(page.getByTestId("notice").filter({ hasText: journey.textCopied })).toBeVisible();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toMatch(journey.post);
+  // The story picture (3.5), saved from the page under its route's name.
+  const saved = page.waitForEvent("download");
+  await page.getByRole("button", { name: journey.downloadPicture }).click();
+  expect((await saved).suggestedFilename()).toMatch(/^puffinride-[a-z0-9-]+\.png$/);
   await expect(page.getByRole("heading", { name: journey.published })).toBeVisible();
   // No push on the web, but the account's email reaches them: no prompt
   // for one (spec 7, 3.6.2; spec 26).
   await expect(page.getByText(journey.addEmailPrompt)).toHaveCount(0);
   await page.getByRole("button", { name: journey.seeTrips }).click();
-  await expect(page.getByRole("heading", { name: journey.publishedTrips })).toBeVisible();
+  // My rides, with the ride just published as a ticket (spec 31, 3.10).
+  await expect(page).toHaveURL("/my-rides");
+  await expect(page.getByRole("heading", { name: journey.myRides, exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: journey.myRide }).filter({ visible: true }),
+  ).toBeVisible();
 }
 
-test.describe("posting a trip on the web, in English", () => {
-  test.use({ locale: "en-GB" });
+test.describe("posting a ride on the web, in English", () => {
+  test.use({ locale: "en-GB", permissions: ["clipboard-read", "clipboard-write"] });
 
   test("a first-time driver posts Reykjavík to Akureyri", async ({ page }) => {
     await postTrip(page, inEnglish);
   });
 });
 
-test.describe("posting a trip on the web, in Icelandic", () => {
-  test.use({ locale: "is-IS" });
+test.describe("posting a ride on the web, in Icelandic", () => {
+  test.use({ locale: "is-IS", permissions: ["clipboard-read", "clipboard-write"] });
 
   test("a first-time driver posts Reykjavík to Akureyri", async ({ page }) => {
     await postTrip(page, inIcelandic);

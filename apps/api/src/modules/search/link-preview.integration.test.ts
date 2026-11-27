@@ -62,7 +62,7 @@ describe("a shared ride's card on its trip page (spec 23, 3.10)", () => {
     const page = await (await website().request(`/trips/${north}?from=1&to=2&lang=en`)).text();
     expect(meta(page, "og:title")).toBe("N1 Borgarnes → Olís Blönduós · Sat 14 Nov at 10:00");
     expect(meta(page, "og:description")).toBe(
-      "A shared ride on PuffinRide, carpooling across Iceland. See the trip and book a seat.",
+      "A shared ride on PuffinRide, carpooling across Iceland. See the ride and book a seat.",
     );
     expect(meta(page, "og:image")).toMatch(
       new RegExp(
@@ -121,6 +121,53 @@ describe("GET /v1/trips/{id}/preview.png (spec 23, 3.10, item 4)", () => {
       "/v1/trips/not-an-id/preview.png",
     ]) {
       expect((await api.request(path)).status, path).toBe(404);
+    }
+  });
+});
+
+describe("GET /v1/trips/{id}/story.png (spec 28, 3.5)", () => {
+  it("draws the part's story, 1080 by 1920, as it is now", async () => {
+    const response = await api.request(`/v1/trips/${north}/story.png?fromStop=1&toStop=2&lang=is`);
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toBe("image/png");
+    expect(response.headers.get("cache-control")).toBe("no-cache");
+    expect(response.headers.get("content-disposition")).toBeNull();
+    const png = Buffer.from(await response.arrayBuffer());
+    expect([png.readUInt32BE(16), png.readUInt32BE(20)]).toEqual([1080, 1920]);
+  });
+
+  it("answers a file to save, named after the route", async () => {
+    const response = await api.request(
+      `/v1/trips/${north}/story.png?fromStop=0&toStop=3&lang=en&download=1`,
+    );
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-disposition")).toMatch(
+      /^attachment; filename="puffinride-[a-z0-9-]+\.png"$/,
+    );
+  });
+
+  it("has no story where the trip page keeps the general card", async () => {
+    for (const path of [
+      `/v1/trips/${home}/story.png`,
+      `/v1/trips/${sampleId("trip:nobody")}/story.png`,
+      `/v1/trips/${north}/story.png?fromStop=2&toStop=1`,
+      "/v1/trips/not-an-id/story.png",
+    ]) {
+      expect((await api.request(path)).status, path).toBe(404);
+    }
+  });
+});
+
+describe("a trip's pictures on other sites (spec 28, 3.5)", () => {
+  it("lets any site show them, and nothing else the API answers", async () => {
+    for (const kind of ["preview", "story"]) {
+      const path = `/v1/trips/${north}/${kind}.png?fromStop=1&toStop=2`;
+      const response = await api.request(path);
+      expect(response.headers.get("cross-origin-resource-policy"), path).toBe("cross-origin");
+    }
+    for (const path of [`/v1/trips/${home}/story.png`, `/v1/trips/${north}`, "/v1/health"]) {
+      const response = await api.request(path);
+      expect(response.headers.get("cross-origin-resource-policy"), path).toBe("same-origin");
     }
   });
 });

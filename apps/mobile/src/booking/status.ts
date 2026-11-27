@@ -23,20 +23,32 @@ export function statusKey(booking: Booking): MessageKey {
     : `booking.status.${booking.status}`;
 }
 
+/**
+ * What a status tag's colour says (spec 31, 3.2, rule 6, and decision 10):
+ * blue is waiting, amber is yours and now ("Waiting for payment"), moss is
+ * good news and red is a problem. A booking that was declined, expired,
+ * cancelled or withdrawn asks nothing of anyone, so its tag is quiet.
+ */
 const statusTags: Record<Booking["status"], TagKind> = {
   requested: "info",
   accepted: "warning",
   confirmed: "positive",
-  declined: "warning",
-  expired: "warning",
-  cancelled: "warning",
+  declined: "plain",
+  expired: "plain",
+  cancelled: "plain",
   completed: "positive",
-  no_show: "warning",
+  no_show: "problem",
 };
 
-/** The status tag's look: a withdrawal was the passenger's own choice. */
+/**
+ * The status tag's look. Amber is for the one who has to do something: a
+ * seat waiting for payment waits for its passenger, so its driver reads
+ * it in blue, as something that waits (spec 31, 3.10).
+ */
 export const statusTag = (booking: Booking): TagKind =>
-  isWithdrawn(booking) ? "info" : statusTags[booking.status];
+  booking.status === "accepted" && booking.viewer === "driver"
+    ? "info"
+    : statusTags[booking.status];
 
 /**
  * When the booking's own page asks its passenger to turn on notifications or

@@ -26,6 +26,14 @@ interface Journey {
   readonly partOf: string;
   readonly seatsLeft: string;
   readonly recent: string;
+  /** The one row over the rides, and the card that ends them (spec 31, 3.6). */
+  readonly sort: string;
+  readonly filters: string;
+  readonly instantOnly: string;
+  readonly oneFilter: string;
+  readonly rides: RegExp;
+  readonly everyRide: string;
+  readonly allRides: string;
 }
 
 const journeys: readonly Journey[] = [
@@ -38,7 +46,7 @@ const journeys: readonly Journey[] = [
     toLabel: "To",
     borgarnes: /^N1 Borgarnes,/,
     blonduos: /^Olís Blönduós,/,
-    submit: "Search",
+    submit: "Find a ride",
     header: "Change search: N1 Borgarnes → Olís Blönduós, Any day, 1 seat",
     changeSearch: "Change search",
     findRide: "Find a ride",
@@ -47,6 +55,13 @@ const journeys: readonly Journey[] = [
     partOf: "Anna drives BSÍ bus terminal → Hof bus stop, Akureyri",
     seatsLeft: "3 seats left",
     recent: "Recent searches",
+    sort: "Sort: Earliest",
+    filters: "Filters",
+    instantOnly: "Book instantly only",
+    oneFilter: "Filters: 1 on",
+    rides: /^\d+ rides?$/,
+    everyRide: "That's every ride found",
+    allRides: "All rides",
   },
   {
     locale: "is-IS",
@@ -57,7 +72,7 @@ const journeys: readonly Journey[] = [
     toLabel: "Til",
     borgarnes: /^N1 Borgarnesi,/,
     blonduos: /^Olís Blönduósi,/,
-    submit: "Leita",
+    submit: "Finna far",
     header: "Breyta leit: N1 Borgarnesi → Olís Blönduósi, Allir dagar, 1 sæti",
     changeSearch: "Breyta leit",
     findRide: "Finna far",
@@ -66,6 +81,13 @@ const journeys: readonly Journey[] = [
     partOf: "Anna ekur BSÍ → Hof, Akureyri",
     seatsLeft: "3 sæti laus",
     recent: "Nýlegar leitir",
+    sort: "Röðun: Fyrst",
+    filters: "Síur",
+    instantOnly: "Aðeins bókun strax",
+    oneFilter: "Síur: 1 virk",
+    rides: /^\d+ ferð(ir)?$/,
+    everyRide: "Ekki fundust fleiri ferðir",
+    allRides: "Allar ferðir",
   },
 ];
 
@@ -108,6 +130,41 @@ for (const journey of journeys) {
       await expect(result).toBeVisible();
       await expect(result.getByText(journey.partOf)).toBeVisible();
       await expect(result.getByText(journey.seatsLeft)).toBeVisible();
+
+      // One row over the rides: the order, Filters and how many rides there
+      // are, the count at the row's right. Find stays in the page under the
+      // results, so the row is looked for on the results only.
+      const results = page
+        .getByTestId("screen-scroll")
+        .filter({ has: page.getByTestId("results-heading") });
+      const row = results.getByTestId("results-row");
+      await expect(row.getByRole("button", { name: journey.sort, exact: true })).toBeVisible();
+      const count = row.getByText(journey.rides);
+      await expect(count).toBeVisible();
+      const rowBox = await row.boundingBox();
+      const countBox = await count.boundingBox();
+      expect((countBox?.x ?? 0) + (countBox?.width ?? 0)).toBeCloseTo(
+        (rowBox?.x ?? 0) + (rowBox?.width ?? 0),
+        0,
+      );
+      expect(countBox?.y).toBeLessThan((rowBox?.y ?? 0) + 44);
+      // Filters opens today's filters under the row, and counts the ones on.
+      const filters = row.getByRole("button", { name: journey.filters, exact: true });
+      await expect(filters).toHaveAttribute("aria-expanded", "false");
+      await filters.click();
+      const instant = results.getByRole("checkbox", { name: journey.instantOnly });
+      await instant.click();
+      await expect(row.getByRole("button", { name: journey.oneFilter })).toBeVisible();
+      await instant.click();
+      await expect(filters).toHaveAttribute("aria-expanded", "true");
+      await expect(result).toBeVisible();
+      // The list ends with a card that leads to every ride leaving soon.
+      const end = results.getByTestId("results-end");
+      await expect(end.getByText(journey.everyRide, { exact: true })).toBeVisible();
+      await expect(end.getByRole("link", { name: journey.allRides })).toHaveAttribute(
+        "href",
+        "/rides",
+      );
 
       // The search is kept on this device for one-tap repeat.
       await page.goBack();

@@ -1,9 +1,9 @@
-import { checkNote, type TripPreferences } from "@shareride/domain";
+import type { TripPreferences } from "@shareride/domain";
 import { useState } from "react";
 import { Body, Heading } from "@/components/text";
 import { ChangePartScreen, WithTripToChange, type TripToChange } from "@/driver-trip/change-screen";
 import { useLanguage } from "@/i18n/language";
-import { NoteField, PreferenceChoices } from "@/trips/preference-fields";
+import { NoteField, noteProblem, PreferenceChoices } from "@/trips/preference-fields";
 
 /**
  * A published trip's preferences and note (spec 6, 3.2): shown on the
@@ -33,7 +33,7 @@ function EditDetails({ trip }: { readonly trip: TripToChange }) {
       trip={trip}
       title={t("trip.editDetailsAction")}
       change={same ? null : { kind: "details", preferences, note: trimmed }}
-      blocked={checkNote(note).length > 0}
+      blocked={noteProblem(t, note)}
     >
       <Body align="start">{t("trip.editDetailsHelp")}</Body>
       <Heading>{t("trip.prefs.title")}</Heading>

@@ -1,71 +1,86 @@
-import { bookingRoute, withdrawRequestRoute, type Booking } from "@shareride/contracts";
+import { bookingRoute, type Booking } from "@shareride/contracts";
 import { holdsSeats } from "@shareride/domain";
-import { capitalised, formatDay, formatMoney } from "@shareride/i18n";
+import { formatMoney } from "@shareride/i18n";
 import { router, useLocalSearchParams } from "expo-router";
-import { CircleCheck } from "lucide-react-native";
-import { useCallback, useState } from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { Flag, MessageCircle, Share, UserX, X } from "lucide-react-native";
+import { useCallback, useState, type ReactNode } from "react";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { errorText } from "@/auth/errors";
 import { useSession } from "@/auth/session";
+import { BookingTicket } from "@/booking/booking-ticket";
+import { PaymentSheet, usePayment } from "@/booking/payment";
 import {
   canCancel,
-  isWithdrawn,
   offersSearchAgain,
   promptOccasion,
   searchAgainHref,
   statusKey,
-  statusTag,
 } from "@/booking/status";
-import { PaymentSheet, usePayment } from "@/booking/payment";
-import { cancellationTexts, payByText, requestSentText } from "@/booking/texts";
+import { endedLines } from "@/booking/texts";
+import { bookingRoad, bookingTitle } from "@/booking/title";
 import { TripChanges, useMoveChoice } from "@/booking/trip-changes";
 import { showsWhereToStand, WhereToStand } from "@/booking/where-to-stand";
-import { BackButton } from "@/components/back-button";
+import { useWithdraw, WithdrawQuestion } from "@/booking/withdraw";
 import { otherPerson } from "@/chat/texts";
+import { ActionRows } from "@/components/action-rows";
+import { Announcer } from "@/components/announcer";
+import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
 import { Columns, PageColumn } from "@/components/columns";
 import { Grid } from "@/components/grid";
-import { Icon } from "@/components/icon";
 import { Notice } from "@/components/notice";
+import { Road } from "@/components/road";
+import { Row } from "@/components/row";
 import { Screen, useWideScreen } from "@/components/screen";
-import { Tag } from "@/components/tag";
+import { ScreenHead } from "@/components/screen-head";
 import { TakesFocus } from "@/components/takes-focus";
-import { Body, Heading, Title } from "@/components/text";
+import { Body } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { now } from "@/lib/clock";
+import { shareText, type ShareOutcome } from "@/lib/share";
+import { useClock } from "@/lib/use-clock";
 import { useLoadedOnFocus } from "@/lib/use-loaded";
-import { bookingShareText } from "@/safety/share-details";
-import { TripSafety } from "@/safety/trip-safety";
 import { NotificationsPrompt } from "@/notifications/notifications-prompt";
-import { onTripDay, PassengerImHere, TripDayHeading } from "@/trip-day/passenger";
+import { firstNameOf } from "@/people/texts";
+import { canRate } from "@/reviews/held-back";
 import { ReviewSection } from "@/reviews/review-section";
+import { bookingShareText } from "@/safety/share-details";
+import { showsWeatherAndRoads, WeatherAndRoadsRow } from "@/safety/weather-roads-row";
+import { spacing } from "@/theme/tokens";
+import { usePalette } from "@/theme/use-palette";
+import { onTripDay, PassengerImHere, showsImHere } from "@/trip-day/passenger";
 import { ReportStatus } from "@/trip-day/report-status";
 import { offersDriverAbsent, reportState } from "@/trip-day/reports";
 import { useTripDayRefresh } from "@/trip-day/use-refresh";
-import { DriverAndCar, PartStop } from "@/trip-details/trip-parts";
-import { controlOutline, maxContentWidth, spacing, typography } from "@/theme/tokens";
-import { usePalette } from "@/theme/use-palette";
-import { firstNameOf } from "@/people/texts";
+import { DriverCard } from "@/trip-details/driver-card";
 
 /**
- * A booking (spec 5, screens 3, 4, 6 and 8): a request waiting for the
- * driver, which can be withdrawn; an accepted booking to pay for; a confirmed
- * seat with the number plate and where to stand; or one that ended, with
- * "Search again". Until the real provider comes (spec 13), paying opens the
- * test sheet, where no money moves. Once a request is accepted, or a booking
- * paid here, someone we could not reach yet is asked to turn on
- * notifications or add an email (spec 7, 3.6.2). An accepted or confirmed
- * booking ends with "Cancel booking", which opens its own screen (spec 6,
- * 3.5); coming back from it with `cancelled`, focus moves to the outcome.
- * From the wait after the time to get in, the passenger can say the driver
- * didn't come, and a report about the booking shows above its status, to
- * answer if it is about them (spec 8, 3.3 to 3.5); coming back from
- * reporting or answering with `report`, focus moves to it.
- * Changes to the trip since booking show, with the choice to keep or
- * cancel after a big move (spec 6, 3.2). It loads again each time it comes
- * into view, and when pulled down (spec 16, 3.9). On a wide screen it is a
- * page of two columns (spec 18, 3.9).
+ * A booked seat (spec 31, 3.8 and 3.9; spec 5, screens 3, 4, 6 and 8). Its
+ * title says where the booking stands: a request waiting for the driver,
+ * a seat to pay for, a seat confirmed, the trip day counting down, a ride
+ * to review, or how it ended; one line under it says what happens next,
+ * and a road shows how far it has come. Then the ride as a ticket, the
+ * driver with Message and the car, where to stand, and rows for the rest,
+ * with what cannot be undone red and last: "Cancel booking", which opens
+ * its own screen (spec 6, 3.5), or "Withdraw request", which asks first.
+ *
+ * It has one main button at most (R31.1), in the bar at the bottom: Pay
+ * (until the real provider comes, spec 13, it opens the test sheet, where
+ * no money moves), "I'm here" on the trip day with "The driver didn't
+ * come" once that is offered (spec 8, 3.2 to 3.4), "Rate the driver" once
+ * the ride is over, or "Find another ride" after a booking that ended. On
+ * a wide screen it is a page of two columns (3.16, item 2): the road, the
+ * driver and where to stand in the main one, and in the side one what the
+ * bar holds, the ticket and the rows.
+ *
+ * Reports about the booking and changes to the ride come directly under
+ * the title. Once a request is accepted, or a booking paid here, someone
+ * we could not reach yet is asked to turn on notifications or add an
+ * email (spec 7, 3.6.2). Coming back from cancelling with `cancelled`, or
+ * from reporting or answering with `report`, focus moves to the outcome.
+ * It loads again each time it comes into view, and when pulled down (spec
+ * 16, 3.9).
  */
 export default function BookingScreen() {
   const { t } = useLanguage();
@@ -135,6 +150,8 @@ export default function BookingScreen() {
       : answer.data;
   return (
     <BookingDetails
+      // What was said, asked or opened here is about this booking.
+      key={booking.id}
       booking={booking}
       announce={acted || cancelled === "1"}
       reported={report === "1" && !reportAnnounced}
@@ -169,17 +186,17 @@ function BookingDetails({
   onPull,
 }: {
   readonly booking: Booking;
-  /** The status changed on this screen: focus moves to it when it shows. */
+  /** The status changed on this screen: focus moves to the title when it does. */
   readonly announce: boolean;
   /**
    * A report about it was just made or answered: focus moves to where it
-   * stands, or to the status when that says how it ended, once.
+   * stands, or to the title when that says how it ended, once.
    */
   readonly reported: boolean;
   readonly onReportAnnounced: () => void;
   /** Why the booking was loaded again, if it was. */
   readonly stale: string | null;
-  /** The passenger starts paying or withdrawing. */
+  /** The passenger starts paying, withdrawing or cancelling. */
   readonly onAction: () => void;
   /** The booking as a payment or withdrawal left it. */
   readonly onChanged: (booking: Booking) => void;
@@ -191,154 +208,302 @@ function BookingDetails({
   readonly onPull: () => Promise<boolean | null>;
 }) {
   const { locale, t } = useLanguage();
-  const palette = usePalette();
+  const wide = useWideScreen();
+  // The title counts: "Leaves in 10 minutes" (3.9).
+  const at = useClock();
   const { board, alight, confirmed } = booking;
-  const name = (stop: Booking["board"]) => stop.meetingPoint.name[locale];
-  const total = formatMoney(booking.total, locale);
-  const free = booking.total.amount === 0;
   const passenger = booking.viewer === "passenger";
+  const total = formatMoney(booking.total, locale);
   const occasion = promptOccasion(booking);
   const moveChoice = useMoveChoice(booking, now());
-  // The trip day (spec 8, 3.1): when and where first, then the car and the
-  // driver, then "I'm here" and the chat. It is used while parked.
+  // The trip day (spec 8, 3.1; spec 31, 3.9): where to stand comes first,
+  // then the driver and the car. It is used while parked.
   const tripDay = onTripDay(booking);
-  const wide = useWideScreen();
-  const part = (
-    <Card>
-      <PartStop stop={board} getIn />
-      <PartStop stop={alight} getIn={false} />
-      <View style={[styles.divider, { backgroundColor: palette.border }]} />
-      <View style={styles.spread}>
-        <Text style={[typography.label, { color: palette.text }]}>
-          {t("search.seatCount", { count: booking.seats })}
-        </Text>
-        <Text style={[typography.figure, { color: palette.text }]}>
-          {free ? t("results.free") : total}
-        </Text>
-      </View>
-    </Card>
-  );
+  // Paying and the question about withdrawing live here, so each stays
+  // open when the window crosses the breakpoint and its place moves
+  // between the bar and the side column.
+  const payment = usePayment({ onSettled: onChanged, onStale });
+  const withdrawing = useWithdraw({ booking, onStart: onAction, onWithdrawn: onChanged, onStale });
+  // So are that "I'm here" was said here, and that focus went to what it
+  // told: moving it between the bar and the side column says nothing new.
+  const [saidHere, setSaidHere] = useState<string | null>(null);
+  const [saidHeard, setSaidHeard] = useState(false);
+  const [shared, setShared] = useState<ShareOutcome | null>(null);
 
+  const head = bookingTitle(t, locale, booking, at);
+  const ended = passenger ? endedLines(t, locale, booking) : [];
+  const road = bookingRoad(t, booking);
+  // The driver said "I'm here" while this page was open: the title says
+  // so, and a screen reader hears it.
+  const driverHere =
+    tripDay && booking.tripDay !== null && booking.tripDay.driverCheckedInAt !== null;
+  const [wasHere, setWasHere] = useState(driverHere);
+  const [arrived, setArrived] = useState<{ text: string; count: number } | null>(null);
+  if (driverHere !== wasHere) {
+    setWasHere(driverHere);
+    if (driverHere) setArrived({ text: head.title, count: (arrived?.count ?? 0) + 1 });
+  }
+
+  const ticket = <BookingTicket booking={booking} />;
   const driver = (
-    <Card key="driver" fill={wide}>
-      <DriverAndCar
-        driver={{
-          firstName: firstNameOf(t, booking.driver),
-          colour: booking.driver.colour,
-          profileId: booking.driver.profileId,
-          photo: booking.driver.photo,
-          // Someone leaving, or a former member, has no profile, and shows no standing.
-          standing: booking.driver.profileId === null ? null : booking.driver,
-        }}
-        car={booking.car}
-        carNote={
-          confirmed !== null
-            ? confirmed.registration === null
-              ? t("booking.plateLater")
-              : t("booking.plate", { plate: confirmed.registration })
-            : booking.status === "requested" || booking.status === "accepted"
-              ? t("trip.plateLater")
-              : undefined
-        }
-      />
-    </Card>
+    <DriverCard
+      key="driver"
+      fill={wide}
+      driver={{ ...booking.driver, firstName: firstNameOf(t, booking.driver) }}
+      // Someone leaving, or a former member, has no profile, and shows no standing.
+      standing={booking.driver.profileId !== null}
+      car={booking.car}
+      plate={confirmed?.registration ?? null}
+      carNote={
+        confirmed !== null
+          ? confirmed.registration === null
+            ? t("booking.plateLater")
+            : undefined
+          : booking.status === "requested" || booking.status === "accepted"
+            ? t("trip.plateLater")
+            : undefined
+      }
+      action={
+        passenger && confirmed !== null ? (
+          <Button
+            variant="secondary"
+            label={t("chat.message")}
+            accessibilityLabel={t("chat.messageTo", { name: firstNameOf(t, booking.driver) })}
+            href={{ pathname: "/messages/[bookingId]", params: { bookingId: booking.id } }}
+          />
+        ) : null
+      }
+    />
   );
   // Left out, not empty, where there is nothing to show: no gap in a
   // column and no empty cell in a row.
   const stand = showsWhereToStand(booking) ? (
     <WhereToStand key="stand" booking={booking} fill={wide} />
   ) : null;
-  const message =
-    confirmed === null ? null : (
-      <Button
-        variant="secondary"
-        label={t("chat.messageTo", { name: firstNameOf(t, otherPerson(booking)) })}
-        onPress={() => {
-          router.push({ pathname: "/messages/[bookingId]", params: { bookingId: booking.id } });
-        }}
-      />
-    );
+
   // Until the passenger gets out: no trip to be safe on after that.
-  const safety =
-    holdsSeats(booking.status) && new Date(alight.plannedAt) > now() ? (
-      <TripSafety
-        regions={[board.meetingPoint.region, alight.meetingPoint.region]}
-        share={bookingShareText(t, locale, booking)}
-      />
-    ) : null;
+  const onTheWay = holdsSeats(booking.status) && new Date(alight.plannedAt) > now();
+  const regions = [board.meetingPoint.region, alight.meetingPoint.region];
+  const share = onTheWay ? bookingShareText(t, locale, booking) : null;
+  const weather = onTheWay && showsWeatherAndRoads(regions);
+  // Off the trip day the bar has other things to say; a ride that is over
+  // can still be reported for a day (R8.5).
+  const absent = offersDriverAbsent(booking, now());
   // After a move, the choice above cancels, with its reason.
-  const cancel =
-    passenger && canCancel(booking, now()) && !moveChoice.offered && !moveChoice.pending ? (
-      <Button
-        variant="text"
-        label={t("booking.cancel")}
-        onPress={() => {
-          onAction();
-          router.push({ pathname: "/bookings/[id]/cancel", params: { id: booking.id } });
-        }}
-      />
+  const cancels =
+    passenger && canCancel(booking, now()) && !moveChoice.offered && !moveChoice.pending;
+  const withdraws = passenger && booking.status === "requested" && !withdrawing.asking;
+  const messages = !passenger && confirmed !== null;
+  const rows =
+    messages ||
+    (absent && !tripDay) ||
+    share !== null ||
+    weather ||
+    booking.problemReportable ||
+    cancels ||
+    withdraws ? (
+      <ActionRows>
+        {messages ? (
+          <Row
+            icon={MessageCircle}
+            title={t("chat.messageTo", { name: firstNameOf(t, otherPerson(booking)) })}
+            href={{ pathname: "/messages/[bookingId]", params: { bookingId: booking.id } }}
+          />
+        ) : null}
+        {absent && !tripDay ? (
+          <Row
+            icon={UserX}
+            title={t("tripDay.driverAbsent")}
+            href={{ pathname: "/bookings/[id]/driver-absent", params: { id: booking.id } }}
+          />
+        ) : null}
+        {share === null ? null : (
+          <Row
+            icon={Share}
+            title={t("share.title")}
+            onPress={() => {
+              setShared(null);
+              void shareText(share).then(setShared);
+            }}
+          />
+        )}
+        {weather ? <WeatherAndRoadsRow regions={regions} /> : null}
+        {/* A booking that ran or is to run, until 24 hours after the trip completed (R9.1). */}
+        {booking.problemReportable ? (
+          <Row
+            icon={Flag}
+            title={t("report.problem")}
+            href={{ pathname: "/report", params: { kind: "booking", id: booking.id } }}
+          />
+        ) : null}
+        {cancels ? (
+          <Row
+            danger
+            icon={X}
+            title={t("booking.cancel")}
+            onPress={() => {
+              onAction();
+              router.push({ pathname: "/bookings/[id]/cancel", params: { id: booking.id } });
+            }}
+          />
+        ) : null}
+        {withdraws ? (
+          // Backing out of withdrawing puts focus back on the row.
+          <TakesFocus when={withdrawing.kept} onFocused={withdrawing.onKeptFocused}>
+            <Row danger icon={X} title={t("booking.withdraw")} onPress={withdrawing.ask} />
+          </TakesFocus>
+        ) : null}
+      </ActionRows>
     ) : null;
-  // A booking that ran or is to run, until 24 hours after the trip completed (R9.1).
-  const report = booking.problemReportable ? (
-    <Button
-      variant="text"
-      label={t("report.problem")}
-      onPress={() => {
-        router.push({
-          pathname: "/report",
-          params: { kind: "booking", id: booking.id },
-        });
-      }}
-    />
-  ) : null;
-  // A wide screen (spec 18, 3.9): the ride with its price, then what can be
-  // done about the booking, stand beside where it is at and what to do now.
-  // Safety is not among them: with "Before you go" it is tall, and the
-  // side column should be whole in a laptop's window.
-  const side = wide ? (
-    <>
-      {part}
-      {message}
-      {cancel}
-      {report}
-    </>
-  ) : null;
+  const sharing =
+    share !== null && shared === "failed" ? (
+      // No share sheet and no clipboard: the text itself, to copy by hand.
+      <Notice selectable message={t("share.failed", { details: share })} />
+    ) : shared === "copied" ? (
+      <Notice kind="info" message={t("share.copied")} />
+    ) : null;
+
+  // The one main thing to do now (R31.1): in the bar at the bottom of a
+  // phone, at the top of a wide screen's side column.
+  const action = ((): ReactNode => {
+    if (!passenger) return null;
+    if (withdrawing.asking) return <WithdrawQuestion booking={booking} withdrawing={withdrawing} />;
+    if (booking.status === "accepted") {
+      // The payment sheet opens in place of Pay.
+      if (payment.sheet !== null) return <PaymentSheet payment={payment} />;
+      return (
+        <View style={styles.action}>
+          {/* Why a payment did not go through, beside the button to try again. */}
+          {payment.notice === null ? null : (
+            <TakesFocus key={payment.notice}>
+              <Notice message={payment.notice} />
+            </TakesFocus>
+          )}
+          <Button
+            main
+            busy={payment.starting}
+            label={t("booking.pay", { total })}
+            onPress={() => {
+              onAction();
+              void payment.start(booking.id);
+            }}
+          />
+        </View>
+      );
+    }
+    if (tripDay) {
+      const checkIn = booking.tripDay;
+      const imHere = saidHere !== null || showsImHere(booking, now());
+      if (checkIn === null || (!imHere && !absent)) return null;
+      // While "I'm here" is the button, it is the main one.
+      const pressable =
+        saidHere === null &&
+        checkIn.passengerCheckedInAt === null &&
+        now() >= new Date(checkIn.checkInOpensAt) &&
+        now() <= new Date(checkIn.checkInClosesAt);
+      return (
+        <View style={styles.action}>
+          {imHere ? (
+            <PassengerImHere
+              booking={booking}
+              said={saidHere}
+              focusSaid={!saidHeard}
+              onSaidFocused={() => {
+                setSaidHeard(true);
+              }}
+              onSaid={(checkedInAt) => {
+                setSaidHere(checkedInAt);
+                onReload();
+              }}
+              onStale={onStale}
+            />
+          ) : null}
+          {absent ? (
+            <Button
+              variant={pressable ? "secondary" : "primary"}
+              main={!pressable}
+              fill
+              label={t("tripDay.driverAbsent")}
+              href={{ pathname: "/bookings/[id]/driver-absent", params: { id: booking.id } }}
+            />
+          ) : null}
+        </View>
+      );
+    }
+    if (canRate(booking, at)) {
+      return (
+        <Button
+          main
+          label={t("review.rateDriver")}
+          href={{ pathname: "/bookings/[id]/rate", params: { id: booking.id } }}
+        />
+      );
+    }
+    if (offersSearchAgain(booking)) {
+      return (
+        <Button
+          main
+          label={t("booking.searchAgain")}
+          onPress={() => {
+            router.push(searchAgainHref(booking, locale, now()));
+          }}
+        />
+      );
+    }
+    return null;
+  })();
 
   // One tree for a phone and a wide screen: each part of the main column
-  // keeps its place among the others, so a payment that is open, a
-  // question asked or "I'm here" just said stays when the window crosses
-  // the breakpoint. What a wide screen shows in the side column is left
-  // out of the main column there, and stands in its phone place otherwise.
+  // keeps its place among the others, so a prompt that is open or a choice
+  // just made stays when the window crosses the breakpoint. What a wide
+  // screen shows in the side column is left out of the main column there,
+  // and stands in its phone place otherwise.
   return (
-    <Screen width="page" refresh={onPull}>
-      <BackButton fallback={{ pathname: "/trips/[id]", params: { id: booking.trip.id } }} />
-      <View>
-        <Text style={[typography.small, { color: palette.textMuted }]}>
-          {capitalised(formatDay(new Date(board.plannedAt), locale), locale)}
-        </Text>
-        <Title align="start">{t("search.route", { from: name(board), to: name(alight) })}</Title>
-        <View style={styles.row}>
-          <Tag kind={statusTag(booking)} label={t(statusKey(booking))} />
-        </View>
-      </View>
+    <Screen width="page" refresh={onPull} footer={wide || action === null ? undefined : action}>
+      <ScreenHead
+        back={{ pathname: "/trips/[id]", params: { id: booking.trip.id } }}
+        title={head.title}
+        over={head.over ?? undefined}
+        line={head.line ?? undefined}
+        // An action that ends in another status, such as confirmed, moves
+        // focus to the title that says so; so does a report that ends how
+        // the booking stands, such as a no-show agreed to (spec 8, 3.3).
+        outcome={{
+          of: `${statusKey(booking)}:${booking.dispute?.outcome ?? ""}`,
+          focus: passenger && (announce || (reported && reportState(booking, now()) === null)),
+          onFocused: onReportAnnounced,
+        }}
+        // What else a cancellation says is part of that outcome (spec 6).
+        more={
+          ended.length === 0
+            ? undefined
+            : ended.map((line) => (
+                <Body key={line} align="start">
+                  {line}
+                </Body>
+              ))
+        }
+      />
+      <Announcer message={arrived} />
 
-      <Columns side={side}>
+      <Columns
+        side={
+          wide ? (
+            <>
+              {action}
+              {ticket}
+              {rows}
+              {sharing}
+            </>
+          ) : null
+        }
+      >
         {stale === null ? null : (
           <TakesFocus key={stale}>
             <Notice message={stale} />
           </TakesFocus>
         )}
         <ReportStatus booking={booking} announce={reported} onAnnounced={onReportAnnounced} />
-        {passenger ? (
-          <Status
-            booking={booking}
-            announce={announce || (reported && reportState(booking, now()) === null)}
-            onAnnounced={onReportAnnounced}
-            onAction={onAction}
-            onChanged={onChanged}
-            onStale={onStale}
-          />
-        ) : null}
         {passenger ? (
           <TripChanges
             booking={booking}
@@ -348,13 +513,17 @@ function BookingDetails({
             onCancel={onAction}
           />
         ) : null}
-        <ReviewSection booking={booking} framed />
+        <ReviewSection booking={booking} framed offer={!passenger} />
         {/* Not on the trip day, when time and place come first. */}
         {occasion === null || tripDay ? null : <NotificationsPrompt occasion={occasion} />}
 
-        {tripDay ? <TripDayHeading booking={booking} /> : wide ? null : part}
+        {road === null ? null : (
+          <Card>
+            <Road steps={road.steps} current={road.current} />
+          </Card>
+        )}
 
-        {tripDay && !wide ? stand : null}
+        {wide ? null : tripDay ? stand : ticket}
 
         {/* Side by side where the column has room for both; where to stand
             comes first on the trip day, as on a phone. */}
@@ -368,322 +537,37 @@ function BookingDetails({
           driver
         )}
 
-        {tripDay ? <PassengerImHere booking={booking} onSaid={onReload} onStale={onStale} /> : null}
+        {wide || tripDay ? null : stand}
 
-        {wide ? null : message}
-
-        {offersDriverAbsent(booking, now()) ? (
-          <Button
-            variant="secondary"
-            label={t("tripDay.driverAbsent")}
-            onPress={() => {
-              router.push({
-                pathname: "/bookings/[id]/driver-absent",
-                params: { id: booking.id },
-              });
-            }}
+        {/* Paid to the driver in person (rule M6): the price, and how; the
+            driver reads who pays them. */}
+        {booking.status === "confirmed" &&
+        booking.payment === "in_person" &&
+        booking.total.amount > 0 ? (
+          <Notice
+            kind="info"
+            urgent={false}
+            message={
+              passenger
+                ? t("booking.payInPerson", { total })
+                : t("booking.paysYouInPerson", {
+                    name: firstNameOf(t, booking.passenger),
+                    total,
+                  })
+            }
           />
         ) : null}
 
-        {tripDay || wide ? null : stand}
+        {!wide && tripDay ? ticket : null}
 
-        {safety}
+        {wide ? null : rows}
 
-        {tripDay && !wide ? part : null}
-
-        {wide ? null : cancel}
-
-        {wide ? null : report}
+        {wide ? null : sharing}
       </Columns>
     </Screen>
   );
 }
 
-/**
- * Where the booking stands for its passenger: paying when it is due,
- * withdrawing a request, and searching again once it ended.
- */
-function Status({
-  booking,
-  announce,
-  onAnnounced,
-  onAction,
-  onChanged,
-  onStale,
-}: {
-  readonly booking: Booking;
-  readonly announce: boolean;
-  readonly onAnnounced: () => void;
-  readonly onAction: () => void;
-  readonly onChanged: (booking: Booking) => void;
-  readonly onStale: (why: string) => void;
-}) {
-  const { locale, t } = useLanguage();
-  if (booking.status === "accepted") {
-    return <Pay booking={booking} onStart={onAction} onPaid={onChanged} onStale={onStale} />;
-  }
-  if (booking.status === "requested") {
-    return (
-      <Requested booking={booking} onStart={onAction} onWithdrawn={onChanged} onStale={onStale} />
-    );
-  }
-  // An action that ends in another status, such as confirmed, moves focus
-  // to it; so does a report that ends how the booking stands, such as a
-  // no-show agreed to (spec 8, 3.3).
-  return (
-    <TakesFocus
-      key={`${statusKey(booking)}:${booking.dispute?.outcome ?? ""}`}
-      when={announce}
-      onFocused={onAnnounced}
-    >
-      <View style={styles.status}>
-        <StatusText booking={booking} />
-        {offersSearchAgain(booking) ? (
-          <Button
-            variant="secondary"
-            label={t("booking.searchAgain")}
-            onPress={() => {
-              router.push(searchAgainHref(booking, locale, now()));
-            }}
-          />
-        ) : null}
-      </View>
-    </TakesFocus>
-  );
-}
-
-function StatusText({ booking }: { readonly booking: Booking }) {
-  const { locale, t } = useLanguage();
-  const palette = usePalette();
-  // Paid to the driver in person (rule M6): the price, and how.
-  const inPerson = booking.payment === "in_person" && booking.total.amount > 0;
-  switch (booking.status) {
-    case "confirmed":
-      return (
-        <View style={styles.status}>
-          <View style={styles.row} accessibilityLiveRegion="polite">
-            <Icon icon={CircleCheck} color={palette.primary} />
-            <Text style={[typography.heading, styles.grow, { color: palette.text }]}>
-              {t("booking.confirmed")}
-            </Text>
-          </View>
-          {inPerson ? (
-            <Body align="start">
-              {booking.viewer === "driver"
-                ? t("booking.paysYouInPerson", {
-                    name: firstNameOf(t, booking.passenger),
-                    total: formatMoney(booking.total, locale),
-                  })
-                : t("booking.payInPerson", { total: formatMoney(booking.total, locale) })}
-            </Body>
-          ) : null}
-        </View>
-      );
-    case "declined":
-      // Declined because the driver cancelled the trip, it says so and why (spec 6, 3.3).
-      return booking.cancellation === null ? (
-        <Notice kind="info" message={t("booking.declined")} />
-      ) : (
-        <Cancelled booking={booking} />
-      );
-    case "expired":
-      // An expired booking keeps the deadline that passed: the driver's to
-      // answer, or the passenger's to pay.
-      return (
-        <Notice
-          kind="info"
-          message={
-            booking.paymentDueAt === null && booking.requestExpiresAt !== null
-              ? t("booking.expired")
-              : t("booking.unpaidExpired")
-          }
-        />
-      );
-    case "cancelled":
-      return isWithdrawn(booking) ? (
-        <Notice kind="info" message={t("booking.withdrawn")} />
-      ) : (
-        <Cancelled booking={booking} />
-      );
-    case "no_show":
-      // While its report is open, the report says where it stands (spec 8, 3.3).
-      return booking.dispute !== null && booking.dispute.outcome === null ? null : (
-        <Notice
-          kind="info"
-          message={t(booking.payment === "in_person" ? "booking.noShowInPerson" : "booking.noShow")}
-        />
-      );
-    default:
-      return null;
-  }
-}
-
-/** Who cancelled and why, the refund, and whether it shows on the passenger's profile (spec 6). */
-function Cancelled({ booking }: { readonly booking: Booking }) {
-  const { locale, t } = useLanguage();
-  const texts = cancellationTexts(t, locale, booking);
-  if (texts === null) return null;
-  return (
-    <View style={styles.status}>
-      {texts.said === null ? null : <Notice kind="info" message={texts.said} />}
-      {texts.note === null ? null : <Body align="start">{texts.note}</Body>}
-      {texts.refund === null ? null : <Body align="start">{texts.refund}</Body>}
-      {texts.counts ? <Body align="start">{t("booking.countsOnReliability")}</Body> : null}
-    </View>
-  );
-}
-
-/**
- * A request waiting for the driver, with its deadline; it can be withdrawn
- * at any time, after a second press to make sure (spec 5, 3.4; R5.8).
- */
-function Requested({
-  booking,
-  onStart,
-  onWithdrawn,
-  onStale,
-}: {
-  readonly booking: Booking;
-  readonly onStart: () => void;
-  readonly onWithdrawn: (booking: Booking) => void;
-  readonly onStale: (why: string) => void;
-}) {
-  const { t } = useLanguage();
-  const session = useSession();
-  const [asking, setAsking] = useState(false);
-  // Backing out of withdrawing puts focus back on the button.
-  const [keptAfterAsking, setKeptAfterAsking] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
-  const driver = firstNameOf(t, booking.driver);
-
-  const withdraw = async () => {
-    setNotice(null);
-    onStart();
-    setBusy(true);
-    const answer = await session.call(withdrawRequestRoute, {
-      params: { id: booking.id },
-      body: {},
-    });
-    setBusy(false);
-    if (answer.ok) {
-      onWithdrawn(answer.data);
-      return;
-    }
-    if (answer.error.code === "booking_not_requested" || answer.error.code === "not_found") {
-      // The driver answered, or the deadline passed, meanwhile.
-      onStale(t("booking.notRequested"));
-      return;
-    }
-    // A lost connection leaves the question open, to try again.
-    setNotice(errorText(t, answer));
-  };
-
-  return (
-    <View style={styles.status}>
-      {booking.requestExpiresAt === null ? null : (
-        <Notice
-          kind="info"
-          message={requestSentText(t, driver, new Date(booking.requestExpiresAt), now())}
-        />
-      )}
-      {notice === null ? null : (
-        <TakesFocus key={notice}>
-          <Notice message={notice} />
-        </TakesFocus>
-      )}
-      {asking ? (
-        <TakesFocus>
-          <Card>
-            <Body align="start">{t("booking.withdrawAsk", { driver, seats: booking.seats })}</Body>
-            <Button
-              busy={busy}
-              label={t("booking.withdraw")}
-              onPress={() => {
-                void withdraw();
-              }}
-            />
-            <Button
-              variant="secondary"
-              disabled={busy}
-              label={t("booking.withdrawKeep")}
-              onPress={() => {
-                setNotice(null);
-                setAsking(false);
-                setKeptAfterAsking(true);
-              }}
-            />
-          </Card>
-        </TakesFocus>
-      ) : (
-        <TakesFocus when={keptAfterAsking}>
-          <Button
-            variant="secondary"
-            label={t("booking.withdraw")}
-            onPress={() => {
-              setNotice(null);
-              setAsking(true);
-            }}
-          />
-        </TakesFocus>
-      )}
-    </View>
-  );
-}
-
-/**
- * Pay to confirm, with the deadline (rule M1). With the test provider the
- * app shows its own sheet, where the person picks what the payment does.
- */
-function Pay({
-  booking,
-  onStart,
-  onPaid,
-  onStale,
-}: {
-  readonly booking: Booking;
-  readonly onStart: () => void;
-  readonly onPaid: (booking: Booking) => void;
-  readonly onStale: (why: string) => void;
-}) {
-  const { locale, t } = useLanguage();
-  const payment = usePayment({ onSettled: onPaid, onStale });
-  const total = formatMoney(booking.total, locale);
-  return (
-    <View style={styles.pay}>
-      <Heading>{t("booking.payNow", { total })}</Heading>
-      {booking.paymentDueAt === null ? null : (
-        <Body align="start">{payByText(t, new Date(booking.paymentDueAt), now())}</Body>
-      )}
-      {payment.notice === null ? null : (
-        <TakesFocus key={payment.notice}>
-          <Notice message={payment.notice} />
-        </TakesFocus>
-      )}
-      {payment.sheet === null ? (
-        <Button
-          main
-          busy={payment.starting}
-          label={t("booking.pay", { total })}
-          onPress={() => {
-            onStart();
-            void payment.start(booking.id);
-          }}
-        />
-      ) : (
-        <PaymentSheet payment={payment} />
-      )}
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
-  row: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
-  grow: { flex: 1 },
-  divider: { height: controlOutline / 2 },
-  spread: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  // No wider than a column, also in the main column of a wide page: a
-  // notice to read and a button to press, not a banner.
-  pay: { gap: spacing.sm, maxWidth: maxContentWidth },
-  status: { gap: spacing.sm, maxWidth: maxContentWidth },
+  action: { gap: spacing.sm },
 });

@@ -1,96 +1,85 @@
 import type { MyTrip } from "@shareride/contracts";
-import { capitalised, formatClock, formatDay } from "@shareride/i18n";
-import { router, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
-import { Text } from "react-native";
+import { Redirect, router, useLocalSearchParams } from "expo-router";
 import { Button } from "@/components/button";
-import { Card } from "@/components/card";
 import { Screen } from "@/components/screen";
-import { ShareNotice } from "@/components/share-notice";
+import { TakesFocus } from "@/components/takes-focus";
 import { Body, Title } from "@/components/text";
 import { TextLink } from "@/components/text-link";
+import { isChangeable } from "@/driver-trip/changes";
 import { useLanguage } from "@/i18n/language";
-import { shareLink, type Shared } from "@/lib/share";
+import { now } from "@/lib/clock";
+import { MyRideTicket } from "@/my-rides/my-ride-ticket";
+import { rideOfTrip, type Ride } from "@/my-rides/rides";
 import { NotificationsPrompt } from "@/notifications/notifications-prompt";
-import { typography } from "@/theme/tokens";
-import { usePalette } from "@/theme/use-palette";
-import { tripHref, tripWebAddress } from "@/trip-details/trip-link";
-import { routeText } from "@/trips/texts";
-import { Loading, useDraft } from "@/trips/use-draft";
+import { ShareRidePanel } from "@/sharing/share-ride-panel";
+import { tripHref } from "@/trip-details/trip-link";
+import { resumeStep, stepHref } from "@/trips/steps";
+import { Loading, useDraftOnFocus } from "@/trips/use-draft";
 
 /**
- * Published (spec 3, screen 10): share the trip's page, or see it as
- * passengers do, and the prompt to turn on notifications (spec 7, 3.6.2).
- * Posting the return trip comes with changes to trips (spec 6).
+ * Published (spec 3, screen 10; spec 31, 3.19): the ride as the ticket it
+ * is in My rides, which opens it; Share this ride right after it (spec 28,
+ * 3.2); the prompt to turn on notifications (spec 7, 3.6.2); the ride's
+ * page as passengers see it; and "See my rides" in the bar, the screen's
+ * one main button (R31.1). Only a ride that is published and has not
+ * left says so, which is also when it can be shared (R28.4): a draft opens
+ * where it was left, and a ride that is cancelled, has left or is done its
+ * own page. The ticket opens the ride, where it can be changed or
+ * cancelled, so the ride is read again each time this screen comes back
+ * into view.
  */
 export default function PublishedScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { value: result, reload } = useDraft(id);
-  return (
-    <Screen>
-      {result === undefined || !result.ok ? (
+  const { t } = useLanguage();
+  const { value: result, reload } = useDraftOnFocus(id);
+  if (result === undefined || !result.ok) {
+    return (
+      <Screen>
         <Loading failure={result} onRetry={reload} />
-      ) : (
-        <Published trip={result.data} />
-      )}
+      </Screen>
+    );
+  }
+  const trip = result.data;
+  const ride = rideOfTrip(trip);
+  if (ride === null) return <Redirect href={stepHref(trip.id, resumeStep(trip))} />;
+  if (!isChangeable(trip, now())) {
+    return <Redirect href={{ pathname: "/drive/trips/[id]", params: { id: trip.id } }} />;
+  }
+  return (
+    <Screen
+      footer={
+        <Button
+          main
+          label={t("trip.published.seeTrips")}
+          onPress={() => {
+            router.replace("/my-rides");
+          }}
+        />
+      }
+    >
+      <Published trip={trip} ride={ride} />
     </Screen>
   );
 }
 
-function Published({ trip }: { readonly trip: MyTrip }) {
-  const { locale, t } = useLanguage();
-  const palette = usePalette();
-  const [shared, setShared] = useState<Shared | null>(null);
-  const departure = trip.departsAt === null ? null : new Date(trip.departsAt);
+function Published({ trip, ride }: { readonly trip: MyTrip; readonly ride: Ride }) {
+  const { t } = useLanguage();
   const whole = { board: 0, alight: trip.stops.length - 1 };
-  const share = async () => {
-    const url = tripWebAddress(trip.id, whole);
-    const outcome = await shareLink(
-      url,
-      t("trip.shareText", { route: routeText(t, locale, trip) }),
-    );
-    setShared({ outcome, url });
-  };
   return (
     <>
-      <Title>{t("trip.published.title")}</Title>
+      {/* The outcome of pressing Publish, so focus starts here. */}
+      <TakesFocus>
+        <Title>{t("trip.published.title")}</Title>
+      </TakesFocus>
       <Body>
         {trip.bookingMode === "approval"
           ? t("trip.published.approval")
           : t("trip.published.instant")}
       </Body>
-      <Card>
-        <Text style={[typography.heading, { color: palette.text }]}>
-          {routeText(t, locale, trip)}
-        </Text>
-        {departure === null ? null : (
-          <Text style={[typography.body, { color: palette.textMuted }]}>
-            {capitalised(
-              t("trip.mine.when", {
-                day: formatDay(departure, locale),
-                time: formatClock(departure),
-              }),
-              locale,
-            )}
-          </Text>
-        )}
-      </Card>
+      <MyRideTicket ride={ride} at={now()} />
+      <ShareRidePanel trip={trip} />
       <NotificationsPrompt occasion={`posted:${trip.id}`} />
-      <Button
-        variant="secondary"
-        label={t("trip.published.share")}
-        onPress={() => {
-          void share();
-        }}
-      />
-      <ShareNotice shared={shared} />
       <TextLink label={t("trip.published.see")} href={tripHref(trip.id, whole)} />
-      <Button
-        label={t("trip.published.seeTrips")}
-        onPress={() => {
-          router.replace("/drive/trips");
-        }}
-      />
     </>
   );
 }

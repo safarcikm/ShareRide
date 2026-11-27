@@ -1,5 +1,5 @@
 import type { Booking, CancelBookingBody } from "@shareride/contracts";
-import { fireEvent, screen } from "expo-router/testing-library";
+import { act, fireEvent, screen, within } from "expo-router/testing-library";
 import { AccessibilityInfo } from "react-native";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
@@ -11,8 +11,10 @@ import {
   paidBooking,
   unpaidBooking,
 } from "@/testing/bookings";
+import { filledButtons } from "@/testing/buttons";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
 import { searchApi } from "@/testing/search";
+import { colors } from "@/theme/tokens";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
 jest.mock("@/auth/token-store", () => {
@@ -98,24 +100,29 @@ const choose = async (reason: string) => {
 };
 
 describe("Cancelling a booking (spec 6, 3.5)", () => {
-  it("offers Cancel booking after the booking's facts and the chat", async () => {
+  it("offers Cancel booking as the last row, in red, after the booking's facts and the chat (R31.3)", async () => {
     await openBooking(paidBooking);
     const cancel = await screen.findByRole("button", { name: "Cancel booking" });
-    const message = screen.getByRole("button", { name: "Message Anna" });
-    const buttons = screen.getAllByRole("button");
-    expect(buttons.indexOf(cancel)).toBeGreaterThan(buttons.indexOf(message));
+    expect(screen.getByRole("link", { name: "Message Anna" })).toBeVisible();
+    // What cannot be undone is the last thing on the page, and never filled.
+    const rows = within(screen.getByTestId("action-rows")).getAllByTestId("row-words");
+    const last = rows.at(-1);
+    if (last === undefined) throw new Error("No rows");
+    expect(within(last).getByText("Cancel booking")).toHaveStyle({ color: colors.light.error });
+    expect(within(cancel).queryByTestId("row-chevron")).toBeNull();
+    expect(filledButtons()).toBe(0);
   });
 
   it("is not offered to the driver here (spec 6, 3.4 comes on the driver's trip page)", async () => {
     await openBooking({ ...paidBooking, viewer: "driver" });
-    expect(await screen.findByRole("button", { name: "Message Gunna" })).toBeVisible();
+    expect(await screen.findByRole("link", { name: "Message Gunna" })).toBeVisible();
     expect(screen.queryByRole("button", { name: "Cancel booking" })).toBeNull();
   });
 
   it("is no longer offered once the time to get in has come: the trip day takes over (spec 8)", async () => {
     const board = { ...paidBooking.board, plannedAt: "2026-11-14T12:00:00.000Z" };
     await openBooking({ ...paidBooking, board });
-    expect(await screen.findByRole("button", { name: "Message Anna" })).toBeVisible();
+    expect(await screen.findByRole("link", { name: "Message Anna" })).toBeVisible();
     expect(screen.queryByRole("button", { name: "Cancel booking" })).toBeNull();
   });
 
@@ -176,8 +183,17 @@ describe("Cancelling a booking (spec 6, 3.5)", () => {
     expect(cancels(client)).toEqual([
       { reason: "plans_changed", terms: { refund: full, countsOnReliability: true } },
     ]);
-    expect(await screen.findByText("You cancelled this booking: Plans changed")).toBeVisible();
-    // The outcome takes focus, as the screen with the button pressed has gone.
+    // The outcome is the title with why under it, and takes focus, as the
+    // screen with the button pressed has gone.
+    const head = within(await screen.findByTestId("screen-head"));
+    expect(head.getByRole("header", { name: "Cancelled" })).toBeVisible();
+    expect(head.getByText("You cancelled this booking: Plans changed")).toBeVisible();
+    // With the refund and whether it shows on the profile, heard with it.
+    const outcome = within(head.getByTestId("screen-head-outcome"));
+    expect(
+      outcome.getByText("Full refund of 2,900 ISK, back to the card you paid with."),
+    ).toBeVisible();
+    expect(outcome.getByText("This cancellation shows on your profile")).toBeVisible();
     expect(focusMoves).toHaveBeenCalledTimes(1);
     focusMoves.mockRestore();
     expect(screen).toHavePathname(`/bookings/${bookingId}`);
@@ -188,6 +204,72 @@ describe("Cancelling a booking (spec 6, 3.5)", () => {
     expect(screen.getByText("This cancellation shows on your profile")).toBeVisible();
     expect(screen.queryByRole("button", { name: "Cancel booking" })).toBeNull();
     expect(screen.queryByRole("button", { name: /^Message/ })).toBeNull();
+  });
+
+  it("has its title at the left over the ride as a ticket (spec 31, 3.19)", async () => {
+    await openCancel();
+    const head = within(screen.getByTestId("screen-head"));
+    expect(head.getByRole("header", { name: "Cancel your booking" })).toBeVisible();
+    expect(head.getByRole("button", { name: "Back" })).toBeVisible();
+    // The ride is the ticket of the booked seat, not a line of small text.
+    const ticket = within(screen.getByTestId("booking-ticket"));
+    expect(ticket.getByText("Sun 15 Nov")).toBeVisible();
+    expect(ticket.getByText("Borgarnes")).toBeVisible();
+    expect(ticket.getByText("Blönduós")).toBeVisible();
+    expect(ticket.getByText("1 seat")).toBeVisible();
+    expect(ticket.getByText("2,900 ISK")).toBeVisible();
+    expect(screen.queryByText(/Sunday 15 November · /)).toBeNull();
+  });
+
+  it("has one main button, red, in the bar, over Keep my booking (R31.1)", async () => {
+    await openCancel();
+    const bar = within(screen.getByTestId("bottom-bar"));
+    const cancel = bar.getByRole("button", { name: "Cancel booking" });
+    // It cannot be undone: the red main button.
+    expect(within(cancel).getByTestId("button-face")).toHaveStyle({
+      backgroundColor: colors.light.error,
+    });
+    expect(cancel).toHaveStyle({ minHeight: 56 });
+    expect(filledButtons()).toBe(1);
+    expect(screen.getByTestId("filled-button")).toBe(cancel);
+    const buttons = bar.getAllByRole("button");
+    expect(buttons.indexOf(bar.getByRole("button", { name: "Keep my booking" }))).toBeGreaterThan(
+      buttons.indexOf(cancel),
+    );
+  });
+
+  it("says over the button why nothing was cancelled, where it is seen", async () => {
+    await openCancel();
+    await fireEvent.press(screen.getByRole("button", { name: "Cancel booking" }));
+    expect(within(screen.getByTestId("bottom-bar")).getByRole("alert")).toHaveTextContent(
+      "Choose a reason.",
+    );
+  });
+
+  it("holds both buttons while the booking is being cancelled", async () => {
+    let release: () => void = () => undefined;
+    await openCancel(paidBooking, {
+      answers: [
+        new Promise((resolve) => {
+          release = () => {
+            resolve(failure(500, "internal_error"));
+          };
+        }),
+      ],
+    });
+    await choose("Plans changed");
+    await fireEvent.press(screen.getByRole("button", { name: "Cancel booking" }));
+    const bar = within(screen.getByTestId("bottom-bar"));
+    expect(await bar.findByRole("button", { name: "Cancel booking", busy: true })).toBeVisible();
+    expect(bar.getByRole("button", { name: "Keep my booking" })).toBeDisabled();
+    await act(async () => {
+      release();
+      await Promise.resolve();
+    });
+    // It was not cancelled: why is over the buttons, and both can be pressed.
+    expect(await bar.findByRole("alert")).toBeVisible();
+    expect(bar.getByRole("button", { name: "Keep my booking" })).toBeEnabled();
+    expect(bar.getByRole("button", { name: "Cancel booking", busy: false })).toBeVisible();
   });
 
   it("asks for a reason before cancelling", async () => {
@@ -320,7 +402,7 @@ describe("A cancelled booking (spec 6, 3.4 and 3.5)", () => {
       screen.getByText("Full refund of 2,900 ISK, back to the card you paid with."),
     ).toBeVisible();
     expect(screen.queryByText("This cancellation shows on your profile")).toBeNull();
-    expect(screen.getByRole("button", { name: "Search again" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Find another ride" })).toBeVisible();
   });
 
   it("says the driver cancelled the whole trip, with their note and the refund (spec 6, 3.3)", async () => {
@@ -335,12 +417,12 @@ describe("A cancelled booking (spec 6, 3.4 and 3.5)", () => {
         wholeTrip: true,
       },
     });
-    expect(await screen.findByText("Anna cancelled the trip: Weather")).toBeVisible();
+    expect(await screen.findByText("Anna cancelled the ride: Weather")).toBeVisible();
     expect(screen.getByText("Note from the driver: The pass is closed.")).toBeVisible();
     expect(
       screen.getByText("Full refund of 2,900 ISK, back to the card you paid with."),
     ).toBeVisible();
-    expect(screen.getByRole("button", { name: "Search again" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Find another ride" })).toBeVisible();
   });
 
   it("tells a passenger whose request was declined that the trip was cancelled, and why", async () => {
@@ -358,12 +440,12 @@ describe("A cancelled booking (spec 6, 3.4 and 3.5)", () => {
         },
       }),
     );
-    expect(await screen.findByText("Anna cancelled the trip: Car problem")).toBeVisible();
+    expect(await screen.findByText("Anna cancelled the ride: Car problem")).toBeVisible();
     expect(screen.getByText("Cancelled")).toBeVisible();
     expect(screen.queryByText("Declined")).toBeNull();
     expect(screen.queryByText("The driver couldn't take this request")).toBeNull();
     expect(screen.queryByText(/refund|Note from/i)).toBeNull();
-    expect(screen.getByRole("button", { name: "Search again" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Find another ride" })).toBeVisible();
   });
 
   it("says nothing of a refund when there was none", async () => {

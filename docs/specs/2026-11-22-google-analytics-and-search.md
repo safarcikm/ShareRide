@@ -82,7 +82,9 @@ page, which asks with its switch:
 ### 3.2 The Cookies page
 
 `/cookies`, open to everyone, linked from Terms, rules and privacy
-(`/legal`) and from the bar's Read more.
+(`/legal`) and from the bar's Read more. Since 2026-11-26 About
+(`/about`, [spec 30](2026-11-26-about-page-and-footer.md)) links to it in
+place of `/legal`.
 
 1. Says what the site keeps on the device to work (signing in, the
    language, the last searches and the like): needed, so no choice.
@@ -129,7 +131,8 @@ Only production's public pages that hold no person's data (R23.6):
 | Meeting points                 | `/meeting-points`                                                    |
 | A meeting point                | `/meeting-points/<id>`, each active one                              |
 | A place and its nearest points | `/places/<id>`, each place                                           |
-| Terms, rules and privacy       | `/legal`, `/legal/terms`, `/legal/community-rules`, `/legal/privacy` |
+| About (spec 30)                | `/about`                                                             |
+| The legal documents            | `/legal/terms`, `/legal/community-rules`, `/legal/privacy`           |
 | Cookies                        | `/cookies`                                                           |
 
 Every other address of the web app answers with `X-Robots-Tag: noindex,
@@ -346,6 +349,11 @@ title only (the same picture) and no change.
 6. **Facebook keeps what it read.** A card already posted keeps the old
    time if the driver moves it; the trip page shows the change. Facebook's
    Sharing Debugger reads a link again on request.
+7. **A story picture beside it:** the same ride standing up, 1080 × 1920,
+   for a driver's Instagram or Facebook story, drawn the same way and
+   showing the same things, at `/v1/trips/<id>/story.png`, from the same
+   kept pictures and limits
+   ([spec 28](2026-11-25-share-a-ride.md), 3.5).
 
 ## 4. Rules
 
@@ -367,7 +375,8 @@ title only (the same picture) and no change.
    the [visual design system](2026-11-13-visual-design-system.md); both
    buttons in the secondary style.
 2. The Cookies page (3.2), in the narrow column, as Settings' pages.
-3. A row **Cookies** on Terms, rules and privacy (`/legal`).
+3. A row **Cookies** on Terms, rules and privacy (`/legal`), on About
+   (`/about`) since spec 30.
 4. The share picture (3.6), made from the front page's puffins in their car and the logo.
 
 ## 6. Data and API

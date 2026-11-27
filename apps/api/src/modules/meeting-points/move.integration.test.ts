@@ -225,7 +225,7 @@ describe("POST /admin/v1/meeting-points/{id}/move", () => {
         to: "ExponentPushToken[jon]",
         title: "Meeting point moved: N1 Fitjar",
         body: expect.stringMatching(
-          /^Your trip stops there: Saturday 14 November at \d\d:\d\d\. See where it is now before you go\.$/,
+          /^Your ride stops there: Saturday 14 November at \d\d:\d\d\. See where it is now before you go\.$/,
         ) as unknown,
         data: { path: `/drive/trips/${airport}` },
       },
@@ -259,8 +259,8 @@ describe("POST /admin/v1/meeting-points/{id}/move", () => {
     );
     // Both board within 24 hours, so the passengers also get an SMS (spec 7, 3.4).
     expect(sms.outbox.map((message) => message.text)).toEqual([
-      "PuffinRide: the meeting point for your trip on Saturday 14 November has changed. Details in the app.",
-      "PuffinRide: the meeting point for your trip on Saturday 14 November has changed. Details in the app.",
+      "PuffinRide: the meeting point for your ride on Saturday 14 November has changed. Details in the app.",
+      "PuffinRide: the meeting point for your ride on Saturday 14 November has changed. Details in the app.",
     ]);
     const [entry] = (await movedEntries(fitjar)).slice(-1);
     expect(entry?.after).toMatchObject({ tripsTold: 1 });

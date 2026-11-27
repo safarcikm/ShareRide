@@ -408,7 +408,7 @@ describe("sending an announcement (3.5.3; R10.7)", () => {
     expect(english?.subject).toBe("A new version");
     expect(english?.text).toContain("We improved the map.\nThank you for testing.");
     expect(english?.text).toContain(
-      "You get this because you are a PuffinRide beta tester. Turn off beta news in Settings.",
+      "You get this because you are a PuffinRide beta tester. Turn off beta news in Profile, under Notifications.",
     );
     expect(english?.text).toContain("https://shareride.test/settings/beta-news");
     const icelandic = email.sent.find((mail) => mail.to === `${palli.userId}@example.test`);

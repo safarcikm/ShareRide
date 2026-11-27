@@ -205,7 +205,8 @@ These work as in the [staging runbook](staging.md), on `puffinride-api`,
 - [Rotate a secret](staging.md#rotate-a-secret).
 - `WEB_APP_URL` stays `https://puffinride.is`: members' Face ID or
   fingerprint is bound to its host (ADR 0048), so a change stops every
-  device set up before it, and each member sets it up again in Settings.
+  device set up before it, and each member sets it up again in Profile,
+  under Sign-in methods.
 - [Show the puffin beside our emails](staging.md#show-the-puffin-beside-our-emails):
   one `hello@` user for both.
 
@@ -311,8 +312,9 @@ To check: open `https://puffinride.is` in a private window. The question
 about cookies shows at the bottom, and the browser's network tab shows
 nothing from Google. **Accept**: `gtag/js` loads, and Google Analytics'
 **Realtime** report shows one visitor on `/` within a minute. Open a trip:
-Realtime shows `/trips/[id]`, never the trip's ID. On **Cookies** (Profile,
-Terms, rules and privacy, Cookies), turn it off: the `_ga` cookies go.
+Realtime shows `/trips/[id]`, never the trip's ID. On **Cookies** (Cookies
+at the end of the front page, or Profile, About PuffinRide, Cookies), turn
+it off: the `_ga` cookies go.
 
 Links in ads and on flyers can carry campaign tags, such as
 `https://puffinride.is/?lang=is&utm_source=flyer&utm_medium=qr&utm_campaign=launch`,

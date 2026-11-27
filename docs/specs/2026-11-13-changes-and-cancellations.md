@@ -9,6 +9,12 @@ after bookings exist, rules M2 and S5), [spec 3](2026-11-13-post-a-trip.md)
 (posting), [spec 5](2026-11-13-booking-and-requests.md) (booking),
 [spec 13](2026-11-13-payments.md) (refunds).
 
+Amended by [spec 31](2026-11-26-one-ride-one-ticket.md) (3.4): in English
+a member now reads "ride" where the texts quoted here say "trip" (which
+stays in "Trip day"), and the actions are named "Find a ride", "Offer a
+ride" and "Publish ride". The keys keep their names;
+`packages/i18n/src/messages/en.ts` has the words as they are.
+
 ## 1. Problem and goal
 
 Plans change: a driver leaves later, adds a stop or cannot go at all; a
@@ -37,6 +43,12 @@ confirm. Drivers repost a regular trip or its return in seconds.
 ## 3. Behaviour
 
 ### 3.1 My trips (driver)
+
+Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.10) there is no My
+trips page: the rides a driver offers stand in My rides beside the seats
+they booked, each as a ticket that opens the ride, where the seat view
+and what item 3 lists are; drafts are listed on Offer. `/drive/trips`
+leads to My rides.
 
 1. **Upcoming:** drafts and published trips, soonest first, each with date,
    route, seats booked and free on each part, requests waiting, and expected
@@ -219,6 +231,17 @@ stop):
     and is told by push and email, never by SMS. A request is not told;
     it sees the change in the app. A part chosen on the trip before the
     stop went no longer matches, as in item 17.
+20. Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.19) Edit trip
+    is one card of rows, each with what is set now: Time, Stops (each
+    stop with its time, with the rows "Add a stop" and "Remove a stop"
+    under it), Price, Seats, Car, How people book, and Preferences and
+    note. A row opens its part's screen; the headings with a link beside
+    each ("Change the time") are gone. Every screen here has Back and its
+    title at the left with the trip over it, but choosing the meeting
+    point of a new stop, which is the picker posting has. Why nothing was
+    saved or checked stands over the main button, in the bar, a note that
+    cannot be saved too; what is wrong with a new time stays under the
+    time (items 5 and 6).
 
 ### 3.3 Cancelling a trip (driver)
 
@@ -259,6 +282,10 @@ As built (milestone 6, PR 4b):
    and offers nothing more. It is listed under Past in My rides at once
    (3.1), marked Cancelled with the reason. A booking the driver cancelled
    alone before keeps its own reason.
+6. Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.19) the screen
+   has its title at the left over the ride as its ticket, and "Cancel the
+   ride" is the red main button, in the bar at the bottom, over "Keep the
+   ride"; why nothing was cancelled stands over them.
 
 ### 3.4 Cancelling one booking (driver)
 
@@ -275,6 +302,8 @@ As built (milestone 6, PR 4):
    the passenger (decision 3, confirmed for the driver by Martin on
    2026-11-16). A booking accepted and waiting for payment
    can be cancelled too: there is nothing to refund and it never counts.
+   Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.12) it is the last
+   row under a passenger's row, in red, once that row is unfolded.
 2. The driver's own screen gives the reasons, the refund in the passenger's
    name, whether it shows on the driver's profile for the reason chosen
    (never for weather or a road closure), and an optional note to the
@@ -285,6 +314,11 @@ As built (milestone 6, PR 4):
    hours of boarding and at most 5 a day (spec 7, 3.4 and R7.10), says only
    that the driver cancelled, the day and time, and whether it is refunded.
    The note never leaves the app.
+4. Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.19) the screen
+   has its title at the left, "Cancel booking: Dóra", over the passenger's
+   part as a ticket with the seats and the price, and its two buttons in
+   the bar at the bottom, as the passenger's has (3.5, item 7), with "Keep
+   the booking" as the second.
 
 ### 3.5 Cancelling a booking (passenger)
 
@@ -304,6 +338,15 @@ As built (milestone 6, PR 4):
 5. A booking can be cancelled until the planned time at the boarding stop.
    After that, what happens belongs to the trip day (spec 8): a passenger who
    did not come is a no-show, and a driver who did not come is reported.
+6. Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.8; rule R31.3)
+   "Cancel booking" is the last of the booking's rows, in red, and never a
+   filled button; it opens the screen of items 1 to 3. After a booking the
+   driver cancelled, "Find another ride" is the page's main button.
+7. Since spec 31 (3.19) that screen has its title at the left, "Cancel
+   your booking", over the booked seat as its ticket. **Cancel booking**
+   is its main button, in red, in the bar at the bottom, with "Keep my
+   booking" outlined under it; with no reason chosen, "Choose a reason."
+   stands over the button and takes focus.
 
 ### 3.6 Post again and post the return trip (C6)
 
@@ -331,6 +374,12 @@ As built (milestone 6, PR 7):
    step says so: "No longer in use, so left out: N1 Fitjar." With fewer
    than two left, nothing is made, and the trip page says to post a new
    trip instead (`too_few_stops`).
+4. Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.12) "Edit the ride",
+   "Post it again", "Post the way back" and "Cancel the ride" are rows of
+   one card at the end of the driver's ride, Edit first and Cancel red
+   and last; on a laptop the two that post it again stand in the main
+   column under "Drive it again". A row says "Loading" while its draft is
+   made.
 
 ## 4. Rules
 

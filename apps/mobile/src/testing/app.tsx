@@ -5,8 +5,11 @@
 //   jest.mock("@/auth/api", () => jest.requireActual("@/testing/app").mockApiModule);
 //   jest.mock("@/auth/token-store", () => jest.requireActual("@/testing/app").mockTokenStoreModule);
 import type { ApiClient } from "@shareride/api-client";
-import type { DriverReadiness, Me } from "@shareride/contracts";
+import type { DriverReadiness, Me, PublicProfile } from "@shareride/contracts";
+import { peopleColourOf } from "@shareride/domain";
 import { fireEvent, renderRouter, screen } from "expo-router/testing-library";
+import type { ReactNode } from "react";
+import { PressGuard } from "@/components/press-guard";
 import { createFakeClient, ok, testMe, tokens, type FakeClient } from "./fake-client";
 import { memoryTokenStore } from "./memory-token-store";
 
@@ -33,6 +36,12 @@ export async function renderApp(
     readonly me?: Me;
     /** Changes the fake API's answers before the app starts. */
     readonly setUp?: (client: FakeClient) => void;
+    /**
+     * Main buttons take no press just after one was pressed, as in the app
+     * (`PressGuard`). Left out, they take every press: a test presses faster
+     * than anyone.
+     */
+    readonly holdsPresses?: boolean;
   } = {},
 ) {
   currentClient = createFakeClient();
@@ -63,10 +72,12 @@ export async function renderApp(
     store.value = "sr_rt_stored";
     currentClient.answer("/v1/auth/refresh", () => ok(200, tokens(1)));
     currentClient.answer("/v1/me", () => ok(200, me));
+    answerOwnProfile(currentClient, me);
   }
   // Once signed in, unless a test says otherwise: nothing in My rides and
-  // Your next ride, a new driver for the licence row on Profile, no chats
-  // for the Messages badge, trip reminders and beta news on in Settings,
+  // Your next ride, a new driver with no car for the Driving rows on
+  // Profile and nothing linked for its Sign-in methods row, no chats for
+  // the Messages badge, trip reminders and beta news on in Notifications,
   // and no beta news yet. A change answers with the settings changed.
   currentClient.answer("/v1/me/notification-settings", (input) =>
     ok(200, { reminders: true, betaNews: true, ...(input["body"] as object | undefined) }),
@@ -75,10 +86,55 @@ export async function renderApp(
   currentClient.answer("/v1/me/bookings", () => ok(200, { bookings: [] }));
   currentClient.answer("/v1/me/trips", () => ok(200, { trips: [] }));
   currentClient.answer("/v1/me/driver-readiness", () => ok(200, newDriver));
+  currentClient.answer("/v1/me/vehicles", () => ok(200, { vehicles: [] }));
+  currentClient.answer("/v1/me/sign-in-methods", () =>
+    ok(200, { methods: [], password: null, passkeys: [] }),
+  );
   currentClient.answer("/v1/me/conversations", () => ok(200, { conversations: [], unread: 0 }));
   options.setUp?.(currentClient);
-  const result = await renderRouter("./src/app", { initialUrl });
+  const result = await renderRouter("./src/app", {
+    initialUrl,
+    ...(options.holdsPresses === true ? {} : { wrapper: TakesEveryPress }),
+  });
   return { ...result, client: currentClient, store };
+}
+
+/** A guard that holds for no time, around the app's own. */
+function TakesEveryPress({ children }: { readonly children: ReactNode }) {
+  return <PressGuard holdsFor={0}>{children}</PressGuard>;
+}
+
+/**
+ * My own profile as others see it, with no reviews yet: Profile reads it
+ * for my rating (spec 31, 3.14) and the last posting step for the ticket
+ * people will see (3.11). Anyone else's is for the test to answer, as
+ * every call is.
+ */
+function answerOwnProfile(client: FakeClient, me: Me) {
+  client.answer("/v1/people/{profileId}", (input) => {
+    const { profileId } = input["params"] as { profileId: string };
+    if (profileId !== me.profileId) throw new Error("No fake answer for /v1/people/{profileId}");
+    return ok(200, ownProfile(me));
+  });
+}
+
+/** A signed-in person's profile as others see it, before any ride: no reviews, no figure. */
+export function ownProfile(me: Me, changes: Partial<PublicProfile> = {}): PublicProfile {
+  const none = { kept: 0, counted: 0 };
+  return {
+    profileId: me.profileId,
+    firstName: me.firstName ?? "",
+    about: me.about,
+    languages: me.languages,
+    phoneVerified: me.phoneNumber !== null,
+    emailVerified: me.email !== null,
+    memberSince: me.memberSince.slice(0, 7),
+    colour: peopleColourOf(me.id),
+    photo: me.photo === null || me.photo.hidden ? null : me.photo.url,
+    rating: { average: null, count: 0 },
+    reliability: { ...none, percent: null, byRole: { driver: none, passenger: none } },
+    ...changes,
+  };
 }
 
 /** A driver who has done nothing yet: no photo, car or licence. */
@@ -127,6 +183,7 @@ export function legalDocument(type: string, version: number, body = "Draft text.
  * 26): an account that has finished signing up, unless `me` is given.
  */
 export async function signInByEmail(client: FakeClient, me: Me = completeMe): Promise<void> {
+  answerOwnProfile(client, me);
   client.answer("/v1/auth/email/start", () => ok(202, { resendAfterSeconds: 30 }));
   client.answer("/v1/auth/email/verify", () =>
     ok(200, { status: "signedIn", ...tokens(1), user: me, isNewUser: false }),

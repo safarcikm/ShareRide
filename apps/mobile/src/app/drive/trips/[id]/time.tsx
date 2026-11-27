@@ -26,7 +26,7 @@ import { minuteStep, roundUpClock } from "@/lib/clock-time";
 import { addDays, compareDays, dayOf, showsOtherTime, type Day } from "@/lib/days";
 import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
-import { at, clockOf, earliestDeparture, onOrAfter, type Clock } from "@/trips/clock-input";
+import { at, clockOf, firstDeparture, onOrAfter, type Clock } from "@/trips/clock-input";
 import { droppedFrom } from "@/trips/copied";
 import { StepScreen } from "@/trips/step-screen";
 import { goOn } from "@/trips/steps";
@@ -228,13 +228,16 @@ function TimeStep({
   };
 
   const help = showsOtherTime(now()) ? t("trip.icelandTime") : undefined;
-  /** Where a wheel starts when its stop has no time yet: after the time before it. */
+  /**
+   * Where a wheel starts when its stop has no time yet: after the time
+   * before it, and the departure's in the morning of another day.
+   */
   const suggestedAt = (index: number): Clock => {
     const before = clocks
       .slice(0, index)
       .reverse()
       .find((clock) => clock !== null);
-    if (before === undefined) return earliestDeparture(now());
+    if (before === undefined) return firstDeparture(date, now());
     return roundUpClock({ hour: before.hour, minute: before.minute + minuteStep });
   };
   const wheel = (index: number) => ({

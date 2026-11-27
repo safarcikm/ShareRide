@@ -1,12 +1,15 @@
-import { fireEvent, screen } from "expo-router/testing-library";
+import { fireEvent, screen, within } from "expo-router/testing-library";
 import type { Booking, BookingReview, MyTrip, ReviewBody } from "@shareride/contracts";
+import { AccessibilityInfo } from "react-native";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
 import { bookingApi, driverApi } from "@/testing/bookings";
+import { filledButtons } from "@/testing/buttons";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
 import { aReview, completedBooking, completedRider, reviewsCloseAt } from "@/testing/reviews";
 import { dispute, tripOnTheDay } from "@/testing/trip-day";
 import { tripsApi } from "@/testing/trips";
+import { colors } from "@/theme/tokens";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
 jest.mock("@/auth/token-store", () => {
@@ -66,7 +69,7 @@ const bookingPage = (booking: Booking) => `/bookings/${booking.id}`;
 const ratePage = (booking: Booking) => `/bookings/${booking.id}/rate`;
 const rateDriver = { name: "Rate the driver" } as const;
 const send = { name: "Send review" } as const;
-const reportOpen = "You can review this trip once the report about it is settled.";
+const reportOpen = "You can review this ride once the report about it is settled.";
 const personLeft = "This person has left PuffinRide, so they can't be reviewed.";
 
 /** Gunna's completed booking while her report that Anna didn't come waits to be decided. */
@@ -82,36 +85,40 @@ function withFormerDriver(): Booking {
 }
 
 describe("rating the driver from the booking (spec 8, 3.7)", () => {
-  it("offers it once the booking completed, with until when", async () => {
+  it("offers it once the booking completed, with until when under the title (spec 31, 3.8)", async () => {
     await open(completedBooking(), bookingPage(completedBooking()));
-    expect(await screen.findByRole("button", rateDriver)).toBeVisible();
-    expect(screen.getByText("You can review until 29 November at 16:00.")).toBeVisible();
+    // The page's one main button, in its bar; the title asks.
+    const bar = within(await screen.findByTestId("bottom-bar"));
+    expect(bar.getByRole("link", rateDriver)).toBeVisible();
+    expect(screen.getByRole("header", { name: "How was your ride?" })).toBeVisible();
+    expect(screen.getAllByText("You can review until 29 November at 16:00.")).toHaveLength(1);
+    expect(screen.getAllByRole("link", rateDriver)).toHaveLength(1);
   });
 
   it("waits while a report on the booking is open (3.7.3)", async () => {
     await open(withOpenReport(), bookingPage(withOpenReport()));
     expect(await screen.findByText(reportOpen)).toBeVisible();
-    expect(screen.queryByRole("button", rateDriver)).toBeNull();
+    expect(screen.queryByRole("link", rateDriver)).toBeNull();
   });
 
   it("is not offered about a driver who has left PuffinRide", async () => {
     await open(withFormerDriver(), bookingPage(withFormerDriver()));
     expect(await screen.findByText(personLeft)).toBeVisible();
-    expect(screen.queryByRole("button", rateDriver)).toBeNull();
+    expect(screen.queryByRole("link", rateDriver)).toBeNull();
   });
 
   it("is not offered before the booking completes", async () => {
     const booking = { ...completedBooking(), status: "confirmed" as const, review: null };
     await open(booking, bookingPage(booking));
     expect(await screen.findByText("Anna")).toBeVisible();
-    expect(screen.queryByRole("button", rateDriver)).toBeNull();
+    expect(screen.queryByRole("link", rateDriver)).toBeNull();
   });
 
   it("is not offered once the 14 days are over", async () => {
     mockNow = new Date(reviewsCloseAt);
     await open(completedBooking(), bookingPage(completedBooking()));
     expect(await screen.findByText("Completed")).toBeVisible();
-    expect(screen.queryByRole("button", rateDriver)).toBeNull();
+    expect(screen.queryByRole("link", rateDriver)).toBeNull();
   });
 
   it("shows the review sent, hidden from the driver until both have reviewed", async () => {
@@ -129,7 +136,7 @@ describe("rating the driver from the booking (spec 8, 3.7)", () => {
         "Your review appears when the other person has reviewed too, or after 14 days.",
       ),
     ).toBeVisible();
-    expect(screen.queryByRole("button", rateDriver)).toBeNull();
+    expect(screen.queryByRole("link", rateDriver)).toBeNull();
   });
 
   it("shows the driver's review of the passenger once it shows", async () => {
@@ -151,9 +158,13 @@ describe("rating the driver from the booking (spec 8, 3.7)", () => {
 
   it("opens the rate screen", async () => {
     await open(completedBooking(), bookingPage(completedBooking()));
-    await fireEvent.press(await screen.findByRole("button", rateDriver));
-    expect(await screen.findByRole("header", { name: "How was your trip?" })).toBeVisible();
-    expect(screen.getByLabelText("Rate the driver")).toHaveProp("accessibilityRole", "radiogroup");
+    await fireEvent.press(await screen.findByRole("link", rateDriver));
+    expect(await screen.findByLabelText("Rate the driver")).toHaveProp(
+      "accessibilityRole",
+      "radiogroup",
+    );
+    expect(screen).toHavePathname(ratePage(completedBooking()));
+    expect(screen.getByRole("header", { name: "How was your ride?" })).toBeVisible();
   });
 });
 
@@ -175,7 +186,35 @@ describe("the rate screen (spec 8, screen 6; R8.8)", () => {
       ),
     ).toBeVisible();
     expect(bodiesOf(client)).toEqual([{ rating: 4, comment: "Smooth drive." }]);
-    expect(screen.getByRole("button", { name: "Back to the booking" })).toBeVisible();
+    // The way back is the one thing to do: the main button, in the bar.
+    const back = within(screen.getByTestId("bottom-bar")).getByRole("button", {
+      name: "Back to the booking",
+    });
+    expect(back).toHaveStyle({ minHeight: 56 });
+    expect(filledButtons()).toBe(1);
+    expect(screen.getByTestId("filled-button")).toBe(back);
+  });
+
+  it("has its title at the left, between the day and the part, and Send review as the main button in the bar (spec 31, 3.19)", async () => {
+    await open(completedBooking(), ratePage(completedBooking()));
+    await screen.findByRole("radio", { name: "5 stars" });
+    const head = within(screen.getByTestId("screen-head"));
+    expect(head.getByRole("header", { name: "How was your ride?" })).toBeVisible();
+    expect(head.getByRole("button", { name: "Back" })).toBeVisible();
+    // The day over the title and the part under it, each on a line of its own.
+    expect(head.getByText("Sunday 15 November")).toBeVisible();
+    expect(head.getByText("Borgarnes → Blönduós")).toBeVisible();
+    expect(screen.getByTestId("screen-head")).toHaveTextContent(
+      /Sunday 15 November.*How was your ride\?.*Borgarnes → Blönduós/,
+    );
+    const sendReview = within(screen.getByTestId("bottom-bar")).getByRole("button", send);
+    expect(sendReview).toHaveStyle({ minHeight: 56 });
+    expect(filledButtons()).toBe(1);
+    expect(screen.getByTestId("filled-button")).toBe(sendReview);
+    // A review takes nothing away: the moss button, not the red one (decision 17).
+    expect(within(sendReview).getByTestId("button-face")).toHaveStyle({
+      backgroundColor: colors.light.primary,
+    });
   });
 
   it("leaves out an empty comment", async () => {
@@ -206,7 +245,12 @@ describe("the rate screen (spec 8, screen 6; R8.8)", () => {
   it("asks for the stars first", async () => {
     const { client } = await open(completedBooking(), ratePage(completedBooking()));
     await fireEvent.press(await screen.findByRole("button", { name: "Send review" }));
-    expect(await screen.findByText("Choose a rating from 1 to 5 stars.")).toBeVisible();
+    // Over the button, where it is seen.
+    expect(
+      await within(screen.getByTestId("bottom-bar")).findByText(
+        "Choose a rating from 1 to 5 stars.",
+      ),
+    ).toBeVisible();
     expect(bodiesOf(client)).toEqual([]);
   });
 
@@ -228,11 +272,10 @@ describe("the rate screen (spec 8, screen 6; R8.8)", () => {
   });
 
   it.each([
-    ["review_window_closed", "Reviews of this trip closed 14 days after it ended."],
+    ["review_window_closed", "Reviews of this ride closed 14 days after it ended."],
     ["report_open", reportOpen],
     ["person_left", personLeft],
-    ["already_reviewed", "You have already reviewed this trip."],
-    ["not_completed", "This booking changed since you opened it."],
+    ["already_reviewed", "You have already reviewed this ride."],
   ])("says why a review was not taken, and stops: %s", async (code, said) => {
     await open(completedBooking(), ratePage(completedBooking()), {
       review: () => failure(409, code),
@@ -241,17 +284,35 @@ describe("the rate screen (spec 8, screen 6; R8.8)", () => {
     await fireEvent.press(screen.getByRole("button", send));
     expect(await screen.findByText(said)).toBeVisible();
     expect(screen.queryByRole("button", send)).toBeNull();
+    // The way back is then the one thing to do.
+    expect(
+      within(screen.getByTestId("bottom-bar")).getByRole("button", { name: "Back to the booking" }),
+    ).toBe(screen.getByTestId("filled-button"));
   });
 
-  it("stops when the booking is no longer there", async () => {
-    await open(completedBooking(), ratePage(completedBooking()), {
-      review: () => failure(404, "not_found"),
-    });
-    await fireEvent.press(await screen.findByRole("radio", { name: "2 stars" }));
-    await fireEvent.press(screen.getByRole("button", send));
-    expect(await screen.findByText("This booking changed since you opened it.")).toBeVisible();
-    expect(screen.queryByRole("button", send)).toBeNull();
-  });
+  it.each([
+    [409, "not_completed"],
+    [404, "not_found"],
+  ] as const)(
+    "stops when the booking changed meanwhile, as when that shows on opening: %i %s",
+    async (status, code) => {
+      const focus = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
+      await open(completedBooking(), ratePage(completedBooking()), {
+        review: () => failure(status, code),
+      });
+      await fireEvent.press(await screen.findByRole("radio", { name: "2 stars" }));
+      focus.mockClear();
+      await fireEvent.press(screen.getByRole("button", send));
+      expect(await screen.findByText("This booking changed since you opened it.")).toBeVisible();
+      expect(focus).toHaveBeenCalledTimes(1);
+      expect(screen.queryByRole("button", send)).toBeNull();
+      // A screen that only says the booking changed keeps an outlined way
+      // back and no bar (spec 31, 3.19), whenever it finds out.
+      expect(screen.getByRole("button", { name: "Back to the booking" })).toBeVisible();
+      expect(screen.queryByTestId("bottom-bar")).toBeNull();
+      expect(filledButtons()).toBe(0);
+    },
+  );
 
   it.each([
     ["rating", "invalid", "Choose a rating from 1 to 5 stars."],
@@ -290,7 +351,7 @@ describe("the rate screen (spec 8, screen 6; R8.8)", () => {
   it("says so when the booking was already reviewed before the screen opened", async () => {
     const booking = completedBooking({ mine: { ...aReview(5), revealed: false } });
     await open(booking, ratePage(booking));
-    expect(await screen.findByText("You have already reviewed this trip.")).toBeVisible();
+    expect(await screen.findByText("You have already reviewed this ride.")).toBeVisible();
     expect(screen.queryByRole("button", { name: "Send review" })).toBeNull();
   });
 
@@ -298,7 +359,7 @@ describe("the rate screen (spec 8, screen 6; R8.8)", () => {
     mockNow = new Date(reviewsCloseAt);
     await open(completedBooking(), ratePage(completedBooking()));
     expect(
-      await screen.findByText("Reviews of this trip closed 14 days after it ended."),
+      await screen.findByText("Reviews of this ride closed 14 days after it ended."),
     ).toBeVisible();
     expect(screen.queryByRole("button", { name: "Send review" })).toBeNull();
   });
@@ -306,7 +367,7 @@ describe("the rate screen (spec 8, screen 6; R8.8)", () => {
 
 describe("a low rating (spec 8, 3.7.4)", () => {
   const wentWrong = "Did something go wrong?";
-  const reportProblem = { name: "Report a problem with this trip" } as const;
+  const reportProblem = { name: "Report a problem with this ride" } as const;
   // Monday morning, within 24 hours of the trip, when a problem with it can
   // still be reported (R9.1); by Tuesday noon it can't.
   const nextMorning = new Date("2026-11-16T09:00:00Z");
@@ -440,6 +501,23 @@ describe("the driver rates each passenger (spec 8, 3.7)", () => {
     expect(screen.queryByRole("button", { name: /^Rate your passenger/ })).toBeNull();
   });
 
+  it("has nothing under a passenger nobody reviewed once the 14 days are over", async () => {
+    mockNow = new Date(reviewsCloseAt);
+    await openDriverTrip([
+      completedRider("0190a1d6-0000-7000-8000-0000000000c1", "Gunna"),
+      completedRider("0190a1d6-0000-7000-8000-0000000000c2", "Siggi", {
+        mine: { ...aReview(5), revealed: false },
+      }),
+    ]);
+    expect(await screen.findByText("Your review")).toBeVisible();
+    const [gunna, siggi] = screen.getAllByTestId("passenger-row").map((row) => within(row));
+    if (gunna === undefined || siggi === undefined) throw new Error("Two rows are expected.");
+    // No band of white under Gunna's row with nothing in it.
+    expect(gunna.queryByTestId("passenger-review")).toBeNull();
+    expect(siggi.getByTestId("passenger-review")).toBeVisible();
+    expect(screen.queryByRole("button", { name: /^Rate your passenger/ })).toBeNull();
+  });
+
   it("rates a passenger, and the trip then shows the review sent instead of the button", async () => {
     const gunna = completedRider("0190a1d6-0000-7000-8000-0000000000c1", "Gunna", {
       theirs: null,
@@ -457,7 +535,7 @@ describe("the driver rates each passenger (spec 8, 3.7)", () => {
     await fireEvent.press(screen.getByRole("button", { name: "Send review" }));
     expect(await screen.findByText("Review sent. Thank you.")).toBeVisible();
     expect(bodiesOf(client)).toEqual([{ rating: 5 }]);
-    await fireEvent.press(screen.getByRole("button", { name: "Back to the trip" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Back to the ride" }));
     expect(await screen.findByText("Your review")).toBeVisible();
     expect(screen.queryByRole("button", { name: "Rate your passenger: Gunna" })).toBeNull();
   });

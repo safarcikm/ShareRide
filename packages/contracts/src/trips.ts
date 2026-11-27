@@ -13,7 +13,7 @@ import {
 import { z } from "zod";
 import { moneySchema, timestampSchema } from "./common.ts";
 import { accountSuspendedResponse, errorResponseSchema } from "./errors.ts";
-import { dateSchema, meetingPointSummarySchema } from "./meeting-points.ts";
+import { dateSchema, localisedTextSchema, meetingPointSummarySchema } from "./meeting-points.ts";
 import { defineRoute } from "./route.ts";
 
 const unauthenticated = { description: "unauthenticated", schema: errorResponseSchema } as const;
@@ -287,6 +287,33 @@ export const myTripSchema = z.object({
   openRequests: z.int().nonnegative(),
   /** The first deadline among those requests, for "Answer by" (spec 16, 3.3); null for none. */
   requestsCloseAt: timestampSchema.nullable(),
+  /**
+   * The request with that deadline, for "Dóra asks for 1 seat" on what
+   * needs the driver (spec 31, 3.3); null for none. `firstName` is null for
+   * a former member (spec 11).
+   */
+  firstRequest: z
+    .object({
+      firstName: z.string().nullable(),
+      seats: z.int().min(1),
+      from: localisedTextSchema,
+      to: localisedTextSchema,
+    })
+    .nullable(),
+  /**
+   * The passengers the driver can still rate, for "Rate your passenger" on
+   * a ride that is done (spec 31, 3.10; spec 8, 3.7): the trip's completed
+   * bookings, in the order they were made, whose time to review still
+   * runs, which the driver has not reviewed, with no report waiting to be
+   * decided and a passenger who has not left. `closesAt` is when the last
+   * of those times ends (R8.8). Null for none.
+   */
+  toRate: z
+    .object({
+      bookingIds: z.array(z.uuid()).min(1),
+      closesAt: timestampSchema,
+    })
+    .nullable(),
   /** Why the driver cancelled it, with their note; null unless the driver cancelled it (spec 6, 3.3), as when ShareRide did (spec 9, 3.6). */
   cancellation: z
     .object({

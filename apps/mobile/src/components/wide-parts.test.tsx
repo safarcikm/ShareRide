@@ -1,13 +1,12 @@
 import { act, fireEvent, render, screen } from "@testing-library/react-native";
+import { useState } from "react";
 import { Dimensions, Text } from "react-native";
 import { Columns } from "./columns";
 import { Grid, widthOf } from "./grid";
-import { Halves } from "./halves";
 import { Screen } from "./screen";
 
 // The parts that lay a screen out on wide screens (spec 18, 3.2): a page
-// 1144 wide, a main column with a side column, a grid of cards, and the two
-// halves of a card.
+// 1144 wide, a main column with a side column, and a grid of cards.
 
 const phone = { width: 750, height: 1334, scale: 2, fontScale: 2 };
 const laptop = { width: 1280, height: 800, scale: 1, fontScale: 1 };
@@ -72,11 +71,38 @@ describe("Columns", () => {
     expect(order("Main part", "Side part")).toBeLessThan(0);
   });
 
-  it("can put the side column at the left, still read after the main column", async () => {
+  it("can put the side column at the left, where it is read first, as it is seen", async () => {
     setWindow(laptop);
     await render(columns("start"));
-    expect(screen.getByTestId("columns")).toHaveStyle({ flexDirection: "row-reverse" });
-    expect(order("Main part", "Side part")).toBeLessThan(0);
+    // Not turned round by a style: the keyboard and a screen reader go
+    // from left to right as the eye does.
+    expect(screen.getByTestId("columns")).toHaveStyle({ flexDirection: "row" });
+    expect(order("Side part", "Main part")).toBeLessThan(0);
+    expect(screen.getByTestId("columns-side")).toHaveStyle({ width: 400 });
+  });
+
+  it("keeps what the main column holds when the window turns wide, with the side column at the left too", async () => {
+    function Counter() {
+      const [count, setCount] = useState(0);
+      return (
+        <Text
+          onPress={() => {
+            setCount(count + 1);
+          }}
+        >{`Count ${String(count)}`}</Text>
+      );
+    }
+    await render(
+      <Columns sideAt="start" side={<Text>Side part</Text>}>
+        <Counter />
+      </Columns>,
+    );
+    await fireEvent.press(screen.getByText("Count 0"));
+    await act(() => {
+      setWindow(laptop);
+    });
+    expect(screen.getByText("Count 1")).toBeVisible();
+    expect(order("Side part", "Count 1")).toBeLessThan(0);
   });
 
   it("takes another width for the side column", async () => {
@@ -181,34 +207,5 @@ describe("Grid", () => {
       </Grid>,
     );
     expect(screen.getAllByTestId("grid-cell")).toHaveLength(1);
-  });
-});
-
-describe("Halves", () => {
-  it("puts two parts side by side, as wide as each other, and lets the second go under the first", async () => {
-    await render(
-      <Halves testID="both">
-        <Text>One</Text>
-        <Text>Two</Text>
-      </Halves>,
-    );
-    expect(screen.getByTestId("both")).toHaveStyle({ flexDirection: "row", flexWrap: "wrap" });
-    const halves = screen.getAllByTestId("half");
-    expect(halves).toHaveLength(2);
-    for (const half of halves) {
-      // Each takes half the room, and no less than 280: with less room than
-      // twice that, the row wraps.
-      expect(half).toHaveStyle({ flexGrow: 1, flexShrink: 1, flexBasis: 280 });
-    }
-  });
-
-  it("leaves out a part that shows nothing", async () => {
-    await render(
-      <Halves>
-        <Text>One</Text>
-        {null}
-      </Halves>,
-    );
-    expect(screen.getAllByTestId("half")).toHaveLength(1);
   });
 });

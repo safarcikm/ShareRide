@@ -1,4 +1,6 @@
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import type { LucideIcon } from "lucide-react-native";
+import { useLayoutEffect, useRef, type ComponentRef, type RefObject } from "react";
+import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useHover } from "@/theme/hover";
 import { chunky } from "@/theme/pressable";
 import {
@@ -12,12 +14,21 @@ import {
 } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 import { linkProps, type AppPath } from "@/navigation/link-props";
+import { Icon } from "./icon";
+import { useMainButton } from "./press-guard";
 
-type Variant = "primary" | "secondary" | "text";
+/**
+ * `danger` is the main button that takes something away, such as "Cancel
+ * booking" on the screen that asks first (spec 31, 3.19 and decision 17):
+ * red where `primary` is moss, and a screen's one filled button as that is
+ * (R31.1). A button that tells PuffinRide what happened stays `primary`,
+ * though it cannot be undone either.
+ */
+type Variant = "primary" | "danger" | "secondary" | "text";
 
 type ButtonProps = ButtonLook &
   (
-    | { readonly onPress: () => void; readonly href?: never }
+    | { readonly onPress: () => void; readonly href?: never; readonly replaces?: never }
     | {
         /**
          * Opens this screen: a link, an `<a href>` on the web that search
@@ -25,11 +36,18 @@ type ButtonProps = ButtonLook &
          */
         readonly href: AppPath;
         readonly onPress?: never;
+        /**
+         * The screen takes this one's place, so going back from it does not
+         * show this one again: the way out of a page with nothing on it.
+         */
+        readonly replaces?: boolean;
       }
   );
 
 interface ButtonLook {
   readonly label: string;
+  /** Before the label, in its colour: the plus of "Offer a ride" (spec 31, 3.10). */
+  readonly icon?: LucideIcon | undefined;
   /** Read by screen readers instead of the label, when the label is not enough. */
   readonly accessibilityLabel?: string;
   readonly variant?: Variant;
@@ -67,6 +85,14 @@ function look(variant: Variant, palette: Palette, disabled: boolean, hovered: bo
         edge: edges.buttonPrimary,
         edgeColor: palette.primaryEdge,
       };
+    case "danger":
+      return {
+        face: { backgroundColor: hovered ? palette.errorHover : palette.error },
+        label: palette.onError,
+        underlined: false,
+        edge: edges.buttonPrimary,
+        edgeColor: palette.errorEdge,
+      };
     case "secondary":
       return {
         face: {
@@ -90,10 +116,62 @@ function look(variant: Variant, palette: Palette, disabled: boolean, hovered: bo
   }
 }
 
+/**
+ * On the web a held button says that it waits on its element itself. A
+ * pressable there writes `aria-disabled` from `disabled` alone, over the
+ * one given, and whatever the library takes for it makes a `<button>`
+ * `disabled` too: out of the keyboard's order for the half second, and
+ * its focus may go with it. So the attribute is set here after each
+ * drawing, and taken off when the wait is over. An inactive button's is
+ * the library's own.
+ */
+function useSaidOnWeb(
+  part: RefObject<ComponentRef<typeof Pressable> | null>,
+  held: boolean,
+  inactive: boolean,
+) {
+  useLayoutEffect(() => {
+    if (Platform.OS !== "web" || inactive) return;
+    const element = part.current as unknown as Element | null;
+    if (held) element?.setAttribute("aria-disabled", "true");
+    else element?.removeAttribute("aria-disabled");
+  }, [part, held, inactive]);
+}
+
+/** A press as a link looks at it; a button looks at nothing. */
+interface Press {
+  readonly preventDefault?: () => void;
+}
+
+/**
+ * What the button does with a press: told to the guard and then done, or,
+ * while the button is held, nothing. A held link is not followed by the
+ * browser either.
+ */
+function taking<Props extends { readonly onPress: (event?: Press) => void }>(
+  props: Props,
+  held: boolean,
+  tookPress: () => void,
+): Props {
+  return {
+    ...props,
+    onPress: held
+      ? (event?: Press) => {
+          event?.preventDefault?.();
+        }
+      : (event?: Press) => {
+          tookPress();
+          props.onPress(event);
+        },
+  };
+}
+
 export function Button({
   label,
+  icon,
   onPress,
   href,
+  replaces = false,
   accessibilityLabel,
   variant = "primary",
   busy = false,
@@ -104,7 +182,13 @@ export function Button({
 }: ButtonProps) {
   const palette = usePalette();
   const inactive = busy || disabled;
+  // A main button takes no press just after one brought it (`PressGuard`).
+  const { held, pressed: tookPress } = useMainButton(main, accessibilityLabel ?? label, busy);
+  const still = inactive || held;
+  // A held button is under the pointer as it was: it keeps its look.
   const [hovered, hover] = useHover(inactive);
+  const part = useRef<ComponentRef<typeof Pressable>>(null);
+  useSaidOnWeb(part, held, inactive);
   const {
     face,
     label: labelColor,
@@ -114,21 +198,29 @@ export function Button({
   } = look(variant, palette, disabled, hovered);
   return (
     <Pressable
+      ref={part}
+      // A screen has at most one filled button (spec 31, R31.1): tests count them.
+      testID={variant === "primary" || variant === "danger" ? "filled-button" : undefined}
       accessibilityRole={href === undefined ? "button" : "link"}
       accessibilityLabel={accessibilityLabel ?? label}
       // aria-* rather than accessibilityState, which the web build drops.
-      aria-disabled={inactive}
+      aria-disabled={still}
       aria-busy={busy}
       aria-expanded={expanded}
-      disabled={inactive}
-      {...(href === undefined ? { onPress } : linkProps(href))}
+      // Not `false`, which would say "not disabled" over aria-disabled on a phone.
+      disabled={inactive ? true : undefined}
+      {...taking(
+        href === undefined ? { onPress } : linkProps(href, replaces ? "replace" : "push"),
+        held,
+        tookPress,
+      )}
       {...hover}
       style={({ pressed }) => [
         styles.outer,
         variant === "text" && styles.textOuter,
         main && styles.mainOuter,
         fill && styles.fillOuter,
-        chunky(edge, edgeColor, pressed && !inactive).outer,
+        chunky(edge, edgeColor, pressed && !still).outer,
       ]}
     >
       {({ pressed }) => (
@@ -138,10 +230,13 @@ export function Button({
             styles.face,
             variant === "text" && styles.textFace,
             face,
-            chunky(edge, edgeColor, pressed && !inactive).face,
+            chunky(edge, edgeColor, pressed && !still).face,
           ]}
         >
           {busy ? <ActivityIndicator size="small" color={labelColor} /> : null}
+          {icon === undefined || busy ? null : (
+            <Icon testID="button-icon" icon={icon} color={labelColor} />
+          )}
           <Text
             style={[
               variant === "text" ? typography.label : typography.button,

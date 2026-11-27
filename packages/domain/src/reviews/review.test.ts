@@ -10,6 +10,7 @@ import {
   reviewCommentProblem,
   reviewMaxLength,
   reviewReminderAt,
+  reviewsOpenSince,
   tidyReviewComment,
   type ReviewToCheck,
 } from "./review.ts";
@@ -118,6 +119,19 @@ describe("writing a review (R8.8)", () => {
 describe("the time to review (R8.8; spec 8, 3.7.6)", () => {
   it("closes 14 days after completion", () => {
     expect(reviewClosesAt(completedAt, settings)).toEqual(after(14));
+  });
+
+  it("is open for what completed after the moment 14 days back, as `checkReview` takes it", () => {
+    const now = after(14);
+    const since = reviewsOpenSince(now, settings);
+    expect(since).toEqual(completedAt);
+    // At the moment itself the 14 days have passed; a millisecond later they have not.
+    const just = new Date(since.getTime() + 1);
+    expect(checkReview({ ...good, completedAt: since }, now, settings)).toEqual({
+      ok: false,
+      error: { code: "review_window_closed" },
+    });
+    expect(checkReview({ ...good, completedAt: just }, now, settings).ok).toBe(true);
   });
 
   it("reminds once, 3 days after completion, while that is still ahead", () => {

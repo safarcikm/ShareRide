@@ -140,6 +140,12 @@ export const northMyTrip = withTripDay(
     segments: northSegments([0, 1, 0]),
     openRequests: 1,
     requestsCloseAt: "2026-11-14T22:00:00.000Z",
+    firstRequest: {
+      firstName: "Gunna",
+      seats: 1,
+      from: northStop(1).meetingPoint.name,
+      to: northStop(2).meetingPoint.name,
+    },
   }),
 );
 

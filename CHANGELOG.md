@@ -1499,6 +1499,24 @@ releases follow [Semantic Versioning](https://semver.org/).
   share window, or copies its link and shows a tick; it is a button of its
   own, so it never opens the trip. `Card` takes a `corner`, `IconButton`
   can be `quiet` (drawn 36 in a 44 button), and the token `iconButtonSmall`.
+- Share this ride (spec 28, 3.2 to 3.4 and 3.6): after publishing, and on
+  a screen of its own opened from the share icon on a published trip in My
+  trips and beside the name on the driver's trip page. It opens the phone's
+  or browser's share window with the post and the link (where there is
+  one), Facebook's share window for the link (no Facebook script, nothing
+  loaded before the tap), and shows the post's text ("Býð far: …", the
+  day, the stops, the link; never a price, a fee or a name) in Icelandic or
+  English to copy, with a link to follow PuffinRide's Facebook Page. It
+  replaces "Share the trip" on the published screen.
+- Story on Instagram (spec 28, 3.2 item 5 and 3.5), on the website's Share
+  this ride: a picture of the ride for a story, 1080 × 1920
+  (`GET /v1/trips/{id}/story.png`, the route large, the day, the stops, the
+  Iceland scene, nothing in Instagram's own top and bottom), with Share
+  picture where the browser can share a file, otherwise Download picture
+  (`&download=1`, named after the route), and Copy link for the link
+  sticker. Any site may show a trip's pictures; every other answer keeps
+  the same-origin resource policy. `pnpm --filter @shareride/api
+  story-pictures` draws sample stories.
 
 - Carpool in Iceland (spec 23, 3.9): a public page at `/carpool-iceland`,
   "Samferða um Ísland" in Icelandic, that says in words what PuffinRide is
@@ -1534,13 +1552,74 @@ releases follow [Semantic Versioning](https://semver.org/).
   sign-in with a password is followed by the browser's quiet save, with no
   screen, unless "Not now" was pressed there in the last 30 days; where it
   saves none within 3 seconds, Face ID is offered as after any other way
-  in, and none with 10 devices set up. `POST /v1/me/passkeys/options` takes `quiet`, given
-  only to a session signed in less than 10 minutes ago, and only the answer
-  to such options is saved without "user present" or "user verified".
+  in, and none with 10 devices set up. `POST /v1/me/passkeys/options`
+  takes `quiet`, given only to a session signed in less than 10 minutes
+  ago, and only the answer to such options is saved without "user present"
+  or "user verified".
   Migration 0064.
+- About PuffinRide (spec 30), a public page at `/about`: what PuffinRide is,
+  the Terms of Service, Community Rules, Privacy Policy and Cookies, who
+  runs PuffinRide (as the Terms say it) and how to reach us
+  (`admin@puffinride.is`, our Facebook Page and Instagram). It takes the place of "Terms,
+  rules and privacy": Profile's row is "About PuffinRide", and `/legal`
+  answers with a permanent redirect to `/about`. About has its own title, is
+  in the sitemap in place of `/legal`, and its words are in the first
+  answer's `<noscript>` for search engines.
+- A footer on the website's public pages (spec 30, 3.3): About, Carpool in
+  Iceland, Meeting points, the three documents, Cookies, our email, our
+  Facebook Page and Instagram (@puffinride.is), as real links. On a laptop, four groups under a line as
+  wide as the page; on a phone's browser, small links in a few lines. Not
+  on signing in, forms, My rides, Messages, Profile or in the phone apps.
+
+- The parts of "one ride, one ticket" (spec 31, 3.3), not on a screen yet:
+  `RideTicket` (a ride as a timetable with a tear line and a foot, which
+  moves a tag, the price or the foot's end to a line of its own where a
+  narrow phone or large text leaves no room; `Timetable` is its times and
+  places alone), `Road`
+  (where a booking or a draft stands, with the puffins' car on the step),
+  `NeedsYouCard` (what needs you, in the car's yellow), `ActionRows` (a card
+  of rows, whose focus ring is drawn inside the row) and `ScreenHead` (Back,
+  the title at the left, one line). `Row`
+  can have an icon, be red, unfold, hold a switch or only show a value;
+  `Tag` can have an icon; `Avatar` has a small size; tests can count a
+  screen's filled buttons.
+- What needs you is one rule (spec 31, 3.3, item 3) in `packages/domain`:
+  `bookingNeed` and `tripNeed` say whether a booked seat or a ride I drive
+  asks me to pay, to answer or is on its trip day, and by when;
+  `soonestFirst` orders them; `busiestStretch` names a ride's fullest
+  stretch. Each ride in `GET /v1/me/trips` says who asks in the request
+  that closes first (`firstRequest`: the first name, the seats and the two
+  stops' names), for "Dóra asks for 1 seat".
 
 ### Fixed
 
+- A tap on a notification about beta news, about a reply to feedback, or
+  about an answer to a question on one's data, opens its page in the
+  phone apps. The server named the three pages and the app ignored them.
+  The pages are one list now, `notificationScreens` in
+  `packages/contracts`, which both sides read.
+- While an account waits to be deleted, Blocked people, My reports and
+  the privacy request are closed as the other pages of Profile are (spec
+  11, 3.4.4); their addresses still opened them. The pages that close are
+  one list, and a test fails for a page of Profile that is not in it.
+- A row of Profile keeps what it said when it cannot be read again on
+  coming back, and the room of the rating's line is kept while it is
+  read, so the rows do not move (spec 31, 3.14).
+- A long email breaks inside its row on a narrow phone; on the website it
+  reached past the row's edge (spec 31, 3.14).
+- The email to the old address after the sign-in email changed opens
+  Profile directly.
+- Titles keep their words apart on the website (spec 31, 3.18): Fredoka's
+  space is narrow and its kerning closed it further, so "N1 Vík" read as
+  "N1Vík". Titles, headings, times, prices and button labels are set
+  without kerning and with a word space 0.06 em wider.
+- On Edit trip and on the last step of posting, a part's link goes under
+  its title where the two do not fit on one line, where "Change the
+  preferences and note" ran out of its card on a phone; "Remove a stop"
+  starts at the left, under the stops (spec 31, 3.18).
+- A profile picture stands with the name, at the top of the lines beside
+  it, on the driver's card and on a request to answer, where it sat at
+  their middle (spec 31, 3.18).
 - Carpool in Iceland says what samferða means (spec 23, 3.9), with the
   spelling without ð (samferda) in English, for people who search for the
   word.
@@ -1603,6 +1682,278 @@ releases follow [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- A booking's status tag follows what the colours say (spec 31, 3.2, rule
+  6): declined, expired, cancelled and withdrawn are a quiet grey tag, as
+  nothing is asked of anyone, and "No-show" is red. They were amber, or
+  blue for a withdrawal. "Waiting for payment" stays amber. The tag of a
+  cancelled ride you drive in My rides (grey) and "No-show" beside a
+  passenger on the driver's trip day (red) follow.
+- One name each (spec 31, 3.4): every English text a member reads says
+  "ride" for what a driver offers and a passenger books, in the app, in
+  notices, emails and text messages; "trip" stays in "Trip day", in the
+  console and the legal documents, and where the marketing pages and About
+  mean the drive itself ("a trip you are making anyway"). "Post a trip" is
+  "Offer a ride", "Publish trip" is "Publish ride", the search button says
+  "Find a ride", "Search again" is "Find another ride", "Post again" and
+  "Post the return trip" are "Post it again" and "Post the way back". In
+  Icelandic the search button says "Finna far" and the button that starts
+  a ride on the driver's list "Bjóða far". No text key changed.
+- In My rides, a ride on its trip day stands under "Needs you", for a
+  passenger and a driver alike, and its row says "Trip day", there and
+  under "Your next ride" on Find (spec 31, 3.3, item 3). Until now only a
+  seat to pay for and requests to answer stood under "Needs you".
+- A ride is a ticket wherever one is listed (spec 31, 3.5, 3.6 and 3.16):
+  on Find, in the search results, on All rides and in My rides. A ride
+  found shows its day, how it is booked,
+  the two times and places, the price, and under the tear line the driver
+  and the seats left; a ride of mine says "Passenger" or "You drive", and
+  what it needs from me in a yellow tag. Signed in, Find greets you by
+  name ("Hi Bára") with what needs you in the yellow card, or your next
+  ride, over the search. What counts on Find and My rides ("19 min left to
+  answer", "Leaves in 40 minutes") keeps counting while the screen is
+  open, and a deadline that passes leaves it. On a laptop the title stands at the left of the
+  scene with the car at the right, and someone new reads "How it works"
+  in three lines beside the rides. The search results have one row (the
+  order, one Filters chip that says how many are on, and the number of
+  rides) and end with a card that leads to All rides. `/search` is the
+  same search card as Find's. A ride found says its driver's `colour` in
+  the API, so the circle in place of a photo is the same everywhere.
+- A ride's details are built around one ticket (spec 31, 3.7). The title
+  names your part ("N1 Borgarnes to Olís Blönduós") under the day. "Your
+  part of the ride" is a ticket: where you get in and out with Change on
+  each, which unfolds the stops inside the ticket, and the seats under the
+  tear line. Then the driver's card with the car and the preferences,
+  "Where you sit", and "The whole route" with the map and the stops. Free
+  cancellation, "Weather and roads" (the links to the weather, the roads
+  and SafeTravel) and "Report this ride" are rows at the end. On a laptop
+  the booking panel and the whole route stay beside them. With more than
+  one seat the bar says what each costs ("2 × 2,900 ISK"). A ride that
+  was cancelled says nothing of how to book it or of cancelling a booking.
+- A screen's title is not broken inside a word for the button beside it:
+  between places with long names on a narrow phone, Share stands over the
+  title, and Change under its place on the ticket (spec 15, 5.2).
+- Booking a seat shows the ride as a ticket, with the total, the seats and
+  the driver and car on it, and "You're booked" and "Request sent" show
+  the ticket My rides has for the seat (spec 31, 3.19).
+- A row's value ("Up to 15 min before") goes under its title where the
+  two have no room on one line; a title is no longer broken in two to make
+  room for it (spec 15, 5.2).
+- A booked seat's page says where the booking stands in its title (spec
+  31, 3.8): "Request sent", "Anna said yes: pay to keep your seat", "Your
+  seat is confirmed", "How was your ride?", "Cancelled", with one line
+  under it on what happens next, or on why it ended ("You cancelled this
+  booking: Plans changed", with the refund under it), and a road (Asked,
+  Confirmed, Trip day, Done). While a report that the driver didn't come
+  is open, the title says that. Then the ride as a ticket with the seats and the price, the
+  driver with Message and the number plate as a tag, where to stand with
+  a small map and "Open in maps", and rows: share the ride's details,
+  weather and roads, report a problem, and "Cancel booking" or "Withdraw
+  request" last, in red. The one main button is in a bar at the bottom:
+  Pay, "Rate the driver" or "Find another ride". On a laptop the ticket
+  and the rows are beside the road, the driver and where to stand, with
+  the main button over them.
+- On the trip day the title counts down ("Leaves in 10 minutes") and says
+  "Anna is at the meeting point" once the driver is there; where to stand
+  comes first, and "I'm here" is in the bar at the bottom, on the first
+  screen (spec 31, 3.9). "The driver didn't come" is there too once it is
+  offered.
+- A driver who opens a passenger's booking paid in person reads who pays
+  them, and how much (ADR 0038): the line was written with paying in
+  person and never showed.
+- The screens around a booking take the same rules (spec 31, 3.19):
+  cancelling it, "The driver didn't come", marking a no-show, answering a
+  report, rating, blocking and reporting have their title at the left,
+  the booked seat as its ticket where they show the ride, and their main
+  button in a bar at the bottom. That button is red where it takes
+  something away ("Cancel booking", "Withdraw request", "Block Bára") and
+  moss where it tells PuffinRide what happened. Why it did nothing
+  ("Choose a reason.") stands over it and is read out, where it was at
+  the end of the page. After blocking, reporting and rating, the way back
+  is the main button.
+- A ride you drive is built around its ticket (spec 31, 3.12): the title
+  is "Your ride to Selfoss", with what it needs under it ("1 request
+  needs your answer."). A request is a yellow card with who asks, their
+  part, their message and "If you accept, 2 of 3 seats are taken from
+  Mjódd to Selfoss"; the passengers are one card of rows, each with a
+  Message button and unfolding to their profile, reporting them and
+  "Cancel booking"; the seats are one line, with each stretch behind it;
+  and everything else is a row, "Cancel the ride" red and last. On the
+  trip day "I'm here at Mjódd" is the main button, in the bar at the
+  bottom (3.9). On a laptop the ticket, the seats and the rows stand
+  beside the requests and the passengers (3.16).
+- The screens a ride you drive opens take the same rules (spec 31, 3.19).
+  Edit the ride is one card of rows, each with what is set now ("Time,
+  Sunday 15 November at 09:00"; the stops with their times, and "Add a
+  stop" and "Remove a stop" under them), in place of headings with a link
+  beside each. Each part's screen has its title at the left, and why
+  nothing was saved stands over the main button and is read out, where it
+  was at the end of the page; a note that cannot be saved is said there
+  too, where the button did nothing. Cancelling a ride has the ride as
+  its ticket and "Cancel the ride" as a red main button over "Keep the
+  ride". Sharing a ride shows it as its ticket, and messaging all
+  passengers has its title at the left.
+- My rides is the one list of your rides (spec 31, 3.10 and 3.11). "Offer
+  a ride" stands at its title. Under Past, a ride that is done says in
+  its foot whose rating you can still give ("Rate the driver", "Rate
+  your passenger", "Rate your passengers"); its ticket opens the ride,
+  which asks for the rating. My trips is gone: its address leads to My
+  rides, and your drafts are rows in one card on Offer, the one changed
+  last first, each with its day and time or "No time yet", with "Show
+  all drafts" for more than three.
+  After publishing, "See my rides" opens My rides; deleting a draft
+  leads to Offer. A ride you drive says which of its passengers you can
+  still rate (`toRate` in `GET /v1/me/trips`).
+- Offering a ride follows the road (spec 31, 3.11). Each step has Back
+  and the road with the puffins' car in place of "Step 2 of 5" and its
+  bars, and its title at the left. The departure's time wheel opens at
+  08:00 for a day other than today. "Check and publish" shows the ride
+  as people will see it, as its ticket, over one card of rows (Route,
+  Time, Price, Seats and booking, Car, Preferences and note), each with
+  what is set and "Change". What is still missing is one yellow card
+  that says what is done and what is left, with the button for the next
+  one. "Delete draft" is a red row, last, and asks first. "Your ride is
+  published" shows the ride as its ticket, with "See my rides" as its
+  main button; it is read again when you come back to it, and its
+  address opens a draft's step, or the page of a ride that is cancelled
+  or has left, instead. Adding a meeting point has Back and its title at
+  the left, and Android's back closes it too. The price beside a step on
+  a laptop and on Edit the ride says kronur first ("3,400 ISK the whole
+  way · 110%"), and the row for the day and times there is called
+  "Time", as on the road. Opened by its address, the last step's Back
+  leads to the price, the step before it; it led to the seats.
+- A conversation has a top that stays (spec 31, 3.13): Back, the other
+  person's picture and name with "Driver, White Toyota Yaris" or
+  "Passenger", and a menu, "More", that holds Report and Block, with
+  Block red and last. Until now those were the first lines of the
+  conversation and out of view from the first message on. Under them the
+  ride is one line that opens the booking, or the ride for its driver.
+  The safety tip is a quiet line with a shield, first in the
+  conversation. The quick messages are chips over the bar, and the field
+  in the bar is one line with "Write a message" in it that grows as it is
+  written in, with a round Send beside it; "Message all passengers" has
+  the same field. The conversation stays at its end as the field grows,
+  so the last message is not under the bar while an answer is written. A
+  top too tall for the room the conversation has, as with text twice as
+  large and long names, scrolls with it. Messages has its title at the
+  left on a phone.
+- Profile and Settings are one page (spec 31, 3.14). Profile has who you
+  are in a card, with your rating and what is checked as others see them,
+  Edit and the photo's controls, then rows in four groups, each row with
+  what is set now: Driving (My cars, Driving licence), Account (Email,
+  Phone number, Sign-in methods, Notifications, Language), Safety and
+  privacy (Privacy and your data, Blocked people, My reports, Notices)
+  and Help (Meeting points, Send feedback, My feedback, About PuffinRide,
+  Legal documents), and Sign out as its last row. The language and the
+  notifications each have a page of their own, the notifications' two
+  switches as rows of one card. "Sign out on all devices" is at the end
+  of Sign-in methods. `/settings` leads to Profile, and the texts and
+  emails that said "in Settings" say where the thing is on Profile. On a
+  laptop the card is the side column and the groups the main one. Quick
+  choices of a language are saved one after the other and end on the
+  last. Back from Beta news opened by itself leads to Notifications. The
+  legal texts still say "Settings".
+- A person's profile and the pages Profile opens follow the same rules
+  (spec 31, 3.19). A person's profile has the title "Profile" at the left
+  with Back, and who they are in the card Profile has: the picture, the
+  name, what they speak and since when, the rating and what is checked,
+  and what they wrote about themselves. The reliability figure is a row
+  that unfolds its counts. "Read the community rules", Report and Block
+  are rows of the page's last card, after the reviews, with Block red and
+  last; they were loose buttons right under the card. "As others see
+  you" and Edit profile have the same card, Edit profile with the
+  photo's controls in it. My cars, a car, the driving licence, the
+  photo, Email, the password, Sign-in methods, Beta news, Blocked
+  people, My reports, Notices, Send feedback, My feedback and the pages
+  of Privacy have Back and their title at the left, with their help as
+  the line under it. Privacy is a card of rows with pictures, "Delete my
+  account" red and last, and the buttons that delete the account are
+  red. "Remove car" is a red row, last on a car's page, and its question
+  takes focus. After sending feedback, a question about your data or
+  deleting the account, what happened is the page's title, with focus,
+  and the way on is the one main button at the bottom. On Notices and
+  Beta news the title of a notice or a piece of news is a heading under
+  the page's title on the web.
+- Every page has one main button, at the bottom, and its title at the
+  left (spec 31, R31.1 and 3.17; the last pass, part one). The button
+  that saves, sends or deletes is in the bar at the bottom of the screen,
+  seen without scrolling, on Edit profile, a car, the driving licence,
+  Email, the password, the photo's page, "Download my data", "Delete my
+  account", Notices (an appeal) and "What's wrong here?" at a meeting
+  point; why it did nothing is said over it. Confirming with a code has
+  that one button there, with "Send a new code" and "Cancel" as rows;
+  Sign-in methods and setting up a passkey keep theirs as it was. My cars
+  lists the cars as rows with pictures. A row shows when it is at work.
+  What was written for an appeal is kept when its form is closed. All rides, a place, the meeting
+  points and a meeting point have Back and their title at the left, with
+  the rest of the page starting there too; a meeting point's "Open in
+  maps" and "Something wrong here?" are rows with pictures at its end.
+  The page an email's link
+  opens, a saved password and the thanks after telling us what is wrong
+  at a meeting point say what happened as the page's title, with focus,
+  and the way on is the main button. A test opens every page a signed-in
+  member reaches, 86 pages and states, and checks both rules.
+- A main button takes no press for half a second after one was pressed
+  (spec 31, 3.20; the last pass, part two). It stands in the same place
+  on every screen, so a second press meant for "Send report" landed on
+  "Back to the ride" before the outcome was read, and one meant for a
+  ride's "Send request" on the next page's. The other buttons of a
+  screen's bar wait with it: "Find another ride" stands where "Send
+  request" stood. The wait starts again when the press opens another
+  page and when another main button comes of it. A waiting button looks
+  as it did, says to a screen reader that it is not to be pressed, and
+  keeps its place for the keyboard.
+- Text twice as large fits a phone 360 wide (spec 31, 3.20): the menu's
+  names stay in their places, on two rows on the web where they must,
+  with the icons in a line (also in Icelandic with the text as set, where
+  "Ferðirnar mínar" has two lines); Find's name line puts the language
+  under the name; the road says "Step 2 of 4: Confirmed" in one line
+  where its names have no room; "Get in" and "Get out" go under a stop's
+  name on a ride's page; and the question about cookies stands over the
+  menu as it is laid out. The journeys measure these with the text as
+  set and twice as large.
+- On a short window, under 480 high (a phone on its side, a laptop
+  zoomed far in), a screen's bar joins the end of its page and scrolls
+  with it (spec 31, 3.20): it took a third of such a window and more. A
+  conversation keeps its field under its messages, and a phone's keyboard
+  over the page moves nothing.
+- The keyboard is where a press put something new (spec 31, 3.20): on
+  the draft's link after "Show all drafts", so Enter opens it; on the
+  title of the screen "Add a meeting point" opens, and on that button
+  again when it closes. Messages' menu closes by Escape, by Android's
+  back and by a press beside it. On a laptop Profile's card, at the left,
+  comes before its rows for the keyboard and a screen reader.
+- A screen reader hears more of what the eye sees (spec 31, 3.20): the
+  driver's card on a ride has a heading ("Driver: Anna"), the link to the
+  driver's profile says "Driver" first, and the name on a profile's card,
+  mine or another's, is a heading; on the web "Where you sit" is read
+  before its picture; a ticket that is not pressed says which end is "Get
+  in" and which "Get out" ("From" and "To" on a ride I offer), in words
+  that are heard and not seen; "Driver" comes before the name in the foot
+  of Booking a seat's ticket; and in a phone's app a row that only shows
+  something, as the phone number, is read in one piece.
+  One new text: "Driver", "Bílstjóri".
+- A chip is 44 high on the web, where nothing can be pressed beyond what
+  is drawn (it was 40).
+- An address the app does not have has a page of our own (spec 31,
+  3.21): "We can't find this page", with "Find a ride" in the bar, in
+  both languages. The router's own page showed before: black, in
+  English, with a link to a list of every address. That list
+  (`/_sitemap`) is turned off.
+- The last small things of the overhaul (spec 31, 3.21): "New driver" is
+  a quiet tag, as amber is kept for what needs someone; a ride that was
+  cancelled has no seats to choose, no "Where you sit" and no price; after
+  blocking, the line about bookings together counts only what is still
+  held; Messages' menu stands on the page's colour, apart from its bar;
+  and a draft whose meeting points went out of use says "No route yet"
+  and opens at its route. Three new texts, and "Find another ride" is
+  "Finna aðra ferð" in Icelandic wherever it stands.
+- The web journeys never give two test accounts the same phone number: a
+  run in ten did, and a sign-in journey then failed.
+- CI skips its code jobs (bundles, unit, integration and web tests, the API
+  image) for a change to docs, marketing and other files that no code reads,
+  and on `main` when the pull request already tested exactly the same files
+  (`.github/scripts/ci-changes.sh`). The format check and the dependency
+  audit always run.
 - A text message no longer signs in (spec 26): the phone step needs a
   waiting email, Google or Apple sign-in (`pendingSignIn`), at most 3 texts
   go for one, and all sign-in and confirm texts together stop at 300 an

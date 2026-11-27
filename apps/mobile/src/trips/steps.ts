@@ -17,9 +17,11 @@ export function stepHref(id: string, step: StepName) {
  * Where a draft carries on: the date and times while it has none, then the
  * review, which shows every other step with a way to change it. A draft
  * keeps no record of the steps after the times, which all have a choice
- * made already (spec 3, 3.8.4; spec 16, 3.6).
+ * made already (spec 3, 3.8.4; spec 16, 3.6). One that lost a meeting
+ * point and has no two stops left starts at its route again.
  */
-export function resumeStep(trip: Pick<MyTrip, "departsAt">): StepName {
+export function resumeStep(trip: Pick<MyTrip, "departsAt" | "stops">): StepName {
+  if (trip.stops.length < 2) return "route";
   return trip.departsAt === null ? "time" : "review";
 }
 

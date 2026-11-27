@@ -4,6 +4,7 @@ import { AccessibilityInfo } from "react-native";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
 import { bookingApi, northBooking, paidBooking, unpaidBooking } from "@/testing/bookings";
+import { filledButtons } from "@/testing/buttons";
 import { ok, type FakeClient } from "@/testing/fake-client";
 import { mockNotifications } from "@/testing/notifications";
 import { plannedDraft, tripsApi } from "@/testing/trips";
@@ -29,8 +30,8 @@ jest.mock("@/lib/clock", () => ({ now: () => new Date("2026-11-14T12:00:00Z") })
 const mockProject = { id: "test-project" as string | undefined };
 jest.mock("@/notifications/project-id", () => ({ projectId: () => mockProject.id }));
 
-const turnOn = "Turn on notifications so you hear at once if your trip changes.";
-const addEmail = "Add an email so we can reach you if your trip changes.";
+const turnOn = "Turn on notifications so you hear at once if your ride changes.";
+const addEmail = "Add an email so we can reach you if your ride changes.";
 
 // Each test posts its own trip, so each is a new occasion.
 let trips = 0;
@@ -58,12 +59,12 @@ async function openPosted(me = completeMe) {
       client.answer("/v1/me/sessions/current/push-token", () => ok(204), "put");
     },
   });
-  expect(await screen.findByRole("header", { name: "Your trip is published" })).toBeVisible();
+  expect(await screen.findByRole("header", { name: "Your ride is published" })).toBeVisible();
   return { ...app, trip };
 }
 
 /** Lets the prompt finish asking the phone and the device's storage. */
-async function settled(button = "Share the trip") {
+async function settled(button = "See my rides") {
   await waitFor(() => {
     expect(screen.getByRole("button", { name: button })).toBeVisible();
   });
@@ -196,7 +197,7 @@ describe("The prompt to turn on notifications (spec 7, 3.6.2)", () => {
         tripsApi(client, [trip]);
       },
     });
-    expect(await screen.findByRole("header", { name: "Your trip is published" })).toBeVisible();
+    expect(await screen.findByRole("header", { name: "Your ride is published" })).toBeVisible();
     await settled();
     expect(screen.queryByText(turnOn)).toBeNull();
   });
@@ -244,10 +245,14 @@ describe("The prompt after booking and being accepted (spec 7, 3.6.2)", () => {
     expect(await screen.findByText(turnOn)).toBeVisible();
   });
 
-  it("asks once a request is accepted, under paying, and registers the phone once allowed", async () => {
+  it("asks once a request is accepted, on the page that asks to pay, and registers the phone once allowed", async () => {
     const booking = aBooking(acceptedRequest);
     const { client } = await openBooking(booking, "booking");
-    expect(await screen.findByText("Pay 2,900 ISK to confirm your seat")).toBeVisible();
+    expect(
+      await screen.findByRole("header", { name: "Anna said yes: pay to keep your seat" }),
+    ).toBeVisible();
+    // Pay is the page's one filled button: the prompt's are quiet (R31.1).
+    expect(filledButtons()).toBe(1);
     await fireEvent.press(await screen.findByRole("button", { name: "Turn on notifications" }));
     await waitFor(() => {
       expect(registered(client)).toEqual(["ExponentPushToken[test-device]"]);
@@ -310,7 +315,7 @@ describe("The prompt after booking and being accepted (spec 7, 3.6.2)", () => {
     const booking = aBooking(paidBooking);
     mockStored.set("notificationsPromptAnswered", JSON.stringify([`booked:${booking.id}`]));
     await openBooking(booking, "booking");
-    await settled("Message Anna");
+    await settled("Cancel booking");
     expect(screen.queryByText(turnOn)).toBeNull();
   });
 

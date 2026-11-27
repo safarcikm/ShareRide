@@ -41,6 +41,17 @@ interface CardProps {
    * its first line.
    */
   readonly corner?: ReactNode;
+  /**
+   * No padding or gap of its own: what it holds reaches its edges and is
+   * cut by its corners, as a ride ticket's tear line and a card of rows are
+   * (spec 31, 3.3).
+   */
+  readonly flush?: boolean;
+  /**
+   * A ride that is mine (spec 31, 3.3): a `primary` bottom edge, which
+   * turns `primaryEdge` where another card's edge turns `primary`.
+   */
+  readonly mine?: boolean;
 }
 
 /**
@@ -85,6 +96,8 @@ export function Card({
   marked = false,
   fill = false,
   corner,
+  flush = false,
+  mine = false,
 }: CardProps) {
   const [cornerHovered, cornerHover] = useHover();
   const events = useMemo<CardCornerEvents>(
@@ -109,6 +122,8 @@ export function Card({
       onFocus={onFocus}
       marked={marked || cornerHovered}
       fill={fill}
+      flush={flush}
+      mine={mine}
     >
       {children}
     </PlainCard>
@@ -133,15 +148,20 @@ function PlainCard({
   onFocus,
   marked = false,
   fill = false,
+  flush = false,
+  mine = false,
 }: Omit<CardProps, "corner">) {
   const palette = usePalette();
   const [hovered, hover] = useHover();
-  const edgeColor = hovered || marked ? palette.primary : palette.edge;
+  const resting = mine ? palette.primary : palette.edge;
+  const shown = mine ? palette.primaryEdge : palette.primary;
+  const edgeColor = hovered || marked ? shown : resting;
   const face = (pressed: boolean) => (
     <View
       testID="card-face"
       style={[
         styles.face,
+        flush && styles.flush,
         fill && styles.fill,
         { backgroundColor: palette.surface },
         chunky(edges.card, edgeColor, pressed).face,
@@ -154,7 +174,7 @@ function PlainCard({
     return (
       <View
         testID="card"
-        style={[styles.outer, fill && styles.fill, chunky(edges.card, palette.edge, false).outer]}
+        style={[styles.outer, fill && styles.fill, chunky(edges.card, resting, false).outer]}
       >
         {face(false)}
       </View>
@@ -187,6 +207,7 @@ const styles = StyleSheet.create({
   outer: { borderRadius: radii.card },
   fill: { flexGrow: 1 },
   face: { borderRadius: radii.card, padding: spacing.md, gap: spacing.ms },
+  flush: { padding: 0, gap: 0, overflow: "hidden" },
   // The tap area's corner: the button it holds is drawn 4 further in.
   corner: { position: "absolute", top: spacing.xs, right: spacing.xs },
 });

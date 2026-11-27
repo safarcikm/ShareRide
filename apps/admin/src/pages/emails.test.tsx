@@ -83,7 +83,7 @@ describe("the Emails to you page (spec 25)", () => {
     expect(((await box()) as HTMLInputElement).checked).toBe(true);
     expect(
       screen.getByText(
-        "Your account has no confirmed email address, so nothing can be sent. Add one in PuffinRide under Settings.",
+        "Your account has no confirmed email address, so nothing can be sent. Add one in PuffinRide, in Profile under Email.",
       ),
     ).toBeTruthy();
   });

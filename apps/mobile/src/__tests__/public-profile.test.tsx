@@ -1,12 +1,14 @@
-import { act, fireEvent, screen } from "expo-router/testing-library";
+import { act, fireEvent, screen, within } from "expo-router/testing-library";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
+import { filledButtons } from "@/testing/buttons";
 import {
   annaProfile,
   annaProfileId,
   annaReviews,
   aProfileReview,
+  findPersonCard,
   newcomer,
   profileApi,
   reviewsAnswer,
@@ -38,6 +40,15 @@ const bylines = () =>
 const label = (element: { props: { accessibilityLabel?: unknown } }) =>
   String(element.props.accessibilityLabel);
 
+const hidden = { includeHiddenElements: true };
+
+/** The first card of rows on the screen: the reliability figure's. */
+const firstRows = () => {
+  const [rows] = screen.getAllByTestId("action-rows");
+  if (rows === undefined) throw new Error("No card of rows");
+  return rows;
+};
+
 /** Anna's profile, opened by a member signed in; `setUp` changes the answers. */
 async function openProfile(
   setUp: (client: FakeClient) => void = (client) => {
@@ -45,7 +56,7 @@ async function openProfile(
   },
 ) {
   const app = await renderApp(`/people/${annaProfileId}`, { me: completeMe, setUp });
-  await screen.findByRole("header", { name: "Anna" });
+  await findPersonCard("Anna");
   return app;
 }
 
@@ -74,8 +85,10 @@ describe("a public profile (spec 1, 3.5)", () => {
         profileApi(client);
       },
     });
-    await fireEvent.press(await screen.findByRole("link", { name: "See profile: Anna" }));
-    expect(await screen.findByRole("header", { name: "Anna" })).toBeVisible();
+    await fireEvent.press(
+      await screen.findByRole("link", { name: /^Driver, See profile: Anna, / }),
+    );
+    expect(await findPersonCard("Anna")).toBeVisible();
     expect(screen).toHavePathname(`/people/${annaProfileId}`);
   });
 
@@ -89,18 +102,44 @@ describe("a public profile (spec 1, 3.5)", () => {
     expect(screen.queryByRole("link", { name: /^See profile/ })).toBeNull();
   });
 
-  it("shows the first name, about, languages, since when and the badges", async () => {
+  it("has its title at the left, with Back, and the person in a card (spec 31, 3.19)", async () => {
     await openProfile();
-    expect(screen.getByText(annaProfile.about ?? "")).toBeVisible();
-    expect(screen.getByText("Speaks Icelandic, English")).toBeVisible();
-    expect(screen.getByText("Member since March 2026")).toBeVisible();
-    expect(screen.getByText("Phone verified")).toBeVisible();
-    expect(screen.queryByText("Email verified")).toBeNull();
+    const head = within(screen.getByTestId("screen-head"));
+    expect(head.getByRole("header", { name: "Profile" })).not.toHaveStyle({ textAlign: "center" });
+    expect(head.getByRole("button", { name: "Back" })).toBeVisible();
+    // The title stands over the card. The name heads the card under it:
+    // a screen reader's list of headings has it between Profile and Reviews.
+    const who = within(screen.getByTestId("person-card"));
+    expect(who.getByText("Anna")).toBeVisible();
+    expect(who.getByRole("header", { name: "Anna" })).toBe(who.getByText("Anna"));
+    // Nothing to do here is the screen's one thing to do (R31.1).
+    expect(filledButtons()).toBe(0);
   });
 
-  it("shows the rating to one decimal, and no rating before the first", async () => {
+  it("shows the first name, about, languages, since when and the badges, in the card", async () => {
     await openProfile();
-    expect(screen.getByText("4.3 (3 ratings)")).toBeVisible();
+    const card = within(screen.getByTestId("person-card"));
+    expect(card.getByText(annaProfile.about ?? "")).toBeVisible();
+    expect(card.getByText("Speaks Icelandic, English")).toBeVisible();
+    expect(card.getByText("Member since March 2026")).toBeVisible();
+    expect(card.getByText("Phone verified")).toBeVisible();
+    expect(card.queryByText("Email verified")).toBeNull();
+  });
+
+  it("leaves the line about what they speak out when they have said nothing", async () => {
+    await openProfile((client) => {
+      profileApi(client, [{ ...annaProfile, languages: [], about: null }], []);
+    });
+    const card = within(screen.getByTestId("person-card"));
+    expect(card.queryByText(/^Speaks/)).toBeNull();
+    expect(card.getByText("Member since March 2026")).toBeVisible();
+  });
+
+  it("shows the rating to one decimal beside what is checked, and no rating before the first", async () => {
+    await openProfile();
+    const standing = within(screen.getByTestId("person-card-standing"));
+    expect(standing.getByText("4.3 (3 ratings)")).toBeVisible();
+    expect(standing.getByText("Phone verified")).toBeVisible();
 
     await openProfile((client) => {
       profileApi(client, [{ ...annaProfile, rating: { average: null, count: 0 } }], []);
@@ -119,6 +158,10 @@ describe("a public profile (spec 1, 3.5)", () => {
     expect(
       await screen.findByText("This profile isn't available. The person may have left PuffinRide."),
     ).toBeVisible();
+    // The head stays, so there is a title and a way back.
+    const head = within(screen.getByTestId("screen-head"));
+    expect(head.getByRole("header", { name: "Profile" })).toBeVisible();
+    expect(head.getByRole("button", { name: "Back" })).toBeVisible();
 
     await renderApp(`/people/${annaProfileId}`, {
       me: completeMe,
@@ -128,6 +171,32 @@ describe("a public profile (spec 1, 3.5)", () => {
       },
     });
     expect(await screen.findByText("The profile could not be loaded.")).toBeVisible();
+    expect(screen.getByRole("header", { name: "Profile" })).toBeVisible();
+  });
+
+  it("has its head while the profile is read", async () => {
+    let answer: () => void = () => undefined;
+    await renderApp(`/people/${annaProfileId}`, {
+      me: completeMe,
+      setUp: (client) => {
+        profileApi(client);
+        client.answer(
+          "/v1/people/{profileId}",
+          () =>
+            new Promise((resolve) => {
+              answer = () => {
+                resolve(ok(200, annaProfile));
+              };
+            }),
+        );
+      },
+    });
+    expect(await screen.findByRole("header", { name: "Profile" })).toBeVisible();
+    expect(screen.queryByTestId("person-card")).toBeNull();
+    await act(() => {
+      answer();
+    });
+    expect(await findPersonCard("Anna")).toBeVisible();
   });
 
   it("is not there for an address that is no profile's, with nothing to try again", async () => {
@@ -156,7 +225,7 @@ describe("a public profile (spec 1, 3.5)", () => {
       },
     });
     await fireEvent.press(await screen.findByRole("button", { name: "Try again" }));
-    expect(await screen.findByRole("header", { name: "Anna" })).toBeVisible();
+    expect(await findPersonCard("Anna")).toBeVisible();
   });
 });
 
@@ -178,8 +247,20 @@ describe("the reliability figure (spec 8, 3.8)", () => {
     });
     await fireEvent.press(screen.getByRole("button", { name: "Reliability: 91%" }));
     expect(
-      await screen.findByText("Kept 11 of 12 trips and bookings in the last 6 months."),
+      await screen.findByText("Kept 11 of 12 rides offered and seats booked in the last 6 months."),
     ).toBeVisible();
+  });
+
+  it("is a row that unfolds, in a card of rows (spec 31, 3.3)", async () => {
+    await openProfile();
+    const rows = within(firstRows());
+    const figure = rows.getByRole("button", { name: "Reliability: 91%" });
+    // Its picture and its chevron are for the eye only.
+    expect(within(figure).getByTestId("row-icon", hidden)).toBeTruthy();
+    expect(within(figure).getByTestId("row-chevron-down", hidden)).toBeTruthy();
+    await fireEvent.press(figure);
+    expect(within(figure).getByTestId("row-chevron-up", hidden)).toBeTruthy();
+    expect(rows.getByText("As a driver: kept 10 of 10")).toBeVisible();
   });
 
   it("shows the share kept, and the counts by role once tapped", async () => {
@@ -190,7 +271,7 @@ describe("the reliability figure (spec 8, 3.8)", () => {
 
     await fireEvent.press(figure);
     expect(
-      screen.getByText("Kept 11 of 12 trips and bookings in the last 12 months."),
+      screen.getByText("Kept 11 of 12 rides offered and seats booked in the last 12 months."),
     ).toBeVisible();
     expect(screen.getByText("As a driver: kept 10 of 10")).toBeVisible();
     expect(screen.getByText("As a passenger: kept 1 of 2")).toBeVisible();
@@ -212,9 +293,11 @@ describe("the reliability figure (spec 8, 3.8)", () => {
       ]);
     });
     await fireEvent.press(
-      screen.getByRole("button", { name: "Reliability: not enough trips yet" }),
+      screen.getByRole("button", { name: "Reliability: not enough rides yet" }),
     );
-    expect(screen.getByText("Kept 3 of 4 trips and bookings in the last 12 months.")).toBeVisible();
+    expect(
+      screen.getByText("Kept 3 of 4 rides offered and seats booked in the last 12 months."),
+    ).toBeVisible();
   });
 });
 
@@ -343,5 +426,31 @@ describe("See it as others do (spec 16, 3.4)", () => {
     expect(screen.getByRole("button", { name: "Reliability: 91%" })).toBeVisible();
     expect(await screen.findByText("On time and careful.")).toBeVisible();
     expect(screen.queryByText("+354 690 0000")).toBeNull();
+  });
+
+  it("has its title at the left with what it is under it, and me in the card (spec 31, 3.19)", async () => {
+    const mine = { ...annaProfile, profileId: completeMe.profileId };
+    await renderApp("/profile/preview", {
+      me: completeMe,
+      setUp: (client) => {
+        profileApi(client, [mine]);
+      },
+    });
+    await findPersonCard("Anna");
+    const head = within(screen.getByTestId("screen-head"));
+    expect(head.getByRole("header", { name: "As others see you" })).not.toHaveStyle({
+      textAlign: "center",
+    });
+    expect(
+      head.getByText("This is your public profile. Your phone number is never part of it."),
+    ).toBeVisible();
+    // One title, and the parts under it: the card, headed by the name, and the reviews.
+    expect(screen.getAllByRole("header").map((header) => String(header.props.children))).toEqual([
+      "As others see you",
+      "Anna",
+      "Reviews",
+    ]);
+    await fireEvent.press(head.getByRole("button", { name: "Back" }));
+    expect(screen).toHavePathname("/profile");
   });
 });

@@ -1,16 +1,16 @@
 import { Accelerometer } from "expo-sensors";
+import { Vibrate } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import { Platform } from "react-native";
 import { useMe } from "@/auth/session";
-import { Switch } from "@/components/switch";
-import { Body } from "@/components/text";
+import { Row } from "@/components/row";
 import { useLanguage } from "@/i18n/language";
 import { readPreference, writePreference } from "@/lib/preferences";
 import { useOpenFeedback } from "./feedback";
 import { createShakeDetector } from "./shake-rule";
 
 // Shake the phone to send feedback (spec 12, 3.3.1): on phones only, for a
-// signed-in person, and off when they turned it off in Settings. The
+// signed-in person, and off when they turned it off on Profile. The
 // choice stays on the device.
 
 const preferenceKey = "shareride.shakeForFeedback";
@@ -70,20 +70,25 @@ export function ShakeForFeedback() {
   return null;
 }
 
-/** The "Shake to send feedback" switch in Settings; nothing on the web. */
-export function ShakeSwitch() {
+/**
+ * "Shake to send feedback", a row with a switch under Send feedback on
+ * Profile (spec 31, 3.14); nothing on the web.
+ */
+export function ShakeRow() {
   const { t } = useLanguage();
   const [on, change] = useShakeChoice();
   if (!canShake || on === undefined) return null;
   const label = t("feedback.shake");
   const help = t("feedback.shakeHelp");
   return (
-    <Switch
-      label={label}
-      spokenLabel={`${label}. ${help}`}
-      value={on}
-      onChange={change}
-      below={<Body align="start">{help}</Body>}
+    <Row
+      icon={Vibrate}
+      title={label}
+      value={help}
+      stacked
+      accessibilityLabel={`${label}. ${help}`}
+      switched={on}
+      onSwitch={change}
     />
   );
 }

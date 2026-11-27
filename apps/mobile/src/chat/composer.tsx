@@ -5,63 +5,69 @@ import {
   type QuickMessage,
 } from "@shareride/domain";
 import { quickMessageText } from "@shareride/i18n";
+import { Send } from "lucide-react-native";
 import { useState, type ReactNode } from "react";
-import { ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
-import { Button } from "@/components/button";
+import { Platform, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { Chip } from "@/components/chip";
+import { IconButton } from "@/components/icon-button";
 import { useWideScreen } from "@/components/screen";
 import { useLanguage } from "@/i18n/language";
-import { controlOutline, radii, sizes, spacing, typography } from "@/theme/tokens";
+import { controlOutline, sizes, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
+import { useGrowingField } from "./growing-field";
 import type { Outgoing } from "./messages";
 
 const { messageMaxLength } = defaultChatSettings;
 /** The counter shows from here on (plan 4.3). */
 const countFrom = messageMaxLength - 100;
-/** About five lines; a longer message scrolls inside the field. */
-const fieldMaxHeight = 5 * typography.body.lineHeight + 2 * spacing.ms;
-
+/** Five lines, with the field's padding and outline; a longer message scrolls inside it. */
+const fieldMaxHeight = 5 * typography.body.lineHeight + 2 * spacing.ms + 2 * controlOutline;
 /**
- * Quick messages and the field to write in (spec 7, 3.1, item 2), for one
- * conversation or for all passengers. "I'm running late" asks how many
- * minutes first. `onSend` says whether what was written can be cleared: a
- * conversation clears it at once and keeps a failed message in the list;
- * message all keeps it until it went. A screen that lays itself out anew,
- * as a conversation does when the window turns wide, keeps what is being
- * written itself and passes it as `draft`.
+ * The web starts a field of several lines with two; this one starts with
+ * one and grows (`useGrowingField`). A phone's grows by itself, and on
+ * Android `rows` would hold it at one line.
  */
-export function Composer({
-  onSend,
-  busy = false,
-  draft,
-}: {
+const oneLineOnWeb = Platform.OS === "web" ? { rows: 1 } : {};
+
+interface Sending {
+  /**
+   * Says whether what was written can be cleared: a conversation clears it
+   * at once and keeps a failed message in the list; message all keeps it
+   * until it went.
+   */
   readonly onSend: (outgoing: Outgoing) => boolean | Promise<boolean>;
   readonly busy?: boolean;
-  readonly draft?: readonly [text: string, setText: (text: string) => void];
-}) {
+}
+
+/**
+ * Quick messages and the field to write in (spec 7, 3.1, item 2), one
+ * over the other, as the bar of "Message all passengers" has them. A
+ * conversation has the two apart: the quick messages over its bar and the
+ * field in it (spec 31, 3.13).
+ */
+export function Composer({ onSend, busy = false }: Sending) {
+  return (
+    <View style={styles.composer}>
+      <QuickMessages onSend={onSend} busy={busy} />
+      <MessageField onSend={onSend} busy={busy} />
+    </View>
+  );
+}
+
+/**
+ * The quick messages, as chips (spec 7, 3.1, item 2; spec 31, 3.13, item
+ * 3). "I'm running late" asks how many minutes first. What is being
+ * written in the field stays as it is.
+ */
+export function QuickMessages({ onSend, busy = false }: Sending) {
   const { t } = useLanguage();
   const palette = usePalette();
-  const own = useState("");
-  const [text, setText] = draft ?? own;
   const [late, setLate] = useState(false);
-  const [focused, setFocused] = useState(false);
-
-  const send = async (outgoing: Outgoing) => {
-    if (await onSend(outgoing)) {
-      if ("text" in outgoing) setText("");
-    }
-  };
   const sendQuick = (quick: QuickMessage) => {
     if (busy) return;
     setLate(false);
-    void send({ quick });
+    void onSend({ quick });
   };
-  const sendText = () => {
-    const written = text.trim();
-    if (written === "" || busy) return;
-    void send({ text: written });
-  };
-
   return (
     <View style={styles.composer}>
       {late ? (
@@ -105,13 +111,50 @@ export function Composer({
                 );
               })}
       </Chips>
-      <Text style={[typography.label, { color: palette.text }]}>{t("chat.placeholder")}</Text>
+    </View>
+  );
+}
+
+/**
+ * The field to write in (spec 31, 3.13, item 3): one line, with "Write a
+ * message" in it until something is written, that grows with what is
+ * written up to about five lines, and a round Send beside it, the screen's
+ * main button. A screen that lays itself out anew, as a conversation does
+ * when the window turns wide, keeps what is being written itself and
+ * passes it as `draft`.
+ */
+export function MessageField({
+  onSend,
+  busy = false,
+  draft,
+}: Sending & {
+  readonly draft?: readonly [text: string, setText: (text: string) => void];
+}) {
+  const { t } = useLanguage();
+  const palette = usePalette();
+  const own = useState("");
+  const [text, setText] = draft ?? own;
+  const [focused, setFocused] = useState(false);
+  const field = useGrowingField(text);
+
+  const sendText = async () => {
+    const written = text.trim();
+    if (written === "" || busy) return;
+    if (await onSend({ text: written })) setText("");
+  };
+
+  return (
+    <View style={styles.composer}>
       <View style={styles.row}>
         <TextInput
+          ref={field}
           accessibilityLabel={t("chat.placeholder")}
+          placeholder={t("chat.placeholder")}
+          placeholderTextColor={palette.textMuted}
           value={text}
           onChangeText={setText}
           multiline
+          {...oneLineOnWeb}
           maxLength={messageMaxLength}
           onFocus={() => {
             setFocused(true);
@@ -129,7 +172,15 @@ export function Composer({
             },
           ]}
         />
-        <Button label={t("chat.send")} busy={busy} onPress={sendText} />
+        <IconButton
+          filled
+          icon={Send}
+          label={t("chat.send")}
+          busy={busy}
+          onPress={() => {
+            void sendText();
+          }}
+        />
       </View>
       {text.length >= countFrom ? (
         <Text
@@ -174,12 +225,13 @@ const styles = StyleSheet.create({
   chips: { gap: spacing.sm, paddingVertical: spacing.xs },
   wrap: { flexDirection: "row", flexWrap: "wrap" },
   row: { flexDirection: "row", alignItems: "flex-end", gap: spacing.sm },
+  // Round at its ends while it has one line, as the button beside it is.
   field: {
     flex: 1,
     minHeight: sizes.inputHeight,
     maxHeight: fieldMaxHeight,
     borderWidth: controlOutline,
-    borderRadius: radii.control,
+    borderRadius: sizes.inputHeight / 2,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.ms,
   },

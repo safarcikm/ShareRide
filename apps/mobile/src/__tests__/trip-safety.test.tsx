@@ -84,13 +84,17 @@ afterEach(() => {
   (getLocales as jest.Mock).mockReturnValue([{ languageTag: "en-GB" }]);
 });
 
+// On a booked seat these are rows (spec 31, 3.8, item 7).
+const weatherAndRoads = { name: "Weather and roads" } as const;
+const shareDetails = { name: "Share the ride's details" } as const;
+
 describe("Safety on a trip (spec 9, 3.3)", () => {
   // People dial 112 themselves: the app has no button for it (Martin, 2026-11-18).
   const call = /112/;
 
   it("has no 112 button on the booking, trip details or the driver's trip page", async () => {
     await openBooking(paidBooking);
-    expect(await screen.findByRole("button", { name: "Share trip details" })).toBeVisible();
+    expect(await screen.findByRole("button", { name: "Share the ride's details" })).toBeVisible();
     expect(screen.queryByRole("button", { name: call })).toBeNull();
 
     await renderApp(`/trips/${northResult.tripId}?from=1&to=2`, {
@@ -98,11 +102,13 @@ describe("Safety on a trip (spec 9, 3.3)", () => {
         tripDetailsApi(client);
       },
     });
-    expect(await screen.findByRole("link", { name: "Weather (vedur.is)" })).toBeVisible();
+    // A ride's details have the pages to check under a row (spec 31, 3.7).
+    await fireEvent.press(await screen.findByRole("button", { name: "Weather and roads" }));
+    expect(screen.getByRole("link", { name: "Weather (vedur.is)" })).toBeVisible();
     expect(screen.queryByRole("button", { name: call })).toBeNull();
 
     await openDriverTrip();
-    expect(await screen.findByRole("button", { name: "Share trip details" })).toBeVisible();
+    expect(await screen.findByRole("button", { name: "Share the ride's details" })).toBeVisible();
     expect(screen.queryByRole("button", { name: call })).toBeNull();
   });
 
@@ -110,6 +116,8 @@ describe("Safety on a trip (spec 9, 3.3)", () => {
     // Within the capital area, and a request has no trip details to share yet.
     await openBooking({ ...inTown, status: "requested" });
     expect(await screen.findByText("Request sent")).toBeVisible();
+    expect(screen.queryByRole("button", weatherAndRoads)).toBeNull();
+    expect(screen.queryByRole("button", shareDetails)).toBeNull();
     expect(screen.queryByRole("header", { name: "Safety" })).toBeNull();
   });
 
@@ -118,22 +126,28 @@ describe("Safety on a trip (spec 9, 3.3)", () => {
     mockNow = new Date("2026-11-16T12:00:00Z");
     await openBooking(paidBooking);
     expect(await screen.findByText("Your seat is confirmed")).toBeVisible();
-    expect(screen.queryByRole("header", { name: "Safety" })).toBeNull();
+    expect(screen.queryByRole("button", weatherAndRoads)).toBeNull();
+    expect(screen.queryByRole("button", shareDetails)).toBeNull();
   });
 
   it("leaves the driver's trip page once the trip has arrived", async () => {
     mockNow = new Date("2026-11-16T12:00:00Z");
     await openDriverTrip();
-    expect(await screen.findByText("BSÍ bus terminal → Hof, Akureyri")).toBeVisible();
-    expect(screen.queryByRole("header", { name: "Safety" })).toBeNull();
+    expect(await screen.findByRole("header", { name: "Your ride to Hof, Akureyri" })).toBeVisible();
+    expect(screen.queryByRole("button", weatherAndRoads)).toBeNull();
+    expect(screen.queryByRole("button", shareDetails)).toBeNull();
   });
 });
 
 describe("Before you go (spec 9, 3.3.2)", () => {
   it("links to the weather, road conditions and SafeTravel on a trip out of the capital area", async () => {
     await openBooking(paidBooking);
+    // Folded until asked for: a row among the booking's rows.
+    const row = await screen.findByRole("button", weatherAndRoads);
+    expect(screen.queryByRole("link", { name: "Weather (vedur.is)" })).toBeNull();
+    await fireEvent.press(row);
     expect(
-      await screen.findByText("Before you go: check the weather, road conditions and SafeTravel."),
+      screen.getByText("Before you go: check the weather, road conditions and SafeTravel."),
     ).toBeVisible();
     for (const [name, url] of [
       ["Weather (vedur.is)", "https://en.vedur.is/"],
@@ -148,7 +162,8 @@ describe("Before you go (spec 9, 3.3.2)", () => {
   it("opens the Icelandic pages in Icelandic", async () => {
     (getLocales as jest.Mock).mockReturnValue([{ languageTag: "is-IS" }]);
     await openBooking(paidBooking);
-    await fireEvent.press(await screen.findByRole("link", { name: "Veður (vedur.is)" }));
+    await fireEvent.press(await screen.findByRole("button", { name: "Veður og færð" }));
+    await fireEvent.press(screen.getByRole("link", { name: "Veður (vedur.is)" }));
     expect(open).toHaveBeenLastCalledWith("https://www.vedur.is/");
     await fireEvent.press(screen.getByRole("link", { name: "Færð á vegum (umferdin.is)" }));
     expect(open).toHaveBeenLastCalledWith("https://umferdin.is/");
@@ -156,19 +171,23 @@ describe("Before you go (spec 9, 3.3.2)", () => {
 
   it("shows them on the driver's trip page, from all of its stops", async () => {
     await openDriverTrip();
-    expect(await screen.findByRole("link", { name: "Weather (vedur.is)" })).toBeVisible();
+    // Folded until asked for: a row among the ride's rows (spec 31, 3.12).
+    await fireEvent.press(await screen.findByRole("button", weatherAndRoads));
+    expect(screen.getByRole("link", { name: "Weather (vedur.is)" })).toBeVisible();
   });
 
   it("says so when a page cannot be opened", async () => {
     open.mockRejectedValueOnce(new Error("No browser"));
     await openBooking(paidBooking);
-    await fireEvent.press(await screen.findByRole("link", { name: "Weather (vedur.is)" }));
+    await fireEvent.press(await screen.findByRole("button", weatherAndRoads));
+    await fireEvent.press(screen.getByRole("link", { name: "Weather (vedur.is)" }));
     expect(await screen.findByText("We couldn't open that page on this device.")).toBeVisible();
   });
 
   it("leaves them out of a trip within the capital area", async () => {
     await openBooking(inTown);
-    expect(await screen.findByRole("button", { name: "Share trip details" })).toBeVisible();
+    expect(await screen.findByRole("button", shareDetails)).toBeVisible();
+    expect(screen.queryByRole("button", weatherAndRoads)).toBeNull();
     expect(screen.queryByRole("link", { name: "Weather (vedur.is)" })).toBeNull();
   });
 });
@@ -176,9 +195,9 @@ describe("Before you go (spec 9, 3.3.2)", () => {
 describe("Share trip details (spec 9, 3.3.3, R9.8)", () => {
   it("shares a confirmed booking's date, place, driver and car with its plate", async () => {
     await openBooking(paidBooking);
-    await fireEvent.press(await screen.findByRole("button", { name: "Share trip details" }));
+    await fireEvent.press(await screen.findByRole("button", { name: "Share the ride's details" }));
     expect(mockedShare).toHaveBeenCalledWith(
-      "My trip: Sunday 15 November at 10:00 · Borgarnes → Blönduós · " +
+      "My ride: Sunday 15 November at 10:00 · Borgarnes → Blönduós · " +
         "Meeting point: Borgarnes (By the petrol pumps) · Driver: Anna · " +
         "Car: White Toyota Yaris, AB 123 · Booked on PuffinRide",
     );
@@ -187,19 +206,19 @@ describe("Share trip details (spec 9, 3.3.3, R9.8)", () => {
   it("says when the details were copied instead", async () => {
     mockedShare.mockResolvedValueOnce("copied");
     await openBooking(paidBooking);
-    await fireEvent.press(await screen.findByRole("button", { name: "Share trip details" }));
+    await fireEvent.press(await screen.findByRole("button", { name: "Share the ride's details" }));
     expect(
-      await screen.findByText("Trip details copied. Paste them into a message to share them."),
+      await screen.findByText("Ride details copied. Paste them into a message to share them."),
     ).toBeVisible();
   });
 
   it("shows the details to copy when the device can neither share nor copy them", async () => {
     mockedShare.mockResolvedValueOnce("failed");
     await openBooking(paidBooking);
-    await fireEvent.press(await screen.findByRole("button", { name: "Share trip details" }));
+    await fireEvent.press(await screen.findByRole("button", { name: "Share the ride's details" }));
     expect(
       await screen.findByText(
-        "The trip details could not be shared. Here they are to copy: My trip: " +
+        "The ride details could not be shared. Here they are to copy: My ride: " +
           "Sunday 15 November at 10:00 · Borgarnes → Blönduós · " +
           "Meeting point: Borgarnes (By the petrol pumps) · Driver: Anna · " +
           "Car: White Toyota Yaris, AB 123 · Booked on PuffinRide",
@@ -209,15 +228,15 @@ describe("Share trip details (spec 9, 3.3.3, R9.8)", () => {
 
   it("waits for the booking to be confirmed", async () => {
     await openBooking(northBooking());
-    expect(await screen.findByRole("link", { name: "Weather (vedur.is)" })).toBeVisible();
-    expect(screen.queryByRole("button", { name: "Share trip details" })).toBeNull();
+    expect(await screen.findByRole("button", weatherAndRoads)).toBeVisible();
+    expect(screen.queryByRole("button", shareDetails)).toBeNull();
   });
 
   it("shares the driver's trip without the passengers' names", async () => {
     await openDriverTrip();
-    await fireEvent.press(await screen.findByRole("button", { name: "Share trip details" }));
+    await fireEvent.press(await screen.findByRole("button", { name: "Share the ride's details" }));
     expect(mockedShare).toHaveBeenCalledWith(
-      "My trip: Sunday 15 November at 09:00 · BSÍ bus terminal → Hof, Akureyri · " +
+      "My ride: Sunday 15 November at 09:00 · BSÍ bus terminal → Hof, Akureyri · " +
         "Offered on PuffinRide",
     );
     expect(mockedShare).not.toHaveBeenCalledWith(expect.stringContaining("Gunna"));
@@ -229,7 +248,7 @@ describe("Share trip details (spec 9, 3.3.3, R9.8)", () => {
         tripDetailsApi(client);
       },
     });
-    expect(await screen.findByRole("link", { name: "Weather (vedur.is)" })).toBeVisible();
-    expect(screen.queryByRole("button", { name: "Share trip details" })).toBeNull();
+    expect(await screen.findByRole("button", { name: "Weather and roads" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Share the ride's details" })).toBeNull();
   });
 });

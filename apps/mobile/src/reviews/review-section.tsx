@@ -10,8 +10,20 @@ import { now } from "@/lib/clock";
 import { firstNameOf } from "@/people/texts";
 import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
-import { heldBack } from "./held-back";
+import { canRate, heldBack } from "./held-back";
 import { Stars } from "./stars";
+
+/**
+ * Whether `ReviewSection` has anything to show for a booking at `at`: a
+ * review to offer or one held back while the 14 days last, or one written
+ * by either side. A part that frames the section leaves its frame out
+ * otherwise, as under a passenger nobody reviewed in time.
+ */
+export function showsReviews(booking: Booking, at: Date): boolean {
+  const { review } = booking;
+  if (review === null) return false;
+  return review.mine !== null || review.theirs !== null || at < new Date(review.closesAt);
+}
 
 /**
  * A completed booking's reviews, for whoever sees it (spec 8, 3.7): "Rate
@@ -21,29 +33,33 @@ import { Stars } from "./stars";
  * other's review of the viewer, once it shows. Nothing before the booking
  * completes. `framed` puts each review on a card, as on the booking page;
  * under a passenger on the driver's trip, which is a card already, they sit
- * in it.
+ * in it. Without `offer`, the page itself has the button and until when,
+ * as a booked seat has them in its bar and under its title (spec 31, 3.8).
  */
 export function ReviewSection({
   booking,
   framed,
+  offer = true,
 }: {
   readonly booking: Booking;
   readonly framed: boolean;
+  readonly offer?: boolean;
 }) {
   const { locale, t } = useLanguage();
   const palette = usePalette();
   const { review } = booking;
   if (review === null) return null;
   const closesAt = new Date(review.closesAt);
-  const open = review.mine === null && now() < closesAt;
-  const held = open ? heldBack(t, booking) : null;
+  const at = now();
+  // Why not yet, said only while the days last and nothing is sent.
+  const held = review.mine === null && at < closesAt ? heldBack(t, booking) : null;
   const label =
     booking.viewer === "driver"
       ? t("review.ratePassengerNamed", { name: firstNameOf(t, otherPerson(booking)) })
       : t("review.rateDriver");
   return (
     <>
-      {open && held === null ? (
+      {offer && canRate(booking, at) ? (
         <View style={styles.offer}>
           <Button
             variant="secondary"

@@ -1,4 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
+import { picturesUnderTheirText } from "./support/layout";
+import { focused } from "./support/trips";
 
 // Spec 4's trip details and shared links on the web build, without an
 // account, against the sample trips the e2e API seeds: Anna drives
@@ -12,7 +14,7 @@ async function choose(page: Page, end: "From" | "To", typed: string, name: RegEx
   await page.getByRole("button", { name }).click();
 }
 
-test.describe("trip details without an account", () => {
+test.describe("ride details without an account", () => {
   test.use({ locale: "en-GB", permissions: ["clipboard-read", "clipboard-write"] });
 
   test("opens a trip from the search, changes where to get in and shares it", async ({
@@ -22,7 +24,7 @@ test.describe("trip details without an account", () => {
     await page.goto("/search");
     await choose(page, "From", "borgarn", /^N1 Borgarnes,/);
     await choose(page, "To", "blondu", /^Olís Blönduós,/);
-    await page.getByRole("button", { name: "Search", exact: true }).click();
+    await page.getByRole("button", { name: "Find a ride", exact: true }).click();
     // The icon in a result's corner copies the part's link, and the results stay (spec 28, 3.1).
     await page
       .getByRole("button", { name: "Share the ride N1 Borgarnes → Olís Blönduós" })
@@ -39,17 +41,55 @@ test.describe("trip details without an account", () => {
 
     await expect(page).toHaveURL(/\/trips\/[0-9a-f-]+\?from=1&to=2$/);
     await expect(
-      page.getByRole("heading", { name: "N1 Borgarnes → Olís Blönduós" }).filter({ visible: true }),
+      page
+        .getByRole("heading", { name: "N1 Borgarnes to Olís Blönduós" })
+        .filter({ visible: true }),
     ).toBeVisible();
+    // Your part is one ticket, named as a part of the screen (spec 31, 3.7).
+    const ticket = page.getByTestId("part-ticket").filter({ visible: true });
+    // The page has one title; the ticket's caption is a heading under it.
+    await expect(
+      ticket.getByRole("heading", { name: "Your part of the ride", level: 2 }),
+    ).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1 }).filter({ visible: true })).toHaveCount(1);
+    // The driver's card is headed by the name, which says who Anna is; and
+    // "Where you sit" is read before the picture it is about, at its right
+    // (spec 31, 3.20).
+    await expect(
+      page.getByTestId("driver-card").getByRole("heading", { name: "Driver: Anna", level: 2 }),
+    ).toBeVisible();
+    const seats = page.getByTestId("where-you-sit").filter({ visible: true });
+    expect(
+      await seats.evaluate((card) => {
+        const heading = card.querySelector('[role="heading"], h2, h3');
+        const picture = card.querySelector('[role="img"]');
+        if (heading === null || picture === null) return "missing";
+        const after = heading.compareDocumentPosition(picture) & Node.DOCUMENT_POSITION_FOLLOWING;
+        const atRight =
+          heading.getBoundingClientRect().left >= picture.getBoundingClientRect().right;
+        return `${after !== 0 ? "heading first" : "picture first"}, ${atRight ? "at its right" : "not at its right"}`;
+      }),
+    ).toBe("heading first, at its right");
+    // The driver's picture stands with the name, not at the middle of the lines (3.18).
+    const pictures = await picturesUnderTheirText(page);
+    expect(pictures.pictures).toBeGreaterThan(0);
+    expect(pictures.under).toEqual([]);
     await expect(
       page.getByRole("img", {
         name: "Seats on your part: 3 offered, 0 taken, 1 yours and 2 free.",
       }),
     ).toBeVisible();
-    await expect(page.getByText(/^3 free on your part · [\d,]+ ISK per seat$/)).toBeVisible();
+    // A phone has the price in the bar at the bottom; a laptop beside the seats.
+    await expect(
+      page.getByText(
+        test.info().project.name === "phone"
+          ? /^3 free on your part$/
+          : /^3 free on your part · [\d,]+ ISK per seat$/,
+      ),
+    ).toBeVisible();
     await expect(
       page.getByRole("img", {
-        name: /^The trip on a map of Iceland: .+\. Your part: N1 Borgarnes → Olís Blönduós\.$/,
+        name: /^The ride on a map of Iceland: .+\. Your part: N1 Borgarnes → Olís Blönduós\.$/,
       }),
     ).toBeVisible();
     // A stop off the part is no taller than one on it: the dotted line fits its row.
@@ -60,6 +100,16 @@ test.describe("trip details without an account", () => {
     expect(heights).toHaveLength(4);
     expect(Math.max(...heights) - Math.min(...heights)).toBeLessThan(2);
     await expect(page.getByText("White Toyota Yaris")).toBeVisible();
+    if (test.info().project.name === "phone") {
+      // A row's value goes under its title where the two have no room on one
+      // line: the title is never broken for it (spec 15, 5.2).
+      const [paying, weather] = await Promise.all(
+        ["Free cancellation", "Weather and roads"].map((title) =>
+          page.getByText(title, { exact: true }).filter({ visible: true }).boundingBox(),
+        ),
+      );
+      expect(paying?.height).toBe(weather?.height);
+    }
     await expect(page.getByRole("button", { name: "Send request" })).toBeEnabled();
     // Trip pages ask search engines not to index them (R4.6).
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
@@ -67,16 +117,38 @@ test.describe("trip details without an account", () => {
       "noindex, nofollow",
     );
 
-    // Get in at the first stop instead.
+    // Get in at the first stop instead: Change on the ticket unfolds the
+    // stops to get in at, and choosing one folds them again.
+    await ticket.getByRole("button", { name: "Change where you get in" }).click();
+    const choices = ticket.getByRole("radiogroup", { name: "Where you get in" });
+    await expect(choices.getByRole("radio")).toHaveCount(2);
+    // Focus goes to the stops, which stand under both ends, and Escape
+    // folds them and gives it back to Change.
+    await expect.poll(() => focused(page)).toContain("BSÍ bus terminal");
+    await page.keyboard.press("Escape");
+    await expect(choices).toHaveCount(0);
+    await expect.poll(() => focused(page)).toBe("Change");
+    await expect(page).toHaveURL(/\?from=1&to=2$/);
+    await ticket.getByRole("button", { name: "Change where you get in" }).click();
+    await choices.getByRole("radio", { name: /^\d\d:\d\d, BSÍ bus terminal$/ }).click();
+    await expect(choices).toHaveCount(0);
+    // The stop chosen has gone, so its Change has focus again.
+    await expect.poll(() => focused(page)).toBe("Change");
+    await expect(
+      page
+        .getByRole("heading", { name: "BSÍ bus terminal to Olís Blönduós" })
+        .filter({ visible: true }),
+    ).toBeVisible();
+    await expect(page).toHaveURL(/\?from=0&to=2$/);
+
+    // The whole route does the same from a stop: back to Borgarnes, and out again.
+    await page.getByRole("button", { name: /^\d\d:\d\d, N1 Borgarnes, on your part$/ }).click();
+    await page.getByRole("button", { name: "Get in here" }).click();
+    await expect(page).toHaveURL(/\?from=1&to=2$/);
     await page
       .getByRole("button", { name: /^\d\d:\d\d, BSÍ bus terminal, not on your part$/ })
       .click();
     await page.getByRole("button", { name: "Get in here" }).click();
-    await expect(
-      page
-        .getByRole("heading", { name: "BSÍ bus terminal → Olís Blönduós" })
-        .filter({ visible: true }),
-    ).toBeVisible();
     await expect(page).toHaveURL(/\?from=0&to=2$/);
 
     // Share copies the link, which opens the same part in another browser.
@@ -95,7 +167,9 @@ test.describe("trip details without an account", () => {
       await expect(
         elsewhere.getByRole("heading", { name: "BSÍ → Olís Blönduósi" }).filter({ visible: true }),
       ).toBeVisible();
-      await expect(elsewhere.getByText("Þinn hluti", { exact: true })).toBeVisible();
+      await expect(
+        elsewhere.getByRole("heading", { name: "Þinn hluti ferðarinnar" }),
+      ).toBeVisible();
       await expect(elsewhere.getByText("Hvítur Toyota Yaris")).toBeVisible();
     } finally {
       await other.close();

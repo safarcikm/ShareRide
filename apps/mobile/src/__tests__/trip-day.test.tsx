@@ -4,9 +4,11 @@ import type { Booking, MyTrip } from "@shareride/contracts";
 import { renderApp, completeMe } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
 import { bookingApi, driverApi, northBooking, northMyTrip, paidBooking } from "@/testing/bookings";
+import { filledButtons } from "@/testing/buttons";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
 import { onTheDay, rider, tripOnTheDay } from "@/testing/trip-day";
 import { tripsApi } from "@/testing/trips";
+import { colors } from "@/theme/tokens";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
 jest.mock("@/auth/token-store", () => {
@@ -81,46 +83,52 @@ function textsInOrder(): string[] {
 
 const imHere = { name: "I'm here" } as const;
 
-describe("the passenger's trip day (spec 8, 3.1)", () => {
-  it("puts when and where first, then the driver and car, then I'm here, and the part last", async () => {
+describe("the passenger's trip day (spec 8, 3.1; spec 31, 3.9)", () => {
+  it("puts when and where first, then where to stand, the driver and car, and the part, with I'm here in the bar", async () => {
     await openBooking(onTheDay());
-    expect(await screen.findByRole("header", { name: "Trip day" })).toBeVisible();
+    expect(await screen.findByRole("header", { name: "Leaves in 15 minutes" })).toBeVisible();
     const texts = textsInOrder();
     const at = (text: string) => {
       const index = texts.indexOf(text);
       expect(index).toBeGreaterThanOrEqual(0);
       return index;
     };
-    expect(at("Trip day")).toBeLessThan(at("10:00"));
-    expect(at("10:00")).toBeLessThan(at("Borgarnes"));
-    expect(at("Borgarnes")).toBeLessThan(at("By the petrol pumps"));
-    expect(at("By the petrol pumps")).toBeLessThan(at("Number plate AB 123"));
-    expect(at("Number plate AB 123")).toBeLessThan(at("I'm here"));
-    expect(at("I'm here")).toBeLessThan(at("Message Anna"));
-    expect(at("Message Anna")).toBeLessThan(at("Blönduós"));
+    expect(at("Leaves in 15 minutes")).toBeLessThan(at("Today at 10:00 from Borgarnes."));
+    expect(at("Today at 10:00 from Borgarnes.")).toBeLessThan(at("Where to stand"));
+    expect(at("Where to stand")).toBeLessThan(at("By the petrol pumps"));
+    expect(at("By the petrol pumps")).toBeLessThan(at("Message"));
+    expect(at("Message")).toBeLessThan(at("AB 123"));
+    expect(at("AB 123")).toBeLessThan(at("Blönduós"));
+    expect(at("Blönduós")).toBeLessThan(at("I'm here"));
+    // The one thing to do now is under the thumb, whatever is scrolled to.
+    expect(within(screen.getByTestId("bottom-bar")).getByRole("button", imHere)).toBeVisible();
+    expect(screen.getByRole("link", { name: "Message Anna" })).toBeVisible();
   });
 
   it("leaves the prompt to add an email for another day", async () => {
     await openBooking(onTheDay());
-    expect(await screen.findByRole("header", { name: "Trip day" })).toBeVisible();
+    expect(await screen.findByRole("header", { name: "Leaves in 15 minutes" })).toBeVisible();
     expect(screen.queryByText(/Add an email/)).toBeNull();
   });
 
   it("keeps the usual page before the trip day", async () => {
     await openBooking(onTheDay({ phase: "upcoming" }));
-    expect(await screen.findByText("Your seat is confirmed")).toBeVisible();
-    expect(screen.queryByRole("header", { name: "Trip day" })).toBeNull();
+    expect(await screen.findByRole("header", { name: "Your seat is confirmed" })).toBeVisible();
+    expect(screen.queryByRole("header", { name: /^Leaves in/ })).toBeNull();
     expect(screen.queryByRole("button", imHere)).toBeNull();
+    expect(screen.queryByTestId("bottom-bar")).toBeNull();
   });
 
   it("is only for a confirmed booking", async () => {
     await openBooking(onTheDay({}, { status: "completed" }));
-    expect(await screen.findByText("Borgarnes")).toBeVisible();
-    expect(screen.queryByRole("header", { name: "Trip day" })).toBeNull();
+    expect(await screen.findByRole("header", { name: "Completed" })).toBeVisible();
+    expect(screen.queryByRole("header", { name: /^Leaves in/ })).toBeNull();
+    expect(screen.queryByRole("button", imHere)).toBeNull();
+    expect(screen.queryByTestId("bottom-bar")).toBeNull();
   });
 });
 
-describe("the passenger's trip day on a laptop (spec 18, 3.9)", () => {
+describe("the passenger's trip day on a laptop (spec 18, 3.9; spec 31, 3.16)", () => {
   const phone = { width: 750, height: 1334, scale: 2, fontScale: 2 };
   const laptop = { width: 1280, height: 800, scale: 1, fontScale: 1 };
 
@@ -135,58 +143,64 @@ describe("the passenger's trip day on a laptop (spec 18, 3.9)", () => {
     });
   });
 
-  it("has when and where, the driver and I'm here in the main column, the ride and the chat beside them", async () => {
+  it("has where to stand and the driver in the main column, with I'm here over the ride beside them", async () => {
     // The booking the page loads again does not say I'm here: what was
     // said shows only for as long as the part that said it is kept.
     const { client } = await openBooking(onTheDay(), () =>
       ok(200, { checkedInAt: mockNow.toISOString() }),
     );
-    expect(await screen.findByRole("header", { name: "Trip day" })).toBeVisible();
+    expect(await screen.findByRole("header", { name: "Leaves in 15 minutes" })).toBeVisible();
     const main = within(screen.getByTestId("columns-main"));
     const side = within(screen.getByTestId("columns-side"));
-    expect(main.getByRole("header", { name: "Trip day" })).toBeVisible();
     expect(main.getByText("By the petrol pumps")).toBeVisible();
-    expect(main.getByText("Number plate AB 123")).toBeVisible();
-    expect(main.getByRole("button", imHere)).toBeVisible();
+    expect(main.getByLabelText("Number plate AB 123")).toBeVisible();
+    expect(main.getByRole("link", { name: "Message Anna" })).toBeVisible();
     // Where to stand comes before the driver on the day, in one row.
     const [stand, driver] = within(main.getByTestId("grid")).getAllByTestId("grid-cell");
     if (stand === undefined || driver === undefined) throw new Error("Two cells expected");
     expect(within(stand).getByText("By the petrol pumps")).toBeVisible();
-    expect(within(driver).getByText("Number plate AB 123")).toBeVisible();
+    expect(within(driver).getByLabelText("Number plate AB 123")).toBeVisible();
+    // What the bar holds on a phone is at the top of the side column.
+    expect(side.getByRole("button", imHere)).toBeVisible();
     expect(side.getByText("Blönduós")).toBeVisible();
-    expect(side.getByRole("button", { name: "Message Anna" })).toBeVisible();
+    expect(screen.queryByTestId("bottom-bar")).toBeNull();
     const texts = textsInOrder();
     const at = (text: string) => {
       const index = texts.indexOf(text);
       expect(index).toBeGreaterThanOrEqual(0);
       return index;
     };
-    expect(at("Trip day")).toBeLessThan(at("By the petrol pumps"));
-    expect(at("By the petrol pumps")).toBeLessThan(at("Number plate AB 123"));
-    expect(at("Number plate AB 123")).toBeLessThan(at("I'm here"));
+    expect(at("Leaves in 15 minutes")).toBeLessThan(at("By the petrol pumps"));
+    expect(at("By the petrol pumps")).toBeLessThan(at("AB 123"));
+    expect(at("AB 123")).toBeLessThan(at("I'm here"));
     expect(at("I'm here")).toBeLessThan(at("Blönduós"));
-    expect(at("Blönduós")).toBeLessThan(at("Message Anna"));
 
-    // Saying I'm here works from the main column, and stays said when the
-    // window turns narrow and wide again: the part keeps its place, and
-    // nothing is loaded again for that.
-    await fireEvent.press(main.getByRole("button", imHere));
+    // Saying I'm here works from the side column, and stays said when the
+    // window turns narrow and wide again: the part keeps what it was told,
+    // and nothing is loaded again for that.
+    await fireEvent.press(side.getByRole("button", imHere));
     const told = "We've told the driver you're here.";
     expect(await screen.findByText(told)).toBeVisible();
     // Saying it loads the booking again, once.
     await waitFor(() => {
       expect(loadsOf(client, "/v1/bookings/{id}")).toBe(2);
     });
+    // Focus went to what was told when it was said, and stays where the
+    // passenger puts it after: a window that changes size says nothing new.
+    const focus = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
+    focus.mockClear();
     await act(() => {
       Dimensions.set({ window: phone });
     });
-    expect(screen.getByText(told)).toBeVisible();
+    expect(within(screen.getByTestId("bottom-bar")).getByText(told)).toBeVisible();
     expect(screen.queryByTestId("columns-side")).toBeNull();
     await act(() => {
       Dimensions.set({ window: laptop });
     });
-    expect(within(screen.getByTestId("columns-main")).getByText(told)).toBeVisible();
+    expect(within(screen.getByTestId("columns-side")).getByText(told)).toBeVisible();
     expect(loadsOf(client, "/v1/bookings/{id}")).toBe(2);
+    expect(focus).not.toHaveBeenCalled();
+    focus.mockRestore();
   });
 });
 
@@ -379,16 +393,37 @@ describe("the driver's trip day (spec 8, 3.1)", () => {
     await openDriverTrip(tripOnTheDay());
     expect(await screen.findByText("Use this only when parked.")).toBeVisible();
     // Once in the trip day and once in the passengers below it.
-    expect(screen.getAllByLabelText("Siggi, 1 seat, No-show")).toHaveLength(2);
+    expect(screen.getByLabelText("Siggi, 1 seat, No-show")).toBeVisible();
+    expect(screen.getByRole("button", { name: /^Siggi, .*, 1 seat, .*, No-show$/ })).toBeVisible();
     expect(screen.queryByLabelText("Siggi, 1 seat")).toBeNull();
+    // Red in both, as a problem is (spec 31, 3.3).
+    const tags = screen.getAllByText("No-show");
+    expect(tags).toHaveLength(2);
+    for (const tag of tags) expect(tag).toHaveStyle({ color: colors.light.error });
   });
 
-  it("offers I'm here at the next stop only, and tells those getting in there", async () => {
+  it("offers I'm here at the next stop only, in the bar, and tells those getting in there", async () => {
     const { client } = await openDriverTrip(tripOnTheDay());
-    await fireEvent.press(
-      await screen.findByRole("button", { name: "I'm here at BSÍ bus terminal" }),
-    );
-    expect(await screen.findByText("We've told your passengers you're here.")).toBeVisible();
+    // The screen's one main button, in the bar at the bottom (spec 31, 3.9 item 4).
+    const bar = within(await screen.findByTestId("bottom-bar"));
+    const button = await bar.findByRole("button", { name: "I'm here at BSÍ bus terminal" });
+    expect(button).toHaveStyle({ minHeight: 56 });
+    expect(within(button).getByText("I'm here at BSÍ bus terminal")).toBeVisible();
+    expect(bar.getByTestId("filled-button")).toBe(button);
+    expect(filledButtons()).toBe(1);
+    expect(screen.queryByTestId("said-here")).toBeNull();
+    const focusMoves = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
+    focusMoves.mockClear();
+    await fireEvent.press(button);
+    // What it told takes the button's place, with focus, and the stop says so too.
+    expect(await bar.findByText("We've told your passengers you're here.")).toBeVisible();
+    expect(focusMoves).toHaveBeenCalledTimes(1);
+    focusMoves.mockRestore();
+    expect(
+      within(await screen.findByTestId("said-here")).getByText(
+        "We've told your passengers you're here.",
+      ),
+    ).toBeVisible();
     expect(
       client.calls.find((call) => call.path === "/v1/trips/{id}/stops/{stopId}/check-in")?.input,
     ).toMatchObject({ params: { id: tripId, stopId: stopId(0) }, body: {} });
@@ -399,7 +434,10 @@ describe("the driver's trip day (spec 8, 3.1)", () => {
     mockNow = inBorgarnes;
     await openDriverTrip(tripOnTheDay([0]));
     expect(await screen.findByRole("button", { name: "I'm here at Borgarnes" })).toBeVisible();
-    expect(screen.getByText("We've told your passengers you're here.")).toBeVisible();
+    // The stop where it was said keeps saying so, in the list.
+    expect(
+      within(screen.getByTestId("said-here")).getByText("We've told your passengers you're here."),
+    ).toBeVisible();
     expect(screen.queryByRole("button", { name: "I'm here at BSÍ bus terminal" })).toBeNull();
   });
 
@@ -407,8 +445,30 @@ describe("the driver's trip day (spec 8, 3.1)", () => {
     // 09:45: still open at BSÍ, where it was not said, and open in Borgarnes.
     mockNow = inBorgarnes;
     await openDriverTrip(tripOnTheDay());
-    expect(await screen.findByRole("button", { name: "I'm here at Borgarnes" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "I'm here at BSÍ bus terminal" })).toBeVisible();
+    const bar = within(await screen.findByTestId("bottom-bar"));
+    const first = await bar.findByRole("button", { name: "I'm here at BSÍ bus terminal" });
+    const second = bar.getByRole("button", { name: "I'm here at Borgarnes" });
+    // One main button (R31.1): the first stop's; the other is outlined under it.
+    expect(within(first).getByTestId("button-face")).toHaveStyle({
+      backgroundColor: colors.light.primary,
+    });
+    expect(within(second).getByTestId("button-face")).toHaveStyle({
+      backgroundColor: colors.light.surface,
+    });
+    expect(bar.getAllByTestId("filled-button")).toHaveLength(1);
+  });
+
+  it("keeps saying what it told when the next stop is open already", async () => {
+    mockNow = inBorgarnes;
+    await openDriverTrip(tripOnTheDay());
+    const bar = within(await screen.findByTestId("bottom-bar"));
+    await fireEvent.press(await bar.findByRole("button", { name: "I'm here at Borgarnes" }));
+    expect(await bar.findByText("We've told your passengers you're here.")).toBeVisible();
+    // Said in Borgarnes, BSÍ is behind: nothing is left to say there.
+    await waitFor(() => {
+      expect(bar.queryByRole("button", { name: /^I'm here at/ })).toBeNull();
+    });
+    expect(bar.getByText("We've told your passengers you're here.")).toBeVisible();
   });
 
   it("never offers it where nobody gets in, since it would tell nobody", async () => {
@@ -418,7 +478,9 @@ describe("the driver's trip day (spec 8, 3.1)", () => {
     expect(await screen.findByText("Use this only when parked.")).toBeVisible();
     expect(screen.getAllByText("We've told your passengers you're here.")).toHaveLength(2);
     expect(screen.queryByRole("button", { name: /^I'm here at/ })).toBeNull();
-    expect(screen.queryByText(/You can say you're here from/)).toBeNull();
+    expect(screen.queryByText(/you can say you're here from/i)).toBeNull();
+    // Nothing to say: no bar.
+    expect(screen.queryByTestId("bottom-bar")).toBeNull();
   });
 
   it("skips a stop where it has closed", async () => {
@@ -432,7 +494,91 @@ describe("the driver's trip day (spec 8, 3.1)", () => {
   it("says when the next stop opens, before then", async () => {
     mockNow = new Date("2026-11-15T08:00:00Z");
     await openDriverTrip(tripOnTheDay());
-    expect(await screen.findByText("You can say you're here from 08:30.")).toBeVisible();
+    const bar = within(await screen.findByTestId("bottom-bar"));
+    expect(bar.getByText("At BSÍ bus terminal you can say you're here from 08:30.")).toBeVisible();
+    expect(screen.queryByRole("button", { name: /^I'm here at/ })).toBeNull();
+  });
+
+  it("says when the next stop opens under what it told, once said where the next is not open yet", async () => {
+    // 08:45: said at BSÍ; Borgarnes opens at 09:30.
+    await openDriverTrip(tripOnTheDay());
+    const bar = within(await screen.findByTestId("bottom-bar"));
+    await fireEvent.press(await bar.findByRole("button", { name: "I'm here at BSÍ bus terminal" }));
+    expect(await bar.findByText("We've told your passengers you're here.")).toBeVisible();
+    expect(await bar.findByText("At Borgarnes you can say you're here from 09:30.")).toBeVisible();
+    expect(bar.queryByRole("button", { name: /^I'm here at/ })).toBeNull();
+  });
+
+  it("keeps what I'm here told when the window turns wide and narrow again, without taking focus again", async () => {
+    const told = "We've told your passengers you're here.";
+    // The ride loads again as it was: only the page knows it was said.
+    await openDriverTrip(tripOnTheDay(), () => ok(200, { checkedInAt: mockNow.toISOString() }));
+    const bar = within(await screen.findByTestId("bottom-bar"));
+    await fireEvent.press(await bar.findByRole("button", { name: "I'm here at BSÍ bus terminal" }));
+    expect(await bar.findByText(told)).toBeVisible();
+    const focusMoves = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
+    focusMoves.mockClear();
+    try {
+      await act(() => {
+        Dimensions.set({ window: { width: 1280, height: 800, scale: 1, fontScale: 1 } });
+      });
+      expect(screen.queryByTestId("bottom-bar")).toBeNull();
+      const side = within(screen.getByTestId("columns-side"));
+      expect(within(side.getByTestId("driver-im-here")).getByText(told)).toBeVisible();
+      expect(side.queryByRole("button", { name: "I'm here at BSÍ bus terminal" })).toBeNull();
+    } finally {
+      await act(() => {
+        Dimensions.set({ window: { width: 750, height: 1334, scale: 2, fontScale: 2 } });
+      });
+    }
+    expect(within(screen.getByTestId("bottom-bar")).getByText(told)).toBeVisible();
+    expect(screen.queryByRole("button", { name: "I'm here at BSÍ bus terminal" })).toBeNull();
+    // It was heard once, where the button was pressed; moving it says nothing again.
+    expect(focusMoves).not.toHaveBeenCalled();
+    focusMoves.mockRestore();
+  });
+
+  it("has I'm here at the top of the side column on a laptop, over the ride's ticket", async () => {
+    Dimensions.set({ window: { width: 1280, height: 800, scale: 1, fontScale: 1 } });
+    try {
+      await openDriverTrip(tripOnTheDay());
+      const side = within(await screen.findByTestId("columns-side"));
+      expect(
+        await side.findByRole("button", { name: "I'm here at BSÍ bus terminal" }),
+      ).toBeVisible();
+      expect(screen.queryByTestId("bottom-bar")).toBeNull();
+      const texts = textsInOrder();
+      expect(texts.indexOf("I'm here at BSÍ bus terminal")).toBeLessThan(
+        texts.lastIndexOf("You drive"),
+      );
+      // The stops stay in the main column.
+      expect(
+        within(screen.getByTestId("columns-main")).getByText("Use this only when parked."),
+      ).toBeVisible();
+    } finally {
+      await act(() => {
+        Dimensions.set({ window: { width: 750, height: 1334, scale: 2, fontScale: 2 } });
+      });
+    }
+  });
+
+  it("keeps itself up to date while open, without asking for the cars again", async () => {
+    jest.useFakeTimers();
+    try {
+      const { client } = await openDriverTrip(tripOnTheDay());
+      expect(await screen.findByText("Use this only when parked.")).toBeVisible();
+      const rides = loadsOf(client, "/v1/me/trips/{id}");
+      const lists = loadsOf(client, "/v1/me/trips/{id}/bookings");
+      const cars = loadsOf(client, "/v1/me/vehicles");
+      expect(cars).toBeGreaterThan(0);
+      await act(() => jest.advanceTimersByTimeAsync(30_000));
+      expect(loadsOf(client, "/v1/me/trips/{id}")).toBeGreaterThan(rides);
+      expect(loadsOf(client, "/v1/me/trips/{id}/bookings")).toBeGreaterThan(lists);
+      // The car on the ticket does not change while the ride is on.
+      expect(loadsOf(client, "/v1/me/vehicles")).toBe(cars);
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   it("says why it could not tell them", async () => {
@@ -449,7 +595,7 @@ describe("the driver's trip day (spec 8, 3.1)", () => {
     const loads = loadsOf(client, "/v1/me/trips/{id}");
     await fireEvent.press(button);
     expect(
-      await screen.findByText("Something changed since you opened this. Here is your trip now."),
+      await screen.findByText("Something changed since you opened this. Here is your ride now."),
     ).toBeVisible();
     expect(loadsOf(client, "/v1/me/trips/{id}")).toBeGreaterThan(loads);
   });

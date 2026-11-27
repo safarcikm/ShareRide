@@ -78,16 +78,19 @@ export function Panes({
  * What is open in `Panes`, on a wide screen: a `header` that stays, such as
  * who the conversation is with; the rest, which scrolls, opens at its end
  * and follows it as a `Screen` with `stickToEnd` does; and a `footer` that
- * stays at the bottom, such as the field to write in.
+ * stays at the bottom, such as the field to write in, with what stands
+ * `overFooter`, such as the quick answers, over it on the pane's ground.
  */
 export function Pane({
   header,
   footer,
+  overFooter,
   endKey,
   children,
 }: {
   readonly header?: ReactNode;
   readonly footer?: ReactNode;
+  readonly overFooter?: ReactNode;
   readonly endKey?: string | undefined;
   readonly children: ReactNode;
 }) {
@@ -109,6 +112,14 @@ export function Pane({
       >
         {children}
       </ScrollView>
+      {overFooter === undefined ? null : (
+        <View
+          testID="over-bar"
+          style={[styles.overFooter, { backgroundColor: palette.background }]}
+        >
+          {overFooter}
+        </View>
+      )}
       {footer === undefined ? null : (
         <View style={[styles.footer, { borderTopColor: palette.border }]}>{footer}</View>
       )}
@@ -137,5 +148,6 @@ const styles = StyleSheet.create({
   open: { flex: 1 },
   header: { padding: spacing.md, gap: spacing.sm, borderBottomWidth: controlOutline },
   content: { flexGrow: 1, padding: spacing.md, gap: spacing.md },
+  overFooter: { paddingHorizontal: spacing.md, paddingBottom: spacing.sm },
   footer: { padding: spacing.md, gap: spacing.sm, borderTopWidth: controlOutline },
 });

@@ -33,7 +33,7 @@ const asShown = (lines: readonly string[]): SoFarRow => ({ lines, spoken: lines.
 
 const rows = [
   { step: "route", title: "trip.review.route" },
-  { step: "time", title: "trip.review.times" },
+  { step: "time", title: "trip.review.time" },
   { step: "seats", title: "trip.review.seats" },
   { step: "price", title: "trip.review.price" },
 ] as const;
@@ -127,7 +127,7 @@ export function timesSoFar(
   };
 }
 
-/** The price level with the whole route's price, as the review has it, once it is quoted. */
+/** The whole route's price with the price level after it, once it is quoted. */
 export function priceSoFar(
   t: Translate,
   locale: Locale,

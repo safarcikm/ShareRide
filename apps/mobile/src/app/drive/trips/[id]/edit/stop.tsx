@@ -5,15 +5,13 @@ import { router } from "expo-router";
 import { useCallback, useState } from "react";
 import { ActivityIndicator, Text } from "react-native";
 import { useSession } from "@/auth/session";
-import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
-import { Notice } from "@/components/notice";
+import { ActionNotice } from "@/components/notice";
 import { Screen } from "@/components/screen";
-import { TakesFocus } from "@/components/takes-focus";
 import { Heading } from "@/components/text";
 import { editHref, WithTripToChange, type TripToChange } from "@/driver-trip/change-screen";
-import { refusalText, timeLines, TripHeading, tripHref } from "@/driver-trip/changes";
+import { refusalText, timeLines, TripHead, tripHref, tripOver } from "@/driver-trip/changes";
 import { ForPassengers, LevelLowered, Lines, Refused } from "@/driver-trip/stop-parts";
 import { useLanguage } from "@/i18n/language";
 import { useLoaded } from "@/lib/use-loaded";
@@ -28,18 +26,23 @@ import { PointPicker } from "@/trips/point-picker";
  * the stops either side, which keep theirs.
  * The check shows where and when, the new stretches' prices for new
  * bookings, and who is told; "Save the change" adds it, under the same
- * checks, and goes back to the trip, which says so with focus.
+ * checks, and goes back to the trip, which says so with focus. Back
+ * from the check to choosing another point puts focus on the title of
+ * choosing, which took the check's place (spec 31, 3.20).
  */
 export default function AddStopScreen() {
-  const { t } = useLanguage();
+  const { locale, t } = useLanguage();
   const [point, setPoint] = useState<MeetingPointSummary | null>(null);
+  const [again, setAgain] = useState(false);
   return (
     <WithTripToChange title={t("trip.editAddStopAction")}>
       {(trip) =>
         point === null ? (
           <PointPicker
             title={t("trip.editAddStopAction")}
+            over={tripOver(t, locale, trip)}
             intro={t("trip.editAddStopHelp")}
+            takesFocus={again}
             onChoose={setPoint}
             onCancel={() => {
               if (router.canGoBack()) router.back();
@@ -51,6 +54,7 @@ export default function AddStopScreen() {
             trip={trip}
             point={point}
             onOther={() => {
+              setAgain(true);
               setPoint(null);
             }}
           />
@@ -113,8 +117,7 @@ function Preview({
   if (effect === undefined) {
     return (
       <Screen>
-        <BackButton fallback={editHref(trip.id)} />
-        <TripHeading trip={trip} title={title} />
+        <TripHead trip={trip} title={title} back={editHref(trip.id)} />
         <ActivityIndicator accessibilityLabel={t("common.loading")} color={palette.primary} />
       </Screen>
     );
@@ -175,18 +178,20 @@ function Preview({
   return (
     <Screen
       footer={
-        <Button
-          main
-          busy={busy}
-          label={t("trip.editSave")}
-          onPress={() => {
-            void save();
-          }}
-        />
+        <>
+          <ActionNotice says={notice} />
+          <Button
+            main
+            busy={busy}
+            label={t("trip.editSave")}
+            onPress={() => {
+              void save();
+            }}
+          />
+        </>
       }
     >
-      <BackButton fallback={editHref(trip.id)} />
-      <TripHeading trip={trip} title={title} />
+      <TripHead trip={trip} title={title} back={editHref(trip.id)} />
       <Text style={[typography.bodyStrong, { color: palette.text }]}>
         {stopAddedText(t, {
           stop: point.name[locale],
@@ -221,11 +226,6 @@ function Preview({
       </Card>
       <LevelLowered effect={effect.data} />
       <ForPassengers told={told} requests={requests} stop="added" />
-      {notice === null ? null : (
-        <TakesFocus key={notice}>
-          <Notice message={notice} />
-        </TakesFocus>
-      )}
     </Screen>
   );
 }

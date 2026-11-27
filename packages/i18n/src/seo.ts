@@ -7,6 +7,7 @@ import type { MessageKey, Translate } from "./translator.ts";
 export type PublicPage =
   | { readonly kind: "find" }
   | { readonly kind: "carpool" }
+  | { readonly kind: "about" }
   | { readonly kind: "meetingPoints" }
   | { readonly kind: "meetingPoint"; readonly name: string }
   | { readonly kind: "place"; readonly name: string };
@@ -29,6 +30,11 @@ export function pageText(t: Translate, page: PublicPage): PageText {
       return {
         title: t("seo.title", { page: t("seo.carpoolTitle") }),
         description: t("seo.carpoolDescription"),
+      };
+    case "about":
+      return {
+        title: t("seo.title", { page: t(aboutPage.title) }),
+        description: t("seo.aboutDescription"),
       };
     case "meetingPoints":
       return {
@@ -99,4 +105,50 @@ export const carpoolPage: {
       ],
     },
   ],
+};
+
+/** A link on the About page, or in the website's footer: its text and the app's address. */
+export interface SiteLink {
+  readonly label: MessageKey;
+  readonly href: string;
+}
+
+/**
+ * The About page (spec 30, 3.1), at `/about`: what PuffinRide is, the
+ * legal documents, who runs it and how to reach us. The screen shows it,
+ * the website's footer links to the same documents, and the server writes
+ * it into the first answer's `<noscript>`, for search engines that do not
+ * run the app. Who runs PuffinRide is said as the published Terms say it
+ * (R30.2); nothing about money (R30.3).
+ */
+export const aboutPage: {
+  readonly path: "/about";
+  readonly title: MessageKey;
+  readonly intro: readonly MessageKey[];
+  readonly howItWorks: SiteLink;
+  readonly documentsTitle: MessageKey;
+  readonly documents: readonly SiteLink[];
+  readonly operatorTitle: MessageKey;
+  readonly operator: MessageKey;
+  readonly contactTitle: MessageKey;
+  readonly contact: MessageKey;
+  /** The address the Terms and the Privacy Policy give; hello@ only sends. */
+  readonly email: string;
+} = {
+  path: "/about",
+  title: "about.title",
+  intro: ["about.intro", "about.beta"],
+  howItWorks: { label: "home.howItWorks", href: carpoolPage.path },
+  documentsTitle: "about.documents",
+  documents: [
+    { label: "legal.terms", href: "/legal/terms" },
+    { label: "legal.rules", href: "/legal/community-rules" },
+    { label: "legal.privacy", href: "/legal/privacy" },
+    { label: "cookies.title", href: "/cookies" },
+  ],
+  operatorTitle: "about.operatorTitle",
+  operator: "about.operator",
+  contactTitle: "about.contactTitle",
+  contact: "about.contact",
+  email: "admin@puffinride.is",
 };

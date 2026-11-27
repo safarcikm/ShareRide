@@ -45,7 +45,7 @@ migration, no new dependency.
 2. **`sharing/links.ts`:** Facebook's share address for a link, and the
    Page's address. Test: the link is encoded.
 3. **`sharing/share-ride-panel.tsx`:** heading, Share (only with a share
-   window: `canShare()` in `lib/share.ts`), Share on Facebook
+   window: `canShareWindow()` in `lib/share.ts`), Share on Facebook
    (`Linking.openURL`), the text box with the language chips and Copy
    text, Follow PuffinRide on Facebook. Tests with and without a share
    window and a clipboard.
@@ -79,7 +79,8 @@ migration, no new dependency.
 3. **Texts:** `shareRide.story`, `shareRide.storyHint`, `shareRide.sharePicture`,
    `shareRide.downloadPicture`, `shareRide.copyLink`.
 4. **Check by eye:** draw the story for a short, a long and a many-stop
-   trip in both languages.
+   trip in both languages. Done with `pnpm --filter @shareride/api
+   story-pictures`, which keeps three of them in spec 28's pictures.
 5. **Docs:** spec 23, 3.10 mentions the story picture; the changelog.
 
 ## After merging

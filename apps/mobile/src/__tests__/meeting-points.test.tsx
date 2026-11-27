@@ -141,7 +141,7 @@ describe("Meeting points", () => {
   it("opens from my profile", async () => {
     await renderApp("/profile", { me: completeMe, setUp: catalogue });
     await screen.findByRole("header", { name: "My profile" });
-    await fireEvent.press(screen.getByRole("button", { name: "Meeting points" }));
+    await fireEvent.press(screen.getByRole("link", { name: "Meeting points" }));
     expect(await screen.findByRole("header", { name: "Meeting points" })).toBeVisible();
   });
 });
@@ -380,6 +380,20 @@ describe("Meeting point details", () => {
     await openDetails(/^BSÍ/);
     await fireEvent.press(await screen.findByRole("button", { name: "Open in maps" }));
     expect(await screen.findByText("We couldn't open a maps app on this device.")).toBeVisible();
+  });
+
+  it("ends with what else it can do as rows with icons, the report last (spec 31, rule 4)", async () => {
+    await openDetails(/^BSÍ/);
+    const rows = within(await screen.findByTestId("action-rows"));
+    expect(
+      rows
+        .getAllByTestId("row-words")
+        .map((words) => String(within(words).getByText(/./).props.children)),
+    ).toEqual(["Open in maps", "Something wrong here?"]);
+    expect(rows.getAllByTestId("row-icon", { includeHiddenElements: true })).toHaveLength(2);
+    // Buttons, not links: one leaves the app, the other asks to sign in first.
+    expect(rows.getByRole("button", { name: "Open in maps" })).toBeVisible();
+    expect(rows.getByRole("button", { name: "Something wrong here?" })).toBeVisible();
   });
 
   it("says so when the point is not shown any more", async () => {

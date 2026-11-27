@@ -1,20 +1,19 @@
 // What the screens that change a published trip share (spec 6, 3.2): when
-// it can change, its heading, its stops' times, and the rules a change breaks.
+// it can change, its head, its stops' times, and the rules a change breaks.
 import type { CallFailure } from "@shareride/api-client";
 import type { MyTrip } from "@shareride/contracts";
 import { capitalised, formatClock, formatDay, type Locale, type Translate } from "@shareride/i18n";
-import { router } from "expo-router";
-import { ActivityIndicator, Text, View } from "react-native";
+import { router, type Href } from "expo-router";
+import { ActivityIndicator } from "react-native";
 import { errorText } from "@/auth/errors";
 import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Notice } from "@/components/notice";
 import { Screen } from "@/components/screen";
-import { Title } from "@/components/text";
+import { ScreenHead } from "@/components/screen-head";
 import { useLanguage } from "@/i18n/language";
-import { typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
-import { problemText, routeText, stopNameAt } from "@/trips/texts";
+import { dayAtTime, problemText, routeText, stopNameAt } from "@/trips/texts";
 
 /** The driver's trip page; `params` such as what just changed. */
 export const tripHref = (id: string, params: Readonly<Record<string, string>> = {}) => ({
@@ -31,28 +30,32 @@ export function isChangeable(trip: MyTrip, now: Date): trip is MyTrip & { depart
   );
 }
 
-/** The trip's day and time and its route, above the screen's title. */
-export function TripHeading({ trip, title }: { readonly trip: MyTrip; readonly title: string }) {
+/**
+ * The top of a screen that changes a trip (spec 31, 3.19): Back and the
+ * title at the left, with the trip's day and time and its route in small
+ * text over it, and at most one `line` under it.
+ */
+export function TripHead({
+  trip,
+  title,
+  line,
+  back,
+}: {
+  readonly trip: MyTrip;
+  readonly title: string;
+  readonly line?: string | undefined;
+  /** Where Back leads when there is nothing to go back to. */
+  readonly back: Href;
+}) {
   const { locale, t } = useLanguage();
-  const palette = usePalette();
+  return <ScreenHead title={title} over={tripOver(t, locale, trip)} line={line} back={back} />;
+}
+
+/** A trip in the small text over a title: its day and time, then its route. */
+export function tripOver(t: Translate, locale: Locale, trip: MyTrip): string {
   const departure = trip.departsAt === null ? null : new Date(trip.departsAt);
-  return (
-    <View>
-      <Text style={[typography.small, { color: palette.textMuted }]}>
-        {departure === null
-          ? null
-          : `${capitalised(
-              t("trip.mine.when", {
-                day: formatDay(departure, locale),
-                time: formatClock(departure),
-              }),
-              locale,
-            )} · `}
-        {routeText(t, locale, trip)}
-      </Text>
-      <Title align="start">{title}</Title>
-    </View>
-  );
+  const when = departure === null ? "" : `${dayAtTime(t, locale, departure)} · `;
+  return `${when}${routeText(t, locale, trip)}`;
 }
 
 /** While the trip loads, or why it did not, on a screen that changes it. */
@@ -70,19 +73,17 @@ export function NotLoaded({
 }) {
   const { t } = useLanguage();
   const palette = usePalette();
-  const back = <BackButton fallback={tripHref(id)} />;
   if (failure === undefined) {
     return (
       <Screen>
-        {back}
+        <BackButton fallback={tripHref(id)} />
         <ActivityIndicator accessibilityLabel={t("common.loading")} color={palette.primary} />
       </Screen>
     );
   }
   return (
     <Screen>
-      {back}
-      <Title>{title}</Title>
+      <ScreenHead title={title} back={tripHref(id)} />
       <Notice
         message={
           failure.status === 404
@@ -102,8 +103,7 @@ export function NotChangeable({ trip, title }: { readonly trip: MyTrip; readonly
   const { t } = useLanguage();
   return (
     <Screen>
-      <BackButton fallback={tripHref(trip.id)} />
-      <TripHeading trip={trip} title={title} />
+      <TripHead trip={trip} title={title} back={tripHref(trip.id)} />
       <Notice message={t("trip.notChangeable")} />
       <Button
         variant="secondary"

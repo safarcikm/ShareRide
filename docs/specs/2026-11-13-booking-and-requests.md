@@ -10,6 +10,15 @@ Book; a payment that does not finish keeps the seats held and Pay starts it
 again. "You're booked!" or "Request sent" follows, with what happens next
 (3.7). After a price change, instant booking asks "Pay this price?".
 
+Amended by [spec 31](2026-11-26-one-ride-one-ticket.md) (3.19): Check and
+pay shows the ride as a ticket, with the total, the seats, the driver and
+the car on it, and "You're booked!" and "Request sent" show the ticket My
+rides has for the seat. By 3.8 and 3.9 a booking's own page says where it
+stands in its title ("Request sent", "Anna said yes: pay to keep your
+seat", "Your seat is confirmed"), shows a road, the ride as a ticket and
+rows, and has one main button, in a bar at the bottom (3.4, 3.5 and 3.6
+below).
+
 Features: D3 Book seats on the whole trip or only part of it, D4 My bookings,
 C7 Accept or decline requests ([features](../product/features.md)).
 Related: [pricing and seats](../product/pricing-and-seats.md) (rules P1, S1 to
@@ -109,6 +118,14 @@ Opened from trip details (spec 4) with the chosen part and seats.
 6. **Expiry** (rule R5.5): an unanswered request expires; its seats are freed
    and the passenger is told, with the same search button. The driver is
    reminded once, halfway to the deadline.
+7. Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.12) a request on the
+   driver's ride is a yellow card under "Needs you": who asks, opening
+   their profile, with the time left; their part as a timetable with the
+   seats and the price, and their message in quotation marks; and one
+   line in the place of the seats on each stretch, "If you accept, 2 of 3
+   seats are taken from Mjódd to Selfoss", for the fullest stretch of
+   their part. Decline and Accept stand side by side, and "Decline
+   request" is red. The title's line says "1 request needs your answer."
 
 ### 3.4 Requests: the passenger's side
 
@@ -116,6 +133,11 @@ Opened from trip details (spec 4) with the chosen part and seats.
   which frees the seats and never affects reliability.
 - A passenger cannot hold requests or bookings on two trips that overlap in
   time (decision 1). To change plans, they withdraw or cancel one first.
+- Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.8) the page's title
+  is "Request sent", with "Anna has until 22:00 to answer." under it, and
+  "Withdraw request" is its last row, in red. It asks first, in the bar at
+  the bottom, with "Keep my request" under it; the button that withdraws
+  is red there too (3.19).
 
 ### 3.5 Paying
 
@@ -134,6 +156,13 @@ Opened from trip details (spec 4) with the chosen part and seats.
 5. Free rides skip this step: an accepted free booking is confirmed at once.
 6. Cancellations and refunds (rule M2) are spec 6; payouts to drivers are
    spec 13.
+7. Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.8) the title asks:
+   "Anna said yes: pay to keep your seat", or "Pay to keep your seat" for a
+   ride booked instantly, with "Your seat is held until 12:30." under it.
+   **Pay {total}** is the page's main button, in the bar at the bottom (at
+   the top of the side column on a laptop), and the payment opens in its
+   place. The texts `booking.payNow` and `booking.payBy` went with the
+   card they stood in.
 
 ### 3.6 My bookings
 
@@ -147,12 +176,32 @@ Opened from trip details (spec 4) with the chosen part and seats.
    "Cancel booking" (spec 6).
 4. Upcoming bookings and their meeting point details stay available offline
    once loaded (feature I4).
+5. Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.8) a booking's
+   page is, in this order: the title that says where it stands, a road
+   (Asked, Confirmed, Trip day, Done), the ride as a ticket with the seats
+   and the price, the driver with **Message** and the car with its number
+   plate, where to stand with a small map and "Open in maps", and rows:
+   sharing the ride's details, the weather and the roads, reporting a
+   problem, and "Cancel booking" last, in red. "Search again" after a
+   booking that ended is "Find another ride", in the bar.
 
 ### 3.7 The driver's trip view
 
 On their trip, the driver sees every request and booking, grouped by where
 passengers get in and out, with seats per segment. Changing and cancelling a
-trip with bookings is spec 6.
+trip with bookings is spec 6. Until it leaves, a share icon beside the
+trip's name opens Share this ride
+([spec 28](2026-11-25-share-a-ride.md), 3.1 and 3.2).
+
+Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.12) the page is "Your
+ride to Selfoss": the ride as a ticket, with sharing in its corner; what
+needs the driver; the passengers as one card of rows, in the order they
+get in, each with its tag and a round Message button once confirmed, and
+unfolding to their part, their profile, reporting them and "Cancel
+booking"; the seats as one line, "1 of 3 taken at the busiest, Mjódd to
+Selfoss", with the bar of each stretch behind "Each stretch"; and rows
+for the rest, "Cancel the ride" red and last. "Waiting for payment" is a
+blue tag for the driver, who waits with the passenger.
 
 ## 4. Rules
 
@@ -237,8 +286,8 @@ Events: `BookingRequested`, `BookingAccepted`, `BookingConfirmed`,
 | Key | English | Icelandic (draft) |
 | --- | ------- | ----------------- |
 | `booking.payInApp` | You pay {total} in the app once your booking is accepted. Free cancellation, with a full refund, up to 15 minutes before your departure. | Þú greiðir {total} í appinu þegar bókunin hefur verið samþykkt. Ókeypis afbókun, með fullri endurgreiðslu, allt að 15 mínútum fyrir brottför. |
-| `booking.payNow` | Pay {total} to confirm your seat | Greiddu {total} til að staðfesta sætið |
-| `booking.payBy` | Pay by {time} to keep your seat | Greiddu fyrir kl. {time} til að halda sætinu |
+| `needs.payToKeep`, `needs.saidYes` (were `booking.payNow` "Pay {total} to confirm your seat", until spec 31 made the page's title say it) | Pay to keep your seat; {name} said yes: pay to keep your seat | Greiddu til að halda sætinu; {name} samþykkti: greiddu til að halda sætinu |
+| `booking.seatHeldUntil` (was `booking.payBy` "Pay by {time} to keep your seat", until spec 31) | Your seat is held until {time}. | Sætið er frátekið fyrir þig til kl. {time}. |
 | `booking.paymentFailed` | The payment didn't go through. Try again or use another card. | Greiðslan gekk ekki í gegn. Reyndu aftur eða notaðu annað kort. |
 | `booking.confirmed` | Your seat is confirmed | Sætið þitt er staðfest |
 | `booking.reliabilityNote` | If you can't make it, cancel as early as you can. Late cancellations and no-shows show on your profile. | Ef þú kemst ekki skaltu afbóka eins fljótt og hægt er. Seinar afbókanir og fjarvistir sjást á prófílnum þínum. |
@@ -247,10 +296,10 @@ Events: `BookingRequested`, `BookingAccepted`, `BookingConfirmed`,
 | `booking.sendRequest` | Send request | Senda beiðni |
 | `booking.seatsTaken` | Sorry, those seats were just taken | Því miður, þessi sæti voru rétt í þessu tekin |
 | `booking.priceChanged` | The price has changed to {total}. Pay this price? (spec 16) | Verðið hefur breyst í {total}. Greiða þetta verð? |
-| `booking.requestSent` | Request sent. {driver} has until {time} to answer. | Beiðni send. {driver} hefur til {time} til að svara. |
+| `booking.requestSentTitle`, `booking.answerBy` (were one line, `booking.requestSent`, until spec 31 made the first the page's title) | Request sent; {driver} has until {time} to answer. | Beiðni send; {driver} hefur til {time} til að svara. |
 | `booking.declined` | The driver couldn't take this request | Ökumaðurinn gat ekki tekið þessari beiðni |
 | `booking.expired` | The driver didn't answer in time | Ökumaðurinn svaraði ekki í tæka tíð |
-| `booking.searchAgain` | Search again | Leita aftur |
+| `booking.searchAgain` | Find another ride (spec 31; it was "Search again") | Finna aðra ferð (it was "Leita aftur") |
 | `booking.withdraw` | Withdraw request | Draga beiðni til baka |
 | `request.accept` | Accept | Samþykkja |
 | `request.decline` | Decline | Hafna |

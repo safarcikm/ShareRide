@@ -76,6 +76,36 @@ describe("The question about cookies", () => {
     expect(page.commands()).toEqual([]);
   });
 
+  it("stands over the menu's bar as the bar is laid out, which large text makes taller", async () => {
+    await renderApp("/", withAnalytics);
+    await screen.findByLabelText("Cookies");
+    // Until the bar is laid out, over its height as counted: its line, its
+    // padding and a tab.
+    expect(screen.getByTestId("consent-layer")).toHaveStyle({ bottom: 2 + 4 + 56 + 4 + 8 });
+    await fireEvent(screen.getByTestId("tab-bar"), "layout", {
+      nativeEvent: { layout: { x: 0, y: 580, width: 360, height: 160 } },
+    });
+    expect(screen.getByTestId("consent-layer")).toHaveStyle({ bottom: 160 + 8 });
+    // The web tells a height of nothing for a bar out of sight, as under
+    // another screen: that is not its height.
+    await fireEvent(screen.getByTestId("tab-bar"), "layout", {
+      nativeEvent: { layout: { x: 0, y: 0, width: 0, height: 0 } },
+    });
+    expect(screen.getByTestId("consent-layer")).toHaveStyle({ bottom: 160 + 8 });
+  });
+
+  it("counts the bar's height again once that bar is gone", async () => {
+    const first = await renderApp("/", withAnalytics);
+    await screen.findByLabelText("Cookies");
+    await fireEvent(screen.getByTestId("tab-bar"), "layout", {
+      nativeEvent: { layout: { x: 0, y: 580, width: 360, height: 160 } },
+    });
+    await first.unmount();
+    await renderApp("/", withAnalytics);
+    await screen.findByLabelText("Cookies");
+    expect(screen.getByTestId("consent-layer")).toHaveStyle({ bottom: 2 + 4 + 56 + 4 + 8 });
+  });
+
   it("Accept loads Google's tag and counts the screen open now, by its pattern", async () => {
     await renderApp("/legal/privacy", withAnalytics);
     await fireEvent.press(await screen.findByRole("button", { name: "Accept" }));
@@ -107,11 +137,11 @@ describe("The question about cookies", () => {
 
   it("counts each screen opened after, by its pattern, never its address", async () => {
     mockPreferences.set(consentKey, consentRecord("accepted", daysAgo(1)));
-    await renderApp("/legal", withAnalytics);
-    await fireEvent.press(await screen.findByRole("button", { name: "Privacy Policy" }));
+    await renderApp("/about", withAnalytics);
+    await fireEvent.press(await screen.findByRole("link", { name: "Privacy Policy" }));
     expect(await screen.findByText("Draft text.")).toBeVisible();
     await waitFor(() => {
-      expect(page.pageViews()).toEqual(["/legal", "/legal/[type]"]);
+      expect(page.pageViews()).toEqual(["/about", "/legal/[type]"]);
     });
     expect(JSON.stringify(page.commands())).not.toContain("privacy");
   });
@@ -216,9 +246,9 @@ describe("The Cookies page", () => {
     expect(screen.getByRole("link", { name: "Read the Privacy Policy" })).toBeVisible();
   });
 
-  it("opens from Terms, rules and privacy", async () => {
-    await renderApp("/legal", withAnalytics);
-    await fireEvent.press(await screen.findByRole("button", { name: "Cookies" }));
+  it("opens from About", async () => {
+    await renderApp("/about", withAnalytics);
+    await fireEvent.press(await screen.findByRole("link", { name: "Cookies" }));
     expect(await theSwitch()).toBeVisible();
   });
 });

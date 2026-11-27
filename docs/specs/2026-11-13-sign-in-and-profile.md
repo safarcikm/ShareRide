@@ -33,6 +33,27 @@ Related decisions: [ADR 0010](../decisions/0010-authentication-and-identity.md)
 (accepted), [ADR 0011](../decisions/0011-localization.md) (accepted),
 [privacy and GDPR](../compliance/privacy-gdpr.md).
 
+Amended by [spec 31](2026-11-26-one-ride-one-ticket.md) (3.14): Settings
+is no page any more. What it held is on Profile, as rows in four groups
+(Driving, Account, Safety and privacy, Help) with Sign out last, each row
+showing what is set now. The language and the notifications have a page
+each, "Sign out on all devices" is at the end of Sign-in methods, the
+phone number shows under Account, and `/settings` leads to Profile (3.7,
+3.8).
+
+Amended by spec 31 (3.19) too: a person's profile has the title "Profile"
+at the left with Back, and the name is in the person's card, with the
+rating, what is checked and what they wrote about themselves (3.5). Edit
+profile has my picture, name, languages and member since in such a card,
+with the photo's controls in it, over its form (screen 6).
+
+And, since its last pass (3.19, R31.1): "Save profile" on Edit profile
+and "Send the link" on Email are each the page's one main button, at the
+bottom of the screen, with why it did nothing over it. "Send the link
+again" is a row under the address that waits. The page an
+email's link opens says what the link did as its title, at the left, and
+the way on is its main button (3.5).
+
 ## 1. Problem and goal
 
 People share cars with strangers, so every user needs a reachable phone number

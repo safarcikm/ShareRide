@@ -29,3 +29,6 @@ export async function freshTestDatabase(): Promise<DatabaseConnection> {
   await migrateDatabase(connection.db);
   return connection;
 }
+
+/** The published legal texts, for a check that another text says what they say. */
+export { bodyOf, publishedVersions } from "./legal/published.ts";

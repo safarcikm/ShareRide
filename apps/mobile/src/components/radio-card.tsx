@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { chunky } from "@/theme/pressable";
 import { controlOutline, edges, radii, sizes, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
@@ -7,18 +7,22 @@ import { spaceKeyPresses } from "./space-key";
 /**
  * One choice of a few that each need a line of explanation, such as how
  * people book (spec 15, `RadioCard`): a card with a radio, a title and help.
- * Selected, its outline turns `primary` and the radio fills.
+ * Selected, its outline turns `primary` and the radio fills. `lang` is the
+ * language of a title that is not in the app's, such as "Íslenska" in
+ * English, so screen readers read it in that language.
  */
 export function RadioCard({
   title,
   help,
   selected,
   onSelect,
+  lang,
 }: {
   readonly title: string;
   readonly help?: string;
   readonly selected: boolean;
   readonly onSelect: () => void;
+  readonly lang?: string;
 }) {
   const palette = usePalette();
   return (
@@ -26,6 +30,9 @@ export function RadioCard({
       accessibilityRole="radio"
       accessibilityLabel={help === undefined ? title : `${title}. ${help}`}
       aria-checked={selected}
+      accessibilityLanguage={lang}
+      // react-native-web reads lang; React Native's types do not know it.
+      {...(Platform.OS === "web" && lang !== undefined ? { lang } : {})}
       onPress={onSelect}
       {...spaceKeyPresses(onSelect)}
       style={({ pressed }) => [styles.outer, chunky(edges.card, palette.edge, pressed).outer]}

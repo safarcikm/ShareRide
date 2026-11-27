@@ -1,5 +1,6 @@
-import { fireEvent, screen } from "expo-router/testing-library";
+import { fireEvent, screen, within } from "expo-router/testing-library";
 import type { Booking, MyReport, FileReportBody } from "@shareride/contracts";
+import { AccessibilityInfo } from "react-native";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
 import {
@@ -12,11 +13,14 @@ import {
   paidBooking,
   requestToDrive,
 } from "@/testing/bookings";
+import { filledButtons } from "@/testing/buttons";
 import { callsTo, chatMessage, chatServer, messageId, openedLine } from "@/testing/chat";
+import { passengerRow, unfoldPassenger } from "@/testing/driver-trip";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
 import { newcomer } from "@/testing/people";
 import { northResult, northTrip, tripDetailsApi } from "@/testing/search";
 import { tripsApi } from "@/testing/trips";
+import { colors } from "@/theme/tokens";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
 jest.mock("@/auth/token-store", () => {
@@ -70,15 +74,15 @@ async function openTrip(changes: Parameters<typeof northTrip>[1] = {}, signedIn 
       reportsApi(client);
     },
   });
-  expect(await screen.findByRole("header", { name: "Borgarnes → Blönduós" })).toBeVisible();
+  expect(await screen.findByRole("header", { name: "Borgarnes to Blönduós" })).toBeVisible();
   return app;
 }
 
 describe("Reporting a trip (spec 9, 3.1)", () => {
   it("asks what happened, sends it, and thanks", async () => {
     const { client } = await openTrip();
-    await fireEvent.press(screen.getByRole("button", { name: "Report this trip" }));
-    expect(await screen.findByRole("header", { name: "Report this trip" })).toBeVisible();
+    await fireEvent.press(screen.getByRole("link", { name: "Report this ride" }));
+    expect(await screen.findByRole("header", { name: "Report this ride" })).toBeVisible();
     expect(screen).toHaveSearchParams({ kind: "trip", id: northResult.tripId });
 
     // Nothing is sent before choosing what happened.
@@ -86,7 +90,7 @@ describe("Reporting a trip (spec 9, 3.1)", () => {
     expect(await screen.findByText("Choose what happened.")).toBeVisible();
     expect(reportsSent(client)).toEqual([]);
 
-    await fireEvent.press(screen.getByRole("radio", { name: "The trip wasn't as listed" }));
+    await fireEvent.press(screen.getByRole("radio", { name: "The ride wasn't as listed" }));
     await fireEvent.changeText(
       screen.getByLabelText("Tell us more (optional)"),
       "  The car was not the one listed.  ",
@@ -109,24 +113,76 @@ describe("Reporting a trip (spec 9, 3.1)", () => {
     expect(screen).toHavePathname(`/trips/${northResult.tripId}`);
   });
 
+  it("has its title at the left and Send report as the one main button in the bar (spec 31, 3.19)", async () => {
+    await openTrip();
+    await fireEvent.press(screen.getByRole("link", { name: "Report this ride" }));
+    await screen.findByRole("radio", { name: "Something else" });
+    const head = within(screen.getByTestId("screen-head"));
+    expect(head.getByRole("header", { name: "Report this ride" })).toBeVisible();
+    expect(head.getByRole("button", { name: "Back" })).toBeVisible();
+    const bar = within(screen.getByTestId("bottom-bar"));
+    const send = bar.getByRole("button", { name: "Send report" });
+    expect(send).toHaveStyle({ minHeight: 56 });
+    expect(filledButtons()).toBe(1);
+    expect(screen.getByTestId("filled-button")).toBe(send);
+    // A report takes nothing away: the moss button, not the red one (decision 17).
+    expect(within(send).getByTestId("button-face")).toHaveStyle({
+      backgroundColor: colors.light.primary,
+    });
+    // Why nothing was sent stands over the button, where it is seen.
+    await fireEvent.press(send);
+    expect(await bar.findByText("Choose what happened.")).toBeVisible();
+    await fireEvent.press(screen.getByRole("radio", { name: "Something else" }));
+    expect(screen.queryByText("Choose what happened.")).toBeNull();
+  });
+
+  it("offers the community rules as a row that opens them, not a loose link", async () => {
+    await openTrip();
+    await fireEvent.press(screen.getByRole("link", { name: "Report this ride" }));
+    await screen.findByRole("radio", { name: "Something else" });
+    const rules = within(screen.getByTestId("action-rows")).getByRole("link", {
+      name: "Read the community rules",
+    });
+    await fireEvent.press(rules);
+    expect(screen).toHavePathname("/legal/community-rules");
+  });
+
+  it("thanks as the title, at the left and with focus, once the report is sent", async () => {
+    const focus = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
+    await openTrip();
+    await fireEvent.press(screen.getByRole("link", { name: "Report this ride" }));
+    await fireEvent.press(await screen.findByRole("radio", { name: "Something else" }));
+    focus.mockClear();
+    await fireEvent.press(screen.getByRole("button", { name: "Send report" }));
+    await screen.findByRole("header", { name: "Thank you. We look at every report." });
+    const head = within(screen.getByTestId("screen-head"));
+    expect(head.getByRole("header", { name: "Thank you. We look at every report." })).toBeVisible();
+    expect(focus).toHaveBeenCalledTimes(1);
+    // The way back is the one thing to do: the main button, in the bar.
+    const back = within(screen.getByTestId("bottom-bar")).getByRole("button", { name: "Back" });
+    expect(back).toHaveStyle({ minHeight: 56 });
+    expect(filledButtons()).toBe(1);
+    expect(screen.getByTestId("filled-button")).toBe(back);
+  });
+
   it("is not offered for my own trip", async () => {
     await openTrip({ part: { state: "own" }, drivenByMe: true });
-    expect(screen.queryByRole("button", { name: "Report this trip" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Report this ride" })).toBeNull();
   });
 
   it("is not offered to its driver once it has left, or been cancelled", async () => {
     await openTrip({ part: { state: "departed" }, drivenByMe: true });
-    expect(screen.queryByRole("button", { name: "Report this trip" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Report this ride" })).toBeNull();
   });
 
   it("is not offered signed out", async () => {
     await openTrip({}, false);
-    expect(screen.queryByRole("button", { name: "Report this trip" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Report this ride" })).toBeNull();
   });
 
   it("says nothing of 112 on a safety report: people dial it themselves (decision 5)", async () => {
     await openTrip();
-    await fireEvent.press(screen.getByRole("button", { name: "Report this trip" }));
+    await fireEvent.press(screen.getByRole("link", { name: "Report this ride" }));
 
     await fireEvent.press(
       await screen.findByRole("radio", { name: "Safety: dangerous driving, threats or violence" }),
@@ -138,12 +194,20 @@ describe("Reporting a trip (spec 9, 3.1)", () => {
 
   it("asks for a shorter description over 1 000 characters, and sends nothing", async () => {
     const { client } = await openTrip();
-    await fireEvent.press(screen.getByRole("button", { name: "Report this trip" }));
+    await fireEvent.press(screen.getByRole("link", { name: "Report this ride" }));
     await fireEvent.press(await screen.findByRole("radio", { name: "Something else" }));
     await fireEvent.changeText(screen.getByLabelText("Tell us more (optional)"), "a".repeat(1001));
     expect(screen.getByText("Shorten it to 1000 characters or fewer.")).toBeVisible();
+    expect(screen.queryByRole("alert")).toBeNull();
     await fireEvent.press(screen.getByRole("button", { name: "Send report" }));
     expect(reportsSent(client)).toEqual([]);
+    // Why nothing was sent stands over the button, where it was pressed:
+    // the field is further up, out of sight on a phone (spec 31, 3.19).
+    const bar = within(screen.getByTestId("bottom-bar"));
+    expect(bar.getByRole("alert")).toHaveTextContent("Shorten it to 1000 characters or fewer.");
+    // Typing mends it, and the notice goes.
+    await fireEvent.changeText(screen.getByLabelText("Tell us more (optional)"), "Too fast.");
+    expect(screen.queryByRole("alert")).toBeNull();
   });
 
   it.each([
@@ -158,7 +222,7 @@ describe("Reporting a trip (spec 9, 3.1)", () => {
         reportsApi(client, () => failure(status, code));
       },
     });
-    await fireEvent.press(await screen.findByRole("button", { name: "Report this trip" }));
+    await fireEvent.press(await screen.findByRole("link", { name: "Report this ride" }));
     await fireEvent.press(await screen.findByRole("radio", { name: "Something else" }));
     await fireEvent.press(screen.getByRole("button", { name: "Send report" }));
     expect(await screen.findByText(text)).toBeVisible();
@@ -192,6 +256,7 @@ describe("Reporting from a conversation (spec 9, 3.1.1)", () => {
   it("reports the person through the booking, then offers to block them too", async () => {
     const { client } = await openConversation();
     expect(screen.getByText("Press and hold a message to report it.")).toBeVisible();
+    await fireEvent.press(screen.getByRole("button", { name: "More" }));
     await fireEvent.press(screen.getByRole("button", { name: "Report Anna" }));
     expect(await screen.findByRole("header", { name: "Report Anna" })).toBeVisible();
     // Anna is named from the booking, not from the address.
@@ -214,7 +279,14 @@ describe("Reporting from a conversation (spec 9, 3.1.1)", () => {
         description: "",
       },
     ]);
-    await fireEvent.press(screen.getByRole("button", { name: "Block Anna too" }));
+    // Blocking is a red row, as what it leads to is (R31.3); Back is the main button.
+    const block = screen.getByRole("button", { name: "Block Anna too" });
+    expect(within(screen.getByTestId("action-rows")).getByText("Block Anna too")).toHaveStyle({
+      color: colors.light.error,
+    });
+    expect(filledButtons()).toBe(1);
+    expect(screen.getByTestId("filled-button")).toBe(screen.getByRole("button", { name: "Back" }));
+    await fireEvent.press(block);
     expect(screen).toHavePathname(`/bookings/${paidBooking.id}/block`);
   });
 
@@ -252,18 +324,20 @@ describe("Reporting a problem with a booking (spec 9, 3.1.1; R9.1)", () => {
 
   it("is offered on a confirmed booking, about the booking", async () => {
     await openBooking(paidBooking);
+    // A row that leads to its own screen (spec 31, 3.8, item 7).
     await fireEvent.press(
-      await screen.findByRole("button", { name: "Report a problem with this trip" }),
+      await screen.findByRole("link", { name: "Report a problem with this ride" }),
     );
     expect(
-      await screen.findByRole("header", { name: "Report a problem with this trip" }),
+      await screen.findByRole("header", { name: "Report a problem with this ride" }),
     ).toBeVisible();
+    expect(screen).toHavePathname("/report");
   });
 
   it("is not offered once the time to report has passed", async () => {
     await openBooking({ ...paidBooking, status: "completed", problemReportable: false });
-    expect(await screen.findByRole("button", { name: "Message Anna" })).toBeVisible();
-    expect(screen.queryByRole("button", { name: "Report a problem with this trip" })).toBeNull();
+    expect(await screen.findByRole("link", { name: "Message Anna" })).toBeVisible();
+    expect(screen.queryByRole("link", { name: "Report a problem with this ride" })).toBeNull();
   });
 
   it("is not offered for a request", async () => {
@@ -275,7 +349,7 @@ describe("Reporting a problem with a booking (spec 9, 3.1.1; R9.1)", () => {
       problemReportable: false,
     });
     expect(await screen.findByRole("button", { name: "Withdraw request" })).toBeVisible();
-    expect(screen.queryByRole("button", { name: "Report a problem with this trip" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Report a problem with this ride" })).toBeNull();
   });
 });
 
@@ -307,13 +381,14 @@ describe("Reporting from the driver's trip (spec 9, 3.1.1)", () => {
         reportsApi(client);
       },
     });
-    expect(await screen.findByLabelText("Jón, 1 seat, Confirmed")).toBeVisible();
+    expect(await screen.findByRole("button", { name: passengerRow("Jón") })).toBeVisible();
     return app;
   }
 
-  it("reports a passenger, named from the booking", async () => {
+  it("reports a passenger from under their row, named from the booking", async () => {
     const { client } = await openDriverTrip();
-    await fireEvent.press(screen.getByRole("button", { name: "Report Jón" }));
+    await unfoldPassenger("Jón");
+    await fireEvent.press(screen.getByRole("link", { name: "Report Jón" }));
     expect(await screen.findByRole("header", { name: "Report Jón" })).toBeVisible();
     expect(screen).toHaveSearchParams({ kind: "user", id: jon.id });
     await fireEvent.press(screen.getByRole("radio", { name: "Something else" }));
@@ -332,15 +407,15 @@ describe("Reporting from the driver's trip (spec 9, 3.1.1)", () => {
   });
 });
 
-describe("My reports in Settings (spec 9, 3.1.7)", () => {
+describe("My reports, from Profile (spec 9, 3.1.7)", () => {
   async function openReports(answer: () => unknown) {
-    await renderApp("/settings", {
+    await renderApp("/profile", {
       me: completeMe,
       setUp: (client) => {
         client.answer("/v1/me/reports", answer, "get");
       },
     });
-    await fireEvent.press(await screen.findByRole("button", { name: "My reports" }));
+    await fireEvent.press(await screen.findByRole("link", { name: "My reports" }));
   }
 
   it("lists what I reported, when, and what was found", async () => {
@@ -360,8 +435,8 @@ describe("My reports in Settings (spec 9, 3.1.7)", () => {
         ],
       }),
     );
-    expect(await screen.findByText("Trip: Anna")).toBeVisible();
-    expect(screen.getByText("The trip wasn't as listed · Sent 12 November 2026")).toBeVisible();
+    expect(await screen.findByText("Ride: Anna")).toBeVisible();
+    expect(screen.getByText("The ride wasn't as listed · Sent 12 November 2026")).toBeVisible();
     expect(screen.getByText("We look at every report within 24 hours.")).toBeVisible();
     expect(screen.getByText("Message: a former member")).toBeVisible();
     expect(screen.getByText("We've looked into your report and taken action.")).toBeVisible();

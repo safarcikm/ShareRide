@@ -45,26 +45,37 @@ export function Switch({
         </Text>
         {below}
       </View>
-      <View
-        testID="switch-track"
-        style={[
-          styles.track,
-          value
-            ? { backgroundColor: palette.primary, borderColor: palette.primary }
-            : { backgroundColor: palette.surface, borderColor: palette.control },
-        ]}
-      >
-        <View
-          testID="switch-thumb"
-          style={[
-            styles.thumb,
-            value
-              ? { backgroundColor: palette.onPrimary, alignSelf: "flex-end" }
-              : { backgroundColor: palette.control, alignSelf: "flex-start" },
-          ]}
-        />
-      </View>
+      <SwitchTrack value={value} />
     </Pressable>
+  );
+}
+
+/**
+ * The track and thumb of a switch, for a part that is the switch itself,
+ * such as a `Row` that holds one (spec 31, 3.3).
+ */
+export function SwitchTrack({ value }: { readonly value: boolean }) {
+  const palette = usePalette();
+  return (
+    <View
+      testID="switch-track"
+      style={[
+        styles.track,
+        value
+          ? { backgroundColor: palette.primary, borderColor: palette.primary }
+          : { backgroundColor: palette.surface, borderColor: palette.control },
+      ]}
+    >
+      <View
+        testID="switch-thumb"
+        style={[
+          styles.thumb,
+          value
+            ? { backgroundColor: palette.onPrimary, alignSelf: "flex-end" }
+            : { backgroundColor: palette.control, alignSelf: "flex-start" },
+        ]}
+      />
+    </View>
   );
 }
 

@@ -8,8 +8,8 @@ import { Button } from "@/components/button";
 import { Loading } from "@/components/loading";
 import { Notice } from "@/components/notice";
 import { Screen } from "@/components/screen";
-import { Body, Title } from "@/components/text";
-import { TextLink } from "@/components/text-link";
+import { ScreenHead } from "@/components/screen-head";
+import { Body } from "@/components/text";
 import { linkToken } from "@/email/link-token";
 import { useLanguage } from "@/i18n/language";
 import { useLoaded } from "@/lib/use-loaded";
@@ -34,7 +34,10 @@ const answers = new Map<string, Promise<unknown>>();
 
 /**
  * The page an email's link opens (plan 4.6): it confirms the address,
- * whether or not the person is signed in on this browser.
+ * whether or not the person is signed in on this browser. What the link
+ * did is the title, at the left and with focus, with nothing to go back
+ * to; the way on is the page's one main button, a link, in the bottom bar
+ * (spec 31, 3.19 and R31.1).
  */
 async function ask(session: ReturnType<typeof useSession>, token: string) {
   const result = await session.call(verifyEmailRoute, { body: { token } });
@@ -60,46 +63,42 @@ export default function VerifyEmailScreen() {
   const { value: result, reload } = useLoaded(verify);
 
   const onward = signedIn ? (
-    <TextLink label={t("verifyEmail.toSettings")} href="/settings" />
+    <Button main label={t("verifyEmail.toProfile")} href="/profile" />
   ) : (
-    <TextLink label={t("verifyEmail.toApp")} href="/" />
+    <Button main label={t("verifyEmail.toApp")} href="/" />
+  );
+  /** What the link did, or why it did nothing, and the way on. */
+  const answer = (of: string, title: string, line: string) => (
+    <Screen footer={onward}>
+      <ScreenHead title={title} line={line} back={null} outcome={{ of, focus: true }} />
+    </Screen>
   );
 
   if (result === undefined) {
     return (
       <Screen>
-        <Body>{t("verifyEmail.checking")}</Body>
+        <Body align="start">{t("verifyEmail.checking")}</Body>
         <Loading />
       </Screen>
     );
   }
   if (result === null) {
-    return (
-      <Screen>
-        <Title>{t("verifyEmail.noLink")}</Title>
-        <Body>{t("verifyEmail.noLinkBody")}</Body>
-        {onward}
-      </Screen>
-    );
+    return answer("noLink", t("verifyEmail.noLink"), t("verifyEmail.noLinkBody"));
   }
   if (result.ok) {
-    return (
-      <Screen>
-        <Title>{t("verifyEmail.done")}</Title>
-        <Body>{t("verifyEmail.doneBody", { email: result.data.email })}</Body>
-        {onward}
-      </Screen>
+    return answer(
+      "done",
+      t("verifyEmail.done"),
+      t("verifyEmail.doneBody", { email: result.data.email }),
     );
   }
   const { code } = result.error;
   if (code === "link_invalid" || code === "email_taken") {
     const taken = code === "email_taken";
-    return (
-      <Screen>
-        <Title>{t(taken ? "verifyEmail.taken" : "verifyEmail.invalid")}</Title>
-        <Body>{t(taken ? "verifyEmail.takenBody" : "verifyEmail.invalidBody")}</Body>
-        {onward}
-      </Screen>
+    return answer(
+      code,
+      t(taken ? "verifyEmail.taken" : "verifyEmail.invalid"),
+      t(taken ? "verifyEmail.takenBody" : "verifyEmail.invalidBody"),
     );
   }
   // Anything else left the link as it was, so it can be tried again.
