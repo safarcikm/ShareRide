@@ -48,16 +48,14 @@ export function TripHead({
   readonly back: Href;
 }) {
   const { locale, t } = useLanguage();
+  return <ScreenHead title={title} over={tripOver(t, locale, trip)} line={line} back={back} />;
+}
+
+/** A trip in the small text over a title: its day and time, then its route. */
+export function tripOver(t: Translate, locale: Locale, trip: MyTrip): string {
   const departure = trip.departsAt === null ? null : new Date(trip.departsAt);
   const when = departure === null ? "" : `${dayAtTime(t, locale, departure)} · `;
-  return (
-    <ScreenHead
-      title={title}
-      over={`${when}${routeText(t, locale, trip)}`}
-      line={line}
-      back={back}
-    />
-  );
+  return `${when}${routeText(t, locale, trip)}`;
 }
 
 /** While the trip loads, or why it did not, on a screen that changes it. */

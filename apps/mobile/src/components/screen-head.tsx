@@ -33,6 +33,7 @@ export function ScreenHead({
   over,
   line,
   back = "/",
+  onBack,
   action,
   road,
   outcome,
@@ -43,6 +44,8 @@ export function ScreenHead({
   readonly line?: string | undefined;
   /** Where Back leads when there is nothing to go back to; null for no Back. */
   readonly back?: Href | null;
+  /** What Back does where it leaves something that is not a screen, such as a picker. */
+  readonly onBack?: (() => void) | undefined;
   readonly action?: ReactNode;
   readonly road?: ReactNode;
   readonly outcome?: {
@@ -55,7 +58,12 @@ export function ScreenHead({
   readonly more?: ReactNode;
 }) {
   const palette = usePalette();
-  const backButton = back === null ? null : <BackButton fallback={back} />;
+  const backButton =
+    onBack !== undefined ? (
+      <BackButton onPress={onBack} />
+    ) : back === null ? null : (
+      <BackButton fallback={back} />
+    );
   const words = (
     <View style={styles.titles}>
       {over === undefined ? null : (

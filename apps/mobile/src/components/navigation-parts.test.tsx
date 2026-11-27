@@ -1,4 +1,4 @@
-import { act, render, screen, within } from "@testing-library/react-native";
+import { act, fireEvent, render, screen, within } from "@testing-library/react-native";
 import { getLocales } from "expo-localization";
 import { Share } from "lucide-react-native";
 import type { ReactElement } from "react";
@@ -68,6 +68,13 @@ describe("ScreenHead (spec 31, 3.3)", () => {
     await inEnglish(<ScreenHead back={null} title="My rides" />);
     expect(screen.queryByRole("button", { name: "Back" })).toBeNull();
     expect(screen.getByRole("header", { name: "My rides" })).toBeVisible();
+  });
+
+  it("lets Back close what is not a screen of its own, such as a picker", async () => {
+    const close = jest.fn();
+    await inEnglish(<ScreenHead title="Add a meeting point" back={null} onBack={close} />);
+    await fireEvent.press(screen.getByRole("button", { name: "Back" }));
+    expect(close).toHaveBeenCalledTimes(1);
   });
 
   it("shows small text over the title, such as a ride's day", async () => {

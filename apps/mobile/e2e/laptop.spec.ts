@@ -1054,6 +1054,14 @@ test.describe("Offer a ride and the driver's ride", () => {
     const soFar = side.getByTestId("trip-so-far");
     /** The step's two columns stand side by side, the step no wider than a phone's column. */
     const expectTwoColumns = async () => {
+      // At the top of the step: once it is scrolled, the side column stays
+      // in view while the main one moves, and choosing a time scrolls it.
+      await driver
+        .getByTestId("screen-scroll")
+        .filter(shown)
+        .evaluate((scroll) => {
+          scroll.scrollTop = 0;
+        });
       const mainBox = await box(main);
       const sideBox = await box(side);
       expect(sideBox.x).toBeGreaterThan(mainBox.x + mainBox.width);
@@ -1119,12 +1127,12 @@ test.describe("Offer a ride and the driver's ride", () => {
 
     // Step 2: the day and the times as they are chosen.
     await expect(main.getByRole("heading", { name: "When are you leaving?" })).toBeVisible();
-    await expect(soFar.getByLabel("Date and times: Step 2")).toBeVisible();
+    await expect(soFar.getByLabel("Time: Step 2")).toBeVisible();
     const day = tomorrow("en");
     if (day.nextMonth) await main.getByRole("button", { name: "Next month" }).click();
     await main.getByRole("radio", { name: day.name }).click();
     await chooseTime(driver, "Leaving Mjódd bus terminal at", "17:45");
-    await expect(soFar.getByLabel(/^Date and times: .+, 17:45 to \d\d:\d\d$/)).toBeVisible();
+    await expect(soFar.getByLabel(/^Time: .+, 17:45 to \d\d:\d\d$/)).toBeVisible();
     await expect(soFar.getByLabel("Seats and booking: Step 3")).toBeVisible();
     await expect(soFar.getByLabel("Price: Step 4")).toBeVisible();
     await expectTwoColumns();
@@ -1166,14 +1174,19 @@ test.describe("Offer a ride and the driver's ride", () => {
     await expect(
       soFar.getByLabel("Seats and booking: 3 seats, I approve each passenger"),
     ).toBeVisible();
-    await expect(soFar.getByLabel(/^Price: 100% · the whole route [\d,]+ ISK$/)).toBeVisible();
+    await expect(soFar.getByLabel(/^Price: [\d,]+ ISK the whole way · 100%$/)).toBeVisible();
     await main.getByRole("button", { name: "Raise the price" }).click();
-    await expect(soFar.getByLabel(/^Price: 110% · the whole route [\d,]+ ISK$/)).toBeVisible();
+    await expect(soFar.getByLabel(/^Price: [\d,]+ ISK the whole way · 110%$/)).toBeVisible();
     await expectTwoColumns();
     await side.getByRole("button", { name: "Check your ride" }).click();
 
-    // Step 5: Publish and what it waits for beside the summary.
+    // Step 5: Publish and what it waits for beside the ride as others will
+    // see it, its rows and what is still missing (spec 31, 3.11).
     await expect(main.getByRole("heading", { name: "Check and publish" })).toBeVisible();
+    await expect(main.getByRole("img", { name: "Step 5 of 5: Check" })).toBeVisible();
+    await expect(main.getByTestId("preview-ticket")).toBeVisible();
+    await expect(main.getByRole("link", { name: /^Route, .+, Change$/ })).toBeVisible();
+    await expect(main.getByText("Three things before you publish", { exact: true })).toBeVisible();
     const publish = side.getByRole("button", { name: "Publish ride" });
     await expect(publish).toBeDisabled();
     await expect(

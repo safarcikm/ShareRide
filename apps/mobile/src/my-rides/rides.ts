@@ -30,15 +30,23 @@ export const rideOfBooking = (booking: Booking): Ride => ({
 });
 
 /**
- * A published or cancelled trip as a ride (spec 6, 3.1); a draft is not a
- * ride yet (3.3 item 7).
+ * A published or cancelled trip of mine as a ride (spec 6, 3.1), for its
+ * ticket where it shows on its own; a draft is not a ride yet (3.3 item 7).
  */
-function asTrip(trip: MyTrip): Ride[] {
-  if (trip.status === "draft" || trip.departsAt === null || trip.arrivesAt === null) return [];
-  return [
-    { kind: "trip", trip, startsAt: new Date(trip.departsAt), endsAt: new Date(trip.arrivesAt) },
-  ];
+export function rideOfTrip(trip: MyTrip): Ride | null {
+  if (trip.status === "draft" || trip.departsAt === null || trip.arrivesAt === null) return null;
+  return {
+    kind: "trip",
+    trip,
+    startsAt: new Date(trip.departsAt),
+    endsAt: new Date(trip.arrivesAt),
+  };
 }
+
+const asTrip = (trip: MyTrip): Ride[] => {
+  const ride = rideOfTrip(trip);
+  return ride === null ? [] : [ride];
+};
 
 /**
  * The bookings and trips the server listed for `when`, as one list: soonest

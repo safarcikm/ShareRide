@@ -408,8 +408,9 @@ changes on a phone.
 ### 3.13 Offer a ride
 
 1. A step is two columns, centred as a pair: a **main column** 480 wide,
-   as a phone's, with Back, the step's progress, the title at the left and
-   the fields; and the **side column** beside it. The pair is 904 wide, so
+   as a phone's, with Back, the step's progress (the road, since
+   [spec 31](2026-11-26-one-ride-one-ticket.md), 3.11), the title at the
+   left and the fields; and the **side column** beside it. The pair is 904 wide, so
    in a window 900 wide the main column gives way a little.
 2. **Side column,** from the top: "Your trip so far"; the step's main
    button with the lines that belong to it; and on the route step the map
@@ -417,7 +418,9 @@ changes on a phone.
    map, not under it as drawn: it keeps its place when a route is chosen
    and is whole in a small laptop's window (1280 by 720) on every step
    (decision 13). On wide screens these steps have no bottom bar.
-3. "Your trip so far" has a row each for the route, the day and times, the
+3. "Your trip so far" has a row each for the route, the day and times
+   (called "Time" since spec 31, as on the road and the last step; it was
+   "Date and times"), the
    seats and booking, and the price (in the order of the steps since
    2026-11-22, when the seats moved before the price; spec 3). The open
    step's row shows what is
@@ -432,14 +435,17 @@ changes on a phone.
    "Step 2". The rows are short whatever the trip: the route is its two
    ends and "2 stops on the way", the times are the day and the first and
    the last time (both days, each with its time, when the trip ends on a
-   later day), the price is the level and the whole route's price, the
+   later day), the price is the whole way's price and the level ("3,400 ISK
+   the whole way · 110%", kronur first since spec 31, 3.11), the
    seats are their number and how people book. So the card is as tall on a
    route of ten stops as on one of two, and the button under it does not
    move. Each row has one spoken label, with a word where the screen has
    an arrow: "Route: Mjódd bus terminal to N1 Selfoss, 2 stops on the way".
 4. The last step, Check and publish, has the whole trip in its main
    column, so its side column holds Publish and what it waits for, and no
-   "Your trip so far".
+   "Your trip so far". Since spec 31 (3.11) the main column is the ride
+   as its ticket, its rows, the yellow card for what is missing and
+   Delete draft.
 5. Offer, the place in the menu, is step 1, with "Continue your draft" in
    its main column (since spec 31, 3.11, the drafts as rows in one card
    there). A draft that cannot be loaded is a page too (3.2, 8).

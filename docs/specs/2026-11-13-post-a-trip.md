@@ -28,6 +28,14 @@ for prices and seats), [domain model](../architecture/domain-model.md),
 [spec 1](2026-11-13-sign-in-and-profile.md),
 [spec 2](2026-11-13-meeting-points.md).
 
+Amended by [spec 31](2026-11-26-one-ride-one-ticket.md) (3.11): each
+step has the road with the puffins' car in place of "Step 2 of 5" and its
+bars, and its title at the left; the departure's wheel opens at 08:00 for
+a day other than today (3.5, item 5); the last step shows the ride as its
+ticket over one card of rows with Change, and what is still missing as
+one yellow card (3.8, item 1); "Your ride is published" shows the ride as
+its ticket.
+
 Amended by [spec 31](2026-11-26-one-ride-one-ticket.md) (3.4): in English
 a member now reads "ride" where the texts quoted here say "trip" (which
 stays in "Trip day"), and the actions are named "Find a ride", "Offer a
@@ -152,7 +160,11 @@ missing, and each item can be done from there:
    clock and minutes in 5-minute steps, so every time is on 5 minutes. A
    time saved before the wheel that is not on 5 minutes shows rounded up to
    the next 5 minutes. The departure's wheel starts at the earliest time
-   one can leave: the first 5 minutes at least 30 minutes from now.
+   one can leave: the first 5 minutes at least 30 minutes from now. Since
+   [spec 31](2026-11-26-one-ride-one-ticket.md) (3.11, item 2) that is
+   for today, and while no day is chosen; for another day it starts at
+   08:00 (at 03:40 at night it started at 04:10 for a ride the next
+   day).
 6. A driver cannot publish a trip that overlaps in time with another of their
    published trips.
 
@@ -208,6 +220,11 @@ Drivers do not edit segment prices one by one (decision 2,
 
 1. A summary shows the route on a map, stops and times, the price level and
    prices, seats, booking mode, car, preferences and note, each with "Edit".
+   Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.11, items 3 to
+   5) the summary is the ride as people will see it, as its ticket, over
+   one card of rows: Route, Time, Price, Seats and booking, Car, and
+   Preferences and note, each with what is set and "Change", which opens
+   its step. The stops' times are on the time step.
 2. "Publish" runs every check in section 4 again on the server and publishes
    the trip, or lists what must be fixed.
 3. After publishing, the trip page opens with "Share" (a link to the trip on

@@ -5,7 +5,8 @@
 //   jest.mock("@/auth/api", () => jest.requireActual("@/testing/app").mockApiModule);
 //   jest.mock("@/auth/token-store", () => jest.requireActual("@/testing/app").mockTokenStoreModule);
 import type { ApiClient } from "@shareride/api-client";
-import type { DriverReadiness, Me } from "@shareride/contracts";
+import type { DriverReadiness, Me, PublicProfile } from "@shareride/contracts";
+import { peopleColourOf } from "@shareride/domain";
 import { fireEvent, renderRouter, screen } from "expo-router/testing-library";
 import { createFakeClient, ok, testMe, tokens, type FakeClient } from "./fake-client";
 import { memoryTokenStore } from "./memory-token-store";
@@ -63,6 +64,14 @@ export async function renderApp(
     store.value = "sr_rt_stored";
     currentClient.answer("/v1/auth/refresh", () => ok(200, tokens(1)));
     currentClient.answer("/v1/me", () => ok(200, me));
+    // My own profile as others see it, with no reviews yet: the last
+    // posting step reads it for the ticket people will see (spec 31, 3.11).
+    // Anyone else's is for the test to answer, as every call is.
+    currentClient.answer("/v1/people/{profileId}", (input) => {
+      const { profileId } = input["params"] as { profileId: string };
+      if (profileId !== me.profileId) throw new Error("No fake answer for /v1/people/{profileId}");
+      return ok(200, ownProfile(me));
+    });
   }
   // Once signed in, unless a test says otherwise: nothing in My rides and
   // Your next ride, a new driver for the licence row on Profile, no chats
@@ -79,6 +88,25 @@ export async function renderApp(
   options.setUp?.(currentClient);
   const result = await renderRouter("./src/app", { initialUrl });
   return { ...result, client: currentClient, store };
+}
+
+/** A signed-in person's profile as others see it, before any ride: no reviews, no figure. */
+export function ownProfile(me: Me, changes: Partial<PublicProfile> = {}): PublicProfile {
+  const none = { kept: 0, counted: 0 };
+  return {
+    profileId: me.profileId,
+    firstName: me.firstName ?? "",
+    about: me.about,
+    languages: me.languages,
+    phoneVerified: me.phoneNumber !== null,
+    emailVerified: me.email !== null,
+    memberSince: me.memberSince.slice(0, 7),
+    colour: peopleColourOf(me.id),
+    photo: me.photo === null || me.photo.hidden ? null : me.photo.url,
+    rating: { average: null, count: 0 },
+    reliability: { ...none, percent: null, byRole: { driver: none, passenger: none } },
+    ...changes,
+  };
 }
 
 /** A driver who has done nothing yet: no photo, car or licence. */

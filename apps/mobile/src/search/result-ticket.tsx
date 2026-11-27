@@ -169,34 +169,54 @@ export function ResultTicket({
             onShared={setShared}
           />
         }
-        foot={
-          <TicketFoot
-            start={
-              <>
-                <Avatar
-                  small
-                  firstName={result.driver.firstName}
-                  colour={result.driver.colour}
-                  photo={result.driver.photo}
-                />
-                <Text style={[typography.label, styles.name, { color: palette.text }]}>
-                  {result.driver.firstName}
-                </Text>
-                {rated ? (
-                  <View style={styles.rating}>
-                    <RatingLine rating={result.driver.rating} />
-                  </View>
-                ) : (
-                  <Tag kind="warning" label={t("results.newDriver")} />
-                )}
-              </>
-            }
-            end={<Text style={[typography.small, muted]}>{seatsLeft}</Text>}
-          />
-        }
+        foot={<DriverFoot driver={result.driver} freeSeats={result.freeSeats} />}
       />
       {shared?.outcome === "failed" ? <ShareNotice shared={shared} /> : null}
     </View>
+  );
+}
+
+/**
+ * The foot of a ride's ticket as people looking for a ride see it: the
+ * driver's picture and first name, the rating with the number of reviews
+ * or "New driver" before the first, and the seats left at the right. The
+ * last posting step shows a driver their own (spec 31, 3.11), where the
+ * rating is null until it is known and then says neither.
+ */
+export function DriverFoot({
+  driver,
+  freeSeats,
+}: {
+  readonly driver: Pick<TripSearchResult["driver"], "firstName" | "colour" | "photo"> & {
+    readonly rating: TripSearchResult["driver"]["rating"] | null;
+  };
+  readonly freeSeats: number;
+}) {
+  const { t } = useLanguage();
+  const palette = usePalette();
+  return (
+    <TicketFoot
+      start={
+        <>
+          <Avatar small firstName={driver.firstName} colour={driver.colour} photo={driver.photo} />
+          <Text style={[typography.label, styles.name, { color: palette.text }]}>
+            {driver.firstName}
+          </Text>
+          {driver.rating === null ? null : driver.rating.count > 0 ? (
+            <View style={styles.rating}>
+              <RatingLine rating={driver.rating} />
+            </View>
+          ) : (
+            <Tag kind="warning" label={t("results.newDriver")} />
+          )}
+        </>
+      }
+      end={
+        <Text style={[typography.small, { color: palette.textMuted }]}>
+          {t("results.seatsLeft", { count: freeSeats })}
+        </Text>
+      }
+    />
   );
 }
 

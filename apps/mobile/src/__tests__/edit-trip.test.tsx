@@ -128,7 +128,7 @@ describe("Edit trip: the seats, price, car, booking mode and details (spec 6, 3.
       "Time, Sunday 15 November at 09:00",
       "Add a stop",
       "Remove a stop",
-      "Price, 100% · the whole route 4,500 ISK",
+      "Price, 4,500 ISK the whole way · 100%",
       "Seats, 3 seats",
       "Car, Toyota Yaris, white",
       "How people book, I approve each passenger",
@@ -153,7 +153,6 @@ describe("Edit trip: the seats, price, car, booking mode and details (spec 6, 3.
       ].join("\n"),
     );
     // A row each, not a heading with a loose link beside it.
-    expect(screen.queryByTestId("summary-section")).toBeNull();
     expect(screen.queryByRole("link", { name: "Change the time" })).toBeNull();
     // Nothing here is the screen's main button: every row opens a screen.
     expect(filledButtons()).toBe(0);
@@ -206,7 +205,7 @@ describe("Edit trip: the seats, price, car, booking mode and details (spec 6, 3.
       { preview: saved, body: { kind: "priceLevel", priceLevel: 110 } },
     ]);
     await fireEvent.press(screen.getByRole("link", { name: "Edit the ride" }));
-    expect(await screen.findByText("110% · the whole route 5,100 ISK")).toBeVisible();
+    expect(await screen.findByText("5,100 ISK the whole way · 110%")).toBeVisible();
   });
 
   it.each([
@@ -520,6 +519,21 @@ describe("Edit trip: adding a stop (spec 6, 3.2; milestone 6 plan, decision 2)",
   }
 
   const addMosfellsbaer = { kind: "addStop", meetingPointId: mosfellsbaer.id };
+
+  it("chooses the stop under the ride's head: Back, the ride over the title, and no cross", async () => {
+    await openPart("Add a stop", north);
+    const head = within(screen.getByTestId("screen-head"));
+    expect(head.getByRole("header", { name: "Add a stop" })).not.toHaveStyle({
+      textAlign: "center",
+    });
+    expect(
+      head.getByText("Sunday 15 November at 09:00 · BSÍ bus terminal → Hof, Akureyri"),
+    ).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Cancel" })).toBeNull();
+    // Back leaves the picker for Edit the ride.
+    await fireEvent.press(head.getByRole("button", { name: "Back" }));
+    expect(await screen.findByRole("header", { name: "Edit the ride" })).toBeVisible();
+  });
 
   it("checks where and when the stop goes and what it costs, then adds it, telling the passengers who booked", async () => {
     const { client } = await choose("mos", "Mosfellsbær", north, {

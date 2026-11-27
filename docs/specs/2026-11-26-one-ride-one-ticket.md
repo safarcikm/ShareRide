@@ -191,7 +191,7 @@ decision 17), added two: its edge and its fill under the pointer.
    on the step you are on, with the steps' names under it and the current
    one in the text colour. For screen readers it is one line: "Step 2 of
    4: Confirmed". It takes the place of `StepProgress` on the posting
-   steps. Its marks are not links: on the last posting step the rows open
+   steps (signing up keeps the bars). Its marks are not links: on the last posting step the rows open
    the earlier steps (3.11).
 3. **`NeedsYouCard`**: a card in `warningSoft` (the soft yellow of the
    "New driver" tag) with a bottom edge in the car's yellow (`people.sun`):
@@ -241,8 +241,10 @@ decision 17), added two: its edge and its fill under the pointer.
    measured; the phone apps are checked when they are built (section 10).
 
 Existing parts stay: `Card`, `Tag`, `Chip`, `BottomBar`, `SeatView`,
-`TickList`, `Columns`, `Grid`, `PuffinsInCar`, `IcelandScene`, `PuffinByPin`,
-`TopBar`, `TabBar`.
+`Columns`, `Grid`, `PuffinsInCar`, `IcelandScene`, `PuffinByPin`, `TopBar`,
+`TabBar`. (`TickList` was to stay too; it went with its one use, the list
+of what is missing on the last posting step, which is a `NeedsYouCard`
+now: 3.11, item 4.)
 
 As built, in the web app: on a phone
 ([light](images/one-ride-one-ticket/built/parts-phone-light.webp),
@@ -648,7 +650,7 @@ soonest first, as Find does.
 2. Steps 1 to 4 keep their fields. Step 4 says the price as kronur for the
    whole way first; the price level in per cent is the control, not the
    headline. On step 2 the time wheel for a day other than today opens at
-   08:00, not at the present time (at 03:40 at night it opened at 04:00
+   08:00, not at the present time (at 03:40 at night it opened at 04:10
    for a ride the next day).
 3. **Check and publish:** "This is how people will see your ride." over
    the ride as a ticket. Under it one card of rows with Change, each
@@ -676,6 +678,98 @@ soonest first, as Find does.
    own as the drafts have; pressed, it goes, the other drafts come and
    focus goes to the first of them. Only the press moves focus: drafts
    read again later come without it.
+
+As built (plan, PR 9), on a phone: step 1 on Offer
+([light](images/one-ride-one-ticket/built/offer-route-phone-light.webp)),
+the price step
+([light](images/one-ride-one-ticket/built/offer-price-phone-light.webp)),
+Check and publish with what is missing
+([light](images/one-ride-one-ticket/built/offer-check-missing-phone-light.webp))
+and ready to publish
+([light](images/one-ride-one-ticket/built/offer-check-phone-light.webp),
+[dark, in Icelandic](images/one-ride-one-ticket/built/offer-check-phone-dark.webp)),
+[adding a meeting point](images/one-ride-one-ticket/built/offer-add-point-phone-light.webp)
+and
+["Your ride is published"](images/one-ride-one-ticket/built/offer-published-phone-light.webp);
+on a laptop,
+[step 1](images/one-ride-one-ticket/built/offer-route-laptop-light.webp)
+and
+[Check and publish](images/one-ride-one-ticket/built/offer-check-laptop-light.webp).
+
+- **The head of a step:** Back beside the road, whose car stands on the
+  step: Route, Time, Seats, Price, Check ("Leið", "Tími", "Sæti", "Verð",
+  "Yfirfara"). A screen reader hears one line, "Step 2 of 5: Time". The
+  title is under them at the left, on a phone too. On Offer, a place of
+  the menu, step 1 has no Back and the road has the whole width. The
+  bars with "Step 2 of 5" stay where someone signs up (spec 29's
+  screens).
+- **Adding a meeting point** (step 1, and "Add a stop" on Edit the ride)
+  has the head of a step too: Back, which closes it with nothing chosen,
+  in place of the cross, and the title at the left. On Edit the ride the
+  ride's day, time and route stand over the title, as on its other
+  screens. Android's back closes it as Back does; on step 1 it left the
+  step, or the app.
+- **Step 2:** for a day other than today the departure's wheel opens at
+  08:00. For today, and while no day is chosen, it opens at the first
+  time one can leave at, as before (spec 3, 3.5, item 5).
+- **Step 4** already said the whole way's price in kronur large, with
+  the level as the value of its control, so only its head changed. The
+  line about the price beside a step on a laptop ("Your ride so far")
+  and on Edit the ride (3.19) says kronur first too now: "3,400 ISK the
+  whole way · 110%".
+- **Check and publish, the ticket:** the one the results show for the
+  whole way: the day, "Driver approves" or "Book instantly", the two
+  ends with their times, how long it takes with the stops between
+  counted, the price ("Free" for a free ride), and in its foot the
+  driver as others see them (the picture unless PuffinRide hid it, the
+  rating or "New driver") with "3 seats left". It is not pressed. A
+  draft with no times yet has no ticket, and no line about one under
+  the title.
+- **The rows:** Route ("BSÍ bus terminal to Hof, Akureyri, with 1 stop
+  on the way"), Time ("Sunday 15 November, 09:00 to 11:00"; a ride that
+  ends on a later day has a line for each day, "Sunday 15 November at
+  23:00" over "Monday 16 November at 01:00"), Price ("3,400 ISK the
+  whole way", or "Free"), Seats and booking, Car, and Preferences and
+  note (the preferences in one line, as a passenger reads them, then the
+  note or "No note"). A row is a small caption over what is set, with
+  "Change" at its right, and one link, which a screen reader hears
+  whole: "Route, BSÍ bus terminal to Hof, Akureyri, with 1 stop on the
+  way, Change". In Icelandic the Route row shows an arrow between the
+  two ends ("BSÍ → Hof, Akureyri, með 1 viðkomustað á leiðinni"), as a
+  name after "til" would stand in the wrong case; read out it is "til",
+  as on every other screen. Seats and booking, Car, and Preferences and
+  note all open step 3, which holds the three, as their links did.
+  Opened by its address, the step's Back leads to the price, the step
+  before it.
+- **What is missing** is one yellow card under the rows, over Delete
+  draft. Its title counts ("Three things before you publish", "Two
+  things", "One thing"), its line says what is done and what is left
+  ("Photo and car are done. Your driving licence is left."), and its one
+  button, outlined, does the next: "Add a photo", then "Add a car", then
+  "Confirm your licence". Each comes back here. The title says "before
+  you publish", not "before your first ride" as item 4 has it: someone
+  who has driven before is asked too when one of the three is missing.
+  The line under Publish, in the bar, says why it waits.
+- **Delete draft** is a red row in a card of its own, last. Pressed, a
+  card takes its place and takes focus: "Delete this draft? You can't
+  undo this.", with "Delete draft" and "Keep it". "Keep it" brings the
+  row back, with focus on it. Deleting leads to Offer.
+- **Why publishing did nothing** stands over Publish, in the bar; what
+  the server asks to be fixed is listed at the top of the step, as
+  before.
+- **"Your ride is published"** (3.19) keeps its centred title, which
+  takes focus, and has no puffin: it had none, and the puffins' car
+  driving off belongs to "You're booked". The ride is the ticket My
+  rides has for it, which opens the ride. The share panel stays (spec
+  28). "See my rides" is the main button, in the bar; "See your ride",
+  the ride as others see it, stays a link. The address says so only
+  for a ride that is published and has not left, which is also when it
+  can be shared (R28.4): a draft's opens the step where it was left,
+  and the address of a ride that is cancelled, has left or is done
+  opens that ride's page. The ride is read again each time the screen
+  comes back into view, as its ticket leads to where the ride is
+  changed and cancelled: the ticket and the text to post have the time
+  the ride has now.
 
 ### 3.12 The driver's ride
 
@@ -917,7 +1011,8 @@ A web journey checks each of the last two in the browser: no link of Edit
 trip reaches past its part at 360 wide, and no picture starts under the
 top of the text beside it. (Since PR 8b Edit trip is a card of rows,
 3.19, and the journey checks that no words of a row reach past the card
-at 360 wide; the last step of posting keeps the links.)
+at 360 wide. Since PR 9 the last step of posting is a card of rows too,
+3.11, looked at 360 and 320 wide in Icelandic.)
 
 Pictures: Edit trip
 [before](images/one-ride-one-ticket/defects/edit-trip-before.webp) and
@@ -967,6 +1062,8 @@ and on a laptop
 - "You're booked" and "Request sent" show the ride as the ticket My rides
   has for it, under the line about the day and time, with "Seat confirmed"
   or "Waiting for Jón's answer" in its foot. It opens the booking.
+- "Your ride is published" shows the ride the same way, as the ticket My
+  rides has for a ride you drive, which opens the ride (3.11, as built).
 
 As built, the screens around a booking: cancelling it on a phone
 ([light](images/one-ride-one-ticket/built/cancel-phone-light.webp),
@@ -1045,8 +1142,9 @@ and
   Time ("Sunday 15 November at 09:00"); Stops, each stop on a line with
   its time, which only shows and opens nothing, with the rows "Add a
   stop" and "Remove a stop" under it (the second only where a stop
-  stands between the ends, R6.5); Price ("100% · the whole route 4,500
-  ISK"); Seats; Car; How people book, with the sign the ride's ticket has
+  stands between the ends, R6.5); Price ("4,500 ISK the whole way · 100%",
+  kronur first since PR 9; it was "100% · the whole route 4,500 ISK");
+  Seats; Car; How people book, with the sign the ride's ticket has
   for it; and Preferences and note: the preferences in one line, as a
   passenger reads them on the ride ("Some chat, one suitcase, ask about
   pets, no smoking, no child seat"), then the note or "No note". A value

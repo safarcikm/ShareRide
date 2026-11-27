@@ -282,7 +282,8 @@ Find replaces both the front page and My profile as the place the app opens.
    Mjódd → N1 Selfoss", which opens it at the step where you left off. With
    more than one, the newest shows, with "See all drafts". The API keeps no
    step, so a draft with no departure time opens at step 2 and any other at
-   step 5, where every step has Edit. If the drafts cannot be loaded, the
+   step 5, where every step has Edit (a row with Change since spec 31,
+   3.11). If the drafts cannot be loaded, the
    form opens without the card. Since
    [spec 31](2026-11-26-one-ride-one-ticket.md) (3.11, item 6) every
    draft is a row in one card there, under the heading "Drafts", the one
@@ -300,7 +301,12 @@ Find replaces both the front page and My profile as the place the app opens.
    publish" (or one): Your car, with Add a car, and Driving licence, with
    Confirm. Until both are done, Publish trip waits, and the text under it
    says why: "Add your car and confirm your licence to publish. Your trip is
-   saved as a draft until then."
+   saved as a draft until then." Since
+   [spec 31](2026-11-26-one-ride-one-ticket.md) (3.11, item 4) what is
+   missing is one yellow card under the ride's rows, in place of the list
+   with a box to tick for each: its title counts as before, its line says
+   what is done and what is left ("Photo and car are done. Your driving
+   licence is left."), and it has one button, for the next of them.
 5. Once profile photos exist ([plan](../plans/2026-11-22-profile-photos.md)),
    Profile photo, with Add a photo, joins Your car and Driving licence while
    photo storage is on.
