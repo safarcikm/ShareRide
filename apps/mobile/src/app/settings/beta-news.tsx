@@ -9,7 +9,7 @@ import { Card } from "@/components/card";
 import { Notice } from "@/components/notice";
 import { Screen } from "@/components/screen";
 import { ScreenHead } from "@/components/screen-head";
-import { Body } from "@/components/text";
+import { Body, sectionLevel } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { useLoadedOnFocus } from "@/lib/use-loaded";
 import { BackToMenu } from "@/navigation/back-to-menu";
@@ -72,6 +72,7 @@ function BetaNews() {
             <View style={styles.item}>
               <Text
                 accessibilityRole="header"
+                {...sectionLevel}
                 style={[typography.bodyStrong, { color: palette.text }]}
               >
                 {locale === "is" ? item.titleIs : item.titleEn}

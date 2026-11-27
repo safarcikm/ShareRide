@@ -1381,16 +1381,18 @@ As built, PR 11b (spec 31 says the same where a person sees it, in 3.19):
   `ProfileForm`. What the card says of me is `myCardOf(me, t, locale)`
   (`profile/my-card.ts`, new), which Profile and the photo's page use
   too.
-- **Heads:** `ScreenHead` in place of `BackButton`, `Title` and a centred
-  `Body` on `drive/cars/index.tsx`, `drive/cars/new.tsx`,
+- **Heads:** `ScreenHead` in place of `BackButton` and `Title`, with the
+  help that was a `Body` under them (centred on most) as its `line`, on
+  `drive/cars/index.tsx`, `drive/cars/new.tsx`,
   `drive/cars/[id].tsx`, `drive/licence.tsx`, `drive/photo.tsx`,
   `notices.tsx`, `feedback.tsx`, `settings/beta-news.tsx`,
   `settings/blocked.tsx`, `settings/email.tsx`, `settings/feedback.tsx`,
   `settings/password.tsx`, `settings/reports.tsx`,
   `settings/sign-in-methods.tsx`, the four of `settings/privacy/` and
-  `account/deletion.tsx`. The help is the head's `line`; a `Body` that
-  says a list is empty is `align="start"`, and so is the help of
-  `SignOutEverywhere`.
+  `account/deletion.tsx`. The cars' pages and the password's have no
+  help, and deleting keeps what it explains as a `Body` under the head.
+  A `Body` that says a list is empty is `align="start"`, and so is the
+  help of `SignOutEverywhere`.
 - **More than the head:** `settings/privacy/index.tsx` is an `ActionRows`
   of four link rows with icons, "Delete my account" with `danger` and
   last. `settings/privacy/delete.tsx` has its button as
@@ -1398,13 +1400,19 @@ As built, PR 11b (spec 31 says the same where a person sees it, in 3.19):
   that confirms; `Deleted` is a `ScreenHead` with an `outcome` (`of:
   "deleted"`) and "Close" as the `main` button in the `Screen`'s
   `footer`. `Thanks` on `feedback.tsx` and on `settings/privacy/ask.tsx`
-  are a `ScreenHead` with an `outcome` (`of: "sent"`) and one `main`
-  button in the `footer`; "My feedback" is a `Row`. `RemoveCar` on
-  `drive/cars/[id].tsx` is a `danger` `Row` in its own `ActionRows`.
-  `drive/photo.tsx` has the `PersonCard` in place of an `Avatar`.
+  are a `ScreenHead` whose title is the thanks, with an `outcome` (`of:
+  "sent"`), and one `main` button in the `footer`; "My feedback" is a
+  `Row`. `RemoveCar` on `drive/cars/[id].tsx` is a `danger` `Row` in its
+  own `ActionRows`; its question and, after "Keep it", the row are each
+  in a `TakesFocus`, keyed apart. `drive/photo.tsx` has the `PersonCard`
+  in place of an `Avatar`. `PhotoControls` lost its `align`: all three
+  places have it at the start. A notice's title (`safety/notices.tsx`)
+  and a piece of news's (`settings/beta-news.tsx`) take `sectionLevel`.
 - **No new page,** so nothing new in `notWhileDeleting`. No change in
   the API, no migration, no new dependency.
-- **Texts:** new, `people.title` ("Profile", "Prófíll").
+- **Texts:** new, `people.title` ("Profile", "Prófíll"), and
+  `feedback.thanksHelp`, the second half of `feedback.thanks`, which is
+  now the title.
 - **For the tests:** `findPersonCard(firstName)` in `testing/people.ts`
   waits for the person's card that holds a name, as the name is no
   heading any more.
@@ -1415,18 +1423,27 @@ As built, PR 11b (spec 31 says the same where a person sees it, in 3.19):
   `profile-safety.test.tsx` (the three rows as links of the last card,
   Block red and last; none on my own profile or the preview),
   `profile-and-settings.test.tsx` (Edit profile's head and card),
-  `page-heads.test.tsx`, new (eighteen pages: the title in the head and
-  not centred, Back in the head, the help as the head's line, no centred
-  text outside a button, at most one filled button; and the photo's page
-  with the person's card over its one main button), `driving.test.tsx`
-  ("Remove car" a red row, last), `feedback.test.tsx` and
-  `ask-about-my-data.test.tsx` (the thanks in the head, one main button,
-  "My feedback" a row), `delete-account.test.tsx` (Privacy's rows with
-  deleting red and last, the red buttons, the outcome as the head, the
-  waiting page's head) and `privacy.test.tsx`. Journeys:
-  `reviews.spec.ts`, `ask-about-my-data.spec.ts`,
-  `delete-account.spec.ts` and `download-my-data.spec.ts` press rows
-  where they pressed buttons; `look.spec.ts` has a person's profile 360
+  `profile-photo.test.tsx` (a photo added and removed in Edit profile's
+  card, with what is being written kept), `page-heads.test.tsx`, new
+  (eighteen pages: the title in the head and not centred, the help as
+  the head's line, what an empty list says, no centred text outside a
+  button, at most one filled button, and Back leading up; and the
+  photo's page with the person's card over its one main button),
+  `driving.test.tsx` ("Remove car" a red row, last; focus on its
+  question and back on the row; the head when the car is gone),
+  `feedback.test.tsx` and `ask-about-my-data.test.tsx` (the thanks as
+  the title with focus, the one main button in the bar, "My feedback" a
+  row), `delete-account.test.tsx` (Privacy's rows with deleting red and
+  last, the red buttons, the outcome as the head with focus and "Close"
+  in the bar, the waiting page's head) and `privacy.test.tsx`. Journeys:
+  `ask-about-my-data.spec.ts`, `delete-account.spec.ts` and
+  `download-my-data.spec.ts` press Privacy's rows as links;
+  `reviews.spec.ts` waits for the title "Profile" and the name in the
+  card; `feedback.spec.ts` and `ask-about-my-data.spec.ts` find the
+  thanks as the heading that has focus and the button in the bar;
+  `driving.spec.ts` asks to remove a car and keeps it, following focus;
+  `suspension.spec.ts` finds one first-level heading on Notices;
+  `look.spec.ts` has a person's profile 360
   wide in Icelandic with a long name, as set and twice as large (the
   head, the card and the two cards of rows whole, Block last, the counts
   unfolded whole), on a person the journey makes up
@@ -1596,8 +1613,25 @@ As built, PR 11b (spec 31 says the same where a person sees it, in 3.19):
     button that confirms removing a car is outlined, as a filled red one
     would be the page's second filled button beside "Save"; and outside
     its card "Sign out on all devices" is centred over help that starts
-    at the left. Icelandic, for a native reader: "Prófíll" as the title
-    of a person's profile.
+    at the left. Found by PR 11b's review and left: main buttons in the
+    column and not in the bar ("Delete my account", which has no `main`;
+    "Add a car" while there is none; "Add email" on
+    `settings/privacy/ask.tsx` and `settings/password.tsx`; "Done" after
+    a saved password; the photo page's `main` button, which
+    `PhotoControls` renders, with "Take a photo" and "Remove photo"
+    under it in the phone apps); `ConfirmWithCode` is a column of three
+    buttons, on deleting, a new file, the email and the password; two
+    filled buttons can show on `settings/privacy/download.tsx` ("Download
+    the file" while "Make my file" is confirmed) and on Notices (each
+    `Appeal` opens by itself); what must be settled before deleting
+    (`settings/privacy/delete.tsx`) is a plain `Card` of rows with no
+    pictures; on a person's profile the name looks like a heading and is
+    plain text, so a screen reader's list of headings has "Profile" and
+    "Reviews" only; "My feedback" after the thanks is a button that
+    navigates; no journey presses the rules, Report or Block on a
+    profile; the two small lines of the person's card are built alike
+    in `profile/my-card.ts` and `people/profile-view.tsx`. Icelandic,
+    for a native reader: "Prófíll" as the title of a person's profile.
 16. **Docs:** spec 31 becomes Built, with what differs from the drawings;
     spec 15 has the parts; the roadmap and the changelog.
 

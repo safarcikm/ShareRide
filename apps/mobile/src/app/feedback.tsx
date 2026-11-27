@@ -33,8 +33,8 @@ const osVersion = platform === "web" ? "" : String(Platform.Version);
  * before sending and can remove. The app's version, the platform, the
  * screen's name and the language go with it, and nothing else (R12.5).
  * The title is at the left with what to write under it; once sent, the
- * head says thanks, with Done as the one main button and My feedback as a
- * row (spec 31, 3.19).
+ * thanks are the title, with focus, Done is the one main button and My
+ * feedback is a row (spec 31, 3.19).
  */
 export default function FeedbackScreen() {
   const me = useMe();
@@ -192,8 +192,8 @@ function Thanks() {
     >
       {/* The button pressed is gone: focus moves to what it did. */}
       <ScreenHead
-        title={t("feedback.title")}
-        line={t("feedback.thanks")}
+        title={t("feedback.thanks")}
+        line={t("feedback.thanksHelp")}
         back={null}
         outcome={{ of: "sent", focus: true }}
       />

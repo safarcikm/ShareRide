@@ -42,7 +42,8 @@ Amended by spec 31 (3.19) as well: "As others see you" has its title at
 the left with "This is your public profile. Your phone number is never
 part of it." as the line under it, and under them the person's card as on
 Profile; it has no second heading with the name (3.4, item 1). The
-photo's page shows the same card over the photo's controls (3.6, item 5).
+photo's page shows my picture and name in such a card, without the
+rating, over the photo's controls (3.6, item 5).
 
 ## 1. Problem and goal
 

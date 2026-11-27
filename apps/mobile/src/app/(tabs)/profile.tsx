@@ -167,7 +167,7 @@ function MyProfile({ me }: { readonly me: Me }) {
     >
       {/* Each is as high as a finger needs, so nothing more is between them. */}
       <View>
-        <PhotoControls me={me} align="start" />
+        <PhotoControls me={me} />
         <TextLink label={t("profile.preview")} href="/profile/preview" align="start" />
       </View>
     </PersonCard>

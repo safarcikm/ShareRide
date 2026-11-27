@@ -1425,15 +1425,18 @@ The person in them is made up by the journey that takes them.
 - **These three stay one column on a laptop** (spec 18, 3.15), no wider
   than a text reads well.
 - **The head is at the left on the pages Profile opens**, with Back, and
-  the line of help that stood centred under the title is the head's line:
-  My cars, a car and "Add a car"; the driving licence ("Your driving
-  licence"); the photo ("Your profile photo"); Email ("Your email");
+  the help under the title is the head's line, at the left; on most of
+  these pages it stood centred. They are My cars, a car and "Add a car";
+  the driving licence ("Your driving licence"); the photo ("Your profile
+  photo"); Email ("Your email");
   "Choose a password"; Sign-in methods; Beta news; Blocked people; My
   reports; Notices; Send feedback and My feedback; Privacy, "Download my
   data", "Ask about my data" and "Delete my account". What a page says
   when it holds nothing yet ("You haven't blocked anyone.") starts at
   the left too. Sign-in methods is spec 29's and took only the head; its
-  "Sign out on all devices" has its help at the left.
+  "Sign out on all devices" has its help at the left. On Notices and Beta
+  news the title of a notice or of a piece of news is a heading under the
+  page's title on the web; it was a second first-level heading.
 - **Privacy** is a card of rows, each with its picture: "Download my
   data", "Ask about my data", "Privacy Policy" and, red and last, "Delete
   my account" (R31.3). The rows had no pictures, and deleting was the
@@ -1441,7 +1444,7 @@ The person in them is made up by the journey that takes them.
 - **Deleting the account:** the button that asks for it, "Delete my
   account", is red, and so is the one that confirms it with the code: it
   takes the account away (decision 17). Once it is done the outcome is
-  the head, with focus: "Your account will be deleted on 27 December." as
+  the head, with focus: "Your account will be deleted on 4 December." as
   the title, "You're signed out on every device. …" as its line, and
   "Close" as the one main button, in the bar. The page an account that
   waits to be deleted lands on has the same title at the left, with what
@@ -1449,15 +1452,21 @@ The person in them is made up by the journey that takes them.
   out", are as they were.
 - **A car:** "Remove car" is a red row in a card of its own, the last
   thing on the page (R31.3), in the place of a loose link. It asks first,
-  naming the car, as before.
+  naming the car, as before; the question now takes focus where the row
+  stood, and "Keep it" gives focus back to the row.
 - **The photo's page** shows the person's card over the photo's controls,
-  in the place of the picture alone, centred: a driver sees the card
-  others will see. "Add a photo" stays the page's one main button.
+  in the place of the picture alone, centred: the picture, or the letter
+  that stands in for it, with the name and the two small lines, as
+  Profile's card has them, without the rating. "Add a photo" stays the
+  page's one main button.
 - **After sending feedback or a question about my data** the thanks are
-  the head's line, with focus, under the page's title, and the way on is
-  the one main button, in the bar: "Done", or "Back to Privacy". "My
-  feedback" is a row under the head. The title and the thanks were
-  centred, with the buttons under them in the column.
+  the page's title, at the left and with focus, as after a report (above):
+  "Thank you. We got your feedback." with "If we reply, you'll see it
+  under My feedback in Profile." as its line, and "Thank you. We'll answer
+  by email within a month." The way on is the one main button, in the
+  bar: "Done", or "Back to Privacy". "My feedback" is a row under the
+  head. The page kept its title, and the thanks stood centred under it
+  with the buttons in the column.
 
 Where this differs from the table: Report is not red, as above. The
 pages took more than the head where a rule asked for it: rows in place
@@ -1469,11 +1478,19 @@ the head with one main button after something was sent or deleted
 Left as they are, for the last pass (plan, PR 12): the page an email's
 link opens (`/verify-email`), whose titles stay centred; the list on My
 cars, a card of names with no pictures; Blocked people's list with an
-outlined "Unblock" on each; "Save" on Edit profile and on the forms of a
-car, the licence, the email and the password, at the end of the form
-and not in the bar; the two buttons of the page an account that waits to
-be deleted lands on; and the button that confirms removing a car, which
-is outlined.
+outlined "Unblock" on each; and the button that confirms removing a car,
+which is outlined. Main buttons that stand in the column and not in the
+bar: "Save" on Edit profile and on the forms of a car, the licence, the
+email and the password; "Delete my account"; "Add a car" while there is
+none; "Add email" where a page asks for one first; "Done" after a
+password is saved; "Add a photo" on the photo's page, with "Take a
+photo" and "Remove photo" under it in the phone apps; and the two
+buttons of the page an account that waits to be deleted lands on.
+Confirming with a code (deleting, a new file of my data, the email, the
+password) is a column of three buttons. Two filled buttons can show at
+once on "Download my data" (a file to download while a new one is
+confirmed) and on Notices (two appeals open). What must be settled
+before deleting is a card of rows with no pictures.
 
 My rides came with PR 8c (3.10).
 
@@ -1690,6 +1707,7 @@ Texts added while building, as they are in the app:
 | The button in the person's card on Profile, named "Edit profile" | Edit | Breyta |
 | Where the page an email's link opens leads on, signed in, whether or not the email was added | Go to your profile | Fara í prófílinn þinn |
 | The title of a person's profile | Profile | Prófíll |
+| After sending feedback, the title and its line (one text until now) | Thank you. We got your feedback.; If we reply, you'll see it under My feedback in Profile. | Takk fyrir. Við fengum ábendinguna þína.; Ef við svörum sérðu svarið undir Ábendingarnar mínar í Prófílnum. |
 
 Texts that named Settings name the place on Profile since 3.14 was built:
 in the app, in three emails and in the console. Only the part that

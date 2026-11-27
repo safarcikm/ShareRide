@@ -1,4 +1,5 @@
 import { fireEvent, screen, within } from "expo-router/testing-library";
+import { AccessibilityInfo } from "react-native";
 import type { Me } from "@shareride/contracts";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
@@ -73,20 +74,30 @@ describe("Ask about my data (spec 11, 3.6)", () => {
     expect(await screen.findByRole("header", { name: "Privacy" })).toBeVisible();
   });
 
-  it("says thanks in the head, at the left, with the way back as the one main button (spec 31, 3.19)", async () => {
+  it("says thanks as the title, at the left and with focus, with the way back as the one main button in the bar (spec 31, 3.19)", async () => {
+    const focus = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
     await openAsk();
     await fireEvent.press(screen.getByRole("radio", { name: /^Ask a question/ }));
     await write("Why do you keep my old rides?");
+    focus.mockClear();
     await fireEvent.press(screen.getByRole("button", { name: "Send" }));
-    const thanks = await screen.findByText("Thank you. We'll answer by email within a month.");
-    const head = within(screen.getByTestId("screen-head"));
-    expect(head.getByRole("header", { name: "Ask about my data" })).not.toHaveStyle({
-      textAlign: "center",
+    // The outcome is the title; focus takes it, as the button pressed is gone.
+    const head = within(await screen.findByTestId("screen-head"));
+    const thanks = await head.findByRole("header", {
+      name: "Thank you. We'll answer by email within a month.",
     });
-    expect(head.getByText("Thank you. We'll answer by email within a month.")).toBe(thanks);
     expect(thanks).not.toHaveStyle({ textAlign: "center" });
+    expect(screen.queryByRole("header", { name: "Ask about my data" })).toBeNull();
+    expect(focus).toHaveBeenCalledTimes(1);
+    focus.mockRestore();
     expect(head.queryByRole("button", { name: "Back" })).toBeNull();
+    // The way back is the one thing left to do: the main button, in the bar.
+    const back = within(screen.getByTestId("bottom-bar")).getByRole("button", {
+      name: "Back to Privacy",
+    });
+    expect(back).toHaveStyle({ minHeight: 56 });
     expect(filledButtons()).toBe(1);
+    expect(screen.getByTestId("filled-button")).toBe(back);
   });
 
   it("offers each kind with what it means", async () => {

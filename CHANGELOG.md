@@ -1852,10 +1852,12 @@ releases follow [Semantic Versioning](https://semver.org/).
   of Privacy have Back and their title at the left, with their help as
   the line under it. Privacy is a card of rows with pictures, "Delete my
   account" red and last, and the buttons that delete the account are
-  red. "Remove car" is a red row, last on a car's page. After sending
-  feedback, a question about your data or deleting the account, what
-  happened is the title's line and the way on is the one main button at
-  the bottom.
+  red. "Remove car" is a red row, last on a car's page, and its question
+  takes focus. After sending feedback, a question about your data or
+  deleting the account, what happened is the page's title, with focus,
+  and the way on is the one main button at the bottom. On Notices and
+  Beta news the title of a notice or a piece of news is a heading under
+  the page's title on the web.
 - The web journeys never give two test accounts the same phone number: a
   run in ten did, and a sign-in journey then failed.
 - CI skips its code jobs (bundles, unit, integration and web tests, the API

@@ -15,24 +15,24 @@ import { choosePhoto, type ChosenPhoto, type PhotoSource } from "./photo-picker"
 type Busy = PhotoSource | "remove" | null;
 
 /**
- * Adding, changing and removing my profile photo, under my avatar on
- * Profile and before publishing a trip (spec 1, 3.5): from my photos, or
- * the camera on a phone. While ShareRide hides it (spec 9, 3.4.3) only I
- * see it, with a note why.
+ * Adding, changing and removing my profile photo (spec 1, 3.5): from my
+ * photos, or the camera on a phone. They stand in the person's card on
+ * Profile and on Edit profile, and under it on the page that asks for a
+ * photo before a ride is published, where adding one is the main button
+ * (spec 31, 3.14 and 3.19). They start at the left, as everything around
+ * them does. While PuffinRide hides the photo (spec 9, 3.4.3) only I see
+ * it, with a note why.
  */
 export function PhotoControls({
   me,
   onAdded,
   prominent = false,
-  align = "center",
 }: {
   readonly me: Me;
   /** After a photo is added or changed, in place of saying so here. */
   readonly onAdded?: () => void;
-  /** Adding a photo is the screen's main action, not a link under the avatar. */
+  /** Adding a photo is the screen's main action, not a link in the card. */
   readonly prominent?: boolean;
-  /** At the left in the person's card on Profile, where everything starts there. */
-  readonly align?: "center" | "start";
 }) {
   const { t } = useLanguage();
   const palette = usePalette();
@@ -114,9 +114,7 @@ export function PhotoControls({
       {me.photo?.hidden === true ? (
         <Notice kind="info" urgent={false} message={t("profile.photo.hidden")} />
       ) : null}
-      <View
-        style={prominent ? styles.stacked : [styles.buttons, align === "start" && styles.start]}
-      >
+      <View style={prominent ? styles.stacked : styles.buttons}>
         <Button
           main={prominent}
           variant={prominent ? "primary" : "text"}
@@ -151,13 +149,7 @@ export function PhotoControls({
         ) : null}
       </View>
       {hasPhoto ? null : (
-        <Text
-          style={[
-            typography.small,
-            align === "center" && styles.centre,
-            { color: palette.textMuted },
-          ]}
-        >
+        <Text style={[typography.small, { color: palette.textMuted }]}>
           {t("profile.photo.help")}
         </Text>
       )}
@@ -169,14 +161,13 @@ export function PhotoControls({
 
 const styles = StyleSheet.create({
   controls: { gap: spacing.xs, alignItems: "stretch" },
+  // The first button's words start where the card's other lines do.
   buttons: {
     flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "center",
+    justifyContent: "flex-start",
     columnGap: spacing.md,
+    marginLeft: -spacing.sm,
   },
-  // The first button's words start where the card's other lines do.
-  start: { justifyContent: "flex-start", marginLeft: -spacing.sm },
   stacked: { gap: spacing.sm },
-  centre: { textAlign: "center" },
 });

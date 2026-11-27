@@ -44,8 +44,8 @@ phone number shows under Account, and `/settings` leads to Profile (3.7,
 Amended by spec 31 (3.19) too: a person's profile has the title "Profile"
 at the left with Back, and the name is in the person's card, with the
 rating, what is checked and what they wrote about themselves (3.5). Edit
-profile has the same card, with the photo's controls in it, over its form
-(screen 6).
+profile has my picture, name, languages and member since in such a card,
+with the photo's controls in it, over its form (screen 6).
 
 ## 1. Problem and goal
 

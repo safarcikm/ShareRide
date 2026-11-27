@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { english, menuLink, signUp } from "./support/account";
+import { focused } from "./support/trips";
 
 // Spec 3's first journey on the web build, against the test API: the car
 // and licence live under Profile (spec 16, 3.4), and step 5 of posting asks
@@ -37,6 +38,18 @@ test.describe("getting ready to drive on the web", () => {
     await expect(page.getByRole("radio", { name: "White" })).toBeChecked();
     await page.getByLabel("Number plate", { exact: true }).fill("test-0001");
     await page.getByRole("button", { name: "Save car" }).click();
+    await expect(car).toContainText("TEST0001");
+
+    // Removing asks first, where the red row stood, and the question has
+    // focus; keeping the car gives focus back to the row (spec 31, 3.19).
+    await car.click();
+    await page.getByRole("button", { name: "Remove car" }).click();
+    await expect
+      .poll(() => focused(page))
+      .toContain("Remove Toyota Yaris? It stays on your past rides.");
+    await page.getByRole("button", { name: "Keep it" }).click();
+    await expect.poll(() => focused(page)).toContain("Remove car");
+    await page.getByRole("button", { name: "Back", exact: true }).click();
     await expect(car).toContainText("TEST0001");
 
     await page.getByRole("button", { name: "Back", exact: true }).click();

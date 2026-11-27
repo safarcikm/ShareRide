@@ -970,7 +970,7 @@ test.describe("A person's profile with a long name, 360 wide", () => {
       }
       // The picture stands with the name, not at the middle of the lines.
       expect((await picturesUnderTheirText(page)).under).toEqual([]);
-      // Block is the last thing on the page: nothing stands under its card.
+      // Block is the last row of the page's last card.
       const last = await box(rows.nth(1));
       const blockRow = await box(block);
       expect(blockRow.y + blockRow.height).toBeGreaterThanOrEqual(last.y + last.height - 2);

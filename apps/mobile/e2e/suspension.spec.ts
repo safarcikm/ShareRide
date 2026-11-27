@@ -31,6 +31,13 @@ test("a suspended person reads why and appeals", async ({ page }) => {
   await expect(
     page.getByText("Your account is suspended with no end date").filter(visible),
   ).toBeVisible();
+  // The page has one title; a notice's own title is a heading under it.
+  await expect(page.getByRole("heading", { level: 1 }).filter(visible)).toHaveText(["Notices"]);
+  await expect(
+    page
+      .getByRole("heading", { level: 2, name: /^Your account is suspended with no end date/ })
+      .filter(visible),
+  ).toBeVisible();
   await expect(page.getByText("Rule: Harassment").filter(visible)).toBeVisible();
   await expect(page.getByText(`Reason: ${reason}`).filter(visible)).toBeVisible();
 

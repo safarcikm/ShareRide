@@ -16,9 +16,9 @@ feedback, the switch for shaking the phone and My feedback are rows of
 Profile, under Help, where they were on Profile and in Settings (3.3).
 
 Amended by spec 31 (3.19) too: Send feedback and My feedback have Back
-and their title at the left. After sending, the thanks are the line under
-the title, "Done" is the one main button, at the bottom, and "My
-feedback" is a row (3.3).
+and their title at the left. After sending, the thanks are the page's
+title, with where an answer will show under it, "Done" is the one main
+button, at the bottom, and "My feedback" is a row (3.3).
 
 ## 1. Problem and goal
 
@@ -240,7 +240,8 @@ Events: `WaitlistJoined`, `WaitlistConfirmed`, `InviteSent`, `InviteUsed`,
 | `feedback.placeholder` | What happened, or what could be better? | Hvað gerðist, eða hvað mætti betur fara? |
 | `feedback.screenshot` | Include a screenshot of this screen | Láta skjámynd af þessum skjá fylgja |
 | `feedback.screenshotCheck` | Check that the screenshot shows nothing you don't want to share. | Gakktu úr skugga um að skjámyndin sýni ekkert sem þú vilt ekki deila. |
-| `feedback.thanks` | Thank you! We read every message. | Takk fyrir! Við lesum öll skilaboð. |
+| `feedback.thanks` (the title after sending, since spec 31) | Thank you. We got your feedback. | Takk fyrir. Við fengum ábendinguna þína. |
+| `feedback.thanksHelp` (under it) | If we reply, you'll see it under My feedback in Profile. | Ef við svörum sérðu svarið undir Ábendingarnar mínar í Prófílnum. |
 | `feedback.shake` | Shake to send feedback | Hrista símann til að senda ábendingu |
 
 ## 9. Testing

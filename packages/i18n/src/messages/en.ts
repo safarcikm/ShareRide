@@ -263,8 +263,8 @@ export const en = {
     "Sent with it: the app's version, your phone or browser type, the screen you were on and your language.",
   "feedback.send": "Send feedback",
   "feedback.tooMany": "You've sent a lot of feedback today. Try again in {wait}.",
-  "feedback.thanks":
-    "Thank you. We got your feedback. If we reply, you'll see it under My feedback in Profile.",
+  "feedback.thanks": "Thank you. We got your feedback.",
+  "feedback.thanksHelp": "If we reply, you'll see it under My feedback in Profile.",
   "feedback.done": "Done",
   "feedback.mine": "My feedback",
   "feedback.mineHelp": "What you sent us and our replies. Only you see this.",

@@ -25,7 +25,6 @@ export default function DriverPhotoScreen() {
       <PhotoControls
         me={me}
         prominent
-        align="start"
         onAdded={() => {
           backTo("/profile");
         }}

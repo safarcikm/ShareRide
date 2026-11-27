@@ -23,8 +23,9 @@ const textMaxLength = 2000;
  * Ask about my data (spec 11, 3.6; plan 4.8 and 4.9): what it is about and
  * the text, answered by email within a month (R11.7). The answer goes by
  * email, so someone without a verified one adds it first. The title is at
- * the left with what one can ask under it; once sent, the head says
- * thanks, with the way back as the one main button (spec 31, 3.19).
+ * the left with what one can ask under it; once sent, the thanks are the
+ * title, with focus, and the way back is the one main button (spec 31,
+ * 3.19).
  */
 export default function AskScreen() {
   const me = useMe();
@@ -169,8 +170,7 @@ function Thanks() {
     >
       {/* The button pressed is gone: focus moves to what it did. */}
       <ScreenHead
-        title={t("privacy.ask")}
-        line={t("privacy.askThanks")}
+        title={t("privacy.askThanks")}
         back={null}
         outcome={{ of: "sent", focus: true }}
       />

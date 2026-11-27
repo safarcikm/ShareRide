@@ -22,7 +22,7 @@ export default function EditProfileScreen() {
     <Screen>
       <ScreenHead title={t("profile.edit")} back="/profile" />
       <PersonCard {...myCardOf(me, t, locale)}>
-        <PhotoControls me={me} align="start" />
+        <PhotoControls me={me} />
       </PersonCard>
       <ProfileForm
         me={me}

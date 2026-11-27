@@ -12,6 +12,7 @@ import { Notice } from "@/components/notice";
 import { Row } from "@/components/row";
 import { Screen } from "@/components/screen";
 import { ScreenHead } from "@/components/screen-head";
+import { TakesFocus } from "@/components/takes-focus";
 import { Body } from "@/components/text";
 import { backTo } from "@/driving/back-to";
 import { CarForm } from "@/driving/car-form";
@@ -64,13 +65,17 @@ export default function EditCarScreen() {
 /**
  * Remove, after a confirmation that names the car: a red row, the last
  * thing on the page, as it takes something away (spec 31, R31.3 and
- * decision 17). The car stays on past trips; one on a trip that has not
- * ended cannot be removed.
+ * decision 17). The question stands where the row stood and takes focus,
+ * as the row pressed is gone; "Keep it" gives focus back to the row. The
+ * car stays on past trips; one on a trip that has not ended cannot be
+ * removed.
  */
 function RemoveCar({ car }: { readonly car: Vehicle }) {
   const { t } = useLanguage();
   const session = useSession();
   const [asking, setAsking] = useState(false);
+  // Whether the question was answered with "Keep it": the row then takes focus.
+  const [kept, setKept] = useState(false);
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
   const name = `${car.make} ${car.model}`;
@@ -88,39 +93,45 @@ function RemoveCar({ car }: { readonly car: Vehicle }) {
 
   if (!asking) {
     return (
-      <ActionRows>
-        <Row
-          danger
-          icon={Trash2}
-          title={t("vehicle.remove")}
-          onPress={() => {
-            setAsking(true);
-          }}
-        />
-      </ActionRows>
+      // Keyed apart from the question, so each takes focus as it appears.
+      <TakesFocus key="row" when={kept}>
+        <ActionRows>
+          <Row
+            danger
+            icon={Trash2}
+            title={t("vehicle.remove")}
+            onPress={() => {
+              setAsking(true);
+            }}
+          />
+        </ActionRows>
+      </TakesFocus>
     );
   }
   return (
-    <Card>
-      <Body align="start">{t("vehicle.removeConfirm", { car: name })}</Body>
-      <Notice message={failure} />
-      <View style={styles.choices}>
-        <Button
-          variant="secondary"
-          label={t("vehicle.removeNamed", { car: name })}
-          busy={busy}
-          onPress={() => void remove()}
-        />
-        <Button
-          variant="text"
-          label={t("vehicle.keep")}
-          onPress={() => {
-            setAsking(false);
-            setFailure(null);
-          }}
-        />
-      </View>
-    </Card>
+    <TakesFocus key="question">
+      <Card>
+        <Body align="start">{t("vehicle.removeConfirm", { car: name })}</Body>
+        <Notice message={failure} />
+        <View style={styles.choices}>
+          <Button
+            variant="secondary"
+            label={t("vehicle.removeNamed", { car: name })}
+            busy={busy}
+            onPress={() => void remove()}
+          />
+          <Button
+            variant="text"
+            label={t("vehicle.keep")}
+            onPress={() => {
+              setKept(true);
+              setAsking(false);
+              setFailure(null);
+            }}
+          />
+        </View>
+      </Card>
+    </TakesFocus>
   );
 }
 

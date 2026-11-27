@@ -1,4 +1,5 @@
 import { fireEvent, screen, within } from "expo-router/testing-library";
+import { AccessibilityInfo } from "react-native";
 import type { DriverReadiness, Vehicle } from "@shareride/contracts";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
 import { completeMe, renderApp } from "@/testing/app";
@@ -210,10 +211,19 @@ describe("Edit a car", () => {
   it("removes a car after naming it", async () => {
     const app = await openCars({ cars: [yaris] });
     await fireEvent.press(screen.getByRole("button", { name: /^Toyota Yaris, white/ }));
-    await fireEvent.press(await screen.findByRole("button", { name: "Remove car" }));
+    const focus = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
+    const remove = await screen.findByRole("button", { name: "Remove car" });
+    // Opening the page moved no focus.
+    expect(focus).not.toHaveBeenCalled();
+    await fireEvent.press(remove);
     expect(screen.getByText("Remove Toyota Yaris? It stays on your past rides.")).toBeVisible();
+    // The row pressed is gone: focus moves to the question in its place.
+    expect(focus).toHaveBeenCalledTimes(1);
     await fireEvent.press(screen.getByRole("button", { name: "Keep it" }));
-    expect(screen.queryByText(/It stays on your past trips/)).toBeNull();
+    expect(screen.queryByText(/It stays on your past rides/)).toBeNull();
+    // And back to the row, once the question is gone.
+    expect(focus).toHaveBeenCalledTimes(2);
+    focus.mockRestore();
 
     await fireEvent.press(screen.getByRole("button", { name: "Remove car" }));
     await fireEvent.press(screen.getByRole("button", { name: "Remove Toyota Yaris" }));
@@ -263,6 +273,11 @@ describe("Edit a car", () => {
     expect(
       await screen.findByText("We couldn't find this car. It may have been removed."),
     ).toBeVisible();
+    // The head stands also then, with the way back to My cars.
+    const head = within(screen.getByTestId("screen-head"));
+    expect(head.getByRole("header", { name: "Edit your car" })).toBeVisible();
+    await fireEvent.press(head.getByRole("button", { name: "Back" }));
+    expect(await screen.findByRole("header", { name: "My cars" })).toBeVisible();
   });
 });
 

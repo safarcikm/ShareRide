@@ -1,4 +1,5 @@
 import { fireEvent, screen, within } from "expo-router/testing-library";
+import { AccessibilityInfo } from "react-native";
 import type { DeletionCheck, Me } from "@shareride/contracts";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
 import { completeMe, renderApp } from "@/testing/app";
@@ -218,7 +219,8 @@ describe("Delete my account (spec 11, 3.4)", () => {
       ),
     ).toBeVisible();
     expect(callsTo(app, "/v1/me/confirm-code")).toEqual([]);
-    // It takes the account away: the one main button is red (decision 17).
+    // It takes the account away: the page's one filled button is red
+    // (decision 17).
     const red = { backgroundColor: colors.light.error };
     const start = screen.getByRole("button", { name: "Delete my account" });
     expect(within(start).getByTestId("button-face")).toHaveStyle(red);
@@ -232,6 +234,7 @@ describe("Delete my account (spec 11, 3.4)", () => {
     const confirm = await screen.findByRole("button", { name: "Delete my account" });
     expect(within(confirm).getByTestId("button-face")).toHaveStyle(red);
     expect(filledButtons()).toBe(1);
+    const focus = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
     await fireEvent.changeText(await screen.findByLabelText("6-digit code"), "123456");
 
     expect(
@@ -242,6 +245,9 @@ describe("Delete my account (spec 11, 3.4)", () => {
         "You're signed out on every device. If you change your mind, sign in before then and keep your account.",
       ),
     ).toBeVisible();
+    // The field and its button are gone: focus moves to what happened.
+    expect(focus).toHaveBeenCalledTimes(1);
+    focus.mockRestore();
     expect(callsTo(app, "/v1/me/delete").map((call) => call.input["body"])).toEqual([
       { code: "123456" },
     ]);
@@ -256,9 +262,13 @@ describe("Delete my account (spec 11, 3.4)", () => {
       textAlign: "center",
     });
     expect(head.queryByRole("button", { name: "Back" })).toBeNull();
+    // The way on is the one main button, in the bar.
+    const close = within(screen.getByTestId("bottom-bar")).getByRole("button", { name: "Close" });
+    expect(close).toHaveStyle({ minHeight: 56 });
     expect(filledButtons()).toBe(1);
+    expect(screen.getByTestId("filled-button")).toBe(close);
 
-    await fireEvent.press(screen.getByRole("button", { name: "Close" }));
+    await fireEvent.press(close);
     expect(await screen.findByRole("tab", { name: "Find" })).toBeVisible();
     expect(screen).toHavePathname("/");
   });

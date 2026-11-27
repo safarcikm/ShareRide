@@ -29,7 +29,8 @@ test("deletes an account after cancelling its booking, then keeps it on signing 
   await expect(
     dora.getByText("Before you can delete your account, these need to be settled:"),
   ).toBeVisible();
-  // The Privacy page's row is a link, and stays in the page behind this screen.
+  // Nothing to delete with while something is open. (The Privacy page's
+  // row of that name is a link.)
   const remove = dora.getByRole("button", { name: "Delete my account" }).filter(visible);
   await expect(remove).toHaveCount(0);
 

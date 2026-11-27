@@ -19,8 +19,8 @@ this order: Download my data, Ask about my data, the Privacy Policy and,
 red and last, Delete my account (3.1). The button that asks to delete the
 account and the one that confirms it with the code are red; once it is
 done, the date is the page's title, with "Close" as its one main button
-(3.4). After a question is sent, the thanks are the line under the title
-(3.6).
+(3.4). After a question is sent, the thanks are the page's title, with
+"Back to Privacy" as its one main button (3.6).
 
 ## 1. Problem and goal
 
