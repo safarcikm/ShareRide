@@ -129,23 +129,32 @@ from a workflow button.
 `store-builds.test.ts`), `.github/workflows/build-apps.yml` (new),
 `docs/operations/app-builds.md`.
 
-- [ ] Tests first: `production` builds for the store with
+- [x] Tests first: `production` builds for the store with
   `EXPO_PUBLIC_API_URL` `https://puffinride.is`, `EXPO_PUBLIC_APP_ENV`
   `production`, Expo's `production` environment and auto-incremented build
   numbers; `ios.bundleIdentifier` and `android.package` are
   `is.puffinride.app`; `version` `1.0.0`; `submit.production` sends iOS to
   TestFlight and Android to the `internal` track as a draft.
-- [ ] `preview` stays as the team's staging Android APK only; the
+- [ ] `submit.production.ios.ascAppId`, once Martin has made the app in App
+  Store Connect (runbook, setup step 5): EAS Submit needs it with an API
+  key.
+- [x] `preview` stays as the team's staging Android APK only; the
   `.preview` iPhone app ID goes.
-- [ ] Over-the-air updates: `expo-updates` (`npx expo install`), channels
+- [x] Over-the-air updates: `expo-updates` (`npx expo install`), channels
   `production` and `preview`, `runtimeVersion` from the app version. The
-  update's URL comes with the expo.dev project ID.
-- [ ] `build-apps.yml`: a `workflow_dispatch` button with platform (both,
+  update's URL comes with the expo.dev project ID. Version 58.0.22, as
+  58.0.23 was a day old and pnpm waits for a release to age.
+- [x] `build-apps.yml`: a `workflow_dispatch` button with platform (both,
   Android, iPhone) and profile; it needs the phone journeys green on the
   same commit (R32.3), then runs `eas build --non-interactive --no-wait
-  --auto-submit` with `EXPO_TOKEN` from the repository's secrets.
-- [ ] The runbook: Martin's steps of spec 32, section 11, with links, in
-  place of the preview-only setup.
+  --auto-submit` with `EXPO_TOKEN` from the repository's secrets. The
+  journeys run first in the same run (`phone-apps.yml` as a called
+  workflow), as a squash merge makes a commit on `main` no pull request
+  ran; production builds come from `main` only.
+- [x] The runbook: Martin's steps of spec 32, section 11, with links, in
+  place of the preview-only setup. Apple's certificate needs one run of
+  `eas credentials` on the PC: EAS makes it only while someone is signed
+  in to Apple, never in a `--non-interactive` build.
 
 ## PR 5: "Update PuffinRide" (`feat(app-version)`)
 

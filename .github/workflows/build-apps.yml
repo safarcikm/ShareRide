@@ -1,0 +1,106 @@
+name: Build the apps
+
+# The phone apps for the stores, built in Expo's cloud (EAS Build, spec 32,
+# 3.7). Run it from the Actions tab, "Build the apps", "Run workflow", on
+# main. The phone journeys run first on the same commit (R32.3); only when
+# both pass does Expo build. A production build goes to TestFlight and to
+# Google Play's internal testing as a draft (R32.2): sending it on to
+# testers or the public is Martin's go, in App Store Connect and the Play
+# Console. The runbook: docs/operations/app-builds.md.
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: "Which app"
+        type: choice
+        options: [both, android, iphone]
+        default: both
+      profile:
+        description: "production: the stores' test tracks, against puffinride.is. preview: the team's Android file, against staging."
+        type: choice
+        options: [production, preview]
+        default: production
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-apps
+  cancel-in-progress: false
+
+jobs:
+  check:
+    name: What to build
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      platform: ${{ steps.pick.outputs.platform }}
+    steps:
+      - name: Check the choice
+        id: pick
+        env:
+          PLATFORM: ${{ inputs.platform }}
+          PROFILE: ${{ inputs.profile }}
+          REF: ${{ github.ref }}
+        run: |
+          set -euo pipefail
+          if [ "$PROFILE" = production ] && [ "$REF" != refs/heads/main ]; then
+            echo "::error::Store builds come from main only, so they hold reviewed code."
+            exit 1
+          fi
+          case "$PLATFORM" in
+            both) platform=all ;;
+            iphone) platform=ios ;;
+            *) platform="$PLATFORM" ;;
+          esac
+          if [ "$PROFILE" = preview ] && [ "$platform" != android ]; then
+            echo "::error::The staging build is Android only: choose android, or production for the iPhone."
+            exit 1
+          fi
+          echo "platform=${platform}" >> "$GITHUB_OUTPUT"
+
+  journeys:
+    name: Phone journeys
+    needs: check
+    uses: ./.github/workflows/phone-apps.yml
+
+  build:
+    name: Build in Expo's cloud
+    needs: [check, journeys]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      # Expo reads the app's settings (app.config.ts) before it uploads.
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Start the builds
+        working-directory: apps/mobile
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          EXPO_NO_TELEMETRY: "1"
+          PLATFORM: ${{ needs.check.outputs.platform }}
+          PROFILE: ${{ inputs.profile }}
+        run: |
+          set -euo pipefail
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "::error::The EXPO_TOKEN secret is missing (runbook: Set it up)."
+            exit 1
+          fi
+          submit=()
+          if [ "$PROFILE" = production ]; then submit=(--auto-submit); fi
+          # Expo builds and sends on its own; this only starts it. The links
+          # to follow it are in the output and on expo.dev.
+          npx --yes eas-cli@27.11.0 build --platform "$PLATFORM" --profile "$PROFILE" \
+            --non-interactive --no-wait "${submit[@]}" | tee "$RUNNER_TEMP/eas.txt"
+          {
+            echo "### ${PROFILE} build started"
+            echo
+            grep -Eo 'https://expo\.dev/[^ ]+' "$RUNNER_TEMP/eas.txt" | sort -u | sed 's/^/- /' || true
+          } >> "$GITHUB_STEP_SUMMARY"
