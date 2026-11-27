@@ -2,8 +2,8 @@
 
 **Owner:** Martin · **Date:** 2026-11-27 · **Status:** Proposed
 (2026-11-27): Martin asked for animations and about the front page's
-banner; how the banner moves is his choice (section 12), the rest are
-working choices he can change
+banner, and chose how the banner moves (section 12, "Drive in, then hop");
+the rest are working choices he can change
 
 Amends: [spec 15, 4.6](2026-11-13-visual-design-system.md#46-motion)
 (motion: two drawings may move on their own, once and briefly, and touch
@@ -58,7 +58,7 @@ joy.
 
 | # | Where | What moves | How long | Why |
 | - | ----- | ---------- | -------- | --- |
-| A1 | The front page's banner (3.2) | The car drives in and stops; the puffins hop (Martin's choice, section 12) | About 1.9 s, once a visit | First look, joy |
+| A1 | The front page's banner (3.2) | The car drives in and stops; the puffins hop (Martin chose this, section 12) | About 1.9 s, once a visit | First look, joy |
 | A2 | Seat booked (3.3) | The car drives in with its speed lines, dips as it stops, the puffins hop; on a phone, a success tap | About 1.9 s | It worked |
 | A3 | Request sent (3.3) | The puffin in its frame rises into place; on a phone, a light tap | 300 ms | It was sent |
 | A4 | The road while offering a ride (3.4) | The car rolls from the last step to the new one; the moss line grows with it | 400 ms | Where you are |
@@ -76,7 +76,7 @@ puffins (spec 15, 5.3, decision 15). The words, the search and the rides
 around it are there and usable from the first frame; only the drawing
 moves.
 
-The recommended way, **"Drive in, then hop"** (A in section 12):
+**"Drive in, then hop"**, which Martin chose (A in section 12):
 
 1. **0 to 1.1 s:** the car drives in from the left and slows to a stop in
    its place, its body bobbing twice on the road.
@@ -98,7 +98,7 @@ The recommended way, **"Drive in, then hop"** (A in section 12):
 - **Dark mode:** the same, in the night scene.
 - **Reduce motion on:** the car is simply in its place (3.9).
 
-The other ways Martin can choose are in section 12. The
+The other ways Martin looked at are in section 12. The
 [moving preview](https://claude.ai/artifact/HMFn994Ev1s7TBfiw8FZKv)
 ([its source](images/small-animations/preview.html)) plays all four on a
 phone and the recommended one on a laptop, in light and dark, and shows
@@ -307,15 +307,17 @@ today.
 
 ## 11. Martin's steps
 
-1. Choose how the banner moves (section 12), after looking at the
-   [preview](https://claude.ai/artifact/HMFn994Ev1s7TBfiw8FZKv).
-2. Say whether the website's banner may go live before the phone apps'
-   release (3.11, step 1; recommended).
+1. ~~Choose how the banner moves~~ (done: "Drive in, then hop",
+   2026-11-27).
+2. Say when the website's banner may go live with a release (3.11, step 1).
 3. After the 1.1 build: try it on a phone, with Reduce Motion on and off.
 
 ## 12. Decision for Martin
 
-How the front page's banner moves:
+How the front page's banner moves. **Martin chose "Drive in, then hop"** on
+a decision card, 2026-11-27, after the
+[moving preview](https://claude.ai/artifact/HMFn994Ev1s7TBfiw8FZKv). The
+options were:
 
 | Option | What happens |
 | ------ | ------------ |
@@ -329,7 +331,7 @@ How the front page's banner moves:
 | # | Question | Answer |
 | - | -------- | ------ |
 | 1 | Animations at all? | Yes, a few (Martin, 2026-11-27) |
-| 2 | How does the banner move? | Open: section 12, A recommended |
+| 2 | How does the banner move? | "Drive in, then hop" (Martin, 2026-11-27, section 12) |
 | 3 | When? | Website banner first; the rest after the first App Store release, as 1.1 (my call, 3.11) |
 | 4 | Which moments move? | A1 to A8 (my call, 3.1) |
 | 5 | Touch taps? | Yes, on phones, for the moments in 3.8 only (my call) |
