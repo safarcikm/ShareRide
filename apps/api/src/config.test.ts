@@ -78,6 +78,7 @@ describe("loadConfig", () => {
       },
       searchEngines: { indexable: false, siteOrigin: null },
       analytics: null,
+      oldestAppVersion: null,
     });
   });
 
@@ -88,6 +89,14 @@ describe("loadConfig", () => {
     expect(loadConfig({ ...valid, GOOGLE_ANALYTICS_ID: "" }).analytics).toBeNull();
     expect(() => loadConfig({ ...valid, GOOGLE_ANALYTICS_ID: "UA-1234-1" })).toThrow(
       "GOOGLE_ANALYTICS_ID: not a Google Analytics measurement ID (G-…)",
+    );
+  });
+
+  it("reads the oldest app version the API serves, which must be x.y.z (spec 32, R32.4)", () => {
+    expect(loadConfig({ ...valid, OLDEST_APP_VERSION: "1.2.0" }).oldestAppVersion).toBe("1.2.0");
+    expect(loadConfig({ ...valid, OLDEST_APP_VERSION: "" }).oldestAppVersion).toBeNull();
+    expect(() => loadConfig({ ...valid, OLDEST_APP_VERSION: "1.2" })).toThrow(
+      "OLDEST_APP_VERSION: not an app version (x.y.z, such as 1.0.0)",
     );
   });
 

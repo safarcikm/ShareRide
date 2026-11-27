@@ -102,6 +102,12 @@ projects:
               # empty, the site asks nothing and loads nothing from Google.
               - key: GOOGLE_ANALYTICS_ID
                 sync: false
+              # The oldest phone app version the API serves (spec 32,
+              # R32.4), set in the dashboard once a newer version is in
+              # both stores (app builds runbook, "Ask older apps to
+              # update"). Left empty, every version is served.
+              - key: OLDEST_APP_VERSION
+                sync: false
               # No PAYMENT_PROVIDER: production takes no payments in the app
               # until milestone 15, so passengers pay the driver in person
               # (ADR 0038), switched on in the console. No PHOTO_STORAGE yet:

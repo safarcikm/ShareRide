@@ -167,17 +167,17 @@ its test), `apps/mobile/src/app/_layout.tsx`,
 `apps/mobile/src/__tests__/update-app.test.tsx` (new), `packages/i18n`,
 `docs/engineering/conventions.md`.
 
-- [ ] Domain, test first: `isOlderThan(version: string, oldest: string |
+- [x] Domain, test first: `isOlderThan(version: string, oldest: string |
   null): boolean`; numbers compared part by part; `null`, empty or not
   `x.y.z` never blocks.
-- [ ] `/v1/config` gets `oldestAppVersion: string | null` from the setting
+- [x] `/v1/config` gets `oldestAppVersion: string | null` from the setting
   `OLDEST_APP_VERSION`.
-- [ ] The app, on iOS and Android only, shows the update screen of spec
+- [x] The app, on iOS and Android only, shows the update screen of spec
   32, section 5, with the store links
   (`itms-apps://apps.apple.com/app/id6840158626` for the App Store;
   `market://details?id=is.puffinride.app`
   with the `https://play.google.com/...` fallback).
-- [ ] Conventions: a field or route an app reads stays until no supported
+- [x] Conventions: a field or route an app reads stays until no supported
   version reads it.
 
 ## PR 6: the iPhone without Google (`feat(auth)`)

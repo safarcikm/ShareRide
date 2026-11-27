@@ -664,7 +664,9 @@ version }` with the version the page loaded: it takes a lock on the
 /admin/v1/settings/history` pages through the changes, newest first.
 - `GET /v1/config` is open to everyone and cached for 5 minutes: what the
   apps need of the settings. Add a value there only when an app shows or
-  checks it.
+  checks it. It also names the oldest phone app version the API serves
+  (`oldestAppVersion`, from the API's `OLDEST_APP_VERSION`, not a console
+  setting; spec 32, R32.4).
 - The console's Settings page (`apps/admin/src/pages/settings/`) shows a
   setting by the texts in its `texts.ts`: add a name, a help sentence and,
   for a new unit, the unit's two texts with each new setting.

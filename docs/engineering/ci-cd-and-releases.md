@@ -116,6 +116,9 @@ the repository.
 - Versioning: semantic version for the app (`1.4.0`), automatic build numbers.
 - Over-the-air updates are for JavaScript-only fixes and small changes; native
   changes always go through the stores.
+- The API's `OLDEST_APP_VERSION` is the oldest app version it serves; an
+  older app shows only "Update PuffinRide" (spec 32, R32.4;
+  [runbook](../operations/app-builds.md#ask-older-apps-to-update)).
 - Each store release gets release notes in Icelandic and English and an entry
   in `CHANGELOG.md`.
 - Staged rollouts in both stores for production releases.
