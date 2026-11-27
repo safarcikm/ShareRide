@@ -262,6 +262,10 @@ update reaches only builds of the same version (`runtimeVersion` follows
   that version. Until a button for updates exists, none is published and
   the builds run what they were built with.
 
+The check sends Expo the phone's network address and a random ID the app
+makes on install, never anything about the account (the
+[privacy register's providers](../compliance/privacy-gdpr.md#providers)).
+
 ## What the apps ask the phone for
 
 The store pages' privacy answers and the reviewers read these from the
