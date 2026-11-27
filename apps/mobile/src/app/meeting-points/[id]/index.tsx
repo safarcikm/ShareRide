@@ -8,20 +8,23 @@ import {
   typeKeys,
 } from "@shareride/i18n";
 import { router, useLocalSearchParams } from "expo-router";
-import { Check } from "lucide-react-native";
+import { Check, Flag, Map as MapIcon } from "lucide-react-native";
 import { useCallback, useState } from "react";
 import { ActivityIndicator, Linking, Platform, StyleSheet, Text, View } from "react-native";
 import { errorText } from "@/auth/errors";
 import { useSession } from "@/auth/session";
+import { ActionRows } from "@/components/action-rows";
 import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
 import { Icon } from "@/components/icon";
 import { Notice } from "@/components/notice";
 import { PageHead } from "@/components/page-head";
+import { Row } from "@/components/row";
 import { Screen } from "@/components/screen";
+import { ScreenHead } from "@/components/screen-head";
 import { Tag } from "@/components/tag";
-import { Body, Heading, Title } from "@/components/text";
+import { Body, Heading } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { useLoaded } from "@/lib/use-loaded";
 import { IcelandMap } from "@/maps/iceland-map";
@@ -33,7 +36,11 @@ import { usePalette } from "@/theme/use-palette";
 /**
  * A meeting point's details (spec 2, screen 2), with the point on our map
  * of Iceland and "Open in maps" for directions (ADR 0024). Open to everyone;
- * "Something wrong here?" reports a problem (3.5).
+ * "Something wrong here?" reports a problem (3.5). Its name is the title,
+ * at the left with Back, with what and where it is as the line under it,
+ * and what the page says starts at the left too (spec 31, 3.17). The two
+ * things it can do are rows at its end (spec 31, 3.3): the page has no
+ * main button.
  */
 export default function MeetingPointScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -48,17 +55,22 @@ export default function MeetingPointScreen() {
 
   return (
     <Screen siteFooter>
-      <BackButton fallback="/meeting-points" />
-      {result === undefined ? (
-        <ActivityIndicator accessibilityLabel={t("common.loading")} color={palette.primary} />
-      ) : result.ok ? (
+      {result?.ok === true ? (
         <Details point={result.data} />
-      ) : result.status === 404 || result.status === 400 ? (
-        <Notice message={t("meetingPoints.notFound")} />
       ) : (
         <>
-          <Notice message={errorText(t, result)} />
-          <Button variant="secondary" label={t("common.retry")} onPress={reload} />
+          {/* Until its name is known, the way back alone, where the head has it. */}
+          <BackButton fallback="/meeting-points" />
+          {result === undefined ? (
+            <ActivityIndicator accessibilityLabel={t("common.loading")} color={palette.primary} />
+          ) : result.status === 404 || result.status === 400 ? (
+            <Notice message={t("meetingPoints.notFound")} />
+          ) : (
+            <>
+              <Notice message={errorText(t, result)} />
+              <Button variant="secondary" label={t("common.retry")} onPress={reload} />
+            </>
+          )}
         </>
       )}
     </Screen>
@@ -78,20 +90,23 @@ function Details({ point }: { readonly point: MeetingPointDetails }) {
   return (
     <>
       <PageHead {...pageText(t, { kind: "meetingPoint", name })} />
-      <Title>{name}</Title>
-      {otherName === name ? null : <Body>{otherName}</Body>}
-      <Body>
-        {t("meetingPoints.detailsLine", {
+      <ScreenHead
+        title={name}
+        line={t("meetingPoints.detailsLine", {
           type: t(typeKeys[point.type]),
           municipality: point.municipality,
           region: t(regionKeys[point.region]),
         })}
-      </Body>
+        back="/meeting-points"
+      />
+      {otherName === name ? null : <Body align="start">{otherName}</Body>}
       {point.aliases.length === 0 ? null : (
-        <Body>{t("meetingPoints.alsoKnownAs", { names: point.aliases.join(", ") })}</Body>
+        <Body align="start">
+          {t("meetingPoints.alsoKnownAs", { names: point.aliases.join(", ") })}
+        </Body>
       )}
       {point.sample ? (
-        <View style={styles.centre}>
+        <View style={styles.tag}>
           <Tag kind="info" label={t("meetingPoints.sample")} />
         </View>
       ) : null}
@@ -118,9 +133,9 @@ function Details({ point }: { readonly point: MeetingPointDetails }) {
           ))}
         </Card>
       )}
-      <Body>{seasonText(t, locale, point.season)}</Body>
+      <Body align="start">{seasonText(t, locale, point.season)}</Body>
       {point.lastCheckedOn === null ? null : (
-        <Body>
+        <Body align="start">
           {t("meetingPoints.lastChecked", { date: formatDate(point.lastCheckedOn, locale) })}
         </Body>
       )}
@@ -128,30 +143,32 @@ function Details({ point }: { readonly point: MeetingPointDetails }) {
         label={t("meetingPoints.pointMap", { name })}
         dots={[{ id: point.id, position: point.position, look: "chosen" }]}
       />
-      <Button
-        variant="secondary"
-        label={t("meetingPoints.openInMaps")}
-        onPress={() => {
-          setMapsFailed(false);
-          Linking.openURL(mapsUrl(point.position, name, Platform.OS)).catch(() => {
-            setMapsFailed(true);
-          });
-        }}
-      />
+      <ActionRows>
+        <Row
+          icon={MapIcon}
+          title={t("meetingPoints.openInMaps")}
+          onPress={() => {
+            setMapsFailed(false);
+            Linking.openURL(mapsUrl(point.position, name, Platform.OS)).catch(() => {
+              setMapsFailed(true);
+            });
+          }}
+        />
+        <Row
+          icon={Flag}
+          title={t("meetingPoints.somethingWrong")}
+          onPress={() => {
+            router.push({ pathname: "/meeting-points/[id]/problem", params: { id: point.id } });
+          }}
+        />
+      </ActionRows>
       <Notice message={mapsFailed ? t("meetingPoints.mapsFailed") : null} />
-      <Button
-        variant="text"
-        label={t("meetingPoints.somethingWrong")}
-        onPress={() => {
-          router.push({ pathname: "/meeting-points/[id]/problem", params: { id: point.id } });
-        }}
-      />
     </>
   );
 }
 
 const styles = StyleSheet.create({
-  // A row, so the tag (which keeps to its own width) sits in the middle.
-  centre: { flexDirection: "row", justifyContent: "center" },
+  // A row, so the tag keeps to its own width, at the left.
+  tag: { flexDirection: "row", justifyContent: "flex-start" },
   amenity: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
 });

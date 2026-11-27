@@ -15,7 +15,8 @@ import { errorText } from "@/auth/errors";
 import { useSession } from "@/auth/session";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
-import { Notice } from "@/components/notice";
+import { ActionNotice, Notice, useSaid } from "@/components/notice";
+import { InBar } from "@/components/screen";
 import { sectionLevel } from "@/components/text";
 import { TextField } from "@/components/text-field";
 import { useLanguage } from "@/i18n/language";
@@ -42,14 +43,24 @@ export function noticeTitle(t: Translate, locale: Locale, notice: NoticeData): s
  * One notice (R9.5): what was done, the rule, the reason as ShareRide wrote
  * it, what it concerned, and the appeal: once, within 14 days, with
  * ShareRide's answer when it comes. Never which operator.
+ *
+ * One appeal is written at a time, which the page keeps (`appealing`):
+ * "Send appeal" is then the page's one main button, in its bottom bar,
+ * with why it was not sent over it (spec 31, R31.1).
  */
 export function NoticeCard({
   notice,
+  appealing,
+  onAppealing,
   onChange,
   onStale,
   onAnnounce,
 }: {
   readonly notice: NoticeData;
+  /** This notice's appeal is the one being written. */
+  readonly appealing: boolean;
+  /** Told when its appeal is opened to write, and when it is left. */
+  readonly onAppealing: (appealing: boolean) => void;
   /** The notice as the API now has it, after an appeal. */
   readonly onChange: (notice: NoticeData) => void;
   /** The appeal was refused as the notice changed meanwhile: load it again. */
@@ -82,7 +93,14 @@ export function NoticeCard({
         {notice.content === null ? null : (
           <Text style={body}>{moderatedContentText(t, notice.content.kind)}</Text>
         )}
-        <Appeal notice={notice} onChange={onChange} onStale={onStale} onAnnounce={onAnnounce} />
+        <Appeal
+          notice={notice}
+          open={appealing}
+          onOpen={onAppealing}
+          onChange={onChange}
+          onStale={onStale}
+          onAnnounce={onAnnounce}
+        />
       </View>
     </Card>
   );
@@ -90,23 +108,25 @@ export function NoticeCard({
 
 function Appeal({
   notice,
+  open,
+  onOpen,
   onChange,
   onStale,
   onAnnounce,
 }: {
   readonly notice: NoticeData;
+  readonly open: boolean;
+  readonly onOpen: (open: boolean) => void;
   readonly onChange: (notice: NoticeData) => void;
   readonly onStale: () => void;
   readonly onAnnounce: (text: string) => void;
 }) {
   const { locale, t } = useLanguage();
   const palette = usePalette();
-  const session = useSession();
-  const [open, setOpen] = useState(false);
+  // The appeal just sent was refused, as the notice changed meanwhile.
+  const [gone, setGone] = useState(false);
+  // What is written, kept here while its form is closed.
   const [text, setText] = useState("");
-  const [problem, setProblem] = useState<string | null>(null);
-  const [failed, setFailed] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
   const body = [typography.body, { color: palette.text }];
   const muted = [typography.small, { color: palette.textMuted }];
 
@@ -138,19 +158,91 @@ function Appeal({
       <>
         <Text style={muted}>{t("notices.appealClosed", { until })}</Text>
         {/* Why the appeal just sent was refused, after loading the notices again. */}
-        <Notice message={failed} />
+        <Notice message={gone ? t("notices.appealGone") : null} />
       </>
     );
   }
 
+  return (
+    <View style={styles.appeal}>
+      <Text style={body}>{t("notices.appealUntil", { until })}</Text>
+      {open ? (
+        <AppealForm
+          notice={notice}
+          text={text}
+          onText={setText}
+          onSent={(now) => {
+            onOpen(false);
+            onAnnounce(t("notices.appealSent"));
+            onChange(now);
+          }}
+          onGone={() => {
+            setGone(true);
+            onOpen(false);
+            onStale();
+          }}
+          onCancel={() => {
+            onOpen(false);
+          }}
+        />
+      ) : (
+        <>
+          <Button
+            variant="secondary"
+            label={t("notices.appeal")}
+            onPress={() => {
+              setGone(false);
+              onOpen(true);
+            }}
+          />
+          {/* Until the notices are loaded again, and if that fails. */}
+          <Notice message={gone ? t("notices.appealGone") : null} />
+        </>
+      )}
+    </View>
+  );
+}
+
+/**
+ * Writing an appeal. What is written is its notice's to keep: an appeal is
+ * sent once, so closing its form, with Cancel or for another notice's
+ * appeal, loses nothing.
+ */
+function AppealForm({
+  notice,
+  text,
+  onText,
+  onSent,
+  onGone,
+  onCancel,
+}: {
+  readonly notice: NoticeData;
+  readonly text: string;
+  readonly onText: (text: string) => void;
+  readonly onSent: (notice: NoticeData) => void;
+  /** Refused as the notice changed meanwhile. */
+  readonly onGone: () => void;
+  readonly onCancel: () => void;
+}) {
+  const { t } = useLanguage();
+  const session = useSession();
+  const [problem, setProblem] = useState<string | null>(null);
+  // Why Send appeal did nothing: said over it, as the field can be out of sight.
+  const [said, say] = useSaid();
+  const [busy, setBusy] = useState(false);
+
   async function send() {
-    setFailed(null);
     const trimmed = text.trim();
     if (trimmed === "") {
       setProblem(t("notices.appealEmpty"));
+      say(t("notices.appealEmpty"));
       return;
     }
-    if (characterCount(trimmed) > maxLength) return;
+    if (characterCount(trimmed) > maxLength) {
+      say(t("report.tooLong", { max: maxLength }));
+      return;
+    }
+    say(null);
     setBusy(true);
     const result = await session.call(appealNoticeRoute, {
       params: { id: notice.id },
@@ -158,8 +250,7 @@ function Appeal({
     });
     setBusy(false);
     if (result.ok) {
-      onAnnounce(t("notices.appealSent"));
-      onChange(result.data);
+      onSent(result.data);
       return;
     }
     switch (result.error.code) {
@@ -167,56 +258,36 @@ function Appeal({
       case "appeal_window_closed":
       case "not_appealable":
       case "not_found":
-        setFailed(t("notices.appealGone"));
-        onStale();
+        onGone();
         return;
       default:
-        setFailed(errorText(t, result));
+        say(errorText(t, result));
     }
   }
 
   const tooLong = characterCount(text.trim()) > maxLength;
   return (
-    <View style={styles.appeal}>
-      <Text style={body}>{t("notices.appealUntil", { until })}</Text>
-      {open ? (
-        <>
-          <TextField
-            label={t("notices.appealLabel")}
-            value={text}
-            onChangeText={(value) => {
-              setProblem(null);
-              setFailed(null);
-              setText(value);
-            }}
-            multiline
-            autoFocus
-            maxLength={maxLength * 4}
-            help={t("notices.appealHelp", { max: maxLength })}
-            error={tooLong ? t("report.tooLong", { max: maxLength }) : (problem ?? undefined)}
-          />
-          <Button label={t("notices.sendAppeal")} busy={busy} onPress={() => void send()} />
-          <Button
-            variant="secondary"
-            label={t("common.cancel")}
-            onPress={() => {
-              setOpen(false);
-              setProblem(null);
-              setFailed(null);
-            }}
-          />
-        </>
-      ) : (
-        <Button
-          variant="secondary"
-          label={t("notices.appeal")}
-          onPress={() => {
-            setOpen(true);
-          }}
-        />
-      )}
-      <Notice message={failed} />
-    </View>
+    <>
+      <TextField
+        label={t("notices.appealLabel")}
+        value={text}
+        onChangeText={(value) => {
+          setProblem(null);
+          say(null);
+          onText(value);
+        }}
+        multiline
+        autoFocus
+        maxLength={maxLength * 4}
+        help={t("notices.appealHelp", { max: maxLength })}
+        error={tooLong ? t("report.tooLong", { max: maxLength }) : (problem ?? undefined)}
+      />
+      <Button variant="secondary" label={t("common.cancel")} onPress={onCancel} />
+      <InBar>
+        <ActionNotice says={said} />
+        <Button main label={t("notices.sendAppeal")} busy={busy} onPress={() => void send()} />
+      </InBar>
+    </>
   );
 }
 

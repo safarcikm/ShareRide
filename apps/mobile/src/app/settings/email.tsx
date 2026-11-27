@@ -1,13 +1,16 @@
 import type { CallFailure } from "@shareride/api-client";
 import { putEmailRoute, type Me } from "@shareride/contracts";
 import { normaliseEmail } from "@shareride/domain";
+import { RotateCw } from "lucide-react-native";
 import { useRef, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { errorText, formatWait } from "@/auth/errors";
 import { useMe, useSession } from "@/auth/session";
+import { ActionRows } from "@/components/action-rows";
 import { Button } from "@/components/button";
-import { Notice } from "@/components/notice";
-import { Screen } from "@/components/screen";
+import { ActionNotice, Notice } from "@/components/notice";
+import { Row } from "@/components/row";
+import { InBar, Screen } from "@/components/screen";
 import { ScreenHead } from "@/components/screen-head";
 import { TextField } from "@/components/text-field";
 import { Body } from "@/components/text";
@@ -23,7 +26,10 @@ import { spacing } from "@/theme/tokens";
  * signs in, so past the account's first 30 minutes a confirm code comes
  * first (spec 26, 3.7): the API asks for it, and the form appears. The
  * title is at the left, with what the email is for under it (spec 31,
- * 3.19).
+ * 3.19). "Send the link" is the page's one main button, in the bottom bar,
+ * with why no link went over it; with a code, the code's button has the
+ * bar (R31.1). "Send the link again" is a row under the address that
+ * waits, with why it did not go by the row.
  */
 export default function EmailScreen() {
   const me = useMe();
@@ -31,13 +37,17 @@ export default function EmailScreen() {
   return <EmailForm me={me} />;
 }
 
+/** The two presses that ask for a link: the form's button, and "Send the link again". */
+type Press = "main" | "again";
+
 function EmailForm({ me }: { readonly me: Me }) {
   const { t } = useLanguage();
   const session = useSession();
   const [address, setAddress] = useState("");
   const [fieldError, setFieldError] = useState<string | undefined>();
-  const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+  // Why a link was not sent, and which press asked for it.
+  const [error, setError] = useState<{ of: Press; message: string } | null>(null);
+  const [busy, setBusy] = useState<Press | null>(null);
   // The address waiting for a confirm code, while the form for it shows.
   const [confirming, setConfirming] = useState<string | null>(null);
   // When a new confirm code can be asked for, kept while the form closes and opens.
@@ -68,7 +78,7 @@ function EmailForm({ me }: { readonly me: Me }) {
     return { ok: true } as const;
   }
 
-  async function send(input: string) {
+  async function send(input: string, of: Press) {
     if (sending.current) return;
     setError(null);
     const valid = normaliseEmail(input);
@@ -77,10 +87,10 @@ function EmailForm({ me }: { readonly me: Me }) {
       return;
     }
     sending.current = true;
-    setBusy(true);
+    setBusy(of);
     const result = await session.call(putEmailRoute, { body: { email: valid.value } });
     sending.current = false;
-    setBusy(false);
+    setBusy(null);
     if (result.ok) {
       session.update(result.data);
       setAddress("");
@@ -89,10 +99,11 @@ function EmailForm({ me }: { readonly me: Me }) {
     const { code } = result.error;
     if (code === "confirm_required") setConfirming(valid.value);
     else if (code === "email_invalid") setFieldError(t("error.email"));
-    else setError(describe(result));
+    else setError({ of, message: describe(result) });
   }
 
   const { pendingEmail } = me;
+  const ofMain = error?.of === "main" ? error.message : null;
   return (
     <Screen>
       <ScreenHead title={t("addEmail.title")} line={t("addEmail.intro")} back="/profile" />
@@ -106,12 +117,17 @@ function EmailForm({ me }: { readonly me: Me }) {
             urgent={false}
             message={t("addEmail.sent", { email: pendingEmail })}
           />
-          <Button
-            variant="secondary"
-            label={t("addEmail.sendAgain")}
-            disabled={busy}
-            onPress={() => void send(pendingEmail)}
-          />
+          <ActionRows>
+            <Row
+              icon={RotateCw}
+              title={t("addEmail.sendAgain")}
+              busy={busy === "again"}
+              disabled={busy !== null}
+              onPress={() => void send(pendingEmail, "again")}
+            />
+          </ActionRows>
+          {/* By the row that was pressed, also while a code is asked for. */}
+          <Notice message={error?.of === "again" ? error.message : null} />
         </View>
       )}
       <View style={styles.form}>
@@ -129,22 +145,35 @@ function EmailForm({ me }: { readonly me: Me }) {
           textContentType="emailAddress"
           autoCapitalize="none"
           maxLength={320}
-          onSubmitEditing={() => void send(address)}
+          onSubmitEditing={() => void send(address, "main")}
         />
-        <Notice message={error} />
         {confirming === null ? (
-          <Button label={t("addEmail.send")} busy={busy} onPress={() => void send(address)} />
+          <InBar>
+            <ActionNotice says={ofMain} />
+            <Button
+              main
+              label={t("addEmail.send")}
+              busy={busy === "main"}
+              disabled={busy !== null}
+              onPress={() => void send(address, "main")}
+            />
+          </InBar>
         ) : (
-          <ConfirmWithCode
-            confirmLabel={t("addEmail.send")}
-            onConfirm={confirmed}
-            describe={describe}
-            sentUntil={sentUntil}
-            onSent={setSentUntil}
-            onCancel={() => {
-              setConfirming(null);
-            }}
-          />
+          <>
+            {/* The Return key can still ask for a link: why not is said here. */}
+            <Notice message={ofMain} />
+            <ConfirmWithCode
+              inBar
+              confirmLabel={t("addEmail.send")}
+              onConfirm={confirmed}
+              describe={describe}
+              sentUntil={sentUntil}
+              onSent={setSentUntil}
+              onCancel={() => {
+                setConfirming(null);
+              }}
+            />
+          </>
         )}
       </View>
     </Screen>

@@ -1,11 +1,11 @@
 import { listVehiclesRoute } from "@shareride/contracts";
-import { router } from "expo-router";
 import { useCallback } from "react";
+import { Car, Plus } from "lucide-react-native";
 import { ActivityIndicator } from "react-native";
 import { errorText } from "@/auth/errors";
 import { useSession } from "@/auth/session";
+import { ActionRows } from "@/components/action-rows";
 import { Button } from "@/components/button";
-import { Card } from "@/components/card";
 import { Notice } from "@/components/notice";
 import { Row } from "@/components/row";
 import { Screen } from "@/components/screen";
@@ -19,7 +19,10 @@ import { usePalette } from "@/theme/use-palette";
 /**
  * My cars (spec 16, 3.4 item 2): each car with its number plate, opening
  * to edit it, and Add a car. Loads again on coming back from either. The
- * title is at the left (spec 31, 3.19).
+ * title is at the left, and the cars are a card of rows, each with a
+ * picture, with "Add a car" as its last row; while there is no car, "Add a
+ * car" is the page's main button, in the bar (spec 31, 3.19 and R31.1).
+ * Each opens a page, so each is a link.
  */
 export default function MyCarsScreen() {
   const { locale, t } = useLanguage();
@@ -27,8 +30,11 @@ export default function MyCarsScreen() {
   const session = useSession();
   const load = useCallback(() => session.call(listVehiclesRoute, {}), [session]);
   const { value, reload } = useLoadedOnFocus(load);
+  const none = value?.ok === true && value.data.vehicles.length === 0;
   return (
-    <Screen>
+    <Screen
+      footer={none ? <Button main label={t("vehicle.add")} href="/drive/cars/new" /> : undefined}
+    >
       <ScreenHead title={t("profile.myCars")} back="/profile" />
       {value === undefined ? (
         <ActivityIndicator accessibilityLabel={t("common.loading")} color={palette.primary} />
@@ -37,29 +43,22 @@ export default function MyCarsScreen() {
           <Notice message={errorText(t, value)} />
           <Button variant="secondary" label={t("common.retry")} onPress={reload} />
         </>
-      ) : value.data.vehicles.length === 0 ? (
+      ) : none ? (
         <Body align="start">{t("profile.noCars")}</Body>
       ) : (
-        <Card>
+        <ActionRows>
           {value.data.vehicles.map((car) => (
             <Row
               key={car.id}
+              icon={Car}
               title={carSummary(t, locale, car)}
               value={car.registration ?? t("vehicle.noPlate")}
-              onPress={() => {
-                router.push({ pathname: "/drive/cars/[id]", params: { id: car.id } });
-              }}
+              href={{ pathname: "/drive/cars/[id]", params: { id: car.id } }}
             />
           ))}
-        </Card>
+          <Row icon={Plus} title={t("vehicle.add")} href="/drive/cars/new" />
+        </ActionRows>
       )}
-      <Button
-        variant={value?.ok === true && value.data.vehicles.length === 0 ? "primary" : "secondary"}
-        label={t("vehicle.add")}
-        onPress={() => {
-          router.push("/drive/cars/new");
-        }}
-      />
     </Screen>
   );
 }

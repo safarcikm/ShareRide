@@ -4,7 +4,7 @@ import type { DeletionCheck, Me } from "@shareride/contracts";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
-import { filledButtons } from "@/testing/buttons";
+import { filledButtons, inBar, inPage } from "@/testing/buttons";
 import { colors } from "@/theme/tokens";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
@@ -222,7 +222,8 @@ describe("Delete my account (spec 11, 3.4)", () => {
     // It takes the account away: the page's one filled button is red
     // (decision 17).
     const red = { backgroundColor: colors.light.error };
-    const start = screen.getByRole("button", { name: "Delete my account" });
+    const start = inBar().getByRole("button", { name: "Delete my account" });
+    expect(start).toHaveStyle({ minHeight: 56 });
     expect(within(start).getByTestId("button-face")).toHaveStyle(red);
     expect(filledButtons()).toBe(1);
 
@@ -231,9 +232,14 @@ describe("Delete my account (spec 11, 3.4)", () => {
       await screen.findByText("We sent a code by text message to your number ending in 00."),
     ).toBeVisible();
     // So is the button that deletes with the code.
-    const confirm = await screen.findByRole("button", { name: "Delete my account" });
+    const confirm = await inBar().findByRole("button", { name: "Delete my account" });
+    expect(confirm).toHaveStyle({ minHeight: 56 });
     expect(within(confirm).getByTestId("button-face")).toHaveStyle(red);
     expect(filledButtons()).toBe(1);
+    // Leaving the code is a row under it, not a third button.
+    expect(
+      within(screen.getByTestId("action-rows")).getByRole("button", { name: "Cancel" }),
+    ).toBeVisible();
     const focus = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
     await fireEvent.changeText(await screen.findByLabelText("6-digit code"), "123456");
 
@@ -332,8 +338,25 @@ describe("While the deletion waits (spec 11, 3.4.4)", () => {
       textAlign: "center",
     });
     expect(head.queryByRole("button", { name: "Back" })).toBeNull();
-    // Keeping the account is the one main button; Sign out is beside it.
+    // Keeping the account is the one main button, in the bar; Sign out is
+    // a row with a picture.
     expect(filledButtons()).toBe(1);
+    expect(inBar().getByRole("button", { name: "Keep my account" })).toHaveStyle({
+      minHeight: 56,
+    });
+    const signOut = within(screen.getByTestId("action-rows")).getByRole("button", {
+      name: "Sign out",
+    });
+    expect(within(signOut).getByTestId("row-icon", { includeHiddenElements: true })).toBeTruthy();
+  });
+
+  it("says over the button, in the bar, why the account was not kept", async () => {
+    await openApp("/", () => failure(500, "internal_error"));
+    await fireEvent.press(inBar().getByRole("button", { name: "Keep my account" }));
+    expect(await inBar().findByRole("alert")).toHaveTextContent(
+      "Something went wrong on our side. Try again.",
+    );
+    expect(inPage().queryByRole("alert")).toBeNull();
   });
 
   it.each([
@@ -359,6 +382,17 @@ describe("While the deletion waits (spec 11, 3.4.4)", () => {
     await fireEvent.press(screen.getByRole("button", { name: "Sign out" }));
     expect(callsTo(app, "/v1/auth/sign-out")).toEqual([]);
     answer(ok(200, completeMe));
+    expect(await screen.findByRole("tab", { name: "Find" })).toBeVisible();
+  });
+
+  it("shows on its row that it is signing out, with no keeping meanwhile", async () => {
+    let answer: (value: unknown) => void = () => undefined;
+    const app = await openApp();
+    app.client.answer("/v1/auth/sign-out", () => new Promise((resolve) => (answer = resolve)));
+    await fireEvent.press(screen.getByRole("button", { name: "Sign out" }));
+    expect(screen.getByRole("button", { name: "Sign out" })).toBeBusy();
+    expect(screen.getByRole("button", { name: "Keep my account" })).toBeDisabled();
+    answer(ok(204));
     expect(await screen.findByRole("tab", { name: "Find" })).toBeVisible();
   });
 

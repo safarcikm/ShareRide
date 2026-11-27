@@ -19,6 +19,8 @@ import { usePalette } from "@/theme/use-palette";
  * Profile and where a notice's push opens: what ShareRide did about me and
  * why, the latest first, each with its appeal. Open while suspended. The
  * title is at the left, with what the page is under it (spec 31, 3.19).
+ * One appeal is written at a time, so the page never has two main buttons
+ * (R31.1).
  */
 export default function NoticesScreen() {
   const me = useMe();
@@ -35,6 +37,8 @@ function Notices() {
   // Notices as an appeal just left them, over the list as loaded.
   const [changed, setChanged] = useState<Readonly<Record<string, NoticeData>>>({});
   const [announcement, setAnnouncement] = useState<{ text: string; count: number } | null>(null);
+  // The notice whose appeal is being written: one at a time.
+  const [appealing, setAppealing] = useState<string | null>(null);
 
   const header = <ScreenHead title={t("notices.title")} line={t("notices.help")} back="/profile" />;
   if (answer === undefined) {
@@ -66,6 +70,10 @@ function Notices() {
           <NoticeCard
             key={notice.id}
             notice={notice}
+            appealing={appealing === notice.id}
+            onAppealing={(now) => {
+              setAppealing((open) => (now ? notice.id : open === notice.id ? null : open));
+            }}
             onChange={(now) => {
               setChanged((all) => ({ ...all, [now.id]: now }));
             }}

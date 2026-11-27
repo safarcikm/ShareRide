@@ -18,9 +18,16 @@ test("downloads my data from Profile", async ({ page }) => {
   await page.getByRole("link", { name: "Download my data" }).click();
   await expect(page.getByRole("heading", { name: "Download my data" })).toBeVisible();
 
+  // Asking is the page's one main button, in the bar at the bottom (spec
+  // 31, R31.1); with the code, the code's button is.
+  const bar = page.getByTestId("bottom-bar").filter({ visible: true });
   const code = await emailedCode(email, confirmCodeSubject, () =>
-    page.getByRole("button", { name: "Make my file" }).click(),
+    bar.getByRole("button", { name: "Make my file" }).click(),
   );
+  await expect(bar.getByRole("button", { name: "Make my file" })).toBeInViewport();
+  await expect(
+    page.getByRole("button", { name: "Cancel" }).filter({ visible: true }),
+  ).toBeVisible();
   // The address shows partly hidden (spec 26, 3.6).
   await expect(
     page.getByText(`We emailed a code to ${email.slice(0, 2)}•••@example.com.`),
@@ -28,7 +35,7 @@ test("downloads my data from Profile", async ({ page }) => {
   await page.getByLabel("6-digit code").fill(code);
 
   // The test API builds files every second; the screen looks every 5 seconds.
-  await expect(page.getByRole("button", { name: "Download the file" })).toBeVisible({
+  await expect(bar.getByRole("button", { name: "Download the file" })).toBeVisible({
     timeout: 20_000,
   });
   // Shown, and read out by screen readers through the page's live region.

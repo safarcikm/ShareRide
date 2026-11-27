@@ -22,6 +22,16 @@ done, the date is the page's title, with "Close" as its one main button
 (3.4). After a question is sent, the thanks are the page's title, with
 "Back to Privacy" as its one main button (3.6).
 
+And, since its last pass (3.19, R31.1): each of these pages has one main
+button, at the bottom of the screen, with why it did nothing over it:
+"Make my file", then "Download the file" (3.2); "Delete my account"
+(3.4); "Add my email" where a question needs one first (3.6). Confirming
+with a code (R11.1) has that one button, the action's own, with "Send a
+new code" and "Cancel" as rows under the field. While a new file is asked
+for beside one that is ready, "Download the file" is not shown; "Make a
+new file" is a row. On the page an account that waits to be deleted lands
+on, "Keep my account" is the main button and "Sign out" a row (3.4.4).
+
 ## 1. Problem and goal
 
 People share their phone number, travel plans and messages with ShareRide.

@@ -1,8 +1,10 @@
 import {
   createContext,
+  Fragment,
   useCallback,
   useContext,
   useEffect,
+  useId,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -39,7 +41,8 @@ import { SiteFooter } from "./site-footer";
  * A full screen with safe-area padding. On wide screens (web, tablets) the
  * content sits in a centred column (spec 1, section 5). A `footer`, such as
  * a step's main button, stays at the bottom while the rest scrolls: the
- * `BottomBar` of spec 15, section 5.2.
+ * `BottomBar` of spec 15, section 5.2. A part of the page that keeps its
+ * own state, as a form does, puts its main button there with `InBar`.
  * A `header`, as the top of a conversation is (spec 31, 3.13), stays at the
  * top the same way, on the surface's colour with a line under it, and the
  * room the screen leaves for the status bar has that colour too. What
@@ -104,6 +107,7 @@ export function Screen({
   const [viewHeight, setViewHeight] = useState<number | null>(null);
   const { onLayout: followsEnd, ...sticking } = useStickToEnd(scrollRef, stickToEnd, endKey);
   const refreshing = useRefresh({ refresh, asked: refreshAsked, scrollRef });
+  const [inBar] = useState(barSlot);
   return (
     <SafeAreaView
       testID="screen-safe-area"
@@ -154,23 +158,25 @@ export function Screen({
             </View>
           )}
           <ScreenScrollContext.Provider value={scroll}>
-            <ScreenViewHeightContext.Provider value={viewHeight}>
-              {aside !== undefined && wide ? (
-                <View style={styles.wide}>
-                  <View style={styles.asideColumn}>{children}</View>
-                  <View testID="aside" style={[styles.aside, stickyOnWeb(viewHeight)]}>
-                    {aside}
+            <BarSlotContext.Provider value={inBar}>
+              <ScreenViewHeightContext.Provider value={viewHeight}>
+                {aside !== undefined && wide ? (
+                  <View style={styles.wide}>
+                    <View style={styles.asideColumn}>{children}</View>
+                    <View testID="aside" style={[styles.aside, stickyOnWeb(viewHeight)]}>
+                      {aside}
+                    </View>
                   </View>
-                </View>
-              ) : width === "page" && wide ? (
-                <View testID="page" style={styles.page}>
-                  {children}
-                </View>
-              ) : (
-                <View style={styles.column}>{children}</View>
-              )}
-              {siteFooter && onWebsite() ? <SiteFooter /> : null}
-            </ScreenViewHeightContext.Provider>
+                ) : width === "page" && wide ? (
+                  <View testID="page" style={styles.page}>
+                    {children}
+                  </View>
+                ) : (
+                  <View style={styles.column}>{children}</View>
+                )}
+                {siteFooter && onWebsite() ? <SiteFooter /> : null}
+              </ScreenViewHeightContext.Provider>
+            </BarSlotContext.Provider>
           </ScreenScrollContext.Provider>
         </ScrollView>
         {refreshing.mark}
@@ -180,15 +186,111 @@ export function Screen({
           <View style={styles.barColumn}>{overFooter}</View>
         </View>
       )}
-      {footer === undefined ? null : (
-        <View
-          testID="bottom-bar"
-          style={[styles.bar, { backgroundColor: palette.surface, borderTopColor: palette.border }]}
-        >
-          <View style={styles.barColumn}>{footer}</View>
-        </View>
-      )}
+      <BottomBar footer={footer} inBar={inBar} />
     </SafeAreaView>
+  );
+}
+
+/**
+ * What the parts of a screen have put in its bar, each under its own key,
+ * in the order they came. Only the bar listens: a part that puts something
+ * there again, as it does each time it is drawn, draws nothing else again.
+ */
+interface BarSlot {
+  readonly put: (key: string, part: ReactNode) => void;
+  readonly take: (key: string) => void;
+  readonly held: () => ReadonlyMap<string, ReactNode>;
+  readonly listen: (changed: () => void) => () => void;
+}
+
+function barSlot(): BarSlot {
+  let held: ReadonlyMap<string, ReactNode> = new Map();
+  const listeners = new Set<() => void>();
+  const hold = (next: ReadonlyMap<string, ReactNode>) => {
+    held = next;
+    listeners.forEach((changed) => {
+      changed();
+    });
+  };
+  return {
+    put: (key, part) => {
+      hold(new Map(held).set(key, part));
+    },
+    take: (key) => {
+      const next = new Map(held);
+      if (next.delete(key)) hold(next);
+    },
+    held: () => held,
+    listen: (changed) => {
+      listeners.add(changed);
+      return () => {
+        listeners.delete(changed);
+      };
+    },
+  };
+}
+
+const BarSlotContext = createContext<BarSlot | null>(null);
+
+/**
+ * Shows what it holds in the bar at the bottom of the screen around it,
+ * and not where it stands: for the main button of a part that keeps its
+ * own state, such as a form's "Save" or the button that confirms with a
+ * code (spec 31, R31.1). The button stays the part's own, with the part's
+ * state. A screen's own `footer` comes before it. With no `Screen` around
+ * it, as in a part's own test, what it holds stays where it stands.
+ *
+ * What it holds is drawn by the screen: it reads nothing a part between
+ * the screen and here provides, such as a card of rows.
+ */
+export function InBar({ children }: { readonly children: ReactNode }) {
+  const slot = useContext(BarSlotContext);
+  const key = useId();
+  // Each time the part is drawn, as what it holds was made anew.
+  useLayoutEffect(() => {
+    slot?.put(key, children);
+  });
+  useLayoutEffect(
+    () => () => {
+      slot?.take(key);
+    },
+    [slot, key],
+  );
+  return slot === null ? children : null;
+}
+
+/**
+ * The bar at the bottom: the screen's `footer`, then what its parts put there.
+ *
+ * It listens from its layout effect on, and looks again there: the parts
+ * put what they hold in their layout effects, which run before the bar's
+ * when a screen first shows, and the bar is drawn again before anything is
+ * painted. So a screen never shows a first frame without its bar.
+ * (`useSyncExternalStore` listens only once the frame is painted.)
+ */
+function BottomBar({ footer, inBar }: { readonly footer: ReactNode; readonly inBar: BarSlot }) {
+  const palette = usePalette();
+  const [held, setHeld] = useState(inBar.held);
+  useLayoutEffect(() => {
+    const look = () => {
+      setHeld(inBar.held());
+    };
+    look();
+    return inBar.listen(look);
+  }, [inBar]);
+  if (footer === undefined && held.size === 0) return null;
+  return (
+    <View
+      testID="bottom-bar"
+      style={[styles.bar, { backgroundColor: palette.surface, borderTopColor: palette.border }]}
+    >
+      <View style={styles.barColumn}>
+        {footer}
+        {[...held].map(([key, part]) => (
+          <Fragment key={key}>{part}</Fragment>
+        ))}
+      </View>
+    </View>
   );
 }
 

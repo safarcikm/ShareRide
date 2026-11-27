@@ -1055,7 +1055,7 @@ test.describe("pictures", () => {
     await page.goto("/drive/cars");
     await expect(heading("My cars")).toBeVisible();
     await page
-      .getByRole("button", { name: /^Toyota Yaris/ })
+      .getByRole("link", { name: /^Toyota Yaris/ })
       .filter(visible)
       .click();
     await expect(heading("Edit your car")).toBeVisible();
@@ -1072,5 +1072,72 @@ test.describe("pictures", () => {
     await expect(page.getByRole("link", { name: "Loka á: Bára" }).filter(visible)).toBeVisible();
     await expect(page.getByText("Easy to travel with.").filter(visible)).toBeVisible();
     await shoot("person", "dark");
+  });
+
+  test("the last pass: one main button and titles at the left (spec 31)", async ({
+    page,
+  }, info) => {
+    test.skip(info.project.name === "desktop", "A phone's pictures");
+    test.setTimeout(300_000);
+    const folder = join(root ?? "", "one-ride-one-ticket", "built");
+    mkdirSync(folder, { recursive: true });
+    const window = page.viewportSize();
+    if (window === null) throw new Error("The page has no size");
+    const visible = { visible: true };
+    const shoot = shooter(page, folder, window, false);
+    const heading = (name: string) =>
+      page.getByRole("heading", { name, exact: true }).filter(visible);
+    const bar = () => page.getByTestId("bottom-bar").filter(visible);
+
+    // The meeting points, one of them, and what is wrong there.
+    await signUp(page, english, "Dóra");
+    await page.goto("/meeting-points");
+    await expect(heading("Meeting points")).toBeVisible();
+    await expect(page.getByTestId("points-map").filter(visible)).toBeVisible();
+    await shoot("meeting-points", "light");
+    await page.getByRole("radio", { name: "List" }).filter(visible).click();
+    await page
+      .getByRole("link", { name: /^N1 Vík/ })
+      .filter(visible)
+      .click();
+    await expect(heading("N1 Vík")).toBeVisible();
+    await shoot("meeting-point", "light");
+    await page.getByRole("button", { name: "Something wrong here?" }).filter(visible).click();
+    await expect(heading("What's wrong here?")).toBeVisible();
+    await expect(bar().getByRole("button", { name: "Send", exact: true })).toBeVisible();
+    await shoot("meeting-point-problem", "light");
+
+    // My cars and All rides, once she has posted a ride with a car.
+    await postTripToSelfoss(page, "17:30");
+    await page.goto("/drive/cars");
+    await expect(heading("My cars")).toBeVisible();
+    await expect(page.getByRole("link", { name: /^Toyota Yaris/ }).filter(visible)).toBeVisible();
+    await shoot("cars", "light");
+    await page.goto("/rides");
+    await expect(heading("Rides leaving soon")).toBeVisible();
+    await expect(page.getByTestId("ticket-top").filter(visible).first()).toBeVisible();
+    await shoot("rides", "light");
+
+    // Asking for a file of my data, with the code's form open.
+    await page.goto("/settings/privacy/download");
+    await expect(heading("Download my data")).toBeVisible();
+    await bar().getByRole("button", { name: "Make my file" }).click();
+    await expect(page.getByLabel("6-digit code").filter(visible)).toBeVisible();
+    await expect(page.getByRole("button", { name: "Cancel" }).filter(visible)).toBeVisible();
+    await shoot("download-code", "light");
+
+    // A meeting point again, in Icelandic, at night.
+    await page.emulateMedia({ colorScheme: "dark" });
+    await page.goto("/settings/language");
+    await page.getByRole("radio", { name: "Íslenska" }).filter(visible).click();
+    await expect(heading("Tungumál")).toBeVisible();
+    await page.goto("/meeting-points");
+    await page.getByRole("radio", { name: "Listi" }).filter(visible).click();
+    await page
+      .getByRole("link", { name: /^N1 Vík/ })
+      .filter(visible)
+      .click();
+    await expect(heading("N1 Vík")).toBeVisible();
+    await shoot("meeting-point", "dark");
   });
 });

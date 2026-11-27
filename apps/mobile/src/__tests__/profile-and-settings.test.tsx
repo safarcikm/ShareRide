@@ -4,7 +4,7 @@ import { Dimensions } from "react-native";
 import { failure, ok, tokens, type FakeClient } from "@/testing/fake-client";
 import { completeMe, legalDocument, ownProfile, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
-import { filledButtons } from "@/testing/buttons";
+import { filledButtons, inBar, inPage } from "@/testing/buttons";
 import { meetingPoints } from "@/testing/meeting-points";
 import { annaProfile, findPersonCard, profileApi } from "@/testing/people";
 import { readyDriver, volvo, yaris } from "@/testing/trips";
@@ -404,11 +404,11 @@ describe("My profile (spec 31, 3.14)", () => {
     expect(await screen.findByRole("header", { name: "My cars" })).toBeVisible();
     expect(screen).toHavePathname("/drive/cars");
     await fireEvent.press(
-      await screen.findByRole("button", { name: "Toyota Yaris, white, No number plate yet" }),
+      await screen.findByRole("link", { name: "Toyota Yaris, white, No number plate yet" }),
     );
     expect(screen).toHavePathname(`/drive/cars/${yaris.id}`);
     await fireEvent.press(await screen.findByRole("button", { name: "Back" }));
-    await fireEvent.press(await screen.findByRole("button", { name: "Add a car" }));
+    await fireEvent.press(await screen.findByRole("link", { name: "Add a car" }));
     expect(screen).toHavePathname("/drive/cars/new");
   });
 
@@ -497,8 +497,34 @@ describe("My profile (spec 31, 3.14)", () => {
     const all = screen.getAllByText(/./).map((text) => String(text.props.children));
     expect(all.indexOf("First name")).toBeGreaterThan(all.indexOf("Member since November 2026"));
     expect(filledButtons()).toBe(1);
+    expect(inBar().getByRole("button", { name: "Save profile" })).toHaveStyle({ minHeight: 56 });
     await fireEvent.press(head.getByRole("button", { name: "Back" }));
     expect(screen).toHavePathname("/profile");
+  });
+
+  it("says over Save, in the bar, why the profile was not saved (spec 31, 3.19)", async () => {
+    const app = await renderApp("/profile/edit", { me: completeMe, setUp: drivingApi });
+    await findPersonCard("Anna");
+    app.client.answer("/v1/me", () => failure(500, "internal_error"), "patch");
+    await fireEvent.press(inBar().getByRole("button", { name: "Save profile" }));
+    expect(await inBar().findByRole("alert")).toHaveTextContent(
+      "Something went wrong on our side. Try again.",
+    );
+    expect(inPage().queryByRole("alert")).toBeNull();
+    expect(screen).toHavePathname("/profile/edit");
+  });
+
+  it("says over Save what the form itself is missing, until it is mended (spec 31, 3.19)", async () => {
+    await renderApp("/profile/edit", { me: completeMe, setUp: drivingApi });
+    await findPersonCard("Anna");
+    const wrong = "Use 1 to 30 letters. Spaces, hyphens and apostrophes are fine.";
+    await fireEvent.changeText(screen.getByLabelText("First name"), "");
+    // The field can be out of sight when Save is pressed: it is said by the button too.
+    await fireEvent.press(inBar().getByRole("button", { name: "Save profile" }));
+    expect(await inBar().findByRole("alert")).toHaveTextContent(wrong);
+    expect(inPage().getByText(wrong)).toBeVisible();
+    await fireEvent.changeText(screen.getByLabelText("First name"), "Anna");
+    expect(inBar().queryByRole("alert")).toBeNull();
   });
 
   it("ticks no language for someone who chose none, and shows the rest after the common ones", async () => {

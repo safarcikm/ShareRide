@@ -41,6 +41,13 @@ driving licence have Back and their title at the left, the licence with
 its help as the line under it, and "Remove car" is a red row, last on a
 car's page (screens 2 and 3).
 
+And, since its last pass (3.19, R31.1): My cars lists the cars as rows
+with pictures, each a link, with "Add a car" as the last row, or as the
+page's main button while there is no car. "Save car", "Confirm" on the driving
+licence and "Add a photo" on the photo's page are each the page's one
+main button, at the bottom of the screen; on the photo's page "Take a
+photo" and "Remove photo" are rows.
+
 Amended by [spec 31](2026-11-26-one-ride-one-ticket.md) (3.4): in English
 a member now reads "ride" where the texts quoted here say "trip" (which
 stays in "Trip day"), and the actions are named "Find a ride", "Offer a

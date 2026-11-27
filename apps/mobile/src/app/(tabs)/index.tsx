@@ -324,7 +324,8 @@ function FrontPage() {
       {me === null ? null : <MineNext rides={mine} at={at} />}
       <LeavingSoon rides={rides} shown={shown} />
       <View style={styles.actions}>
-        <Body>{t("nav.offerSignedOut")}</Body>
+        {/* Signed out the page is centred; signed in, it starts at the left (spec 31, 3.17). */}
+        <Body align={me === null ? "center" : "start"}>{t("nav.offerSignedOut")}</Body>
         {offer}
         {meetingPoints}
         {howItWorks}

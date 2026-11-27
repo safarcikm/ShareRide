@@ -1,10 +1,12 @@
-import { act, fireEvent, screen } from "expo-router/testing-library";
+import { act, fireEvent, screen, within } from "expo-router/testing-library";
 import { router } from "expo-router";
+import { AccessibilityInfo } from "react-native";
 import type { Me } from "@shareride/contracts";
 import { linkToken } from "@/email/link-token";
 import { failure, ok } from "@/testing/fake-client";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
+import { filledButtons, inBar, inPage } from "@/testing/buttons";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
 jest.mock("@/auth/token-store", () => {
@@ -72,6 +74,13 @@ describe("Your email (plan 4.6)", () => {
     );
     await sendLink("new@example.com");
     expect(await screen.findByText("We emailed a code to an•••@example.com.")).toBeVisible();
+    // The button that sends with the code has the bar now (spec 31,
+    // R31.1), and leaving the code is a row under it.
+    expect(inBar().getByRole("button", { name: "Send the link" })).toHaveStyle({ minHeight: 56 });
+    expect(filledButtons()).toBe(1);
+    expect(
+      within(screen.getByTestId("action-rows")).getByRole("button", { name: "Cancel" }),
+    ).toBeVisible();
 
     app.client.answer("/v1/me/email", (input) => {
       const { code } = input["body"] as { code?: string };
@@ -119,12 +128,43 @@ describe("Your email (plan 4.6)", () => {
     ]);
   });
 
+  it("says by its row why the link was not sent again, not over the other button", async () => {
+    const waiting = { ...completeMe, email: "anna@example.com", pendingEmail: "new@example.com" };
+    const app = await openEmail(waiting, () =>
+      failure(429, "rate_limited", { retryAfterSeconds: 45 }),
+    );
+    const again = screen.getByRole("button", { name: "Send the link again" });
+    // A row with a picture, as "Send a new code" is.
+    expect(within(again).getByTestId("row-icon", { includeHiddenElements: true })).toBeTruthy();
+    await fireEvent.press(again);
+    const why = "You asked for a link just now. Try again in 45 seconds.";
+    expect(await inPage().findByRole("alert")).toHaveTextContent(why);
+    expect(inBar().queryByRole("alert")).toBeNull();
+    // Still said while a code is asked for, where the other button is gone.
+    app.client.answer("/v1/me/email", () => failure(403, "confirm_required"));
+    app.client.answer("/v1/me/confirm-code", () =>
+      ok(202, { resendAfterSeconds: 30, channel: "email", sentTo: "an•••@example.com" }),
+    );
+    await sendLink("other@example.com");
+    expect(await screen.findByLabelText("6-digit code")).toBeVisible();
+    app.client.answer("/v1/me/email", () =>
+      failure(429, "rate_limited", { retryAfterSeconds: 45 }),
+    );
+    await fireEvent.press(screen.getByRole("button", { name: "Send the link again" }));
+    expect(await inPage().findByText(why)).toBeVisible();
+  });
+
   it("says when a link was asked for just now", async () => {
     await openEmail(completeMe, () => failure(429, "rate_limited", { retryAfterSeconds: 45 }));
     await sendLink("anna@example.com");
     expect(
       await screen.findByText("You asked for a link just now. Try again in 45 seconds."),
     ).toBeVisible();
+    // Over the button that did nothing, in the bar (spec 31, 3.19).
+    expect(inBar().getByRole("alert")).toHaveTextContent(
+      "You asked for a link just now. Try again in 45 seconds.",
+    );
+    expect(inPage().queryByRole("alert")).toBeNull();
   });
 
   it("says how long to wait once the day's links are used", async () => {
@@ -198,6 +238,39 @@ describe("The link's page (plan 4.6)", () => {
     expect(screen.getByRole("link", { name: "Open PuffinRide" })).toBeVisible();
   });
 
+  it("says what the link did as the title, at the left and with focus, with the way on as the one main button in the bar (spec 31, 3.19 and R31.1)", async () => {
+    const focus = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent").mockClear();
+    await openLink(() => ok(200, { email: "anna@example.com" }), completeMe);
+    const head = within(await screen.findByTestId("screen-head"));
+    expect(await head.findByRole("header", { name: "Your email is added" })).not.toHaveStyle({
+      textAlign: "center",
+    });
+    expect(
+      head.getByText("anna@example.com is now the email of your PuffinRide account."),
+    ).not.toHaveStyle({ textAlign: "center" });
+    // Nothing to go back to: the page was opened from an email.
+    expect(head.queryByRole("button", { name: "Back" })).toBeNull();
+    expect(focus).toHaveBeenCalledTimes(1);
+    focus.mockRestore();
+    expect(inBar().getByRole("link", { name: "Go to your profile" })).toHaveStyle({
+      minHeight: 56,
+    });
+    expect(filledButtons()).toBe(1);
+    expect(inPage().queryByRole("link")).toBeNull();
+  });
+
+  it.each([
+    ["This link no longer works", () => failure(400, "link_invalid")],
+    ["This email belongs to another account", () => failure(409, "email_taken")],
+  ])("says %s at the left too, with the way on in the bar", async (title, answer) => {
+    await openLink(answer);
+    const head = within(await screen.findByTestId("screen-head"));
+    expect(await head.findByRole("header", { name: title })).not.toHaveStyle({
+      textAlign: "center",
+    });
+    expect(inBar().getByRole("link", { name: "Open PuffinRide" })).toHaveStyle({ minHeight: 56 });
+  });
+
   it("says when the link no longer works", async () => {
     await openLink(() => failure(400, "link_invalid"));
     expect(await screen.findByRole("header", { name: "This link no longer works" })).toBeVisible();
@@ -266,6 +339,12 @@ describe("The link's page (plan 4.6)", () => {
       ),
     ).toBeVisible();
     expect(app.client.calls.filter((call) => call.path === "/v1/email-verifications")).toEqual([]);
+    expect(
+      within(screen.getByTestId("screen-head")).getByRole("header", {
+        name: "Open the link from your email",
+      }),
+    ).not.toHaveStyle({ textAlign: "center" });
+    expect(inBar().getByRole("link", { name: "Open PuffinRide" })).toHaveStyle({ minHeight: 56 });
   });
 
   it("reads the token after the # on the web, or from the address on a phone", () => {

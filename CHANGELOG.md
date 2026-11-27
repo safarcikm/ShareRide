@@ -1858,6 +1858,25 @@ releases follow [Semantic Versioning](https://semver.org/).
   and the way on is the one main button at the bottom. On Notices and
   Beta news the title of a notice or a piece of news is a heading under
   the page's title on the web.
+- Every page has one main button, at the bottom, and its title at the
+  left (spec 31, R31.1 and 3.17; the last pass, part one). The button
+  that saves, sends or deletes is in the bar at the bottom of the screen,
+  seen without scrolling, on Edit profile, a car, the driving licence,
+  Email, the password, the photo's page, "Download my data", "Delete my
+  account", Notices (an appeal) and "What's wrong here?" at a meeting
+  point; why it did nothing is said over it. Confirming with a code has
+  that one button there, with "Send a new code" and "Cancel" as rows;
+  Sign-in methods and setting up a passkey keep theirs as it was. My cars
+  lists the cars as rows with pictures. A row shows when it is at work.
+  What was written for an appeal is kept when its form is closed. All rides, a place, the meeting
+  points and a meeting point have Back and their title at the left, with
+  the rest of the page starting there too; a meeting point's "Open in
+  maps" and "Something wrong here?" are rows with pictures at its end.
+  The page an email's link
+  opens, a saved password and the thanks after telling us what is wrong
+  at a meeting point say what happened as the page's title, with focus,
+  and the way on is the main button. A test opens every page a signed-in
+  member reaches, 86 pages and states, and checks both rules.
 - The web journeys never give two test accounts the same phone number: a
   run in ten did, and a sign-in journey then failed.
 - CI skips its code jobs (bundles, unit, integration and web tests, the API

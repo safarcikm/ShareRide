@@ -31,10 +31,13 @@ export const englishPhoto: PhotoTexts = {
   photoTitle: "Your profile photo",
 };
 
-/** The screen with this title, not one left in the page under it. */
+/**
+ * The screen with this title, not one left in the page under it: its page
+ * and the bar at its bottom, where its main button is (spec 31, R31.1).
+ */
 const screenTitled = (page: Page, title: string) =>
   page
-    .getByTestId("screen-scroll")
+    .getByTestId("screen-safe-area")
     .filter({ has: page.getByRole("heading", { name: title, exact: true }) });
 
 /**
@@ -54,7 +57,8 @@ export async function addPhotoBeforePublishing(
   const stored = page.waitForResponse(
     (response) => response.url().endsWith("/v1/me/photo") && response.request().method() === "PUT",
   );
-  await screen.getByRole("button", { name: texts.addPhoto }).click();
+  // The photo page's one main button, in its bar.
+  await screen.getByTestId("bottom-bar").getByRole("button", { name: texts.addPhoto }).click();
   await (await chooser).setFiles({ name: "me.jpg", mimeType: "image/jpeg", buffer: picture });
   expect((await stored).status()).toBe(200);
   await expect(screen).toBeHidden();

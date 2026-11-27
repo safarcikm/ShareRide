@@ -45,9 +45,15 @@ test("deletes an account after cancelling its booking, then keeps it on signing 
   await dora.getByRole("button", { name: "Back", exact: true }).filter(visible).click();
   await expect(dora.getByRole("heading", { name: "Delete my account" })).toBeVisible();
   await expect(remove).toBeVisible();
+  // It is the page's one main button, in the bar at the bottom (spec 31, R31.1).
+  const bar = dora.getByTestId("bottom-bar").filter(visible);
+  await expect(bar.getByRole("button", { name: "Delete my account" })).toBeInViewport();
 
   // A fresh code by email confirms it, and she is signed out.
   const code = await emailedCode(passengerEmail, confirmCodeSubject, () => remove.click());
+  // The button that deletes with the code has the bar now; leaving is a row.
+  await expect(bar.getByRole("button", { name: "Delete my account" })).toBeInViewport();
+  await expect(dora.getByRole("button", { name: "Cancel" }).filter(visible)).toBeVisible();
   await dora.getByLabel("6-digit code").fill(code);
   await expect(dora.getByRole("heading", { name: scheduled })).toBeVisible();
   await dora.getByRole("button", { name: "Close" }).click();
@@ -58,7 +64,8 @@ test("deletes an account after cancelling its booking, then keeps it on signing 
   await signIn(dora, english, passengerEmail);
   await expect(dora.getByRole("heading", { name: scheduled })).toBeVisible();
   await expect(dora).toHaveURL("/account/deletion");
-  await dora.getByRole("button", { name: "Keep my account" }).click();
+  await expect(dora.getByRole("button", { name: "Sign out", exact: true })).toBeVisible();
+  await bar.getByRole("button", { name: "Keep my account" }).click();
   await expect(dora.getByRole("heading", { name: english.hi("Dóra") })).toBeVisible();
   await close();
 });

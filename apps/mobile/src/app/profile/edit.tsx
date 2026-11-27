@@ -11,8 +11,9 @@ import { ProfileForm } from "@/profile/profile-form";
 /**
  * Edit profile (spec 1, screen 6): the title at the left, who I am now in
  * the person's card with the photo's controls, as on Profile, and the form
- * under it (spec 31, 3.19). The card says what is saved: it changes with
- * the photo at once, and with the form once that is saved.
+ * under it (spec 31, 3.19), with "Save profile" in the bottom bar. The card
+ * says what is saved: it changes with the photo at once, and with the form
+ * once that is saved.
  */
 export default function EditProfileScreen() {
   const { locale, t } = useLanguage();
@@ -26,6 +27,7 @@ export default function EditProfileScreen() {
       </PersonCard>
       <ProfileForm
         me={me}
+        inBar
         onSaved={() => {
           if (router.canGoBack()) router.back();
           else router.replace("/profile");

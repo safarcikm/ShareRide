@@ -130,7 +130,7 @@ describe("Ask about my data (spec 11, 3.6)", () => {
 
     expect(screen.getByText("We answer by email, so add your email first.")).toBeVisible();
     expect(screen.queryByRole("button", { name: "Send" })).toBeNull();
-    await fireEvent.press(screen.getByRole("button", { name: "Add my email" }));
+    await fireEvent.press(screen.getByRole("link", { name: "Add my email" }));
     expect(await screen.findByRole("header", { name: "Your email" })).toBeVisible();
   });
 
@@ -142,7 +142,7 @@ describe("Ask about my data (spec 11, 3.6)", () => {
     await fireEvent.press(screen.getByRole("button", { name: "Send" }));
 
     expect(await screen.findByText("We answer by email, so add your email first.")).toBeVisible();
-    expect(screen.getByRole("button", { name: "Add my email" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Add my email" })).toBeVisible();
   });
 
   it("says when another can be sent after 5 in a day, and keeps the text", async () => {

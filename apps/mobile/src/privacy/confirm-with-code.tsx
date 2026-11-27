@@ -1,13 +1,17 @@
 import type { CallFailure } from "@shareride/api-client";
 import { sendConfirmCodeRoute } from "@shareride/contracts";
 import { codeRules, hideEmail } from "@shareride/domain";
+import { RotateCw, X } from "lucide-react-native";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { errorText, formatWait } from "@/auth/errors";
 import { useMe, useSession } from "@/auth/session";
 import { useConfig } from "@/beta/config";
+import { ActionRows } from "@/components/action-rows";
 import { Button } from "@/components/button";
 import { Notice } from "@/components/notice";
+import { Row } from "@/components/row";
+import { InBar } from "@/components/screen";
 import { TextField } from "@/components/text-field";
 import { Body, sectionLevel } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
@@ -34,10 +38,19 @@ const codeFailures = new Set(["code_invalid", "code_expired", "code_attempts_exc
  * and shows "Send a new code" after the wait. Opened again inside that
  * wait, it uses the code already sent. If no code could be sent, it says
  * why and still takes a code the person already has.
+ *
+ * With `inBar`, the button that confirms is the screen's one main button
+ * while this shows, in its bottom bar (spec 31, R31.1): busy until the
+ * first code has an answer, so the bar does not come and go. "Send a new
+ * code" and "Cancel" are then rows under the field. Without it, the three
+ * are buttons under the code, as on Sign-in methods and where a passkey is
+ * set up, which are spec 29's pages. Either way, what the code has to say
+ * stays by the field it is about.
  */
 export function ConfirmWithCode({
   confirmLabel,
   danger = false,
+  inBar = false,
   onConfirm,
   describe,
   sentUntil,
@@ -48,6 +61,8 @@ export function ConfirmWithCode({
   readonly confirmLabel: string;
   /** What it confirms takes something away, as deleting the account does: the button is red. */
   readonly danger?: boolean;
+  /** The button that confirms goes in the screen's bar, with the rest as rows. */
+  readonly inBar?: boolean;
   /** Runs the action with the code: done, or why not. */
   readonly onConfirm: (code: string) => Promise<{ readonly ok: true } | CallFailure>;
   /** Words for a failure that is the action's own, such as one file a day. */
@@ -182,6 +197,12 @@ export function ConfirmWithCode({
         where.to === null ? t("confirm.sentNoNumber") : t("confirm.sent", { digits: where.to });
   }
 
+  const variant = danger ? "danger" : "primary";
+  // How long until a new code can be asked for.
+  const waiting =
+    asked && secondsLeft > 0 ? (
+      <Body align="start">{t("auth.code.resendIn", { wait: formatWait(t, secondsLeft) })}</Body>
+    ) : null;
   return (
     <View style={styles.group}>
       <Text
@@ -211,26 +232,54 @@ export function ConfirmWithCode({
         />
       ) : null}
       <Notice message={message} kind={notice?.kind === "resent" ? "info" : "error"} />
-      {asked ? (
-        <Button
-          variant={danger ? "danger" : "primary"}
-          label={confirmLabel}
-          busy={confirming}
-          onPress={() => void confirm(code)}
-        />
-      ) : null}
-      {!asked ? null : secondsLeft > 0 ? (
-        <Body align="start">{t("auth.code.resendIn", { wait: formatWait(t, secondsLeft) })}</Body>
+      {inBar ? (
+        <>
+          {waiting}
+          <ActionRows>
+            {asked && secondsLeft <= 0 ? (
+              <Row
+                icon={RotateCw}
+                title={t("auth.code.resend")}
+                busy={sending}
+                disabled={confirming}
+                onPress={resend}
+              />
+            ) : null}
+            <Row icon={X} title={t("common.cancel")} onPress={onCancel} />
+          </ActionRows>
+          <InBar>
+            <Button
+              main
+              variant={variant}
+              label={confirmLabel}
+              busy={confirming || !asked}
+              onPress={() => void confirm(code)}
+            />
+          </InBar>
+        </>
       ) : (
-        <Button
-          variant="secondary"
-          label={t("auth.code.resend")}
-          busy={sending}
-          disabled={confirming}
-          onPress={resend}
-        />
+        <>
+          {asked ? (
+            <Button
+              variant={variant}
+              label={confirmLabel}
+              busy={confirming}
+              onPress={() => void confirm(code)}
+            />
+          ) : null}
+          {waiting}
+          {asked && secondsLeft <= 0 ? (
+            <Button
+              variant="secondary"
+              label={t("auth.code.resend")}
+              busy={sending}
+              disabled={confirming}
+              onPress={resend}
+            />
+          ) : null}
+          <Button variant="text" label={t("common.cancel")} onPress={onCancel} />
+        </>
       )}
-      <Button variant="text" label={t("common.cancel")} onPress={onCancel} />
     </View>
   );
 }

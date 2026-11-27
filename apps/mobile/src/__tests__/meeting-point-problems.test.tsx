@@ -1,7 +1,9 @@
-import { fireEvent, screen } from "expo-router/testing-library";
+import { fireEvent, screen, within } from "expo-router/testing-library";
+import { AccessibilityInfo } from "react-native";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
 import { completeMe, renderApp, signInByEmail } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
+import { filledButtons, inBar, inPage } from "@/testing/buttons";
 import { bsi, details } from "@/testing/meeting-points";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
@@ -78,6 +80,64 @@ describe("Something wrong here? (spec 2, 3.5)", () => {
     ]);
     await fireEvent.press(screen.getByRole("button", { name: "Back" }));
     expect(screen).toHavePathname(`/meeting-points/${bsi.id}`);
+  });
+
+  it("has its title at the left with Back, the point under it, and Send as the main button in the bar (spec 31, 3.17 and R31.1)", async () => {
+    await openProblem();
+    const head = within(screen.getByTestId("screen-head"));
+    expect(head.getByRole("header", { name: "What's wrong here?" })).not.toHaveStyle({
+      textAlign: "center",
+    });
+    expect(head.getByText("BSÍ bus terminal")).not.toHaveStyle({ textAlign: "center" });
+    expect(head.getByRole("button", { name: "Back" })).toBeVisible();
+    expect(inBar().getByRole("button", { name: "Send" })).toHaveStyle({ minHeight: 56 });
+    expect(filledButtons()).toBe(1);
+  });
+
+  it("says thanks as the title, with focus, and the way back as the main button in the bar (spec 31, 3.19)", async () => {
+    await openProblem();
+    await fireEvent.press(screen.getByRole("radio", { name: "It's not safe to wait here" }));
+    const focus = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent").mockClear();
+    await fireEvent.press(inBar().getByRole("button", { name: "Send" }));
+    const head = within(await screen.findByTestId("screen-head"));
+    expect(
+      await head.findByRole("header", { name: "Thank you. We'll check this meeting point." }),
+    ).not.toHaveStyle({ textAlign: "center" });
+    expect(focus).toHaveBeenCalledTimes(1);
+    focus.mockRestore();
+    // Nothing to go back to in the head: the way on is the bar's button.
+    expect(head.queryByRole("button", { name: "Back" })).toBeNull();
+    expect(inBar().getByRole("button", { name: "Back" })).toHaveStyle({ minHeight: 56 });
+    expect(filledButtons()).toBe(1);
+  });
+
+  it("says over Send, in the bar, why it was not sent", async () => {
+    await openProblem(() => failure(429, "too_many_reports"));
+    await fireEvent.press(screen.getByRole("radio", { name: "It's not safe to wait here" }));
+    await fireEvent.press(inBar().getByRole("button", { name: "Send" }));
+    expect(await inBar().findByRole("alert")).toBeVisible();
+    expect(inPage().queryByRole("alert")).toBeNull();
+    expect(screen.getByRole("header", { name: "What's wrong here?" })).toBeVisible();
+  });
+
+  it("says over Send what the form itself is missing: a reason, or a shorter note", async () => {
+    const { client } = await openProblem();
+    // The reasons can be out of sight when Send is pressed: it is said by the button.
+    await fireEvent.press(inBar().getByRole("button", { name: "Send" }));
+    expect(await inBar().findByRole("alert")).toHaveTextContent("Choose what is wrong.");
+    expect(inPage().queryByText("Choose what is wrong.")).toBeNull();
+    // Mended, it goes.
+    await fireEvent.press(screen.getByRole("radio", { name: "Something else" }));
+    expect(inBar().queryByRole("alert")).toBeNull();
+    await fireEvent.changeText(screen.getByLabelText("Tell us more (optional)"), "a".repeat(301));
+    await fireEvent.press(inBar().getByRole("button", { name: "Send" }));
+    expect(await inBar().findByRole("alert")).toHaveTextContent(
+      "Shorten it to 300 characters or fewer.",
+    );
+    expect(inPage().getByText("Shorten it to 300 characters or fewer.")).toBeVisible();
+    await fireEvent.changeText(screen.getByLabelText("Tell us more (optional)"), "Short.");
+    expect(inBar().queryByRole("alert")).toBeNull();
+    expect(sent(client)).toEqual([]);
   });
 
   it("offers each reason of spec 2, 3.5", async () => {
