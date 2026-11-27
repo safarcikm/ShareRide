@@ -263,6 +263,21 @@ describe("The tab bar on phones", () => {
   });
 });
 
+describe("The tab bar's places", () => {
+  it("start at the top of their tabs, so a name of two lines, as Ferðirnar mínar, lifts no icon over the others", async () => {
+    (getLocales as jest.Mock).mockReturnValue([{ languageTag: "is-IS" }]);
+    await renderApp("/");
+    await screen.findByRole("tab", { name: "Ferðirnar mínar" });
+    const places = screen.getAllByRole("tab");
+    expect(places).toHaveLength(5);
+    // 2 from the top, where an icon over a name of one line (22 in a pill
+    // padded by 4, 4 between, and a line of 18) is at the middle of a tab 56 high.
+    for (const place of places) {
+      expect(place).toHaveStyle({ justifyContent: "flex-start", paddingTop: 2, minHeight: 56 });
+    }
+  });
+});
+
 describe("The top bar on wide screens", () => {
   beforeEach(() => {
     Dimensions.set({ window: { width: 1280, height: 800, scale: 1, fontScale: 1 } });

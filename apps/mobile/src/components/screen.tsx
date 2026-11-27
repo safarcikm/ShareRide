@@ -34,6 +34,7 @@ import {
 } from "@/theme/tokens";
 import { onWebsite } from "@/lib/on-website";
 import { usePalette } from "@/theme/use-palette";
+import { HeldWithMain } from "./press-guard";
 import { useRefresh, type Refresh } from "./refresh";
 import { SiteFooter } from "./site-footer";
 
@@ -285,10 +286,13 @@ function BottomBar({ footer, inBar }: { readonly footer: ReactNode; readonly inB
       style={[styles.bar, { backgroundColor: palette.surface, borderTopColor: palette.border }]}
     >
       <View style={styles.barColumn}>
-        {footer}
-        {[...held].map(([key, part]) => (
-          <Fragment key={key}>{part}</Fragment>
-        ))}
+        {/* A second press meant for the bar's button lands on none of them (spec 31, 3.20). */}
+        <HeldWithMain>
+          {footer}
+          {[...held].map(([key, part]) => (
+            <Fragment key={key}>{part}</Fragment>
+          ))}
+        </HeldWithMain>
       </View>
     </View>
   );

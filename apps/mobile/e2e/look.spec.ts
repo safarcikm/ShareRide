@@ -10,9 +10,15 @@ import {
   type TripDetails,
   type TripSearchResult,
 } from "@shareride/contracts";
-import { english, signUp } from "./support/account";
+import { english, icelandic, signUp } from "./support/account";
 import { confirmedBooking, requestSeat, secondPage } from "./support/cancelling";
-import { picturesUnderTheirText, ticketFit } from "./support/layout";
+import {
+  menuFit,
+  picturesUnderTheirText,
+  textsToSee,
+  ticketFit,
+  twiceAsLarge,
+} from "./support/layout";
 import { aPerson, personId, showPerson } from "./support/person";
 import { openTrip } from "./support/trips";
 
@@ -187,33 +193,9 @@ for (const scheme of schemes) {
   });
 }
 
-/**
- * Text at 200% (WCAG 1.4.4), as a browser's text-only zoom sets it: the
- * text there is, and the text drawn after, as when a part of the screen
- * takes another place for the larger text.
- */
-async function twiceAsLarge(page: Page) {
-  await page.evaluate(() => {
-    document.documentElement.style.fontSize = "200%";
-    const enlarge = (text: HTMLElement) => {
-      if (text.dataset["twice"] !== undefined) return;
-      text.dataset["twice"] = "";
-      const style = getComputedStyle(text);
-      text.style.fontSize = `${String(parseFloat(style.fontSize) * 2)}px`;
-      text.style.lineHeight = `${String(parseFloat(style.lineHeight) * 2)}px`;
-    };
-    for (const text of document.querySelectorAll<HTMLElement>("[dir]")) enlarge(text);
-    new MutationObserver((changes) => {
-      for (const change of changes) {
-        for (const added of change.addedNodes) {
-          if (!(added instanceof HTMLElement)) continue;
-          if (added.matches("[dir]")) enlarge(added);
-          for (const text of added.querySelectorAll<HTMLElement>("[dir]")) enlarge(text);
-        }
-      }
-    }).observe(document.body, { childList: true, subtree: true });
-  });
-}
+/** By how many pixels the page itself scrolls sideways. */
+const pageWider = (page: Page) =>
+  page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
 
 // Spec 31, review focus 3: a ride between places with long names, on the
 // narrowest phone the app is made for. Find's rides are given such a ride
@@ -275,20 +257,14 @@ test.describe("a ticket with long place names, 360 wide", () => {
       const price = await box(ticket.getByTestId("ticket-price"));
       expect(price.x).toBeGreaterThanOrEqual(card.x);
       expect(price.x + price.width).toBeLessThanOrEqual(card.x + card.width);
+      // Neither the screen nor the page scrolls sideways, at either size:
+      // the name line over the scene and the menu's names stay in the window.
+      expect(fit.screenWider).toBeLessThanOrEqual(0);
+      expect(await pageWider(page)).toBeLessThanOrEqual(0);
       if (zoom === 1) {
         // With the text as set every word is whole: the price goes under
         // the timetable before it squeezes a name.
         expect(fit.brokenWords).toEqual([]);
-        // Neither the screen nor the page scrolls sideways. At twice the
-        // size the name line over the scene is wider than the screen, and
-        // the labels of the tab bar than their tabs, which is the last
-        // pass's to mend (plan, PR 12), not a ticket's: the ticket is
-        // whole in the window at either size.
-        expect(fit.screenWider).toBeLessThanOrEqual(0);
-        const wider = await page.evaluate(
-          () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
-        );
-        expect(wider).toBeLessThanOrEqual(0);
       } else {
         // Twice as large, a word longer than a whole line of its place can
         // only be broken: no other word is, and by then the price stands
@@ -370,12 +346,29 @@ test.describe("a ride's page with long place names, 360 wide", () => {
       const from = await box(ticket.getByTestId("ticket-from-place"));
       const time = await box(ticket.getByTestId("ticket-time").first());
       expect(Math.abs(time.y - from.y)).toBeLessThan(8 * zoom);
+      // The screen does not scroll sideways: "Get in" and "Get out" go
+      // under their stops' names where they have no room beside them.
+      expect(fit.screenWider).toBeLessThanOrEqual(0);
       if (zoom === 1) {
         // With the text as set every word is whole: Share goes over the
         // title, and Change under its place, before either squeezes a name.
         expect(head.brokenWords).toEqual([]);
         expect(fit.brokenWords).toEqual([]);
-        expect(fit.screenWider).toBeLessThanOrEqual(0);
+        // A stop's name of one line stands level with its time and its
+        // dot: at the middle of a row as high as a touch target.
+        const offLevel = await page.evaluate(() =>
+          [...document.querySelectorAll<HTMLElement>('[data-testid="route-stop"]')]
+            .filter((stop) => stop.getClientRects().length > 0)
+            .flatMap((stop) => {
+              const name = stop.querySelector<HTMLElement>('[role="button"] [dir]');
+              if (name === null) return ["a stop with no name"];
+              const box = name.getBoundingClientRect();
+              if (box.height > parseFloat(getComputedStyle(name).lineHeight) * 1.5) return [];
+              const from = box.top + box.height / 2 - stop.getBoundingClientRect().top;
+              return Math.abs(from - 22) > 3 ? [`${name.textContent} at ${String(from)}`] : [];
+            }),
+        );
+        expect(offLevel).toEqual([]);
         // Where you sit: the words stand beside the car, also this narrow.
         const seats = page.getByTestId("where-you-sit").filter({ visible: true });
         const car = await box(seats.getByTestId("seat-view"));
@@ -477,11 +470,21 @@ test.describe("a booked seat with long names, 360 wide", () => {
       const button = await box(message);
       expect(button.x).toBeGreaterThanOrEqual(card.x - 1);
       expect(button.x + button.width).toBeLessThanOrEqual(card.x + card.width + 1);
+      // The road names its steps, or says the one it is at in a line: no
+      // name stands over another or past the road. It measures its names
+      // and is drawn again, a moment after the text grew.
+      const road = page.getByRole("img", { name: /^Step \d of 4: / }).filter(shown);
+      await expect
+        .poll(async () => {
+          const steps = await textsToSee(road);
+          return { shown: steps.shown.length > 0, over: steps.over, past: steps.past };
+        })
+        .toEqual({ shown: true, over: [], past: [] });
+      // The screen does not scroll sideways.
+      expect(seat.screenWider).toBeLessThanOrEqual(0);
       if (zoom === 1) {
-        // With the text as set every word is whole, and the screen does
-        // not scroll sideways.
+        // With the text as set every word is whole.
         for (const part of [head, seat, stand, who]) expect(part.brokenWords).toEqual([]);
-        expect(seat.screenWider).toBeLessThanOrEqual(0);
         // Where to stand: the place stands beside the small map.
         const map = await box(place.getByTestId("iceland-map"));
         const name = await box(place.getByText(getIn));
@@ -799,11 +802,11 @@ test.describe("a ride I drive with long names, 360 wide", () => {
       const button = await box(message);
       expect(button.x).toBeGreaterThanOrEqual(line.x);
       expect(button.x + button.width).toBeLessThanOrEqual(line.x + line.width + 1);
+      // The screen does not scroll sideways.
+      expect(ride.screenWider).toBeLessThanOrEqual(0);
       if (zoom === 1) {
-        // With the text as set every word is whole, and the screen does
-        // not scroll sideways.
+        // With the text as set every word is whole.
         for (const part of parts) expect(part.brokenWords).toEqual([]);
-        expect(ride.screenWider).toBeLessThanOrEqual(0);
       } else {
         // Twice as large, only a word longer than a whole line is broken.
         for (const part of parts) expect(part.needlessly).toEqual([]);
@@ -896,12 +899,12 @@ test.describe("Profile with a long name, 360 wide", () => {
         expect(group.needlessly).toEqual([]);
       }
       expect(who.needlessly).toEqual([]);
-      if (zoom === 1) {
-        // With the text as set every word of the card is whole, and the
-        // screen does not scroll sideways.
-        expect(who.brokenWords).toEqual([]);
-        expect(who.screenWider).toBeLessThanOrEqual(0);
-      }
+      // Neither the screen nor the page scrolls sideways: the menu's names
+      // stay in their places.
+      expect(who.screenWider).toBeLessThanOrEqual(0);
+      expect(await pageWider(page)).toBeLessThanOrEqual(0);
+      // With the text as set every word of the card is whole.
+      if (zoom === 1) expect(who.brokenWords).toEqual([]);
     }
   });
 });
@@ -974,11 +977,11 @@ test.describe("A person's profile with a long name, 360 wide", () => {
       const last = await box(rows.nth(1));
       const blockRow = await box(block);
       expect(blockRow.y + blockRow.height).toBeGreaterThanOrEqual(last.y + last.height - 2);
+      // The screen does not scroll sideways.
+      expect(who.screenWider).toBeLessThanOrEqual(0);
       if (zoom === 1) {
-        // With the text as set every word is whole, and the screen does
-        // not scroll sideways.
+        // With the text as set every word is whole.
         for (const part of [head, who, figure, safety]) expect(part.brokenWords).toEqual([]);
-        expect(who.screenWider).toBeLessThanOrEqual(0);
       }
     }
     // Unfolded, twice as large, the counts behind the figure are whole in its card.
@@ -988,5 +991,81 @@ test.describe("A person's profile with a long name, 360 wide", () => {
     expect(counts.past).toEqual([]);
     expect(counts.cut).toEqual([]);
     expect(counts.beyondWindow).toBe(0);
+  });
+});
+
+// The last pass (plan, PR 12b): what every screen of the menu shares, on
+// the narrowest phone the app is made for, with the text as set and twice
+// as large (WCAG 1.4.4).
+test.describe("the menu, Find's name line and the road, 360 wide", () => {
+  const window = { width: 360, height: 740 };
+  const shown = { visible: true } as const;
+
+  for (const texts of [english, icelandic]) {
+    test.describe(texts === english ? "in English" : "in Icelandic", () => {
+      test.use({ locale: texts === english ? "en-GB" : "is-IS" });
+
+      test("the menu keeps each name in its own place and its icons in a line, and Find's name line stays in the window", async ({
+        page,
+      }, testInfo) => {
+        test.skip(testInfo.project.name !== "phone", "Wide screens have the top bar.");
+        await signUp(page, texts, "Anna");
+        await page.setViewportSize(window);
+        for (const zoom of [1, 2] as const) {
+          if (zoom === 2) await twiceAsLarge(page);
+          // Each place's name is inside its place, no place stands over
+          // another, and the icons of a row are level, whatever lines the
+          // names take ("Ferðirnar mínar" has two as set).
+          const menu = await menuFit(page);
+          expect(menu.places).toBe(5);
+          // With the text as set the five stand beside each other.
+          if (zoom === 1) expect(menu.rows).toBe(1);
+          expect(menu.namesPast).toEqual([]);
+          expect(menu.over).toEqual([]);
+          expect(menu.iconsOffLine).toEqual([]);
+          expect(menu.beyondWindow).toBe(0);
+          // Find's name line: the name, Beta and the language, each whole
+          // in the window.
+          const top = await ticketFit(page, "scene-top", "[dir]");
+          expect(top.past).toEqual([]);
+          expect(top.cut).toEqual([]);
+          expect(top.beyondWindow).toBe(0);
+          expect(top.screenWider).toBeLessThanOrEqual(0);
+          expect(await pageWider(page)).toBeLessThanOrEqual(0);
+        }
+      });
+    });
+  }
+
+  test.describe("offering a ride", () => {
+    test.use({ locale: "en-GB" });
+
+    test("the road names its steps under their marks, and says the step in one line where they have no room", async ({
+      page,
+    }, testInfo) => {
+      test.skip(testInfo.project.name !== "phone", "A phone's column.");
+      await signUp(page, english, "Anna");
+      await page.setViewportSize(window);
+      await page.goto("/offer");
+      await expect(page.getByRole("heading", { name: "Where are you driving?" })).toBeVisible();
+      const road = page.getByRole("img", { name: "Step 1 of 5: Route" }).filter(shown);
+      await expect(road).toBeVisible();
+      const set = await textsToSee(road);
+      expect(set.shown).toEqual(["Route", "Time", "Seats", "Price", "Check"]);
+      expect(set.over).toEqual([]);
+      expect(set.past).toEqual([]);
+
+      // Twice as large the five names have no room: what a screen reader
+      // hears stands under the road, for the eye.
+      await twiceAsLarge(page);
+      await expect(road.getByText("Step 1 of 5: Route")).toBeVisible();
+      const large = await textsToSee(road);
+      expect(large.shown).toEqual(["Step 1 of 5: Route"]);
+      expect(large.over).toEqual([]);
+      expect(large.past).toEqual([]);
+      const head = await ticketFit(page, "screen-head", "h1");
+      expect(head.screenWider).toBeLessThanOrEqual(0);
+      expect(await pageWider(page)).toBeLessThanOrEqual(0);
+    });
   });
 });

@@ -5,6 +5,7 @@ import { apiUrl } from "../playwright.config";
 import { english, signUp } from "./support/account";
 import { confirmedBooking, requestSeat, secondPage } from "./support/cancelling";
 import { passengerRow } from "./support/driver-ride";
+import { twiceAsLarge } from "./support/layout";
 import { aPerson, personId, showPerson } from "./support/person";
 import { addPhotoBeforePublishing } from "./support/photo";
 import { chooseTime, postTripToSelfoss, tomorrow } from "./support/trips";
@@ -1139,5 +1140,49 @@ test.describe("pictures", () => {
       .click();
     await expect(heading("N1 Vík")).toBeVisible();
     await shoot("meeting-point", "dark");
+  });
+
+  test("the last pass: text twice as large on a phone 360 wide (spec 31)", async ({
+    page,
+  }, info) => {
+    test.skip(info.project.name === "desktop", "A phone's pictures");
+    test.setTimeout(300_000);
+    const folder = join(root ?? "", "one-ride-one-ticket", "built");
+    mkdirSync(folder, { recursive: true });
+    const visible = { visible: true };
+    /** The window as it is, not the whole screen: what a phone shows of it. */
+    const shoot = async (name: string) => {
+      await page.mouse.move(0, 0);
+      await page.waitForTimeout(500);
+      await page.screenshot({ path: join(folder, `${name}-phone-light.png`), scale: "device" });
+    };
+    await signUp(page, english, "Dóra");
+    const tripId = await postTripToSelfoss(page, "17:30");
+    await page.setViewportSize({ width: 360, height: 740 });
+
+    // Find: the language under the name, and the menu on two rows.
+    await page.goto("/");
+    await expect(page.getByRole("heading", { name: "Hi Dóra" }).filter(visible)).toBeVisible();
+    await twiceAsLarge(page);
+    await shoot("large-text-find");
+
+    // A posting step: the road says its step in one line.
+    await page.goto("/offer");
+    await expect(
+      page.getByRole("heading", { name: "Where are you driving?" }).filter(visible),
+    ).toBeVisible();
+    await twiceAsLarge(page);
+    await expect(page.getByText("Step 1 of 5: Route").filter(visible)).toBeVisible();
+    await shoot("large-text-offer");
+
+    // A ride's stops: "Get in" and "Get out" under their stops' names.
+    await page.goto(`/trips/${tripId}?from=0&to=1`);
+    const stop = page.getByTestId("route-stop").filter(visible).first();
+    await expect(stop).toBeVisible();
+    await twiceAsLarge(page);
+    await stop.evaluate((row) => {
+      row.scrollIntoView({ block: "start" });
+    });
+    await shoot("large-text-stops");
   });
 });

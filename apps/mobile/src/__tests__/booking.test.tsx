@@ -342,6 +342,72 @@ describe("Booking from trip details (spec 5, 3.1)", () => {
     expect(stored.get("pending-booking")).toBe("");
   });
 
+  it("takes no press on the next page's Send request just after the ride's own was pressed: a double press sends nothing", async () => {
+    const { client } = await renderApp(`/trips/${id}?from=1&to=2`, {
+      me: completeMe,
+      // As in the app: tests press faster than anyone otherwise.
+      holdsPresses: true,
+      setUp: (fake) => {
+        tripDetailsApi(fake, () => ok(200, northTrip({ board: 1, alight: 2 })));
+        fake.answer("/v1/trips/{id}/bookings", () => ok(201, northBooking()), "post");
+        bookingApi(fake, () => northBooking());
+      },
+    });
+    const sent = () => client.calls.filter((call) => call.path === "/v1/trips/{id}/bookings");
+    const bar = await screen.findByTestId("bottom-bar");
+    await fireEvent.press(within(bar).getByRole("button", { name: "Send request" }));
+    // The page that checks the booking is open, with its own Send request
+    // where the ride's stood (spec 31, R31.1): it is held.
+    await waitFor(() => {
+      expect(screen).toHavePathname(`/trips/${id}/book`);
+    });
+    const send = () => screen.getByRole("button", { name: "Send request" });
+    expect(send()).toBeDisabled();
+    await fireEvent.press(send());
+    expect(sent()).toHaveLength(0);
+    // Half a second later it sends.
+    await waitFor(
+      () => {
+        expect(send()).toBeEnabled();
+      },
+      { timeout: 3_000 },
+    );
+    await fireEvent.press(send());
+    expect(await screen.findByRole("header", { name: "Request sent" })).toBeVisible();
+    expect(sent()).toHaveLength(1);
+  });
+
+  it("takes no press on Find another ride just after Send request brought it under the main button: Request sent stays to be read", async () => {
+    await renderApp(`/trips/${id}/book?from=1&to=2&seats=1`, {
+      me: completeMe,
+      holdsPresses: true,
+      setUp: (fake) => {
+        tripDetailsApi(fake, () => ok(200, northTrip({ board: 1, alight: 2 })));
+        fake.answer("/v1/trips/{id}/bookings", () => ok(201, northBooking()), "post");
+        bookingApi(fake, () => northBooking());
+      },
+    });
+    await fireEvent.press(await screen.findByRole("button", { name: "Send request" }));
+    expect(await screen.findByRole("header", { name: "Request sent" })).toBeVisible();
+    // The bar has "See in My rides" over "Find another ride", which stands
+    // where Send request stood (spec 31, 3.20): it is held with the main one.
+    const find = () => screen.getByRole("button", { name: "Find another ride" });
+    expect(find()).toBeDisabled();
+    await fireEvent.press(find());
+    expect(screen).toHavePathname(`/bookings/${bookingId}/booked`);
+    // Half a second later it leads on.
+    await waitFor(
+      () => {
+        expect(find()).toBeEnabled();
+      },
+      { timeout: 3_000 },
+    );
+    await fireEvent.press(find());
+    await waitFor(() => {
+      expect(screen).toHavePathname("/");
+    });
+  });
+
   it("shows the booking on trip details on coming back from it", async () => {
     let booked = false;
     await renderApp(`/trips/${id}?from=1&to=2`, {

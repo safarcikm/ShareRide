@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react-native";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { useLayoutEffect, useRef, type ComponentRef, type RefObject } from "react";
+import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useHover } from "@/theme/hover";
 import { chunky } from "@/theme/pressable";
 import {
@@ -14,6 +15,7 @@ import {
 import { usePalette } from "@/theme/use-palette";
 import { linkProps, type AppPath } from "@/navigation/link-props";
 import { Icon } from "./icon";
+import { useMainButton } from "./press-guard";
 
 /**
  * `danger` is the main button that takes something away, such as "Cancel
@@ -109,6 +111,56 @@ function look(variant: Variant, palette: Palette, disabled: boolean, hovered: bo
   }
 }
 
+/**
+ * On the web a held button says that it waits on its element itself. A
+ * pressable there writes `aria-disabled` from `disabled` alone, over the
+ * one given, and whatever the library takes for it makes a `<button>`
+ * `disabled` too: out of the keyboard's order for the half second, and
+ * its focus may go with it. So the attribute is set here after each
+ * drawing, and taken off when the wait is over. An inactive button's is
+ * the library's own.
+ */
+function useSaidOnWeb(
+  part: RefObject<ComponentRef<typeof Pressable> | null>,
+  held: boolean,
+  inactive: boolean,
+) {
+  useLayoutEffect(() => {
+    if (Platform.OS !== "web" || inactive) return;
+    const element = part.current as unknown as Element | null;
+    if (held) element?.setAttribute("aria-disabled", "true");
+    else element?.removeAttribute("aria-disabled");
+  }, [part, held, inactive]);
+}
+
+/** A press as a link looks at it; a button looks at nothing. */
+interface Press {
+  readonly preventDefault?: () => void;
+}
+
+/**
+ * What the button does with a press: told to the guard and then done, or,
+ * while the button is held, nothing. A held link is not followed by the
+ * browser either.
+ */
+function taking<Props extends { readonly onPress: (event?: Press) => void }>(
+  props: Props,
+  held: boolean,
+  tookPress: () => void,
+): Props {
+  return {
+    ...props,
+    onPress: held
+      ? (event?: Press) => {
+          event?.preventDefault?.();
+        }
+      : (event?: Press) => {
+          tookPress();
+          props.onPress(event);
+        },
+  };
+}
+
 export function Button({
   label,
   icon,
@@ -124,7 +176,13 @@ export function Button({
 }: ButtonProps) {
   const palette = usePalette();
   const inactive = busy || disabled;
+  // A main button takes no press just after one brought it (`PressGuard`).
+  const { held, pressed: tookPress } = useMainButton(main, accessibilityLabel ?? label, busy);
+  const still = inactive || held;
+  // A held button is under the pointer as it was: it keeps its look.
   const [hovered, hover] = useHover(inactive);
+  const part = useRef<ComponentRef<typeof Pressable>>(null);
+  useSaidOnWeb(part, held, inactive);
   const {
     face,
     label: labelColor,
@@ -134,23 +192,25 @@ export function Button({
   } = look(variant, palette, disabled, hovered);
   return (
     <Pressable
+      ref={part}
       // A screen has at most one filled button (spec 31, R31.1): tests count them.
       testID={variant === "primary" || variant === "danger" ? "filled-button" : undefined}
       accessibilityRole={href === undefined ? "button" : "link"}
       accessibilityLabel={accessibilityLabel ?? label}
       // aria-* rather than accessibilityState, which the web build drops.
-      aria-disabled={inactive}
+      aria-disabled={still}
       aria-busy={busy}
       aria-expanded={expanded}
-      disabled={inactive}
-      {...(href === undefined ? { onPress } : linkProps(href))}
+      // Not `false`, which would say "not disabled" over aria-disabled on a phone.
+      disabled={inactive ? true : undefined}
+      {...taking(href === undefined ? { onPress } : linkProps(href), held, tookPress)}
       {...hover}
       style={({ pressed }) => [
         styles.outer,
         variant === "text" && styles.textOuter,
         main && styles.mainOuter,
         fill && styles.fillOuter,
-        chunky(edge, edgeColor, pressed && !inactive).outer,
+        chunky(edge, edgeColor, pressed && !still).outer,
       ]}
     >
       {({ pressed }) => (
@@ -160,7 +220,7 @@ export function Button({
             styles.face,
             variant === "text" && styles.textFace,
             face,
-            chunky(edge, edgeColor, pressed && !inactive).face,
+            chunky(edge, edgeColor, pressed && !still).face,
           ]}
         >
           {busy ? <ActivityIndicator size="small" color={labelColor} /> : null}

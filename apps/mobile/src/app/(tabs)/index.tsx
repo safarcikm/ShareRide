@@ -314,7 +314,9 @@ function FrontPage() {
             </Pressable>
             <BetaLabel />
           </View>
-          <LanguageSwitch onSwitch={saveLanguage} />
+          <View style={styles.language}>
+            <LanguageSwitch onSwitch={saveLanguage} />
+          </View>
         </View>
         <PuffinsInCar width={sizes.sceneCar} />
       </View>
@@ -577,8 +579,19 @@ function LeavingSoon({
 }
 
 const styles = StyleSheet.create({
-  top: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  brand: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  // The name at the left and the language at the right. Where they have no
+  // room beside each other, as with large text on a narrow phone, the
+  // language goes under the name, still at the right, and Beta under the
+  // name before either is cut.
+  top: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", columnGap: spacing.sm },
+  brand: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    flexShrink: 1,
+    alignItems: "center",
+    columnGap: spacing.sm,
+  },
+  language: { marginLeft: "auto" },
   logo: {
     minHeight: minTouchTarget,
     flexDirection: "row",

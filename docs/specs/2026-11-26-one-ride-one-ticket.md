@@ -190,7 +190,8 @@ decision 17), added two: its edge and its fill under the pointer.
    car in moss, a mark at each step and the car (`PuffinsInCar`, 60 wide)
    on the step you are on, with the steps' names under it and the current
    one in the text colour. For screen readers it is one line: "Step 2 of
-   4: Confirmed". It takes the place of `StepProgress` on the posting
+   4: Confirmed", which stands under the road in place of the names where
+   they have no room (3.20). It takes the place of `StepProgress` on the posting
    steps (signing up keeps the bars). Its marks are not links: on the last posting step the rows open
    the earlier steps (3.11).
 3. **`NeedsYouCard`**: a card in `warningSoft` (the soft yellow of the
@@ -1618,6 +1619,78 @@ invitation link), which are spec 29's; About, the legal
 documents, cookies and the public pages for search engines (specs 23 and
 30); the console.
 
+### 3.20 A second press, and text twice as large
+
+As built, the last pass, part two (plan, PR 12b). Both were named by the
+reviews of earlier pull requests and left for the last pass.
+
+**A second press.** A screen's main button stands in the same place on
+every screen (R31.1), so a second press meant for one can land on the
+next: on the way on after an outcome, before the outcome is read ("Back
+to the ride" where "Send report" stood; "Find another ride", under "See
+in My rides", where "Send request" stood), or on the next step's button
+("Publish ride" after "Check your ride", "Send request" on Booking a seat
+after the ride's own).
+
+- For half a second after a main button took a press, no main button
+  takes one, and no other button of a screen's bar: the one under the
+  main button stands where a lone main button stood.
+- From when that press opens another page the half second starts again,
+  and once more from when a main button comes after it, or the same one
+  says other words. A press waits ten seconds for that and no longer:
+  nobody presses a second time for a press that long ago. Words that
+  change while the button pressed is busy count when it takes a press
+  again.
+- A main button whose words change by themselves, as with the number of
+  seats, is not held. The buttons, rows and links of a page are never
+  held, and only a main button's press starts a wait. The round button
+  that sends a message is never held either.
+- A held button looks as it did, under the pointer too. To a screen
+  reader it says that it is not to be pressed, and it keeps its place and
+  its focus for the keyboard: it is not switched off. A main button that
+  is a link ("Add a car") opens nothing meanwhile.
+
+**Text twice as large** (WCAG 1.4.4), on a phone 360 wide. No screen that
+is measured scrolls sideways with it, and nothing stands over anything
+else:
+
+- **The menu's bar.** Each place's name stays inside its place. On the
+  web a place is never narrower than the longest word of its name, and
+  the places go on a second row when they do not fit beside each other
+  (in English "Profile", under the other four). In the
+  phone apps a word too long for its place is broken there. The icons of
+  a row stand in a line whatever lines the names take: in Icelandic
+  "Ferðirnar mínar" has two lines with the text as set, and its icon
+  stood higher than the others.
+- **The question about cookies** stands over the bar as the bar is laid
+  out. Its place was counted from the bar's usual height, so it covered
+  the top of a taller bar.
+- **Find's name line.** Where the name, Beta and the language have no
+  room beside each other, the language goes under the name, still at the
+  right, and Beta under the name before either is cut. The line was 85
+  wider than the screen, and the language was reached by scrolling
+  sideways.
+- **The road.** Where its names have no room under it (one of them takes
+  two lines, or they are wider than the road together), the line a screen
+  reader hears stands under the road in their place, for the eye: "Step 2
+  of 4: Confirmed". So it is on a posting step, with five names, and on a
+  booking, with four. The names come back when they have room, and keep a
+  gap between them.
+- **A ride's stops.** "Get in" and "Get out" go under their stop's name
+  where the name would be left with less than most of the row, and a name
+  longer than a line is broken there. With long names the page was 209
+  wider than the screen.
+
+As built, with the text twice as large on a phone 360 wide:
+[Find with the menu](images/one-ride-one-ticket/built/large-text-find-phone-light.webp),
+[a posting step with its road](images/one-ride-one-ticket/built/large-text-offer-phone-light.webp)
+and [a ride's stops](images/one-ride-one-ticket/built/large-text-stops-phone-light.webp).
+With the text as set, the Icelandic menu:
+[Find](images/one-ride-one-ticket/built/find-phone-dark.webp).
+
+Left for the next part: the order of focus, what screen readers hear,
+and short windows (plan, PR 12, items 6 to 15).
+
 ## 4. Rules
 
 No business rule changes. Booking, seats (rules S1 to S4), prices and their
@@ -1638,7 +1711,10 @@ declaration before publishing (spec 3, R3.1 and R3.2; spec 16, 3.6).
   search card, on Find and on "Find a ride"; under the puffin of an empty
   My rides; and, round, at the end of the field in a conversation's bar.
   A part of a page that keeps its own state, as a form does, puts its
-  button in the screen's bar (`InBar`).
+  button in the screen's bar (`InBar`). As it stands in the same place on
+  every screen, a main button takes no press for half a second after one
+  was pressed, nor does another button of the bar (3.20). The round
+  button that sends a message is not held: it is pressed again and again.
 - **R31.2** A ride is shown as a `RideTicket` wherever a member sees it in
   a list or as a summary.
 - **R31.3** An action that cannot be undone is a red row, last in its

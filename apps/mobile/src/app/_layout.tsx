@@ -1,4 +1,4 @@
-import { Stack, type ErrorBoundaryProps } from "expo-router";
+import { Stack, usePathname, type ErrorBoundaryProps } from "expo-router";
 import { useEffect, type ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -11,6 +11,7 @@ import { UnreadProvider } from "@/chat/unread";
 import { Button } from "@/components/button";
 import { Loading } from "@/components/loading";
 import { Notice } from "@/components/notice";
+import { PressGuard, useNewPageHolds } from "@/components/press-guard";
 import { Screen, ScreenEdges, useWideScreen } from "@/components/screen";
 import { Body, Title } from "@/components/text";
 import { LanguageProvider, useLanguage } from "@/i18n/language";
@@ -34,7 +35,10 @@ export default function RootLayout() {
           <ConfigProvider>
             <AnalyticsProvider>
               <UnreadProvider>
-                <Navigation />
+                <PressGuard>
+                  <NewPageHolds />
+                  <Navigation />
+                </PressGuard>
                 <PushNotifications />
                 <ShakeForFeedback />
               </UnreadProvider>
@@ -44,6 +48,16 @@ export default function RootLayout() {
       </LanguageProvider>
     </SafeAreaProvider>
   );
+}
+
+/**
+ * Tells the guard of main buttons each time another page is open, also one
+ * that was under the page just left: its main button stands where the one
+ * pressed stood (`PressGuard`).
+ */
+function NewPageHolds() {
+  useNewPageHolds(usePathname());
+  return null;
 }
 
 /**
