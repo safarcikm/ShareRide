@@ -6,7 +6,7 @@ import type { AppPath } from "@/navigation/link-props";
 import { controlOutline, edges, radii, sizes, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 import { Card, cardCornerRoom } from "./card";
-import { namedGroup, spokenAs } from "./spoken";
+import { Heard, spokenAs } from "./spoken";
 import { Tag, type TagKind } from "./tag";
 import { sectionLevel } from "./text";
 
@@ -222,7 +222,8 @@ export function Timetable({ from, to, between, price = null, ends }: TimetablePr
   return (
     <View testID="ticket-times" style={styles.times}>
       <View testID="ticket-route" style={[styles.route, wholeWords]}>
-        <View testID="ticket-from" style={styles.end} {...namedGroup(ends?.from)}>
+        <View testID="ticket-from" style={styles.end}>
+          <Heard says={ends?.from} />
           <Time shown={from.time} times={times} end={ends?.from} />
           <Unspoken style={styles.railCell}>
             <View
@@ -246,7 +247,8 @@ export function Timetable({ from, to, between, price = null, ends }: TimetablePr
             {between}
           </Text>
         </View>
-        <View testID="ticket-to" style={styles.end} {...namedGroup(ends?.to)}>
+        <View testID="ticket-to" style={styles.end}>
+          <Heard says={ends?.to} />
           <Time shown={to.time} times={times} end={ends?.to} />
           <Unspoken style={styles.railCell}>
             <View testID="ticket-rail" style={[styles.rail, styles.railEnd, rail]} />
@@ -280,9 +282,10 @@ export function Timetable({ from, to, between, price = null, ends }: TimetablePr
  * The usual foot of a ticket, one line: a picture and a name at the left,
  * and something at the right, such as the seats left or a status tag,
  * which goes under the left when the two do not fit beside each other.
- * `startIs` says what the left is to the web's screen readers, such as
- * "Driver: Anna" where the eye has the picture and the car to go by; a
- * phone hears it from the name's own text (`spokenAs`).
+ * `startIs` says what the left is to a screen reader on the web, such as
+ * "Driver" before Anna, where the eye has the picture and the car to go
+ * by (`Heard`); a phone's app says it with the name's own text
+ * (`spokenAs`).
  */
 export function TicketFoot({
   start,
@@ -295,7 +298,8 @@ export function TicketFoot({
 }) {
   return (
     <View testID="ticket-foot" style={styles.foot}>
-      <View testID="ticket-foot-start" style={styles.footStart} {...namedGroup(startIs)}>
+      <View testID="ticket-foot-start" style={styles.footStart}>
+        <Heard says={startIs} />
         {start}
       </View>
       {end === undefined || end === null ? null : (
@@ -356,7 +360,7 @@ function Time({
 }: {
   readonly shown: string | null;
   readonly times: readonly [string, string];
-  /** What the time's end is, for a phone's screen reader. */
+  /** What the time's end is, for a screen reader in a phone's app. */
   readonly end?: string | undefined;
 }) {
   const palette = usePalette();

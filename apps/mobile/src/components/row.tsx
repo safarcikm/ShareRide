@@ -123,8 +123,9 @@ export function Row(props: RowLook & RowKind) {
   const shape = [styles.row, inRows ? styles.inRows : styles.inCard, ground];
   const label = accessibilityLabel ?? (value === undefined ? title : `${title}, ${value}`);
   if (props.shows === true) {
-    // One stop for a phone's screen reader, not one for each text. The
-    // web reads the two after each other, and has no stop to make of it.
+    // One stop for a screen reader in a phone's app, not one for each
+    // text. The web reads the two after each other, and a name on a view
+    // with no role would count for nothing there.
     const whole = Platform.OS === "web" ? {} : { accessible: true, accessibilityLabel: label };
     return (
       <View {...whole} style={shape}>

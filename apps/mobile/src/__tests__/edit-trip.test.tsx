@@ -5,6 +5,7 @@ import type * as TestApp from "@/testing/app";
 import { driverApi, northMyTrip, northSegments } from "@/testing/bookings";
 import { filledButtons } from "@/testing/buttons";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
+import { focusWentTo } from "@/testing/focus";
 import { searchApi } from "@/testing/search";
 import { blonduos, mosfellsbaer, tripsApi, volvo, yaris } from "@/testing/trips";
 
@@ -626,8 +627,9 @@ describe("Edit trip: adding a stop (spec 6, 3.2; milestone 6 plan, decision 2)",
     focus.mockClear();
     // The check gave way to choosing again: its title has focus.
     await fireEvent.press(screen.getByRole("button", { name: "Choose another meeting point" }));
-    expect(await screen.findByRole("header", { name: "Add a stop" })).toBeVisible();
+    const title = await screen.findByRole("header", { name: "Add a stop" });
     expect(focus.mock.calls.map(([, event]) => event)).toEqual(["focus"]);
+    expect(focusWentTo(focus, title)).toBe(true);
   });
 
   it.each([

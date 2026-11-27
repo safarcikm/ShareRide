@@ -1,10 +1,11 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react-native";
 import { StrictMode, useState, type ReactElement } from "react";
-import { Dimensions, Text } from "react-native";
+import { AccessibilityInfo, Dimensions, Text } from "react-native";
 import { LanguageProvider } from "@/i18n/language";
 import { colors } from "@/theme/tokens";
 import { Button } from "./button";
 import { Calendar } from "./calendar";
+import { ActionNotice, useSaid } from "./notice";
 import { PriceLevel } from "./price-level";
 import { RadioCard } from "./radio-card";
 import { InBar, Screen } from "./screen";
@@ -276,14 +277,72 @@ describe("Screen with a bottom bar", () => {
       expect(screen.getByTestId("bottom-bar")).toHaveStyle({ borderTopWidth: 2 });
     });
 
-    it("moves the bar when the window turns", async () => {
+    it("moves the bar when the window turns, and back when it is upright again", async () => {
       await inEnglish(page());
       expect(inScroll()).toBeNull();
+      await fireEvent.press(screen.getByRole("button", { name: "Count 0" }));
       await act(() => {
         window(740, 360);
       });
       expect(inScroll()).not.toBeNull();
-      expect(screen.getByRole("button", { name: "Count 0" })).toBeVisible();
+      // What the part holds stays: the bar shows it in another place.
+      expect(screen.getByRole("button", { name: "Count 1" })).toBeVisible();
+      await act(() => {
+        Dimensions.set({ window: upright });
+      });
+      expect(inScroll()).toBeNull();
+      expect(screen.getByTestId("bottom-bar")).toHaveStyle({ borderTopWidth: 2 });
+      expect(screen.getByRole("button", { name: "Count 1" })).toBeVisible();
+    });
+
+    it("leaves focus where it is as the bar moves with a notice in it, and gives it to what the notice says after", async () => {
+      const told = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
+      told.mockClear();
+      const focused = () => told.mock.calls.filter(([, event]) => event === "focus").length;
+      function Page() {
+        const [said, say] = useSaid();
+        return (
+          <Screen footer={<ActionNotice says={said} />}>
+            <Button
+              variant="text"
+              label="Send"
+              onPress={() => {
+                say("Choose a reason.");
+              }}
+            />
+          </Screen>
+        );
+      }
+      await inEnglish(<Page />);
+      await fireEvent.press(screen.getByRole("button", { name: "Send" }));
+      expect(screen.getByText("Choose a reason.")).toBeVisible();
+      expect(focused()).toBe(1);
+      // A window made short, as by the keyboard of a browser inside another
+      // app while a field is mended: the notice is the one there was, in
+      // another place, and takes focus from nothing.
+      await act(() => {
+        window(360, 300);
+      });
+      expect(
+        within(screen.getByTestId("screen-scroll")).getByText("Choose a reason."),
+      ).toBeVisible();
+      expect(focused()).toBe(1);
+      await act(() => {
+        Dimensions.set({ window: upright });
+      });
+      expect(inScroll()).toBeNull();
+      expect(screen.getByText("Choose a reason.")).toBeVisible();
+      expect(focused()).toBe(1);
+      // Another press gets the same words: they are said again, with focus.
+      await fireEvent.press(screen.getByRole("button", { name: "Send" }));
+      expect(focused()).toBe(2);
+      // And so in a bar that has moved.
+      await act(() => {
+        window(360, 300);
+      });
+      expect(focused()).toBe(2);
+      await fireEvent.press(screen.getByRole("button", { name: "Send" }));
+      expect(focused()).toBe(3);
     });
 
     it("keeps a conversation's field under its messages", async () => {

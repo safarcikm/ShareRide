@@ -26,7 +26,8 @@ const imageRole: object = Platform.OS === "web" ? { role: "img" } : {};
  * the whole line opens the profile, with a chevron at its end. The picture
  * stands with the name, at the top of the lines about them (3.18). The
  * name heads the card, an h2 on the web, and says "Driver: Anna" to a
- * screen reader, which has no card to see who Anna is by (3.20). Under a
+ * screen reader, which has no card to see who Anna is by (3.20); where
+ * the line is a link, the link's name starts with "Driver". Under a
  * line: the car, with what the passenger learns about the number plate,
  * what the driver likes on a ride, and their note.
  *
@@ -110,8 +111,11 @@ export function DriverCard({
       <ProfileLink
         profileId={profileId}
         chevron={!acts}
-        // A link's name takes the place of what it holds, so it says all of it.
+        // A link's name takes the place of what it holds, so it says all of
+        // it: also who Anna is, as a phone's screen reader stops at the link
+        // and never at the heading in it.
         label={[
+          t("trip.driver"),
           t("people.openOf", { name: driver.firstName }),
           !standing ? null : rated ? ratingText(t, locale, driver.rating) : t("results.newDriver"),
           figure,

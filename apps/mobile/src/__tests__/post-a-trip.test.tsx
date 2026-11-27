@@ -5,6 +5,7 @@ import { completeMe, ownProfile, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
 import { filledButtons } from "@/testing/buttons";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
+import { focusWentTo, taker } from "@/testing/focus";
 import { photoSizeIs, resetManipulator } from "@/testing/image-manipulator";
 import { photoPickedIs } from "@/testing/image-picker";
 import { bsi, fitjar, hof, kef, thorlakshofn } from "@/testing/meeting-points";
@@ -403,14 +404,6 @@ describe("Posting a trip (spec 3)", () => {
     await choosePoint("From", "bs", "BSÍ bus terminal");
     await choosePoint("To", "hof", "Hof, Akureyri");
     await screen.findByRole("switch", { name: "Borgarnes" });
-    /** The view that takes focus around a part (`TakesFocus`): the nearest one above it. */
-    const taker = (part: ReturnType<typeof screen.getByRole>) => {
-      let above = part.parent;
-      while (above !== null && (above.props as { tabIndex?: number }).tabIndex !== -1) {
-        above = above.parent;
-      }
-      return above;
-    };
     // React Native's test set-up already mocks it, so it holds earlier tests' calls.
     const focus = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
     focus.mockClear();
@@ -418,12 +411,13 @@ describe("Posting a trip (spec 3)", () => {
     // The step gave way to this screen: focus is on its title.
     const title = await screen.findByRole("header", { name: "Add a meeting point" });
     expect(focus.mock.calls.map(([, event]) => event)).toEqual(["focus"]);
-    expect(taker(title)).not.toBeNull();
+    expect(focusWentTo(focus, title)).toBe(true);
     focus.mockClear();
     // Back closes it: focus is on the button that opened it, and on nothing else.
     await fireEvent.press(screen.getByRole("button", { name: "Back" }));
     const add = await screen.findByRole("button", { name: "Add a meeting point" });
     expect(focus.mock.calls.map(([, event]) => event)).toEqual(["focus"]);
+    expect(focusWentTo(focus, add)).toBe(true);
     const around = taker(add);
     if (around === null) throw new Error("Nothing takes focus around Add a meeting point");
     expect(within(around).getAllByRole("button")).toEqual([add]);
@@ -441,8 +435,9 @@ describe("Posting a trip (spec 3)", () => {
     await fireEvent.press(await screen.findByRole("button", { name: /^Borgarnes/ }));
     // Already on the route: said over the stops, with focus back on the button.
     expect(await screen.findByText("Borgarnes is already on your route.")).toBeVisible();
-    expect(screen.getByRole("button", { name: "Add a meeting point" })).toBeVisible();
+    const add = screen.getByRole("button", { name: "Add a meeting point" });
     expect(focus.mock.calls.map(([, event]) => event)).toEqual(["focus"]);
+    expect(focusWentTo(focus, add)).toBe(true);
   });
 
   it("closes Add a meeting point with Android's back, staying on the step", async () => {

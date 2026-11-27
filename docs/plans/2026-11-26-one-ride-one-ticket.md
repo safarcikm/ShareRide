@@ -1895,14 +1895,31 @@ where a person sees it):
   `InBar` slot, so a page's buttons do not know where they stand. A
   `Screen` with `stickToEnd`, the conversation, keeps its bar. The tab
   bar is not a `Screen`'s and stays.
+- **The window's height** for this is the one the page is laid out in
+  (`useLaidOutHeight`, `components/window-height.ts`, new): on the web
+  `document.documentElement.clientHeight`, read again on the window's
+  `resize`. `useWindowDimensions` tells what is seen there
+  (`visualViewport`), which a phone's keyboard makes shorter: by it the
+  bar moved into the page each time a field took the keyboard.
+- **The bar's move is quiet.** The two places are two `BottomBar`s, so
+  what the bar holds is put again when it moves, and a `TakesFocus` in
+  it, as a notice has, would take focus again. Once a screen's bar has
+  changed place, each `BottomBar` sets `PutAgainContext` (a ref, in
+  `takes-focus.tsx`) while it is first put, and a `TakesFocus` that
+  appears then takes none; the ref is false once the bar is in place, so
+  what a notice says after takes focus as anywhere. A browser inside
+  another app can make the window itself shorter for the keyboard: there
+  the bar joins the page, and this keeps the keyboard in its field.
 - **`TakesFocus`** (`components/takes-focus.tsx`): on the web, where
   its content holds one stop for the keyboard and that stop's text is
   all the content's text, focus goes to that stop, and to the content
   as a whole otherwise or if the stop takes none. That mends "Show all
   drafts" with no change on Offer, and every other place a lone row or
-  button is wrapped. Sign-in methods (spec 29's page) wraps a lone
-  button in two places: there the keyboard is now on the button and not
-  on a view around it. Nothing else of that page is touched.
+  button is wrapped. Sign-in's pages wrap a lone button in five places
+  (four in `settings/sign-in-methods.tsx`, one in
+  `sign-in/passkey-devices.tsx`: each the button that opened a question
+  which has closed): there the keyboard is now on the button and not on a
+  view around it. Nothing else of those pages is touched.
 - **Messages' menu** (`chat/conversation-head.tsx`,
   `app/messages/[bookingId].tsx`): the page holds `useTopMenu()` (open,
   `set`, `inTop`, `beside`) and gives it to `ConversationHead`. Escape
@@ -1910,7 +1927,8 @@ where a person sees it):
   the one in front: `navigation.isFocused()`) call `closeToButton`,
   which closes and focuses "More" (`IconButton` takes a `ref` now). On
   the web a `pointerdown` listener on the document, in the capture
-  phase, closes for a press outside the head. In the phone apps the
+  phase, closes for a press outside the head, as the press begins. In
+  the phone apps the
   head's `onTouchStart` says `inTop` and the page's frame says `beside`,
   which closes unless the touch began in the head: a touch bubbles from
   the head to the frame, so the frame hears both. A row of the menu
@@ -1926,10 +1944,13 @@ where a person sees it):
   side column is first in the tree, where `row-reverse` drew it at the
   left before. The two have keys, so the main column is the same part on
   either side and at any width. Profile is the one page with it.
-- **`components/spoken.ts`** (new): `namedGroup(name)` is `role="group"`
-  with `aria-label` on the web and nothing in the phone apps;
-  `spokenAs(name, text)` is an `accessibilityLabel` "name: text" in the
-  phone apps and nothing on the web, where a label would need a role.
+- **`components/spoken.tsx`** (new): `Heard` is a text of the words on
+  the web, 1 by 1 and cut to nothing, out of the layout, and nothing in
+  the phone apps; `spokenAs(name, text)` is an `accessibilityLabel`
+  "name: text" in the phone apps and nothing on the web, where a label
+  would need a role. The first build named a `role="group"` around each
+  end; its review found that VoiceOver and TalkBack do not say a group's
+  name on coming into it, and the web on a phone is where the beta is.
   `Timetable` takes `ends` (`from`, `to`) unless it is pressed, and
   `TicketFoot` `startIs`. Given by `app/trips/[id]/book.tsx`,
   `booking/booking-ticket.tsx` and `trip-details/part-ticket.tsx` ("Get
@@ -1937,27 +1958,38 @@ where a person sees it):
   `driver-trip/ride-ticket.tsx` ("From", "To").
 - **Headings:** the name in `trip-details/driver-card.tsx` (with the
   label "Driver: Anna") and in `people/person-card.tsx`, both of the
-  second level. PR 11a's tests said the person's name was no heading,
+  second level. Where the driver's line is a `ProfileLink`, its label
+  starts with "Driver": the link's name takes the place of what it
+  holds for a phone's screen reader, heading and all. PR 11a's tests said the person's name was no heading,
   on its review's word that it should be one; they say the opposite now.
 - **`WhereYouSit`:** the words are first in the tree; the card is
   `row-reverse` with `wrap-reverse` and `justifyContent: "flex-end"`, so
   the car is still at the left, and over the words where they wrap.
+  The web reads by the tree; VoiceOver and TalkBack in an app go by
+  where things stand, so there the car is still met first.
 - **`Row`:** one that `shows` is `accessible` with the label "title,
-  value" in the phone apps. Not on the web, where `accessible` makes a
-  view a stop for Tab.
+  value" in the phone apps. Not on the web, which passes `accessible`
+  on to nothing and counts no name of a view without a role.
+- **`Chip`** and `TakesFocus` are shared, so two things change on pages
+  of sign-in and sign-up this work otherwise leaves alone: the language
+  chips of "About you" are 44 high on the web, and the five buttons
+  named above take the keyboard themselves.
 - **`Chip`:** `minHeight` is `minTouchTarget` on the web and `chipHeight`
   elsewhere, with its `hitSlop`.
 - **One new text,** `trip.driver` ("Driver", "Bílstjóri"). No new page,
   no change in the API, no migration, no new dependency.
 - **Tests:** `posting-parts.test.tsx` (a short window: the bar in the
-  page, over the website's footer, a conversation's kept, back under the
-  page when the window is tall again); `wide-parts.test.tsx` and
+  page, kept under it from 480, moved as the window turns and back with
+  what the page holds, a conversation's kept; a notice in the bar takes
+  no focus as the bar moves either way, and takes it when it says
+  something after); `wide-parts.test.tsx` and
   `profile-and-settings.test.tsx` (the side column first at the left);
   `chat.test.tsx` (a touch beside the top and one in it; Android's back
   closes the menu, stays, and puts a screen reader on "More"; back on a
   page over the conversation leaves that page); `post-a-trip.test.tsx`
   and `edit-trip.test.tsx` (the picker's focus as it opens, on Back,
-  after a point, and not as Add a stop opens); `ticket-parts.test.tsx`
+  after a point, and not as Add a stop opens, each with the view the
+  focus went to, `testing/focus.ts`, new); `ticket-parts.test.tsx`
   and `display-parts.test.tsx` (the ends' words; a row in one piece);
   `booking.test.tsx`, `trip-details.test.tsx` and
   `public-profile.test.tsx` (the labels, the headings, the reading
@@ -1967,11 +1999,15 @@ where a person sees it):
   `chat.spec.ts` (Escape, a press beside the menu, a row and the way
   back; the field on a window 740 by 360); `look.spec.ts` ("a short
   window": at 740 by 360 and 320 by 256 the bar is in the page and its
-  button is reached by scrolling, whole in the window's width; "chips":
+  button is reached by scrolling, whole in the window's width and over
+  the website's footer; what is seen told as 300 high, as under a
+  keyboard, leaves the bar where it is; "chips":
   44 high; the person's name as a heading); `cancel-trip.spec.ts` (the
   bar's notice and its focus); `trip-details.spec.ts` (the driver's
   heading; "Where you sit" before its picture and at its right);
-  `booking.spec.ts` (the ticket's groups in both languages);
+  `booking.spec.ts` (the words before each end and before the driver's
+  name, not seen, in both languages; signed in, the link to the driver's
+  profile and the heading in it);
   `laptop.spec.ts` (Profile's card before its rows). Pictures
   (`pictures.spec.ts`): `built/short-window-ride-phone-light` and
   `built/short-window-ride-end-phone-light` ("a short window, a phone on
@@ -1984,7 +2020,13 @@ where a person sees it):
   card beside the rides, read after them (item 6); with text twice as
   large on a phone 360 wide, the words of "Where you sit" in a narrow
   column beside the car (the row wraps by widths that do not grow with
-  the text). To hear on a phone and in NVDA: a main button just pressed
+  the text); Messages' menu closes as a press beside it begins, so a
+  thing in the conversation that moved with the top would lose its
+  press (none is pressed there today), and in an app on a tablet a touch
+  on the conversations beside the open one leaves it open; "Where you
+  sit" before its picture in the phone apps, which go by place; focus
+  on a bar's button is lost when the bar changes place, as when a phone
+  is turned. To hear on a phone and in NVDA: a main button just pressed
   while it waits, and what this pull request gives a screen reader.
 - **Found on the way, for 12c:** an address the app does not have, as
   `/trips`, shows the router's own page: black, "Unmatched Route", with

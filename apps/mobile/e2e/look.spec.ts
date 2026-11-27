@@ -1125,12 +1125,29 @@ test.describe("a short window", () => {
       const button = await box(send);
       expect(button.x).toBeGreaterThanOrEqual(0);
       expect(button.x + button.width).toBeLessThanOrEqual(window.width);
+      const footer = await box(scroll.getByTestId("site-footer"));
+      expect(footer.y).toBeGreaterThanOrEqual(button.y + button.height);
       expect(await pageWider(page)).toBeLessThanOrEqual(0);
     }
 
     await page.setViewportSize({ width: 360, height: 740 });
     await expect.poll(inPage).toBe(false);
     await expect(send).toBeInViewport();
+
+    // A phone's keyboard makes what is seen shorter, not the window the
+    // page is laid out in: the bar stays, or it would move under the
+    // fingers each time a field is written in. (No keyboard here: what is
+    // seen is told as 300 high, as a keyboard would leave it.)
+    await page.evaluate(async () => {
+      const seen = window.visualViewport;
+      if (seen === null) throw new Error("This browser tells nothing of what is seen");
+      Object.defineProperty(seen, "height", { configurable: true, get: () => 300 });
+      seen.dispatchEvent(new Event("resize"));
+      // Two frames: the app has drawn again with what it was told.
+      await new Promise((drawn) => requestAnimationFrame(() => requestAnimationFrame(drawn)));
+    });
+    expect(await inPage()).toBe(false);
+    await expect(send).toBeVisible();
   });
 });
 

@@ -1699,6 +1699,13 @@ are the same buttons in the same order, so R31.1 holds and a second press
 is held as in a bar. A conversation keeps its field under its messages at
 any height, and the menu's bar stays where it is.
 
+A phone's keyboard does not make a window short. It covers the page,
+which is laid out as before, so the bar does not move each time a field
+is written in. A browser inside another app can make the window itself
+shorter for the keyboard: there the bar joins the page while the keyboard
+is up, and a notice in it takes no focus as it is put there, or it would
+take the keyboard from the field being mended.
+
 **Where the keyboard is.** A press that brings something new puts the
 keyboard, and a screen reader, on the new thing; when that closes again
 they are on the button that opened it.
@@ -1729,21 +1736,29 @@ they are on the button that opened it.
 
 - **The driver's card** on a ride has a heading: the driver's name, read
   as "Driver: Anna". A card has no title to see, and the name alone did
-  not say who Anna is.
+  not say who Anna is. For members signed in the driver's line is a link
+  to the profile, and its name starts with "Driver" too: a phone's screen
+  reader stops at the link and not at the heading in it.
 - **A person's name** on the card of a profile, mine or another's, is a
   heading, so the list of headings has the person and not "Profile" and
   "Reviews" only.
-- **"Where you sit"** is read before its picture: the heading and its
-  line, then the car. They look as they did, the car at the left.
+- **"Where you sit"** is read before its picture on the web: the heading
+  and its line, then the car. They look as they did, the car at the left.
+  (In a phone's app a screen reader goes by where things stand, and meets
+  the car first.)
 - **A ticket that is not pressed** says which end is which: "Get in" and
   "Get out" on a ride I look at, book or have booked, "From" and "To" on
-  a ride I offer. On the web each end is a group with that name; a
-  phone's screen reader hears it before the time, "Get in: 10:00". On
-  Booking a seat the name in the ticket's foot is read as "Driver: Anna".
-  A ticket that is pressed is one button with one line, as before.
+  a ride I offer. On the web the words stand before each end's time,
+  heard and not seen; a phone's app says them with the time, "Get in:
+  10:00". On Booking a seat "Driver" comes before the name in the
+  ticket's foot in the same way. They are words and not the name of a
+  group around the end, which the screen readers of phones, VoiceOver and
+  TalkBack, do not say. A ticket that is pressed is one button with one
+  line, as before.
 - **A row that only shows** something, as the phone number on Profile,
-  is one stop for a phone's screen reader, which reads its title and then
-  its value. They were two.
+  is one stop for a screen reader in a phone's app, which reads its title
+  and then its value. They were two. The web reads the two after each
+  other, as before.
 
 **Smaller.** A chip is 44 high on the web, where nothing can be pressed
 beyond what is drawn; in the phone apps it stays 40 high with 44 to tap.
@@ -1761,7 +1776,11 @@ field's "Write a message" cut to "Write a" until something is written,
 and its five lines counted in the text as set; the browser's Back with
 the screen of a meeting point open, which leaves the step; on Find, the
 yellow card beside the rides on a laptop, which a reader meets after
-them. "After Show all rides focus goes to the first ride" no longer
+them; Messages' menu closes as a press beside it begins, so something in
+the conversation that moved as the top got lower would lose its press
+(nothing there is pressed today: a message is reported by a long press),
+and in a phone's app on a tablet a touch on my conversations beside the
+open one leaves the menu open. "After Show all rides focus goes to the first ride" no longer
 applies: it opens the All rides page, which has its own title. To hear
 on a phone, and in NVDA on Windows, which cannot be done from here: what
 is said of a main button just pressed while it waits, and the lines

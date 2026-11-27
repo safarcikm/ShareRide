@@ -1185,7 +1185,7 @@ test.describe("pictures", () => {
     });
     await shoot("large-text-stops");
 
-    // "Where you sit": the car over the words where they have no room beside it.
+    // "Where you sit": the words stay beside the car, in a narrow column (left, 12c).
     const seats = page.getByTestId("where-you-sit").filter(visible);
     await seats.evaluate((card) => {
       card.scrollIntoView({ block: "center" });

@@ -138,6 +138,19 @@ for (const journey of journeys) {
       await signUp(page, journey.account, journey.name);
       const id = await openTrip(page, journey);
       const trip = page.url();
+      // Signed in, the driver's line is a link to the profile. Its name says
+      // who Jón is, as a phone's screen reader stops at the link; and so
+      // does the heading in it (spec 31, 3.20).
+      const profile = page
+        .getByTestId("driver-card")
+        .filter({ visible: true })
+        .getByRole("link", { name: new RegExp(`^${journey.said.driver}, `) });
+      await expect(
+        profile.getByRole("heading", {
+          name: `${journey.said.driver}: ${journey.driver}`,
+          level: 2,
+        }),
+      ).toBeVisible();
       await page.getByRole("button", { name: journey.book, exact: true }).click();
 
       // Check and pay: the ride as booked, and one button that pays (spec 16, 3.7).
@@ -153,11 +166,20 @@ for (const journey of journeys) {
       await expect(ticket.getByText(journey.getIn, { exact: true })).toBeVisible();
       await expect(ticket.getByText(journey.driver, { exact: true })).toBeVisible();
       // Nothing on it is pressed, so a screen reader is told what each end
-      // is, and that Jón is the driver.
-      const said = (name: string) => ticket.getByRole("group", { name, exact: true });
-      await expect(said(journey.said.getIn)).toContainText(journey.getIn);
-      await expect(said(journey.said.getOut)).toBeVisible();
-      await expect(said(journey.said.driver)).toContainText(journey.driver);
+      // is, and that Jón is the driver: words before each, heard and not
+      // seen (a phone's screen reader would not say a group's name).
+      const starts = (words: string) => new RegExp(`^${words}`);
+      const from = ticket.getByTestId("ticket-from");
+      await expect(from).toHaveText(starts(journey.said.getIn));
+      await expect(from).toContainText(journey.getIn);
+      const heard = await from.getByText(journey.said.getIn, { exact: true }).boundingBox();
+      expect(heard?.width).toBeLessThanOrEqual(1);
+      expect(heard?.height).toBeLessThanOrEqual(1);
+      await expect(ticket.getByTestId("ticket-to")).toHaveText(starts(journey.said.getOut));
+      const foot = ticket.getByTestId("ticket-foot-start");
+      await expect(foot).toHaveText(starts(journey.said.driver));
+      await expect(foot).toContainText(journey.driver);
+      await expect(ticket.getByRole("group")).toHaveCount(0);
       await expect(
         page.getByText(journey.confirmedOnPay, { exact: true }).filter({ visible: true }),
       ).toBeVisible();

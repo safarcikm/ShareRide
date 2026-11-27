@@ -1,4 +1,12 @@
-import { useEffect, useRef, type ComponentRef, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  type ComponentRef,
+  type ReactNode,
+  type RefObject,
+} from "react";
 import { AccessibilityInfo, Platform, View } from "react-native";
 
 /**
@@ -7,13 +15,22 @@ import { AccessibilityInfo, Platform, View } from "react-native";
  * once that sheet closes. Without it, focus falls back to the top of the
  * page on the web. `when` false leaves focus where it is, such as on a
  * screen that has just opened. `onFocused` runs once it has moved focus,
- * so a page can announce something only the first time.
+ * so a page can announce something only the first time. Content that is
+ * only put in another place takes none (`PutAgainContext`).
  *
  * Where the content is one thing to press and nothing else, as a row
  * that came or the button that opened what has closed, the web puts the
  * keyboard on that thing itself, so Enter presses it. A phone's screen
  * reader lands on the first thing in the content either way.
  */
+/**
+ * Around what is shown again in another place and did not just appear, as
+ * a screen's bar that joined its page with a notice in it: while the ref
+ * is true, nothing in it takes focus as it is put there. A ref, set to
+ * false once that is done, so what comes later takes focus as anywhere.
+ */
+export const PutAgainContext = createContext<RefObject<boolean> | null>(null);
+
 export function TakesFocus({
   children,
   when = true,
@@ -27,9 +44,13 @@ export function TakesFocus({
   // Only on appearing: a later change of `when` does not move focus.
   const focusOnMount = useRef(when);
   const focusedOnMount = useRef(onFocused);
+  const putAgain = useContext(PutAgainContext);
+  // Decided once, as it appears: an effect that runs again finds the same.
+  const shownAgain = useRef<boolean | null>(null);
   useEffect(() => {
     const view = ref.current;
-    if (!focusOnMount.current || view === null) return;
+    shownAgain.current ??= putAgain?.current === true;
+    if (!focusOnMount.current || view === null || shownAgain.current) return;
     if (Platform.OS === "web") {
       // On the web the view is an element, focusable through tabIndex -1.
       focusOnWeb(view as unknown as HTMLElement);
@@ -37,7 +58,7 @@ export function TakesFocus({
       AccessibilityInfo.sendAccessibilityEvent(view, "focus");
     }
     focusedOnMount.current?.();
-  }, []);
+  }, [putAgain]);
   return (
     <View ref={ref} tabIndex={-1}>
       {children}
