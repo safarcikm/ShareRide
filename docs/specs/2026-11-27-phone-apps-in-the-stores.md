@@ -1,9 +1,9 @@
 # Spec 32: The Android and iPhone apps in the stores
 
 **Owner:** Martin · **Date:** 2026-11-27 · **Status:** Proposed
-(2026-11-27): Martin asked for it; whose name the store accounts are in is
-his choice (section 12), the other choices are working choices he can
-change
+(2026-11-27): Martin asked for it and chose whose name the store accounts
+are in (section 12, "Both personal now, move later"); the other choices are
+working choices he can change
 
 Amends: [spec 19](2026-11-22-google-and-apple-sign-in.md) (Google on the
 iPhone, 3.3), the [roadmap](../strategy/roadmap.md) (the store release moves
@@ -11,8 +11,8 @@ up from Phase 4), the [app builds runbook](../operations/app-builds.md) and
 [CI/CD and releases](../engineering/ci-cd-and-releases.md). Builds on
 [ADR 0003](../decisions/0003-cross-platform-client-expo.md) (Expo, EAS
 Build and EAS Submit) and [ADR 0026](../decisions/0026-push-through-expo.md)
-(push through Expo). A new ADR records the store accounts and the phone
-checks once Martin has chosen (section 12).
+(push through Expo). [ADR 0051](../decisions/0051-store-apps-in-martins-name-until-the-company.md)
+records the store accounts and the phone checks.
 
 ## 1. Problem and goal
 
@@ -301,11 +301,12 @@ languages.
 
 In the order of what they unblock:
 
-1. **Choose whose name the accounts are in** (section 12).
-2. **Google Play Console:** an account (25 US dollars once), the ID check,
-   and the check on an Android phone with the Play Console app.
-3. **Apple Developer Program:** 99 US dollars a year, from the Apple
-   Developer app on the iPhone.
+1. **Choose whose name the accounts are in** (section 12): done,
+   personal now.
+2. **Google Play Console:** a personal account (25 US dollars once), the
+   ID check, and the check on an Android phone with the Play Console app.
+3. **Apple Developer Program:** as an individual, 99 US dollars a year,
+   from the Apple Developer app on the iPhone.
 4. **expo.dev:** an account and the project `puffinride`; send the project ID
    (not a secret) and add an Expo access token as a GitHub secret.
 5. **Firebase:** a project for production push (the runbook's steps).
@@ -315,14 +316,17 @@ In the order of what they unblock:
 7. **Trader status** for the EU in both stores. A trader's name, address,
    phone and email show on the store page in EU countries; the address and
    email are already public in the Terms.
-8. **Testers:** 12 Android testers for the 14 days, if the Google account
-   is personal.
+8. **Testers:** 12 Android testers who keep the app for 14 days in a row
+   (the personal account's closed test).
 9. **A review account** on production for the reviewers.
 10. **Go** for each step to testers and to the public.
 
 ## 12. Decision for Martin
 
-Whose name the store accounts are in, until the ehf. exists:
+Whose name the store accounts are in, until the ehf. exists. **Martin
+chose "Both personal now, move later"** on a decision card, 2026-11-27
+([ADR 0051](../decisions/0051-store-apps-in-martins-name-until-the-company.md)).
+The options were:
 
 | Option | What happens |
 | ------ | ------------ |
@@ -339,7 +343,7 @@ later.
 
 | # | Question | Answer |
 | - | -------- | ------ |
-| 1 | Whose name are the accounts in? | Waiting for Martin (section 12) |
+| 1 | Whose name are the accounts in? | Martin's own now, moved to the company's later (Martin, 2026-11-27, ADR 0051) |
 | 2 | Which devices? | Android phones and tablets; iPhone only (my call) |
 | 3 | Google sign-in on the iPhone? | Not until Sign in with Apple (my call) |
 | 4 | Which server do store builds use? | Production only (R32.1) |
