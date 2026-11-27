@@ -8,9 +8,22 @@
 > the driver in person, no invite code, no women-only trips) and in Icelandic
 > too, is what the app shows: it is published from
 > `packages/db/src/legal/texts` ([ADR 0043](../../decisions/0043-legal-documents-published-from-the-repository.md)).
-> The lawyer's changes become the next version of each. The Privacy Policy
-> is at version 3 already: Google Analytics on the website, after consent
-> ([spec 23](../../specs/2026-11-22-google-analytics-and-search.md)).
+> The lawyer's changes become the next version of each. Three versions
+> since, in two changes, were not material, so nobody accepts anything
+> again. The Privacy Policy's
+> version 3: Google Analytics on the website, after consent
+> ([spec 23](../../specs/2026-11-22-google-analytics-and-search.md)). The
+> Terms' version 3 and the Privacy Policy's version 4 (2026-11-27): the
+> pages in Profile where the texts said "in Settings", a place the app
+> no longer has ([spec 31, 3.22](../../specs/2026-11-26-one-ride-one-ticket.md#322-against-the-drawings)),
+> and in the Privacy Policy what the phone apps add: Expo's check for an
+> update, the two stores and their testing
+> ([spec 32, section 7](../../specs/2026-11-27-phone-apps-in-the-stores.md#7-privacy-and-safety)).
+> A test holds the newest texts to the names the app gives its pages
+> (`apps/api/src/legal-places.test.ts`). The published Privacy Policy
+> says the standard contractual clauses are "in our agreement with the
+> provider", as not every provider it names has a data processing
+> agreement (Apple and Google run their testing under their own terms).
 
 | Document | At sign-up | Draft |
 | -------- | ---------- | ----- |

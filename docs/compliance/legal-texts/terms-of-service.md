@@ -1,7 +1,8 @@
 # PuffinRide Terms of Service (draft)
 
 > **Draft for the lawyer, not in force.** Version 1, written 2026-11-16;
-> paying the driver in person (section 6.9) added 2026-11-22.
+> paying the driver in person (section 6.9) added 2026-11-22; the pages in
+> Profile in place of "Settings" on 2026-11-27 (as in published version 3).
 > Placeholders are in square brackets. See the [README](README.md) for the
 > questions this draft raises.
 
@@ -211,7 +212,7 @@ When you book, you confirm and promise that:
 3. We send you the messages the service needs, such as booking updates,
    changes, cancellations and reminders, by push notification, email and,
    for last-minute changes and sign-in codes, by SMS. You can turn off trip
-   reminders and beta news in Settings.
+   reminders and beta news in Profile, under Notifications.
 
 ## 11. Safety, reports and blocking
 
@@ -244,7 +245,7 @@ When you book, you confirm and promise that:
 
 ## 13. Women-only trips
 
-1. A woman can turn on women-only trips in Settings. She can then publish
+1. A woman can turn on women-only trips in Profile. She can then publish
    trips that only women can book, and book women-only trips. Anyone can see
    that a trip is women-only.
 2. This is a private declaration: we do not ask for proof and we do not
@@ -284,7 +285,8 @@ When you book, you confirm and promise that:
 
 ## 16. Ending
 
-1. You can delete your account in Settings at any time. First, any upcoming
+1. You can delete your account at any time in Profile, under Privacy and
+   your data. First, any upcoming
    trips and bookings are cancelled under the normal rules. We delete or
    anonymise your personal data 7 days later, unless you undo it, as
    described in the Privacy Policy. An account cannot be deleted while it has
