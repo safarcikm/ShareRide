@@ -231,10 +231,10 @@ not secret), `docs/operations/production.md`.
   of the App Store's largest size, signed out, with a tidy status bar.
 - [x] Privacy register: Google Play, the App Store and testers' details
   (Google Play testing joins TestFlight). The new privacy policy version
-  (ADR 0043) comes with the website redesign's new Terms: one version 4,
-  which also carries the apps' paragraphs
-  (`marketing/stores/privacy-policy-v4-paragraphs.md`), before testers
-  outside the team.
+  (ADR 0043) is #291, with the website redesign's new Terms: one Privacy
+  Policy version 4, which also carries the apps' paragraphs
+  (`marketing/stores/privacy-policy-v4-paragraphs.md`). Testers are
+  invited by email alone, as it says.
 
 ## Martin's steps, then releases
 

@@ -25,6 +25,13 @@ Spec 32, step 9, and R32.6 (sample data only):
 4. After each review, cancel any booking the reviewers made, and post the
    sample ride again before the next one.
 
+## Testers (TestFlight and Google Play testing)
+
+Invite testers by their email address alone, with no names: Privacy Policy
+version 4 says we give Apple or Google only the email address. In
+TestFlight, leave the first and last name empty; in Google Play testing,
+add the addresses to the testers' list (or a Google Group).
+
 ## App Store Connect
 
 ### App Information

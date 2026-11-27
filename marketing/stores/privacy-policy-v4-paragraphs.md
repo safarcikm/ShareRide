@@ -4,7 +4,8 @@ The draft paragraphs the phone apps add to the privacy policy (spec 32,
 section 7; ADR 0043), handed to the website redesign's work, which publishes
 Privacy Policy version 4 with its own "on your Profile" wording, so there is
 one new version, not two. The published text in `packages/db/src/legal`
-is the one that counts; this page only records what the stores asked for.
+is the one that counts (published by #291, which reworded these after a
+review); this page only records what the stores asked for.
 
 ## English
 
