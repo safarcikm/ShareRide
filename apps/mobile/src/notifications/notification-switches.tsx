@@ -40,6 +40,9 @@ export function NotificationSwitches() {
     setFailures((now) => (now[name] === why ? now : { ...now, [name]: why }));
   }, []);
 
+  // Said once when both failed for the same reason.
+  const whys = [...new Set([failures.reminders, failures.betaNews].filter((why) => why !== null))];
+
   const always = (
     <Text style={[typography.small, { color: palette.textMuted }]}>{t("settings.alwaysOn")}</Text>
   );
@@ -88,8 +91,9 @@ export function NotificationSwitches() {
             onFailed={failed}
           />
         </ActionRows>
-        <Notice message={failures.reminders} />
-        <Notice message={failures.betaNews} />
+        {whys.map((why) => (
+          <Notice key={why} message={why} />
+        ))}
         {always}
       </View>
       {news}

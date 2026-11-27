@@ -114,7 +114,8 @@ function MyProfile({ me }: { readonly me: Me }) {
 
   // What the rows say is set now. Each is loaded again when the page comes
   // back into view, as after adding a car; without an answer its row just
-  // leaves the value out.
+  // leaves the value out, and one that cannot be read again keeps what it
+  // said.
   const { profileId } = me;
   const loadStanding = useCallback(
     () => session.call(publicProfileRoute, { params: { profileId } }),
@@ -123,10 +124,10 @@ function MyProfile({ me }: { readonly me: Me }) {
   const loadReadiness = useCallback(() => session.call(driverReadinessRoute, {}), [session]);
   const loadCars = useCallback(() => session.call(listVehiclesRoute, {}), [session]);
   const loadSignIn = useCallback(() => session.call(listSignInMethodsRoute, {}), [session]);
-  const { value: standing } = useLoadedOnFocus(loadStanding);
-  const { value: readiness } = useLoadedOnFocus(loadReadiness);
-  const { value: cars } = useLoadedOnFocus(loadCars);
-  const { value: signIn } = useLoadedOnFocus(loadSignIn);
+  const { value: standing } = useLoadedOnFocus(loadStanding, answered);
+  const { value: readiness } = useLoadedOnFocus(loadReadiness, answered);
+  const { value: cars } = useLoadedOnFocus(loadCars, answered);
+  const { value: signIn } = useLoadedOnFocus(loadSignIn, answered);
 
   const licence =
     readiness?.ok === true
@@ -161,7 +162,7 @@ function MyProfile({ me }: { readonly me: Me }) {
         ...(languages === "" ? [] : [t("profile.speaks", { languages })]),
         memberSinceText(t, locale, dayOf(new Date(me.memberSince))),
       ]}
-      standing={standing?.ok === true ? standing.data : undefined}
+      standing={standing === undefined ? "reading" : standing.ok ? standing.data : undefined}
       action={
         <Button
           variant="secondary"
@@ -294,6 +295,9 @@ function MyProfile({ me }: { readonly me: Me }) {
     </Screen>
   );
 }
+
+/** Whether a call was answered: a row keeps what it said when it was not. */
+const answered = (result: { readonly ok: boolean }) => result.ok;
 
 /** The three documents, each on its own page; About holds them too (spec 30, 3.2). */
 const legalDocuments = [

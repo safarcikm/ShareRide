@@ -273,13 +273,20 @@ describe("While the deletion waits (spec 11, 3.4.4)", () => {
     expect(screen.queryByRole("tab", { name: "Find" })).toBeNull();
   });
 
-  it.each(["/drive/trips/new", "/settings", "/settings/privacy/delete", `/messages/${bookingId}`])(
-    "is what %s opens meanwhile",
-    async (url) => {
-      await openApp(url);
-      expect(screen).toHavePathname("/account/deletion");
-    },
-  );
+  it.each([
+    "/drive/trips/new",
+    "/settings",
+    "/settings/privacy/delete",
+    "/settings/privacy/ask",
+    "/settings/language",
+    "/settings/notifications",
+    "/settings/blocked",
+    "/settings/reports",
+    `/messages/${bookingId}`,
+  ])("is what %s opens meanwhile", async (url) => {
+    await openApp(url);
+    expect(screen).toHavePathname("/account/deletion");
+  });
 
   it("does one thing at a time: no signing out while keeping", async () => {
     let answer: (value: unknown) => void = () => undefined;

@@ -45,7 +45,8 @@ export function emailChangedContent(
     {
       title: t("email.emailChangedSubject"),
       body: t("email.emailChangedBody", { email: hideEmail(newEmail) }),
-      path: "/settings",
+      // Profile, where the account's email and Send feedback are.
+      path: "/profile",
     },
     locale,
     webAppUrl,

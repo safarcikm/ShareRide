@@ -1136,7 +1136,7 @@ export const en = {
   "report.send": "Send report",
   "report.thanks": "Thank you. We look at every report.",
   "report.thanksHelp":
-    "We'll tell you what we found, in general terms, in Profile under My reports. The person you reported won't be told who reported them.",
+    "We'll tell you what we found, in general terms, in Profile, under My reports. The person you reported won't be told who reported them.",
   "report.blockToo": "Block {name} too",
   "report.gone": "This can no longer be reported.",
   "report.windowClosed": "A problem with a booking can be reported until 24 hours after the ride.",

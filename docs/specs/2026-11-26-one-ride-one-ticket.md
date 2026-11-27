@@ -1023,8 +1023,9 @@ on a laptop,
   both. Then one line that wraps: the rating, "No ratings yet" or the
   star with "4.3 (3 ratings)", and the tags "Phone verified" and "Email
   verified". They are read from my own profile as anyone signed in sees
-  it, so the card and "See it as others do" never differ; until it is
-  read, and when it could not be, the line is left out. Then the photo's
+  it, so the card and "See it as others do" never differ; while it is
+  read the line's room is kept, so nothing under it moves when it comes,
+  and when it could not be read the line is left out. Then the photo's
   controls at the left (Add a photo or Change photo, Remove photo, and
   Take a photo in the phone apps), with their line of help and what they
   say after a change, and the link "See it as others do". The drawing
@@ -1056,6 +1057,9 @@ on a laptop,
     red: signing in again undoes it (decision 17). While it signs out the
     row is muted, and on the web a sign-out that failed says why under
     it.
+- **What a row says is read again** each time Profile comes back into
+  view, as after adding a car. A row, or the card's line, that cannot be
+  read again keeps what it said: a failed call takes nothing away.
 - **A value with no room beside its title** goes under it, as a long
   email does on a narrow phone; a title is never broken to make room. A
   word longer than the row's line, as an email of fifty letters is on a
@@ -1066,20 +1070,24 @@ on a laptop,
   written in its own language and marked so for a screen reader. Choosing
   one changes the app at once and saves it to the account; if saving
   failed, the page says why in the language just chosen, and choosing it
-  again tries again.
+  again tries again. Quick choices are saved one after the other and end
+  on the last, and the page says only how the last one went.
 - **The notifications' page** has "Notifications" at the left with Back
   to Profile. The two switches are two rows of one card, each with what
   it does under its name: "Ride reminders" and "Beta news". Under the
   card a small line says what is always on. The way to the beta news is
   a row of a second card, "Beta news" with "What PuffinRide has told beta
   testers in the last three months." under it. Why a change could not be
-  saved shows under the first card, and the switch goes back.
+  saved shows under the first card, once when both failed alike, and the
+  switch goes back.
 - **"Sign out on all devices"** is the last thing on Sign-in methods,
   under its card, with its line of help, also when the ways to sign in
   could not be read. That page itself is spec 29's and is otherwise as it
   was.
 - **`/settings`** leads to Profile, signed in or out, and the menu has no
-  Settings. Back on each page that Settings opened returns to Profile.
+  Settings. Back on a page that Settings opened returns to where it was
+  opened from, and to Profile when it was opened by itself, as from an
+  email; Beta news then returns to Notifications, where its switch is.
 - **On a laptop** (3.16, item 5) the title is over both columns, the
   person's card is the side column, at the left, and the groups and Sign
   out are the main one.
@@ -1578,7 +1586,7 @@ Texts added while building, as they are in the app:
 | The menu of a conversation's top | More | Meira |
 | The day and the time on a conversation's ride line | {day}, {time} | {day} kl. {time} |
 | The button in the person's card on Profile, named "Edit profile" | Edit | Breyta |
-| Where a link that could not add an email leads | Go to your profile | Fara í prófílinn þinn |
+| Where the page an email's link opens leads on, signed in, whether or not the email was added | Go to your profile | Fara í prófílinn þinn |
 
 Texts that named Settings name the place on Profile since 3.14 was built:
 in the app, in three emails and in the console. Only the part that
@@ -1592,7 +1600,7 @@ changed is shown; the Icelandic says "í Prófílnum, undir …".
 | An email another account uses | Add a different one in Profile, under Email. | Bættu öðru við í Prófílnum, undir Netfang. |
 | The email page opened without its link | … your email is in Profile. | … er netfangið þitt í Prófílnum. |
 | In a conversation with someone I blocked | You can unblock them in Profile, under Blocked people. | Þú getur opnað aftur í Prófílnum, undir Lokað á. |
-| After reporting | … in Profile under My reports. | … í Prófílnum, undir Tilkynningarnar mínar. |
+| After reporting | … in Profile, under My reports. | … í Prófílnum, undir Tilkynningarnar mínar. |
 | The foot of a beta news email | Turn off beta news in Profile, under Notifications. | Þú getur slökkt á fréttum af beta-prófuninni í Prófílnum, undir Tilkynningar. |
 | The email that confirms an address | … ask for a new one in Profile, under Email. | … geturðu beðið um nýjan í Prófílnum, undir Netfang. |
 | The email about a changed way to sign in | … sign out on all devices in Profile, under Sign-in methods, … | … skrá þig út á öllum tækjum í Prófílnum, undir Innskráningarleiðir, … |

@@ -61,3 +61,29 @@ export const accountScreens = [
   "settings/privacy/download",
   "settings/password",
 ] as const;
+
+/**
+ * Open signed in or out, but not while an account waits to be deleted:
+ * then the app shows only when the account goes and "Keep my account"
+ * (spec 11, 3.4.4). Every page of Profile under `settings/` is here; a
+ * page left out would be open to such an account (member-screens.test.ts).
+ */
+export const notWhileDeleting = [
+  "settings",
+  "settings/email",
+  "settings/sign-in-methods",
+  "settings/password",
+  "settings/notifications",
+  "settings/language",
+  "settings/feedback",
+  "settings/beta-news",
+  "settings/blocked",
+  "settings/reports",
+  "feedback",
+  "settings/privacy/index",
+  "settings/privacy/ask",
+  "settings/privacy/download",
+  "settings/privacy/delete",
+  "messages/[bookingId]",
+  "verify-email",
+] as const;

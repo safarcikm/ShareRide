@@ -1,7 +1,7 @@
 import type { CallFailure } from "@shareride/api-client";
 import { updateMeRoute } from "@shareride/contracts";
 import type { Locale } from "@shareride/i18n";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { errorText } from "@/auth/errors";
 import { useMe, useSession } from "@/auth/session";
@@ -18,8 +18,9 @@ import { spacing } from "@/theme/tokens";
  * languages to choose from, each named in its own. Choosing one changes
  * the app at once and the account's language, which is the one used for
  * texts sent to the person; if that cannot be saved, the page says so and
- * choosing again tries again. Signed out, it closes back to the menu:
- * Profile has the language there.
+ * choosing again tries again. Quick choices are saved one after the other,
+ * so the account ends on the last. Signed out, it closes back to the
+ * menu: Profile has the language there.
  */
 export default function LanguageScreen() {
   const me = useMe();
@@ -38,15 +39,31 @@ function Language({ saved }: { readonly saved: Locale }) {
   // Why saving failed, kept as the API said it: the page says it in the
   // language just chosen.
   const [failure, setFailure] = useState<CallFailure | null>(null);
+  // Choices are saved one at a time, so quick ones end on the last: a
+  // choice still to send, and whether one is on its way.
+  const waiting = useRef<Locale | null>(null);
+  const saving = useRef(false);
 
   async function choose(choice: Locale) {
-    // Pressing the one in use asks nothing, unless the account still has the other.
-    if (choice === locale && choice === saved) return;
+    // Pressing the one in use asks nothing, unless the account still has
+    // the other and nothing is on its way to change that.
+    if (choice === locale && (choice === saved || saving.current)) return;
     setFailure(null);
     setLocale(choice);
-    const result = await session.call(updateMeRoute, { body: { locale: choice } });
-    if (result.ok) session.update(result.data);
-    else setFailure(result);
+    waiting.current = choice;
+    if (saving.current) return;
+    saving.current = true;
+    let failed: CallFailure | null = null;
+    while (waiting.current !== null) {
+      const body = { locale: waiting.current };
+      waiting.current = null;
+      const result = await session.call(updateMeRoute, { body });
+      if (result.ok) session.update(result.data);
+      failed = result.ok ? null : result;
+    }
+    saving.current = false;
+    // How the last one went: an earlier one that failed no longer matters.
+    setFailure(failed);
   }
 
   return (

@@ -138,6 +138,40 @@ describe("My profile (spec 31, 3.14)", () => {
     expect(card.getByText("Anna")).toBeVisible();
     expect(card.queryByText("No ratings yet")).toBeNull();
     expect(card.queryByTestId("tag")).toBeNull();
+    expect(
+      card.queryByTestId("person-card-standing-room", { includeHiddenElements: true }),
+    ).toBeNull();
+  });
+
+  it("keeps the room of the rating's line while it is read, so nothing under it moves when it comes", async () => {
+    let answer: (value: unknown) => void = () => undefined;
+    await openProfile(readyDriver, {
+      setUp: (client) => {
+        client.answer(
+          "/v1/people/{profileId}",
+          () =>
+            new Promise((resolve) => {
+              answer = resolve;
+            }),
+        );
+      },
+    });
+    const card = within(screen.getByTestId("person-card"));
+    // Nothing of it is read out or seen meanwhile: only a line's room.
+    expect(card.queryByTestId("person-card-standing")).toBeNull();
+    expect(card.queryByText("No ratings yet")).toBeNull();
+    expect(card.queryByTestId("person-card-standing-room")).toBeNull();
+    expect(
+      card.getByTestId("person-card-standing-room", { includeHiddenElements: true }),
+    ).toHaveStyle({ lineHeight: typography.bodyStrong.lineHeight });
+    await act(async () => {
+      answer(ok(200, ownProfile(completeMe)));
+      await Promise.resolve();
+    });
+    expect(await card.findByText("No ratings yet")).toBeVisible();
+    expect(
+      card.queryByTestId("person-card-standing-room", { includeHiddenElements: true }),
+    ).toBeNull();
   });
 
   it("groups the rows under Driving, Account, Safety and privacy and Help, each with what is set now, then Sign out", async () => {
@@ -298,6 +332,42 @@ describe("My profile (spec 31, 3.14)", () => {
     });
     expect(await screen.findByRole("link", { name: "Driving licence, Confirmed" })).toBeVisible();
     expect(screen.getByRole("link", { name: "My cars" })).toBeVisible();
+  });
+
+  it("keeps what the rows and the card said when they cannot be read again on coming back", async () => {
+    const me = { ...completeMe, email: "anna@example.com" };
+    const app = await openProfile(readyDriver, { me });
+    expect(await screen.findByRole("link", { name: "My cars, Toyota Yaris" })).toBeVisible();
+    expect(await screen.findByRole("link", { name: "Sign-in methods, Email" })).toBeVisible();
+    expect(await screen.findByText("No ratings yet")).toBeVisible();
+    const read = [
+      "/v1/me/vehicles",
+      "/v1/me/driver-readiness",
+      "/v1/me/sign-in-methods",
+      "/v1/people/{profileId}",
+    ];
+    for (const path of read) app.client.answer(path, () => failure(0, "network_error"));
+    const asked = () => app.client.calls.filter((call) => read.includes(call.path)).length;
+    const before = asked();
+    await fireEvent.press(screen.getByRole("link", { name: "Notifications" }));
+    expect(await screen.findByRole("header", { name: "Notifications" })).toBeVisible();
+    await fireEvent.press(
+      within(screen.getByTestId("screen-head")).getByRole("button", { name: "Back" }),
+    );
+    expect(await screen.findByRole("header", { name: "My profile" })).toBeVisible();
+    // Each is asked again on coming back, and none could be read.
+    await waitFor(() => {
+      expect(asked()).toBe(before + read.length);
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(screen.getByRole("link", { name: "My cars, Toyota Yaris" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Driving licence, Confirmed" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Sign-in methods, Email" })).toBeVisible();
+    const card = within(screen.getByTestId("person-card"));
+    expect(card.getByText("No ratings yet")).toBeVisible();
+    expect(card.getByText("Phone verified")).toBeVisible();
   });
 
   it("signs out of this device from its row and returns to Find", async () => {
@@ -641,6 +711,64 @@ describe("The language's page (spec 31, 3.14 item 2)", () => {
     ).toBeVisible();
   });
 
+  it("tries again when the language is chosen again after it could not be saved", async () => {
+    const app = await openLanguage();
+    const saves = () =>
+      app.client.calls
+        .filter((call) => call.path === "/v1/me" && "body" in call.input)
+        .map((call) => (call.input as { body: unknown }).body);
+    app.client.answer("/v1/me", () => failure(0, "network_error"));
+    await fireEvent.press(screen.getByRole("radio", { name: "Íslenska" }));
+    const sorry = "Ekki náðist samband við PuffinRide. Athugaðu tenginguna og reyndu aftur.";
+    expect(await screen.findByText(sorry)).toBeVisible();
+    app.client.answer("/v1/me", () => ok(200, { ...completeMe, locale: "is" }));
+    // The one in use, but the account still has the other.
+    await fireEvent.press(screen.getByRole("radio", { name: "Íslenska" }));
+    await waitFor(() => {
+      expect(saves()).toEqual([{ locale: "is" }, { locale: "is" }]);
+    });
+    await waitFor(() => {
+      expect(screen.queryByText(sorry)).toBeNull();
+    });
+    // Saved now: pressing it once more asks nothing.
+    await fireEvent.press(screen.getByRole("radio", { name: "Íslenska" }));
+    expect(saves()).toHaveLength(2);
+  });
+
+  it("saves quick choices one after the other, ends on the last, and says only how the last went", async () => {
+    const app = await openLanguage();
+    const saves: unknown[] = [];
+    let answerFirst: (answer: unknown) => void = () => undefined;
+    app.client.answer("/v1/me", (input) => {
+      saves.push(input["body"]);
+      if (saves.length > 1) return ok(200, { ...completeMe, locale: "en" });
+      return new Promise((resolve) => {
+        answerFirst = resolve;
+      });
+    });
+    await fireEvent.press(screen.getByRole("radio", { name: "Íslenska" }));
+    await fireEvent.press(screen.getByRole("radio", { name: "English" }));
+    expect(screen.getByRole("radio", { name: "English" })).toBeChecked();
+    // The second waits for the first, so the last one is what the account keeps.
+    expect(saves).toEqual([{ locale: "is" }]);
+    await act(async () => {
+      answerFirst(failure(0, "network_error"));
+      await Promise.resolve();
+    });
+    await waitFor(() => {
+      expect(saves).toEqual([{ locale: "is" }, { locale: "en" }]);
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(screen.getByRole("header", { name: "Language" })).toBeVisible();
+    expect(screen.getByRole("radio", { name: "English" })).toBeChecked();
+    // The first could not be saved, but the last was: nothing to say.
+    expect(
+      screen.queryByText("We couldn't reach PuffinRide. Check your connection and try again."),
+    ).toBeNull();
+  });
+
   it("closes back to the menu signed out", async () => {
     await renderApp("/settings/language");
     expect(await screen.findByRole("tab", { name: "Find", selected: true })).toBeVisible();
@@ -759,6 +887,43 @@ describe("The notifications' page (spec 31, 3.14 item 2)", () => {
     expect(screen.getByRole("switch", { name: reminderSwitch })).toBeChecked();
   });
 
+  it("says once why two changes could not be saved", async () => {
+    await renderApp("/settings/notifications", {
+      me: completeMe,
+      setUp: (client) => {
+        client.answer(
+          "/v1/me/notification-settings",
+          () => ok(200, { reminders: true, betaNews: true }),
+          "get",
+        );
+        client.answer("/v1/me/notification-settings", () => failure(0, "network_error"), "patch");
+      },
+    });
+    const sorry = "We couldn't reach PuffinRide. Check your connection and try again.";
+    const reminders = await screen.findByRole("switch", { name: reminderSwitch });
+    await waitFor(() => {
+      expect(reminders).toBeChecked();
+    });
+    await fireEvent.press(reminders);
+    expect(await screen.findByText(sorry)).toBeVisible();
+    await fireEvent.press(
+      screen.getByRole("switch", {
+        name: "Beta news. News from PuffinRide about the beta, by notification and email.",
+      }),
+    );
+    await waitFor(() => {
+      expect(
+        screen.getByRole("switch", {
+          name: "Beta news. News from PuffinRide about the beta, by notification and email.",
+        }),
+      ).toBeChecked();
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(screen.getAllByText(sorry)).toHaveLength(1);
+  });
+
   it("saves quick changes one after the other, and ends on the last", async () => {
     const changes: unknown[] = [];
     let answerFirst: (answer: unknown) => void = () => undefined;
@@ -865,6 +1030,27 @@ describe("Settings is gone (spec 31, 3.14 item 3)", () => {
     expect(app.client.calls.findLast((call) => call.path === "/v1/auth/sign-out")).toEqual({
       path: "/v1/auth/sign-out",
       input: { body: { all: true }, accessToken: "sr_at_access-1" },
+    });
+    expect(app.store.value).toBeNull();
+  });
+
+  it("signs out on all devices also when the ways to sign in cannot be read", async () => {
+    const app = await openProfile();
+    app.client.answer("/v1/me/sign-in-methods", () => failure(0, "network_error"));
+    await fireEvent.press(screen.getByRole("link", { name: "Sign-in methods" }));
+    expect(await screen.findByRole("header", { name: "Sign-in methods" })).toBeVisible();
+    expect(
+      await screen.findByText("We couldn't reach PuffinRide. Check your connection and try again."),
+    ).toBeVisible();
+    expect(screen.getByRole("button", { name: "Try again" })).toBeVisible();
+    expect(
+      screen.getByText("Use this if you lost a phone or signed in on a device other people use."),
+    ).toBeVisible();
+    await fireEvent.press(screen.getByRole("button", { name: "Sign out on all devices" }));
+    expect(await screen.findByRole("tab", { name: "Find", selected: true })).toBeVisible();
+    expect(app.client.calls.findLast((call) => call.path === "/v1/auth/sign-out")?.input).toEqual({
+      body: { all: true },
+      accessToken: "sr_at_access-1",
     });
     expect(app.store.value).toBeNull();
   });

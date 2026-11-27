@@ -1272,7 +1272,8 @@ As built, PR 11a (spec 31 says the same where a person sees it, in 3.14):
   the rating and what is checked), `driverReadinessRoute`,
   `listVehiclesRoute` and `listSignInMethodsRoute`. A row whose value is
   not read yet, or could not be, shows its title alone and still opens
-  its page. On a wide screen it is a `Screen` of `width="page"` with
+  its page; one that cannot be read again keeps what it said
+  (`useLoadedOnFocus` takes an `ok` for that, new). On a wide screen it is a `Screen` of `width="page"` with
   `Columns` (`sideAt="start"`, the card as `side`). Legal documents is a
   row that unfolds (`expanded`, `onToggle`) three `TextLink`s; Sign out
   is a `Row` with `onPress`, `disabled` while it signs out. `SignedOut`
@@ -1280,7 +1281,8 @@ As built, PR 11a (spec 31 says the same where a person sees it, in 3.14):
 - **The person's card** (`people/person-card.tsx`, `PersonCard`):
   `firstName`, `colour`, `photo`, small `lines`, a `standing`
   (`PersonStanding`: the rating and the two checks) that is left out
-  while undefined, one `action` at the right that wraps under the name
+  while undefined and keeps a line's room, hidden, while it is
+  `"reading"`, one `action` at the right that wraps under the name
   (`sizes.wordsBeside` is the least the name keeps), and `children` under
   them. `RatingLine` can be `inline`, where it does not take the row's
   width, so the tags stand beside it. `PhotoControls` can `align` at the
@@ -1288,14 +1290,24 @@ As built, PR 11a (spec 31 says the same where a person sees it, in 3.14):
   uses the card for a person's profile.
 - **The new pages:** `app/settings/language.tsx` (two `RadioCard`s, each
   with its `lang`, new, for a screen reader; it sets the language at
-  once, saves it with `updateMeRoute`, and keeps a `CallFailure` to say
-  in the language just chosen) and `app/settings/notifications.tsx`
+  once, saves it with `updateMeRoute`, one choice at a time so quick
+  ones end on the last, and keeps the last one's `CallFailure` to say in
+  the language just chosen) and `app/settings/notifications.tsx`
   (`NotificationSwitches`, now an `ActionRows` of two `Row`s that are
   switches, the line of what is always on in `small` under it, and the
   way to the beta news as a link row of a second `ActionRows`; a row
   says why it could not be saved through `onFailed`, and the notice
-  stands under the card). `app/settings.tsx` is a `Redirect` to
-  `/profile`.
+  stands under the card, once when both say the same). `app/settings.tsx`
+  is a `Redirect` to `/profile`. Back from Beta news opened by itself
+  leads to Notifications.
+- **Closed while an account waits to be deleted:** the pages that close
+  then are a list, `notWhileDeleting` in `navigation/member-screens.ts`,
+  which the root layout reads. The two new pages are in it, and with them
+  Blocked people, My reports and the privacy request, which were open to
+  such an account until now. A test reads `app/settings/` and fails for a
+  page that is not listed.
+- **The email about a changed sign-in email** opens `/profile`, no longer
+  `/settings`, which only leads on.
 - **"Sign out on all devices"** (`sign-in/sign-out-everywhere.tsx`,
   `SignOutEverywhere`): a secondary button, its help and its notice, at
   the end of `app/settings/sign-in-methods.tsx`, also when the list
@@ -1304,8 +1316,8 @@ As built, PR 11a (spec 31 says the same where a person sees it, in 3.14):
   that is a switch with its help `stacked` under its name, in place of
   `ShakeSwitch`; nothing on the web.
 - **Back** on Email, Sign-in methods, Privacy and your data, Blocked
-  people, My reports, My feedback and Beta news falls back to
-  `/profile`; the page that adds an email from its link leads to
+  people, My reports and My feedback falls back to `/profile`, and on
+  Beta news to `/settings/notifications`; the page that adds an email from its link leads to
   Profile (`verifyEmail.toProfile`).
 - **Texts:** new, `profile.editShort`, `profile.driving`,
   `profile.account`, `profile.safety`, `profile.help` and
@@ -1325,12 +1337,19 @@ As built, PR 11a (spec 31 says the same where a person sees it, in 3.14):
   what is set now, in order; each row opening its page; the phone number
   that only shows; the documents unfolding; Sign out, also when
   PuffinRide cannot be reached; no main button on the page; the card in
-  the side column on a laptop; the language's page, its two radios and a
-  failed save; the notifications' page, its rows, a failed and a quick
-  change; `/settings` leading to Profile, signed in and out). The tests
-  of the pages Profile opens go through its rows. Journeys:
-  `notification-settings.spec.ts`, `email.spec.ts`, `sign-in.spec.ts`
-  ("Sign out on all devices" from Sign-in methods), `blocking.spec.ts`,
+  the side column on a laptop; the language's page, its two radios, a
+  failed save, trying again and quick choices; the notifications' page,
+  its rows, a failed and a quick change, and two that fail alike;
+  `/settings` leading to Profile, signed in and out; the rows and the
+  card keeping what they said when they cannot be read again, and the
+  room of the rating's line; "Sign out on all devices" when the ways to
+  sign in cannot be read). `delete-account.test.tsx` opens five pages of
+  Profile for an account that waits, and `member-screens.test.ts` reads
+  the folder. The tests of the pages Profile opens go through its rows.
+  Journeys: `notification-settings.spec.ts`, `email.spec.ts`,
+  `sign-in.spec.ts` ("Sign out on all devices" from Sign-in methods, and
+  a sign-out from Profile that fails once and says why),
+  `blocking.spec.ts`,
   `reporting.spec.ts`, `feedback.spec.ts`, the three of Privacy and your
   data, `provider-sign-in.spec.ts`, the laptop's Profile, and
   `look.spec.ts` (Profile 360 wide in Icelandic with a long name and a
@@ -1481,7 +1500,18 @@ As built, PR 11a (spec 31 says the same where a person sees it, in 3.14):
     29's page, has "Change email" in the middle and its other buttons at
     the left. Icelandic, for a native reader: "í Prófílnum, undir …" in
     the eleven texts that named Settings, "Breyta" on the card, and the
-    groups' names.
+    groups' names. Found by PR 11a's review and left: on a laptop the
+    keyboard reaches the groups before the person's card, which stands
+    at the left (`Columns` with `sideAt="start"`); a tap on a
+    notification about beta news or about feedback opens no page, as
+    `notifications/paths.ts` names neither `/settings/beta-news` nor
+    `/settings/feedback`; the photo's controls lose what they said when
+    the window turns wide or narrow; a row that only shows, as the phone
+    number, is read as two texts by a phone's screen reader; the two
+    languages are each a stop for Tab, with no arrow keys between them;
+    and `notices`, `report`, the two `block` pages and `carpool-iceland`
+    are in none of the root layout's lists, so the first four are open to
+    an account that waits to be deleted.
 16. **Docs:** spec 31 becomes Built, with what differs from the drawings;
     spec 15 has the parts; the roadmap and the changelog.
 

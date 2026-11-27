@@ -186,7 +186,7 @@ export const identities = pgTable(
  * only as SHA-256 hashes; the PKCE verifier and the nonce are made from the
  * state and never stored. After the provider answers, it holds the subject,
  * a verified email and a first name for at most 30 minutes, before or while
- * an account is made, or while a member adds it in Settings. A sign-in
+ * an account is made, or while a member adds it on Sign-in methods. A sign-in
  * that ends is deleted; the hourly clean-up deletes the rest an hour after
  * they expired.
  */

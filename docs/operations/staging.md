@@ -199,7 +199,7 @@ settings, and nothing stops working in between. Martin's steps, in order:
    `EMAIL_FROM` to `hello@puffinride.is`, and the app builds' API address.
    Members' Face ID or fingerprint is bound to `WEB_APP_URL`'s host (ADR
    0048): every device set up before a change stops signing in, and members
-   set it up again in Settings.
+   set it up again in Profile, under Sign-in methods.
 7. **After that deploy, the console.** Its passkeys belong to the old
    address. In the API's **Shell** in Render, run
    `node apps/api/src/operator-cli.ts add <your phone number>`, open the

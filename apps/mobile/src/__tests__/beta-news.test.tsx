@@ -55,6 +55,14 @@ describe("Beta news", () => {
     expect(await screen.findByText("No news yet.")).toBeVisible();
   });
 
+  it("goes back to Notifications, where its switch is, when opened by itself as from a notification", async () => {
+    await renderApp("/settings/beta-news", { me: completeMe });
+    expect(await screen.findByText("No news yet.")).toBeVisible();
+    await fireEvent.press(screen.getByRole("button", { name: "Back" }));
+    expect(await screen.findByRole("header", { name: "Notifications" })).toBeVisible();
+    expect(screen).toHavePathname("/settings/notifications");
+  });
+
   it("offers to try again when the news cannot be loaded", async () => {
     let tries = 0;
     const app = await renderApp("/settings/beta-news", {

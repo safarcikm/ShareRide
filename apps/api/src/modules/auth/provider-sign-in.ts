@@ -37,7 +37,7 @@ import {
 
 // Signing in with Google and Apple through our API (ADR 0034; plan 4.1):
 // the start, the provider's answer, the app's ticket, and the sign-in
-// methods in Settings.
+// methods, a page of Profile.
 
 const { identities, providerSignIns, users } = schema;
 

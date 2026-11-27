@@ -37,7 +37,7 @@ function BetaNews() {
 
   const header = (
     <>
-      <BackButton fallback="/profile" />
+      <BackButton fallback="/settings/notifications" />
       <Title>{t("betaNews.title")}</Title>
       <Body>{t("betaNews.help")}</Body>
     </>

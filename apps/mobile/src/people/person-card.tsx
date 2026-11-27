@@ -21,9 +21,10 @@ export interface PersonStanding {
  * small `lines` under it such as what they speak and since when they are a
  * member, with at most one control at the right, such as Edit, which goes
  * under them where the card has no room for both. Then how they stand, on
- * one line that wraps: the rating and what is checked, left out while it is
- * not known. Then what the screen puts under it, such as the photo's
- * controls on my own.
+ * one line that wraps: the rating and what is checked, left out when it is
+ * not known. While it is `"reading"`, the line's room is kept, so nothing
+ * under it moves when it comes. Then what the screen puts under it, such as
+ * the photo's controls on my own.
  *
  * The name is plain text: the screen's title stands over the card.
  */
@@ -41,7 +42,7 @@ export function PersonCard({
   /** A link from the API, or null for none. */
   readonly photo: string | null;
   readonly lines: readonly string[];
-  readonly standing?: PersonStanding | undefined;
+  readonly standing?: PersonStanding | "reading" | undefined;
   readonly action?: ReactNode;
   readonly children?: ReactNode;
 }) {
@@ -66,7 +67,18 @@ export function PersonCard({
             <View testID="person-card-action">{action}</View>
           )}
         </View>
-        {standing === undefined ? null : (
+        {standing === undefined ? null : standing === "reading" ? (
+          // As high as the line's words, with nothing to see or to read out.
+          <Text
+            testID="person-card-standing-room"
+            style={typography.bodyStrong}
+            aria-hidden
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
+          >
+            {"\u00A0"}
+          </Text>
+        ) : (
           <View testID="person-card-standing" style={styles.standing}>
             <RatingLine rating={standing.rating} strong inline />
             {standing.phoneVerified ? (
