@@ -1662,7 +1662,12 @@ As built, PR 12a (spec 31 says the same where a person sees it, in 3.17,
   the search card, under the puffin); the title not centred and in the
   `ScreenHead`, or centred where 3.17 says (`centred`); and no centred
   text under a title at the left but what a pressed thing says, the
-  words beside a puffin, and the four kinds `centredToo` names.
+  words beside a puffin, and the four kinds `centredToo` names, each on
+  the pages it names (`on`). Each page says what its main button is
+  (`main`, or null for none), so a page whose button is lost fails; two
+  states of one address with the same title and button each name words
+  only they show (`shows`). It looks at `textAlign`, not at a block
+  centred by its box.
 - **`InBar`** (`components/screen.tsx`): a part of the page puts what it
   holds in the `Screen`'s bottom bar. The screen keeps a slot
   (`BarSlotContext`) that only the bar (`BottomBar`) listens to, so a
@@ -1670,26 +1675,43 @@ As built, PR 12a (spec 31 says the same where a person sees it, in 3.17,
   nothing else again. The screen's own `footer` comes first. With no
   `Screen` around it, what it holds stays in place. What is in the bar
   is drawn by the screen, so it reads no context a part between the two
-  provides.
+  provides. The bar listens from its layout effect on and looks again
+  there, so a screen's first frame has its bar; `useSyncExternalStore`
+  would listen only after that frame (no test can see a frame).
 - **In the bar with `InBar`:** `ProfileForm` with the new `inBar` (Edit
   profile; onboarding's form is as it was), `CarForm`,
-  `ConfirmWithCode`, `PhotoControls` when `prominent`, `AppealForm`
+  `ConfirmWithCode` with the new `inBar`, `PhotoControls` when
+  `prominent`, `AppealForm`
   (`safety/notices.tsx`), and the buttons of `settings/email.tsx`,
   `settings/password.tsx`, `settings/privacy/delete.tsx` and
   `settings/privacy/download.tsx`. **With the screen's `footer`:**
   `drive/licence.tsx`, `drive/cars/index.tsx` (while there is no car),
   `account/deletion.tsx`, `meeting-points/[id]/problem.tsx`,
   `verify-email.tsx`, and the states of `settings/password.tsx` and
-  `settings/privacy/ask.tsx` that ask for an email first. Each has an
-  `ActionNotice` over the button for what the server refused.
-- **`ConfirmWithCode`:** the confirm `Button` is `main` in `InBar`, busy
-  until the first code has an answer; an `ActionRows` holds "Send a new
-  code" (after the wait, `disabled` while sending or confirming) and
-  "Cancel". It serves Sign-in methods and the passkey's set-up too,
-  which changed only by this.
+  `settings/privacy/ask.tsx` that ask for an email first. Where a press
+  can be refused, an `ActionNotice` over the button says why (not on
+  "Delete my account", My cars, `/verify-email` and the two states that
+  ask for an email first, whose buttons only lead on). `ProfileForm` in
+  the bar, `CarForm`, `AppealForm` and the problem form say what the
+  form itself refuses there too: the first two from the field's error and
+  a count of presses, the other two with `useSaid`, as Report does.
+- **`ConfirmWithCode`:** with `inBar`, the confirm `Button` is `main` in
+  `InBar`, busy until the first code has an answer; an `ActionRows` holds
+  "Send a new code" (after the wait, `busy` while sending, `disabled`
+  while confirming) and "Cancel". Email, the password, the file and
+  deleting pass `inBar`. Sign-in methods and the passkey's set-up
+  (`sign-in/passkey-set-up.tsx`, on two onboarding pages too) do not, and
+  keep the three buttons under the code: spec 29's pages.
+- **`Row`** takes `busy` with `onPress`: a spinner (`row-busy`) where the
+  chevron was, `aria-busy`, and no press. A row that opens a page takes
+  `href`: My cars' rows. `Button` with `href` for "Add a car", "Add an
+  email" and "Add my email".
+- **Email** (`settings/email.tsx`) keeps which press failed (`error.of`),
+  as `PhotoControls` does: the bar's `ActionNotice` for "Send the link",
+  a `Notice` by the row for "Send the link again".
 - **One appeal at a time:** `app/notices.tsx` keeps which notice's appeal
-  is open (`appealing`); `Appeal` shows `AppealForm`, new, which holds
-  what is written and goes when it is left.
+  is open (`appealing`); `Appeal` shows `AppealForm`, new, and keeps what
+  is written while the form is closed.
 - **`PhotoControls`** keeps which press failed (`error.of`): the main
   button's is the bar's `ActionNotice`, a row's a `Notice` by the rows.
 - **Heads:** `ScreenHead` on `rides/index.tsx`, `places/[id].tsx`,
@@ -1706,7 +1728,10 @@ As built, PR 12a (spec 31 says the same where a person sees it, in 3.17,
   change in the API, no migration, no new dependency.
 - **Tests:** the walk; `posting-parts.test.tsx` (`InBar`: shown in the
   bar as the part has it now, taken out with the part, one in place of
-  another, after the footer, in place with no screen);
+  another, two parts in their order, once under `StrictMode`, after the
+  footer, in place with no screen); `display-parts.test.tsx` (a busy
+  row); `sign-in-methods.test.tsx` and `passkey.test.tsx` (the code's
+  form whole in the page, with no bar);
   `driving.test.tsx`, `profile-and-settings.test.tsx`, `email.test.tsx`
   (with the link's page), `password.test.tsx`, `privacy.test.tsx`,
   `delete-account.test.tsx`, `profile-photo.test.tsx`, `notices.test.tsx`

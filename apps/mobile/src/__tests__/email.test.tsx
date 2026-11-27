@@ -128,6 +128,32 @@ describe("Your email (plan 4.6)", () => {
     ]);
   });
 
+  it("says by its row why the link was not sent again, not over the other button", async () => {
+    const waiting = { ...completeMe, email: "anna@example.com", pendingEmail: "new@example.com" };
+    const app = await openEmail(waiting, () =>
+      failure(429, "rate_limited", { retryAfterSeconds: 45 }),
+    );
+    const again = screen.getByRole("button", { name: "Send the link again" });
+    // A row with a picture, as "Send a new code" is.
+    expect(within(again).getByTestId("row-icon", { includeHiddenElements: true })).toBeTruthy();
+    await fireEvent.press(again);
+    const why = "You asked for a link just now. Try again in 45 seconds.";
+    expect(await inPage().findByRole("alert")).toHaveTextContent(why);
+    expect(inBar().queryByRole("alert")).toBeNull();
+    // Still said while a code is asked for, where the other button is gone.
+    app.client.answer("/v1/me/email", () => failure(403, "confirm_required"));
+    app.client.answer("/v1/me/confirm-code", () =>
+      ok(202, { resendAfterSeconds: 30, channel: "email", sentTo: "an•••@example.com" }),
+    );
+    await sendLink("other@example.com");
+    expect(await screen.findByLabelText("6-digit code")).toBeVisible();
+    app.client.answer("/v1/me/email", () =>
+      failure(429, "rate_limited", { retryAfterSeconds: 45 }),
+    );
+    await fireEvent.press(screen.getByRole("button", { name: "Send the link again" }));
+    expect(await inPage().findByText(why)).toBeVisible();
+  });
+
   it("says when a link was asked for just now", async () => {
     await openEmail(completeMe, () => failure(429, "rate_limited", { retryAfterSeconds: 45 }));
     await sendLink("anna@example.com");

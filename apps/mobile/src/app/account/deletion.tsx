@@ -86,6 +86,7 @@ export default function DeletionWaitingScreen() {
           <Row
             icon={LogOut}
             title={t("settings.signOut")}
+            busy={busy === "signOut"}
             disabled={busy !== null}
             onPress={() => void signOut()}
           />

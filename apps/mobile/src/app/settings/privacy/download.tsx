@@ -192,6 +192,7 @@ function DownloadMyData() {
           ) : null}
           {asking ? (
             <ConfirmWithCode
+              inBar
               confirmLabel={t("privacy.download.make")}
               sentUntil={codeWait}
               onSent={setCodeWait}

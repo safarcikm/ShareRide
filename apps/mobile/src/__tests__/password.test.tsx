@@ -302,7 +302,7 @@ describe("Choosing a password (spec 27, 3.5)", () => {
     await renderApp("/settings/password", { me: completeMe });
     expect(await screen.findByText("Add an email first. It's your user name.")).toBeVisible();
     expect(screen.queryByLabelText("New password")).toBeNull();
-    await fireEvent.press(screen.getByRole("button", { name: "Add an email" }));
+    await fireEvent.press(inBar().getByRole("link", { name: "Add an email" }));
     expect(await screen.findByRole("header", { name: "Your email" })).toBeVisible();
   });
 });

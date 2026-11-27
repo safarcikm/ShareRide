@@ -385,6 +385,17 @@ describe("While the deletion waits (spec 11, 3.4.4)", () => {
     expect(await screen.findByRole("tab", { name: "Find" })).toBeVisible();
   });
 
+  it("shows on its row that it is signing out, with no keeping meanwhile", async () => {
+    let answer: (value: unknown) => void = () => undefined;
+    const app = await openApp();
+    app.client.answer("/v1/auth/sign-out", () => new Promise((resolve) => (answer = resolve)));
+    await fireEvent.press(screen.getByRole("button", { name: "Sign out" }));
+    expect(screen.getByRole("button", { name: "Sign out" })).toBeBusy();
+    expect(screen.getByRole("button", { name: "Keep my account" })).toBeDisabled();
+    answer(ok(204));
+    expect(await screen.findByRole("tab", { name: "Find" })).toBeVisible();
+  });
+
   it("keeps the account, and the app is as it was", async () => {
     const app = await openApp();
     await fireEvent.press(screen.getByRole("button", { name: "Keep my account" }));

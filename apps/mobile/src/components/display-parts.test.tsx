@@ -349,6 +349,27 @@ describe("Row", () => {
     expect(screen.getByText("Post the way back")).toHaveStyle({ color: colors.light.text });
   });
 
+  it("shows that it is working while it is busy, in place of its chevron, and does nothing more", async () => {
+    const onPress = jest.fn();
+    await render(<Row busy icon={Pencil} title="Take a photo" onPress={onPress} />);
+    const row = screen.getByRole("button", { name: "Take a photo" });
+    expect(row).toBeDisabled();
+    expect(row).toBeBusy();
+    expect(within(row).getByTestId("row-busy", { includeHiddenElements: true })).toBeTruthy();
+    expect(screen.queryByTestId("row-chevron", { includeHiddenElements: true })).toBeNull();
+    await fireEvent.press(row);
+    expect(onPress).not.toHaveBeenCalled();
+    // A red row has no chevron, and shows it is working all the same.
+    await screen.rerender(<Row busy danger icon={X} title="Remove photo" onPress={onPress} />);
+    const red = screen.getByRole("button", { name: "Remove photo" });
+    expect(within(red).getByTestId("row-busy", { includeHiddenElements: true })).toBeTruthy();
+    // Done: a row like any other again.
+    await screen.rerender(<Row icon={Pencil} title="Take a photo" onPress={onPress} />);
+    expect(screen.getByRole("button", { name: "Take a photo" })).toBeEnabled();
+    expect(screen.queryByTestId("row-busy", { includeHiddenElements: true })).toBeNull();
+    expect(screen.getByTestId("row-chevron", { includeHiddenElements: true })).toBeTruthy();
+  });
+
   it("unfolds what is under it, and says whether it is open", async () => {
     const onToggle = jest.fn();
     const row = (expanded: boolean) => (

@@ -2,7 +2,7 @@ import { fireEvent, screen } from "expo-router/testing-library";
 import type { Notice } from "@shareride/contracts";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
-import { filledButtons, inBar } from "@/testing/buttons";
+import { filledButtons, inBar, inPage } from "@/testing/buttons";
 import { callsTo } from "@/testing/chat";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
 
@@ -119,7 +119,7 @@ describe("Notices from PuffinRide (spec 9, 3.4.4; R9.5)", () => {
     await fireEvent.press(await screen.findByRole("button", { name: "Appeal" }));
     // Nothing is sent without a word.
     await fireEvent.press(screen.getByRole("button", { name: "Send appeal" }));
-    expect(screen.getByText("Write why you disagree.")).toBeVisible();
+    expect(inPage().getByText("Write why you disagree.")).toBeVisible();
     expect(appealsSent(app.client)).toEqual([]);
 
     await fireEvent.changeText(
@@ -158,11 +158,45 @@ describe("Notices from PuffinRide (spec 9, 3.4.4; R9.5)", () => {
     // Opening the other notice's appeal closes this one: one at a time.
     await fireEvent.press(screen.getByRole("button", { name: "Appeal" }));
     expect(screen.getAllByLabelText("Why do you disagree?")).toHaveLength(1);
-    expect(screen.getByLabelText("Why do you disagree?")).toHaveDisplayValue("");
     expect(filledButtons()).toBe(1);
     await fireEvent.press(screen.getByRole("button", { name: "Cancel" }));
     expect(screen.queryByTestId("bottom-bar")).toBeNull();
     expect(screen.getAllByRole("button", { name: "Appeal" })).toHaveLength(2);
+  });
+
+  it("keeps what was written when its appeal is closed, by Cancel or for another notice's", async () => {
+    const second = suspension({ id: "0190a1d6-0000-7000-8000-0000000000e2", until: null });
+    await openNotices(() => ok(200, { notices: [suspension(), second] }));
+    const first = async () => {
+      const appeal = await screen.findAllByRole("button", { name: "Appeal" });
+      await fireEvent.press(appeal[0] as (typeof appeal)[number]);
+    };
+    await first();
+    await fireEvent.changeText(screen.getByLabelText("Why do you disagree?"), "Not me.");
+    await fireEvent.press(screen.getByRole("button", { name: "Cancel" }));
+    await first();
+    expect(screen.getByLabelText("Why do you disagree?")).toHaveDisplayValue("Not me.");
+
+    // The other notice's appeal opens empty, and closes this one.
+    await fireEvent.press(screen.getByRole("button", { name: "Appeal" }));
+    expect(screen.getByLabelText("Why do you disagree?")).toHaveDisplayValue("");
+    await fireEvent.press(screen.getByRole("button", { name: "Cancel" }));
+    await first();
+    expect(screen.getByLabelText("Why do you disagree?")).toHaveDisplayValue("Not me.");
+  });
+
+  it("says over Send appeal what the appeal itself is missing (spec 31, 3.19)", async () => {
+    const app = await openNotices(() => ok(200, { notices: [suspension()] }));
+    await fireEvent.press(await screen.findByRole("button", { name: "Appeal" }));
+    await fireEvent.press(inBar().getByRole("button", { name: "Send appeal" }));
+    expect(await inBar().findByRole("alert")).toHaveTextContent("Write why you disagree.");
+    await fireEvent.changeText(screen.getByLabelText("Why do you disagree?"), "x".repeat(1001));
+    expect(inBar().queryByRole("alert")).toBeNull();
+    await fireEvent.press(inBar().getByRole("button", { name: "Send appeal" }));
+    expect(await inBar().findByRole("alert")).toHaveTextContent(
+      "Shorten it to 1000 characters or fewer.",
+    );
+    expect(appealsSent(app.client)).toEqual([]);
   });
 
   it("asks for a shorter appeal over 1 000 characters, and sends nothing", async () => {
@@ -170,7 +204,7 @@ describe("Notices from PuffinRide (spec 9, 3.4.4; R9.5)", () => {
     await fireEvent.press(await screen.findByRole("button", { name: "Appeal" }));
     await fireEvent.changeText(screen.getByLabelText("Why do you disagree?"), "x".repeat(1001));
     await fireEvent.press(screen.getByRole("button", { name: "Send appeal" }));
-    expect(screen.getByText("Shorten it to 1000 characters or fewer.")).toBeVisible();
+    expect(inPage().getByText("Shorten it to 1000 characters or fewer.")).toBeVisible();
     expect(appealsSent(app.client)).toEqual([]);
   });
 

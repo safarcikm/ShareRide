@@ -68,6 +68,8 @@ export function CarForm({
   const [invalid, setInvalid] = useState<Field | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // Presses of Save: the same words after another press are said again.
+  const [press, setPress] = useState(0);
 
   const typed = make.trim().toLowerCase();
   const suggestions =
@@ -77,6 +79,8 @@ export function CarForm({
           .filter((known) => known.toLowerCase().startsWith(typed) && known !== make.trim())
           .slice(0, suggestionCount);
   const errorFor = (field: Field) => (invalid === field ? fieldError(t, field) : undefined);
+  /** Why Save did nothing: what a field needs, or what the server said. */
+  const refused = invalid === null ? failure : fieldError(t, invalid);
   /** A change to a field clears its error at once; the next save checks again. */
   const changed =
     <T,>(field: Field, set: (value: T) => void) =>
@@ -86,6 +90,7 @@ export function CarForm({
     };
 
   async function save() {
+    setPress((presses) => presses + 1);
     const body = { make, model, colour: colour ?? "", registration };
     const checked = validateVehicle(body);
     if (!checked.ok) {
@@ -163,7 +168,8 @@ export function CarForm({
         autoCapitalize="characters"
       />
       <InBar>
-        <ActionNotice says={failure} />
+        {/* A field's error is said here too: the field can be out of sight. */}
+        <ActionNotice says={refused === null ? null : { message: refused, press }} />
         <Button main label={t("vehicle.save")} busy={busy} onPress={() => void save()} />
       </InBar>
     </>

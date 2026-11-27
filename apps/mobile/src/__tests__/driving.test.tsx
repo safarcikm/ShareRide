@@ -79,8 +79,9 @@ async function openCars(start: Parameters<typeof driver>[1] = {}) {
   return { ...app, driver: state };
 }
 
+/** From My cars: a link, as it opens a page. */
 const addCar = async () => {
-  await fireEvent.press(screen.getByRole("button", { name: "Add a car" }));
+  await fireEvent.press(screen.getByRole("link", { name: "Add a car" }));
 };
 
 describe("Offer (spec 16, 3.6)", () => {
@@ -125,10 +126,24 @@ describe("Add a car (spec 3, 3.2)", () => {
     await fireEvent.changeText(await screen.findByLabelText("Make"), "Kia");
     await fireEvent.changeText(screen.getByLabelText("Model"), "Ceed");
     await fireEvent.press(screen.getByRole("button", { name: "Save car" }));
-    expect(await screen.findByText("Choose a colour.")).toBeVisible();
+    expect(await inPage().findByText("Choose a colour.")).toBeVisible();
     expect(
       app.client.calls.some((call) => "body" in call.input && call.path === "/v1/me/vehicles"),
     ).toBe(false);
+  });
+
+  it("says over Save car what the form itself is missing, until it is mended (spec 31, 3.19)", async () => {
+    await openCars();
+    await addCar();
+    await fireEvent.changeText(await screen.findByLabelText("Make"), "Kia");
+    await fireEvent.changeText(screen.getByLabelText("Model"), "Ceed");
+    // The field can be out of sight when Save is pressed: it is said by the button too.
+    await fireEvent.press(inBar().getByRole("button", { name: "Save car" }));
+    expect(await inBar().findByRole("alert")).toHaveTextContent("Choose a colour.");
+    expect(inPage().getByText("Choose a colour.")).toBeVisible();
+    await fireEvent.press(screen.getByRole("radio", { name: "Green" }));
+    expect(inBar().queryByRole("alert")).toBeNull();
+    expect(screen.queryByText("Choose a colour.")).toBeNull();
   });
 
   it("clears a field's error as soon as it changes", async () => {
@@ -137,7 +152,7 @@ describe("Add a car (spec 3, 3.2)", () => {
     await fireEvent.changeText(await screen.findByLabelText("Make"), "Kia");
     await fireEvent.changeText(screen.getByLabelText("Model"), "Ceed");
     await fireEvent.press(screen.getByRole("button", { name: "Save car" }));
-    expect(await screen.findByText("Choose a colour.")).toBeVisible();
+    expect(await inPage().findByText("Choose a colour.")).toBeVisible();
     await fireEvent.press(screen.getByRole("radio", { name: "Green" }));
     expect(screen.queryByText("Choose a colour.")).toBeNull();
   });
@@ -154,7 +169,7 @@ describe("Add a car (spec 3, 3.2)", () => {
     await fireEvent.changeText(screen.getByLabelText("Number plate"), "TEST 0001");
     await fireEvent.press(screen.getByRole("button", { name: "Save car" }));
     expect(
-      await screen.findByText("Use 2 to 8 letters and numbers, or leave it empty for now."),
+      await inPage().findByText("Use 2 to 8 letters and numbers, or leave it empty for now."),
     ).toBeVisible();
     expect(screen).toHavePathname("/drive/cars/new");
   });
@@ -166,11 +181,13 @@ describe("My cars (spec 31, 3.19 and R31.1)", () => {
   it("lists each car as a row with a picture, and Add a car as the last row", async () => {
     await openCars({ cars: [yaris] });
     const rows = within(screen.getByTestId("action-rows"));
-    const car = rows.getByRole("button", { name: "Toyota Yaris, white, No number plate yet" });
+    // Each opens a page: links, an `<a href>` on the web.
+    const car = rows.getByRole("link", { name: "Toyota Yaris, white, No number plate yet" });
     expect(within(car).getByTestId("row-icon", hidden)).toBeTruthy();
-    const add = rows.getByRole("button", { name: "Add a car" });
+    const add = rows.getByRole("link", { name: "Add a car" });
     expect(within(add).getByTestId("row-icon", hidden)).toBeTruthy();
-    expect(rows.getAllByRole("button").at(-1)).toBe(add);
+    expect(rows.getAllByRole("link").at(-1)).toBe(add);
+    expect(rows.queryAllByRole("button")).toEqual([]);
     // Rows only: while it lists cars the page has no main button, and no bar.
     expect(filledButtons()).toBe(0);
     expect(screen.queryByTestId("bottom-bar")).toBeNull();
@@ -179,7 +196,7 @@ describe("My cars (spec 31, 3.19 and R31.1)", () => {
   it("has Add a car as its main button, in the bar, while there is no car", async () => {
     await openCars();
     expect(screen.getByText("No cars yet. Add the car you drive.")).toBeVisible();
-    expect(inBar().getByRole("button", { name: "Add a car" })).toHaveStyle({ minHeight: 56 });
+    expect(inBar().getByRole("link", { name: "Add a car" })).toHaveStyle({ minHeight: 56 });
     expect(screen.queryByTestId("action-rows")).toBeNull();
   });
 });
@@ -212,7 +229,7 @@ describe("Edit a car", () => {
   it("adds the number plate later", async () => {
     const app = await openCars({ cars: [yaris] });
     expect(screen.getByText("No number plate yet")).toBeVisible();
-    await fireEvent.press(screen.getByRole("button", { name: /^Toyota Yaris, white/ }));
+    await fireEvent.press(screen.getByRole("link", { name: /^Toyota Yaris, white/ }));
     expect(await screen.findByRole("header", { name: "Edit your car" })).toBeVisible();
     expect(screen.getByLabelText("Model")).toHaveDisplayValue("Yaris");
     expect(screen.getByRole("radio", { name: "White" })).toBeChecked();
@@ -224,7 +241,7 @@ describe("Edit a car", () => {
 
   it("says so when the car was removed elsewhere before saving", async () => {
     const app = await openCars({ cars: [yaris] });
-    await fireEvent.press(screen.getByRole("button", { name: /^Toyota Yaris, white/ }));
+    await fireEvent.press(screen.getByRole("link", { name: /^Toyota Yaris, white/ }));
     await fireEvent.changeText(await screen.findByLabelText("Model"), "Yaris Cross");
     app.client.answer("/v1/me/vehicles/{id}", () => failure(404, "not_found"));
     await fireEvent.press(screen.getByRole("button", { name: "Save car" }));
@@ -240,7 +257,7 @@ describe("Edit a car", () => {
 
   it("removes a car after naming it", async () => {
     const app = await openCars({ cars: [yaris] });
-    await fireEvent.press(screen.getByRole("button", { name: /^Toyota Yaris, white/ }));
+    await fireEvent.press(screen.getByRole("link", { name: /^Toyota Yaris, white/ }));
     const focus = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent").mockClear();
     const remove = await screen.findByRole("button", { name: "Remove car" });
     // Opening the page moved no focus (the count starts here: an earlier test moved some).
@@ -264,7 +281,7 @@ describe("Edit a car", () => {
 
   it("has Remove car as a red row, the last thing on the page (spec 31, R31.3)", async () => {
     await openCars({ cars: [yaris] });
-    await fireEvent.press(screen.getByRole("button", { name: /^Toyota Yaris, white/ }));
+    await fireEvent.press(screen.getByRole("link", { name: /^Toyota Yaris, white/ }));
     const rows = within(await screen.findByTestId("action-rows"));
     const remove = rows.getByRole("button", { name: "Remove car" });
     expect(within(remove).getByText("Remove car")).toHaveStyle({ color: colors.light.error });
@@ -287,7 +304,7 @@ describe("Edit a car", () => {
 
   it("keeps a car that is on a trip that has not ended, and says why", async () => {
     const app = await openCars({ cars: [yaris] });
-    await fireEvent.press(screen.getByRole("button", { name: /^Toyota Yaris, white/ }));
+    await fireEvent.press(screen.getByRole("link", { name: /^Toyota Yaris, white/ }));
     await fireEvent.press(await screen.findByRole("button", { name: "Remove car" }));
     app.client.answer("/v1/me/vehicles/{id}", () => failure(409, "vehicle_in_use"));
     await fireEvent.press(screen.getByRole("button", { name: "Remove Toyota Yaris" }));

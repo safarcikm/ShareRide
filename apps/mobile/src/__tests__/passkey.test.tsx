@@ -660,6 +660,17 @@ describe("Face ID or fingerprint in Sign-in methods (spec 27, 3.6)", () => {
     ).toEqual([{}, { code: "654321" }]);
   });
 
+  it("keeps the confirm code's form whole in the page, with no bar (spec 31, 3.19)", async () => {
+    await openMethods([], (client) => {
+      client.answer("/v1/me/passkeys/options", () => failure(403, "confirm_required"));
+    });
+    await fireEvent.press(await screen.findByRole("button", { name: "Set up on this device" }));
+    expect(await screen.findByLabelText("6-digit code")).toBeVisible();
+    expect(screen.queryByTestId("bottom-bar")).toBeNull();
+    expect(screen.queryByTestId("action-rows")).toBeNull();
+    expect(screen.getByRole("button", { name: "Cancel" })).toBeVisible();
+  });
+
   it("uses the confirmed options again when the sheet was closed, with no new code", async () => {
     mockDevice.create.mockReturnValueOnce(Promise.reject(named("NotAllowedError")));
     const app = await openMethods([], (client) => {

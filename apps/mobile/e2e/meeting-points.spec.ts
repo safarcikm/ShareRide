@@ -127,7 +127,8 @@ test.describe("meeting points on the web", () => {
     const bar = page.getByTestId("bottom-bar").filter({ visible: true });
     await expect(bar.getByRole("button", { name: "Send", exact: true })).toBeInViewport();
     await page.getByRole("button", { name: "Send", exact: true }).click();
-    await expect(page.getByText("Choose what is wrong.")).toBeVisible();
+    // Why it did nothing is said over it, whatever of the page is in sight.
+    await expect(bar.getByText("Choose what is wrong.")).toBeInViewport();
     await page.getByRole("radio", { name: "It's in the wrong place on the map" }).click();
     await page
       .getByRole("textbox", { name: "Tell us more (optional)" })

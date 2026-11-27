@@ -16,7 +16,7 @@ import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { errorText } from "@/auth/errors";
 import { useMe, useSession } from "@/auth/session";
 import { Button } from "@/components/button";
-import { ActionNotice, Notice } from "@/components/notice";
+import { ActionNotice, Notice, useSaid } from "@/components/notice";
 import { RadioCard } from "@/components/radio-card";
 import { Screen } from "@/components/screen";
 import { ScreenHead } from "@/components/screen-head";
@@ -106,18 +106,22 @@ function ProblemForm({ point }: { readonly point: MeetingPointDetails }) {
   const [reason, setReason] = useState<MeetingPointIssueReason | null>(null);
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
-  const [missing, setMissing] = useState(false);
-  const [failed, setFailed] = useState<string | null>(null);
+  // Why Send did nothing: said over it, where it is seen whatever the page shows.
+  const [notice, say] = useSaid();
   const [sent, setSent] = useState(false);
   const tooLong = characterCount(note.trim()) > maxLength;
 
   async function send() {
-    setFailed(null);
     if (reason === null) {
-      setMissing(true);
+      say(t("meetingPoints.issue.choose"));
       return;
     }
-    if (tooLong) return;
+    if (tooLong) {
+      // The field says so too, further up: here it is seen and heard.
+      say(t("report.tooLong", { max: maxLength }));
+      return;
+    }
+    say(null);
     setBusy(true);
     const answer = await session.call(reportMeetingPointIssueRoute, {
       params: { id: point.id },
@@ -133,7 +137,7 @@ function ProblemForm({ point }: { readonly point: MeetingPointDetails }) {
       too_many_reports: "meetingPoints.issue.tooMany",
     };
     const key = failures[answer.error.code];
-    setFailed(key === undefined ? errorText(t, answer) : t(key));
+    say(key === undefined ? errorText(t, answer) : t(key));
   }
 
   if (sent) {
@@ -165,7 +169,7 @@ function ProblemForm({ point }: { readonly point: MeetingPointDetails }) {
     <Screen
       footer={
         <>
-          <ActionNotice says={failed} />
+          <ActionNotice says={notice} />
           <Button
             main
             label={t("meetingPoints.issue.send")}
@@ -195,19 +199,18 @@ function ProblemForm({ point }: { readonly point: MeetingPointDetails }) {
               title={t(issueReasonKeys[option])}
               selected={option === reason}
               onSelect={() => {
-                setMissing(false);
+                say(null);
                 setReason(option);
               }}
             />
           ))}
         </View>
-        <Notice message={missing ? t("meetingPoints.issue.choose") : null} />
       </View>
       <TextField
         label={t("meetingPoints.issue.note")}
         value={note}
         onChangeText={(text) => {
-          setFailed(null);
+          say(null);
           setNote(text);
         }}
         multiline

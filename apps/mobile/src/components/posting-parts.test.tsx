@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, within } from "@testing-library/react-native";
-import { useState, type ReactElement } from "react";
+import { StrictMode, useState, type ReactElement } from "react";
 import { Text } from "react-native";
 import { LanguageProvider } from "@/i18n/language";
 import { colors } from "@/theme/tokens";
@@ -315,6 +315,35 @@ describe("Screen with a bottom bar", () => {
       .getAllByText(/./)
       .map((text) => String(text.props.children));
     expect(texts).toEqual(["From the page", "Count 0"]);
+  });
+
+  it("shows what two parts put there, in the order they stand, each its own", async () => {
+    await inEnglish(
+      <Screen>
+        <Counter name="First" />
+        <Counter name="Second" />
+      </Screen>,
+    );
+    const bar = within(screen.getByTestId("bottom-bar"));
+    const names = () =>
+      bar.getAllByRole("button").map((button) => String(button.props.accessibilityLabel));
+    expect(names()).toEqual(["First 0", "Second 0"]);
+    await fireEvent.press(bar.getByRole("button", { name: "Second 0" }));
+    expect(names()).toEqual(["First 0", "Second 1"]);
+  });
+
+  it("shows it once, and keeps what the part holds, when React draws everything twice", async () => {
+    await inEnglish(
+      <StrictMode>
+        <Screen>
+          <Counter />
+        </Screen>
+      </StrictMode>,
+    );
+    const bar = within(screen.getByTestId("bottom-bar"));
+    await fireEvent.press(bar.getByRole("button", { name: "Count 0" }));
+    expect(bar.getAllByRole("button")).toHaveLength(1);
+    expect(bar.getByRole("button", { name: "Count 1" })).toBeVisible();
   });
 
   it("leaves it where the part stands when there is no screen around it", async () => {

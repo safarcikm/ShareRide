@@ -1865,8 +1865,10 @@ releases follow [Semantic Versioning](https://semver.org/).
   Email, the password, the photo's page, "Download my data", "Delete my
   account", Notices (an appeal) and "What's wrong here?" at a meeting
   point; why it did nothing is said over it. Confirming with a code has
-  that one button, with "Send a new code" and "Cancel" as rows. My cars
-  lists the cars as rows with pictures. All rides, a place, the meeting
+  that one button there, with "Send a new code" and "Cancel" as rows;
+  Sign-in methods and setting up a passkey keep theirs as it was. My cars
+  lists the cars as rows with pictures. A row shows when it is at work.
+  What was written for an appeal is kept when its form is closed. All rides, a place, the meeting
   points and a meeting point have Back and their title at the left, with
   the rest of the page starting there too; a meeting point's "Open in
   maps" and "Something wrong here?" are rows with pictures at its end.

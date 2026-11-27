@@ -31,8 +31,9 @@ and Notices have their title at the left.
 
 And, since its last pass (3.19, R31.1): on Notices one appeal is written
 at a time, with "Send appeal" as the page's one main button, at the
-bottom; opening another notice's appeal closes the first, as Cancel does
-(3.4.4).
+bottom, and why it was not sent over it; opening another notice's appeal
+closes the first, as Cancel does, and what was written for a notice is
+kept until it is sent (3.4.4).
 
 ## 1. Problem and goal
 

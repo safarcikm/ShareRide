@@ -21,7 +21,8 @@ import {
   requestToDrive,
   unpaidBooking,
 } from "@/testing/bookings";
-import { chatBooking, chatServer, openedLine } from "@/testing/chat";
+import { chatBooking, chatServer, chatServers, openedLine } from "@/testing/chat";
+import { inside, type Shown } from "@/testing/buttons";
 import { ok, type FakeClient } from "@/testing/fake-client";
 import { bsi, details, fitjar, hof, meetingPoints, thorlakshofn } from "@/testing/meeting-points";
 import { annaProfile, annaProfileId, profileApi } from "@/testing/people";
@@ -29,6 +30,7 @@ import { completedBooking } from "@/testing/reviews";
 import { northResult, searchApi, soonRides, soonestApi, tripDetailsApi } from "@/testing/search";
 import { dispute, onTheDay, rider } from "@/testing/trip-day";
 import { blonduos, borgarnes, plannedDraft, readyDriver, tripsApi, yaris } from "@/testing/trips";
+import { sizes } from "@/theme/tokens";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
 jest.mock("@/auth/token-store", () => {
@@ -91,25 +93,6 @@ const blockedAnna: BlockedPerson = {
   blockedAt: "2026-11-12T09:00:00.000Z",
 };
 
-/** A part on a screen under test, with the part that holds it. */
-interface Shown {
-  readonly props: {
-    readonly testID?: unknown;
-    readonly style?: unknown;
-    readonly accessibilityLabel?: unknown;
-    readonly accessibilityRole?: unknown;
-    readonly children?: unknown;
-  };
-  readonly parent: Shown | null;
-}
-
-function inside(part: Shown, testID: string): boolean {
-  for (let around = part.parent; around !== null; around = around.parent) {
-    if (around.props.testID === testID) return true;
-  }
-  return false;
-}
-
 /** In something that is pressed, whose own words may be centred. */
 function pressed(part: Shown): boolean {
   for (let around = part.parent; around !== null; around = around.parent) {
@@ -130,15 +113,30 @@ function underPuffin(text: Shown): boolean {
  * What else stands centred on a page with its title at the left: words that
  * belong to a control or a drawing, not to the page's column.
  */
-const centredToo: readonly { readonly what: string; readonly words: RegExp }[] = [
-  { what: "the number between a stepper's two buttons", words: /^\d+$/ },
-  { what: "the month between a calendar's two arrows", words: /^November 2026$/ },
+const centredToo: readonly {
+  readonly what: string;
+  /** The pages that have it. */
+  readonly on: RegExp;
+  readonly words: RegExp;
+}[] = [
+  {
+    what: "the number between a stepper's two buttons",
+    on: /^\/(search)?$|^\/trips\/[^/]+\?|\/seats$/,
+    words: /^\d+$/,
+  },
+  {
+    what: "the month between a calendar's two arrows",
+    on: /\/time$/,
+    words: /^November 2026$/,
+  },
   {
     what: "what a passenger pays, large over the price step's slider",
+    on: /\/price$/,
     words: /^(A passenger for the whole route pays|\d,\d{3} ISK|100%)$/,
   },
   {
     what: "a conversation's day, and what PuffinRide says in it, between the two sides",
+    on: /^\/messages\/[^/]+$/,
     words: /^(Saturday 14 November|Booking confirmed\. You can message each other here\.)$/,
   },
 ];
@@ -160,8 +158,8 @@ function filledButtons(): { readonly name: string; readonly tall: boolean; reado
     .filter((button) => !inside(button, "needs-you-card"))
     .map((button) => ({
       name: String(button.props.accessibilityLabel),
-      // A main button is 56 high; the round one of a conversation's field is the bar's own.
-      tall: styleOf(button).minHeight === 56,
+      // A main button is tall; the round one of a conversation's field is the bar's own.
+      tall: styleOf(button).minHeight === sizes.mainButtonHeight,
       in: inside(button, "bottom-bar")
         ? "the bar"
         : inside(button, "card")
@@ -191,6 +189,12 @@ const riding = (booking: Booking) => (client: FakeClient) => {
   );
   chatServer(client, { booking, messages: [openedLine] });
 };
+
+/** A conversation of mine, with Anna, in the list of Messages. */
+function talking(client: FakeClient) {
+  riding(chatBooking)(client);
+  chatServers(client, [chatBooking]);
+}
 
 /** What the pages Profile opens read: a car, and nothing else yet. */
 function mine(client: FakeClient) {
@@ -265,8 +269,15 @@ interface Page {
   readonly me?: Me;
   /** When, where the page depends on it: noon on the Saturday otherwise. */
   readonly at?: Date;
-  /** Where its filled button is, if it has one: in the bar otherwise. */
+  /** What its one main button says; null where the page has none. */
+  readonly main: string | null;
+  /** Where that button is: in the bar otherwise. */
   readonly button?: Place;
+  /**
+   * Words only this state of the page has, where another state of the
+   * address has the same title and the same main button.
+   */
+  readonly shows?: string;
   /** A title 3.17 leaves centred. */
   readonly centred?: true;
   /**
@@ -285,124 +296,324 @@ const noEmail: Me = { ...completeMe, email: null };
 
 const pages: readonly Page[] = [
   // The five places of the menu.
-  { path: "/", title: "Hi Anna", setUp: finding, button: "the search card", head: "title-line" },
-  { path: "/my-rides", title: "My rides", setUp: driving },
-  { path: "/my-rides", title: "My rides", setUp: nothing, button: "under the puffin" },
-  { path: "/offer", title: "Where are you driving?", setUp: driving },
-  { path: "/messages", title: "Messages", setUp: riding(chatBooking) },
-  { path: "/messages", title: "Messages", setUp: nothing },
-  { path: "/profile", title: "My profile", setUp: mine },
+  {
+    path: "/",
+    title: "Hi Anna",
+    main: "Find a ride",
+    setUp: finding,
+    button: "the search card",
+    head: "title-line",
+  },
+  { path: "/my-rides", title: "My rides", main: null, setUp: driving },
+  {
+    path: "/my-rides",
+    title: "My rides",
+    main: "Find a ride",
+    setUp: nothing,
+    button: "under the puffin",
+  },
+  { path: "/offer", title: "Where are you driving?", main: "Choose date and time", setUp: driving },
+  {
+    path: "/messages",
+    title: "Messages",
+    main: null,
+    setUp: talking,
+    shows: "Sunday 15 November · Borgarnes → Blönduós",
+  },
+  {
+    path: "/messages",
+    title: "Messages",
+    main: null,
+    setUp: nothing,
+    shows:
+      "Chats open once a booking is confirmed. Then you can message your driver or passengers here.",
+  },
+  { path: "/profile", title: "My profile", main: null, setUp: mine },
   // Finding a ride and booking a seat.
-  { path: "/search", title: "Find a ride", setUp: finding, button: "the search card" },
-  { path: results, title: "Sunday 15 November", setUp: finding, head: "results-heading" },
-  { path: "/rides", title: "Rides leaving soon", setUp: finding },
-  { path: "/rides", title: "Rides leaving soon", setUp: nothing },
-  { path: `/places/${thorlakshofn.id}`, title: "Þorlákshöfn", setUp: finding },
-  { path: "/meeting-points", title: "Meeting points", setUp: finding },
-  { path: `/meeting-points/${bsi.id}`, title: "BSÍ bus terminal", setUp: finding },
-  { path: `/meeting-points/${bsi.id}/problem`, title: "What's wrong here?", setUp: finding },
+  {
+    path: "/search",
+    title: "Find a ride",
+    main: "Find a ride",
+    setUp: finding,
+    button: "the search card",
+  },
+  {
+    path: results,
+    title: "Sunday 15 November",
+    main: null,
+    setUp: finding,
+    head: "results-heading",
+  },
+  {
+    path: "/rides",
+    title: "Rides leaving soon",
+    main: null,
+    setUp: finding,
+    shows: "Sun 15 Nov",
+  },
+  {
+    path: "/rides",
+    title: "Rides leaving soon",
+    main: null,
+    setUp: nothing,
+    shows: "No rides are coming up yet.",
+  },
+  { path: `/places/${thorlakshofn.id}`, title: "Þorlákshöfn", main: null, setUp: finding },
+  { path: "/meeting-points", title: "Meeting points", main: null, setUp: finding },
+  { path: `/meeting-points/${bsi.id}`, title: "BSÍ bus terminal", main: null, setUp: finding },
+  {
+    path: `/meeting-points/${bsi.id}/problem`,
+    title: "What's wrong here?",
+    main: "Send",
+    setUp: finding,
+  },
   {
     path: `/trips/${northResult.tripId}?from=1&to=2`,
     title: "Borgarnes to Blönduós",
+    main: "Send request",
     setUp: finding,
   },
   {
     path: `/trips/${northResult.tripId}/book?from=1&to=2&seats=1`,
     title: "Request this ride",
+    main: "Send request",
     setUp: finding,
   },
   // A booked seat.
-  { path: seat, title: "Your seat is confirmed", setUp: riding(paidBooking) },
-  { path: seat, title: "Pay to keep your seat", setUp: riding(unpaidBooking) },
-  { path: `${seat}/booked`, title: "You're booked!", setUp: riding(paidBooking), centred: true },
-  { path: `${seat}/cancel`, title: "Cancel your booking", setUp: riding(paidBooking) },
-  { path: seat, title: "Trip day", setUp: riding(onTheDay()), at: onTheTripDay },
+  { path: seat, title: "Your seat is confirmed", main: null, setUp: riding(paidBooking) },
+  {
+    path: seat,
+    title: "Pay to keep your seat",
+    main: "Pay 2,900 ISK",
+    setUp: riding(unpaidBooking),
+  },
+  {
+    path: `${seat}/booked`,
+    title: "You're booked!",
+    main: "See it in My rides",
+    setUp: riding(paidBooking),
+    centred: true,
+  },
+  {
+    path: `${seat}/cancel`,
+    title: "Cancel your booking",
+    main: "Cancel booking",
+    setUp: riding(paidBooking),
+  },
+  { path: seat, title: "Trip day", main: "I'm here", setUp: riding(onTheDay()), at: onTheTripDay },
   {
     path: `${seat}/driver-absent`,
     title: "The driver didn't come",
+    main: "Tell PuffinRide",
     setUp: riding(onTheDay()),
     at: onTheTripDay,
   },
   {
     path: `/bookings/${gunna.id}/no-show`,
     title: "Mark as no-show: Gunna",
+    main: "Mark as no-show",
     setUp: riding(gunna),
     at: onTheTripDay,
   },
-  { path: `${seat}/answer`, title: "Is this right?", setUp: riding(reported), at: onTheTripDay },
-  { path: seat, title: "How was your ride?", setUp: riding(completedBooking()) },
-  { path: `${seat}/rate`, title: "How was your ride?", setUp: riding(completedBooking()) },
-  { path: `${seat}/block`, title: "Block Anna?", setUp: riding(paidBooking) },
+  {
+    path: `${seat}/answer`,
+    title: "Is this right?",
+    main: "Send answer",
+    setUp: riding(reported),
+    at: onTheTripDay,
+  },
+  {
+    path: seat,
+    title: "How was your ride?",
+    main: "Rate the driver",
+    setUp: riding(completedBooking()),
+  },
+  {
+    path: `${seat}/rate`,
+    title: "How was your ride?",
+    main: "Send review",
+    setUp: riding(completedBooking()),
+  },
+  { path: `${seat}/block`, title: "Block Anna?", main: "Block Anna", setUp: riding(paidBooking) },
   {
     path: `/messages/${chatBooking.id}`,
     title: "Anna",
+    main: "Send",
     setUp: riding(chatBooking),
     head: "conversation-head",
   },
   // Offering a ride, and the driver's ride.
-  { path: "/drive/trips/new", title: "Where are you driving?", setUp: driving },
-  { path: `${posting}/route`, title: "Where are you driving?", setUp: driving },
-  { path: `${posting}/time`, title: "When are you leaving?", setUp: driving },
-  { path: `${posting}/seats`, title: "Seats and preferences", setUp: driving },
-  { path: `${posting}/price`, title: "Set your price", setUp: driving },
-  { path: `${posting}/review`, title: "Check and publish", setUp: driving },
-  { path: `${trip}/published`, title: "Your ride is published", setUp: driving, centred: true },
-  { path: `${trip}/share`, title: "Share this ride", setUp: driving },
-  { path: trip, title: "Your ride to Hof, Akureyri", setUp: driving },
-  { path: `${trip}/message`, title: "Message all passengers", setUp: driving },
-  { path: `${trip}/cancel`, title: "Cancel your ride", setUp: driving },
-  { path: `${trip}/edit`, title: "Edit the ride", setUp: driving },
-  { path: `${trip}/edit/time`, title: "Change the departure", setUp: driving },
-  { path: `${trip}/edit/seats`, title: "Change the seats", setUp: driving },
-  { path: `${trip}/edit/price`, title: "Change the price", setUp: driving },
-  { path: `${trip}/edit/car`, title: "Change the car", setUp: driving },
-  { path: `${trip}/edit/booking`, title: "Change how people book", setUp: driving },
-  { path: `${trip}/edit/details`, title: "Change the preferences and note", setUp: driving },
-  { path: `${trip}/edit/stop`, title: "Add a stop", setUp: driving },
-  { path: `${trip}/edit/remove-stop`, title: "Remove a stop", setUp: driving },
+  {
+    path: "/drive/trips/new",
+    title: "Where are you driving?",
+    main: "Choose date and time",
+    setUp: driving,
+  },
+  {
+    path: `${posting}/route`,
+    title: "Where are you driving?",
+    main: "Choose date and time",
+    setUp: driving,
+  },
+  { path: `${posting}/time`, title: "When are you leaving?", main: "Choose seats", setUp: driving },
+  {
+    path: `${posting}/seats`,
+    title: "Seats and preferences",
+    main: "Set your price",
+    setUp: driving,
+  },
+  { path: `${posting}/price`, title: "Set your price", main: "Check your ride", setUp: driving },
+  { path: `${posting}/review`, title: "Check and publish", main: "Publish ride", setUp: driving },
+  {
+    path: `${trip}/published`,
+    title: "Your ride is published",
+    main: "See my rides",
+    setUp: driving,
+    centred: true,
+  },
+  { path: `${trip}/share`, title: "Share this ride", main: null, setUp: driving },
+  { path: trip, title: "Your ride to Hof, Akureyri", main: null, setUp: driving },
+  { path: `${trip}/message`, title: "Message all passengers", main: "Send", setUp: driving },
+  { path: `${trip}/cancel`, title: "Cancel your ride", main: "Cancel the ride", setUp: driving },
+  { path: `${trip}/edit`, title: "Edit the ride", main: null, setUp: driving },
+  {
+    path: `${trip}/edit/time`,
+    title: "Change the departure",
+    main: "Check the change",
+    setUp: driving,
+  },
+  {
+    path: `${trip}/edit/seats`,
+    title: "Change the seats",
+    main: "Save the change",
+    setUp: driving,
+  },
+  {
+    path: `${trip}/edit/price`,
+    title: "Change the price",
+    main: "Save the change",
+    setUp: driving,
+  },
+  { path: `${trip}/edit/car`, title: "Change the car", main: "Save the change", setUp: driving },
+  {
+    path: `${trip}/edit/booking`,
+    title: "Change how people book",
+    main: "Save the change",
+    setUp: driving,
+  },
+  {
+    path: `${trip}/edit/details`,
+    title: "Change the preferences and note",
+    main: "Save the change",
+    setUp: driving,
+  },
+  { path: `${trip}/edit/stop`, title: "Add a stop", main: null, setUp: driving },
+  {
+    path: `${trip}/edit/remove-stop`,
+    title: "Remove a stop",
+    main: "Check the change",
+    setUp: driving,
+  },
   {
     path: `${trip}/edit/check?departsAt=2026-11-15T09:45:00.000Z`,
     title: "Check the change",
+    main: "Save the change",
     setUp: driving,
   },
   // Profile, and the pages it opens.
-  { path: `/people/${annaProfileId}`, title: "Profile", setUp: mine },
-  { path: `/people/${annaProfileId}/block`, title: "Block Anna?", setUp: mine },
-  { path: `/report?kind=profile&id=${annaProfileId}`, title: "Report Anna", setUp: mine },
-  { path: "/profile/edit", title: "Edit profile", setUp: mine },
-  { path: "/profile/preview", title: "As others see you", setUp: mine },
-  { path: "/drive/cars", title: "My cars", setUp: mine },
-  { path: "/drive/cars", title: "My cars", setUp: mineWithMore },
-  { path: "/drive/cars/new", title: "Add a car", setUp: mine },
-  { path: `/drive/cars/${yaris.id}`, title: "Edit your car", setUp: mine },
-  { path: "/drive/licence", title: "Your driving licence", setUp: mine },
-  { path: "/drive/photo", title: "Your profile photo", setUp: mine },
-  { path: "/notices", title: "Notices", setUp: mine },
-  { path: "/notices", title: "Notices", setUp: mineWithMore },
-  { path: "/feedback", title: "Send feedback", setUp: mine },
-  { path: "/settings/beta-news", title: "Beta news", setUp: mine },
-  { path: "/settings/blocked", title: "Blocked people", setUp: mine },
-  { path: "/settings/blocked", title: "Blocked people", setUp: mineWithMore },
-  { path: "/settings/email", title: "Your email", setUp: mine },
-  { path: "/settings/feedback", title: "My feedback", setUp: mine },
-  { path: "/settings/language", title: "Language", setUp: mine },
-  { path: "/settings/notifications", title: "Notifications", setUp: mine },
-  { path: "/settings/password", title: "Choose a password", setUp: mine },
-  { path: "/settings/password", title: "Choose a password", setUp: mine, me: noEmail },
-  { path: "/settings/reports", title: "My reports", setUp: mine },
-  { path: "/settings/sign-in-methods", title: "Sign-in methods", setUp: mine },
-  { path: "/settings/privacy", title: "Privacy", setUp: mine },
-  { path: "/settings/privacy/ask", title: "Ask about my data", setUp: mine },
-  { path: "/settings/privacy/ask", title: "Ask about my data", setUp: mine, me: noEmail },
-  { path: "/settings/privacy/delete", title: "Delete my account", setUp: mine },
-  { path: "/settings/privacy/delete", title: "Delete my account", setUp: mineWithMore },
-  { path: "/settings/privacy/download", title: "Download my data", setUp: mine },
-  { path: "/settings/privacy/download", title: "Download my data", setUp: mineWithMore },
+  { path: `/people/${annaProfileId}`, title: "Profile", main: null, setUp: mine },
+  { path: `/people/${annaProfileId}/block`, title: "Block Anna?", main: "Block Anna", setUp: mine },
+  {
+    path: `/report?kind=profile&id=${annaProfileId}`,
+    title: "Report Anna",
+    main: "Send report",
+    setUp: mine,
+  },
+  { path: "/profile/edit", title: "Edit profile", main: "Save profile", setUp: mine },
+  { path: "/profile/preview", title: "As others see you", main: null, setUp: mine },
+  { path: "/drive/cars", title: "My cars", main: null, setUp: mine },
+  { path: "/drive/cars", title: "My cars", main: "Add a car", setUp: mineWithMore },
+  { path: "/drive/cars/new", title: "Add a car", main: "Save car", setUp: mine },
+  { path: `/drive/cars/${yaris.id}`, title: "Edit your car", main: "Save car", setUp: mine },
+  { path: "/drive/licence", title: "Your driving licence", main: "Confirm", setUp: mine },
+  { path: "/drive/photo", title: "Your profile photo", main: "Add a photo", setUp: mine },
+  {
+    path: "/notices",
+    title: "Notices",
+    main: null,
+    setUp: mine,
+    shows: "Nothing here. If PuffinRide ever acts on your account, you'll read why here.",
+  },
+  {
+    path: "/notices",
+    title: "Notices",
+    main: null,
+    setUp: mineWithMore,
+    shows: "Reason: Repeated messages after being asked to stop.",
+  },
+  { path: "/feedback", title: "Send feedback", main: "Send feedback", setUp: mine },
+  { path: "/settings/beta-news", title: "Beta news", main: null, setUp: mine },
+  {
+    path: "/settings/blocked",
+    title: "Blocked people",
+    main: null,
+    setUp: mine,
+    shows: "You haven't blocked anyone.",
+  },
+  {
+    path: "/settings/blocked",
+    title: "Blocked people",
+    main: null,
+    setUp: mineWithMore,
+    shows: "Anna",
+  },
+  { path: "/settings/email", title: "Your email", main: "Send the link", setUp: mine },
+  { path: "/settings/feedback", title: "My feedback", main: null, setUp: mine },
+  { path: "/settings/language", title: "Language", main: null, setUp: mine },
+  { path: "/settings/notifications", title: "Notifications", main: null, setUp: mine },
+  { path: "/settings/password", title: "Choose a password", main: "Save password", setUp: mine },
+  {
+    path: "/settings/password",
+    title: "Choose a password",
+    main: "Add an email",
+    setUp: mine,
+    me: noEmail,
+  },
+  { path: "/settings/reports", title: "My reports", main: null, setUp: mine },
+  { path: "/settings/sign-in-methods", title: "Sign-in methods", main: null, setUp: mine },
+  { path: "/settings/privacy", title: "Privacy", main: null, setUp: mine },
+  { path: "/settings/privacy/ask", title: "Ask about my data", main: "Send", setUp: mine },
+  {
+    path: "/settings/privacy/ask",
+    title: "Ask about my data",
+    main: "Add my email",
+    setUp: mine,
+    me: noEmail,
+  },
+  {
+    path: "/settings/privacy/delete",
+    title: "Delete my account",
+    main: "Delete my account",
+    setUp: mine,
+  },
+  { path: "/settings/privacy/delete", title: "Delete my account", main: null, setUp: mineWithMore },
+  {
+    path: "/settings/privacy/download",
+    title: "Download my data",
+    main: "Make my file",
+    setUp: mine,
+  },
+  {
+    path: "/settings/privacy/download",
+    title: "Download my data",
+    main: "Download the file",
+    setUp: mineWithMore,
+  },
   // What the website says about itself: centred, as About is.
-  { path: "/about", title: "About PuffinRide", setUp: mine, centred: true },
-  { path: "/legal", title: "About PuffinRide", setUp: mine, centred: true },
-  { path: "/legal/terms", title: "Terms of Service", setUp: mine, centred: true },
-  { path: "/cookies", title: "Cookies", setUp: mine, centred: true },
+  { path: "/about", title: "About PuffinRide", main: null, setUp: mine, centred: true },
+  { path: "/legal", title: "About PuffinRide", main: null, setUp: mine, centred: true },
+  { path: "/legal/terms", title: "Terms of Service", main: null, setUp: mine, centred: true },
+  { path: "/cookies", title: "Cookies", main: null, setUp: mine, centred: true },
 ];
 
 /**
@@ -471,6 +682,7 @@ async function open(page: Page) {
   mockNow = page.at ?? noon;
   await renderApp(page.path, { me: page.me ?? me, setUp: page.setUp });
   await screen.findByRole("header", { name: page.title });
+  if (page.shows !== undefined) await screen.findByText(page.shows);
   await waitFor(() => {
     expect(screen.queryAllByLabelText("Loading")).toEqual([]);
   });
@@ -492,18 +704,22 @@ describe("The rules every page keeps (spec 31, R31.1 and 3.17)", () => {
     );
   });
 
-  it.each(pages)("$path, as $title, has at most one main button, in the bar", async (page) => {
-    await open(page);
-    const buttons = filledButtons();
-    const place = page.button ?? "the bar";
-    // One at most; where it is; and tall, but for the one under a puffin
-    // and the round one of a conversation's field.
-    expect(buttons.map((button) => button.in)).toEqual(buttons.length === 0 ? [] : [place]);
-    const round = page.title === "Anna" || page.title === "Message all passengers";
-    expect(buttons.map((button) => button.tall)).toEqual(
-      buttons.map(() => place !== "under the puffin" && !round),
-    );
-  });
+  it.each(pages)(
+    "$path, as $title, has its one main button, or none, where it belongs",
+    async (page) => {
+      await open(page);
+      const buttons = filledButtons();
+      const place = page.button ?? "the bar";
+      // The one the page names, and no other; where it is; and tall, but for
+      // the one under a puffin and the round one of a conversation's field.
+      expect(buttons.map((button) => button.name)).toEqual(page.main === null ? [] : [page.main]);
+      expect(buttons.map((button) => button.in)).toEqual(buttons.map(() => place));
+      const round = page.title === "Anna" || page.title === "Message all passengers";
+      expect(buttons.map((button) => button.tall)).toEqual(
+        buttons.map(() => place !== "under the puffin" && !round),
+      );
+    },
+  );
 
   it.each(pages)("$path, as $title, has its title at the left", async (page) => {
     await open(page);
@@ -531,7 +747,9 @@ describe("The rules every page keeps (spec 31, R31.1 and 3.17)", () => {
           .filter((text) => styleOf(text).textAlign === "center")
           .filter((text) => !pressed(text) && !underPuffin(text))
           .map((text) => String(text.props.children))
-          .filter((words) => !centredToo.some((own) => own.words.test(words))),
+          .filter(
+            (words) => !centredToo.some((own) => own.on.test(page.path) && own.words.test(words)),
+          ),
       ).toEqual([]);
     },
   );

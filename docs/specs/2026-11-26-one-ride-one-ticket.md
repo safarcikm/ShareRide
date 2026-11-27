@@ -1170,8 +1170,8 @@ changes:
 ### 3.17 Titles at the left
 
 On a screen where you do something (a ride, a booking, a step, a list, a
-conversation, Profile) the title is at the left. Find on a phone, the empty
-and signed-out screens with a puffin, the screens that say a seat is
+conversation, Profile) the title is at the left. Find on a phone while
+signed out, the empty and signed-out screens with a puffin, the screens that say a seat is
 booked or a ride is published, and About keep a centred title. This
 changes Martin's choice of 2026-11-14 (spec 15, 5.1) and is decision 2.
 
@@ -1183,7 +1183,9 @@ at the left nothing in the page's column is centred. What is centred
 there belongs to a control or a drawing: what a button says, the number
 between a stepper's two buttons, the month between a calendar's arrows,
 the price a passenger pays over its slider, a conversation's day and what
-PuffinRide says in it, and the words under a puffin. On Find on a phone,
+PuffinRide says in it, and the words under a puffin; the test names the
+pages each of these is on. It looks at words set in the middle, not at a
+block placed in the middle of its column. On Find on a phone,
 signed in, "Driving somewhere? Share the empty seats in your car." starts
 at the left, as the title does; signed out it stays centred with the
 rest.
@@ -1462,7 +1464,7 @@ The person in them is made up by the journey that takes them.
   "Close" as the one main button, in the bar. The page an account that
   waits to be deleted lands on has the same title at the left, with what
   waiting means as its line; its two buttons, "Keep my account" and "Sign
-  out", are as they were.
+  out", were as they had been until the last pass (below).
 - **A car:** "Remove car" is a red row in a card of its own, the last
   thing on the page (R31.3), in the place of a loose link. It asks first,
   naming the car, as before; the question now takes focus where the row
@@ -1509,35 +1511,51 @@ and [All rides](images/one-ride-one-ticket/built/rides-phone-light.webp).
   Email; "Save password", and "Done" once it is saved; "Delete my
   account"; "Make my file" and "Download the file" on "Download my data";
   "Add a photo" or "Change photo" on the photo's page; "Add a car" on My
-  cars while there is none; "Add email" where a page asks for one first
-  ("Ask about my data", "Choose a password"); "Keep my account" on the
+  cars while there is none; "Add my email" and "Add an email" where a page
+  asks for one first ("Ask about my data", "Choose a password"); "Keep my
+  account" on the
   page an account that waits to be deleted lands on; "Send appeal" on
   Notices; and "Send" on "What's wrong here?". These pages stay one column
   on a laptop and keep the bar there.
 - **Why the button did nothing** is said over it, in the bar, and takes
   focus, as on the screens around a booking: what the server refused on
-  each of these pages. What a field has to say stays at the field: an
-  email that is no address, a password against the rules, a code of too
-  few digits, the box of the licence not ticked, no reason chosen.
+  each of these pages. On a form longer than one field, what the form
+  itself refuses is said there too, as on Report, since the field can be
+  out of sight when the button is pressed: a name or a car's make left
+  out, no colour chosen, no reason chosen on "What's wrong here?" (said
+  over the button only), a note or an appeal that is empty or too long.
+  It goes once the field is mended. Where the page has one field, right
+  under its title, what the field has to say stays at the field: an email
+  that is no address, a password against the rules, a code of too few
+  digits, the box of the licence not ticked.
 - **Confirming with a code** (deleting, a file of my data, a new email, a
-  password, and on Sign-in methods a Google or Apple account or a
-  passkey): the button that confirms is the page's main button while the
+  password): the button that confirms is the page's main button while the
   code is asked for, in the bar, red where it deletes the account. It is
   there from the start and busy until the code is on its way, so the bar
   does not come and go. "Send a new code" and "Cancel" are rows with
   pictures under the field, in that order; they were two more buttons.
   What the code's field says, and that a new code was sent, stay by the
-  field.
+  field. On Sign-in methods and where a passkey is set up (onboarding
+  too) the same form keeps its three buttons under the code, as it was:
+  those pages are spec 29's.
 - **Never two:** on "Download my data", while a new file is asked for
   with a code beside a file that is ready, the code's button has the bar
   and "Download the file" is not shown; Cancel brings it back. "Make a new
   file" is a row with a picture under "A new file replaces this one." On
   Notices one appeal is written at a time: opening a second notice's
-  appeal closes the first, and what was written there goes, as with
-  Cancel.
+  appeal closes the first, as Cancel does. What was written for a notice
+  is kept while its form is closed, either way: an appeal is sent once.
 - **My cars** lists the cars as rows with pictures, with "Add a car" as
   the last row; it was a card of names with a button under it. With no
-  car yet, "Add a car" is the main button, in the bar.
+  car yet, "Add a car" is the main button, in the bar. Each opens a
+  page, so each is a link, as "Add my email" and "Add an email" are.
+- **A row that is at work** shows it: a spinner where its chevron was,
+  and no other press meanwhile. "Take a photo", "Remove photo", "Sign
+  out", "Send a new code" and "Send the link again" do.
+- **Email:** "Send the link again" is a row with a picture under the
+  address that waits, as "Send a new code" is; it was an outlined button.
+  Why it did not go is said by the row, also while a code is asked for,
+  and not over "Send the link".
 - **The photo's page:** "Take a photo", in the phone apps, and "Remove
   photo", red and last (R31.3), are rows with pictures under the person's
   card; they were buttons under the main one. What a row did or could not
@@ -1587,8 +1605,11 @@ each line, which undoes something and is no row that leads on; the
 outlined button that confirms removing a car, in its card, as a filled
 red one would be the page's second beside "Save car"; what must be
 settled before deleting, a card of rows with no pictures; and "Not now"
-under the password's field, a text link. Sign-in methods keeps its own
-buttons (spec 29); only the code's form changed there, as everywhere.
+under the password's field, a text link. On Notices, "Appeal" on a
+notice's card and "Cancel" under what is written are outlined buttons in
+that card: they open and close the form in the card, as "Unblock" acts on
+its own line. Sign-in methods keeps its own buttons, and the code's form
+as it was (spec 29).
 
 My rides came with PR 8c (3.10).
 
@@ -1612,7 +1633,8 @@ declaration before publishing (spec 3, R3.1 and R3.2; spec 16, 3.6).
   main button at most, and no filled button outside a `NeedsYouCard`.
   A screen that stays one column on a laptop (spec 18, 3.15) keeps the
   bar there. As built (PR 12a), the test opens every page a signed-in
-  member reaches and says where its filled button is: the bar; the
+  member reaches and says what its one main button is, or that it has
+  none, and where it is: the bar; the
   search card, on Find and on "Find a ride"; under the puffin of an empty
   My rides; and, round, at the end of the field in a conversation's bar.
   A part of a page that keeps its own state, as a form does, puts its

@@ -3,6 +3,7 @@ import type { SignInMethod } from "@shareride/contracts";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
+import { inPage } from "@/testing/buttons";
 import { windowReturnsTo } from "@/testing/web-browser";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
@@ -273,6 +274,28 @@ describe("Sign-in methods, from Profile", () => {
     await fireEvent.changeText(await screen.findByLabelText("6-digit code"), "123456");
     return opened;
   }
+
+  it("keeps the code's form whole in the page, with no bar (the page is spec 29's; spec 31, 3.19)", async () => {
+    await openMethods([], (client) => {
+      client.answer("/v1/me/sign-in-methods/prepare", () =>
+        ok(200, {
+          pendingSignIn,
+          provider: "google",
+          email: "anna@example.com",
+          expiresAt: "2026-11-22T12:30:00.000Z",
+        }),
+      );
+    });
+    windowReturnsTo(`puffinride://sign-in/return#ticket=${ticket}`);
+    await fireEvent.press(await screen.findByRole("button", { name: "Add Google" }));
+    expect(await screen.findByLabelText("6-digit code")).toBeVisible();
+    // The button that confirms and Cancel are under the code, as they were:
+    // no bar on this page, and no card of rows in its card.
+    expect(screen.queryByTestId("bottom-bar")).toBeNull();
+    expect(screen.queryByTestId("action-rows")).toBeNull();
+    expect(inPage().getByRole("button", { name: "Add Google" })).toBeVisible();
+    expect(inPage().getByRole("button", { name: "Cancel" })).toBeVisible();
+  });
 
   it("keeps the form open when the code is wrong", async () => {
     await addGoogleWith(() => failure(400, "code_invalid"));

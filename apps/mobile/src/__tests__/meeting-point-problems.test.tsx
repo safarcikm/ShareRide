@@ -120,6 +120,26 @@ describe("Something wrong here? (spec 2, 3.5)", () => {
     expect(screen.getByRole("header", { name: "What's wrong here?" })).toBeVisible();
   });
 
+  it("says over Send what the form itself is missing: a reason, or a shorter note", async () => {
+    const { client } = await openProblem();
+    // The reasons can be out of sight when Send is pressed: it is said by the button.
+    await fireEvent.press(inBar().getByRole("button", { name: "Send" }));
+    expect(await inBar().findByRole("alert")).toHaveTextContent("Choose what is wrong.");
+    expect(inPage().queryByText("Choose what is wrong.")).toBeNull();
+    // Mended, it goes.
+    await fireEvent.press(screen.getByRole("radio", { name: "Something else" }));
+    expect(inBar().queryByRole("alert")).toBeNull();
+    await fireEvent.changeText(screen.getByLabelText("Tell us more (optional)"), "a".repeat(301));
+    await fireEvent.press(inBar().getByRole("button", { name: "Send" }));
+    expect(await inBar().findByRole("alert")).toHaveTextContent(
+      "Shorten it to 300 characters or fewer.",
+    );
+    expect(inPage().getByText("Shorten it to 300 characters or fewer.")).toBeVisible();
+    await fireEvent.changeText(screen.getByLabelText("Tell us more (optional)"), "Short.");
+    expect(inBar().queryByRole("alert")).toBeNull();
+    expect(sent(client)).toEqual([]);
+  });
+
   it("offers each reason of spec 2, 3.5", async () => {
     await openProblem();
     expect(

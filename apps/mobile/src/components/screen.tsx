@@ -9,7 +9,6 @@ import {
   useMemo,
   useRef,
   useState,
-  useSyncExternalStore,
   type ComponentRef,
   type ReactNode,
   type RefObject,
@@ -260,10 +259,25 @@ export function InBar({ children }: { readonly children: ReactNode }) {
   return slot === null ? children : null;
 }
 
-/** The bar at the bottom: the screen's `footer`, then what its parts put there. */
+/**
+ * The bar at the bottom: the screen's `footer`, then what its parts put there.
+ *
+ * It listens from its layout effect on, and looks again there: the parts
+ * put what they hold in their layout effects, which run before the bar's
+ * when a screen first shows, and the bar is drawn again before anything is
+ * painted. So a screen never shows a first frame without its bar.
+ * (`useSyncExternalStore` listens only once the frame is painted.)
+ */
 function BottomBar({ footer, inBar }: { readonly footer: ReactNode; readonly inBar: BarSlot }) {
   const palette = usePalette();
-  const held = useSyncExternalStore(inBar.listen, inBar.held, inBar.held);
+  const [held, setHeld] = useState(inBar.held);
+  useLayoutEffect(() => {
+    const look = () => {
+      setHeld(inBar.held());
+    };
+    look();
+    return inBar.listen(look);
+  }, [inBar]);
   if (footer === undefined && held.size === 0) return null;
   return (
     <View

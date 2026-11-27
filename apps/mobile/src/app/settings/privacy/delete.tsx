@@ -121,6 +121,7 @@ function DeleteMyAccount({
           {check.data.allowed ? (
             confirming ? (
               <ConfirmWithCode
+                inBar
                 danger
                 confirmLabel={t("privacy.deleteConfirm")}
                 sentUntil={codeWait}

@@ -15,7 +15,7 @@ import { errorText } from "@/auth/errors";
 import { useSession } from "@/auth/session";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
-import { ActionNotice, Notice } from "@/components/notice";
+import { ActionNotice, Notice, useSaid } from "@/components/notice";
 import { InBar } from "@/components/screen";
 import { sectionLevel } from "@/components/text";
 import { TextField } from "@/components/text-field";
@@ -125,6 +125,8 @@ function Appeal({
   const palette = usePalette();
   // The appeal just sent was refused, as the notice changed meanwhile.
   const [gone, setGone] = useState(false);
+  // What is written, kept here while its form is closed.
+  const [text, setText] = useState("");
   const body = [typography.body, { color: palette.text }];
   const muted = [typography.small, { color: palette.textMuted }];
 
@@ -167,6 +169,8 @@ function Appeal({
       {open ? (
         <AppealForm
           notice={notice}
+          text={text}
+          onText={setText}
           onSent={(now) => {
             onOpen(false);
             onAnnounce(t("notices.appealSent"));
@@ -200,16 +204,21 @@ function Appeal({
 }
 
 /**
- * Writing an appeal. What is written goes when it is left, with Cancel or
- * for another notice's appeal.
+ * Writing an appeal. What is written is its notice's to keep: an appeal is
+ * sent once, so closing its form, with Cancel or for another notice's
+ * appeal, loses nothing.
  */
 function AppealForm({
   notice,
+  text,
+  onText,
   onSent,
   onGone,
   onCancel,
 }: {
   readonly notice: NoticeData;
+  readonly text: string;
+  readonly onText: (text: string) => void;
   readonly onSent: (notice: NoticeData) => void;
   /** Refused as the notice changed meanwhile. */
   readonly onGone: () => void;
@@ -217,19 +226,23 @@ function AppealForm({
 }) {
   const { t } = useLanguage();
   const session = useSession();
-  const [text, setText] = useState("");
   const [problem, setProblem] = useState<string | null>(null);
-  const [failed, setFailed] = useState<string | null>(null);
+  // Why Send appeal did nothing: said over it, as the field can be out of sight.
+  const [said, say] = useSaid();
   const [busy, setBusy] = useState(false);
 
   async function send() {
-    setFailed(null);
     const trimmed = text.trim();
     if (trimmed === "") {
       setProblem(t("notices.appealEmpty"));
+      say(t("notices.appealEmpty"));
       return;
     }
-    if (characterCount(trimmed) > maxLength) return;
+    if (characterCount(trimmed) > maxLength) {
+      say(t("report.tooLong", { max: maxLength }));
+      return;
+    }
+    say(null);
     setBusy(true);
     const result = await session.call(appealNoticeRoute, {
       params: { id: notice.id },
@@ -248,7 +261,7 @@ function AppealForm({
         onGone();
         return;
       default:
-        setFailed(errorText(t, result));
+        say(errorText(t, result));
     }
   }
 
@@ -260,8 +273,8 @@ function AppealForm({
         value={text}
         onChangeText={(value) => {
           setProblem(null);
-          setFailed(null);
-          setText(value);
+          say(null);
+          onText(value);
         }}
         multiline
         autoFocus
@@ -271,7 +284,7 @@ function AppealForm({
       />
       <Button variant="secondary" label={t("common.cancel")} onPress={onCancel} />
       <InBar>
-        <ActionNotice says={failed} />
+        <ActionNotice says={said} />
         <Button main label={t("notices.sendAppeal")} busy={busy} onPress={() => void send()} />
       </InBar>
     </>

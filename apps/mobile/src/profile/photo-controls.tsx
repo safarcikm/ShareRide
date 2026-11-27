@@ -155,6 +155,7 @@ export function PhotoControls({
               <Row
                 icon={Camera}
                 title={t("profile.photo.take")}
+                busy={busy === "camera"}
                 disabled={busy !== null}
                 onPress={fromCamera}
               />
@@ -164,6 +165,7 @@ export function PhotoControls({
                 danger
                 icon={Trash2}
                 title={t("profile.photo.remove")}
+                busy={busy === "remove"}
                 disabled={busy !== null}
                 onPress={removeIt}
               />

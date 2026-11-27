@@ -18,8 +18,9 @@ test.describe("getting ready to drive on the web", () => {
     // With no car yet, adding one is the page's main button, in the bar at
     // the bottom (spec 31, R31.1).
     const bar = page.getByTestId("bottom-bar").filter({ visible: true });
-    await expect(bar.getByRole("button", { name: "Add a car" })).toBeInViewport();
-    await bar.getByRole("button", { name: "Add a car" }).click();
+    // A link, as it opens a page.
+    await expect(bar.getByRole("link", { name: "Add a car" })).toBeInViewport();
+    await bar.getByRole("link", { name: "Add a car" }).click();
     await expect(page.getByRole("heading", { name: "Add a car" })).toBeVisible();
     // So is the form's own button, seen before the form is filled in.
     await expect(bar.getByRole("button", { name: "Save car" })).toBeInViewport();
@@ -34,11 +35,11 @@ test.describe("getting ready to drive on the web", () => {
     );
     await page.getByRole("button", { name: "Save car" }).click();
     await expect(page.getByRole("heading", { name: "My cars" })).toBeVisible();
-    const car = page.getByRole("button", { name: /^Toyota Yaris, white/ });
+    const car = page.getByRole("link", { name: /^Toyota Yaris, white/ });
     await expect(car).toContainText("No number plate yet");
     // With a car, another is a row under it, and the page has no bar.
     await expect(
-      page.getByRole("button", { name: "Add a car" }).filter({ visible: true }),
+      page.getByRole("link", { name: "Add a car" }).filter({ visible: true }),
     ).toBeVisible();
     await expect(bar).toHaveCount(0);
 

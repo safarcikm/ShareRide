@@ -130,15 +130,7 @@ function PasswordForm({ me }: { readonly me: Me }) {
   if (me.email === null) {
     return (
       <Screen
-        footer={
-          <Button
-            main
-            label={t("settings.signInMethods.addEmail")}
-            onPress={() => {
-              router.push("/settings/email");
-            }}
-          />
-        }
+        footer={<Button main label={t("settings.signInMethods.addEmail")} href="/settings/email" />}
       >
         {header}
         <Body align="start">{t("password.emailRequired")}</Body>
@@ -191,6 +183,7 @@ function PasswordForm({ me }: { readonly me: Me }) {
           <>
             <Body align="start">{t("password.confirm")}</Body>
             <ConfirmWithCode
+              inBar
               confirmLabel={t("password.save")}
               onConfirm={confirmed}
               describe={describe}

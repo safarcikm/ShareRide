@@ -139,17 +139,7 @@ function AskForm({ me, onSent }: { readonly me: Me; readonly onSent: () => void 
 function EmailFirst() {
   const { t } = useLanguage();
   return (
-    <Screen
-      footer={
-        <Button
-          main
-          label={t("privacy.ask.addEmail")}
-          onPress={() => {
-            router.push("/settings/email");
-          }}
-        />
-      }
-    >
+    <Screen footer={<Button main label={t("privacy.ask.addEmail")} href="/settings/email" />}>
       <ScreenHead title={t("privacy.ask")} line={t("privacy.ask.intro")} back="/settings/privacy" />
       <View style={styles.group}>
         <Notice kind="info" message={t("privacy.ask.emailFirst")} />

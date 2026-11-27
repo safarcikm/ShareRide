@@ -109,6 +109,10 @@ export function ProfileForm({
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const saving = useRef(false);
+  // Presses of Save: the same words after another press are said again.
+  const [press, setPress] = useState(0);
+  /** Why Save did nothing, for the bar: what a field needs, or what the server said. */
+  const refused = Object.values(errors)[0] ?? error;
 
   function showError(field: ProfileError["field"]) {
     setErrors({ [field]: fieldError(t, field) });
@@ -124,6 +128,7 @@ export function ProfileForm({
 
   async function save() {
     if (saving.current) return;
+    setPress((presses) => presses + 1);
     setError(null);
     const valid = validateProfileChanges({ firstName, about, languages });
     // Both run, so every field that needs a change says so at once.
@@ -252,7 +257,8 @@ export function ProfileForm({
       {children}
       {inBar ? (
         <InBar>
-          <ActionNotice says={error} />
+          {/* A field's error is said here too: the field can be out of sight. */}
+          <ActionNotice says={refused === null ? null : { message: refused, press }} />
           <Button
             main
             label={submitLabel ?? t("profile.save")}

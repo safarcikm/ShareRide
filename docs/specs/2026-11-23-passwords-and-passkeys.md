@@ -19,9 +19,11 @@ And, since its last pass (3.19, R31.1): on "Choose a password" (3.5)
 "Save password" is the page's one main button, at the bottom of the
 screen, with why it was not saved over it; once saved, "Your password is
 saved." is the page's title and "Done" is that button. Where a confirm
-code is asked for (R27.5), here and on Sign-in methods, the button that
-confirms is at the bottom too, with "Send a new code" and "Cancel" as
-rows under the field.
+code is asked for here (R27.5), the button that confirms is at the bottom
+too, with "Send a new code" and "Cancel" as rows under the field. On
+Sign-in methods and where a passkey is set up the code's form is as it
+was, with its three buttons under the code: those pages are
+[spec 29](2026-11-25-easier-sign-in.md)'s.
 
 ## 1. Problem and goal
 

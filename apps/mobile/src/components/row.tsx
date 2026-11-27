@@ -1,6 +1,6 @@
 import { ChevronDown, ChevronRight, ChevronUp, type LucideIcon } from "lucide-react-native";
 import type { ReactNode } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { linkProps, type AppPath } from "@/navigation/link-props";
 import { useHover } from "@/theme/hover";
 import { ringInside } from "@/theme/ring-inside";
@@ -48,8 +48,11 @@ type Only<Own extends keyof Kinds> = Pick<Kinds, Own> & {
 };
 
 type RowKind =
-  /** Does something: a button. `disabled` while it has to wait for something else. */
-  | (Only<"onPress"> & { readonly disabled?: boolean })
+  /**
+   * Does something: a button. `disabled` while it has to wait for something
+   * else, `busy` while what it does is under way.
+   */
+  | (Only<"onPress"> & { readonly disabled?: boolean; readonly busy?: boolean })
   /** Opens a screen: a link, an `<a href>` on the web. */
   | Only<"href">
   /** Unfolds what is under it. */
@@ -73,15 +76,19 @@ type RowKind =
  * something on and off; a row that only `shows` a value has nothing there
  * and is not a button. A `danger` row is red and has no chevron. A row
  * that does something can be `disabled` while it has to wait: muted, with
- * no tint, and it says so to a screen reader.
+ * no tint, and it says so to a screen reader. While what it does is under
+ * way it is `busy`: a spinner stands where the chevron was, on a red row
+ * too, and another press does nothing.
  */
 export function Row(props: RowLook & RowKind) {
   const { title, value, stacked = false, icon, danger = false, accessibilityLabel } = props;
   const palette = usePalette();
   const inRows = useInActionRows();
-  // Only a row that does something can wait.
+  // Only a row that does something can wait, or be at work.
+  const busy = props.onPress !== undefined && props.busy === true;
   const disabled = props.onPress !== undefined && props.disabled === true;
-  const [hovered, hover] = useHover(disabled);
+  const inactive = busy || disabled;
+  const [hovered, hover] = useHover(inactive);
   const ink = disabled ? palette.textMuted : danger ? palette.error : palette.text;
   const face = (
     <>
@@ -176,14 +183,23 @@ export function Row(props: RowLook & RowKind) {
       accessibilityRole={props.href === undefined ? "button" : "link"}
       accessibilityLabel={label}
       {...(props.href === undefined
-        ? { onPress: props.onPress, disabled, "aria-disabled": disabled }
+        ? {
+            onPress: props.onPress,
+            disabled: inactive,
+            "aria-disabled": inactive,
+            "aria-busy": busy,
+          }
         : linkProps(props.href))}
       {...hover}
       {...ring}
       style={tinted}
     >
       {face}
-      {danger ? null : <Icon testID="row-chevron" icon={ChevronRight} color={palette.textMuted} />}
+      {busy ? (
+        <ActivityIndicator testID="row-busy" size="small" color={palette.textMuted} />
+      ) : danger ? null : (
+        <Icon testID="row-chevron" icon={ChevronRight} color={palette.textMuted} />
+      )}
     </Pressable>
   );
 }

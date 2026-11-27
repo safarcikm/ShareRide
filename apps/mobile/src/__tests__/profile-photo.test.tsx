@@ -199,6 +199,25 @@ describe("my profile photo (spec 1, 3.5)", () => {
     expect(inBar().queryByRole("alert")).toBeNull();
   });
 
+  it("shows on its row that the photo is being removed, and takes no other press meanwhile", async () => {
+    let answer: (value: unknown) => void = () => undefined;
+    await renderApp("/drive/photo", {
+      me: withPhoto,
+      setUp: (client) => {
+        drivingApi(client);
+        client.answer("/v1/me/photo", () => new Promise((resolve) => (answer = resolve)), "delete");
+      },
+    });
+    await findPersonCard("Anna");
+    await fireEvent.press(screen.getByRole("button", { name: "Remove photo" }));
+    expect(screen.getByRole("button", { name: "Remove photo" })).toBeBusy();
+    expect(screen.getByRole("button", { name: "Take a photo" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Take a photo" })).not.toBeBusy();
+    expect(inBar().getByRole("button", { name: "Change photo" })).toBeDisabled();
+    answer(ok(200, completeMe));
+    expect(await inPage().findByText("Photo removed.")).toBeVisible();
+  });
+
   it("says PuffinRide hid my photo, which only I still see, and lets me add another (spec 9, 3.4.3)", async () => {
     await openProfile({ ...completeMe, photo: { url: link, hidden: true } });
     expect(

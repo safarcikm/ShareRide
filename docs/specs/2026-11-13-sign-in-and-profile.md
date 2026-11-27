@@ -49,7 +49,8 @@ with the photo's controls in it, over its form (screen 6).
 
 And, since its last pass (3.19, R31.1): "Save profile" on Edit profile
 and "Send the link" on Email are each the page's one main button, at the
-bottom of the screen, with why it did nothing over it. The page an
+bottom of the screen, with why it did nothing over it. "Send the link
+again" is a row under the address that waits. The page an
 email's link opens says what the link did as its title, at the left, and
 the way on is its main button (3.5).
 

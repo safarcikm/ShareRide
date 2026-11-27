@@ -1,12 +1,19 @@
 import { screen, within } from "@testing-library/react-native";
 
 /** A part on a screen under test, with the part that holds it. */
-interface Shown {
-  readonly props: { readonly testID?: unknown };
+export interface Shown {
+  readonly props: {
+    readonly testID?: unknown;
+    readonly style?: unknown;
+    readonly accessibilityLabel?: unknown;
+    readonly accessibilityRole?: unknown;
+    readonly children?: unknown;
+  };
   readonly parent: Shown | null;
 }
 
-function inside(part: Shown, testID: string): boolean {
+/** Whether a part stands in the one with this test ID. */
+export function inside(part: Shown, testID: string): boolean {
   for (let around = part.parent; around !== null; around = around.parent) {
     if (around.props.testID === testID) return true;
   }

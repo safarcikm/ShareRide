@@ -1055,7 +1055,7 @@ test.describe("pictures", () => {
     await page.goto("/drive/cars");
     await expect(heading("My cars")).toBeVisible();
     await page
-      .getByRole("button", { name: /^Toyota Yaris/ })
+      .getByRole("link", { name: /^Toyota Yaris/ })
       .filter(visible)
       .click();
     await expect(heading("Edit your car")).toBeVisible();
@@ -1111,7 +1111,7 @@ test.describe("pictures", () => {
     await postTripToSelfoss(page, "17:30");
     await page.goto("/drive/cars");
     await expect(heading("My cars")).toBeVisible();
-    await expect(page.getByRole("button", { name: /^Toyota Yaris/ }).filter(visible)).toBeVisible();
+    await expect(page.getByRole("link", { name: /^Toyota Yaris/ }).filter(visible)).toBeVisible();
     await shoot("cars", "light");
     await page.goto("/rides");
     await expect(heading("Rides leaving soon")).toBeVisible();
