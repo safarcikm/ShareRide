@@ -294,6 +294,8 @@ export interface AppDependencies {
   readonly findRide?: FindRide;
   /** Google Analytics on the website (spec 23); none when left out. */
   readonly analytics?: Analytics | null;
+  /** The oldest phone app version served (spec 32, R32.4); every one when left out. */
+  readonly oldestAppVersion?: string | null;
 }
 
 export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
@@ -723,6 +725,7 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       dependencies.analytics ?? null,
       features.email !== undefined,
       memberPasskeys !== undefined,
+      dependencies.oldestAppVersion ?? null,
     );
     registerSettingsAdminRoutes(app, { ...features, settings: operatorSettings, requireOperator });
     registerInviteRoutes(app, {

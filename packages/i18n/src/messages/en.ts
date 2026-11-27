@@ -180,6 +180,11 @@ export const en = {
   "auth.email.send": "Send code",
   "auth.email.before":
     "Joined with your phone number? Use your email or Google, then the same number. It's added to your account.",
+  /** On the iPhone, which offers no Google until Sign in with Apple comes (spec 32, 3.3). */
+  "auth.email.beforeNoGoogle":
+    "Joined with your phone number? Use your email, then the same number. It's added to your account.",
+  "auth.email.googleOnIphone":
+    "Joined with Google? Type your Google email and we'll email you a code. If that doesn't work, sign in once on puffinride.is with Google and add an email.",
   "auth.email.unavailable": "Sign-in by email is not available on this server.",
   "auth.emailCode.help": "We emailed a {length}-digit code to {email}.",
   "auth.emailCode.change": "Change email",
@@ -495,6 +500,10 @@ export const en = {
     "This page adds an email when it is opened from the link we sent. If you opened it already, your email is in Profile.",
   "notFound.title": "We can't find this page",
   "notFound.line": "The link may be old, or the address may have a mistake in it.",
+  "appUpdate.title": "Update PuffinRide",
+  "appUpdate.line": "This version no longer works. The new one is waiting in the store.",
+  "appUpdate.openAppStore": "Open the App Store",
+  "appUpdate.openGooglePlay": "Open Google Play",
   "comingSoon.title": "Coming soon",
   "comingSoon.body": "Finding and booking rides opens with the beta. Thank you for your patience.",
   "meetingPoints.open": "See the meeting points",

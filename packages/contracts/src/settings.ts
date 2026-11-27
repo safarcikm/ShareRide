@@ -1,4 +1,5 @@
 import {
+  isAppVersion,
   isGoogleMeasurementId,
   pausedParts,
   settingGroups,
@@ -67,6 +68,12 @@ export const configSchema = z.object({
     .object({ googleMeasurementId: z.string().refine(isGoogleMeasurementId) })
     .nullable()
     .default(null),
+  /**
+   * The oldest phone app version the API still serves (spec 32, R32.4), as
+   * `x.y.z`: an app below it shows only "Update PuffinRide". Null serves
+   * every version, as from an API that does not say.
+   */
+  oldestAppVersion: z.string().refine(isAppVersion).nullable().default(null),
 });
 
 export type Config = z.infer<typeof configSchema>;
