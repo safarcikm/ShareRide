@@ -58,12 +58,13 @@ Actions:
 
 ## 3. Company and operations
 
-- Choose the company form, most likely a private limited company (ehf.),
-  registered with the Register of Enterprises at Skatturinn: at least
+- The company form is a private limited company (ehf.), registered early
+  in 2027 ([ADR 0053](../decisions/0053-a-private-limited-company-not-a-nonprofit.md)),
+  with the Register of Enterprises at Skatturinn: at least
   500 000 kr share capital, paid in at registration, and a 140 500 kr fee
   (checked 2026-11-27). The nonprofit forms and why they fit less well are
   in [ways to make money](../strategy/2026-11-27-ways-to-make-money.md#3-would-a-nonprofit-work)
-  (open question Q32).
+  (A58).
 - The company is the **data controller**, the contracting party in the terms,
   the publisher in the app stores and, later, the payment provider's merchant.
   It should exist before the beta.

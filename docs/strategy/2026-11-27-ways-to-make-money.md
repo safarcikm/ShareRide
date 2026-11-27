@@ -1,7 +1,8 @@
 # Ways to make money, and whether a nonprofit would work
 
 **Owner:** Martin · **Last reviewed:** 2026-11-27 · **Status:** Brainstorm for
-Martin's review, not a decision
+Martin's review. The legal form is decided: an ehf. early in 2027 (A58,
+[ADR 0053](../decisions/0053-a-private-limited-company-not-a-nonprofit.md))
 
 > Not legal or tax advice. Facts below were checked on official Icelandic
 > sources on 27 November 2026 (links at the end). Money figures marked
@@ -370,7 +371,7 @@ to the ehf. for community projects, with care for conflicts of interest
 
 | When | What |
 | --- | --- |
-| December 2026 to January 2027 | Decide the legal form (open question Q32). Ask an accountant about the fee's VAT rate and whether the work counts for the R&D tax credit. Apply to Vegagerðin's research fund. |
+| December 2026 to January 2027 | Ask an accountant about the fee's VAT rate and whether the work counts for the R&D tax credit. Apply to Vegagerðin's research fund. |
 | Early 2027 | Register the ehf. (500 000 kr share capital, 140 500 kr fee). Apply to NORA (8 March, needs a partner) and Lóa (end of March). Apply to Nýsköpunarsjóður when its categories are out. |
 | Spring 2027 | One or two employer pilots by hand; talk to SASS about a regional package. |
 | Summer 2027 | One festival partnership. |
@@ -391,8 +392,9 @@ What a mixed year could look like once the service is established (all
 
 ## 5. Decisions for Martin
 
-- **Q32: the legal form.** Recommendation: an ehf. early in 2027 (section
-  3.6). Recorded in [open questions](open-questions.md).
+- **Q32: the legal form.** Decided 2026-11-27: an ehf. early in 2027, as
+  recommended (A58 in [open questions](open-questions.md),
+  [ADR 0053](../decisions/0053-a-private-limited-company-not-a-nonprofit.md)).
 - Which first: employers, a region, or an event? Recommendation: one
   employer pilot first, because it can start before card payments and
   teaches what organisations will pay for.

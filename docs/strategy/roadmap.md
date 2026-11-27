@@ -68,7 +68,9 @@ Legal and company (start now, see [legal and regulatory](../compliance/legal-and
 - [ ] Written opinion from an Icelandic lawyer on the cost-sharing model under
       the Taxi Act No. 120/2022
 - [ ] Informal check with Samgöngustofa (Icelandic Transport Authority)
-- [ ] Decide company form (likely an ehf., private limited company)
+- [x] Decide company form: an ehf. (private limited company), registered
+      early in 2027 (Martin, 2026-11-27, A58 and
+      [ADR 0053](../decisions/0053-a-private-limited-company-not-a-nonprofit.md))
 - [x] Name: keep "ShareRide" for now, with the option to change it later
       (renamed PuffinRide on 2026-11-22, A56 and
       [ADR 0039](../decisions/0039-rename-to-puffinride.md))
