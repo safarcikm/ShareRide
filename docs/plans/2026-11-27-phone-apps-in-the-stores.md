@@ -104,13 +104,13 @@ from a workflow button.
 
 ## PR 3 and on: what the phone runs show (`fix(mobile)`)
 
-- [ ] `expo-system-ui` for Android's dark mode; test: the app icon test's
-  config read shows the plugin.
-- [ ] Permission texts: `expo-secure-store` with `faceIDPermission: false`;
-  `expo-sensors` with `motionPermission: false` if the shake still works on
-  the simulator, otherwise a reason in both languages in `locales/*.json`.
-- [ ] `android.blockedPermissions`: `android.permission.SYSTEM_ALERT_WINDOW`.
-- [ ] `ios.supportsTablet: false`.
+- [x] `expo-system-ui` for Android's dark mode; test:
+  `phone-settings.test.ts`.
+- [x] Permission texts: `expo-secure-store` with `faceIDPermission: false`;
+  `expo-sensors` with `motionPermission: false` (the shake reads only the
+  accelerometer, whose iOS module never asks for motion permission).
+- [x] `android.blockedPermissions`: `android.permission.SYSTEM_ALERT_WINDOW`.
+- [x] `ios.supportsTablet: false`.
 - [ ] Each problem the screenshots show, with a Maestro step or a screen
   test that fails first. One PR per kind of problem.
 
