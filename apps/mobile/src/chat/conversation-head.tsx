@@ -2,10 +2,9 @@ import type { Conversation } from "@shareride/contracts";
 import { capitalised, carText, formatClock, formatShortDay } from "@shareride/i18n";
 import { router } from "expo-router";
 import { Ban, ChevronRight, EllipsisVertical, Flag, Ticket } from "lucide-react-native";
-import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { ActionRows } from "@/components/action-rows";
-import { Avatar, besideAvatar } from "@/components/avatar";
+import { Avatar, avatarSize, besideAvatar } from "@/components/avatar";
 import { BackButton } from "@/components/back-button";
 import { Icon } from "@/components/icon";
 import { IconButton } from "@/components/icon-button";
@@ -33,17 +32,25 @@ import { otherPerson } from "./texts";
  * The name is the screen's title; beside my conversations on a wide screen
  * it is the title of a `part`, an h2 on the web (spec 18, 3.11).
  *
- * `onRest` hears how tall it is with its menu closed, each time that
- * changes: the screen lets a top that is too tall for the window scroll
- * with the conversation, and the menu, open for a moment, is not counted.
+ * The screen holds whether the `menu` is open, as it can move the top
+ * from its bar into the conversation and back, which draws it anew.
+ * `onRest` hears how tall the top is with its menu closed, each time that
+ * changes: a top too tall for the room the conversation has scrolls with
+ * it, and the menu, open for a moment, is not counted. A screen under
+ * another is not drawn on the web and says it is 0 high: that is no
+ * measure.
  */
 export function ConversationHead({
   conversation,
   part,
+  menu,
+  onMenu,
   onRest,
 }: {
   readonly conversation: Conversation;
   readonly part: boolean;
+  readonly menu: boolean;
+  readonly onMenu: (open: boolean) => void;
   readonly onRest?: (height: number) => void;
 }) {
   const { t } = useLanguage();
@@ -51,7 +58,6 @@ export function ConversationHead({
   const { booking } = conversation;
   const other = otherPerson(booking);
   const name = firstNameOf(t, other);
-  const [menu, setMenu] = useState(false);
   const who =
     booking.viewer === "driver"
       ? t("chat.passenger")
@@ -62,12 +68,14 @@ export function ConversationHead({
     <View
       testID="conversation-head"
       style={styles.head}
-      onLayout={(event) => {
-        if (!menu) onRest?.(event.nativeEvent.layout.height);
+      onLayout={({ nativeEvent: { layout } }) => {
+        if (!menu && layout.height > 0) onRest?.(layout.height);
       }}
     >
       <View style={styles.top}>
-        <BackButton quiet fallback="/messages" />
+        <View style={styles.beside}>
+          <BackButton quiet fallback="/messages" />
+        </View>
         <Avatar firstName={name} colour={other.colour} photo={other.photo} />
         <View style={besideAvatar.text}>
           <Text
@@ -79,15 +87,17 @@ export function ConversationHead({
           </Text>
           <Text style={[typography.small, { color: palette.textMuted }]}>{who}</Text>
         </View>
-        <IconButton
-          quiet
-          icon={EllipsisVertical}
-          label={t("chat.more")}
-          expanded={menu}
-          onPress={() => {
-            setMenu((open) => !open);
-          }}
-        />
+        <View style={styles.beside}>
+          <IconButton
+            quiet
+            icon={EllipsisVertical}
+            label={t("chat.more")}
+            expanded={menu}
+            onPress={() => {
+              onMenu(!menu);
+            }}
+          />
+        </View>
       </View>
       {menu ? (
         <ActionRows>
@@ -97,7 +107,7 @@ export function ConversationHead({
             onPress={() => {
               // Closed again on coming back. No name in the address: the
               // report screen reads it from the booking.
-              setMenu(false);
+              onMenu(false);
               router.push({ pathname: "/report", params: { kind: "user", id: booking.id } });
             }}
           />
@@ -107,7 +117,7 @@ export function ConversationHead({
               icon={Ban}
               title={t("block.action", { name })}
               onPress={() => {
-                setMenu(false);
+                onMenu(false);
                 router.push({ pathname: "/bookings/[id]/block", params: { id: booking.id } });
               }}
             />
@@ -134,7 +144,10 @@ function RideLine({ conversation }: { readonly conversation: Conversation }) {
     from: booking.board.meetingPoint.name[locale],
     to: booking.alight.meetingPoint.name[locale],
   };
-  const when = `${capitalised(formatShortDay(isoDay(dayOf(leaves)), locale), locale)}, ${formatClock(leaves)}`;
+  const when = t("chat.rideWhen", {
+    day: capitalised(formatShortDay(isoDay(dayOf(leaves)), locale), locale),
+    time: formatClock(leaves),
+  });
   const href: AppPath =
     booking.viewer === "driver"
       ? { pathname: "/drive/trips/[id]", params: { id: booking.trip.id } }
@@ -162,8 +175,10 @@ function RideLine({ conversation }: { readonly conversation: Conversation }) {
 
 const styles = StyleSheet.create({
   head: { gap: spacing.sm },
-  // At the top of a name of several lines, as the two buttons are (spec 31, 3.18).
+  // The picture and the two buttons stand at the top of a name of several
+  // lines (spec 31, 3.18), each button level with the picture's middle.
   top: { flexDirection: "row", alignItems: "flex-start", gap: spacing.sm },
+  beside: { height: avatarSize, justifyContent: "center" },
   ride: {
     minHeight: sizes.iconButton,
     flexDirection: "row",

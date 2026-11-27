@@ -1551,6 +1551,7 @@ export const is = {
   "chat.driver": "Bílstjóri",
   "chat.driverWithCar": "Bílstjóri · {car}",
   "chat.passenger": "Farþegi",
+  "chat.rideWhen": "{day} kl. {time}",
   "chat.sentTo": "{count, plural, one {Sent til # farþega.} other {Sent til # farþega.}}",
   "chat.noPassengers":
     "Enginn fær skilaboðin: enginn farþegi er staðfestur eða spjallið við hann er lokað.",

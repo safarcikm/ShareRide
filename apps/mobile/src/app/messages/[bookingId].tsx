@@ -6,7 +6,6 @@ import {
   Platform,
   StyleSheet,
   Text,
-  useWindowDimensions,
   View,
 } from "react-native";
 import { errorText } from "@/auth/errors";
@@ -34,21 +33,12 @@ import { useLanguage } from "@/i18n/language";
 import { BackToMenu } from "@/navigation/back-to-menu";
 import { firstNameOf } from "@/people/texts";
 import { suspensionNow } from "@/safety/suspended-account";
-import { typography } from "@/theme/tokens";
+import { roomUnderTop, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
 /**
- * What the top of a conversation leaves of the window's height for the
- * messages, the quick messages and the bar, at the least, while it stays:
- * the two bars take about 150 of it. A top that leaves less, as with text
- * twice as large and long names, or on a phone on its side, is the first
- * thing in the conversation and scrolls with it.
- */
-const roomUnderTop = 400;
-
-/**
  * A booking's conversation (spec 7, 3.1, screen 2; spec 31, 3.13): its top,
- * which stays while the window has room for it, with who it is with, a
+ * which stays while the conversation has room for it, with who it is with, a
  * menu that holds Report and Block, and the ride as one line; then the
  * safety line, the message sent with the request and the messages; the
  * quick messages over the bar, and in the bar the field with Send. Once
@@ -115,9 +105,15 @@ function Open({
   const wide = useWideScreen();
   const chat = useConversation(bookingId);
   const draft = useState("");
-  // How tall the top is with its menu closed; nothing until it is laid out.
+  // The top stays while it leaves the rest `roomUnderTop` of the height
+  // the conversation has: a phone's screen, a laptop's pane. Neither is
+  // known until laid out, and the top stays until then. The top is
+  // measured with its menu closed, and whether the menu is open is kept
+  // here, as moving the top draws it anew.
+  const [room, setRoom] = useState<number | null>(null);
   const [topHeight, setTopHeight] = useState(0);
-  const topStays = useWindowDimensions().height - topHeight >= roomUnderTop;
+  const [menu, setMenu] = useState(false);
+  const topStays = room === null || room - topHeight >= roomUnderTop;
   const suspended = suspensionNow(useMe()) !== null;
   const { refresh: refreshList } = useUnread();
   const { loaded } = chat;
@@ -194,7 +190,15 @@ function Open({
     messages.findLast((message) => message.from === "me")?.clientId ??
     undefined;
 
-  const head = <ConversationHead conversation={conversation} part={wide} onRest={setTopHeight} />;
+  const head = (
+    <ConversationHead
+      conversation={conversation}
+      part={wide}
+      menu={menu}
+      onMenu={setMenu}
+      onRest={setTopHeight}
+    />
+  );
   // Reading stays open to a suspended person; sending does not (spec 9, 3.6.2).
   const writes = conversation.canWrite && !suspended;
   const send = (outgoing: Outgoing) => {
@@ -251,26 +255,40 @@ function Open({
     </>
   );
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    <View
+      testID="conversation-frame"
       style={styles.fill}
+      onLayout={({ nativeEvent: { layout } }) => {
+        // A screen under another is not drawn on the web: 0 is no measure.
+        if (layout.height > 0) setRoom(layout.height);
+      }}
     >
-      {wide ? (
-        <Pane endKey={mine} header={topStays ? head : undefined} overFooter={quick} footer={footer}>
-          {reading}
-        </Pane>
-      ) : (
-        <Screen
-          stickToEnd
-          endKey={mine}
-          header={topStays ? head : undefined}
-          overFooter={quick}
-          footer={footer}
-        >
-          {reading}
-        </Screen>
-      )}
-    </KeyboardAvoidingView>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={styles.fill}
+      >
+        {wide ? (
+          <Pane
+            endKey={mine}
+            header={topStays ? head : undefined}
+            overFooter={quick}
+            footer={footer}
+          >
+            {reading}
+          </Pane>
+        ) : (
+          <Screen
+            stickToEnd
+            endKey={mine}
+            header={topStays ? head : undefined}
+            overFooter={quick}
+            footer={footer}
+          >
+            {reading}
+          </Screen>
+        )}
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 

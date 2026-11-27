@@ -102,7 +102,7 @@ export function Screen({
   const safeEdges = useContext(ScreenEdgesContext);
   // The height the screen scrolls in: the window less any bar above it.
   const [viewHeight, setViewHeight] = useState<number | null>(null);
-  const sticking = useStickToEnd(scrollRef, stickToEnd, endKey);
+  const { onLayout: followsEnd, ...sticking } = useStickToEnd(scrollRef, stickToEnd, endKey);
   const refreshing = useRefresh({ refresh, asked: refreshAsked, scrollRef });
   return (
     <SafeAreaView
@@ -137,15 +137,12 @@ export function Screen({
           ref={scrollRef}
           testID="screen-scroll"
           refreshControl={refreshing.control}
-          onLayout={
+          onLayout={(event) => {
             // Only the web's sticky aside and side column use the height. It
             // is measured from the start, as they can come later, with data.
-            Platform.OS === "web"
-              ? (event) => {
-                  setViewHeight(event.nativeEvent.layout.height);
-                }
-              : undefined
-          }
+            if (Platform.OS === "web") setViewHeight(event.nativeEvent.layout.height);
+            followsEnd?.();
+          }}
           style={wide ? evenGutterOnWeb : undefined}
           contentContainerStyle={[styles.scroll, { paddingBottom: spacing.md + keyboardRoom }]}
           keyboardShouldPersistTaps="handled"
@@ -201,17 +198,32 @@ type ViewRef = ComponentRef<typeof View>;
  * What a scroll takes to open at its end and stay there as it grows, as a
  * conversation does (`on`): it follows only while the reader is at the
  * end, not while they read further up, and a new `endKey`, such as my own
- * message on its way, brings it back to the end whatever they read.
+ * message on its way, brings it back to the end whatever they read. It
+ * stays at its end too when it gets less height itself, as when the field
+ * under it grows with a second line: the last message is not left under
+ * the bar.
+ *
+ * The reader leaves the end by going up, and only so. A browser says a
+ * scroll's sizes as they are when the scroll is heard, which can be after
+ * what it holds grew and before its new size is told: being short of the
+ * end then is not the reader's doing, and the scroll still follows.
  */
 export function useStickToEnd(
   scrollRef: RefObject<ComponentRef<typeof ScrollView> | null>,
   on: boolean,
   endKey: string | undefined,
-) {
+): {
+  readonly scrollEventThrottle?: number;
+  readonly onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
+  readonly onContentSizeChange?: () => void;
+  readonly onLayout?: () => void;
+} {
   // Whether the reader is at the end, and whether to go there at the next
   // change in size whatever they read.
   const atEnd = useRef(true);
   const toEnd = useRef(false);
+  // How far down the last scroll was.
+  const lastY = useRef(0);
   useLayoutEffect(() => {
     if (endKey !== undefined) toEnd.current = true;
   }, [endKey]);
@@ -222,14 +234,23 @@ export function useStickToEnd(
             scrollEventThrottle: 100,
             onScroll: ({ nativeEvent }: NativeSyntheticEvent<NativeScrollEvent>) => {
               const { contentOffset, layoutMeasurement, contentSize } = nativeEvent;
-              atEnd.current =
-                contentOffset.y + layoutMeasurement.height >= contentSize.height - spacing.xxl;
+              const wentUp = contentOffset.y < lastY.current - 1;
+              lastY.current = contentOffset.y;
+              if (contentOffset.y + layoutMeasurement.height >= contentSize.height - spacing.xxl) {
+                atEnd.current = true;
+              } else if (wentUp) {
+                atEnd.current = false;
+              }
             },
             onContentSizeChange: () => {
               if (!atEnd.current && !toEnd.current) return;
               toEnd.current = false;
               atEnd.current = true;
               scrollRef.current?.scrollToEnd({ animated: false });
+            },
+            // Its own height changed and what it holds did not.
+            onLayout: () => {
+              if (atEnd.current) scrollRef.current?.scrollToEnd({ animated: false });
             },
           }
         : {},

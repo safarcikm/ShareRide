@@ -906,14 +906,16 @@ on a laptop,
   "Driver" alone while the booking names no car, or "Passenger".
   Icelandic has a dot between the two, "Bílstjóri · Hvítur Toyota
   Yaris", as the colour's capital letter would read wrong after a comma.
-  Back, the picture and the menu's button stand at the top of a name of
-  several lines (3.18).
+  Back and the menu's button are level with the picture's middle, and
+  the three stand at the top of a name of several lines (3.18).
 - **When the top would leave too little room,** it is the first thing in
   the conversation instead, on a card, and scrolls with it as it did
   before: when it leaves the messages, the quick answers and the bar
-  less than 400 of the window's height. That is text twice as large with
-  long names on a narrow phone, where the top alone is 600 high, or a
-  phone on its side. The menu, open for a moment, is not counted.
+  less than 400 of the height the conversation has, which is a phone's
+  screen, or its pane on a laptop. That is text twice as large with long
+  names on a narrow phone, where the top alone is 600 high, or a phone
+  on its side. The menu, open for a moment, is not counted, and stays
+  open if the top moves while it is, as when a phone is turned.
 - **The menu** is a button of three dots at the right, named "More",
   which says for a screen reader whether it is open. Pressed, two rows
   unfold under the top's first line and push the ride's line down:
@@ -925,8 +927,9 @@ on a laptop,
 - **The ride's line** is a ticket icon, the short day and the time in
   bold, and the part of the way the booking is for with the arrow, as
   the list's rows write it: "Sat 28 Nov, 17:30 Mjódd bus terminal → N1
-  Selfoss". Long names wrap to another line and are not cut, and a name
-  wider than the line breaks inside it. It is one link, read out
+  Selfoss", and in Icelandic "Lau. 28. nóv. kl. 17:30", as it says a
+  time after a day. Long names wrap to another line and are not cut,
+  and a name wider than the line breaks inside it. It is one link, read out
   "Saturday 28 November at 17:30, Mjódd bus terminal to N1 Selfoss": to
   the booking for its passenger, and for the driver to their ride, which
   has the passenger on it.
@@ -946,7 +949,9 @@ on a laptop,
   it until something is written. Those words are its name for a screen
   reader too; the label over it is gone. It grows with what is written,
   to about five lines, and scrolls inside from there; emptied or sent,
-  it is one line again. **Send** is a round filled button as high as the
+  it is one line again. As it grows the conversation stays at its end,
+  so the last message is not under the bar while an answer to it is
+  written. **Send** is a round filled button as high as the
   field, with a paper plane and the name "Send": the screen's one main
   button (R31.1). It stays at the field's foot as the field grows, and
   turns to a spinner while "Message all passengers" sends.
@@ -960,13 +965,14 @@ on a laptop,
   Report and Block in its menu too; they stood beside the name there
   (spec 18, 3.11).
 - **"Message all passengers"** (3.19) has the same field and round Send
-  in its bar, with the chips over them.
+  in its bar, with the chips over them, in the bar too.
 - `look.spec.ts` opens a conversation on a phone 360 wide with a long
   name and long place names, with the text as set and twice as large:
   the top holds what is in it, staying with the text as set and
   scrolling with the conversation twice as large; the field and Send are
   whole in the bar, and a line written twice as large is whole in the
-  field; and the messages keep at least a third of the window. Twice as
+  field, with the conversation still at its end after the field grew for
+  it; and the messages keep at least a third of the window. Twice as
   large there, the field shows "Write a" of "Write a message" until
   something is written (plan, PR 12's list).
 
@@ -1480,6 +1486,7 @@ Texts added while building, as they are in the app:
 | Before "I'm here" opens, for the driver | At {stop} you can say you're here from {time}. | {stop}: þú getur sagt að þú sért á staðnum frá kl. {time}. |
 | Under the name in a conversation | Driver; Driver, {car}; Passenger | Bílstjóri; Bílstjóri · {car}; Farþegi |
 | The menu of a conversation's top | More | Meira |
+| The day and the time on a conversation's ride line | {day}, {time} | {day} kl. {time} |
 
 Texts that exist are reused where they say the same: "Rate the driver",
 "Rate your passenger", "Pay", "Delete draft", "My reports", "Notices",

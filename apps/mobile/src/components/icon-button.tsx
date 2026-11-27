@@ -23,7 +23,8 @@ import { Icon } from "./icon";
  * Send is beside the field of a conversation (spec 31, 3.13): round and as
  * high as the field, in moss with the main button's edge, and counted as
  * the screen's one filled button (R31.1). While `busy` it shows a spinner
- * and ignores presses.
+ * and ignores presses. A button is plain, `quiet` or `filled`, never two
+ * of them, and only a quiet one is `strong`.
  *
  * One that opens and closes something under it says whether it is open
  * (`expanded`), as the menu of a conversation's top does.

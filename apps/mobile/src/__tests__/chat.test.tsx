@@ -561,7 +561,8 @@ describe("A conversation (spec 7, 3.1)", () => {
     scrollToEnd.mockClear();
     await grows(5000);
     expect(scrollToEnd).toHaveBeenCalledTimes(1);
-    // Up at the top, earlier messages come in above: the screen stays where I read.
+    // Up from the end to the top, earlier messages come in above: the screen stays where I read.
+    await readAt(4200, 5000);
     await readAt(0, 5000);
     await fireEvent.press(screen.getByRole("button", { name: "Show earlier messages" }));
     await grows(5400);
@@ -574,6 +575,70 @@ describe("A conversation (spec 7, 3.1)", () => {
     await readAt(4680, 5480);
     await grows(5560);
     expect(scrollToEnd).toHaveBeenCalledTimes(3);
+  });
+
+  it("stays at its end when the bar under it grows, as the field does with a second line", async () => {
+    const scrollToEnd = (ScrollView.prototype as unknown as { scrollToEnd: jest.Mock }).scrollToEnd;
+    await openConversation();
+    const scroll = await screen.findByTestId("screen-scroll");
+    // Less height for the same messages: nothing about their size says so.
+    const shrinksTo = (height: number) =>
+      act(async () => {
+        await fireEvent(scroll, "layout", {
+          nativeEvent: { layout: { x: 0, y: 0, width: 400, height } },
+        });
+      });
+    scrollToEnd.mockClear();
+    await shrinksTo(500);
+    expect(scrollToEnd).toHaveBeenCalledTimes(1);
+    // Reading further up, I stay where I read.
+    const readAt = (y: number) =>
+      fireEvent.scroll(scroll, {
+        nativeEvent: {
+          contentOffset: { x: 0, y },
+          layoutMeasurement: { width: 400, height: 500 },
+          contentSize: { width: 400, height: 5000 },
+        },
+      });
+    await readAt(4500);
+    await readAt(0);
+    await shrinksTo(476);
+    expect(scrollToEnd).toHaveBeenCalledTimes(1);
+  });
+
+  it("stays at its end when a scroll is told after the conversation grew, and only going up leaves the end", async () => {
+    const scrollToEnd = (ScrollView.prototype as unknown as { scrollToEnd: jest.Mock }).scrollToEnd;
+    await openConversation();
+    const scroll = await screen.findByTestId("screen-scroll");
+    const grows = (height: number) =>
+      act(async () => {
+        await fireEvent(scroll, "contentSizeChange", 400, height);
+      });
+    const toldAt = (y: number, height: number) =>
+      fireEvent.scroll(scroll, {
+        nativeEvent: {
+          contentOffset: { x: 0, y },
+          layoutMeasurement: { width: 400, height: 600 },
+          contentSize: { width: 400, height },
+        },
+      });
+    await grows(1100);
+    scrollToEnd.mockClear();
+    // A browser says a scroll's sizes as they are when the scroll is heard,
+    // which can be after the conversation grew and before its new size is
+    // told. I did not move: it is not me who left the end.
+    await toldAt(500, 1500);
+    await grows(1500);
+    expect(scrollToEnd).toHaveBeenCalledTimes(1);
+    // Going up is what leaves it.
+    await toldAt(900, 1500);
+    await toldAt(300, 1500);
+    await grows(1600);
+    expect(scrollToEnd).toHaveBeenCalledTimes(1);
+    // Down again, short of the end, I am still reading further up.
+    await toldAt(600, 1600);
+    await grows(1700);
+    expect(scrollToEnd).toHaveBeenCalledTimes(1);
   });
 
   it("shows earlier messages a page at a time", async () => {
@@ -705,6 +770,20 @@ describe("A conversation's top, ride and field (spec 31, 3.13)", () => {
     expect(screen).toHavePathname(`/bookings/${bookingId}`);
   });
 
+  it('says the ride\'s day and time as Icelandic does, with "kl." before the time', async () => {
+    jest
+      .mocked(readPreference)
+      .mockImplementation((key) => Promise.resolve(key === "language" ? "is" : null));
+    try {
+      await openConversation();
+      const top = within(await screen.findByTestId("screen-top-bar"));
+      expect(top.getByText("Sun. 15. nóv. kl. 10:00")).toBeVisible();
+      expect(top.getByText("Bílstjóri · Hvítur Toyota Yaris")).toBeVisible();
+    } finally {
+      jest.mocked(readPreference).mockImplementation(() => Promise.resolve(null));
+    }
+  });
+
   it("opens the driver's ride from the ride line when I drive", async () => {
     await openConversation({ booking: driving }, (client) => {
       tripsApi(client, [northMyTrip]);
@@ -742,24 +821,36 @@ describe("A conversation's top, ride and field (spec 31, 3.13)", () => {
     // The picture stands with the name, not at the middle of a tall block (spec 31, 3.18).
     const row = within(head).getByTestId("avatar", { includeHiddenElements: true }).parent;
     expect(row).toHaveStyle({ flexDirection: "row", alignItems: "flex-start" });
+    // Each of the two buttons has the picture's height to stand in the middle of.
+    for (const name of ["Back", "More"]) {
+      expect(within(head).getByRole("button", { name }).parent).toHaveStyle({
+        height: 48,
+        justifyContent: "center",
+      });
+    }
     // A word wider than the line is broken; it does not push the line wider than the screen.
     expect(within(head).getByText(/Borgarnes → Blönduós/)).toHaveStyle({ flex: 1, minWidth: 0 });
   });
 
   // Text twice as large with long names on a narrow phone makes the top
   // several times as tall; staying, it left the messages no room at all.
-  const tall = (height: number) => ({
+  const high = (height: number) => ({
     nativeEvent: { layout: { x: 0, y: 0, width: 328, height } },
   });
+  /** The height the conversation has, and how tall its top is with the menu closed. */
+  const measured = async (frame: number, top: number) => {
+    await fireEvent(screen.getByTestId("conversation-frame"), "layout", high(frame));
+    await fireEvent(screen.getByTestId("conversation-head"), "layout", high(top));
+  };
 
-  it("lets a top that leaves the rest too little of the window scroll with the conversation", async () => {
+  it("lets a top that leaves the rest too little of the screen scroll with the conversation", async () => {
     await openConversation();
     const head = await screen.findByTestId("conversation-head");
     expect(within(screen.getByTestId("screen-top-bar")).getByTestId("conversation-head")).toBe(
       head,
     );
-    // The test's window is 1334 high: 1000 leaves 334 for the messages and the bar.
-    await fireEvent(head, "layout", tall(1000));
+    // 740 high with a top of 600: 140 for the messages, the quick messages and the bar.
+    await measured(740, 600);
     expect(screen.queryByTestId("screen-top-bar")).toBeNull();
     const reading = within(screen.getByTestId("screen-scroll"));
     expect(reading.getByRole("button", { name: "Back" })).toBeVisible();
@@ -785,19 +876,46 @@ describe("A conversation's top, ride and field (spec 31, 3.13)", () => {
     ).toBeVisible();
 
     // With room again, as when the phone is turned upright, it stays.
-    await fireEvent(screen.getByTestId("conversation-head"), "layout", tall(120));
+    await measured(740, 136);
     expect(
       within(screen.getByTestId("screen-top-bar")).getByRole("header", { name: "Anna" }),
     ).toBeVisible();
+    // On a phone on its side the same top leaves too little.
+    await measured(360, 136);
+    expect(screen.queryByTestId("screen-top-bar")).toBeNull();
   });
 
-  it("measures the top without its menu, so opening the menu moves nothing", async () => {
+  it("measures the top without its menu, and keeps the menu open when the top moves", async () => {
     await openConversation();
     await fireEvent.press(await screen.findByRole("button", { name: "More" }));
-    await fireEvent(screen.getByTestId("conversation-head"), "layout", tall(1000));
+    // The menu makes the top taller: that is not counted.
+    await measured(740, 600);
     const top = within(screen.getByTestId("screen-top-bar"));
     expect(top.getByRole("button", { name: "More", expanded: true })).toBeVisible();
     expect(top.getByRole("button", { name: "Block Anna" })).toBeVisible();
+    // The window turns short with the menu open: the top moves, and its menu with it.
+    await fireEvent(screen.getByTestId("conversation-frame"), "layout", high(360));
+    expect(screen.queryByTestId("screen-top-bar")).toBeNull();
+    const reading = within(screen.getByTestId("screen-scroll"));
+    expect(reading.getByRole("button", { name: "More", expanded: true })).toBeVisible();
+    expect(reading.getByRole("button", { name: "Block Anna" })).toBeVisible();
+  });
+
+  it("takes no measure from a screen that is hidden, which says it is 0 high", async () => {
+    await openConversation();
+    await screen.findByTestId("conversation-head");
+    // Under Report or the booking, on the web, the screen is not drawn. A
+    // top that stays is not moved there, to move back on return.
+    await measured(740, 136);
+    await measured(0, 0);
+    expect(
+      within(screen.getByTestId("screen-top-bar")).getByRole("header", { name: "Anna" }),
+    ).toBeVisible();
+    // Nor is one that scrolls with the conversation taken out of it.
+    await measured(740, 600);
+    expect(screen.queryByTestId("screen-top-bar")).toBeNull();
+    await measured(0, 0);
+    expect(screen.queryByTestId("screen-top-bar")).toBeNull();
   });
 
   it("has one field with its words inside it and a round Send, the screen's one filled button", async () => {
@@ -805,6 +923,8 @@ describe("A conversation's top, ride and field (spec 31, 3.13)", () => {
     const bar = within(await screen.findByTestId("bottom-bar"));
     const field = bar.getByLabelText("Write a message");
     expect(field).toHaveProp("placeholder", "Write a message");
+    // One line high, and five lines at the most, each with its outline counted.
+    expect(field).toHaveStyle({ minHeight: 52, maxHeight: 5 * 24 + 2 * 12 + 2 * 2 });
     // No label over the field: the words are in it.
     expect(screen.queryByText("Write a message")).toBeNull();
     const send = bar.getByRole("button", { name: "Send" });
@@ -1057,6 +1177,20 @@ describe("Where a chat starts (spec 7, 3.1 and 3.2)", () => {
     expect(
       head.getByText("Each passenger gets it in their own chat. Passengers don't see each other."),
     ).toBeVisible();
+  });
+
+  it("has the same field and round Send to message all, the screen's one filled button, with the quick messages in the bar", async () => {
+    await renderApp(`/drive/trips/${northMyTrip.id}/message`, { me: completeMe });
+    const bar = within(await screen.findByTestId("bottom-bar"));
+    const field = bar.getByLabelText("Write a message");
+    expect(field).toHaveProp("placeholder", "Write a message");
+    expect(field).toHaveStyle({ minHeight: 52 });
+    expect(screen.queryByText("Write a message")).toBeNull();
+    expect(filledButtons()).toBe(1);
+    expect(screen.getByTestId("filled-button")).toBe(bar.getByRole("button", { name: "Send" }));
+    // One over the other, both in the bar.
+    expect(bar.getByRole("button", { name: "I'm at the meeting point" })).toBeVisible();
+    expect(screen.queryByTestId("over-bar")).toBeNull();
   });
 
   it("sends the driver's message to all passengers; a retry after a failure sends it once", async () => {
@@ -1319,6 +1453,36 @@ describe("Messages on a laptop (spec 18, 3.11)", () => {
       await fireEvent(screen.getByTestId("pane-scroll"), "contentSizeChange", 700, 5000);
     });
     expect(scrollToEnd).toHaveBeenCalledTimes(1);
+  });
+
+  it("lets a top too tall for its pane scroll with the conversation, by the pane's height and not the window's", async () => {
+    await openApp(conversationPage);
+    const open = await screen.findByTestId("panes-open");
+    await within(open).findByTestId("conversation-head");
+    const high = (height: number) => ({
+      nativeEvent: { layout: { x: 0, y: 0, width: 800, height } },
+    });
+    const measured = async (pane: number, top: number) => {
+      await fireEvent(within(open).getByTestId("conversation-frame"), "layout", high(pane));
+      await fireEvent(within(open).getByTestId("conversation-head"), "layout", high(top));
+    };
+    const reading = () => within(screen.getByTestId("pane-scroll"));
+    expect(reading().queryByRole("header", { name: "Anna" })).toBeNull();
+    // The window is 800 high. Under the app's bar and in its card the pane
+    // has 500, of which a top of 136 leaves 364.
+    await measured(500, 136);
+    expect(reading().getByRole("header", { name: "Anna" })).toBeVisible();
+    expect(reading().getByRole("button", { name: "More", expanded: false })).toBeVisible();
+    expect(within(open).getAllByTestId("conversation-head")).toHaveLength(1);
+    // The field and the quick messages keep their places under it.
+    expect(within(open).getByLabelText("Write a message")).toBeVisible();
+    expect(
+      within(screen.getByTestId("over-bar")).getByRole("button", { name: "Thank you!" }),
+    ).toBeVisible();
+    // A taller window: the top stays over the pane again.
+    await measured(560, 136);
+    expect(reading().queryByRole("header", { name: "Anna" })).toBeNull();
+    expect(within(open).getByRole("header", { name: "Anna" })).toBeVisible();
   });
 
   it("shows the two panes for a chat opened from a booking, and Back returns to the booking", async () => {

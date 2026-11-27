@@ -20,8 +20,8 @@ import type { Outgoing } from "./messages";
 const { messageMaxLength } = defaultChatSettings;
 /** The counter shows from here on (plan 4.3). */
 const countFrom = messageMaxLength - 100;
-/** About five lines; a longer message scrolls inside the field. */
-const fieldMaxHeight = 5 * typography.body.lineHeight + 2 * spacing.ms;
+/** Five lines, with the field's padding and outline; a longer message scrolls inside it. */
+const fieldMaxHeight = 5 * typography.body.lineHeight + 2 * spacing.ms + 2 * controlOutline;
 /**
  * The web starts a field of several lines with two; this one starts with
  * one and grows (`useGrowingField`). A phone's grows by itself, and on

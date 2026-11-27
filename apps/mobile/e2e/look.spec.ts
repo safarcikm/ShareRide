@@ -650,6 +650,14 @@ test.describe("a booked seat with long names, 360 wide", () => {
       if (zoom === 1) expect(head.brokenWords).toEqual([]);
       else expect(head.needlessly).toEqual([]);
     }
+    // With its top in it the conversation is taller than its room, and is at its end.
+    const fromEnd = () =>
+      reading.evaluate((scroll) => scroll.scrollHeight - scroll.scrollTop - scroll.clientHeight);
+    expect(
+      await reading.evaluate((scroll) => scroll.scrollHeight - scroll.clientHeight),
+    ).toBeGreaterThan(0);
+    await expect.poll(fromEnd).toBeLessThanOrEqual(1);
+    const room = await box(reading);
     // A line written twice as large is whole in the field, which has grown
     // for it. (From about five lines of text as set, it scrolls inside.)
     await field.fill("Skis too?");
@@ -658,6 +666,10 @@ test.describe("a booked seat with long names, 360 wide", () => {
       .toBeLessThanOrEqual(1);
     const written = await box(field);
     expect(written.y + written.height).toBeLessThanOrEqual(window.height);
+    // The field took of the conversation's room, and the last message did
+    // not go under the bar: the conversation is still at its end.
+    await expect.poll(async () => (await box(reading)).height).toBeLessThan(room.height);
+    await expect.poll(fromEnd).toBeLessThanOrEqual(1);
     await close();
   });
 });

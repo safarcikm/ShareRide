@@ -1805,9 +1805,11 @@ releases follow [Semantic Versioning](https://semver.org/).
   conversation. The quick messages are chips over the bar, and the field
   in the bar is one line with "Write a message" in it that grows as it is
   written in, with a round Send beside it; "Message all passengers" has
-  the same field. A top too tall for the window, as with text twice as
-  large and long names, scrolls with the conversation. Messages has its
-  title at the left on a phone.
+  the same field. The conversation stays at its end as the field grows,
+  so the last message is not under the bar while an answer is written. A
+  top too tall for the room the conversation has, as with text twice as
+  large and long names, scrolls with it. Messages has its title at the
+  left on a phone.
 - The web journeys never give two test accounts the same phone number: a
   run in ten did, and a sign-in journey then failed.
 - CI skips its code jobs (bundles, unit, integration and web tests, the API

@@ -1131,14 +1131,17 @@ As built (spec 31 says the same where a person sees it, in 3.13):
   under it (`chat.driver`, `chat.driverWithCar` with `carText`, or
   `chat.passenger`) and a quiet `IconButton` named `chat.more` that says
   whether it is `expanded` (new: `aria-expanded`). Its row has its parts
-  at the top (spec 31, 3.18). The menu is an `ActionRows` of two `Row`s
+  at the top (spec 31, 3.18), with Back and More each in a place as high
+  as the picture (`avatarSize`), so the three are level. The menu is an
+  `ActionRows` of two `Row`s
   that unfolds in place under that row. It is no layer over the screen:
   the app has none, and on Android a part takes no presses outside its
   parent's bounds. Each row closes the menu and opens its screen
   (`/report?kind=user`, `/bookings/[id]/block`), which reads the booking.
   `RideLine` is a link (`linkProps`) to `/bookings/[id]`, or to
-  `/drive/trips/[id]` for the driver; it shows `formatShortDay`, the
-  time and `search.route`, and is named with `dayAtTime` and
+  `/drive/trips/[id]` for the driver; it shows `formatShortDay` and
+  the time, joined by `chat.rideWhen` as each language does, and
+  `search.route`, and is named with `dayAtTime` and
   `trip.stretchSpoken`. Its words can shrink (`minWidth: 0`), so a name
   wider than the line breaks.
 - **Where the top stands:** `Screen` has `header`, a bar over what
@@ -1147,17 +1150,42 @@ As built (spec 31 says the same where a person sees it, in 3.13):
   scrolls and the bar, on `background` (`over-bar`). `Pane`
   (`chat/panes.tsx`) has `overFooter` too. The screen
   (`app/messages/[bookingId].tsx`) gives the top as `header` while the
-  window's height less the top's is at least `roomUnderTop` (400), and
-  otherwise as the first thing in what scrolls, in a `Card`.
-  `ConversationHead` says how tall it is through `onRest`, and only
-  while its menu is closed, so opening the menu moves nothing. In the
-  card the top is 32 narrower than in the bar and so never shorter, and
-  the two places cannot hand it back and forth. Until the conversation
-  shows, and when it could not be read, the bar has Back alone.
+  height the conversation has, less the top's, is at least
+  `roomUnderTop` (400, a size in `packages/ui/src/tokens.ts`), and
+  otherwise as the first thing in what scrolls, in a `Card`. That height
+  is the `onLayout` of a `View` around the screen
+  (`conversation-frame`): a phone's screen, or the pane on a laptop,
+  which is shorter than the window by the app's bar and the card's
+  edges. It is not the window's: React Native Web reads that from
+  `visualViewport`, which a phone browser's keyboard makes shorter while
+  it is up. `ConversationHead` says how tall it is through `onRest`,
+  and only while its menu is closed, so opening the menu moves nothing.
+  Neither takes 0 for a measure: on the web a screen under another, as
+  under Report or the booking, is not drawn and says it is 0 high.
+  Whether the menu is open is held by the screen (`menu`, `onMenu`), as
+  a top that moves is drawn anew and would close it. In the card the top
+  is 32 narrower than in the bar and so never shorter, and the two
+  places cannot hand it back and forth. Until the conversation shows,
+  and when it could not be read, the bar has Back alone.
+- **At its end:** `useStickToEnd` followed what the scroll holds and
+  where it was scrolled to. It now gives an `onLayout` too: when the
+  scroll's own height changes, as when the field under it grows by a
+  line, and it was at its end, it goes to its end again. Until then the
+  last message slid under the bar as an answer was written. `Screen`
+  calls it from its own `onLayout`; `Pane` takes it as it is. And the
+  reader now leaves the end by going up, and only so. Any scroll short
+  of the end counted as leaving it, and React Native Web says a scroll's
+  sizes as they are when the scroll is heard (and once more 100 ms
+  after the last one), which can be after what the scroll holds grew and
+  before `onContentSizeChange` says so: the growth was then not
+  followed. The look journey showed it, with the last line 73 under the
+  quick messages once the top had moved into a conversation with text
+  twice as large.
 - **The field** (`chat/composer.tsx`): `MessageField` is a `TextInput`
   of several lines with `chat.placeholder` as its placeholder and its
-  name, at least `inputHeight` (52) high and at most about five lines
-  (`fieldMaxHeight`), with corners of half its one-line height. On the
+  name, at least `inputHeight` (52) high and at most five lines with
+  its padding and outline (`fieldMaxHeight`, 148), with corners of half
+  its one-line height. On the
   web `useGrowingField` (`chat/growing-field.web.ts`) sets its height
   from `scrollHeight` after each change of the text or the window's
   width: React Native Web's `onContentSizeChange` reads `scrollHeight`
@@ -1174,19 +1202,26 @@ As built (spec 31 says the same where a person sees it, in 3.13):
   `chat.safetyTip` or `chat.safetyTipInPerson`, in `small` `textMuted`.
 - **The list:** `ScreenHead` with `back={null}` on a phone, in place of
   the centred `Title`.
-- **Texts:** new, `chat.more`, `chat.driver`, `chat.driverWithCar` and
-  `chat.passenger`. None is gone: `chat.message` still names Message on
-  a booked seat.
+- **Texts:** new, `chat.more`, `chat.driver`, `chat.driverWithCar`,
+  `chat.passenger` and `chat.rideWhen`. None is gone: `chat.message`
+  still names Message on a booked seat.
 - **Tests:** `chat.test.tsx` (the top in the bar with Back, the name
   and who they are; the menu's two rows, their colours and order, and
   that it closes; Report and Block in two presses each; Report alone
   once blocked; "Passenger", and "Driver" with no car; the ride's line
   for a passenger and for a driver; the safety line first and muted; the
   field's placeholder with no label, and Send as the one filled button,
-  in the bar; the chips over the bar; a top too tall for the window
-  scrolling with the conversation, and back; the menu not counted; the
+  in the bar; the chips over the bar; a top too tall for the room it
+  has scrolling with the conversation, and back, on a phone and in a
+  laptop's pane shorter than its window; the menu not counted, and kept
+  open when the top moves; no measure taken from a hidden screen; the
+  conversation at its end again when the bar under it grows, and not
+  when I read further up; at its end still when a scroll is told after
+  the conversation grew, with only going up leaving it; the ride's day
+  and time in Icelandic; the
   top's row and the ride's words; the same top in a laptop's pane; the
-  list's title at the left). `navigation-parts.test.tsx` for the quiet
+  field and Send of "Message all passengers"; the list's title at the
+  left). `navigation-parts.test.tsx` for the quiet
   `BackButton`, the `filled`, `busy` and `expanded` `IconButton`, and
   `Screen`'s two new places. `blocking.test.tsx` and
   `reporting.test.tsx` press More first. Journeys: `chat.spec.ts` (the
@@ -1194,8 +1229,9 @@ As built (spec 31 says the same where a person sees it, in 3.13):
   field's height with one line, three lines and after sending, the
   driver's top in Icelandic), `blocking.spec.ts` (More first), and
   `look.spec.ts` (a conversation 360 wide with long names, as set and
-  twice as large; `twiceAsLarge` enlarges what is drawn after it too, as
-  a top that moves is drawn anew). `confirmedBooking` takes the hour the
+  twice as large, and still at its end after the field grew;
+  `twiceAsLarge` enlarges what is drawn after it too, as a top that
+  moves is drawn anew). `confirmedBooking` takes the hour the
   ride leaves at, for a picture. Pictures: `built/chat-*` and
   `built/messages-phone-light`.
 
@@ -1333,15 +1369,24 @@ and deleting the account (3.19).
     360 wide the field shows "Write a" of "Write a message" until
     something is written, as a placeholder of two lines has one; the
     field's five lines are counted in the text as set, so text twice as
-    large scrolls inside it from the third line; the top stays by the
-    window's height, not the pane's, so a laptop's pane with text twice
-    as large (and not the page zoomed, which makes the window a
-    phone's) may leave the messages little room, to measure; the menu
-    of the top closes by its button, not by Escape or a press beside
-    it; when the top moves between its bar and the conversation, as the
-    window turns, the keyboard's focus in it is lost; on a window under
-    400 high the two bars still take about 150 (item 9). Icelandic, for
-    a native reader: "Bílstjóri · Hvítur Toyota Yaris" and "Meira".
+    large scrolls inside it from the third line; the menu of the top
+    closes by its button, not by Escape or a press beside it, and its
+    rows are a white card on the white bar, which an edge or a tint
+    would set apart; when the top moves between its bar and the
+    conversation, as the window turns, the keyboard's focus in it is
+    lost, and a top too tall is drawn in the bar for one frame before
+    it is measured; on a window under 400 high the two bars still take
+    about 150 (item 9). To try on phones, in the apps: the keyboard
+    (Android makes the screen shorter, which may move the top into the
+    conversation while writing; on an iPhone the messages keep about
+    100 over it); the strip under a conversation that is loading or
+    could not be read, which a `Screen` with a `header` colours as the
+    bar; and whether VoiceOver says "Write a message" twice for the
+    empty field, as its name and as the words in it. In the code:
+    `IconButton`'s `quiet`, `filled` and `strong` as one `kind`, and a
+    unit test for the web's growing field, which only the journeys
+    try. Icelandic, for a native reader: "Bílstjóri · Hvítur Toyota
+    Yaris", "Meira" and "Lau. 28. nóv. kl. 17:30".
 15. **Docs:** spec 31 becomes Built, with what differs from the drawings;
     spec 15 has the parts; the roadmap and the changelog.
 
