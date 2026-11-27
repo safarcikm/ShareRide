@@ -10,12 +10,7 @@ import {
   type PublicKeyCredentialCreationOptionsJSON,
   type PublicKeyCredentialRequestOptionsJSON,
 } from "@simplewebauthn/browser";
-import type {
-  DevicePasskeys,
-  PasskeyAssertion,
-  PasskeyOptions,
-  PasskeyRegistration,
-} from "./passkey-types";
+import type { DevicePasskeys, PasskeyAssertion, PasskeyRegistration } from "./passkey-types";
 
 export { keepPasskeyOptionsMs, passkeyFailure } from "./passkey-types";
 export type {
@@ -25,9 +20,10 @@ export type {
   PasskeyRegistration,
 } from "./passkey-types";
 
-// On the website: the browser's own passkey sheet (spec 27, 3.3 and 3.6),
-// its quiet request in the email field (spec 29, 3.1), and the passkey it
-// may save by itself after a password (3.3). Offered only
+// On the website: the browser's own sheet to set a passkey up (spec 27,
+// 3.6), its quiet request in the email field, the only way to sign in with
+// one (spec 29, 3.1 and 3.7), and the passkey it may save by itself after a
+// password (3.3). Offered only
 // where the browser says the device has a built-in authenticator, never a
 // hardware key (ADR 0048).
 
@@ -124,10 +120,5 @@ export const devicePasskeys: DevicePasskeys = {
     const optionsJSON = options as unknown as PublicKeyCredentialCreationOptionsJSON;
     started();
     return (await startRegistration({ optionsJSON })) as unknown as PasskeyRegistration;
-  },
-  async get(options: PasskeyOptions) {
-    const optionsJSON = options as unknown as PublicKeyCredentialRequestOptionsJSON;
-    started();
-    return (await startAuthentication({ optionsJSON })) as unknown as PasskeyAssertion;
   },
 };

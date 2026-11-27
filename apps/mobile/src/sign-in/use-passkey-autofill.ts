@@ -10,8 +10,8 @@ import {
 /** What the screen does with the quiet request. */
 export interface PasskeyAutofill {
   /**
-   * Ends the quiet request at once, before the button's sheet, Google or
-   * Apple opens, until `resume` or until the screen is left and shown again.
+   * Ends the quiet request at once, before Google or Apple opens or the
+   * email is sent, until `resume` or until the screen is left and shown again.
    */
   pause(): void;
   /** Starts it again, with new options. */

@@ -217,6 +217,8 @@ the console's recovery code and its notice (spec 22).
 
 ## 5. Screens
 
+> [Spec 29](2026-11-25-easier-sign-in.md), 3.5 and 3.6, changes step 1: the way used last time first, no "Step 1 of 3", and the line "We email you a 6-digit code." goes.
+
 Phone first; on a laptop the same content in the sign-in column (spec 18).
 
 1. **Sign in** (step 1):

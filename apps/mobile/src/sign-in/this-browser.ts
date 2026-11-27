@@ -39,11 +39,14 @@ export function markPasskeyHere(credentialId: string): Promise<void> {
 
 /**
  * A passkey removed in Sign-in methods: when it is this browser's, or this
- * browser's is unnamed, the browser is no longer known to have one.
+ * browser's is unnamed, the browser is no longer known to have one, and
+ * Face ID is no longer kept as the way used last time (spec 29, 3.5).
  */
 export async function forgetPasskeyHere(credentialId: string): Promise<void> {
   const kept = await passkeyHere();
-  if (kept === credentialId || kept === unnamedPasskey) await writePreference(passkeyHereKey, "");
+  if (kept !== credentialId && kept !== unnamedPasskey) return;
+  await writePreference(passkeyHereKey, "");
+  if ((await lastWay()) === "passkey") await writePreference(lastWayKey, "");
 }
 
 /** When "Not now" was last pressed on this browser, or null. */

@@ -53,6 +53,8 @@ Staging answers on its own address and could end up in Google too.
 
 ### 3.1 The question about cookies
 
+> [Spec 29](2026-11-25-easier-sign-in.md), 3.6, item 3: the bar waits while signing in or up, and appears on the next screen.
+
 On the website, when the site has Google Analytics turned on (production
 with its measurement ID set, section 6), the first visit shows a bar at the
 bottom of every screen, above the menu bar on phones, except the Cookies

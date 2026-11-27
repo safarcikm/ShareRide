@@ -25,8 +25,6 @@ export interface DevicePasskeys {
   available(): Promise<boolean>;
   /** Makes a passkey kept on this device; throws if the person cancels or it is set up already. */
   create(options: PasskeyOptions): Promise<PasskeyRegistration>;
-  /** Answers a challenge with one of the site's passkeys; throws like `create`. */
-  get(options: PasskeyOptions): Promise<PasskeyAssertion>;
   /**
    * Whether the browser can offer the site's passkeys in the email field's
    * suggestions (spec 29, 3.1): a built-in lock and a quiet request.

@@ -55,9 +55,7 @@ describe("Signing in with a password (spec 27, 3.1 and 3.2)", () => {
         ok(200, { status: "signedIn", ...tokens(1), user: anna, isNewUser: false }),
       );
     });
-    expect(
-      screen.getByText("Only if you've set one. Otherwise we email you a code."),
-    ).toBeVisible();
+    expect(screen.getByText("Leave it empty and we'll email you a code.")).toBeVisible();
     expect(screen.getByRole("button", { name: "Send code" })).toBeVisible();
     await fireEvent.changeText(screen.getByLabelText("Email"), " Anna@Example.com ");
     await fireEvent.changeText(screen.getByLabelText("Password"), strong);

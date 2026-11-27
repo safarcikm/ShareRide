@@ -34,7 +34,6 @@ jest.mock("@/lib/app-data", () => ({
 const mockDevice = {
   available: jest.fn(() => Promise.resolve(true)),
   create: jest.fn(),
-  get: jest.fn(),
   autofillAvailable: jest.fn(() => Promise.resolve(false)),
   autofill: jest.fn(),
   cancel: jest.fn(),
@@ -108,7 +107,6 @@ beforeEach(() => {
   mockPreferences.clear();
   mockDevice.available.mockReset().mockReturnValue(Promise.resolve(true));
   mockDevice.create.mockReset().mockReturnValue(Promise.resolve(registration));
-  mockDevice.get.mockReset().mockReturnValue(Promise.resolve(assertion));
   mockDevice.autofillAvailable.mockReset().mockReturnValue(Promise.resolve(false));
   mockDevice.autofill.mockReset();
   mockDevice.cancel.mockReset();
@@ -128,86 +126,6 @@ async function openSignIn(setUp?: (client: FakeClient) => void, passkeySignIn = 
   expect(await screen.findByRole("header", { name: "Sign in or create an account" })).toBeVisible();
   return app;
 }
-
-describe("Signing in with Face ID or fingerprint (spec 27, 3.1 and 3.3)", () => {
-  it("is offered where the server has it and the device has its own lock", async () => {
-    await openSignIn();
-    expect(await screen.findByRole("button", { name: "Face ID or fingerprint" })).toBeVisible();
-    expect(screen.getByText("or with your email")).toBeVisible();
-  });
-
-  it("is not offered on a device without its own lock", async () => {
-    mockDevice.available.mockReturnValue(Promise.resolve(false));
-    await openSignIn();
-    expect(screen.queryByRole("button", { name: "Face ID or fingerprint" })).toBeNull();
-  });
-
-  it("is not offered by a server without it", async () => {
-    await openSignIn(undefined, false);
-    expect(screen.queryByRole("button", { name: "Face ID or fingerprint" })).toBeNull();
-  });
-
-  it("signs in with the device's answer, with no email typed", async () => {
-    const app = await openSignIn((client) => {
-      client.answer("/v1/auth/passkey", () =>
-        ok(200, { status: "signedIn", ...tokens(1), user: anna, isNewUser: false }),
-      );
-    });
-    await fireEvent.press(await screen.findByRole("button", { name: "Face ID or fingerprint" }));
-    expect(await screen.findByRole("tab", { name: "Find", selected: true })).toBeVisible();
-    expect(mockDevice.get).toHaveBeenCalledWith(options);
-    expect(callsTo(app.client, "/v1/auth/passkey").map((call) => call.input["body"])).toEqual([
-      { credential: assertion, device: expect.any(Object) as unknown },
-    ]);
-  });
-
-  it("changes nothing when the person closes the device's sheet", async () => {
-    mockDevice.get.mockReturnValue(Promise.reject(named("NotAllowedError")));
-    const app = await openSignIn();
-    await fireEvent.press(await screen.findByRole("button", { name: "Face ID or fingerprint" }));
-    expect(
-      await screen.findByRole("button", { name: "Face ID or fingerprint", disabled: false }),
-    ).toBeVisible();
-    expect(callsTo(app.client, "/v1/auth/passkey")).toHaveLength(0);
-    expect(screen.queryByRole("alert")).toBeNull();
-  });
-
-  it("uses the same options on the next tap after the sheet was closed", async () => {
-    mockDevice.get.mockReturnValueOnce(Promise.reject(named("NotAllowedError")));
-    const app = await openSignIn((client) => {
-      client.answer("/v1/auth/passkey", () =>
-        ok(200, { status: "signedIn", ...tokens(1), user: anna, isNewUser: false }),
-      );
-    });
-    await fireEvent.press(await screen.findByRole("button", { name: "Face ID or fingerprint" }));
-    await fireEvent.press(
-      await screen.findByRole("button", { name: "Face ID or fingerprint", disabled: false }),
-    );
-    expect(await screen.findByRole("tab", { name: "Find", selected: true })).toBeVisible();
-    expect(callsTo(app.client, "/v1/auth/passkey/options")).toHaveLength(1);
-    expect(mockDevice.get).toHaveBeenCalledTimes(2);
-  });
-
-  it("says when the answer came too late", async () => {
-    await openSignIn((client) => {
-      client.answer("/v1/auth/passkey", () => failure(400, "passkey_expired"));
-    });
-    await fireEvent.press(await screen.findByRole("button", { name: "Face ID or fingerprint" }));
-    expect(await screen.findByText("That took too long. Try again.")).toBeVisible();
-  });
-
-  it("says when the device's passkey is not one of a member's", async () => {
-    await openSignIn((client) => {
-      client.answer("/v1/auth/passkey", () => failure(400, "passkey_invalid"));
-    });
-    await fireEvent.press(await screen.findByRole("button", { name: "Face ID or fingerprint" }));
-    expect(
-      await screen.findByText(
-        "This device's sign-in isn't set up for your PuffinRide account. Use your email, then set it up again in Profile, under Sign-in methods.",
-      ),
-    ).toBeVisible();
-  });
-});
 
 /**
  * The browser's quiet request, stood in for: each waits until a passkey is
@@ -254,6 +172,16 @@ describe("Face ID in the email field (spec 29, 3.1)", () => {
     mockDevice.autofillAvailable.mockReturnValue(Promise.resolve(true));
   });
 
+  it("has no button of its own: the passkey is among the email field's suggestions (3.7)", async () => {
+    const quiet = quietRequests();
+    await openSignIn();
+    await waitFor(() => {
+      expect(quiet.waiting).toHaveLength(1);
+    });
+    expect(screen.queryByRole("button", { name: "Face ID or fingerprint" })).toBeNull();
+    expect(screen.queryByText("or with your email")).toBeNull();
+  });
+
   it("waits quietly for a passkey from the email field where the browser offers it", async () => {
     const quiet = quietRequests();
     await openSignIn();
@@ -261,14 +189,17 @@ describe("Face ID in the email field (spec 29, 3.1)", () => {
       expect(quiet.waiting).toHaveLength(1);
     });
     expect(mockDevice.autofill).toHaveBeenCalledWith(options);
-    expect(mockDevice.get).not.toHaveBeenCalled();
     expect(screen.queryByRole("alert")).toBeNull();
   });
 
   it("does not wait where the browser cannot offer passkeys in the field", async () => {
     mockDevice.autofillAvailable.mockReturnValue(Promise.resolve(false));
     const app = await openSignIn();
-    expect(await screen.findByRole("button", { name: "Face ID or fingerprint" })).toBeVisible();
+    expect(await screen.findByLabelText("Email")).toBeVisible();
+    await waitFor(() => {
+      expect(mockDevice.autofillAvailable).toHaveBeenCalled();
+    });
+    expect(screen.queryByRole("button", { name: "Face ID or fingerprint" })).toBeNull();
     expect(mockDevice.autofill).not.toHaveBeenCalled();
     expect(callsTo(app.client, "/v1/auth/passkey/options")).toHaveLength(0);
   });
@@ -293,43 +224,20 @@ describe("Face ID in the email field (spec 29, 3.1)", () => {
     expect(callsTo(app.client, "/v1/auth/passkey").map((call) => call.input["body"])).toEqual([
       { credential: assertion, device: expect.any(Object) as unknown },
     ]);
-    expect(mockDevice.get).not.toHaveBeenCalled();
   });
 
-  it("stops waiting while the button's sheet is open, and waits again after", async () => {
+  it("says when the answer came too late", async () => {
     const quiet = quietRequests();
-    mockDevice.get.mockReturnValue(Promise.reject(named("NotAllowedError")));
-    const app = await openSignIn();
+    await openSignIn((client) => {
+      client.answer("/v1/auth/passkey", () => failure(400, "passkey_expired"));
+    });
     await waitFor(() => {
       expect(quiet.waiting).toHaveLength(1);
     });
-    await fireEvent.press(screen.getByRole("button", { name: "Face ID or fingerprint" }));
-    expect(
-      await screen.findByRole("button", { name: "Face ID or fingerprint", disabled: false }),
-    ).toBeVisible();
-    expect(mockDevice.get).toHaveBeenCalledTimes(1);
-    const [cancelled] = mockDevice.cancel.mock.invocationCallOrder;
-    const [sheet] = mockDevice.get.mock.invocationCallOrder;
-    expect(cancelled).toBeLessThan(sheet ?? 0);
-    await waitFor(() => {
-      expect(quiet.waiting).toHaveLength(1);
+    await act(() => {
+      quiet.pick();
     });
-    expect(mockDevice.autofill).toHaveBeenCalledTimes(2);
-    expect(callsTo(app.client, "/v1/auth/passkey")).toHaveLength(0);
-    expect(screen.queryByRole("alert")).toBeNull();
-  });
-
-  it("signs in once from the button while the quiet request waits", async () => {
-    const quiet = quietRequests();
-    const app = await openSignIn(signedInAsAnna);
-    await waitFor(() => {
-      expect(quiet.waiting).toHaveLength(1);
-    });
-    await fireEvent.press(screen.getByRole("button", { name: "Face ID or fingerprint" }));
-    expect(await screen.findByRole("tab", { name: "Find", selected: true })).toBeVisible();
-    expect(mockDevice.get).toHaveBeenCalledTimes(1);
-    expect(callsTo(app.client, "/v1/auth/passkey")).toHaveLength(1);
-    expect(quiet.waiting).toHaveLength(0);
+    expect(await screen.findByText("That took too long. Try again.")).toBeVisible();
   });
 
   it("asks for new options a little before the challenge's 5 minutes are up", async () => {
@@ -512,27 +420,40 @@ describe("Face ID in the email field (spec 29, 3.1)", () => {
     });
   });
 
-  it("tells the browser after the button's passkey is unknown too, and this browser has none", async () => {
-    quietRequests();
+  it("forgets this browser's passkey, and Face ID as the way used last time, when it is unknown", async () => {
+    const quiet = quietRequests();
     // Removed in another device's Sign-in methods since this browser signed in with it.
     mockPreferences.set("passkey-here", "credential-one");
+    mockPreferences.set("last-sign-in", "passkey");
     await openSignIn((client) => {
       client.answer("/v1/auth/passkey", () => failure(400, "passkey_unknown"));
     });
-    await fireEvent.press(await screen.findByRole("button", { name: "Face ID or fingerprint" }));
+    await waitFor(() => {
+      expect(quiet.waiting).toHaveLength(1);
+    });
+    await act(() => {
+      quiet.pick();
+    });
     expect(await screen.findByText(notSetUp)).toBeVisible();
     expect(mockDevice.forget).toHaveBeenCalledWith("credential-one");
-    // So Face ID can be offered here again (spec 29, 3.2, item 5).
+    // So Face ID can be offered here again (spec 29, 3.2, item 5), and is
+    // no longer first as "Last used" (3.5).
     expect(mockPreferences.get("passkey-here")).toBe("");
+    expect(mockPreferences.get("last-sign-in")).toBe("");
   });
 
   it("keeps the console's passkey with the browser (R29.4)", async () => {
-    quietRequests();
+    const quiet = quietRequests();
     mockPreferences.set("passkey-here", "credential-one");
     await openSignIn((client) => {
       client.answer("/v1/auth/passkey", () => failure(400, "passkey_invalid"));
     });
-    await fireEvent.press(await screen.findByRole("button", { name: "Face ID or fingerprint" }));
+    await waitFor(() => {
+      expect(quiet.waiting).toHaveLength(1);
+    });
+    await act(() => {
+      quiet.pick();
+    });
     expect(await screen.findByText(notSetUp)).toBeVisible();
     expect(mockDevice.forget).not.toHaveBeenCalled();
     expect(mockPreferences.get("passkey-here")).toBe("credential-one");
@@ -607,6 +528,7 @@ describe("Face ID or fingerprint in Sign-in methods (spec 27, 3.6)", () => {
 
   it("forgets that this browser has a passkey when its own is removed, not another's", async () => {
     mockPreferences.set("passkey-here", mac.credentialId);
+    mockPreferences.set("last-sign-in", "passkey");
     await openMethods([iPhone, mac]);
     await fireEvent.press(
       await screen.findByRole("button", {
@@ -618,6 +540,7 @@ describe("Face ID or fingerprint in Sign-in methods (spec 27, 3.6)", () => {
       await screen.findByText("Face ID or fingerprint is removed for Safari on iPhone."),
     ).toBeVisible();
     expect(mockPreferences.get("passkey-here")).toBe(mac.credentialId);
+    expect(mockPreferences.get("last-sign-in")).toBe("passkey");
     await fireEvent.press(
       screen.getByRole("button", { name: "Remove Face ID or fingerprint for Chrome on Mac" }),
     );
@@ -628,6 +551,8 @@ describe("Face ID or fingerprint in Sign-in methods (spec 27, 3.6)", () => {
     await waitFor(() => {
       expect(mockPreferences.get("passkey-here")).toBe("");
     });
+    // Step 1 no longer puts Face ID first (spec 29, 3.5).
+    expect(mockPreferences.get("last-sign-in")).toBe("");
   });
 
   it("sets up this device with a fresh sign-in", async () => {
@@ -827,8 +752,15 @@ describe("Face ID offered after another way in (spec 29, 3.2 and 3.3)", () => {
   });
 
   it("is not asked after a passkey, and this browser is then known to have one", async () => {
+    mockDevice.autofillAvailable.mockReturnValue(Promise.resolve(true));
+    const quiet = quietRequests();
     await openSignIn(signedInAsAnna);
-    await fireEvent.press(await screen.findByRole("button", { name: "Face ID or fingerprint" }));
+    await waitFor(() => {
+      expect(quiet.waiting).toHaveLength(1);
+    });
+    await act(() => {
+      quiet.pick();
+    });
     await onFind("passkey");
     expect(mockPreferences.get("passkey-here")).toBe("credential-one");
     expect(screen.queryByRole("header", { name: offerTitle })).toBeNull();

@@ -17,7 +17,6 @@ const unavailable = () =>
 export const devicePasskeys: DevicePasskeys = {
   available: () => Promise.resolve(false),
   create: unavailable,
-  get: unavailable,
   autofillAvailable: () => Promise.resolve(false),
   autofill: unavailable,
   cancel: () => undefined,

@@ -170,11 +170,14 @@ export const en = {
   "auth.continueGoogle": "Continue with Google",
   "auth.continueApple": "Continue with Apple",
   "auth.orEmail": "or with your email",
-  /** Sign in with a passkey on this device (spec 27, 3.1 and 3.3). */
+  /** Step 1: before the buttons when the email form comes first (spec 29, 3.5). */
+  "auth.or": "or",
+  /** The way this browser signed in last time (spec 29, 3.5). */
+  "auth.lastUsed": "Last used",
+  /** A passkey on this device, as a way to sign in (spec 27, 3.6). */
   "auth.passkey": "Face ID or fingerprint",
   "auth.email.label": "Email",
   "auth.email.send": "Send code",
-  "auth.email.help": "We email you a {length}-digit code.",
   "auth.email.before":
     "Joined with your phone number? Use your email or Google, then the same number. It's added to your account.",
   "auth.email.unavailable": "Sign-in by email is not available on this server.",
@@ -187,7 +190,7 @@ export const en = {
   "auth.email.replaced": "Your sign-in email is now {email}.",
   /** A password on step 1 (spec 27, 3.1 to 3.4). */
   "auth.password": "Password",
-  "auth.passwordHelp": "Only if you've set one. Otherwise we email you a code.",
+  "auth.passwordHelp": "Leave it empty and we'll email you a code.",
   "auth.signIn": "Sign in",
   "auth.forgotPassword": "Forgot your password?",
   "auth.forgotPasswordEmail": "Type your email, and we'll send you a code.",
