@@ -1559,11 +1559,14 @@ releases follow [Semantic Versioning](https://semver.org/).
   Migration 0064.
 - The way you used last time first (spec 29, 3.5): step 1 of signing in
   shows the way this browser signed in with last, marked "Last used":
-  Google, Apple or Face ID at the top, or for the email code or a password
+  Google or Apple at the top, or for the email code, a password or Face ID
   the email form first, then "or" and the buttons. A way the screen no
-  longer offers keeps the usual order with no mark. The order is decided
-  once, so no button moves after it shows, and a removed Face ID is no
-  longer first.
+  longer offers keeps the usual order with no mark, and the order is
+  decided once, so no button moves after it shows.
+- No "Face ID or fingerprint" button on step 1 (spec 29, 3.7, Martin
+  2026-11-27): the browser's password manager offers the PuffinRide passkey
+  among the email field's suggestions, which signs in as before. Setting a
+  passkey up is unchanged.
 - A calmer sign-in screen (spec 29, 3.6): step 1 and its email code show no
   "Step 1 of 3" (the steps start at the phone number), the password's help
   says "Leave it empty and we'll email you a code." in place of the line

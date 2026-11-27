@@ -13,7 +13,6 @@ import {
 import type {
   DevicePasskeys,
   PasskeyAssertion,
-  PasskeyOptions,
   PasskeyRegistration,
 } from "./passkey-types";
 
@@ -124,10 +123,5 @@ export const devicePasskeys: DevicePasskeys = {
     const optionsJSON = options as unknown as PublicKeyCredentialCreationOptionsJSON;
     started();
     return (await startRegistration({ optionsJSON })) as unknown as PasskeyRegistration;
-  },
-  async get(options: PasskeyOptions) {
-    const optionsJSON = options as unknown as PublicKeyCredentialRequestOptionsJSON;
-    started();
-    return (await startAuthentication({ optionsJSON })) as unknown as PasskeyAssertion;
   },
 };

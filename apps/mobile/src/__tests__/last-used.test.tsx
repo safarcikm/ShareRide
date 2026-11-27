@@ -25,7 +25,6 @@ jest.mock("@/lib/app-data", () => ({
 const mockDevice = {
   available: jest.fn(() => Promise.resolve(true)),
   create: jest.fn(),
-  get: jest.fn(),
   autofillAvailable: jest.fn(() => Promise.resolve(false)),
   autofill: jest.fn(),
   cancel: jest.fn(),
@@ -87,10 +86,20 @@ describe("The way used last time first (spec 29, 3.5)", () => {
     await settled([
       "Continue with Google",
       "Continue with Apple",
-      "Face ID or fingerprint",
       "or with your email",
       "Send code",
     ]);
+  });
+
+  it("has no Face ID button: a passkey is in the email field's suggestions (3.7)", async () => {
+    await openSignIn();
+    await settled([
+      "Continue with Google",
+      "Continue with Apple",
+      "or with your email",
+      "Send code",
+    ]);
+    expect(screen.queryByRole("button", { name: "Face ID or fingerprint" })).toBeNull();
   });
 
   it("puts Google first after Google", async () => {
@@ -100,7 +109,6 @@ describe("The way used last time first (spec 29, 3.5)", () => {
       "Last used",
       "Continue with Google",
       "Continue with Apple",
-      "Face ID or fingerprint",
       "or with your email",
       "Send code",
     ]);
@@ -113,106 +121,35 @@ describe("The way used last time first (spec 29, 3.5)", () => {
       "Last used",
       "Continue with Apple",
       "Continue with Google",
-      "Face ID or fingerprint",
       "or with your email",
       "Send code",
     ]);
   });
 
-  it("puts Face ID first after Face ID", async () => {
-    mockPreferences.set("last-sign-in", "passkey");
-    await openSignIn();
-    await settled([
-      "Last used",
-      "Face ID or fingerprint",
-      "Continue with Google",
-      "Continue with Apple",
-      "or with your email",
-      "Send code",
-    ]);
-  });
-
-  it.each(["email", "password"])("puts the email form first after the %s", async (way) => {
-    mockPreferences.set("last-sign-in", way);
-    await openSignIn();
-    await settled([
-      "Last used",
-      "Send code",
-      "or",
-      "Continue with Google",
-      "Continue with Apple",
-      "Face ID or fingerprint",
-    ]);
-  });
+  it.each(["email", "password", "passkey"])(
+    "puts the email form first after the %s",
+    async (way) => {
+      mockPreferences.set("last-sign-in", way);
+      await openSignIn();
+      await settled([
+        "Last used",
+        "Send code",
+        "or",
+        "Continue with Google",
+        "Continue with Apple",
+      ]);
+    },
+  );
 
   it("keeps today's order when the kept way is not offered any more", async () => {
     mockPreferences.set("last-sign-in", "google");
     await openSignIn(["apple"]);
-    await settled([
-      "Continue with Apple",
-      "Face ID or fingerprint",
-      "or with your email",
-      "Send code",
-    ]);
-  });
-
-  it("waits for a slow device's answer after Face ID, so no way moves once shown", async () => {
-    mockPreferences.set("last-sign-in", "passkey");
-    let answer: (available: boolean) => void = () => undefined;
-    mockDevice.available.mockReturnValue(
-      new Promise<boolean>((resolve) => {
-        answer = resolve;
-      }),
-    );
-    await openSignIn();
-    expect(screen.queryAllByText(parts)).toEqual([]);
-    answer(true);
-    await settled([
-      "Last used",
-      "Face ID or fingerprint",
-      "Continue with Google",
-      "Continue with Apple",
-      "or with your email",
-      "Send code",
-    ]);
-  });
-
-  it("adds Face ID in its usual place, unmarked, when the device answers too late", async () => {
-    mockPreferences.set("last-sign-in", "passkey");
-    let answer: (available: boolean) => void = () => undefined;
-    mockDevice.available.mockReturnValue(
-      new Promise<boolean>((resolve) => {
-        answer = resolve;
-      }),
-    );
-    await openSignIn();
-    await settled(["Continue with Google", "Continue with Apple", "or with your email", "Send code"]);
-    answer(true);
-    await settled([
-      "Continue with Google",
-      "Continue with Apple",
-      "Face ID or fingerprint",
-      "or with your email",
-      "Send code",
-    ]);
+    await settled(["Continue with Apple", "or with your email", "Send code"]);
   });
 
   it("marks nothing when the email is the only way", async () => {
     mockPreferences.set("last-sign-in", "email");
-    mockDevice.available.mockReturnValue(Promise.resolve(false));
     await openSignIn([]);
     await settled(["Send code"]);
-  });
-
-  it("keeps today's order after Face ID on a device without its own lock", async () => {
-    mockPreferences.set("last-sign-in", "passkey");
-    mockDevice.available.mockReturnValue(Promise.resolve(false));
-    await openSignIn();
-    await settled([
-      "Continue with Google",
-      "Continue with Apple",
-      "or with your email",
-      "Send code",
-    ]);
   });
 });

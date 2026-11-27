@@ -25,13 +25,7 @@ import { Body, Title } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { useSignInFlow } from "@/sign-in/flow";
 import { KeptRideCard } from "@/sign-in/kept-ride-card";
-import {
-  devicePasskeys,
-  keepPasskeyOptionsMs,
-  passkeyFailure,
-  type PasskeyAssertion,
-  type PasskeyOptions,
-} from "@/sign-in/passkey";
+import { devicePasskeys, type PasskeyAssertion } from "@/sign-in/passkey";
 import { pendingExpiredText, phoneStepHelp } from "@/sign-in/pending";
 import { ProviderButtons } from "@/sign-in/provider-buttons";
 import { providerNames, useProviderWindow } from "@/sign-in/provider-window";
@@ -39,7 +33,7 @@ import { SignUpProgress } from "@/sign-in/sign-up-progress";
 import { firstWay } from "@/sign-in/last-used";
 import { forgetPasskeyHere, lastWay } from "@/sign-in/this-browser";
 import { usePasskeyAutofill } from "@/sign-in/use-passkey-autofill";
-import { useDeviceLock } from "@/sign-in/use-passkeys";
+import { usePasskeysOffered } from "@/sign-in/use-passkeys";
 import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
@@ -83,20 +77,17 @@ function passkeyErrorText(t: Translate, failure: CallFailure): string {
 }
 
 /**
- * How long step 1 waits, at most, for the device to say whether it has its
- * own lock, when Face ID was the way used last time (spec 29, 3.5).
+ * Google or Apple, or the email with a code or its password. A passkey is
+ * among the email field's suggestions, with no button of its own (spec 29,
+ * 3.1 and 3.7).
  */
-const orderWaitMs = 250;
-
-/** Google or Apple, Face ID or fingerprint, or the email with a code or its password. */
 function ChooseHowScreen() {
   const { locale, t } = useLanguage();
   const session = useSession();
   const flow = useSignInFlow();
-  const { signInProviders, emailSignIn, passkeySignIn } = useConfig();
+  const { signInProviders, emailSignIn } = useConfig();
   const providerWindow = useProviderWindow();
-  const deviceLock = useDeviceLock();
-  const passkeyOffered = passkeySignIn && deviceLock === true;
+  const passkeyOffered = usePasskeysOffered();
   const [fieldError, setFieldError] = useState<string>();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -104,11 +95,6 @@ function ChooseHowScreen() {
   const [passkeyBusy, setPasskeyBusy] = useState(false);
   // Never kept in the flow: it goes when this screen does.
   const [password, setPassword] = useState("");
-  // Options whose sheet was closed, used again on the next tap while their
-  // challenge lasts: a browser may open the sheet only from a tap.
-  const keptOptions = useRef<{ readonly options: PasskeyOptions; readonly until: number } | null>(
-    null,
-  );
   // Guards against a second tap or a Return key before the first reply.
   const sending = useRef(false);
   const focused = useIsFocused();
@@ -123,17 +109,6 @@ function ChooseHowScreen() {
       live = false;
     };
   }, []);
-  // Whether the device took longer than `orderWaitMs` to say if it has its own lock.
-  const [checkLate, setCheckLate] = useState(false);
-  useEffect(() => {
-    if (deviceLock !== null) return;
-    const timer = setTimeout(() => {
-      setCheckLate(true);
-    }, orderWaitMs);
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [deviceLock]);
   // On a laptop the field takes the focus, so its suggestions show at once
   // (spec 29, 3.1, item 5); not on a phone, where the keyboard would cover the rest.
   const wide = useWideScreen();
@@ -192,8 +167,8 @@ function ChooseHowScreen() {
   }
 
   /**
-   * Signs in with the device's answer, from the button's sheet or the email
-   * field; true when signed in. A passkey the site no longer has is one this
+   * Signs in with the passkey picked from the email field's suggestions;
+   * true when signed in. A passkey the site no longer has is one this
    * browser stops offering (spec 29, 3.4).
    */
   async function finishPasskey(credential: PasskeyAssertion): Promise<boolean> {
@@ -208,53 +183,6 @@ function ChooseHowScreen() {
       await forgetPasskeyHere(credential.id);
     }
     return false;
-  }
-
-  /**
-   * The device's own sheet, then signed in with no email typed (spec 27,
-   * 3.3). Closing the sheet, or a browser with no passkey for PuffinRide,
-   * changes nothing, and the next tap uses the same options. The email
-   * field's quiet request waits meanwhile (spec 29, 3.1, item 4).
-   */
-  async function signInWithPasskey() {
-    if (sending.current) return;
-    sending.current = true;
-    setError(null);
-    flow.setNotice(null);
-    setPasskeyBusy(true);
-    autofill.pause();
-    let signedIn = false;
-    try {
-      const before = keptOptions.current;
-      keptOptions.current = null;
-      let options: PasskeyOptions;
-      if (before !== null && Date.now() < before.until) {
-        options = before.options;
-      } else {
-        const asked = await session.passkeyOptions();
-        if (!asked.ok) {
-          setError(passkeyErrorText(t, asked));
-          return;
-        }
-        options = asked.data.options;
-      }
-      let credential;
-      try {
-        credential = await devicePasskeys.get(options);
-      } catch (failure) {
-        if (passkeyFailure(failure) === "cancelled") {
-          keptOptions.current = { options, until: Date.now() + keepPasskeyOptionsMs };
-        } else {
-          setError(t("error.generic"));
-        }
-        return;
-      }
-      signedIn = await finishPasskey(credential);
-    } finally {
-      sending.current = false;
-      setPasskeyBusy(false);
-      if (!signedIn) autofill.resume();
-    }
   }
 
   /** The password when one is typed; otherwise, or when it was forgotten, a code by email. */
@@ -301,42 +229,21 @@ function ChooseHowScreen() {
   }
 
   // The way this browser used last time, first and marked (spec 29, 3.5).
-  // The order is decided once, so nothing moves under a finger: the ways
-  // wait for the kept way, and after Face ID for the device's answer, at
-  // most `orderWaitMs`. Face ID answered later keeps its usual place.
-  const ordered = last !== undefined && (last !== "passkey" || deviceLock !== null || checkLate);
-  const first = firstWay(last ?? null, {
-    providers: signInProviders,
-    passkey: passkeyOffered && !checkLate,
-    email: emailSignIn,
-  });
-  const formFirst = first === "email" || first === "password";
+  // The ways wait for it, so nothing moves under a finger. A passkey is
+  // picked in the email field, so after one the form comes first (3.7).
+  const ordered = last !== undefined;
+  const first = firstWay(last ?? null, { providers: signInProviders, email: emailSignIn });
+  const formFirst = first === "email" || first === "password" || first === "passkey";
   const providerFirst = first === "google" || first === "apple" ? first : null;
   const providers =
     providerFirst === null
       ? signInProviders
       : [providerFirst, ...signInProviders.filter((provider) => provider !== providerFirst)];
   const lastUsed = <Tag kind="info" label={t("auth.lastUsed")} />;
-  const passkeyButton = passkeyOffered ? (
-    <Button
-      variant="secondary"
-      fill
-      label={t("auth.passkey")}
-      busy={passkeyBusy}
-      disabled={busy || providerBusy !== null}
-      onPress={() => void signInWithPasskey()}
-    />
-  ) : null;
   const buttons =
-    signInProviders.length > 0 || passkeyOffered ? (
+    signInProviders.length > 0 ? (
       <View style={styles.providers}>
         {formFirst ? <OrDivider label={t("auth.or")} /> : null}
-        {first === "passkey" ? (
-          <>
-            {lastUsed}
-            {passkeyButton}
-          </>
-        ) : null}
         {providerFirst === null ? null : lastUsed}
         <ProviderButtons
           providers={providers}
@@ -344,7 +251,6 @@ function ChooseHowScreen() {
           disabled={!providerWindow.ready || busy || passkeyBusy}
           onPress={(provider) => void continueWith(provider)}
         />
-        {first === "passkey" ? null : passkeyButton}
         {emailSignIn && !formFirst ? <OrDivider label={t("auth.orEmail")} /> : null}
       </View>
     ) : null;

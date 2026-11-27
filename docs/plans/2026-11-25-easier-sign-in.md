@@ -239,4 +239,8 @@ step 1), affected app tests and journeys.
   phone step; the cookie question waits on sign-in screens and shows after.
 - [x] Implement; `pnpm check`; the sign-in, welcome and analytics journeys;
   spec 16 and spec 27 pointers; open PR 4.
+- [x] No "Face ID or fingerprint" button on step 1 (spec 29, 3.7, Martin
+  2026-11-27): tests first (no button; after a passkey the form comes
+  first; the journeys sign in from the email field's suggestion), then the
+  button, its sheet and `devicePasskeys.get` go.
 - [ ] Release; Martin's manual check.

@@ -12,6 +12,8 @@ section 5 (step 1's texts). It changes no rule of
 [ADR 0050](../decisions/0050-passkey-saved-by-the-browser-after-a-password.md)
 amends [ADR 0048](../decisions/0048-member-passkeys-on-the-device-only.md)
 for 3.3 only: the browser's own save checks neither presence nor Face ID.
+Since 2026-11-27 step 1 has no "Face ID or fingerprint" button: a passkey
+is picked from the email field's suggestions only (3.7, Martin).
 Related: [security](../engineering/security.md#sign-in-and-sessions),
 [privacy and GDPR](../compliance/privacy-gdpr.md).
 
@@ -81,20 +83,19 @@ Google One Tap, magic links.
    (`autocomplete="username webauthn"`).
 2. Tapping or clicking the email field then lists the member's PuffinRide
    passkey beside saved emails. Picking it opens the device's own check
-   (Face ID, fingerprint, Windows Hello), then signs in exactly as the
-   "Face ID or fingerprint" button does (spec 27, 3.3, item 3).
+   (Face ID, fingerprint, Windows Hello), then signs in as spec 27, 3.3,
+   item 3 says.
 3. Nothing else changes: a browser with no passkey for PuffinRide shows its
    usual suggestions, and typing an email works as before. A refused
-   passkey shows the button's messages in the same place.
+   passkey shows spec 27's messages above the button.
 4. The options' challenge lasts 5 minutes; while step 1 stays open, new
    options replace them a little before then (my call: no message, so a
-   suggestion picked later still works). Leaving step 1, pressing the
-   button, Google or Apple, ends the quiet request first.
+   suggestion picked later still works). Leaving step 1, Google or Apple
+   ends the quiet request first.
 5. On a laptop the email field takes the focus when step 1 opens, so the
    suggestions show at once (my call: not on a phone, where the keyboard
-   would cover Google and the button).
-6. The "Face ID or fingerprint" button stays, for browsers without
-   suggestions and for people who look for a button.
+   would cover Google).
+6. Step 1 has no button of its own for a passkey (3.7, since 2026-11-27).
 
 ### 3.2 Face ID offered after another way in
 
@@ -161,18 +162,16 @@ Google One Tap, magic links.
    Face ID or fingerprint, a password, or the email code. Never the email
    address or anything else.
 2. Step 1 then shows that way first, marked **"Last used"**: the button for
-   Google, Apple or Face ID at the top; for the email code or a password,
-   the email form at the top, then "or", then the buttons.
+   Google or Apple at the top; for the email code, a password or Face ID
+   (picked in the email field, 3.7), the email form at the top, then "or",
+   then the buttons.
 3. A browser that has kept nothing, and a kept way the screen no longer
-   offers (Google switched off, a device without Face ID), show today's
-   order with no mark.
+   offers (Google switched off), show today's order with no mark.
 4. A new account keeps the way it started with (Google, Apple or the email
    code), once sign-up is done.
 5. The order is decided once, so no button moves under a finger: step 1
-   shows its ways once it has read the kept way, and after Face ID once the
-   device says whether it has its own lock, waiting a quarter of a second
-   at most. Face ID found later is added in its usual place, unmarked.
-   "Last used" shows only when there is more than one way.
+   shows its ways once it has read the kept way. "Last used" shows only
+   when there is more than one way.
 6. When this browser's passkey goes (removed in Settings, or unknown to the
    site, 3.4), Face ID is no longer kept as the way used last time.
 
@@ -188,11 +187,28 @@ Google One Tap, magic links.
    screen. Nothing counts visits before an answer (spec 23), so nothing
    changes about consent.
 
+### 3.7 No Face ID button on step 1
+
+Martin, 2026-11-27, looking at step 1 on his iPhone: "I think we should
+hide the Face ID/passkey, aren't the password managers handling this
+nowadays". They are: Safari, Chrome, Edge and Firefox list a site's
+passkeys among the email field's suggestions (3.1), and save one by
+themselves after a password (3.3).
+
+1. Step 1 has no "Face ID or fingerprint" button. Google and Apple, if
+   offered, then "or with your email", then the email form.
+2. A passkey is picked from the email field's suggestions (3.1). On a
+   browser that cannot list passkeys there, a member signs in with the
+   email code, a password, Google or Apple, as before.
+3. Setting a passkey up stays as it is: "Sign in faster next time" after
+   sign-up, the offer after another way in (3.2), the browser's own save
+   (3.3) and Sign-in methods in Profile.
+
 ## 4. Rules
 
 | ID    | Rule                                                                                                                                                                                                                                                  |
 | ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| R29.1 | Where the browser can, step 1's email field offers the member's passkey; picking it signs in as the "Face ID or fingerprint" button does.                                                                                                             |
+| R29.1 | Where the browser can, step 1's email field offers the member's passkey, and picking it signs in. Step 1 has no button of its own for a passkey (3.7).                                                                                               |
 | R29.2 | After the email code, a password, Google or Apple, an existing member is offered Face ID or fingerprint, only on a browser with a built-in authenticator, not known to have a passkey, not declined there in 30 days, and with nothing kept to open. |
 | R29.3 | After a password sign-in, the app may ask the browser to save a passkey by itself; it is told by email like any other (R27.7).                                                                                                                        |
 | R29.4 | A removed passkey, and one no member or operator has, is reported to the browser so it stops offering it; an operator's never is.                                                                                                                    |
@@ -272,9 +288,9 @@ speaker):
   a kept booking; the order and "Last used"; no progress on step 1; the
   cookie question waits on sign-in screens.
 - **Browser journeys (Playwright, Chromium's virtual authenticator):** an
-  existing member signs in with the email code, is offered Face ID, sets it
-  up, signs out and back in from the "Last used" button; the suggestion in
-  the email field where Chromium's automation can pick it.
+  existing member sees the email form marked "Last used" and no Face ID
+  button, signs in with the email code, is offered Face ID, sets it up,
+  signs out and back in from the email field's suggestion.
 - **Manual (Martin):** on puffinride.is, on an iPhone in Safari: tap the
   email field and pick the passkey; on a laptop, sign in with the email
   code on a new browser and see the offer. The browser's own save (3.3),
@@ -304,3 +320,4 @@ apps' builds); Google One Tap; magic links; staying signed in longer
 | 8   | Keep the last way after signing out?         | Yes (my call: it helps the next sign-in on that browser, and says nothing about who)                                                   |
 | 9   | Does "Not now" at sign-up count for 3.2?     | No: a new member's next sign-in asks once (my call: it is a different question, among a password and Face ID); leaving the offer without an answer asks again at the next sign-in, at most every 60 days |
 | 10  | Let the browser save a passkey by itself after a password? | Yes, with ADR 0050 for its missing checks. Martin, 2026-11-26 ("Yes, record it in a new ADR")                             |
+| 11  | Keep the "Face ID or fingerprint" button on step 1? | No: password managers offer the passkey in the email field. Martin, 2026-11-27                                            |

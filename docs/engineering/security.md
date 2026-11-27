@@ -113,8 +113,8 @@ How [ADR 0016](../decisions/0016-own-sign-in-module.md) is built, in
   the API's memory, which leaves room for step 1's quiet request (spec 29,
   3.1): where the browser can list passkeys among the email field's
   suggestions (conditional mediation), step 1 asks for options as it opens
-  and every 4.5 minutes while it stays open, and the passkey picked there
-  is checked exactly as the button's is. Removing a device in Sign-in methods
+  and every 4.5 minutes while it stays open; that is the only way to sign
+  in with a passkey, as step 1 has no button for it (spec 29, 3.7). Removing a device in Sign-in methods
   tells this browser too (the Signal API's `signalUnknownCredential`).
   The trade-off accepted: `passkey_unknown` tells a caller with no account
   that a credential ID is in neither table, which `passkey_invalid` alone

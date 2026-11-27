@@ -90,8 +90,6 @@ test("a new member sets up Face ID or fingerprint, signs in with it, then remove
   page,
 }) => {
   const lock = await addDeviceLock(page);
-  // The button, as in a browser without the email field's suggestions.
-  await withoutSuggestions(page);
   // Straight after sign-up, the fresh sign-in is the proof (spec 27, 3.7).
   const email = await newMemberWithPasskey(page);
   const told = await emailTo(
@@ -102,10 +100,12 @@ test("a new member sets up Face ID or fingerprint, signs in with it, then remove
   await page.getByRole("button", { name: "Done" }).click();
   await expect(page.getByRole("heading", { name: english.hi("Hekla") })).toBeVisible();
 
-  // Signed out, the device's lock signs in with no email typed (3.3).
+  // Signed out, step 1 hands its options to the browser as it opens, and
+  // the device lock answers as a person picking the passkey from the email
+  // field's suggestions would: no email typed, no button (spec 29, 3.1 and 3.7).
   await signOut(page);
-  await openSignIn(page);
-  await page.getByRole("button", { name: "Face ID or fingerprint", exact: true }).click();
+  await menuLink(page, english.profileTab).click();
+  await page.getByRole("button", { name: english.signIn, exact: true }).click();
   await expect(page.getByRole("heading", { name: english.hi("Hekla") })).toBeVisible();
   await menuLink(page, english.profileTab).click();
   await expect(page.getByText("Hekla", { exact: true }).filter(visible)).toBeVisible();
@@ -122,32 +122,25 @@ test("a new member sets up Face ID or fingerprint, signs in with it, then remove
   await expect.poll(() => keptPasskeys(lock)).toBe(0);
 });
 
-test("a member signs in from the email field's suggestions, with no tap (spec 29, 3.1)", async ({
-  page,
-}) => {
-  await addDeviceLock(page);
-  await newMemberWithPasskey(page);
-  await page.getByRole("button", { name: "Done" }).click();
-  await expect(page.getByRole("heading", { name: english.hi("Hekla") })).toBeVisible();
-  await signOut(page);
-
-  // Step 1 hands its options to the browser as it opens; the device lock
-  // answers as a person picking the passkey from the field would.
-  await menuLink(page, english.profileTab).click();
-  await page.getByRole("button", { name: english.signIn, exact: true }).click();
-  await expect(page.getByRole("heading", { name: english.hi("Hekla") })).toBeVisible();
-  await menuLink(page, english.profileTab).click();
-  await expect(page.getByText("Hekla", { exact: true }).filter(visible)).toBeVisible();
-});
-
 test("a member who signs in with the email code is offered Face ID, and uses it next time (spec 29, 3.2)", async ({
   page,
 }) => {
   await addDeviceLock(page);
-  await withoutSuggestions(page);
   // An account from before, which said "Not now" to Face ID at sign-up.
   const { email } = await signUp(page, english, "Hekla");
   await signOut(page);
+
+  // Step 1 puts the email first, as the way used last time (spec 29, 3.5),
+  // with no Face ID button (3.7).
+  await openSignIn(page);
+  const lastUsed = page.getByText("Last used", { exact: true }).filter(visible);
+  const emailField = page.getByLabel("Email", { exact: true }).filter(visible);
+  await expect(lastUsed).toBeVisible();
+  expect(await top(lastUsed)).toBeLessThan(await top(emailField));
+  expect(await top(emailField)).toBeLessThan(
+    await top(page.getByRole("button", { name: "Continue with Google" })),
+  );
+  await expect(page.getByRole("button", { name: "Face ID or fingerprint" })).toHaveCount(0);
 
   // Back with the email code: asked once, and set up with the fresh sign-in.
   await signIn(page, english, email);
@@ -159,23 +152,13 @@ test("a member who signs in with the email code is offered Face ID, and uses it 
   await page.getByRole("button", { name: "Done" }).click();
   await expect(page.getByRole("heading", { name: english.hi("Hekla") })).toBeVisible();
 
-  // Next time the device's lock signs in, and nothing is offered.
+  // Next time the device's lock signs in from the email field's
+  // suggestions, and nothing is offered.
   await signOut(page);
-  await openSignIn(page);
-  await page.getByRole("button", { name: "Face ID or fingerprint", exact: true }).click();
+  await menuLink(page, english.profileTab).click();
+  await page.getByRole("button", { name: english.signIn, exact: true }).click();
   await expect(page.getByRole("heading", { name: english.hi("Hekla") })).toBeVisible();
   await expect(page.getByRole("heading", { name: offerTitle })).toHaveCount(0);
-
-  // The time after, step 1 shows it first, marked (spec 29, 3.5).
-  await signOut(page);
-  await openSignIn(page);
-  const lastUsed = page.getByText("Last used", { exact: true }).filter(visible);
-  const faceId = page.getByRole("button", { name: "Face ID or fingerprint", exact: true });
-  await expect(lastUsed).toBeVisible();
-  expect(await top(lastUsed)).toBeLessThan(await top(faceId));
-  expect(await top(faceId)).toBeLessThan(await top(page.getByLabel("Email").filter(visible)));
-  await faceId.click();
-  await expect(page.getByRole("heading", { name: english.findTitle })).toBeVisible();
 });
 
 test("after a password, a browser that saves no passkey by itself offers Face ID (spec 29, 3.3)", async ({

@@ -75,7 +75,7 @@ autofill (a later polish), checking passwords against a breach service.
 
 ### 3.1 The sign-in screen (step 1)
 
-> [Spec 29](2026-11-25-easier-sign-in.md) adds to this section: the passkey in the email field's suggestions (its 3.1), the way used last time first and a calmer screen (3.5 and 3.6).
+> [Spec 29](2026-11-25-easier-sign-in.md) changes this section: the passkey in the email field's suggestions (its 3.1), the way used last time first and a calmer screen (3.5 and 3.6), and since 2026-11-27 no "Face ID or fingerprint" button on step 1 (3.7).
 
 Spec 26's screen gains a password field and, where the device can, a
 button for Face ID or fingerprint:
