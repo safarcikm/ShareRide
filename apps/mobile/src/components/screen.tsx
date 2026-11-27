@@ -29,6 +29,7 @@ import {
   controlOutline,
   maxContentWidth,
   pageMaxWidth,
+  shortWindowUnder,
   sidePanelFrom,
   spacing,
 } from "@/theme/tokens";
@@ -109,6 +110,9 @@ export function Screen({
   const { onLayout: followsEnd, ...sticking } = useStickToEnd(scrollRef, stickToEnd, endKey);
   const refreshing = useRefresh({ refresh, asked: refreshAsked, scrollRef });
   const [inBar] = useState(barSlot);
+  // On a short window the bar joins the end of the page and scrolls with
+  // it (spec 31, 3.20). A conversation's field stays under its messages.
+  const barJoins = useShortWindow() && !stickToEnd;
   return (
     <SafeAreaView
       testID="screen-safe-area"
@@ -175,6 +179,7 @@ export function Screen({
                 ) : (
                   <View style={styles.column}>{children}</View>
                 )}
+                {barJoins ? <BottomBar footer={footer} inBar={inBar} joined /> : null}
                 {siteFooter && onWebsite() ? <SiteFooter /> : null}
               </ScreenViewHeightContext.Provider>
             </BarSlotContext.Provider>
@@ -187,7 +192,7 @@ export function Screen({
           <View style={styles.barColumn}>{overFooter}</View>
         </View>
       )}
-      <BottomBar footer={footer} inBar={inBar} />
+      {barJoins ? null : <BottomBar footer={footer} inBar={inBar} />}
     </SafeAreaView>
   );
 }
@@ -269,7 +274,16 @@ export function InBar({ children }: { readonly children: ReactNode }) {
  * painted. So a screen never shows a first frame without its bar.
  * (`useSyncExternalStore` listens only once the frame is painted.)
  */
-function BottomBar({ footer, inBar }: { readonly footer: ReactNode; readonly inBar: BarSlot }) {
+function BottomBar({
+  footer,
+  inBar,
+  joined = false,
+}: {
+  readonly footer: ReactNode;
+  readonly inBar: BarSlot;
+  /** At the end of the page, in its column, with no band of its own. */
+  readonly joined?: boolean;
+}) {
   const palette = usePalette();
   const [held, setHeld] = useState(inBar.held);
   useLayoutEffect(() => {
@@ -283,7 +297,11 @@ function BottomBar({ footer, inBar }: { readonly footer: ReactNode; readonly inB
   return (
     <View
       testID="bottom-bar"
-      style={[styles.bar, { backgroundColor: palette.surface, borderTopColor: palette.border }]}
+      style={
+        joined
+          ? styles.joinedBar
+          : [styles.bar, { backgroundColor: palette.surface, borderTopColor: palette.border }]
+      }
     >
       <View style={styles.barColumn}>
         {/* A second press meant for the bar's button lands on none of them (spec 31, 3.20). */}
@@ -455,6 +473,11 @@ function useRevealing() {
   return { scrollRef, scroll, keyboardRoom: revealing ? keyboard : 0 };
 }
 
+/** Whether the window is short: a phone on its side, or a laptop zoomed far in. */
+export function useShortWindow() {
+  return useWindowDimensions().height < shortWindowUnder;
+}
+
 /** Whether the window is wide enough for a panel beside the column. */
 export function useWideScreen() {
   return useWindowDimensions().width >= sidePanelFrom;
@@ -511,6 +534,8 @@ const styles = StyleSheet.create({
   },
   overBar: { paddingHorizontal: spacing.md, paddingBottom: spacing.sm, alignItems: "center" },
   bar: { borderTopWidth: controlOutline, padding: spacing.md, alignItems: "center" },
+  // In the page's padding already, a step under what the page ends with.
+  joinedBar: { width: "100%", paddingTop: spacing.md, alignItems: "center" },
   barColumn: { width: "100%", maxWidth: maxContentWidth, gap: spacing.sm },
   wide: {
     flex: 1,

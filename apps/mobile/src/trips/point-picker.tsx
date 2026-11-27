@@ -88,12 +88,16 @@ export function PointDropdown({
  * town shows its nearest points to choose from. Paused points cannot be
  * chosen. Its head is a step's (spec 31, 3.17): Back, which closes it, and
  * the title at the left, with the ride `over` it where one is changed.
- * Android's back closes it too.
+ * Android's back closes it too. Where it took the place of what was just
+ * pressed, as a step's "Add a meeting point", it `takesFocus`: keyboard
+ * and screen-reader focus go to its title (spec 31, 3.20). On a page that
+ * opens with it, focus stays where a new page has it.
  */
 export function PointPicker({
   title,
   over,
   intro,
+  takesFocus = false,
   onChoose,
   onCancel,
 }: {
@@ -102,6 +106,7 @@ export function PointPicker({
   readonly over?: string | undefined;
   /** What choosing a point does, under the title. */
   readonly intro?: string | undefined;
+  readonly takesFocus?: boolean;
   readonly onChoose: (point: MeetingPointSummary) => void;
   /** Back: the picker closes with nothing chosen. */
   readonly onCancel: () => void;
@@ -131,7 +136,13 @@ export function PointPicker({
 
   return (
     <Screen>
-      <ScreenHead title={title} over={over} line={intro} onBack={onCancel} />
+      <ScreenHead
+        title={title}
+        over={over}
+        line={intro}
+        onBack={onCancel}
+        outcome={{ of: "picker", focus: takesFocus }}
+      />
       <Notice message={paused ? t("trip.route.pointPaused") : null} />
       {place === null ? (
         <>

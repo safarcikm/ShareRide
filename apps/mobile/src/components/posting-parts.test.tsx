@@ -1,6 +1,6 @@
-import { fireEvent, render, screen, within } from "@testing-library/react-native";
+import { act, fireEvent, render, screen, within } from "@testing-library/react-native";
 import { StrictMode, useState, type ReactElement } from "react";
-import { Text } from "react-native";
+import { Dimensions, Text } from "react-native";
 import { LanguageProvider } from "@/i18n/language";
 import { colors } from "@/theme/tokens";
 import { Button } from "./button";
@@ -230,6 +230,69 @@ describe("Screen with a bottom bar", () => {
       </>
     );
   }
+
+  describe("on a short window, as a phone on its side or a laptop zoomed far in (spec 31, 3.20)", () => {
+    const upright = Dimensions.get("window");
+    const window = (width: number, height: number) => {
+      Dimensions.set({ window: { width, height, scale: 2, fontScale: 1 } });
+    };
+    afterEach(async () => {
+      await act(() => {
+        Dimensions.set({ window: upright });
+      });
+    });
+    const page = (stickToEnd = false) => (
+      <Screen
+        stickToEnd={stickToEnd}
+        footer={<Button variant="text" label="Not now" onPress={jest.fn()} />}
+      >
+        <Counter />
+      </Screen>
+    );
+    const inScroll = () => within(screen.getByTestId("screen-scroll")).queryByTestId("bottom-bar");
+
+    it("joins the bar to the end of the page: it scrolls with the page and has no band of its own", async () => {
+      window(740, 360);
+      await inEnglish(page());
+      const bar = inScroll();
+      expect(bar).not.toBeNull();
+      expect(screen.getAllByTestId("bottom-bar")).toHaveLength(1);
+      // The screen's own and what a part put there, in their order, after the page.
+      const texts = within(screen.getByTestId("screen-scroll"))
+        .getAllByText(/Counted here|Not now|Count 0/)
+        .map((text) => text.props.children as string);
+      expect(texts).toEqual(["Counted here", "Not now", "Count 0"]);
+      expect(bar).not.toHaveStyle({ borderTopWidth: 2 });
+      expect(bar).not.toHaveStyle({ backgroundColor: colors.light.surface });
+      // The button stays the part's own.
+      await fireEvent.press(screen.getByRole("button", { name: "Count 0" }));
+      expect(screen.getByRole("button", { name: "Count 1" })).toBeVisible();
+    });
+
+    it("keeps the bar under the page from 480 high", async () => {
+      window(853, 480);
+      await inEnglish(page());
+      expect(inScroll()).toBeNull();
+      expect(screen.getByTestId("bottom-bar")).toHaveStyle({ borderTopWidth: 2 });
+    });
+
+    it("moves the bar when the window turns", async () => {
+      await inEnglish(page());
+      expect(inScroll()).toBeNull();
+      await act(() => {
+        window(740, 360);
+      });
+      expect(inScroll()).not.toBeNull();
+      expect(screen.getByRole("button", { name: "Count 0" })).toBeVisible();
+    });
+
+    it("keeps a conversation's field under its messages", async () => {
+      window(740, 360);
+      await inEnglish(page(true));
+      expect(inScroll()).toBeNull();
+      expect(screen.getByTestId("bottom-bar")).toHaveStyle({ borderTopWidth: 2 });
+    });
+  });
 
   it("has no bar while nothing is put in it", async () => {
     await inEnglish(

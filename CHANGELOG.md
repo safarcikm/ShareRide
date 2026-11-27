@@ -1896,6 +1896,26 @@ releases follow [Semantic Versioning](https://semver.org/).
   name on a ride's page; and the question about cookies stands over the
   menu as it is laid out. The journeys measure these with the text as
   set and twice as large.
+- On a short window, under 480 high (a phone on its side, a laptop
+  zoomed far in), a screen's bar joins the end of its page and scrolls
+  with it (spec 31, 3.20): it took a third of such a window and more. A
+  conversation keeps its field under its messages.
+- The keyboard is where a press put something new (spec 31, 3.20): on
+  the draft's link after "Show all drafts", so Enter opens it; on the
+  title of the screen "Add a meeting point" opens, and on that button
+  again when it closes. Messages' menu closes by Escape, by Android's
+  back and by a press beside it. On a laptop Profile's card, at the left,
+  comes before its rows for the keyboard and a screen reader.
+- A screen reader hears more of what the eye sees (spec 31, 3.20): the
+  driver's card on a ride has a heading ("Driver: Anna"), and the name on
+  a profile's card, mine or another's, is one; "Where you sit" is read before its
+  picture; a ticket that is not pressed says which end is "Get in" and
+  which "Get out" ("From" and "To" on a ride I offer); the name in the
+  foot of Booking a seat's ticket is "Driver: Anna"; and a row that only
+  shows something, as the phone number, is read in one piece on a phone.
+  One new text: "Driver", "Bílstjóri".
+- A chip is 44 high on the web, where nothing can be pressed beyond what
+  is drawn (it was 40).
 - The web journeys never give two test accounts the same phone number: a
   run in ten did, and a sign-in journey then failed.
 - CI skips its code jobs (bundles, unit, integration and web tests, the API

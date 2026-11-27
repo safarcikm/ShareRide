@@ -28,6 +28,7 @@ import { Notice } from "@/components/notice";
 import { RideTicket, TicketFoot } from "@/components/ride-ticket";
 import { Screen, useWideScreen } from "@/components/screen";
 import { ScreenHead } from "@/components/screen-head";
+import { spokenAs } from "@/components/spoken";
 import { TakesFocus } from "@/components/takes-focus";
 import { TextField } from "@/components/text-field";
 import { Body } from "@/components/text";
@@ -471,6 +472,7 @@ function BookForm({
         (new Date(alightStop.plannedAt).getTime() - new Date(boardStop.plannedAt).getTime()) / 1000,
         locale,
       )}
+      ends={{ from: t("trip.getIn"), to: t("trip.getOut") }}
       price={{
         amount: free ? t("results.free") : shownTotal,
         // The sum behind the amount, where there is one: more seats than one.
@@ -484,6 +486,8 @@ function BookForm({
       }}
       foot={
         <TicketFoot
+          // The eye has the picture and the car beside it to know the driver by.
+          startIs={t("trip.driver")}
           start={
             <>
               <Avatar
@@ -492,7 +496,12 @@ function BookForm({
                 colour={trip.driver.colour}
                 photo={trip.driver.photo}
               />
-              <Text style={[typography.label, { color: palette.text }]}>{driver}</Text>
+              <Text
+                {...spokenAs(t("trip.driver"), driver)}
+                style={[typography.label, { color: palette.text }]}
+              >
+                {driver}
+              </Text>
             </>
           }
           end={

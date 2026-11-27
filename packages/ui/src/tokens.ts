@@ -377,6 +377,12 @@ export const maxContentWidth = 480;
  * beside a list (spec 15, section 4.8; spec 18, 3.2).
  */
 export const sidePanelFrom = 900;
+/**
+ * Under this height a window is short, as a phone on its side or a laptop
+ * zoomed far in: a screen's bottom bar joins the end of its page, which
+ * keeps the height (spec 31, 3.20).
+ */
+export const shortWindowUnder = 480;
 /** The menu at the side of the operator console. */
 export const sidePanelWidth = 320;
 /** From the same width, a map sits beside a list, at most this wide (spec 15, section 4.8). */

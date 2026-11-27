@@ -192,6 +192,11 @@ describe("Booking from trip details (spec 5, 3.1)", () => {
     expect(foot.getByText("White Toyota Yaris")).toBeVisible();
     // Nothing on it is pressed: the part is changed on the ride's page.
     expect(ticket.queryByRole("button")).toBeNull();
+    // So a screen reader is told what each text is: where I get in and
+    // out, and that Anna is the driver (spec 31, 3.20).
+    expect(ticket.getByLabelText("Get in: 10:00")).toBe(ticket.getByText("10:00"));
+    expect(ticket.getByLabelText("Get out: 12:05")).toBe(ticket.getByText("12:05"));
+    expect(foot.getByLabelText("Driver: Anna")).toBe(foot.getByText("Anna"));
     for (const tick of [
       "Your seat is confirmed as soon as you pay.",
       "Free cancellation, with a full refund, up to 15 min before you get in.",

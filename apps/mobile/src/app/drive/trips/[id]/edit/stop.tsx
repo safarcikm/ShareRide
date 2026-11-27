@@ -26,11 +26,14 @@ import { PointPicker } from "@/trips/point-picker";
  * the stops either side, which keep theirs.
  * The check shows where and when, the new stretches' prices for new
  * bookings, and who is told; "Save the change" adds it, under the same
- * checks, and goes back to the trip, which says so with focus.
+ * checks, and goes back to the trip, which says so with focus. Back
+ * from the check to choosing another point puts focus on the title of
+ * choosing, which took the check's place (spec 31, 3.20).
  */
 export default function AddStopScreen() {
   const { locale, t } = useLanguage();
   const [point, setPoint] = useState<MeetingPointSummary | null>(null);
+  const [again, setAgain] = useState(false);
   return (
     <WithTripToChange title={t("trip.editAddStopAction")}>
       {(trip) =>
@@ -39,6 +42,7 @@ export default function AddStopScreen() {
             title={t("trip.editAddStopAction")}
             over={tripOver(t, locale, trip)}
             intro={t("trip.editAddStopHelp")}
+            takesFocus={again}
             onChoose={setPoint}
             onCancel={() => {
               if (router.canGoBack()) router.back();
@@ -50,6 +54,7 @@ export default function AddStopScreen() {
             trip={trip}
             point={point}
             onOther={() => {
+              setAgain(true);
               setPoint(null);
             }}
           />

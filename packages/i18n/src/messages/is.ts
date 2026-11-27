@@ -938,6 +938,7 @@ export const is = {
   "trip.freeCancellationUntil": "Allt að {time} áður",
   "trip.paying": "Greiðsla",
   "trip.payingInPerson": "Reiðufé eða millifærsla",
+  "trip.driver": "Bílstjóri",
   "trip.whereYouSit": "Hvar þú situr",
   "trip.whereYouSitLine":
     "{free, plural, =0 {Ekkert sæti er laust} one {# af {offered} sætum er laust} other {# af {offered} sætum eru laus}}. Sætin eru ekki númeruð: þið semjið um þau í bílnum.",

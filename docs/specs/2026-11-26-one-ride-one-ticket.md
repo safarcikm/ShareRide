@@ -1619,10 +1619,11 @@ invitation link), which are spec 29's; About, the legal
 documents, cookies and the public pages for search engines (specs 23 and
 30); the console.
 
-### 3.20 A second press, and text twice as large
+### 3.20 A second press, large text, short windows, focus and screen readers
 
-As built, the last pass, part two (plan, PR 12b). Both were named by the
-reviews of earlier pull requests and left for the last pass.
+As built, the last pass, part two (plan, PR 12b, in two pull requests).
+All of it was named by the reviews of earlier pull requests and left for
+the last pass.
 
 **A second press.** A screen's main button stands in the same place on
 every screen (R31.1), so a second press meant for one can land on the
@@ -1688,8 +1689,91 @@ and [a ride's stops](images/one-ride-one-ticket/built/large-text-stops-phone-lig
 With the text as set, the Icelandic menu:
 [Find](images/one-ride-one-ticket/built/find-phone-dark.webp).
 
-Left for the next part: the order of focus, what screen readers hear,
-and short windows (plan, PR 12, items 6 to 15).
+**A short window.** Under 480 high, as a phone on its side or a laptop
+zoomed until its window is 320 by 256, a screen's bar took much of the
+height: about 88 with one button and 148 with two, more with a notice.
+There the bar joins the end of the page and scrolls with it. Its buttons
+stand under the page's last part, in the page's column, with no band of
+their own; on a public page they stand over the website's footer. They
+are the same buttons in the same order, so R31.1 holds and a second press
+is held as in a bar. A conversation keeps its field under its messages at
+any height, and the menu's bar stays where it is.
+
+**Where the keyboard is.** A press that brings something new puts the
+keyboard, and a screen reader, on the new thing; when that closes again
+they are on the button that opened it.
+
+- **"Show all drafts"** on Offer: the keyboard is on the link of the
+  first draft that came, so Enter opens it. It was on a view around the
+  link, and Enter did nothing until Tab. So it is wherever what comes is
+  one control and nothing else; where it is more, as a card with words
+  and buttons, the whole takes focus as before.
+- **Messages' menu,** behind "More" in a conversation's top: Escape
+  closes it, and so does Android's back, which then stays in the
+  conversation; both put focus on "More" again. A press beside the menu
+  closes it too and does what it pressed: on the web a press anywhere
+  outside the top, in the phone apps a touch in the conversation. A row
+  of the menu that opens a page leaves the menu closed for the way back.
+- **"Add a meeting point"** on the first step of offering a ride: as its
+  screen takes the step's place, focus goes to its title; when it closes,
+  with a point chosen or by Back, focus is on "Add a meeting point"
+  again. On Edit's "Add a stop", choosing's title takes focus when
+  "Choose another meeting point" brings choosing back, and not as the
+  page opens, when the page's own title has it.
+- **Profile on a laptop:** who I am stands at the left, and now comes
+  first for the keyboard and a reader too, before the rows at its right
+  (spec 18, 3.12). The other pages with two columns keep the main one
+  first, as it stands at the left there.
+
+**What a screen reader hears.**
+
+- **The driver's card** on a ride has a heading: the driver's name, read
+  as "Driver: Anna". A card has no title to see, and the name alone did
+  not say who Anna is.
+- **A person's name** on the card of a profile, mine or another's, is a
+  heading, so the list of headings has the person and not "Profile" and
+  "Reviews" only.
+- **"Where you sit"** is read before its picture: the heading and its
+  line, then the car. They look as they did, the car at the left.
+- **A ticket that is not pressed** says which end is which: "Get in" and
+  "Get out" on a ride I look at, book or have booked, "From" and "To" on
+  a ride I offer. On the web each end is a group with that name; a
+  phone's screen reader hears it before the time, "Get in: 10:00". On
+  Booking a seat the name in the ticket's foot is read as "Driver: Anna".
+  A ticket that is pressed is one button with one line, as before.
+- **A row that only shows** something, as the phone number on Profile,
+  is one stop for a phone's screen reader, which reads its title and then
+  its value. They were two.
+
+**Smaller.** A chip is 44 high on the web, where nothing can be pressed
+beyond what is drawn; in the phone apps it stays 40 high with 44 to tap.
+The page where a driver cancels a ride has a journey that reads the
+bar's notice and where focus goes, as cancelling a booking has. And the
+words of a notice over a main button have a rule (spec 15, `ActionNotice`):
+plain words only where the screen takes them away as the button is
+pressed again; what is said without leaving the press, as "Choose a
+reason.", is said again on each press.
+
+Left, for the last part or later: arrow keys between the choices of a
+group where one is chosen, as the two languages (each is a stop for Tab
+today); in Messages, with text twice as large on a phone 360 wide, the
+field's "Write a message" cut to "Write a" until something is written,
+and its five lines counted in the text as set; the browser's Back with
+the screen of a meeting point open, which leaves the step; on Find, the
+yellow card beside the rides on a laptop, which a reader meets after
+them. "After Show all rides focus goes to the first ride" no longer
+applies: it opens the All rides page, which has its own title. To hear
+on a phone, and in NVDA on Windows, which cannot be done from here: what
+is said of a main button just pressed while it waits, and the lines
+above as VoiceOver and TalkBack say them. Seen and left: with text twice
+as large on a phone 360 wide the words of "Where you sit" stay beside the
+car, in a column of some ten letters; narrower than that they go under it.
+
+As built, a phone on its side, 740 by 360:
+[a ride](images/one-ride-one-ticket/built/short-window-ride-phone-light.webp)
+and [its end, with the page's button](images/one-ride-one-ticket/built/short-window-ride-end-phone-light.webp).
+With the text twice as large on a phone 360 wide:
+["Where you sit"](images/one-ride-one-ticket/built/large-text-where-you-sit-phone-light.webp).
 
 ## 4. Rules
 
@@ -1927,6 +2011,7 @@ changed is shown; the Icelandic says "í Prófílnum, undir …".
 | The email that confirms an address | … ask for a new one in Profile, under Email. | … geturðu beðið um nýjan í Prófílnum, undir Netfang. |
 | The email about a changed way to sign in | … sign out on all devices in Profile, under Sign-in methods, … | … skrá þig út á öllum tækjum í Prófílnum, undir Innskráningarleiðir, … |
 | The console, with no address to send to | Add one in PuffinRide, in Profile under Email. | Bættu því við í PuffinRide, í Prófílnum undir Netfang. |
+| Who a name is, for a screen reader (3.20) | Driver | Bílstjóri |
 
 Gone with Settings: its title and the row that opened it, "Your account",
 "Add an email" and "Change your email" as rows, "Go to Settings", the

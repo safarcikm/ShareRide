@@ -12,7 +12,9 @@ import { SeatView } from "./seat-view";
  * saying how many are free and that seats are not numbered, in the place
  * of a legend. The two stand beside each other on the narrowest phone, the
  * car smaller there; with no room for that, as with large text, the line
- * goes under the car.
+ * goes under the car. The words come first for a screen reader and the
+ * keyboard, as a heading comes before what it heads: the row is laid out
+ * from its end, and wraps upwards.
  */
 export function WhereYouSit({
   offered,
@@ -31,14 +33,14 @@ export function WhereYouSit({
   return (
     <Card>
       <View testID="where-you-sit" style={styles.card}>
-        <View style={[styles.part, styles.car]}>
-          <SeatView offered={offered} free={free} yours={yours} driverColour={driverColour} />
-        </View>
         <View style={[styles.part, styles.words]}>
           <Heading>{t("trip.whereYouSit")}</Heading>
           <Text style={[typography.small, { color: palette.textMuted }]}>
             {t("trip.whereYouSitLine", { free, offered })}
           </Text>
+        </View>
+        <View style={[styles.part, styles.car]}>
+          <SeatView offered={offered} free={free} yours={yours} driverColour={driverColour} />
         </View>
       </View>
     </Card>
@@ -46,9 +48,12 @@ export function WhereYouSit({
 }
 
 const styles = StyleSheet.create({
+  // The car at the left and the words at its right, with the words first
+  // in the tree; where they wrap, the car is over the words, at the left.
   card: {
-    flexDirection: "row",
-    flexWrap: "wrap",
+    flexDirection: "row-reverse",
+    flexWrap: "wrap-reverse",
+    justifyContent: "flex-end",
     alignItems: "center",
     columnGap: spacing.md,
     rowGap: spacing.ms,

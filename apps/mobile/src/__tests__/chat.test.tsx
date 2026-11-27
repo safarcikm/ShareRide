@@ -1,6 +1,6 @@
 import type { ChatMessage, SendMessageBody } from "@shareride/contracts";
 import { act, fireEvent, screen, waitFor, within } from "expo-router/testing-library";
-import { AccessibilityInfo, Dimensions, ScrollView } from "react-native";
+import { AccessibilityInfo, BackHandler, Dimensions, ScrollView } from "react-native";
 import { readPreference } from "@/lib/preferences";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
@@ -742,6 +742,95 @@ describe("A conversation's top, ride and field (spec 31, 3.13)", () => {
     await fireEvent.press(await screen.findByRole("button", { name: "More" }));
     expect(screen.getByRole("button", { name: "Report Anna" })).toBeVisible();
     expect(screen.queryByRole("button", { name: "Block Anna" })).toBeNull();
+  });
+
+  it("closes the menu on a touch beside the top, and not on a touch in it", async () => {
+    await openConversation();
+    await fireEvent.press(await screen.findByRole("button", { name: "More" }));
+    // A touch in the top, as on one of its rows on the way to a press,
+    // leaves it open. A phone tells the top and then what holds it; the
+    // tests tell only the nearest part that listens, so each is told here.
+    const frame = screen.getByTestId("conversation-frame");
+    await fireEvent(screen.getByRole("button", { name: "Report Anna" }), "touchStart");
+    await fireEvent(frame, "touchStart");
+    expect(screen.getByRole("button", { name: "Report Anna" })).toBeVisible();
+    // A touch beside it, as on the bar with the field, closes it.
+    await fireEvent(screen.getByTestId("bottom-bar"), "touchStart");
+    expect(screen.queryByRole("button", { name: "Report Anna" })).toBeNull();
+    expect(screen.getByRole("button", { name: "More", expanded: false })).toBeVisible();
+    // With the menu closed a touch changes nothing.
+    await fireEvent(screen.getByTestId("bottom-bar"), "touchStart");
+    expect(screen.getByRole("button", { name: "More", expanded: false })).toBeVisible();
+    // And a touch in the top is forgotten once told: the next beside it closes the menu.
+    await fireEvent.press(screen.getByRole("button", { name: "More" }));
+    await fireEvent(screen.getByRole("button", { name: "Report Anna" }), "touchStart");
+    await fireEvent(frame, "touchStart");
+    await fireEvent(screen.getByTestId("bottom-bar"), "touchStart");
+    expect(screen.queryByRole("button", { name: "Report Anna" })).toBeNull();
+  });
+
+  describe("with Android's back", () => {
+    // As a phone asks: the listeners still there, the one added last first.
+    type Listener = Parameters<typeof BackHandler.addEventListener>[1];
+    const listeners: Listener[] = [];
+    const pressBack = async () => {
+      let handled = false;
+      await act(() => {
+        handled = listeners
+          .toReversed()
+          .some((listener) => listener({ type: "hardwareBackPress", timeStamp: 0 }) === true);
+      });
+      return handled;
+    };
+    beforeEach(() => {
+      listeners.length = 0;
+      jest.spyOn(BackHandler, "addEventListener").mockImplementation((_event, listener) => {
+        listeners.push(listener);
+        return {
+          remove: () => {
+            listeners.splice(listeners.indexOf(listener), 1);
+          },
+        };
+      });
+    });
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    it("closes the menu, stays in the conversation and puts a screen reader on More", async () => {
+      await openConversation();
+      await fireEvent.press(await screen.findByRole("button", { name: "More" }));
+      // React Native's test set-up already mocks it, so it holds earlier tests' calls.
+      const focus = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
+      focus.mockClear();
+      expect(await pressBack()).toBe(true);
+      expect(screen.queryByRole("button", { name: "Report Anna" })).toBeNull();
+      expect(screen.getByRole("button", { name: "More", expanded: false })).toBeVisible();
+      // One move, to the button that opened it.
+      expect(focus.mock.calls.map(([, event]) => event)).toEqual(["focus"]);
+      const [[on] = []] = focus.mock.calls;
+      expect((on as unknown as { props: { accessibilityLabel?: string } }).props).toMatchObject({
+        accessibilityLabel: "More",
+      });
+      // Once more it is the phone's own: the menu holds it no longer.
+      expect(await pressBack()).toBe(false);
+    });
+
+    it("leaves the screen over the conversation, where the ride's line led with the menu open", async () => {
+      await openConversation({}, (client) => {
+        bookingApi(client, () => chatBooking);
+      });
+      await fireEvent.press(await screen.findByRole("button", { name: "More" }));
+      await fireEvent.press(screen.getByRole("link", { name: /Borgarnes to Blönduós$/ }));
+      await waitFor(() => {
+        expect(screen).toHavePathname(`/bookings/${bookingId}`);
+      });
+      // The menu under that screen does not take the press for itself.
+      expect(await pressBack()).toBe(true);
+      await waitFor(() => {
+        expect(screen).toHavePathname(`/messages/${bookingId}`);
+      });
+    });
   });
 
   it("says Passenger under a passenger's name, and Driver alone for a driver whose car is not shown", async () => {

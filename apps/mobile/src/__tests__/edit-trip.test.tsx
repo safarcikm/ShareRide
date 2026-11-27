@@ -613,6 +613,23 @@ describe("Edit trip: adding a stop (spec 6, 3.2; milestone 6 plan, decision 2)",
     expect(await screen.findByLabelText("Town or meeting point")).toBeVisible();
   });
 
+  it("moves focus to choosing's title when Choose another meeting point brings it back, and not as the page opens", async () => {
+    // React Native's test set-up already mocks it, so it holds earlier tests' calls.
+    const focus = jest.spyOn(AccessibilityInfo, "sendAccessibilityEvent");
+    focus.mockClear();
+    await openPart("Add a stop", north);
+    expect(screen.getByRole("header", { name: "Add a stop" })).toBeVisible();
+    expect(focus).not.toHaveBeenCalled();
+    await fireEvent.changeText(screen.getByLabelText("Town or meeting point"), "bor");
+    await fireEvent.press(await screen.findByRole("button", { name: /^Borgarnes/ }));
+    expect(await screen.findByText("Borgarnes is already on your route.")).toBeVisible();
+    focus.mockClear();
+    // The check gave way to choosing again: its title has focus.
+    await fireEvent.press(screen.getByRole("button", { name: "Choose another meeting point" }));
+    expect(await screen.findByRole("header", { name: "Add a stop" })).toBeVisible();
+    expect(focus.mock.calls.map(([, event]) => event)).toEqual(["focus"]);
+  });
+
   it.each([
     [
       { path: "segments.0", issue: "stop_does_not_fit" },

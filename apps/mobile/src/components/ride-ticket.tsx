@@ -6,6 +6,7 @@ import type { AppPath } from "@/navigation/link-props";
 import { controlOutline, edges, radii, sizes, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 import { Card, cardCornerRoom } from "./card";
+import { namedGroup, spokenAs } from "./spoken";
 import { Tag, type TagKind } from "./tag";
 import { sectionLevel } from "./text";
 
@@ -33,6 +34,17 @@ interface TimetableProps {
   readonly between: string;
   /** At the right of the timetable: "1,500 ISK" over "per seat"; "Free" is an amount. */
   readonly price?: TicketPrice | null;
+  /**
+   * What each end is, for a screen reader: "Get in" and "Get out", or
+   * "From" and "To". The eye has the ring and the dot. Not for a ticket
+   * that is one thing to press, whose name says it all in one line.
+   */
+  readonly ends?: TicketEnds | undefined;
+}
+
+export interface TicketEnds {
+  readonly from: string;
+  readonly to: string;
 }
 
 export interface TicketPrice {
@@ -51,6 +63,7 @@ interface Pressed {
   readonly from: PlainEnd;
   readonly to: PlainEnd;
   readonly unfolded?: never;
+  readonly ends?: never;
   /** A screen reader would otherwise read every text the ticket holds. */
   readonly accessibilityLabel: string;
 }
@@ -122,6 +135,7 @@ export function RideTicket({
   to,
   between,
   price = null,
+  ends,
   note = null,
   unfolded,
   foot,
@@ -154,7 +168,7 @@ export function RideTicket({
         ))}
       </View>
       <View testID="ticket-top" style={[styles.top, fill && styles.fill]}>
-        <Timetable from={from} to={to} between={between} price={price} />
+        <Timetable from={from} to={to} between={between} price={price} ends={ends} />
         {note === null ? null : (
           <Text testID="ticket-note" style={[typography.small, { color: palette.textMuted }]}>
             {note}
@@ -201,15 +215,15 @@ export function RideTicket({
  * beside the line, and the price at the right. A ticket holds one; so can
  * a card about a part of a ride, such as a request to answer.
  */
-export function Timetable({ from, to, between, price = null }: TimetableProps) {
+export function Timetable({ from, to, between, price = null, ends }: TimetableProps) {
   const palette = usePalette();
   const times = [from.time, to.time] as const;
   const rail = { backgroundColor: palette.primary };
   return (
     <View testID="ticket-times" style={styles.times}>
       <View testID="ticket-route" style={[styles.route, wholeWords]}>
-        <View testID="ticket-from" style={styles.end}>
-          <Time shown={from.time} times={times} />
+        <View testID="ticket-from" style={styles.end} {...namedGroup(ends?.from)}>
+          <Time shown={from.time} times={times} end={ends?.from} />
           <Unspoken style={styles.railCell}>
             <View
               testID="ticket-ring"
@@ -232,8 +246,8 @@ export function Timetable({ from, to, between, price = null }: TimetableProps) {
             {between}
           </Text>
         </View>
-        <View testID="ticket-to" style={styles.end}>
-          <Time shown={to.time} times={times} />
+        <View testID="ticket-to" style={styles.end} {...namedGroup(ends?.to)}>
+          <Time shown={to.time} times={times} end={ends?.to} />
           <Unspoken style={styles.railCell}>
             <View testID="ticket-rail" style={[styles.rail, styles.railEnd, rail]} />
             <View testID="ticket-dot" style={[styles.dot, rail]} />
@@ -266,17 +280,22 @@ export function Timetable({ from, to, between, price = null }: TimetableProps) {
  * The usual foot of a ticket, one line: a picture and a name at the left,
  * and something at the right, such as the seats left or a status tag,
  * which goes under the left when the two do not fit beside each other.
+ * `startIs` says what the left is to the web's screen readers, such as
+ * "Driver: Anna" where the eye has the picture and the car to go by; a
+ * phone hears it from the name's own text (`spokenAs`).
  */
 export function TicketFoot({
   start,
   end,
+  startIs,
 }: {
   readonly start: ReactNode;
   readonly end?: ReactNode;
+  readonly startIs?: string | undefined;
 }) {
   return (
     <View testID="ticket-foot" style={styles.foot}>
-      <View testID="ticket-foot-start" style={styles.footStart}>
+      <View testID="ticket-foot-start" style={styles.footStart} {...namedGroup(startIs)}>
         {start}
       </View>
       {end === undefined || end === null ? null : (
@@ -333,15 +352,20 @@ function widestTime(times: readonly [string, string]): string {
 function Time({
   shown,
   times,
+  end,
 }: {
   readonly shown: string | null;
   readonly times: readonly [string, string];
+  /** What the time's end is, for a phone's screen reader. */
+  readonly end?: string | undefined;
 }) {
   const palette = usePalette();
   return (
     <View testID="ticket-time" style={styles.time}>
       {shown === null ? null : (
-        <Text style={[typography.heading, { color: palette.text }]}>{shown}</Text>
+        <Text {...spokenAs(end, shown)} style={[typography.heading, { color: palette.text }]}>
+          {shown}
+        </Text>
       )}
       <Unspoken>
         <Text testID="ticket-time-width" style={[typography.heading, styles.width, unseen]}>

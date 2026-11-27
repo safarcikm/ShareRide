@@ -31,6 +31,8 @@ interface Journey extends TripSearch {
   readonly book: string;
   readonly title: string;
   readonly driver: string;
+  /** What a screen reader is told of the ticket's ends and of its foot (spec 31, 3.20). */
+  readonly said: { readonly getIn: string; readonly getOut: string; readonly driver: string };
   readonly confirmedOnPay: string;
   readonly pay: RegExp;
   readonly sheet: string;
@@ -68,6 +70,7 @@ const inEnglish: Journey = {
   book: "Book",
   title: "Check and pay",
   driver: "Jón",
+  said: { getIn: "Get in", getOut: "Get out", driver: "Driver" },
   confirmedOnPay: "Your seat is confirmed as soon as you pay.",
   pay: /^Pay [\d,]+ ISK$/,
   sheet: "Test payment: no money moves",
@@ -105,6 +108,7 @@ const inIcelandic: Journey = {
   book: "Bóka",
   title: "Yfirfara og greiða",
   driver: "Jón",
+  said: { getIn: "Inn", getOut: "Út", driver: "Bílstjóri" },
   confirmedOnPay: "Sætið þitt er staðfest um leið og þú greiðir.",
   pay: /^Greiða [\d.]+ kr\.$/,
   sheet: "Prufugreiðsla: engir peningar færast",
@@ -148,6 +152,12 @@ for (const journey of journeys) {
       const ticket = page.getByTestId("booking-ticket").filter({ visible: true });
       await expect(ticket.getByText(journey.getIn, { exact: true })).toBeVisible();
       await expect(ticket.getByText(journey.driver, { exact: true })).toBeVisible();
+      // Nothing on it is pressed, so a screen reader is told what each end
+      // is, and that Jón is the driver.
+      const said = (name: string) => ticket.getByRole("group", { name, exact: true });
+      await expect(said(journey.said.getIn)).toContainText(journey.getIn);
+      await expect(said(journey.said.getOut)).toBeVisible();
+      await expect(said(journey.said.driver)).toContainText(journey.driver);
       await expect(
         page.getByText(journey.confirmedOnPay, { exact: true }).filter({ visible: true }),
       ).toBeVisible();

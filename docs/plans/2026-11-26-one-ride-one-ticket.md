@@ -1463,7 +1463,7 @@ left, on every page (as built, below). **12b** has item 4 and what the
 other items say about focus, screen readers, large text and short
 windows, in two pull requests: the first has the second press (item 9)
 and large text (items 4, 8 and 13; as built, below), the second focus,
-screen readers and short windows. **12c** has the rest: items 3 and 5,
+screen readers and short windows (as built, below). **12c** has the rest: items 3 and 5,
 the small things of items 6 to 15 that are left, and item 16, where spec
 31 becomes Built.
 
@@ -1482,13 +1482,17 @@ the small things of items 6 to 15 that are left, and item 16, where spec
    before, and were found by PR 5's `look.spec.ts`, which measures the
    sideways scroll with the text as set only: the labels fit their tabs,
    the name line wraps, and that journey measures it at 200% too. (The
-   large text: done, PR 12b. Focus order: its second pull request.)
+   large text: done, PR 12b. Focus order: done in its second pull
+   request where it went against the eye, on Profile's two columns and in
+   "Where you sit"; Find's yellow card is left, item 6.)
 5. **Sign-in** (3.15): if spec 29's screen has landed by then, the ride
    someone was about to book shows over the form as a ticket; if not, it
    is named as left for that spec's thread.
 6. **Small things PR 5's code review named:** after "Show all rides"
-   focus goes to the first ride; a chip is 40 high on the web, under the
-   44 of a touch target; "New driver" is an amber tag, which rule 6 keeps
+   focus goes to the first ride (no longer applies: it opens the All
+   rides page, whose title takes focus); a chip is 40 high on the web,
+   under the 44 of a touch target (done, PR 12b: 44 on the web); "New
+   driver" is an amber tag, which rule 6 keeps
    for what needs someone; the reading order of the yellow card beside
    the rides on a laptop; All rides' centred title (done, PR 12a); Find
    on a phone moves
@@ -1496,11 +1500,12 @@ the small things of items 6 to 15 that are left, and item 16, where spec
    soon (room kept for them, or both shown together).
 7. **Small things PR 6's code review named:** a heading for the driver's
    card, and the heading before the picture in "Where you sit"; on
-   Booking a seat, "driver" beside the driver's name for a screen reader;
+   Booking a seat, "driver" beside the driver's name for a screen reader
+   (these three: done, PR 12b);
    a cancelled ride's page without the seats stepper and "Where you sit".
 8. **Small things PR 7a's code review named:** a ticket that is not
    pressed says which end is where I get in and where I get out, for a
-   screen reader; "Find another ride" in Icelandic ("Leita aftur" today,
+   screen reader (done, PR 12b); "Find another ride" in Icelandic ("Leita aftur" today,
    and spec 5's table says "Search again"); an Icelandic reader looks at
    the status words as titles ("Afbókuð", "Útrunnin", "Dregin til baka",
    "Mætti ekki"), and at "bílstjóri" beside "ökumaður"; with text at 200%
@@ -1516,7 +1521,8 @@ the small things of items 6 to 15 that are left, and item 16, where spec
    other buttons of a bar). On a short window (a phone on its side, or a
    laptop zoomed until the window is 320 by 256) the bar takes much of
    the height, about 88 with one button and 148 with two, more with a
-   notice: under a height to be chosen the bar joins the end of the page.
+   notice: under a height to be chosen the bar joins the end of the page
+   (done, PR 12b: under 480).
    After blocking, "You still have a booking together" stays the title's
    line once that booking is cancelled. `BookingHead`, `bookingWords`,
    `backTo` and `leave` serve bookings, reviews and blocking from
@@ -1536,32 +1542,36 @@ the small things of items 6 to 15 that are left, and item 16, where spec
     point of a new stop kept the picker's own top, a Cancel cross and a
     centred title with no ride over it: done with posting's heads, PR
     9;) `cancel-trip.spec.ts` does not read the bar's notice
-    or where focus goes, as `cancel-booking.spec.ts` does, and
+    or where focus goes, as `cancel-booking.spec.ts` does (done, PR
+    12b), and
     `look.spec.ts` opens none of Edit the ride's screens with long names
     or large text; "day at time" has one helper since 8c (`dayAtTime`),
     which `driver-trip/title.ts`, `trip-so-far.tsx` and the post's text
     do not use yet; an `ActionNotice` given plain words
     does not say them again on another press, which is easy to get
-    wrong: `useSaid` everywhere, or a rule for it.
+    wrong: `useSaid` everywhere, or a rule for it (done, PR 12b: a
+    rule, which the seven places with plain words keep).
 12. **Left from My rides (PR 8c):** Coming up and Past are two chips,
     where the drawing has one control of two halves; the address
     `/drive/trips/new`, a first step outside Offer, which nothing in the
     app opens since My trips went; after "Show all drafts" focus goes to
     a view around the first draft that came, not to its link, so Enter
     does nothing until Tab (`TakesFocus`, the app's way everywhere: one
-    fix for all); a draft whose stops were all retired reads " → ", and
+    fix for all; done, PR 12b); a draft whose stops were all retired reads " → ", and
     the Route row of its last step " to " (PR 9's `routeChecked`).
 13. **Left from offering a ride (PR 9):** on the last step, why
     deleting a draft failed is said over Publish, in the bar, away from
     the card that asked; the ride's ticket there is not pressed and
-    does not say for a screen reader which end is which (item 8); the
+    does not say for a screen reader which end is which (item 8; done,
+    PR 12b: "From" and "To"); the
     road has five names on a posting step, closer together than a
     booking's four, to measure with text at 200% (item 8; done, PR 12b);
     on a laptop
     the last step's side column holds Publish alone. From PR 9's code
     review: on step 1 the browser's Back leaves the step with the picker
     of a meeting point open (Android's back closes it), and the picker
-    moves no focus when it opens or closes; a posting step opened by its
+    moves no focus when it opens or closes (the focus: done, PR 12b); a
+    posting step opened by its
     address for a ride that is already published shows the step; at
     23:35 the wheel for today opens at 00:05, which has passed
     (`earliestDeparture` goes round midnight); `sign-in-methods.tsx` has
@@ -1580,13 +1590,15 @@ the small things of items 6 to 15 that are left, and item 16, where spec
     something is written, as a placeholder of two lines has one; the
     field's five lines are counted in the text as set, so text twice as
     large scrolls inside it from the third line; the menu of the top
-    closes by its button, not by Escape or a press beside it, and its
+    closes by its button, not by Escape or a press beside it (done, PR
+    12b, with Android's back), and its
     rows are a white card on the white bar, which an edge or a tint
     would set apart; when the top moves between its bar and the
     conversation, as the window turns, the keyboard's focus in it is
     lost, and a top too tall is drawn in the bar for one frame before
     it is measured; on a window under 400 high the two bars still take
-    about 150 (item 9). To try on phones, in the apps: the keyboard
+    about 150 (item 9; kept, PR 12b: a conversation's field stays under
+    its messages at any height). To try on phones, in the apps: the keyboard
     (Android makes the screen shorter, which may move the top into the
     conversation while writing; on an iPhone the messages keep about
     100 over it); the strip under a conversation that is loading or
@@ -1607,12 +1619,14 @@ the small things of items 6 to 15 that are left, and item 16, where spec
     the eleven texts that named Settings, "Breyta" on the card, and the
     groups' names. Found by PR 11a's review and left: on a laptop the
     keyboard reaches the groups before the person's card, which stands
-    at the left (`Columns` with `sideAt="start"`); a tap on a
+    at the left (`Columns` with `sideAt="start"`; done, PR 12b); a tap
+    on a
     notification about beta news or about feedback opens no page, as
     `notifications/paths.ts` names neither `/settings/beta-news` nor
     `/settings/feedback`; the photo's controls lose what they said when
     the window turns wide or narrow; a row that only shows, as the phone
-    number, is read as two texts by a phone's screen reader; the two
+    number, is read as two texts by a phone's screen reader (done, PR
+    12b); the two
     languages are each a stop for Tab, with no arrow keys between them;
     and `notices`, `report`, the two `block` pages and `carpool-iceland`
     are in none of the root layout's lists, so the first four are open to
@@ -1641,7 +1655,7 @@ the small things of items 6 to 15 that are left, and item 16, where spec
     (`settings/privacy/delete.tsx`) is a plain `Card` of rows with no
     pictures; on a person's profile the name looks like a heading and is
     plain text, so a screen reader's list of headings has "Profile" and
-    "Reviews" only; "My feedback" after the thanks is a button that
+    "Reviews" only (done, PR 12b: a heading); "My feedback" after the thanks is a button that
     navigates; no journey presses the rules, Report or Block on a
     profile; the two small lines of the person's card are built alike
     in `profile/my-card.ts` and `people/profile-view.tsx`. Icelandic,
@@ -1869,6 +1883,113 @@ where a person sees it):
   text twice as large; every `Button` reads the guard and is drawn again
   twice for each main press; a first tap's pressed look ends when the
   finger lifts.
+
+As built, PR 12b, the second of its two (spec 31, 3.20, says the same
+where a person sees it):
+
+- **A short window:** `shortWindowUnder` 480 (`packages/ui`), and
+  `useShortWindow()` in `components/screen.tsx`. Under it `Screen`
+  renders its `BottomBar` `joined`: inside the scroll, after the page's
+  column and before `SiteFooter`, with no band and no edge, and not under
+  the scroll. It is the same `BottomBar`, with `HeldWithMain` and the
+  `InBar` slot, so a page's buttons do not know where they stand. A
+  `Screen` with `stickToEnd`, the conversation, keeps its bar. The tab
+  bar is not a `Screen`'s and stays.
+- **`TakesFocus`** (`components/takes-focus.tsx`): on the web, where
+  its content holds one stop for the keyboard and that stop's text is
+  all the content's text, focus goes to that stop, and to the content
+  as a whole otherwise or if the stop takes none. That mends "Show all
+  drafts" with no change on Offer, and every other place a lone row or
+  button is wrapped. Sign-in methods (spec 29's page) wraps a lone
+  button in two places: there the keyboard is now on the button and not
+  on a view around it. Nothing else of that page is touched.
+- **Messages' menu** (`chat/conversation-head.tsx`,
+  `app/messages/[bookingId].tsx`): the page holds `useTopMenu()` (open,
+  `set`, `inTop`, `beside`) and gives it to `ConversationHead`. Escape
+  on the head and Android's back (`BackHandler`, only while the page is
+  the one in front: `navigation.isFocused()`) call `closeToButton`,
+  which closes and focuses "More" (`IconButton` takes a `ref` now). On
+  the web a `pointerdown` listener on the document, in the capture
+  phase, closes for a press outside the head. In the phone apps the
+  head's `onTouchStart` says `inTop` and the page's frame says `beside`,
+  which closes unless the touch began in the head: a touch bubbles from
+  the head to the frame, so the frame hears both. A row of the menu
+  that opens a page closes it first.
+- **The picker of a meeting point** (`trips/point-picker.tsx`,
+  `trips/route-step.tsx`, `app/drive/trips/[id]/edit/stop.tsx`):
+  `PointPicker` has `takesFocus`, which its `ScreenHead` gets as an
+  outcome's focus. The route step passes it always, as the picker takes
+  the step's place there, and wraps "Add a meeting point" in a
+  `TakesFocus` that is on once the picker has closed. Add a stop passes
+  it only after "Choose another meeting point".
+- **`Columns`** (`components/columns.tsx`): with `sideAt="start"` the
+  side column is first in the tree, where `row-reverse` drew it at the
+  left before. The two have keys, so the main column is the same part on
+  either side and at any width. Profile is the one page with it.
+- **`components/spoken.ts`** (new): `namedGroup(name)` is `role="group"`
+  with `aria-label` on the web and nothing in the phone apps;
+  `spokenAs(name, text)` is an `accessibilityLabel` "name: text" in the
+  phone apps and nothing on the web, where a label would need a role.
+  `Timetable` takes `ends` (`from`, `to`) unless it is pressed, and
+  `TicketFoot` `startIs`. Given by `app/trips/[id]/book.tsx`,
+  `booking/booking-ticket.tsx` and `trip-details/part-ticket.tsx` ("Get
+  in", "Get out"), and by `trips/preview-ticket.tsx` and
+  `driver-trip/ride-ticket.tsx` ("From", "To").
+- **Headings:** the name in `trip-details/driver-card.tsx` (with the
+  label "Driver: Anna") and in `people/person-card.tsx`, both of the
+  second level. PR 11a's tests said the person's name was no heading,
+  on its review's word that it should be one; they say the opposite now.
+- **`WhereYouSit`:** the words are first in the tree; the card is
+  `row-reverse` with `wrap-reverse` and `justifyContent: "flex-end"`, so
+  the car is still at the left, and over the words where they wrap.
+- **`Row`:** one that `shows` is `accessible` with the label "title,
+  value" in the phone apps. Not on the web, where `accessible` makes a
+  view a stop for Tab.
+- **`Chip`:** `minHeight` is `minTouchTarget` on the web and `chipHeight`
+  elsewhere, with its `hitSlop`.
+- **One new text,** `trip.driver` ("Driver", "Bílstjóri"). No new page,
+  no change in the API, no migration, no new dependency.
+- **Tests:** `posting-parts.test.tsx` (a short window: the bar in the
+  page, over the website's footer, a conversation's kept, back under the
+  page when the window is tall again); `wide-parts.test.tsx` and
+  `profile-and-settings.test.tsx` (the side column first at the left);
+  `chat.test.tsx` (a touch beside the top and one in it; Android's back
+  closes the menu, stays, and puts a screen reader on "More"; back on a
+  page over the conversation leaves that page); `post-a-trip.test.tsx`
+  and `edit-trip.test.tsx` (the picker's focus as it opens, on Back,
+  after a point, and not as Add a stop opens); `ticket-parts.test.tsx`
+  and `display-parts.test.tsx` (the ends' words; a row in one piece);
+  `booking.test.tsx`, `trip-details.test.tsx` and
+  `public-profile.test.tsx` (the labels, the headings, the reading
+  order of "Where you sit").
+  Journeys: `keyboard.spec.ts` (new: the draft's link after "Show all
+  drafts" and Enter; the picker's title, Back, the button, Enter);
+  `chat.spec.ts` (Escape, a press beside the menu, a row and the way
+  back; the field on a window 740 by 360); `look.spec.ts` ("a short
+  window": at 740 by 360 and 320 by 256 the bar is in the page and its
+  button is reached by scrolling, whole in the window's width; "chips":
+  44 high; the person's name as a heading); `cancel-trip.spec.ts` (the
+  bar's notice and its focus); `trip-details.spec.ts` (the driver's
+  heading; "Where you sit" before its picture and at its right);
+  `booking.spec.ts` (the ticket's groups in both languages);
+  `laptop.spec.ts` (Profile's card before its rows). Pictures
+  (`pictures.spec.ts`): `built/short-window-ride-phone-light` and
+  `built/short-window-ride-end-phone-light` ("a short window, a phone on
+  its side", new), and `built/large-text-where-you-sit-phone-light`.
+  The pictures with chips are not taken again here: a chip's row is 4
+  higher on the web, and 12c takes every picture.
+- **Left:** arrow keys between the choices of a group where one is
+  chosen; Messages' placeholder and five lines with large text (item
+  14); the browser's Back with the picker open (item 13); Find's yellow
+  card beside the rides, read after them (item 6); with text twice as
+  large on a phone 360 wide, the words of "Where you sit" in a narrow
+  column beside the car (the row wraps by widths that do not grow with
+  the text). To hear on a phone and in NVDA: a main button just pressed
+  while it waits, and what this pull request gives a screen reader.
+- **Found on the way, for 12c:** an address the app does not have, as
+  `/trips`, shows the router's own page: black, "Unmatched Route", with
+  a link to a list of every address. The app has no `+not-found` page:
+  one in its look, with the title at the left and "Find a ride".
 
 ## After merging
 

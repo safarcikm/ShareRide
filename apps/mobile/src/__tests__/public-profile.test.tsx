@@ -105,9 +105,11 @@ describe("a public profile (spec 1, 3.5)", () => {
     const head = within(screen.getByTestId("screen-head"));
     expect(head.getByRole("header", { name: "Profile" })).not.toHaveStyle({ textAlign: "center" });
     expect(head.getByRole("button", { name: "Back" })).toBeVisible();
-    // The title stands over the card, so the name is not a second one.
-    expect(screen.queryByRole("header", { name: "Anna" })).toBeNull();
-    expect(within(screen.getByTestId("person-card")).getByText("Anna")).toBeVisible();
+    // The title stands over the card. The name heads the card under it:
+    // a screen reader's list of headings has it between Profile and Reviews.
+    const who = within(screen.getByTestId("person-card"));
+    expect(who.getByText("Anna")).toBeVisible();
+    expect(who.getByRole("header", { name: "Anna" })).toBe(who.getByText("Anna"));
     // Nothing to do here is the screen's one thing to do (R31.1).
     expect(filledButtons()).toBe(0);
   });
@@ -440,9 +442,10 @@ describe("See it as others do (spec 16, 3.4)", () => {
     expect(
       head.getByText("This is your public profile. Your phone number is never part of it."),
     ).toBeVisible();
-    // One title: the name in the card is not a heading under it.
+    // One title, and the parts under it: the card, headed by the name, and the reviews.
     expect(screen.getAllByRole("header").map((header) => String(header.props.children))).toEqual([
       "As others see you",
+      "Anna",
       "Reviews",
     ]);
     await fireEvent.press(head.getByRole("button", { name: "Back" }));

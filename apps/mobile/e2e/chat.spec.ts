@@ -95,6 +95,26 @@ test("the driver and passenger of a confirmed booking message each other", async
   await expect(conversation.getByRole("button", { name: "Block Bára" })).toBeVisible();
   await more.click();
   await expect(conversation.getByRole("button", { name: "Block Bára" })).toHaveCount(0);
+  // Escape closes it from one of its rows, and the keyboard is on its button again.
+  await more.click();
+  await conversation.getByRole("button", { name: "Report Bára" }).focus();
+  await passenger.keyboard.press("Escape");
+  await expect(conversation.getByRole("button", { name: "Block Bára" })).toHaveCount(0);
+  await expect(more).toHaveAttribute("aria-expanded", "false");
+  await expect(more).toBeFocused();
+  // A press beside it closes it too: here on the field, which has the keyboard then.
+  await more.click();
+  await expect(conversation.getByRole("button", { name: "Block Bára" })).toBeVisible();
+  await passenger.getByLabel("Write a message").click();
+  await expect(conversation.getByRole("button", { name: "Block Bára" })).toHaveCount(0);
+  await expect(passenger.getByLabel("Write a message")).toBeFocused();
+  // A press on its own row is no press beside it: Report opens.
+  await more.click();
+  await conversation.getByRole("button", { name: "Report Bára" }).click();
+  await expect(passenger).toHaveURL(/\/report\?/);
+  await passenger.goBack();
+  await expect(passenger).toHaveURL(/\/messages\/[0-9a-f-]+$/);
+  await expect(conversation.getByRole("button", { name: "Block Bára" })).toHaveCount(0);
 
   // The field has one line, grows with what is written, and is one line
   // again once the message went; Send is the round button beside it.
@@ -145,5 +165,17 @@ test("the driver and passenger of a confirmed booking message each other", async
   await expect(passenger.getByLabel(/^You, \d\d:\d\d: Where shall I wait\? Seen$/)).toBeVisible(
     nextFetch,
   );
+
+  // On a window as short as a phone on its side other screens' bars join
+  // their pages (spec 31, 3.20). A conversation keeps its field under the
+  // messages, in view.
+  if (testInfo.project.use.isMobile === true) {
+    await passenger.setViewportSize({ width: 740, height: 360 });
+    const bar = passenger.getByTestId("bottom-bar").filter(visible);
+    await expect(bar.getByLabel("Write a message")).toBeInViewport();
+    expect(
+      await bar.evaluate((part) => part.closest('[data-testid="screen-scroll"]') === null),
+    ).toBe(true);
+  }
   await passengerContext.close();
 });

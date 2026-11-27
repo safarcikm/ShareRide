@@ -102,6 +102,8 @@ describe("Trip details (spec 4, 3.6)", () => {
     expect(headings()).toEqual([
       "Borgarnes to Blönduós",
       "Your part of the ride",
+      // The driver's card, headed by their name.
+      "Anna",
       "Where you sit",
       "The whole route",
     ]);
@@ -142,6 +144,8 @@ describe("Trip details (spec 4, 3.6)", () => {
     // The driver, and under a line the car and what they like.
     const driver = within(screen.getByTestId("driver-card"));
     expect(driver.getByText("Anna")).toBeVisible();
+    // The card's heading, which says who Anna is (spec 31, 3.20).
+    expect(driver.getByRole("header", { name: "Driver: Anna" })).toBe(driver.getByText("Anna"));
     expect(driver.getByText("New driver")).toBeVisible();
     expect(driver.getByText("White Toyota Yaris")).toBeVisible();
     expect(driver.getByText("Number plate shown once your seat is confirmed")).toBeVisible();
@@ -166,6 +170,16 @@ describe("Trip details (spec 4, 3.6)", () => {
       seats.getByText("2 of 3 seats are free. Seats are not numbered: you agree in the car."),
     ).toBeVisible();
     expect(seats.queryByText("Taken")).toBeNull();
+    // The heading is read before the picture it is about, which stands at its left.
+    type Part = ReturnType<typeof screen.getByTestId>;
+    const inOrder = (part: Part): Part[] => [
+      part,
+      ...part.children.flatMap((child) => (typeof child === "string" ? [] : inOrder(child))),
+    ];
+    const read = inOrder(screen.getByTestId("where-you-sit"));
+    const heading = read.indexOf(seats.getByRole("header", { name: "Where you sit" }));
+    expect(heading).toBeGreaterThan(-1);
+    expect(heading).toBeLessThan(read.indexOf(seats.getByRole("image")));
 
     // The whole route: the map and every stop, mine marked.
     const route = within(screen.getByTestId("whole-route"));
@@ -736,6 +750,8 @@ describe("Trip details on a laptop (spec 18, 3.7)", () => {
     expect(headings()).toEqual([
       "Borgarnes to Blönduós",
       "Your part of the ride",
+      // The driver's card, headed by their name.
+      "Anna",
       "Where you sit",
       "The whole route",
     ]);

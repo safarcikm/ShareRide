@@ -1003,6 +1003,16 @@ test.describe("My rides, a booking and Profile", () => {
     await expect(rows.getByRole("heading", { name: "Safety and privacy" })).toBeVisible();
     await expect(rows.getByRole("link", { name: "Language, English" })).toBeVisible();
     await expect(rows.getByTestId("action-rows")).toHaveCount(5);
+    // The card comes before the rows for the keyboard and a reader too,
+    // as it stands at their left (spec 31, 3.20).
+    expect(
+      await who.evaluate((card) => {
+        const rowsOf = card.parentElement?.querySelector('[data-testid="columns-main"]');
+        if (rowsOf === null || rowsOf === undefined) return "no rows";
+        const after = card.compareDocumentPosition(rowsOf) & Node.DOCUMENT_POSITION_FOLLOWING;
+        return after !== 0 ? "card first" : "rows first";
+      }),
+    ).toBe("card first");
     // No Settings any more, and the shake switch is for the phone apps.
     await expect(dora.getByRole("link", { name: "Settings" })).toHaveCount(0);
     await expect(dora.getByRole("switch")).toHaveCount(0);

@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen } from "@testing-library/react-native";
+import { useState } from "react";
 import { Dimensions, Text } from "react-native";
 import { Columns } from "./columns";
 import { Grid, widthOf } from "./grid";
@@ -70,11 +71,38 @@ describe("Columns", () => {
     expect(order("Main part", "Side part")).toBeLessThan(0);
   });
 
-  it("can put the side column at the left, still read after the main column", async () => {
+  it("can put the side column at the left, where it is read first, as it is seen", async () => {
     setWindow(laptop);
     await render(columns("start"));
-    expect(screen.getByTestId("columns")).toHaveStyle({ flexDirection: "row-reverse" });
-    expect(order("Main part", "Side part")).toBeLessThan(0);
+    // Not turned round by a style: the keyboard and a screen reader go
+    // from left to right as the eye does.
+    expect(screen.getByTestId("columns")).toHaveStyle({ flexDirection: "row" });
+    expect(order("Side part", "Main part")).toBeLessThan(0);
+    expect(screen.getByTestId("columns-side")).toHaveStyle({ width: 400 });
+  });
+
+  it("keeps what the main column holds when the window turns wide, with the side column at the left too", async () => {
+    function Counter() {
+      const [count, setCount] = useState(0);
+      return (
+        <Text
+          onPress={() => {
+            setCount(count + 1);
+          }}
+        >{`Count ${String(count)}`}</Text>
+      );
+    }
+    await render(
+      <Columns sideAt="start" side={<Text>Side part</Text>}>
+        <Counter />
+      </Columns>,
+    );
+    await fireEvent.press(screen.getByText("Count 0"));
+    await act(() => {
+      setWindow(laptop);
+    });
+    expect(screen.getByText("Count 1")).toBeVisible();
+    expect(order("Side part", "Count 1")).toBeLessThan(0);
   });
 
   it("takes another width for the side column", async () => {

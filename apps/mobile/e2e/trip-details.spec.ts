@@ -52,6 +52,24 @@ test.describe("ride details without an account", () => {
       ticket.getByRole("heading", { name: "Your part of the ride", level: 2 }),
     ).toBeVisible();
     await expect(page.getByRole("heading", { level: 1 }).filter({ visible: true })).toHaveCount(1);
+    // The driver's card is headed by the name, which says who Anna is; and
+    // "Where you sit" is read before the picture it is about, at its right
+    // (spec 31, 3.20).
+    await expect(
+      page.getByTestId("driver-card").getByRole("heading", { name: "Driver: Anna", level: 2 }),
+    ).toBeVisible();
+    const seats = page.getByTestId("where-you-sit").filter({ visible: true });
+    expect(
+      await seats.evaluate((card) => {
+        const heading = card.querySelector('[role="heading"], h2, h3');
+        const picture = card.querySelector('[role="img"]');
+        if (heading === null || picture === null) return "missing";
+        const after = heading.compareDocumentPosition(picture) & Node.DOCUMENT_POSITION_FOLLOWING;
+        const atRight =
+          heading.getBoundingClientRect().left >= picture.getBoundingClientRect().right;
+        return `${after !== 0 ? "heading first" : "picture first"}, ${atRight ? "at its right" : "not at its right"}`;
+      }),
+    ).toBe("heading first, at its right");
     // The driver's picture stands with the name, not at the middle of the lines (3.18).
     const pictures = await picturesUnderTheirText(page);
     expect(pictures.pictures).toBeGreaterThan(0);
