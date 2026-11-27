@@ -6,9 +6,10 @@
 **Goal:** a returning member gets back in with a glance or a touch, or with
 the way they used last time on top ([spec 29](../specs/2026-11-25-easier-sign-in.md)).
 
-**Architecture:** no migration and no new dependency. The API learns one
-error (`passkey_unknown`), shows each passkey's `credentialId`, and allows
-more sign-in options. The app's device layer (`apps/mobile/src/sign-in/passkey*.ts`)
+**Architecture:** no new dependency, and one migration (PR 3, for ADR
+0050's quiet setup). The API learns one error (`passkey_unknown`), shows
+each passkey's `credentialId`, allows more sign-in options, and gives quiet
+setup options straight after a sign-in. The app's device layer (`apps/mobile/src/sign-in/passkey*.ts`)
 gains the browser's quiet requests (conditional get and create, through
 `@simplewebauthn/browser` 14, which has both) and the Signal API; step 1
 runs the quiet request; a hook in the menu layout decides, after each
@@ -196,11 +197,12 @@ ID (WebAuthn conditional create), which ADR 0048 requires at setup.
 **Files:** `apps/api/src/modules/auth/member-passkeys.ts` (+ integration
 test), `packages/contracts`, `docs/decisions/0050-*.md`.
 
-- [ ] Failing tests: quiet options only for a session opened with a
-  password in the last 10 minutes; a quiet answer without presence or user
-  verification is saved with its own challenge only; the usual setup still
-  needs both; 10 devices and the usual email as in spec 27.
-- [ ] Implement; ADR 0050 (supersedes that part of ADR 0048); commit.
+- [x] Failing tests: quiet options only for a session signed in in the
+  last 10 minutes (the browser asks only after a password); a quiet answer
+  without presence or user verification is saved with its own challenge
+  only; the usual setup still needs both; 10 devices and the usual email
+  as in spec 27. Migration 0064 adds `register_quiet` to the challenges.
+- [x] Implement; ADR 0050 (amends that part of ADR 0048); commit.
 
 ### Task 10: The quiet save in the app
 
@@ -208,9 +210,11 @@ test), `packages/contracts`, `docs/decisions/0050-*.md`.
 `quietCreateAvailable()`, `apps/mobile/src/sign-in/after-sign-in.ts`,
 `apps/mobile/src/__tests__/passkey.test.tsx`.
 
-- [ ] Failing tests: after a password, a quiet passkey saved means no
-  offer, a refused one means the offer; never after another way in.
-- [ ] Implement; docs (spec 29, 3.3 and its intro; security); open PR 3.
+- [x] Failing tests: after a password, a quiet passkey saved means no
+  offer, a refused one means the offer; never after another way in. The
+  journey: Chromium without a password of its own never decides, so the
+  app stops after 3 seconds and offers Face ID.
+- [x] Implement; docs (spec 29, 3.3 and its intro; security); open PR 3.
 
 ## PR 4: The way you used last time first, and a calmer screen
 

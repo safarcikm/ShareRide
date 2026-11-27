@@ -293,7 +293,12 @@ Milestone 16: ready for the beta
 
 - [ ] Accessibility pass to WCAG 2.2 AA
 - [ ] Icelandic texts checked by a native speaker
-- [ ] TestFlight and Google Play internal testing builds against production
+- [ ] TestFlight and Google Play internal testing builds against production,
+      then the App Store and Google Play release, moved up from Phase 4 at
+      Martin's request (2026-11-27,
+      [spec 32](../specs/2026-11-27-phone-apps-in-the-stores.md)): the apps
+      run on an emulator and a simulator in CI first, and nothing reaches
+      testers or the stores without Martin's go
 - [x] The real meeting points for the beta corridors in production (a
       point in or near every settlement since spec 21): Martin imported,
       checked and activated the 104 settlement points and the 32 sights on
@@ -350,10 +355,10 @@ Legal and company (in parallel)
 - [ ] Terms of service, privacy policy, community rules (Icelandic and English)
 - [ ] Record of processing activities and data protection impact assessment
 - [ ] Data processing agreements with every provider
-- [ ] Apple and Google developer accounts in the company's name (until then,
-      Martin's individual Apple account signs the team's test builds only,
-      under its own app ID, `is.puffinride.app.preview`,
-      [milestone 2 plan](../plans/2026-11-13-milestone-2-hosted-and-connected.md#3-decisions-for-martin))
+- [ ] Apple and Google developer accounts in the company's name. Until then,
+      the store apps are in Martin's own accounts, under `is.puffinride.app`,
+      and move to the company's once the ehf. exists (Martin, 2026-11-27,
+      [ADR 0051](../decisions/0051-store-apps-in-martins-name-until-the-company.md))
 
 Community (in parallel)
 

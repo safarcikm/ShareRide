@@ -1547,6 +1547,16 @@ releases follow [Semantic Versioning](https://semver.org/).
   on that browser; anything kept from before signing in (a booking, Offer,
   a link) opens instead. The browser keeps the way it last signed in with,
   its own passkey's ID and the date of "Not now" (privacy, device storage).
+- A passkey the browser saves by itself after a password (spec 29, 3.3,
+  ADR 0050): on Safari and Chrome with their own password managers, a
+  sign-in with a password is followed by the browser's quiet save, with no
+  screen, unless "Not now" was pressed there in the last 30 days; where it
+  saves none within 3 seconds, Face ID is offered as after any other way
+  in, and none with 10 devices set up. `POST /v1/me/passkeys/options`
+  takes `quiet`, given only to a session signed in less than 10 minutes
+  ago, and only the answer to such options is saved without "user present"
+  or "user verified".
+  Migration 0064.
 - About PuffinRide (spec 30), a public page at `/about`: what PuffinRide is,
   the Terms of Service, Community Rules, Privacy Policy and Cookies, who
   runs PuffinRide (as the Terms say it) and how to reach us

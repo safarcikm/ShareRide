@@ -449,6 +449,13 @@
       "when": 1795441685471,
       "tag": "0063_passwords_and_passkeys",
       "breakpoints": true
+    },
+    {
+      "idx": 64,
+      "version": "7",
+      "when": 1795652792769,
+      "tag": "0064_quiet_passkey_setup",
+      "breakpoints": true
     }
   ]
 }
