@@ -27,7 +27,12 @@ keeps no Turborepo cache between runs. The phone journeys run in their own workf
 `.github/workflows/phone-apps.yml`, on pull requests that touch the app, the
 API or the packages, and by hand: a release build of each app against the
 test API on the same machine, with the screenshots kept as the run's
-artifacts ([spec 32, 3.7](../specs/2026-11-27-phone-apps-in-the-stores.md#37-builds-and-checks)). Third-party actions are pinned to a
+artifacts ([spec 32, 3.7](../specs/2026-11-27-phone-apps-in-the-stores.md#37-builds-and-checks)). Run by hand with "Which journeys" set to
+`store`, it runs `apps/mobile/maestro/store` instead: the store pages'
+screenshots in English and Icelandic, on an iPhone of the App Store's
+largest size, with a tidy status bar on both phones; the store kit draws
+them into the stores' pictures ([marketing/stores](../../marketing/stores/README.md)).
+Third-party actions are pinned to a
 full commit SHA, with the version in a comment, and kept current by
 Dependabot.
 

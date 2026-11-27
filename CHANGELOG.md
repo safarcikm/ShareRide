@@ -1613,6 +1613,18 @@ releases follow [Semantic Versioning](https://semver.org/).
   for how long, and where to write. Signed out it offers Sign in, signed in
   Delete my account itself. It is in the sitemap, the server writes its
   text for crawlers that do not run the app, and About links to it.
+- The store kit (spec 32, 3.9) in `marketing/stores/`: the App Store page
+  in English and the Google Play page in Icelandic and English, checked
+  for each store's limits and for any word about money; six screenshots
+  per store under captions at each store's size, the Play feature graphic
+  and icon, drawn by `src/build.sh`; Apple's privacy label and Google's
+  data safety answers from the privacy register; the age rating, the
+  reviewers' notes and the review account's steps. Phone apps, run by hand
+  with "Which journeys" set to `store`, takes the screenshots
+  (`apps/mobile/maestro/store`) on an iPhone of the App Store's largest
+  size and on the emulator, signed out, with a tidy status bar. The
+  privacy register lists the App Store, Google Play and Google Play
+  testing.
 
 ### Fixed
 
