@@ -376,6 +376,21 @@ test.describe("a ride's page with long place names, 360 wide", () => {
         // title, and Change under its place, before either squeezes a name.
         expect(head.brokenWords).toEqual([]);
         expect(fit.brokenWords).toEqual([]);
+        // A stop's name of one line stands level with its time and its
+        // dot: at the middle of a row as high as a touch target.
+        const offLevel = await page.evaluate(() =>
+          [...document.querySelectorAll<HTMLElement>('[data-testid="route-stop"]')]
+            .filter((stop) => stop.getClientRects().length > 0)
+            .flatMap((stop) => {
+              const name = stop.querySelector<HTMLElement>('[role="button"] [dir]');
+              if (name === null) return ["a stop with no name"];
+              const box = name.getBoundingClientRect();
+              if (box.height > parseFloat(getComputedStyle(name).lineHeight) * 1.5) return [];
+              const from = box.top + box.height / 2 - stop.getBoundingClientRect().top;
+              return Math.abs(from - 22) > 3 ? [`${name.textContent} at ${String(from)}`] : [];
+            }),
+        );
+        expect(offLevel).toEqual([]);
         // Where you sit: the words stand beside the car, also this narrow.
         const seats = page.getByTestId("where-you-sit").filter({ visible: true });
         const car = await box(seats.getByTestId("seat-view"));

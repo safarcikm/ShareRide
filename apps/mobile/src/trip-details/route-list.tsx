@@ -212,11 +212,13 @@ const styles = StyleSheet.create({
   content: { flex: 1, paddingBottom: spacing.ms, gap: spacing.sm },
   // "Get in" or "Get out" stands beside the stop's name, and goes under it
   // where the name would be left with less than most of the row, as with
-  // large text on a narrow phone.
+  // large text on a narrow phone. One line stands at the middle of the
+  // row, level with the time and the dot.
   stop: {
     flexDirection: "row",
     flexWrap: "wrap",
     alignItems: "center",
+    alignContent: "center",
     columnGap: spacing.sm,
     rowGap: spacing.xs,
     minHeight: minTouchTarget,

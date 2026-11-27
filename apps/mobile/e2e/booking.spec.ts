@@ -242,3 +242,55 @@ test.describe("booking before having an account", () => {
     await expect(page.getByText(/^2 sæti × [\d.]+ kr\.$/).filter({ visible: true })).toBeVisible();
   });
 });
+
+// A screen's main button stands in the same place on every screen (spec
+// 31, R31.1 and 3.19), so a second press meant for one lands on the next:
+// for half a second after a main button took a press, none takes one.
+// On the part between the two the other journeys book, and nothing is
+// booked.
+test.describe("a double press on a main button", () => {
+  test.use({ locale: "en-GB" });
+
+  test("opens Check and pay and pays nothing: Pay waits half a second, and says so", async ({
+    page,
+  }) => {
+    const journey: Journey = {
+      ...inEnglish,
+      from: "hell",
+      fromPoint: /^N1 Hella,/,
+      to: "hvols",
+      toPoint: /^N1 Hvolsvöllur,/,
+      result: /^Leaves N1 Hella at \d\d:\d\d, .*Jón, New driver/,
+    };
+    await signUp(page, journey.account, "Dísa");
+    await openTrip(page, journey);
+    const asked: string[] = [];
+    page.on("request", (request) => {
+      if (request.method() === "POST" && new URL(request.url()).pathname.startsWith("/v1/bookings"))
+        asked.push(request.url());
+    });
+
+    // A double click: the second press lands on Book again, or on Pay, which
+    // stands where Book stood. Neither does anything: nothing is asked of
+    // the server, no payment opens, and Pay takes a press again after the wait.
+    const book = page.getByRole("button", { name: journey.book, exact: true });
+    await book.dblclick();
+    await expect(page).toHaveURL(/\/book\?from=1&to=2&seats=1&/);
+    await expect(page.getByRole("heading", { name: journey.title })).toBeVisible();
+    await expect(page.getByRole("button", { name: journey.pay })).toBeEnabled();
+    expect(asked).toEqual([]);
+    await expect(page.getByRole("heading", { name: journey.sheet })).toBeHidden();
+
+    // While it waits a button says so, to a screen reader and to a
+    // journey's next click, and keeps its place for the keyboard.
+    await page.goBack();
+    await expect(book).toBeEnabled();
+    const waits = await book.evaluate(async (button: HTMLElement) => {
+      button.click();
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      return { said: button.getAttribute("aria-disabled"), tab: button.tabIndex };
+    });
+    expect(waits).toEqual({ said: "true", tab: 0 });
+    expect(asked).toEqual([]);
+  });
+});

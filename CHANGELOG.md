@@ -1877,6 +1877,23 @@ releases follow [Semantic Versioning](https://semver.org/).
   at a meeting point say what happened as the page's title, with focus,
   and the way on is the main button. A test opens every page a signed-in
   member reaches, 86 pages and states, and checks both rules.
+- A main button takes no press for half a second after one was pressed
+  (spec 31, 3.20; the last pass, part two). It stands in the same place
+  on every screen, so a second press meant for "Send report" landed on
+  "Back to the ride" before the outcome was read, and one meant for a
+  ride's "Send request" on the next page's. The wait starts again when
+  the press opens another page and when another main button comes of it.
+  A waiting button looks as it did and says to a screen reader that it is
+  not to be pressed.
+- Text twice as large fits a phone 360 wide (spec 31, 3.20): the menu's
+  names stay in their places, on two rows on the web where they must,
+  with the icons in a line (also in Icelandic with the text as set, where
+  "Ferðirnar mínar" has two lines); Find's name line puts the language
+  under the name; the road says "Step 2 of 4: Confirmed" in one line
+  where its names have no room; "Get in" and "Get out" go under a stop's
+  name on a ride's page; and the question about cookies stands over the
+  menu as it is laid out. The journeys measure these with the text as
+  set and twice as large.
 - The web journeys never give two test accounts the same phone number: a
   run in ten did, and a sign-in journey then failed.
 - CI skips its code jobs (bundles, unit, integration and web tests, the API

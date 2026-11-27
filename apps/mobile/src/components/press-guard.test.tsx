@@ -198,6 +198,45 @@ describe("PressGuard", () => {
     expect(publish).toHaveBeenCalledTimes(1);
   });
 
+  it("holds the main button of a page a press opened from when it comes, though the page is slow to show it", async () => {
+    function Pages({ onPay }: { readonly onPay: () => void }) {
+      const [page, setPage] = useState("ride");
+      const [read, setRead] = useState(false);
+      useNewPageHolds(page);
+      if (page === "ride") {
+        return (
+          <Button
+            main
+            label="Book"
+            onPress={() => {
+              // The page opens at once, and reads the ride before it has its button.
+              setPage("check");
+              setTimeout(() => {
+                setRead(true);
+              }, 2_000);
+            }}
+          />
+        );
+      }
+      return read ? <Button main label="Pay" onPress={onPay} /> : null;
+    }
+    const pay = jest.fn();
+    await render(
+      <PressGuard>
+        <Pages onPay={pay} />
+      </PressGuard>,
+    );
+    await fireEvent.press(button("Book"));
+    await later(2_000);
+    // A press meant for Book, repeated until something happens, pays nothing.
+    expect(button("Pay")).toBeDisabled();
+    await fireEvent.press(button("Pay"));
+    expect(pay).not.toHaveBeenCalled();
+    await later(500);
+    await fireEvent.press(button("Pay"));
+    expect(pay).toHaveBeenCalledTimes(1);
+  });
+
   it("does not hold on a new page that no press on a main button opened", async () => {
     function Pages({ onPublish }: { readonly onPublish: () => void }) {
       const [page, setPage] = useState("price");

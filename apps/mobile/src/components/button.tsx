@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react-native";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useHover } from "@/theme/hover";
 import { chunky } from "@/theme/pressable";
 import {
@@ -110,6 +110,15 @@ function look(variant: Variant, palette: Palette, disabled: boolean, hovered: bo
   }
 }
 
+/**
+ * On the web a pressable writes `aria-disabled` from `disabled` alone,
+ * over the one given, so a held button would say nothing: the library's
+ * older name for it is let through. A held button is not `disabled`, which
+ * would take it out of the keyboard's order for the half second.
+ */
+const saidOnWeb = (held: boolean): object =>
+  Platform.OS === "web" && held ? { accessibilityDisabled: true } : {};
+
 /** A press as a link looks at it; a button looks at nothing. */
 interface Press {
   readonly preventDefault?: () => void;
@@ -176,6 +185,7 @@ export function Button({
       aria-expanded={expanded}
       // Not `false`, which would say "not disabled" over aria-disabled on a phone.
       disabled={inactive ? true : undefined}
+      {...saidOnWeb(held)}
       {...taking(href === undefined ? { onPress } : linkProps(href), held, tookPress)}
       {...hover}
       style={({ pressed }) => [
