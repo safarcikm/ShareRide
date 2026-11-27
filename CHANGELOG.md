@@ -1701,6 +1701,14 @@ releases follow [Semantic Versioning](https://semver.org/).
   `accessibilityState`, so they use `aria-*` props instead. On the web,
   Space ticks a tick box or picks a chip, and a text field's help or error
   is its description (the web build also ignored `accessibilityHint`).
+- Phone builds and journeys fail less often by chance. The Android splash
+  pictures are made once and used in the dark too: two sets from the same
+  picture were made at the same time through one cache file, and a build
+  now and then read it half written ("Could not find MIME for Buffer
+  <null>"). The iPhone Sign up journey types the code one digit at a time,
+  because the whole code at once now and then outran the field. The
+  Android emulator closes another app that stalls instead of showing an
+  "isn't responding" box over ours.
 
 ### Changed
 
