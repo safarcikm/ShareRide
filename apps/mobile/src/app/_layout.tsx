@@ -1,4 +1,5 @@
 import { Stack, usePathname, type ErrorBoundaryProps } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import { useEffect, type ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -30,6 +31,9 @@ installFocusRing();
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
+      {/* The phone's clock and battery: dark on the light look, light on
+          the dark one, as the app follows the phone's setting. */}
+      <StatusBar style="auto" />
       <LanguageProvider>
         <SessionProvider>
           <ConfigProvider>
@@ -182,6 +186,7 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   }, [error]);
   return (
     <SafeAreaProvider>
+      <StatusBar style="auto" />
       <LanguageProvider>
         <UnexpectedError retry={retry} />
       </LanguageProvider>

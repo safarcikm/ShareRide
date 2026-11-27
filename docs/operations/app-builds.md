@@ -194,3 +194,22 @@ the App Store Connect API key in its credentials service. To withdraw them:
 remove the key in App Store Connect (**Users and Access**, **Integrations**)
 and revoke the certificate in the Apple Developer account
 (**Certificates**); the next build makes new ones.
+
+### What the apps ask the phone for
+
+The store pages' privacy answers and the reviewers read these from the
+built app, so `app.json` keeps them to what the app uses
+(`src/__tests__/phone-settings.test.ts`, spec 32, section 1.1):
+
+- Photos and the camera, for a profile photo, with our own reason in
+  `app.json` (`expo-image-picker`); no microphone.
+- No Face ID (`expo-secure-store` with `faceIDPermission: false`) and no
+  motion data (`expo-sensors` with `motionPermission: false`): shaking for
+  feedback reads the accelerometer, which iOS gives without asking.
+- Android: no drawing over other apps (`SYSTEM_ALERT_WINDOW` blocked); the
+  storage permissions stay only for Android 12 and older.
+- iPhone only (`supportsTablet: false`), so the App Store asks for no iPad
+  screenshots. `expo-system-ui` lets Android follow the phone's dark mode.
+
+Check what a change makes with `npx expo config --type introspect` in
+`apps/mobile`: it prints the Info.plist and Android manifest.

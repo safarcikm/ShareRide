@@ -8,7 +8,7 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "is.puffinride.app.preview",
       "config": {
         "usesNonExemptEncryption": false
@@ -26,7 +26,8 @@
         "monochromeImage": "./assets/android-icon-monochrome.png",
         "backgroundColor": "#2F6B4F"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "blockedPermissions": ["android.permission.SYSTEM_ALERT_WINDOW"]
     },
     "web": {
       "output": "single",
@@ -40,7 +41,12 @@
         }
       ],
       "expo-localization",
-      "expo-secure-store",
+      [
+        "expo-secure-store",
+        {
+          "faceIDPermission": false
+        }
+      ],
       "expo-web-browser",
       [
         "expo-image-picker",
@@ -55,6 +61,12 @@
         {
           "icon": "./assets/android-icon-monochrome.png",
           "color": "#2F6B4F"
+        }
+      ],
+      [
+        "expo-sensors",
+        {
+          "motionPermission": false
         }
       ],
       [

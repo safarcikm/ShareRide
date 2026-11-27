@@ -104,15 +104,21 @@ from a workflow button.
 
 ## PR 3 and on: what the phone runs show (`fix(mobile)`)
 
-- [ ] `expo-system-ui` for Android's dark mode; test: the app icon test's
-  config read shows the plugin.
-- [ ] Permission texts: `expo-secure-store` with `faceIDPermission: false`;
-  `expo-sensors` with `motionPermission: false` if the shake still works on
-  the simulator, otherwise a reason in both languages in `locales/*.json`.
-- [ ] `android.blockedPermissions`: `android.permission.SYSTEM_ALERT_WINDOW`.
-- [ ] `ios.supportsTablet: false`.
-- [ ] Each problem the screenshots show, with a Maestro step or a screen
-  test that fails first. One PR per kind of problem.
+- [x] `expo-system-ui` for Android's dark mode; test:
+  `phone-settings.test.ts`.
+- [x] Permission texts: `expo-secure-store` with `faceIDPermission: false`;
+  `expo-sensors` with `motionPermission: false` (the shake reads only the
+  accelerometer, whose iOS module never asks for motion permission).
+- [x] `android.blockedPermissions`: `android.permission.SYSTEM_ALERT_WINDOW`.
+- [x] `ios.supportsTablet: false`.
+- [x] The status bar (the phone's clock and battery) takes the app's light
+  or dark look, with `expo-status-bar` at the root: on Android it was
+  white over the light sky of Find. Test: `status-bar.test.tsx`.
+- [x] Each problem the screenshots show, with a Maestro step or a screen
+  test that fails first. One PR per kind of problem. The first green runs
+  (2026-11-27, both phones, all six journeys) showed only the status bar
+  above. Their screens: [iPhone](../specs/images/phone-apps/first-run-iphone.jpg)
+  and [Android](../specs/images/phone-apps/first-run-android.jpg).
 
 ## PR 4: store-ready settings (`feat(mobile)`)
 
