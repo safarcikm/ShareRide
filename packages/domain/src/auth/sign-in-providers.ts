@@ -10,6 +10,23 @@ import type { RateLimitRule } from "./rate-limit.ts";
 export const signInProviders = ["google", "apple"] as const;
 export type SignInProvider = (typeof signInProviders)[number];
 
+/** Where the app runs, as the sign-in rules tell them apart. */
+export type SignInPlatform = "ios" | "android" | "web";
+
+/**
+ * The providers an app offers of those the API has set up (spec 32, 3.3;
+ * R32.5): all of them, except Google on the iPhone without Sign in with
+ * Apple beside it, as Apple's guideline 4.8 asks. Members who joined with
+ * Google sign in there with an email code to their Google address.
+ */
+export function providersOffered(
+  enabled: readonly SignInProvider[],
+  platform: SignInPlatform,
+): SignInProvider[] {
+  if (platform !== "ios" || enabled.includes("apple")) return [...enabled];
+  return enabled.filter((provider) => provider !== "google");
+}
+
 export const providerSignInRules = {
   /** From the tap to the provider's answer. */
   startValidSeconds: 10 * 60,

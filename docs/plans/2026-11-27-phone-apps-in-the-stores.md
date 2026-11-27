@@ -188,14 +188,19 @@ its test), `apps/mobile/src/app/_layout.tsx`,
 `apps/mobile/src/sign-in/provider-buttons.tsx`, the Sign-in methods
 screen, `apps/mobile/src/__tests__/provider-sign-in.test.tsx`.
 
-- [ ] Tell the "Make sign-in easiest" thread first: it is changing the same
-  screens.
-- [ ] Domain, test first: `providersOffered(enabled: SignInProvider[],
+- [x] Tell the "Make sign-in easiest" thread first: it is changing the same
+  screens. (Not needed: it had finished, merged and released, on
+  2026-11-27 before this PR.)
+- [x] Domain, test first: `providersOffered(enabled: SignInProvider[],
   platform: "ios" | "android" | "web"): SignInProvider[]` drops `google`
   on `ios` unless `apple` is enabled too (R32.5).
-- [ ] Screens: sign-in and step 1 without the Google button on iOS;
+- [x] Screens: sign-in and step 1 without the Google button on iOS;
   Sign-in methods lists a linked Google with Remove but no Add on iOS; the
-  Review focus 3 note.
+  Review focus 3 note. The app reads the platform through
+  `apps/mobile/src/sign-in/platform.ts`, so screen tests choose it (Jest
+  runs as iOS): `iphone-sign-in.test.tsx` for the iPhone, `passkey.test.tsx`
+  as the website. On iOS, step 1's line for members who joined with their
+  number says "your email" without "or Google".
 
 ## PR 7: links that open the app (`feat(app-links)`)
 

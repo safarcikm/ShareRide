@@ -180,6 +180,11 @@ export const is = {
   "auth.email.send": "Senda kóða",
   "auth.email.before":
     "Skráðir þú þig með símanúmeri? Notaðu netfangið þitt eða Google og svo sama númer. Því er bætt við aðganginn þinn.",
+  /** On the iPhone, which offers no Google until Sign in with Apple comes (spec 32, 3.3). */
+  "auth.email.beforeNoGoogle":
+    "Skráðir þú þig með símanúmeri? Notaðu netfangið þitt og svo sama númer. Því er bætt við aðganginn þinn.",
+  "auth.email.googleOnIphone":
+    "Skráðir þú þig með Google? Sláðu inn Google-netfangið þitt og við sendum þér kóða. Ef það virkar ekki, skráðu þig einu sinni inn á puffinride.is með Google og bættu við netfangi.",
   "auth.email.unavailable": "Innskráning með netfangi er ekki í boði á þessum netþjóni.",
   "auth.emailCode.help": "Við sendum {length} stafa kóða á {email}.",
   "auth.emailCode.change": "Breyta netfanginu",
