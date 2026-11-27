@@ -4,32 +4,42 @@
     "appVersionSource": "remote"
   },
   "build": {
-    "preview": {
+    "production": {
       "distribution": "store",
-      "environment": "preview",
+      "environment": "production",
+      "channel": "production",
       "node": "26.13.1",
       "pnpm": "12.18.0",
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://puffinride.is",
+        "EXPO_PUBLIC_APP_ENV": "production"
+      },
+      "android": {
+        "buildType": "app-bundle"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "environment": "preview",
+      "channel": "preview",
+      "node": "26.13.1",
+      "pnpm": "12.18.0",
+      "autoIncrement": true,
       "env": {
         "EXPO_PUBLIC_API_URL": "https://staging.puffinride.is",
         "EXPO_PUBLIC_APP_ENV": "staging"
       },
-      "ios": {
-        "autoIncrement": true
-      }
-    },
-    "preview-apk": {
-      "extends": "preview",
-      "distribution": "internal",
       "android": {
-        "buildType": "apk",
-        "autoIncrement": true
+        "buildType": "apk"
       }
     }
   },
   "submit": {
-    "preview": {
-      "ios": {
-        "appName": "PuffinRide Preview"
+    "production": {
+      "android": {
+        "track": "internal",
+        "releaseStatus": "draft"
       }
     }
   }

@@ -652,7 +652,11 @@ Staging shows no "Continue with Apple" until Apple knows PuffinRide
 paid Apple Developer Program, even for the web. The beta uses Martin's own
 developer account with the test App ID `is.puffinride.app.preview`, so the
 store's `is.puffinride.app` stays free for the company's account (spec 19,
-3.5). Martin's steps:
+3.5). Spec 32 has since put the store app in Martin's account
+([ADR 0051](../decisions/0051-store-apps-in-martins-name-until-the-company.md))
+and dropped the `.preview` App ID: when Apple sign-in is turned on, use
+`is.puffinride.app` wherever these steps say `is.puffinride.app.preview`.
+Martin's steps:
 
 1. If not a member yet: [Apple Developer Program](https://developer.apple.com/programs/enroll/),
    **Start your enrollment**, as an individual (99 USD a year). Apple can

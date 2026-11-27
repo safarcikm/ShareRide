@@ -2,14 +2,21 @@
   "expo": {
     "name": "PuffinRide",
     "slug": "puffinride",
+    "owner": "puffinride.is",
     "scheme": "puffinride",
-    "version": "0.1.0",
+    "version": "1.0.0",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/59be70df-a793-46df-9e42-b3a592af7549"
+    },
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "is.puffinride.app.preview",
+      "bundleIdentifier": "is.puffinride.app",
       "config": {
         "usesNonExemptEncryption": false
       },
@@ -89,6 +96,11 @@
     },
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "59be70df-a793-46df-9e42-b3a592af7549"
+      }
     }
   }
 }

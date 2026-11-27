@@ -40,7 +40,7 @@ Everything needed to understand, build and run PuffinRide. Start with the
 ## Operations
 
 - [Staging runbook](operations/staging.md): set up, deploy, roll back, logs, restore
-- [App builds runbook](operations/app-builds.md): iPhone builds in Expo's cloud and TestFlight
+- [App builds runbook](operations/app-builds.md): store builds in Expo's cloud, TestFlight and Google Play's internal testing
 
 ## Compliance
 

@@ -1,27 +1,31 @@
 # App builds runbook
 
-**Owner:** Martin · **Last reviewed:** 2026-11-15
+**Owner:** Martin · **Last reviewed:** 2026-11-27
 
-How the phone apps are built and reach the team's phones. Builds run in
-Expo's cloud (EAS Build, [ADR 0003](../decisions/0003-cross-platform-client-expo.md)),
-which has its own Macs, so a Windows PC is enough. The settings are in
-[`apps/mobile/eas.json`](../../apps/mobile/eas.json) and
+How the phone apps are built and reach the stores' test tracks
+([spec 32](../specs/2026-11-27-phone-apps-in-the-stores.md),
+[ADR 0051](../decisions/0051-store-apps-in-martins-name-until-the-company.md)).
+Builds run in Expo's cloud (EAS Build,
+[ADR 0003](../decisions/0003-cross-platform-client-expo.md)), which has its
+own Macs, started by the **Build the apps** button in GitHub Actions. The
+settings are in [`apps/mobile/eas.json`](../../apps/mobile/eas.json) and
 [`apps/mobile/app.json`](../../apps/mobile/app.json).
-
-The iPhone comes first. An Android build to install by hand comes with push
-([below](#android-build-with-push)); Google Play and development builds
-follow ([milestone 2 plan](../plans/2026-11-13-milestone-2-hosted-and-connected.md#pr-5b-featmobile-development-builds-android-and-maestro)).
 
 | Build | For | What it is |
 | ----- | --- | ---------- |
-| `preview` on iPhone | The team | The app on its own, signed for the App Store and sent to **TestFlight**, Apple's app for testing. It talks to [staging](staging.md) and needs no computer once installed |
-| `preview-apk` on Android | The team | The same app as an APK file, installed straight from its build page on a phone or the emulator, with push. No Google Play account needed |
+| `production` on iPhone | Testers, then the App Store | Signed for the App Store and sent to **TestFlight**, Apple's app for testing. It talks to `https://puffinride.is` |
+| `production` on Android | Testers, then Google Play | An app bundle sent to Google Play's **internal testing** as a draft. It talks to `https://puffinride.is` |
+| `preview` on Android | The team | An APK file installed straight from its build page, against [staging](staging.md), with push. No Google Play needed |
+
+There is no staging build for the iPhone: testers outside the team use the
+production app, and staging never holds a tester's real data (R32.1).
 
 | Setting | Value |
 | ------- | ----- |
-| App ID (bundle identifier) | `is.puffinride.app.preview`, under Martin's own Apple account ([plan, decision 6](../plans/2026-11-13-milestone-2-hosted-and-connected.md#3-decisions-for-martin)). The store app ID comes with the company's account |
-| API | `https://staging.puffinride.is`, the address in the [staging runbook](staging.md). If staging moves to another address, change `EXPO_PUBLIC_API_URL` in `eas.json` first |
-| Build number | Counted up by Expo for each build; the version (`0.1.0`) is in `app.json` |
+| App ID | `is.puffinride.app` in both stores, under Martin's own accounts until the company has its own (ADR 0051) |
+| expo.dev project | `puffinride`, owner `puffinride.is`; its ID is in `app.json` (`extra.eas.projectId`) |
+| Version | `1.0.0` in `app.json`; build numbers counted up by Expo for each build |
+| Over-the-air updates | Channel `production` or `preview`, for builds of the same version only ([below](#over-the-air-updates)) |
 | Error reports | Off on phones for now: the build has no Sentry DSN until native crash reports are checked against the [privacy table](../compliance/privacy-gdpr.md#providers). Testers' crash reports and feedback reach App Store Connect through TestFlight |
 
 Expo's free plan includes 15 iPhone builds a month, in a slower queue. The
@@ -29,173 +33,236 @@ Starter plan ($19 a month) has a faster one if the wait gets in the way.
 
 ## Set it up (once)
 
-Martin's steps, with the shared project email address.
+Martin's steps (spec 32, section 11). Never paste a password, key or token
+in a chat; each goes only where its step says.
 
-1. **Apple Developer Program.** On the iPhone, install the Apple Developer
-   app and sign in with the Apple ID (two-factor sign-in must be on). Tap
-   **Account**, then **Enroll**, as an individual with the legal name and a
-   passport for the photo check. It costs $99 a year. Approval can take a
-   few days.
-2. **Expo.** Create an account at expo.dev. Choose **Create a project**,
-   name it `puffinride` (the slug must be `puffinride`), and send the
-   project ID to the build thread. It is not a secret; it goes in `app.json`
-   as `extra.eas.projectId`, so builds know their project.
-3. **The PC.** Follow the README's [one-time setup](../../README.md#one-time-setup)
-   (Git, Node.js 26, pnpm 12, the repository, `pnpm install`), then install
-   Expo's command-line tool and sign in:
+1. **Apple Developer Program**, as an individual: done 2026-11-27, team ID
+   `855RK3C94D`.
+2. **expo.dev:** the account `puffinride.is` and the project `puffinride`:
+   done 2026-11-27.
+3. **Expo's key for GitHub:** a robot with the Developer role on expo.dev,
+   its token in the repository's **Settings**, **Secrets and variables**,
+   **Actions**, as `EXPO_TOKEN`: done 2026-11-27.
+4. **Apple's certificate and keys, from the PC.** Expo can only make them
+   while someone signs in to Apple, so this is the one step that needs the
+   PC. With the repository up to date (`git pull`, then `pnpm install`):
 
    ```sh
-   npm install --global eas-cli@27
-   eas login
+   cd apps/mobile
+   npx eas-cli@27.11.0 login
+   npx eas-cli@27.11.0 credentials --platform ios
    ```
 
-## Build and send to TestFlight
+   Choose the **production** profile, then sign in with the Apple ID of the
+   developer account and the six-digit code Apple shows on the iPhone. Then:
 
-Pull the latest `main` first (`git pull`), so the build has the project ID.
-Then, in the repository folder:
+   - **Build Credentials**, **Set up all the required credentials**: yes to
+     every question, so Expo registers the app ID `is.puffinride.app` and
+     makes the distribution certificate and the provisioning profile.
+   - **Push Notifications**, **Set up a push key**: yes, a new one.
+   - **App Store Connect**, **Set up your project to use an API Key for EAS
+     Submit**: yes, a new one.
 
-```sh
-cd apps/mobile
-eas build --platform ios --profile preview --auto-submit
-```
+   Expo keeps all three; nothing goes in the repository.
+5. **The app in App Store Connect.** At
+   [appstoreconnect.apple.com](https://appstoreconnect.apple.com), **Apps**,
+   **+**, **New App**: platform iOS, name **PuffinRide** (if it is taken,
+   **PuffinRide Iceland**), primary language **English (U.K.)** (the App
+   Store has no Icelandic page), bundle ID `is.puffinride.app`, SKU
+   `puffinride`, full access. Then **App Information** shows its **Apple
+   ID**, a number. Send it to the build thread: it is not a secret, and it
+   goes in `eas.json` as `ascAppId`, which builds need to send to
+   TestFlight.
+6. **Google Play**, once the account is approved: the app in the Play
+   Console, and a service account so builds reach internal testing by
+   themselves (sent separately, with the account).
+7. **Push on Android:** the Firebase project `puffinride`. Its
+   `google-services.json` goes on expo.dev, **Project settings**,
+   **Environment variables**, as `GOOGLE_SERVICES_JSON`, type **File**,
+   visibility **Secret**, environments **production** and **preview**.
+   The FCM V1 key: as in [Android build with push](#android-build-with-push),
+   step 4.
 
-The first time, the command asks some questions:
+The organisation `puffinride.is` on Google Cloud blocks service account
+keys (`iam.disableServiceAccountKeyCreation`), which both the FCM key and
+the Play service account need. Switch the block off for the one project,
+make the key, then switch it back on; the key keeps working. The Cloud
+Console's role search did not find the role needed, so use **Cloud Shell**
+(the **>_** icon at the top right of the Cloud Console), signed in as
+`admin@puffinride.is`:
 
-- **Sign in to Apple:** the Apple ID of the developer account, then the
-  six-digit code Apple shows on the iPhone.
-- **Distribution certificate and provisioning profile:** answer yes to let
-  Expo make them. Expo keeps them, so later builds ask nothing.
-- **App Store Connect API key** (for the upload to TestFlight): answer yes
-  to let Expo make one.
+1. Once: give yourself the role Organization Policy Administrator.
 
-Right after the build is queued, the command also creates the app in App
-Store Connect, named **PuffinRide Preview** (`appName` in `eas.json`). The
-name PuffinRide stays free for the company's store app; on the phone the app
-is still called PuffinRide. If the name is taken, it adds a few random
-letters, such as `PuffinRide Preview (a1b2c3)`, which can be changed in App
-Store Connect. It also creates an internal TestFlight group, **Team
-(Expo)**, which gets every new build by itself, and adds the account's
-admins to it.
+   ```sh
+   ORG=$(gcloud organizations list --format="value(name.basename())" --limit=1)
+   gcloud organizations add-iam-policy-binding "$ORG" --member="user:admin@puffinride.is" --role="roles/orgpolicy.policyAdmin" --condition=None
+   ```
 
-The terminal shows a link to the build's page on expo.dev, where it can be
-followed. The build waits in the queue, builds and uploads to App Store
-Connect. Apple then processes it, often in 5 to 10 minutes, and sends an
-email when it is ready.
+2. Find the project's ID (`gcloud projects list`), then set it, for
+   example `PROJECT=puffinride-12345`.
+3. Switch the block off for that project. Answer **y** if it offers to
+   enable an API; "not found" for the second one is fine.
 
-Later builds are the same command, without the questions.
+   ```sh
+   for c in iam.disableServiceAccountKeyCreation iam.managed.disableServiceAccountKeyCreation; do
+     printf 'name: projects/%s/policies/%s\nspec:\n  rules:\n  - enforce: false\n' "$PROJECT" "$c" > off.yaml
+     gcloud org-policies set-policy off.yaml
+   done
+   ```
+
+4. Wait a few minutes, make the key, then switch the block back on:
+
+   ```sh
+   for c in iam.disableServiceAccountKeyCreation iam.managed.disableServiceAccountKeyCreation; do gcloud org-policies delete "$c" --project="$PROJECT"; done
+   ```
+
+## Build
+
+In GitHub, **Actions**, **Build the apps**, **Run workflow**: branch
+**main**, the app (both, android or iphone) and the profile (`production`,
+or `preview` for the team's Android file).
+
+1. The phone journeys run first on the same commit, on an emulator and the
+   simulator (about 45 minutes). If one fails, nothing is built (R32.3).
+2. Then Expo builds. The run's summary links to the builds on expo.dev,
+   where they can be followed; each waits in Expo's queue, then builds.
+3. A `production` build is sent on by itself: the iPhone build to App
+   Store Connect, where Apple processes it in 5 to 10 minutes and emails
+   when it is ready; the Android build to Google Play's internal testing,
+   as a draft.
+
+Sending a build to testers outside the team or to the public is always
+Martin's go (R32.2), in App Store Connect and the Play Console.
+
+The same build can be started from the PC, with the same settings, but it
+builds the files on the PC rather than what the journeys checked:
+`npx eas-cli@27.11.0 build --platform ios --profile production --auto-submit`.
 
 ### Install it on the iPhone
 
 The first time:
 
-1. In [App Store Connect](https://appstoreconnect.apple.com), open
-   **Apps**, then **PuffinRide Preview**, then **TestFlight**.
-2. Under **Internal Testing**, open **Team (Expo)** and check that you are
-   listed. Add other people on the App Store Connect team there; do not make
-   a second group.
+1. In App Store Connect, open **Apps**, **PuffinRide**, **TestFlight**.
+2. Under **Internal Testing**, make a group named **Team** and add yourself
+   and the others on the App Store Connect team. Turn on automatic
+   distribution, so each new build reaches them.
 3. On the iPhone, install **TestFlight** from the App Store, open the
    invitation email, and install PuffinRide.
 
 Internal testers need no review from Apple. A build expires after 90 days;
 a newer build replaces it.
 
+### The first Android build
+
+Google's interface for uploads may refuse an app's very first upload. If
+the submission on expo.dev says so, download the `.aab` from the build's
+page and upload it once by hand: Play Console, **Test and release**,
+**Testing**, **Internal testing**, **Create new release**. Later builds go
+up by themselves.
+
 ### If it fails
 
-- **Apple asks to accept an agreement:** a new developer account must accept
-  Apple's latest agreement first. Accept it in the Apple Developer account
-  or in App Store Connect (**Business**), then run the command again.
-- **The upload failed but the build finished:** send it again with
-  `eas submit --platform ios --profile preview --latest`.
-- **Anything else:** send the error from the build page on expo.dev to the
-  build thread. Do not paste keys or certificates.
+- **Apple asks to accept an agreement:** accept Apple's latest agreement in
+  App Store Connect (**Business**), then run the button again.
+- **Credentials are missing:** step 4 of the setup has not been done, or
+  was done for another profile.
+- **The upload failed but the build finished:** from the PC,
+  `npx eas-cli@27.11.0 submit --platform ios --profile production --latest`
+  (or `android`).
+- **Anything else:** send the error from the build's page on expo.dev to
+  the build thread. Do not paste keys or certificates.
 
 ## Android build with push
 
 Push needs a build of the app: Expo Go cannot receive push. Pushes go
 through Expo's push service and Google's Firebase Cloud Messaging
 ([ADR 0026](../decisions/0026-push-through-expo.md)), so Expo needs a
-Firebase project's key. Do this once the Expo project ID is in `app.json`
-(step 2 above) and the PC is set up (step 3).
+Firebase project's key.
 
 ### Set it up (once)
 
 1. **Firebase project.** At [console.firebase.google.com](https://console.firebase.google.com),
-   with the shared project Google account, choose **Create a project**,
-   name it `puffinride-staging`, and turn Google Analytics off.
+   with the shared project Google account, the project `puffinride`, with
+   Google Analytics off.
 2. **The Android app in it.** In the project, choose **Add app**, then
    **Android**. Package name: `is.puffinride.app`; nickname: PuffinRide.
    Choose **Register app**, then **Download google-services.json**. Skip the
    remaining steps: Expo does them.
-3. **Give the file to Expo, not to the repository.** On
-   [expo.dev](https://expo.dev), open the `puffinride` project, then
-   **Project settings**, **Environment variables**, **Add Variables**. Name
-   `GOOGLE_SERVICES_JSON`, the file as its value, environment **preview**
-   only, visibility **Secret**. Builds read it through `app.config.ts`;
-   the repository ignores the file, so it is never committed.
+3. **Give the file to Expo, not to the repository**, as setup step 7 says.
+   Builds read it through `app.config.ts`; the repository ignores the file,
+   so it is never committed.
 4. **The push key.** Back in Firebase, open the gear, **Project settings**,
    **Service accounts**, then **Generate new private key** and **Generate
-   key**. On expo.dev, open **Credentials**, **Android**, add the
-   application identifier `is.puffinride.app`, then under **Service
-   credentials**, **FCM V1 service account key**, choose **Add a service
-   account key**, upload the downloaded file and **Save**. Then delete the
-   file from the PC: Expo keeps the key, and Firebase can make a new one.
+   key** (the organisation policy above may block it first). On expo.dev,
+   open **Credentials**, **Android**, the application identifier
+   `is.puffinride.app`, then under **Service credentials**, **FCM V1
+   service account key**, choose **Add a service account key**, upload the
+   downloaded file and **Save**. Then delete the file from the PC: Expo
+   keeps the key, and Firebase can make a new one.
 5. **Recommended: only the API may push.** On expo.dev, in the account's
    settings under [Access tokens](https://expo.dev/settings/access-tokens),
-   make a token and add it to Render's `shareride-staging` environment
-   group as `EXPO_ACCESS_TOKEN` (a secret, never in chat or the
-   repository). Once staging has restarted, turn on **Enhanced security
-   for push notifications** on the same expo.dev page. In that order: once
-   it is on, a push without the token is refused.
+   make a token and add it to Render's environment groups as
+   `EXPO_ACCESS_TOKEN` (a secret, never in chat or the repository). Once
+   the API has restarted, turn on **Enhanced security for push
+   notifications** on the same expo.dev page. In that order: once it is on,
+   a push without the token is refused.
 
 ### Build and install
 
-```sh
-cd apps/mobile
-eas build --platform android --profile preview-apk
-```
-
-The first time, answer yes when it offers to make an Android keystore;
-Expo keeps it, so later builds ask nothing. When the build is done, its
-page on expo.dev shows **Install** and a QR code:
+Run **Build the apps** with **android** and **preview**. When the build is
+done, its page on expo.dev shows **Install** and a QR code:
 
 - **On a phone:** scan the QR code, download the file and allow installing
-  apps from that browser when Android asks.
+  apps from that browser when Android asks. A phone with the Google Play
+  version installed must remove it first: the two are signed differently.
 - **On the emulator** (Android Studio): download the `.apk` and drag it
   onto the emulator's window.
 
 ### Try push
 
-1. Sign in on the Android app with one phone number, and on the web, in
-   another browser, with a second one. Book a seat on the other person's
-   trip so the two can chat.
-2. Until the app asks for notifications itself (milestone 5, PR 8), allow
-   them by hand: Android **Settings**, **Apps**, **PuffinRide**,
-   **Notifications**, on. Then close PuffinRide fully (swipe it away from
-   recent apps) and open it again, so it registers the phone.
+1. Sign in on the Android app, and on the web, in another browser, as a
+   second person. Book a seat on the other person's trip so the two can
+   chat.
+2. Allow notifications when the app asks.
 3. Close the app on the phone, and send a message from the web. A push
    arrives within about ten seconds; tapping it opens the conversation.
    With the conversation open on the phone, the message appears without a
    push.
 
-If no push arrives, look for `not sent` in staging's logs on Render and
+If no push arrives, look for `not sent` in the API's logs on Render and
 send the line (it carries no tokens or text) to the build thread.
 
 ## What a build uses
 
-Settings come from `eas.json` and are not secret: the staging address and
-`EXPO_PUBLIC_APP_ENV=staging`. The build also reads Expo's **preview**
-environment variables on expo.dev (`environment` in `eas.json`), which hold
-only `GOOGLE_SERVICES_JSON`; keep them so, and change `eas.json` instead. Without that line, an
-App Store build would read Expo's production variables. Never put a secret
-in an `EXPO_PUBLIC_` setting: it is readable inside the app.
+Settings come from `eas.json` and are not secret: the API's address and
+`EXPO_PUBLIC_APP_ENV`, `production` or `staging`. The build also reads
+Expo's environment variables on expo.dev for its profile's `environment`
+(`production` or `preview`), which hold only `GOOGLE_SERVICES_JSON`; keep
+them so, and change `eas.json` instead. Never put a secret in an
+`EXPO_PUBLIC_` setting: it is readable inside the app.
 
-Expo stores the Apple distribution certificate, the provisioning profile and
-the App Store Connect API key in its credentials service. To withdraw them:
-remove the key in App Store Connect (**Users and Access**, **Integrations**)
-and revoke the certificate in the Apple Developer account
-(**Certificates**); the next build makes new ones.
+Expo stores the Apple distribution certificate, the provisioning profile,
+the push key, the App Store Connect API key and the Android upload key in
+its credentials service. To withdraw Apple's: remove the key in App Store
+Connect (**Users and Access**, **Integrations**) and revoke the certificate
+in the Apple Developer account (**Certificates**), then run setup step 4
+again.
 
-### What the apps ask the phone for
+## Over-the-air updates
+
+Each build asks Expo for a newer version of the app's JavaScript on its
+channel (`production` or `preview`) and takes it at the next start. An
+update reaches only builds of the same version (`runtimeVersion` follows
+`version` in `app.json`), so:
+
+- **A change to native code** (a new Expo package, a change to `app.json`
+  or `app.config.ts`) raises the version in `app.json` (`1.0.0` to
+  `1.1.0`) and goes through the stores.
+- **A fix to the screens or texts** can go as an update to the builds of
+  that version. Until a button for updates exists, none is published and
+  the builds run what they were built with.
+
+## What the apps ask the phone for
 
 The store pages' privacy answers and the reviewers read these from the
 built app, so `app.json` keeps them to what the app uses

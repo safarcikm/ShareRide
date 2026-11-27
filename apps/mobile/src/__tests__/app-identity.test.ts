@@ -20,8 +20,8 @@ describe("The app's identity", () => {
     expect(app.expo.scheme).toBe("puffinride");
   });
 
-  it("uses the is.puffinride app IDs, the iPhone preview under its own", () => {
-    expect(app.expo.ios.bundleIdentifier).toBe("is.puffinride.app.preview");
+  it("uses the app ID is.puffinride.app in both stores (spec 32, 3.1)", () => {
+    expect(app.expo.ios.bundleIdentifier).toBe("is.puffinride.app");
     expect(app.expo.android.package).toBe("is.puffinride.app");
   });
 });

@@ -107,10 +107,11 @@ the repository.
 
 | Channel | Who | How |
 | ------- | --- | --- |
-| Development builds | Developers | EAS Build `development` profile |
-| Preview | Owner and testers | EAS Build `preview` profile; TestFlight (iPhone, [runbook](../operations/app-builds.md)) and Google Play internal testing |
-| Production | Everyone | EAS Build `production` profile, EAS Submit to App Store and Google Play |
-| Over-the-air updates | Users on a matching runtime version | EAS Update to the `preview` or `production` channel |
+| Development builds | Developers | EAS Build `development` profile (not set up yet) |
+| Staging (Android only) | The team | EAS Build `preview` profile: an APK against staging, installed by hand ([runbook](../operations/app-builds.md)) |
+| Testers | The team, then outside testers on Martin's go | EAS Build `production` profile, started by **Build the apps** (`build-apps.yml`) after the phone journeys pass on the same commit; EAS Submit sends it to TestFlight and to Google Play's internal testing as a draft |
+| Production | Everyone | The same build, promoted in App Store Connect and the Play Console on Martin's go |
+| Over-the-air updates | Builds of the same app version | EAS Update to the `preview` or `production` channel (`runtimeVersion` follows the app version) |
 
 - Versioning: semantic version for the app (`1.4.0`), automatic build numbers.
 - Over-the-air updates are for JavaScript-only fixes and small changes; native
