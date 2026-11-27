@@ -91,10 +91,10 @@ translation, each with its own texts and pictures.
 PuffinRide
 ```
 
-**Short description**, 74 of 80 characters:
+**Short description**, 75 of 80 characters:
 
 ```text
-Samakstur um allt Ísland: finndu far eða bjóddu laus sætin í bílnum þínum.
+Samakstur um allt Ísland: finndu far eða bjóddu lausu sætin í bílnum þínum.
 ```
 
 **Full description**, 1667 of 4000 characters:

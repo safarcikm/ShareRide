@@ -123,7 +123,7 @@ LISTING = {
         "is": {
             "language": "Icelandic, is-IS",
             "title": "PuffinRide",
-            "short": "Samakstur um allt Ísland: finndu far eða bjóddu laus sætin í bílnum þínum.",
+            "short": "Samakstur um allt Ísland: finndu far eða bjóddu lausu sætin í bílnum þínum.",
             "full": GOOGLE_PLAY_FULL_IS,
         },
     },
