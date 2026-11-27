@@ -293,7 +293,12 @@ Milestone 16: ready for the beta
 
 - [ ] Accessibility pass to WCAG 2.2 AA
 - [ ] Icelandic texts checked by a native speaker
-- [ ] TestFlight and Google Play internal testing builds against production
+- [ ] TestFlight and Google Play internal testing builds against production,
+      then the App Store and Google Play release, moved up from Phase 4 at
+      Martin's request (2026-11-27,
+      [spec 32](../specs/2026-11-27-phone-apps-in-the-stores.md)): the apps
+      run on an emulator and a simulator in CI first, and nothing reaches
+      testers or the stores without Martin's go
 - [x] The real meeting points for the beta corridors in production (a
       point in or near every settlement since spec 21): Martin imported,
       checked and activated the 104 settlement points and the 32 sights on
