@@ -180,6 +180,11 @@ export const en = {
   "auth.email.send": "Send code",
   "auth.email.before":
     "Joined with your phone number? Use your email or Google, then the same number. It's added to your account.",
+  /** On the iPhone, which offers no Google until Sign in with Apple comes (spec 32, 3.3). */
+  "auth.email.beforeNoGoogle":
+    "Joined with your phone number? Use your email, then the same number. It's added to your account.",
+  "auth.email.googleOnIphone":
+    "Joined with Google? Type your Google email and we'll email you a code. If that doesn't work, sign in once on puffinride.is with Google and add an email.",
   "auth.email.unavailable": "Sign-in by email is not available on this server.",
   "auth.emailCode.help": "We emailed a {length}-digit code to {email}.",
   "auth.emailCode.change": "Change email",
