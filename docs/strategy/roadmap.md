@@ -303,6 +303,13 @@ Milestone 16: ready for the beta
       point in or near every settlement since spec 21): Martin imported,
       checked and activated the 104 settlement points and the 32 sights on
       2026-11-22
+- [x] Every screen of the member app on the same rules, "One ride, one
+      ticket" ([spec 31](../specs/2026-11-26-one-ride-one-ticket.md)):
+      built in #257 to #278 and on puffinride.is since 2026-11-27. Its
+      section 3.22 says what is left, with Martin's part: listening with
+      a screen reader, a few things to try in the phone apps, a new
+      version of the legal texts, and Q31 (which pages close for an
+      account that waits to be deleted)
 
 Martin's steps, in the order of what they unblock:
 

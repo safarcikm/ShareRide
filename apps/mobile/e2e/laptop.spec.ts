@@ -6,7 +6,7 @@ import {
 } from "@shareride/contracts";
 import { maxContentWidth } from "@shareride/ui";
 import { apiUrl } from "../playwright.config";
-import { english, signUp } from "./support/account";
+import { english, menuLink, signUp } from "./support/account";
 import { passengerRow } from "./support/driver-ride";
 import { expectNoSidewaysScroll, laptop, widths } from "./support/laptop";
 import { addPhotoBeforePublishing } from "./support/photo";
@@ -1237,6 +1237,10 @@ test.describe("Offer a ride and the driver's ride", () => {
     const head = driver.getByTestId("screen-head").filter(shown);
     await expect(head.getByRole("heading", { name: "Your ride to N1 Selfoss" })).toBeVisible();
     await expect(head.getByText("1 request needs your answer.", { exact: true })).toBeVisible();
+    // My rides lists this ride, so My rides is the place chosen in the menu,
+    // though the ride's address starts as a posting step's does (3.22).
+    await expect(menuLink(driver, "My rides")).toHaveAttribute("aria-current", "page");
+    await expect(menuLink(driver, "Offer")).not.toHaveAttribute("aria-current", "page");
     await expect(main.getByRole("heading", { name: "Needs you" })).toBeVisible();
     const ticket = side.getByTestId("driver-ride-ticket");
     await expect(ticket).toBeVisible();

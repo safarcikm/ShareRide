@@ -7,7 +7,8 @@
 > the spec says what it looks like and why.
 
 **Spec:** [spec 31](../specs/2026-11-26-one-ride-one-ticket.md) · **Date:**
-2026-11-26 · **Status:** In progress
+2026-11-26 · **Status:** Built (2026-11-27; #257 to #278 and the closing
+pull request), and on puffinride.is since that day
 
 **Goal:** every screen of the member app follows the six rules of spec 31,
 so a ride looks the same everywhere, the title says what is going on, what
@@ -1474,6 +1475,8 @@ and item 16, where spec 31 becomes Built and says what is left.
    centred ones are the ones 3.17 names. (Done, PR 12a.)
 3. **Laptop, dark, Icelandic:** each rebuilt screen looked at in the three
    pictures and against its drawing; what differs is fixed or named.
+   (Done, PR 12c, its second pull request: one thing mended, the rest
+   named in spec 31, 3.22.)
 4. **Accessibility:** focus order follows the reading order on each
    rebuilt screen; the road and the tear line are skipped. With text at
    200% on a phone 360 wide, the labels of the tab bar are wider than their
@@ -1488,7 +1491,8 @@ and item 16, where spec 31 becomes Built and says what is left.
    "Where you sit"; Find's yellow card is left, item 6.)
 5. **Sign-in** (3.15): if spec 29's screen has landed by then, the ride
    someone was about to book shows over the form as a ticket; if not, it
-   is named as left for that spec's thread.
+   is named as left for that spec's thread. (It had not: left for that
+   thread, spec 31, 3.15 and 3.22.)
 6. **Small things PR 5's code review named:** after "Show all rides"
    focus goes to the first ride (no longer applies: it opens the All
    rides page, whose title takes focus); a chip is 40 high on the web,
@@ -1558,7 +1562,8 @@ and item 16, where spec 31 becomes Built and says what is left.
     wrong: `useSaid` everywhere, or a rule for it (done, PR 12b: a
     rule, which the seven places with plain words keep).
 12. **Left from My rides (PR 8c):** Coming up and Past are two chips,
-    where the drawing has one control of two halves; the address
+    where the drawing has one control of two halves (kept, PR 12c: spec
+    31, 3.22); the address
     `/drive/trips/new`, a first step outside Offer, which nothing in the
     app opens since My trips went; after "Show all drafts" focus goes to
     a view around the first draft that came, not to its link, so Enter
@@ -1676,7 +1681,8 @@ and item 16, where spec 31 becomes Built and says what is left.
     confirms removing a car, and says why (spec 31, 3.19). The rest is
     still left.
 16. **Docs:** spec 31 becomes Built, with what differs from the drawings;
-    spec 15 has the parts; the roadmap and the changelog.
+    spec 15 has the parts; the roadmap and the changelog. (Done, PR 12c,
+    its second pull request.)
 
 As built, PR 12a (spec 31 says the same where a person sees it, in 3.17,
 3.19 and R31.1):
@@ -2118,8 +2124,60 @@ where a person sees it):
   question of spec 9 and spec 11 and not of the look: Q31 in
   [open questions](../strategy/open-questions.md).
 
+As built, PR 12c, the second of its two (spec 31, 3.22, says the same
+where a person sees it):
+
+- **Against the drawings** (item 3). Each of the proposal's thirteen
+  drawings (`proposal/img/new-*.webp`) was laid beside the picture of
+  the screen as built, and the 84 pictures of `e2e/pictures.spec.ts`
+  were taken again from the finished build, on a phone and on a laptop:
+  62 came out different, and each was looked at and replaced; 22 came
+  out the same to the pixel. The four `parts-*` pictures are not that
+  run's.
+- **One thing mended:** `menuTabOf` (`navigation/menu.ts`) gives My
+  rides for a ride I drive and the screens it opens
+  (`/drive/trips/<id>`, and under it `edit`, `cancel`, `message` and
+  `share`), so a laptop's top bar keeps My rides chosen there, as drawn.
+  It gave Offer for every address under `/drive`. The steps of posting
+  (`stepNames` of `trips/steps.ts`, and `published`),
+  `/drive/trips/new`, My cars and the licence stay Offer's. Tests, seen
+  to fail first: `navigation/menu.test.ts` (every screen under a ride I
+  drive, as `member-screens.ts` lists them, under one place or the
+  other, so a new screen must be put under one; and every step of
+  `stepNames`), `__tests__/menu.test.tsx` (the top bar on a ride I
+  drive) and a line of `laptop.spec.ts` (the menu's link has
+  `aria-current` on the driver's ride).
+- **Named, not changed:** what differs from a drawing for a reason an
+  earlier section gives (spec 31, 3.22, by screen), and what is left.
+- **Sign-in** (item 5): spec 29's screen had not landed, so the ride
+  over the form keeps its small card; left for that spec's thread.
+- **Docs** (item 16): spec 31 is Built and says what differs and what
+  is left (3.22); spec 15 had the parts since PR 2; the roadmap, the
+  changelog and the lists of specs and plans.
+- No change in what the API answers or sends, no migration, no new
+  dependency, no new text.
+- **Code review** (one reviewer, before the pull request): ready with
+  fixes, none in what the code does. Mended: the menu's steps of posting
+  were a second list beside `stepNames`, and the test named the same
+  six, so a step added later would have shown My rides with no test
+  failing; this plan's own status; three lines of 3.22 that said more
+  than the code does (Find's footer is the website's, signed in or not;
+  the line about paying the driver follows the booking, not the switch;
+  "Sign-in methods" is the name its page has since spec 19); three
+  differences more, seen in passing (3.22); and what is left for spec
+  29's thread and for Martin's phone, which 3.22 now names. Left, and
+  said in 3.22: a draft opened at the address of a ride I drive shows
+  the ride's page, which is that page's to mend.
+
 ## After merging
 
-Production needs a release, on Martin's go. His steps then: walk a
-booking as a passenger and a ride as a driver on his phone, and read the
-Icelandic texts of section 8, which are a non-native's.
+Released to production on Martin's go of 2026-11-27 ("let's just go live
+when ready"): #257 to #278, at 12:07 UTC that day, live at 12:10. No
+migration and no new setting went with it. The closing pull request
+(PR 12c, its second) came after, and goes out with the next release.
+
+Martin's steps: walk a booking as a passenger and a ride as a driver on
+his phone, read the Icelandic texts of section 8, which are a
+non-native's, and listen to the screens with a screen reader. Still his
+to decide: a new version of the legal texts, which name "Settings", and
+Q31.

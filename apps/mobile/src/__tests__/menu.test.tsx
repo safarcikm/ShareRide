@@ -5,8 +5,10 @@ import type { DriverReadiness } from "@shareride/contracts";
 import { readAppData, writeAppData } from "@/lib/app-data";
 import { completeMe, renderApp, signInByEmail } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
+import { driverApi, northMyTrip } from "@/testing/bookings";
 import { ok, testMe } from "@/testing/fake-client";
 import { northResult, searchApi, soonestApi, soonRide, tripDetailsApi } from "@/testing/search";
+import { tripsApi } from "@/testing/trips";
 import { colors } from "@/theme/tokens";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
@@ -304,6 +306,20 @@ describe("The top bar on wide screens", () => {
       within(bar).getByRole("button", { name: "Change the language to Icelandic" }),
     ).toBeVisible();
     expect(screen.queryByTestId("tab-bar")).toBeNull();
+  });
+
+  it("keeps My rides chosen on a ride I drive, which My rides lists (spec 31, 3.22)", async () => {
+    await renderApp(`/drive/trips/${northMyTrip.id}`, {
+      me: completeMe,
+      setUp: (client) => {
+        tripsApi(client, [northMyTrip]);
+        driverApi(client, []);
+      },
+    });
+    const bar = within(await screen.findByTestId("top-bar"));
+    expect(await screen.findByRole("header", { name: /^Your ride to / })).toBeVisible();
+    expect(bar.getByRole("tab", { name: "My rides", selected: true })).toBeVisible();
+    expect(bar.queryByRole("tab", { name: "Offer", selected: true })).toBeNull();
   });
 
   it("lines its content up with the page (spec 18, 3.3)", async () => {

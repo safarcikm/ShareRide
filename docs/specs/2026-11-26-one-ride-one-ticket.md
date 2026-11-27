@@ -3,7 +3,9 @@
 **Owner:** Martin · **Date:** 2026-11-26 · **Status:** Approved
 (2026-11-26): Martin chose "One ride, one ticket" (3.1, B) on the thread's
 card, to be built flow by flow as drawn
-([plan](../plans/2026-11-26-one-ride-one-ticket.md)). The other choices in
+([plan](../plans/2026-11-26-one-ride-one-ticket.md)). Built (2026-11-27),
+and on puffinride.is since that day, on Martin's go; where the build
+differs from a drawing, and what is left, is in 3.22. The other choices in
 the Decisions section stay his to change
 
 Amends, once approved: [spec 15](2026-11-13-visual-design-system.md) (new
@@ -806,8 +808,8 @@ As built, on a phone
 and on a laptop
 ([light](images/one-ride-one-ticket/built/driver-ride-laptop-light.webp)).
 The screens it opens (Edit the ride, cancelling the ride, sharing and
-"Message all passengers") are in 3.19, as built in PR 8b; My rides
-follows (plan, PR 8c).
+"Message all passengers") are in 3.19, as built in PR 8b; My rides is
+in 3.10.
 
 - **The head:** Back leads to My rides when the page was opened by its
   address. The line under the title is the first of these that is true:
@@ -1110,6 +1112,10 @@ screen. Once it has landed, one thing joins it from this spec: the ride
 someone was about to book shows over the form as a ticket (spec 16, 3.5
 already keeps the ride in sight; only its shape changes).
 
+Left for that spec's thread (2026-11-27): its screen was still being built
+when this spec's build ended, so the ride over the form keeps spec 16's
+small card ("You're booking", `KeptRideCard`).
+
 ### 3.16 Wide screens
 
 The kinds of screen, the widths and the top bar of spec 18 stay. What
@@ -1153,7 +1159,7 @@ changes:
    column, as on a booked seat, whole in that window; until the ride
    leaves the column under it is then whole in a window 800 high, and in
    one 720 high its last row is reached by scrolling the column (51 more
-   than fit; PR 12 looks at it again). Whether each stretch shows, what
+   than fit; left so, 3.22). Whether each stretch shows, what
    "I'm here" told and a draft being made stay when the window turns
    narrow and wide again.
 4. **My rides:** a grid of tickets, as today.
@@ -1854,6 +1860,130 @@ links by their status would not see a dead one.
 As built:
 [an address the app does not have](images/one-ride-one-ticket/built/not-found-phone-light.webp)
 and [Messages' menu](images/one-ride-one-ticket/built/chat-menu-phone-light.webp).
+
+### 3.22 Against the drawings
+
+At the end of the build each of the proposal's thirteen drawings was laid
+beside the screen as built: Find, the results, a ride, a booked seat,
+trip day, My rides, Check and publish, a conversation, Profile and the
+driver's ride on a phone, Find in the dark and in Icelandic, and Find
+and the driver's ride on a laptop. The 84 pictures that
+`e2e/pictures.spec.ts` takes of the app, in
+[images/one-ride-one-ticket/built/](images/one-ride-one-ticket/built/),
+were taken again from the finished build. 62 came out different (days and
+times, the quiet "New driver" tag, the menu's chosen place); each was
+looked at and replaced. 22 came out the same to the pixel. The four
+pictures of the parts' page (`parts-*`) are not that run's and stay as
+they were.
+
+**Mended, one thing.** On a laptop a ride I drive keeps My rides chosen in
+the menu, as drawn: My rides lists the ride, and its Back leads there. The
+menu showed Offer, as it does for every other address under `/drive`. The
+screens the ride opens follow it: editing it, cancelling it, a message to
+all passengers and "Share this ride". The steps of posting and "Your ride
+is published" stay Offer's; the menu takes the steps from the one list
+posting has of them (`stepNames`), so a step added later is Offer's too.
+The mend was made after the release of 2026-11-27 (#257 to #278) and
+goes to puffinride.is with the release after it.
+
+**What differs from a drawing, and stays.** Each for a reason an earlier
+section gives. This is what was seen with the pictures side by side, on
+the thirteen screens drawn; it is not a proof that nothing else differs.
+The people and rides in the built pictures are the test server's, new
+members with no ratings yet.
+
+- **Find.** "Your next ride" stands under the search only when the yellow
+  card is about another ride (3.5, item 2); the drawing shows one ride in
+  both. Find on the website ends with the website's footer (spec 30),
+  signed in or not, which came after the drawings, and "Beta" stands
+  beside the name (spec 12). Signed in on a laptop, the greeting stands
+  in the scene and the yellow card beside the rides (3.16); the drawing
+  is of a visitor's Find. The link over the rides leaving soon says "See
+  all rides" on a phone as on a laptop; the phone's drawing has "See
+  all".
+- **A ticket's foot.** "New driver" is a quiet tag (3.21); it is drawn in
+  amber.
+- **The menu in Icelandic.** The places have their whole names (3.4),
+  "Ferðirnar mínar" and "Bjóða far", and on a phone the first takes two
+  lines (3.20). The drawing has "Ferðir" and "Bjóða".
+- **A ride.** "The whole route" has no distance beside it: a ride has
+  none in the API (3.7). The route lists the stops before and after my
+  part too, in grey, with a line on how to change where I get in. What
+  the driver is fine with stands in outlined bubbles, spec 15's own part
+  for it (`NeedBubble`); it is drawn with no outline. "Free cancellation"
+  and "Weather and roads" open in their place, so their arrows point
+  down.
+- **A booked seat and trip day.** "Message" and "I'm here" are words with
+  no picture before them. On trip day the seat's ticket stays, under the
+  driver. The line about paying the driver shows on a seat that is paid
+  in person, which the booking itself says
+  ([ADR 0038](../decisions/0038-pay-the-driver-in-person-until-card-payments.md));
+  the test server's bookings are not. The rows say "Share the ride's
+  details" and "Report a problem with this ride" (3.4).
+- **My rides.** Coming up and Past are two chips, drawn as one control of
+  two halves. In a ticket's foot the seats taken stand at the left and
+  what needs me at the right.
+- **The driver's ride.** Its rows have no heading ("Manage" in the
+  drawing), and hold "Share the ride's details" and "Weather and roads"
+  too, which the Safety card held (3.12). On a laptop "Share this ride"
+  is the round button on the ticket and not a row as well (3.16). The
+  line under the title is one thing, the first that is true (3.12): with
+  a request waiting it says "1 request needs your answer." and no day,
+  where the laptop's drawing has the day before it. The car on a
+  driver's own screens, here and on Check and publish, reads "Toyota
+  Yaris, white", as My cars lists it; it is drawn "White Toyota Yaris",
+  which is what a passenger reads.
+- **Profile.** The title is "My profile", as a person's is "Profile"
+  (3.19). The card also has the languages I speak and the links to change
+  or remove my photo. The row to the ways of signing in keeps the name
+  its page has, "Sign-in methods" (3.14); it is drawn "Ways to sign in".
+  A line under Account says who sees the phone number.
+- **A conversation.** As drawn, with the line on how to report a
+  message and "Sent with the request" over the words that came with one
+  (3.13).
+
+**Left.** The [plan's list for PR 12](../plans/2026-11-26-one-ride-one-ticket.md#pr-12-the-last-pass)
+has every item with where it was found; these are the ones with someone
+to take them, and the ones that change what a screen does.
+
+- **For Martin:** the legal texts name "Settings", a place the app no
+  longer has (the Terms twice, the Privacy Notice four times, in each
+  language); a new version of either is his to decide. Listening to the
+  screens with VoiceOver, TalkBack and NVDA: the build names and orders
+  what a screen reader meets (3.20), and no one has heard it on a phone.
+  In the phone apps, which a cloud session cannot open: the keyboard in a
+  conversation on Android and on an iPhone, the strip under a
+  conversation that is loading or could not be read, and whether
+  VoiceOver says "Write a message" twice for the empty field.
+  [Q31](../strategy/open-questions.md): which pages close for an account
+  that waits to be deleted.
+- **For spec 29's thread:** the ride over the sign-in form as a ticket
+  (3.15); Sign-in methods' "Change email" in the middle of its page; and
+  whether focus moves on that page, which has two `TakesFocus` in one
+  place with no key.
+- **For a native Icelandic reader:** the status words as titles, "Check
+  and publish" as a whole, "bílstjóri" beside "ökumaður", and the smaller
+  wordings the plan lists under PR 12.
+- **What a screen does, not how it looks:** at 23:35 the time wheel for
+  today opens at 00:05, which has passed; on the first step of posting
+  the browser's Back leaves the step with the picker of a meeting point
+  open; a posting step opened by its address for a ride that is already
+  published shows the step; and a draft opened at the address of a ride
+  I drive (`/drive/trips/<id>`, which nothing in the app links to) shows
+  the ride's page with Back to My rides, and now My rides chosen, though
+  drafts are listed on Offer. That page would better lead to the draft's
+  step, as "Your ride is published" does for one.
+- **Left as it was, on a laptop:** My cars and the driving licence show
+  Offer chosen in the menu. Profile lists them, and Offer's last step
+  opens them before a first ride, so they have two homes; nothing was
+  changed.
+- **Smaller things the reviews named:** among them Find on a phone
+  moving down a ticket's height when my rides arrive after the rides
+  leaving soon, the laptop's side column on the driver's trip day
+  reaching past a window 720 high, a placeholder of two lines in a
+  conversation's field with text twice as large, and code that serves
+  several screens from one screen's folder.
+- An address the app does not have answers 200, not 404 (3.21).
 
 ## 4. Rules
 
