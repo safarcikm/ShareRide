@@ -14,6 +14,7 @@ import {
 import { usePalette } from "@/theme/use-palette";
 import { linkProps, type AppPath } from "@/navigation/link-props";
 import { Icon } from "./icon";
+import { useMainButton } from "./press-guard";
 
 /**
  * `danger` is the main button that takes something away, such as "Cancel
@@ -109,6 +110,34 @@ function look(variant: Variant, palette: Palette, disabled: boolean, hovered: bo
   }
 }
 
+/** A press as a link looks at it; a button looks at nothing. */
+interface Press {
+  readonly preventDefault?: () => void;
+}
+
+/**
+ * What the button does with a press: told to the guard and then done, or,
+ * while the button is held, nothing. A held link is not followed by the
+ * browser either.
+ */
+function taking<Props extends { readonly onPress: (event?: Press) => void }>(
+  props: Props,
+  held: boolean,
+  tookPress: () => void,
+): Props {
+  return {
+    ...props,
+    onPress: held
+      ? (event?: Press) => {
+          event?.preventDefault?.();
+        }
+      : (event?: Press) => {
+          tookPress();
+          props.onPress(event);
+        },
+  };
+}
+
 export function Button({
   label,
   icon,
@@ -124,7 +153,10 @@ export function Button({
 }: ButtonProps) {
   const palette = usePalette();
   const inactive = busy || disabled;
-  const [hovered, hover] = useHover(inactive);
+  // A main button takes no press just after one brought it (`PressGuard`).
+  const { held, pressed: tookPress } = useMainButton(main, accessibilityLabel ?? label);
+  const still = inactive || held;
+  const [hovered, hover] = useHover(still);
   const {
     face,
     label: labelColor,
@@ -139,18 +171,19 @@ export function Button({
       accessibilityRole={href === undefined ? "button" : "link"}
       accessibilityLabel={accessibilityLabel ?? label}
       // aria-* rather than accessibilityState, which the web build drops.
-      aria-disabled={inactive}
+      aria-disabled={still}
       aria-busy={busy}
       aria-expanded={expanded}
-      disabled={inactive}
-      {...(href === undefined ? { onPress } : linkProps(href))}
+      // Not `false`, which would say "not disabled" over aria-disabled on a phone.
+      disabled={inactive ? true : undefined}
+      {...taking(href === undefined ? { onPress } : linkProps(href), held, tookPress)}
       {...hover}
       style={({ pressed }) => [
         styles.outer,
         variant === "text" && styles.textOuter,
         main && styles.mainOuter,
         fill && styles.fillOuter,
-        chunky(edge, edgeColor, pressed && !inactive).outer,
+        chunky(edge, edgeColor, pressed && !still).outer,
       ]}
     >
       {({ pressed }) => (
@@ -160,7 +193,7 @@ export function Button({
             styles.face,
             variant === "text" && styles.textFace,
             face,
-            chunky(edge, edgeColor, pressed && !inactive).face,
+            chunky(edge, edgeColor, pressed && !still).face,
           ]}
         >
           {busy ? <ActivityIndicator size="small" color={labelColor} /> : null}

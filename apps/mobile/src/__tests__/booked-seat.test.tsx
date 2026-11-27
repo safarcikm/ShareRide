@@ -1,4 +1,4 @@
-import { act, fireEvent, screen, within } from "expo-router/testing-library";
+import { act, fireEvent, screen, waitFor, within } from "expo-router/testing-library";
 import type { ReactElement } from "react";
 import {
   AccessibilityInfo,
@@ -19,6 +19,7 @@ import {
 import { filledButtons } from "@/testing/buttons";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
 import { completedBooking } from "@/testing/reviews";
+import { searchApi } from "@/testing/search";
 import { dispute, onTheDay } from "@/testing/trip-day";
 import { colors } from "@/theme/tokens";
 
@@ -51,10 +52,16 @@ beforeEach(() => {
   mockNow = noon;
 });
 
-async function open(start: Booking, setUp?: (client: FakeClient) => void) {
+async function open(
+  start: Booking,
+  setUp?: (client: FakeClient) => void,
+  /** Main buttons take no press just after one was pressed, as in the app. */
+  holdsPresses = false,
+) {
   let booking = start;
   const result = await renderApp(`/bookings/${start.id}`, {
     me: completeMe,
+    holdsPresses,
     setUp: (client) => {
       bookingApi(client, () => booking);
       setUp?.(client);
@@ -321,6 +328,34 @@ describe("a booked seat on a phone (spec 31, 3.8)", () => {
       expect(
         client.calls.filter((call) => call.path === "/v1/bookings/{id}/withdraw"),
       ).toHaveLength(1);
+    });
+  });
+
+  it("takes no press on Find another ride just after withdrawing: a second press meant for Withdraw request stays on the page", async () => {
+    const withdrawn = northBooking({ status: "cancelled", withdrawn: true });
+    await open(
+      northBooking(),
+      (fake) => {
+        fake.answer("/v1/bookings/{id}/withdraw", () => ok(200, withdrawn), "post");
+        searchApi(fake);
+      },
+      true,
+    );
+    await fireEvent.press(await screen.findByRole("button", { name: "Withdraw request" }));
+    await fireEvent.press(bar().getByRole("button", { name: "Withdraw request" }));
+    expect(await screen.findByRole("header", { name: "Withdrawn" })).toBeVisible();
+    // The way on stands where the red button stood, and is held (spec 31, 3.19).
+    const next = () => bar().getByRole("button", { name: "Find another ride" });
+    expect(next()).toBeDisabled();
+    await fireEvent.press(next());
+    expect(screen).toHavePathname(`/bookings/${withdrawn.id}`);
+    // Half a second later it leads on.
+    await waitFor(() => {
+      expect(next()).toBeEnabled();
+    });
+    await fireEvent.press(next());
+    await waitFor(() => {
+      expect(screen).toHavePathname("/search/results");
     });
   });
 

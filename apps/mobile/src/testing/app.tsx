@@ -8,6 +8,8 @@ import type { ApiClient } from "@shareride/api-client";
 import type { DriverReadiness, Me, PublicProfile } from "@shareride/contracts";
 import { peopleColourOf } from "@shareride/domain";
 import { fireEvent, renderRouter, screen } from "expo-router/testing-library";
+import type { ReactNode } from "react";
+import { PressGuard } from "@/components/press-guard";
 import { createFakeClient, ok, testMe, tokens, type FakeClient } from "./fake-client";
 import { memoryTokenStore } from "./memory-token-store";
 
@@ -34,6 +36,12 @@ export async function renderApp(
     readonly me?: Me;
     /** Changes the fake API's answers before the app starts. */
     readonly setUp?: (client: FakeClient) => void;
+    /**
+     * Main buttons take no press just after one was pressed, as in the app
+     * (`PressGuard`). Left out, they take every press: a test presses faster
+     * than anyone.
+     */
+    readonly holdsPresses?: boolean;
   } = {},
 ) {
   currentClient = createFakeClient();
@@ -84,8 +92,16 @@ export async function renderApp(
   );
   currentClient.answer("/v1/me/conversations", () => ok(200, { conversations: [], unread: 0 }));
   options.setUp?.(currentClient);
-  const result = await renderRouter("./src/app", { initialUrl });
+  const result = await renderRouter("./src/app", {
+    initialUrl,
+    ...(options.holdsPresses === true ? {} : { wrapper: TakesEveryPress }),
+  });
   return { ...result, client: currentClient, store };
+}
+
+/** A guard that holds for no time, around the app's own. */
+function TakesEveryPress({ children }: { readonly children: ReactNode }) {
+  return <PressGuard holdsFor={0}>{children}</PressGuard>;
 }
 
 /**
