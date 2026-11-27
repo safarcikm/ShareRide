@@ -27,6 +27,8 @@ Martin's review. The legal form is decided: an ehf. early in 2027 (A58,
 4. **Employers, regions and events are the realistic second leg.** Liftshare
    in the UK is the model: the public service stays free and organisations
    pay for their own schemes. Start two or three employer pilots in 2027.
+   A yearly estimate of the CO2 their staff saved helps sell it; selling
+   carbon credits does not pay (2.14).
 5. **Say no to** a cut from drivers, ads, selling data and paid boosts. They
    break the cost-sharing rules, the privacy promises or the trust the
    service needs, for little money.
@@ -96,6 +98,7 @@ money do the heavy lifting first.
 | 11 | Ads in the app | Very small | Needs consent; hurts trust | n/a | **No** |
 | 12 | Selling data | Small | Against our privacy promises | n/a | **No**; only totals inside research projects |
 | 13 | A cut from drivers, or paid boosts | n/a | Breaks the cost-sharing case | n/a | **No** |
+| 14 | CO2: carbon credits, or CO2 figures for employers, regions and grants | Credits about 2 m kr a year at most; the figures help sell 3, 4 and 9 | Credits would count tonnes Iceland already counts; figures yes, as estimates | Figures with the employer pilots | **No** to credits; **do** count CO2 |
 
 ### 2.1 Passenger service fee (ADR 0014)
 
@@ -235,6 +238,68 @@ nonprofit.
 - **A cut from drivers, or paid boosts for drivers.** Both take from what
   drivers receive or let money decide who gets passengers. They weaken the
   cost-sharing case under the Taxi Act and break ADR 0014.
+
+### 2.14 CO2: count it, do not sell it
+
+Martin asked on 27 November 2026 whether the CO2 that shared rides save
+could earn money. Not directly, for now. Counted honestly, though, it makes
+options 3, 4 and 9 easier to sell.
+
+#### Selling carbon credits: no, for now
+
+- A crediting method for exactly this exists. The Global Carbon Council's
+  GCCM007 (2025) covers long-distance carpooling between towns on
+  cost-sharing platforms whose drivers make no profit. Verra, the largest
+  standard, rejected a carpooling method on 30 January 2024 because it saves
+  little and it is hard to prove the rides would not have happened anyway.
+- In Iceland the saving is already counted. Less fuel sold shows up in
+  Iceland's own emissions inventory, where road transport is under the
+  effort-sharing target (samfélagslosun). A credit sold abroad would count
+  the same tonne twice unless the government authorised it and adjusted its
+  own accounts. The government's working group on carbon markets
+  (November 2024) advised against exports that harm Iceland's accounts.
+- It would be small. At the 164 seats a day the salary needs (section 1),
+  about 150 km a seat and about 0.16 kg CO2 per car kilometre (a petrol car
+  using 7 litres per 100 km), the most PuffinRide could claim is about
+  1 400 tonnes a year, and only if every passenger would otherwise have
+  driven alone. Many would have taken the bus or not travelled, so a few
+  hundred tonnes is more likely. Even at a generous 10 euros a tonne,
+  1 400 tonnes is about 2 million kr a year and a few hundred tonnes well
+  under 1 million kr, before paying independent auditors to approve the
+  project and check every issue of credits. **guess**
+
+#### Where CO2 does help
+
+- **Employers and public bodies.** Iceland's Climate Act (70/2012) requires
+  state bodies, state-owned companies and municipalities to adopt climate
+  policies with emission-reduction goals. Many private firms also publish
+  climate accounts, in which staff commuting is a standard category (Scope 3,
+  category 7 of the Greenhouse Gas Protocol). A yearly figure of car
+  kilometres and CO2 saved by their own staff is something they can put
+  straight into those. Add it to the "PuffinRide for work" report (2.3) and
+  the regional package (2.4). EU reporting rules will not make anyone ask:
+  since the 2025 changes, the sustainability reporting directive (CSRD)
+  covers only companies with more than 1 000 staff and more than 450 million
+  euros turnover, and Iceland was still consulting on its own law in 2024
+  (S-159/2024).
+- **Grants.** A measured saving strengthens every application in 2.9. The
+  Climate and Energy Fund (Loftslags- og orkusjóður) needs a legal entity
+  and favours hardware; its December 2026 call is for greenhouses only. The
+  EU's LIFE programme has September deadlines and advisers at Rannís, but it
+  suits a larger project with partners. Later, not 2027.
+- **Members.** A line such as "about 60 kg CO2 saved" for a passenger who
+  would otherwise have driven alone from Reykjavík to Akureyri, or a yearly
+  total, is a nice touch. Green claims need care: from 27 September 2026 the
+  EU bans vague environmental claims and claims of being climate neutral
+  through offsets (Directive 2024/825). Whether that applies in Iceland
+  through the EEA yet is not checked (**verify**), and Iceland's marketing
+  law already bans misleading claims. Say "estimated", show the method, and
+  never say "carbon neutral". This changes the product, so it needs its own
+  spec.
+
+To make the figure honest, PuffinRide would need to know how passengers
+would have travelled otherwise. One optional question after a trip, reported
+only in totals, would do it ([privacy and GDPR](../compliance/privacy-gdpr.md)).
 
 ## 3. Would a nonprofit work?
 
@@ -440,6 +505,14 @@ Checked 27 November 2026.
 - Iceland's shared rides: [Grapevine on Samferða (2006)](https://grapevine.is/?p=1428),
   [Grapevine on Skutlarar (2017)](https://grapevine.is/?p=9962753),
   [Iceland Monitor (2015)](https://icelandmonitor.mbl.is/news/news/2015/06/07/drugs_alcohol_and_unofficial_cabs_offered_on_facebo)
+- CO2: Global Carbon Council, [GCCM007 for private carpooling](https://www.globalcarboncouncil.com/new-methodology-for-emission-reductions-from-private-carpooling/);
+  Verra, [methodology for carpooling, rejected 30 January 2024](https://verra.org/?p=40275);
+  Government of Iceland, [working group report on carbon markets (2024)](https://stjornarradid.is/library/02-Rit--skyrslur-og-skrar/URN/Skyrsla_starfshops_um_kolefnismarkadi_2024.pdf);
+  UNEP LEAP, [summary of the Climate Act 70/2012](https://leap.unep.org/en/countries/is/national-legislation/climate-act-no-70-2012);
+  Morrison Foerster, [the final CSRD Omnibus, 22 December 2025](https://www.mofo.com/resources/insights/251222-eu-sustainability-omnibus-i-detailed-omnibus);
+  Samráðsgátt, [CSRD in Icelandic law, S-159/2024](https://island.is/samradsgatt/mal/3798);
+  European Commission, [Directive 2024/825 on green claims](https://transition-pathways.europa.eu/legislation/directive-eu-2024825-empowering-consumer-green-transition);
+  Ísland.is, [LIFE grants in Iceland, 11 June 2026](https://island.is/frett/5-5-milljardar-til-islenskrar-nyskoepunar-i-umhverfis-og-loftslagsmalum)
 - Earlier PuffinRide work: [ADR 0014](../decisions/0014-passenger-service-fee-from-launch.md),
   [ADR 0030](../decisions/0030-limit-what-a-whole-trip-brings-the-driver.md),
   [ADR 0038](../decisions/0038-pay-the-driver-in-person-until-card-payments.md),
