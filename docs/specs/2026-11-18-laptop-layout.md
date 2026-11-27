@@ -365,7 +365,11 @@ changes on a phone.
    other person's name, the day and the stretch, then Report and Block, the
    messages, and at the bottom the quick messages and the field with Send.
    Where the pane has no room for both, Report and Block go under the
-   name.
+   name. Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.13) the
+   pane's top is a conversation's top as on a phone: Back, the picture,
+   the name with who they are, the menu that holds Report and Block, and
+   the ride as one line; the quick messages stand over the field, on the
+   pane's ground.
 2. Messages in the menu opens the list with "Choose a conversation" in the
    right pane. No conversation opens by itself, because opening one tells
    the other person their messages were seen. With no conversations, or

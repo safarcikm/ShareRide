@@ -40,6 +40,11 @@ import { SiteFooter } from "./site-footer";
  * content sits in a centred column (spec 1, section 5). A `footer`, such as
  * a step's main button, stays at the bottom while the rest scrolls: the
  * `BottomBar` of spec 15, section 5.2.
+ * A `header`, as the top of a conversation is (spec 31, 3.13), stays at the
+ * top the same way, on the surface's colour with a line under it, and the
+ * room the screen leaves for the status bar has that colour too. What
+ * stands `overFooter`, as a conversation's quick answers do, stays over the
+ * bar on the screen's own ground.
  * Wide screens show an `aside`, such as a map, beside the column; phones
  * leave it out, and the screen shows it its own way (see `useWideScreen`).
  * With `width="page"`, wide screens give the content a page instead of the
@@ -64,7 +69,9 @@ import { SiteFooter } from "./site-footer";
  */
 export function Screen({
   children,
+  header,
   footer,
+  overFooter,
   aside,
   width = "column",
   stickToEnd = false,
@@ -76,7 +83,9 @@ export function Screen({
   siteFooter = false,
 }: {
   readonly children: ReactNode;
+  readonly header?: ReactNode;
   readonly footer?: ReactNode;
+  readonly overFooter?: ReactNode;
   readonly aside?: ReactNode;
   readonly width?: "column" | "page";
   readonly stickToEnd?: boolean;
@@ -99,8 +108,25 @@ export function Screen({
     <SafeAreaView
       testID="screen-safe-area"
       edges={safeEdges}
-      style={[styles.safeArea, { backgroundColor: topColour ?? palette.background }]}
+      style={[
+        styles.safeArea,
+        {
+          backgroundColor:
+            topColour ?? (header === undefined ? palette.background : palette.surface),
+        },
+      ]}
     >
+      {header === undefined ? null : (
+        <View
+          testID="screen-top-bar"
+          style={[
+            styles.top,
+            { backgroundColor: palette.surface, borderBottomColor: palette.border },
+          ]}
+        >
+          <View style={styles.barColumn}>{header}</View>
+        </View>
+      )}
       {/* The scroll and, over its top, what a refresh shows. */}
       <View
         testID="screen-scroll-area"
@@ -152,6 +178,11 @@ export function Screen({
         </ScrollView>
         {refreshing.mark}
       </View>
+      {overFooter === undefined ? null : (
+        <View testID="over-bar" style={[styles.overBar, { backgroundColor: palette.background }]}>
+          <View style={styles.barColumn}>{overFooter}</View>
+        </View>
+      )}
       {footer === undefined ? null : (
         <View
           testID="bottom-bar"
@@ -345,6 +376,13 @@ const styles = StyleSheet.create({
   scroll: { flexGrow: 1, alignItems: "center", padding: spacing.md },
   column: { flex: 1, width: "100%", maxWidth: maxContentWidth, gap: spacing.md },
   page: { flex: 1, width: "100%", maxWidth: pageMaxWidth, gap: spacing.md },
+  top: {
+    borderBottomWidth: controlOutline,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.ms,
+    alignItems: "center",
+  },
+  overBar: { paddingHorizontal: spacing.md, paddingBottom: spacing.sm, alignItems: "center" },
   bar: { borderTopWidth: controlOutline, padding: spacing.md, alignItems: "center" },
   barColumn: { width: "100%", maxWidth: maxContentWidth, gap: spacing.sm },
   wide: {

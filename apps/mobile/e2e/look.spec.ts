@@ -3,13 +3,14 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 import {
   soonestTripsRoute,
   type Booking,
+  type Conversation,
   type MyTrip,
   type TripBookings,
   type TripDetails,
   type TripSearchResult,
 } from "@shareride/contracts";
 import { confirmedBooking, requestSeat, secondPage } from "./support/cancelling";
-import { ticketFit } from "./support/layout";
+import { picturesUnderTheirText, ticketFit } from "./support/layout";
 import { openTrip } from "./support/trips";
 
 // The look from spec 15 in a real browser: centred buttons that fit their label, the
@@ -183,15 +184,31 @@ for (const scheme of schemes) {
   });
 }
 
-/** Text at 200% (WCAG 1.4.4), as a browser's text-only zoom sets it. */
+/**
+ * Text at 200% (WCAG 1.4.4), as a browser's text-only zoom sets it: the
+ * text there is, and the text drawn after, as when a part of the screen
+ * takes another place for the larger text.
+ */
 async function twiceAsLarge(page: Page) {
   await page.evaluate(() => {
     document.documentElement.style.fontSize = "200%";
-    for (const text of document.querySelectorAll<HTMLElement>("[dir]")) {
+    const enlarge = (text: HTMLElement) => {
+      if (text.dataset["twice"] !== undefined) return;
+      text.dataset["twice"] = "";
       const style = getComputedStyle(text);
       text.style.fontSize = `${String(parseFloat(style.fontSize) * 2)}px`;
       text.style.lineHeight = `${String(parseFloat(style.lineHeight) * 2)}px`;
-    }
+    };
+    for (const text of document.querySelectorAll<HTMLElement>("[dir]")) enlarge(text);
+    new MutationObserver((changes) => {
+      for (const change of changes) {
+        for (const added of change.addedNodes) {
+          if (!(added instanceof HTMLElement)) continue;
+          if (added.matches("[dir]")) enlarge(added);
+          for (const text of added.querySelectorAll<HTMLElement>("[dir]")) enlarge(text);
+        }
+      }
+    }).observe(document.body, { childList: true, subtree: true });
   });
 }
 
@@ -542,6 +559,105 @@ test.describe("a booked seat with long names, 360 wide", () => {
     const red = await box(cancel);
     expect(said.y).toBeGreaterThanOrEqual(0);
     expect(said.y + said.height).toBeLessThanOrEqual(red.y + 1);
+    await close();
+  });
+
+  // Its conversation (spec 31, 3.13): the top, with Back, the driver's
+  // name and car and the menu's button, and the ride as one line that
+  // wraps; in the bar the field with Send beside it; and room left for the
+  // messages between them. With the text as set the top stays; twice as
+  // large it would fill the window, so it scrolls with the conversation.
+  test("holds its conversation's top, the ride's line and the field with Send, and leaves the messages room, with the text as set and twice as large", async ({
+    page: driver,
+    browser,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== "phone", "A phone's column and bar.");
+    test.slow();
+    const { page, close } = await secondPage(browser, testInfo);
+    const { booking } = await confirmedBooking(driver, page);
+    const window = { width: 360, height: 740 };
+    await page.setViewportSize(window);
+    // The conversation comes with its booking.
+    await page.route(
+      (url) => /^\/v1\/bookings\/[0-9a-f-]{36}\/messages$/.test(url.pathname),
+      async (route) => {
+        const response = await route.fetch();
+        if (route.request().method() !== "GET" || !response.ok()) {
+          await route.fulfill({ response });
+          return;
+        }
+        const answer = (await response.json()) as { conversation: Conversation };
+        const seat = answer.conversation.booking;
+        const named = (name: string) => ({ is: name, en: name });
+        const long: Booking = {
+          ...seat,
+          driver: { ...seat.driver, firstName: driverName },
+          board: {
+            ...seat.board,
+            meetingPoint: { ...seat.board.meetingPoint, name: named(getIn) },
+          },
+          alight: {
+            ...seat.alight,
+            meetingPoint: { ...seat.alight.meetingPoint, name: named(getOut) },
+          },
+        };
+        await route.fulfill({
+          response,
+          json: { ...answer, conversation: { ...answer.conversation, booking: long } },
+        });
+      },
+    );
+    await page.goto(`/messages/${booking.split("/").at(-1) ?? ""}`);
+    const top = page.getByTestId("conversation-head").filter(shown);
+    await expect(top.getByRole("heading", { name: driverName })).toBeVisible();
+    const ride = top.getByRole("link", { name: `, ${getIn} to ${getOut}` });
+    await expect(ride).toBeVisible();
+    const more = top.getByRole("button", { name: "More", exact: true });
+    const staying = page.getByTestId("screen-top-bar").filter(shown);
+    const reading = page.getByTestId("screen-scroll").filter(shown);
+    const bar = page.getByTestId("bottom-bar").filter(shown);
+    const field = bar.getByLabel("Write a message");
+    const send = bar.getByRole("button", { name: "Send", exact: true });
+
+    for (const zoom of [1, 2] as const) {
+      if (zoom === 2) await twiceAsLarge(page);
+      // The top stays while the rest keeps room; twice as large it is the
+      // first thing in the conversation.
+      await expect(staying).toHaveCount(zoom === 1 ? 1 : 0);
+      const head = await ticketFit(page, "conversation-head", "[dir]");
+      expect(head.cut).toEqual([]);
+      expect(head.past).toEqual([]);
+      expect(head.beyondWindow).toBe(0);
+      expect(head.screenWider).toBeLessThanOrEqual(0);
+      // The menu's button and the ride's line are whole in the window's width.
+      for (const part of [await box(more), await box(ride)]) {
+        expect(part.x).toBeGreaterThanOrEqual(0);
+        expect(part.x + part.width).toBeLessThanOrEqual(window.width);
+      }
+      // The bar: the field, and Send at its right, whole in the window.
+      const written = await box(field);
+      const button = await box(send);
+      expect(written.x).toBeGreaterThanOrEqual(0);
+      expect(button.x).toBeGreaterThanOrEqual(written.x + written.width);
+      expect(button.x + button.width).toBeLessThanOrEqual(window.width);
+      expect(button.y + button.height).toBeLessThanOrEqual(window.height);
+      // The messages keep a third of the window, between the top or the
+      // window's own and the quick messages.
+      const room = await box(reading);
+      expect(room.height).toBeGreaterThanOrEqual(window.height / 3);
+      // The picture stands with the top of the name, which has two lines.
+      expect((await picturesUnderTheirText(page)).under).toEqual([]);
+      if (zoom === 1) expect(head.brokenWords).toEqual([]);
+      else expect(head.needlessly).toEqual([]);
+    }
+    // A line written twice as large is whole in the field, which has grown
+    // for it. (From about five lines of text as set, it scrolls inside.)
+    await field.fill("Skis too?");
+    await expect
+      .poll(() => field.evaluate((written) => written.scrollHeight - written.clientHeight))
+      .toBeLessThanOrEqual(1);
+    const written = await box(field);
+    expect(written.y + written.height).toBeLessThanOrEqual(window.height);
     await close();
   });
 });

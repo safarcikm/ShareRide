@@ -1,12 +1,14 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react-native";
 import { getLocales } from "expo-localization";
-import { Share } from "lucide-react-native";
+import { EllipsisVertical, Send, Share } from "lucide-react-native";
 import type { ReactElement } from "react";
 import { Dimensions, StyleSheet } from "react-native";
 import { LanguageProvider } from "@/i18n/language";
 import { renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
+import { filledButtons } from "@/testing/buttons";
 import { colors } from "@/theme/tokens";
+import { BackButton } from "./back-button";
 import { IconButton } from "./icon-button";
 import { Road } from "./road";
 import { Screen } from "./screen";
@@ -28,6 +30,9 @@ beforeEach(() => {
   (getLocales as jest.Mock).mockReturnValue([{ languageTag: "en-GB" }]);
 });
 
+/** A colour as a drawn icon holds it. */
+const ink = (hex: string) => `"payload":${String(0xff000000 + Number.parseInt(hex.slice(1), 16))}`;
+
 describe("BackButton", () => {
   it("is a round icon button with a chunky edge and the name Back", async () => {
     await renderApp("/coming-soon");
@@ -41,6 +46,78 @@ describe("BackButton", () => {
     });
     expect(screen.getByTestId("back-face")).toHaveStyle({ backgroundColor: colors.light.surface });
     expect(screen.queryByText("Back")).toBeNull();
+  });
+
+  it("is quiet in a bar that stays: no face and no edge, in its 44 button (spec 31, 3.13)", async () => {
+    await render(<BackButton quiet />, { wrapper: LanguageProvider });
+    const back = await screen.findByRole("button", { name: "Back" });
+    expect(back).toHaveStyle({ width: 44, height: 44, borderBottomWidth: 0 });
+    expect(screen.getByTestId("back-face")).toHaveStyle({ width: 36, height: 36 });
+    expect(screen.getByTestId("back-face")).not.toHaveStyle({
+      backgroundColor: colors.light.surface,
+    });
+    // It leads away: its chevron keeps the text's colour, not the muted one.
+    const drawn = JSON.stringify(screen.toJSON());
+    expect(drawn).toContain(ink(colors.light.text));
+    expect(drawn).not.toContain(ink(colors.light.textMuted));
+  });
+});
+
+describe("IconButton", () => {
+  it("is filled where it is a screen's main button: round, moss, with the main button's edge", async () => {
+    const onPress = jest.fn();
+    await render(
+      <IconButton filled icon={Send} label="Send" faceTestID="face" onPress={onPress} />,
+    );
+    const send = screen.getByRole("button", { name: "Send" });
+    expect(send).toHaveStyle({
+      width: 52,
+      height: 52,
+      borderRadius: 999,
+      borderBottomWidth: 4,
+      borderBottomColor: colors.light.primaryEdge,
+    });
+    expect(screen.getByTestId("face")).toHaveStyle({ backgroundColor: colors.light.primary });
+    // Counted as the screen's one filled button (R31.1).
+    expect(filledButtons()).toBe(1);
+    await fireEvent.press(send);
+    expect(onPress).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows a spinner and ignores presses while busy", async () => {
+    const onPress = jest.fn();
+    await render(<IconButton filled busy icon={Send} label="Send" onPress={onPress} />);
+    const send = screen.getByRole("button", { name: "Send", busy: true });
+    await fireEvent.press(send);
+    expect(onPress).not.toHaveBeenCalled();
+  });
+
+  it("says whether what it opens is open", async () => {
+    const view = await render(
+      <IconButton
+        quiet
+        icon={EllipsisVertical}
+        label="More"
+        expanded={false}
+        onPress={jest.fn()}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "More", expanded: false })).toBeVisible();
+    // Quiet, and not Back: small and muted.
+    expect(JSON.stringify(screen.toJSON())).toContain(ink(colors.light.textMuted));
+    await view.rerender(
+      <IconButton quiet icon={EllipsisVertical} label="More" expanded onPress={jest.fn()} />,
+    );
+    expect(screen.getByRole("button", { name: "More", expanded: true })).toBeVisible();
+  });
+
+  it("says nothing about being open where it opens nothing", async () => {
+    await render(<IconButton icon={Share} label="Share" onPress={jest.fn()} />);
+    expect(screen.getByRole("button", { name: "Share" }).props).not.toHaveProperty(
+      "aria-expanded",
+      false,
+    );
+    expect(filledButtons()).toBe(0);
   });
 });
 
@@ -237,6 +314,51 @@ describe("Screen", () => {
       );
       expect(within(screen.getByTestId("bottom-bar")).getByText("Book")).toBeVisible();
       expect(within(screen.getByTestId("aside")).getByText("Map")).toBeVisible();
+    });
+  });
+
+  it("keeps a header at the top, on the surface with a line under it, and what stands over the bar on the screen's ground", async () => {
+    await render(
+      <Screen
+        header={<Body>Anna</Body>}
+        overFooter={<Body>Quick</Body>}
+        footer={<Body>Write</Body>}
+      >
+        <Body>Messages</Body>
+      </Screen>,
+    );
+    const top = screen.getByTestId("screen-top-bar");
+    expect(within(top).getByText("Anna")).toBeVisible();
+    expect(top).toHaveStyle({
+      backgroundColor: colors.light.surface,
+      borderBottomWidth: 2,
+      borderBottomColor: colors.light.border,
+    });
+    // The room for the status bar has the header's colour.
+    expect(screen.getByTestId("screen-safe-area")).toHaveStyle({
+      backgroundColor: colors.light.surface,
+    });
+    // Neither scrolls with the screen.
+    const scroll = within(screen.getByTestId("screen-scroll"));
+    expect(scroll.getByText("Messages")).toBeVisible();
+    expect(scroll.queryByText("Anna")).toBeNull();
+    expect(scroll.queryByText("Quick")).toBeNull();
+    const over = screen.getByTestId("over-bar");
+    expect(within(over).getByText("Quick")).toBeVisible();
+    expect(over).toHaveStyle({ backgroundColor: colors.light.background });
+    expect(within(screen.getByTestId("bottom-bar")).queryByText("Quick")).toBeNull();
+  });
+
+  it("has no top bar and nothing over the bar without them, on the screen's own colour", async () => {
+    await render(
+      <Screen footer={<Body>Book</Body>}>
+        <Body>Trip</Body>
+      </Screen>,
+    );
+    expect(screen.queryByTestId("screen-top-bar")).toBeNull();
+    expect(screen.queryByTestId("over-bar")).toBeNull();
+    expect(screen.getByTestId("screen-safe-area")).toHaveStyle({
+      backgroundColor: colors.light.background,
     });
   });
 

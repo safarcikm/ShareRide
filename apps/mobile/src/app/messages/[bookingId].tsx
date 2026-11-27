@@ -1,4 +1,3 @@
-import { capitalised, formatDay } from "@shareride/i18n";
 import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -7,21 +6,27 @@ import {
   Platform,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { errorText } from "@/auth/errors";
 import { useMe } from "@/auth/session";
 import { Announcer } from "@/components/announcer";
+import { avatarSize } from "@/components/avatar";
 import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
+import { Card } from "@/components/card";
 import { PageColumn } from "@/components/columns";
 import { Notice } from "@/components/notice";
 import { Screen, useWideScreen } from "@/components/screen";
-import { Body, Title } from "@/components/text";
-import { Composer } from "@/chat/composer";
+import { Body } from "@/components/text";
+import { MessageField, QuickMessages } from "@/chat/composer";
+import { ConversationHead } from "@/chat/conversation-head";
 import { ConversationList, useConversations } from "@/chat/conversation-list";
 import { MessageList } from "@/chat/message-list";
+import type { Outgoing } from "@/chat/messages";
 import { Pane, Panes } from "@/chat/panes";
+import { SafetyLine } from "@/chat/safety-line";
 import { otherPerson } from "@/chat/texts";
 import { useUnread } from "@/chat/unread";
 import { useConversation } from "@/chat/use-conversation";
@@ -29,14 +34,26 @@ import { useLanguage } from "@/i18n/language";
 import { BackToMenu } from "@/navigation/back-to-menu";
 import { firstNameOf } from "@/people/texts";
 import { suspensionNow } from "@/safety/suspended-account";
-import { halfMinWidth, spacing, typography } from "@/theme/tokens";
+import { typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
 /**
- * A booking's conversation (spec 7, 3.1, screen 2): the safety tip, the
- * message sent with the request, then the messages, with quick messages and
- * the field at the bottom. Once closed, or once one of the two blocked the
- * other, it can only be read (R7.1, R9.4). "Block" sits by the name.
+ * What the top of a conversation leaves of the window's height for the
+ * messages, the quick messages and the bar, at the least, while it stays:
+ * the two bars take about 150 of it. A top that leaves less, as with text
+ * twice as large and long names, or on a phone on its side, is the first
+ * thing in the conversation and scrolls with it.
+ */
+const roomUnderTop = 400;
+
+/**
+ * A booking's conversation (spec 7, 3.1, screen 2; spec 31, 3.13): its top,
+ * which stays while the window has room for it, with who it is with, a
+ * menu that holds Report and Block, and the ride as one line; then the
+ * safety line, the message sent with the request and the messages; the
+ * quick messages over the bar, and in the bar the field with Send. Once
+ * closed, or once one of the two blocked the other, it can only be read
+ * (R7.1, R9.4).
  *
  * On a wide screen it is the right pane of Messages, with my conversations
  * beside it (spec 18, 3.11), wherever it was opened from. Another row of
@@ -93,11 +110,14 @@ function Open({
   /** Called with the other person's name once the conversation shows. */
   readonly onShown: ((name: string) => void) | undefined;
 }) {
-  const { locale, t } = useLanguage();
+  const { t } = useLanguage();
   const palette = usePalette();
   const wide = useWideScreen();
   const chat = useConversation(bookingId);
   const draft = useState("");
+  // How tall the top is with its menu closed; nothing until it is laid out.
+  const [topHeight, setTopHeight] = useState(0);
+  const topStays = useWindowDimensions().height - topHeight >= roomUnderTop;
   const suspended = suspensionNow(useMe()) !== null;
   const { refresh: refreshList } = useUnread();
   const { loaded } = chat;
@@ -121,19 +141,17 @@ function Open({
     if (shownName !== null) onShown?.(shownName);
   }, [shownName, onShown]);
 
-  const back = <BackButton fallback="/messages" />;
+  // Until the conversation shows, its top has Back alone, in the same place.
+  const back = (
+    <View style={styles.back}>
+      <BackButton quiet fallback="/messages" />
+    </View>
+  );
   if (loaded === undefined) {
     const loading = (
       <ActivityIndicator accessibilityLabel={t("common.loading")} color={palette.primary} />
     );
-    return wide ? (
-      <Pane header={<View style={styles.who}>{back}</View>}>{loading}</Pane>
-    ) : (
-      <Screen>
-        {back}
-        {loading}
-      </Screen>
-    );
+    return wide ? <Pane header={back}>{loading}</Pane> : <Screen header={back}>{loading}</Screen>;
   }
   if (shown === null) {
     const failed = !("messages" in loaded) ? loaded : null;
@@ -153,15 +171,14 @@ function Open({
     );
     const retry = <Button variant="secondary" label={t("common.retry")} onPress={chat.reload} />;
     return wide ? (
-      <Pane header={<View style={styles.who}>{back}</View>}>
+      <Pane header={back}>
         <PageColumn>
           {notice}
           {retry}
         </PageColumn>
       </Pane>
     ) : (
-      <Screen>
-        {back}
+      <Screen header={back}>
         {notice}
         {retry}
       </Screen>
@@ -170,75 +187,40 @@ function Open({
 
   const { conversation, messages, hasEarlier } = shown;
   const { booking } = conversation;
-  const { board, alight } = booking;
   const name = firstNameOf(t, otherPerson(booking));
-  const route = t("search.route", {
-    from: board.meetingPoint.name[locale],
-    to: alight.meetingPoint.name[locale],
-  });
-  const day = capitalised(formatDay(new Date(board.plannedAt), locale), locale);
   // Each message I send, on its way or sent, brings the screen to its end.
   const mine =
     chat.pending.at(-1)?.clientId ??
     messages.findLast((message) => message.from === "me")?.clientId ??
     undefined;
 
-  const who = (
-    <View style={styles.fill}>
-      <Title align="start" part={wide}>
-        {name}
-      </Title>
-      <Text style={[typography.small, { color: palette.textMuted }]}>{`${day} · ${route}`}</Text>
-    </View>
-  );
-  // Reporting and blocking ask first, on their own screens (spec 9, 3.1 and 3.2).
-  const report = (
-    <Button
-      variant="text"
-      label={t("report.person", { name })}
-      onPress={() => {
-        // No name in the address: the report screen reads it from the booking.
-        router.push({ pathname: "/report", params: { kind: "user", id: booking.id } });
-      }}
+  const head = <ConversationHead conversation={conversation} part={wide} onRest={setTopHeight} />;
+  // Reading stays open to a suspended person; sending does not (spec 9, 3.6.2).
+  const writes = conversation.canWrite && !suspended;
+  const send = (outgoing: Outgoing) => {
+    chat.send(outgoing);
+    return true;
+  };
+  const footer = writes ? (
+    <>
+      {chat.tooFast ? <Notice message={t("chat.tooFast")} /> : null}
+      <MessageField draft={draft} onSend={send} />
+    </>
+  ) : (
+    <Notice
+      kind="info"
+      urgent={false}
+      message={t(conversation.canWrite ? "error.account_suspended" : "chat.closed")}
     />
   );
-  const block = conversation.blockedByMe ? null : (
-    <Button
-      variant="text"
-      label={t("block.action", { name })}
-      onPress={() => {
-        router.push({ pathname: "/bookings/[id]/block", params: { id: booking.id } });
-      }}
-    />
-  );
-  const footer =
-    // Reading stays open to a suspended person; sending does not (spec 9, 3.6.2).
-    conversation.canWrite && suspended ? (
-      <Notice kind="info" urgent={false} message={t("error.account_suspended")} />
-    ) : conversation.canWrite ? (
-      <>
-        {chat.tooFast ? <Notice message={t("chat.tooFast")} /> : null}
-        <Composer
-          draft={draft}
-          onSend={(outgoing) => {
-            chat.send(outgoing);
-            return true;
-          }}
-        />
-      </>
-    ) : (
-      <Notice kind="info" urgent={false} message={t("chat.closed")} />
-    );
+  const quick = writes ? <QuickMessages onSend={send} /> : undefined;
   const reading = (
     <>
+      {topStays ? null : <Card>{head}</Card>}
+      <SafetyLine inPerson={booking.payment === "in_person"} />
       {conversation.blockedByMe ? (
         <Body align="start">{t("block.youBlocked", { name })}</Body>
       ) : null}
-      <Notice
-        kind="info"
-        urgent={false}
-        message={t(booking.payment === "in_person" ? "chat.safetyTipInPerson" : "chat.safetyTip")}
-      />
       {messages.some((message) => message.from === "them" && !message.removed) ? (
         <Text style={[typography.small, { color: palette.textMuted }]}>
           {t(Platform.OS === "web" ? "report.messageHintWeb" : "report.messageHint")}
@@ -274,35 +256,17 @@ function Open({
       style={styles.fill}
     >
       {wide ? (
-        <Pane
-          endKey={mine}
-          footer={footer}
-          header={
-            // Where the pane has no room for both, Report and Block go under the name.
-            <View style={styles.paneHeader}>
-              <View style={styles.who}>
-                {back}
-                {who}
-              </View>
-              <View style={styles.paneActions}>
-                {report}
-                {block}
-              </View>
-            </View>
-          }
-        >
+        <Pane endKey={mine} header={topStays ? head : undefined} overFooter={quick} footer={footer}>
           {reading}
         </Pane>
       ) : (
-        <Screen stickToEnd endKey={mine} footer={footer}>
-          {back}
-          <View style={styles.header}>
-            {who}
-            <View style={styles.actions}>
-              {report}
-              {block}
-            </View>
-          </View>
+        <Screen
+          stickToEnd
+          endKey={mine}
+          header={topStays ? head : undefined}
+          overFooter={quick}
+          footer={footer}
+        >
           {reading}
         </Screen>
       )}
@@ -312,22 +276,6 @@ function Open({
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
-  header: { flexDirection: "row", alignItems: "flex-start", gap: spacing.sm },
-  actions: { alignItems: "flex-end" },
-  paneHeader: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    alignItems: "center",
-    columnGap: spacing.md,
-    rowGap: spacing.sm,
-  },
-  who: {
-    flexGrow: 1,
-    flexShrink: 1,
-    flexBasis: halfMinWidth,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.ms,
-  },
-  paneActions: { flexDirection: "row", flexWrap: "wrap", marginLeft: "auto", gap: spacing.sm },
+  // As high as the picture beside Back will be, so the top does not jump.
+  back: { minHeight: avatarSize, justifyContent: "center" },
 });

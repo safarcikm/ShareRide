@@ -1122,6 +1122,83 @@ As built (spec 31 says the same where a person sees it, in 3.11 and
    works. Journey: `chat.spec.ts`.
 5. **Docs and pictures:** spec 7; `built/chat-*`.
 
+As built (spec 31 says the same where a person sees it, in 3.13):
+
+- **The top** (`chat/conversation-head.tsx`, `ConversationHead`): a
+  `BackButton` that is `quiet` (new: no fill or edge, its chevron in the
+  text's colour), the `Avatar`, the name as the screen's heading (the
+  heading of a `part`, an h2, beside the list on a laptop), the line
+  under it (`chat.driver`, `chat.driverWithCar` with `carText`, or
+  `chat.passenger`) and a quiet `IconButton` named `chat.more` that says
+  whether it is `expanded` (new: `aria-expanded`). Its row has its parts
+  at the top (spec 31, 3.18). The menu is an `ActionRows` of two `Row`s
+  that unfolds in place under that row. It is no layer over the screen:
+  the app has none, and on Android a part takes no presses outside its
+  parent's bounds. Each row closes the menu and opens its screen
+  (`/report?kind=user`, `/bookings/[id]/block`), which reads the booking.
+  `RideLine` is a link (`linkProps`) to `/bookings/[id]`, or to
+  `/drive/trips/[id]` for the driver; it shows `formatShortDay`, the
+  time and `search.route`, and is named with `dayAtTime` and
+  `trip.stretchSpoken`. Its words can shrink (`minWidth: 0`), so a name
+  wider than the line breaks.
+- **Where the top stands:** `Screen` has `header`, a bar over what
+  scrolls (`screen-top-bar`: `surface`, a `border` line under it, and
+  the safe area over it in its colour), and `overFooter`, between what
+  scrolls and the bar, on `background` (`over-bar`). `Pane`
+  (`chat/panes.tsx`) has `overFooter` too. The screen
+  (`app/messages/[bookingId].tsx`) gives the top as `header` while the
+  window's height less the top's is at least `roomUnderTop` (400), and
+  otherwise as the first thing in what scrolls, in a `Card`.
+  `ConversationHead` says how tall it is through `onRest`, and only
+  while its menu is closed, so opening the menu moves nothing. In the
+  card the top is 32 narrower than in the bar and so never shorter, and
+  the two places cannot hand it back and forth. Until the conversation
+  shows, and when it could not be read, the bar has Back alone.
+- **The field** (`chat/composer.tsx`): `MessageField` is a `TextInput`
+  of several lines with `chat.placeholder` as its placeholder and its
+  name, at least `inputHeight` (52) high and at most about five lines
+  (`fieldMaxHeight`), with corners of half its one-line height. On the
+  web `useGrowingField` (`chat/growing-field.web.ts`) sets its height
+  from `scrollHeight` after each change of the text or the window's
+  width: React Native Web's `onContentSizeChange` reads `scrollHeight`
+  too, which never gets smaller while the height is set, so the field
+  would grow and not shrink. A phone's field does both by itself
+  (`growing-field.ts` does nothing). `rows: 1` goes to the web only: on
+  Android it would hold the field at one line. Send is an `IconButton`
+  that is `filled` (new: the main button as a round one, `inputHeight`
+  across, with the `buttonPrimary` edge, counted by `filledButtons()`)
+  and can be `busy`. `QuickMessages` are the chips, and `Composer` the
+  two, one over the other, for "Message all passengers". `onSend` says
+  whether what was written can be cleared.
+- **The safety line** (`chat/safety-line.tsx`): `ShieldCheck` and
+  `chat.safetyTip` or `chat.safetyTipInPerson`, in `small` `textMuted`.
+- **The list:** `ScreenHead` with `back={null}` on a phone, in place of
+  the centred `Title`.
+- **Texts:** new, `chat.more`, `chat.driver`, `chat.driverWithCar` and
+  `chat.passenger`. None is gone: `chat.message` still names Message on
+  a booked seat.
+- **Tests:** `chat.test.tsx` (the top in the bar with Back, the name
+  and who they are; the menu's two rows, their colours and order, and
+  that it closes; Report and Block in two presses each; Report alone
+  once blocked; "Passenger", and "Driver" with no car; the ride's line
+  for a passenger and for a driver; the safety line first and muted; the
+  field's placeholder with no label, and Send as the one filled button,
+  in the bar; the chips over the bar; a top too tall for the window
+  scrolling with the conversation, and back; the menu not counted; the
+  top's row and the ride's words; the same top in a laptop's pane; the
+  list's title at the left). `navigation-parts.test.tsx` for the quiet
+  `BackButton`, the `filled`, `busy` and `expanded` `IconButton`, and
+  `Screen`'s two new places. `blocking.test.tsx` and
+  `reporting.test.tsx` press More first. Journeys: `chat.spec.ts` (the
+  top in view after a message went, the ride's link, the menu, the
+  field's height with one line, three lines and after sending, the
+  driver's top in Icelandic), `blocking.spec.ts` (More first), and
+  `look.spec.ts` (a conversation 360 wide with long names, as set and
+  twice as large; `twiceAsLarge` enlarges what is drawn after it too, as
+  a top that moves is drawn anew). `confirmedBooking` takes the hour the
+  ride leaves at, for a picture. Pictures: `built/chat-*` and
+  `built/messages-phone-light`.
+
 ## PR 11: Profile and settings
 
 `feat(profile)`, spec 31, 3.14, 3.16 item 5, and a person's profile, Edit
@@ -1252,7 +1329,20 @@ and deleting the account (3.19).
     and what is read out with a name or a day after "til"
     (`trip.stretchSpoken`, `myBookings.times`), which is heard and not
     seen.
-14. **Docs:** spec 31 becomes Built, with what differs from the drawings;
+14. **Left from Messages (PR 10):** with text twice as large on a phone
+    360 wide the field shows "Write a" of "Write a message" until
+    something is written, as a placeholder of two lines has one; the
+    field's five lines are counted in the text as set, so text twice as
+    large scrolls inside it from the third line; the top stays by the
+    window's height, not the pane's, so a laptop's pane with text twice
+    as large (and not the page zoomed, which makes the window a
+    phone's) may leave the messages little room, to measure; the menu
+    of the top closes by its button, not by Escape or a press beside
+    it; when the top moves between its bar and the conversation, as the
+    window turns, the keyboard's focus in it is lost; on a window under
+    400 high the two bars still take about 150 (item 9). Icelandic, for
+    a native reader: "Bílstjóri · Hvítur Toyota Yaris" and "Meira".
+15. **Docs:** spec 31 becomes Built, with what differs from the drawings;
     spec 15 has the parts; the roadmap and the changelog.
 
 ## After merging

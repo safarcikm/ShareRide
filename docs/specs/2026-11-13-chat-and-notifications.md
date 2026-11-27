@@ -85,6 +85,16 @@ keep its cost down.
     and as soon as a push for that conversation arrives; otherwise it relies on
     push. A live connection can replace polling later if usage needs it.
 
+Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.13) a conversation
+has a top that stays while the messages scroll: Back, the other person's
+picture and name with "Driver, White Toyota Yaris" or "Passenger", a menu
+that holds Report and Block (item 8), and the ride as one line that opens
+the booking, or the ride for its driver. The safety tip (item 5) is the
+first line of the conversation, quiet, with a shield. The quick messages
+(item 2) are chips over the bar; in the bar the field is one line with
+"Write a message" in it, grows as it is written in, and has a round Send
+beside it. The list (item 9) has its title at the left on a phone.
+
 ### 3.2 Message all passengers (driver)
 
 From the trip or the seat view (spec 6), the driver can send one message to
@@ -94,7 +104,8 @@ separate message in each passenger's own conversation, so passengers never
 see each other or each other's replies. Quick messages work here too.
 Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.19) the screen has
 its title at the left, with "Each passenger gets it in their own chat.
-Passengers don't see each other." as the line under it.
+Passengers don't see each other." as the line under it, and (3.13) the
+field that grows with the round Send beside it, as a conversation has.
 
 ### 3.3 Notifications (F2)
 

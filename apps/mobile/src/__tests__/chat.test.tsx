@@ -26,6 +26,8 @@ import { passengerRow } from "@/testing/driver-trip";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
 import { tripsApi } from "@/testing/trips";
 import { aProfileId, newcomer } from "@/testing/people";
+import { filledButtons } from "@/testing/buttons";
+import { colors } from "@/theme/tokens";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
 jest.mock("@/auth/token-store", () => {
@@ -108,7 +110,6 @@ describe("A conversation (spec 7, 3.1)", () => {
   it("shows the safety tip, the request message, then the messages oldest first, with Seen under my last read one", async () => {
     const { client } = await openConversation({ messages: [onMyWay, openedLine, seen, hi] });
     expect(await screen.findByRole("header", { name: "Anna" })).toBeVisible();
-    expect(screen.getByText("Sunday 15 November · Borgarnes → Blönduós")).toBeVisible();
     expect(
       screen.getByText("Pay only in the app. PuffinRide never asks for card details in a chat."),
     ).toBeVisible();
@@ -618,6 +619,220 @@ describe("A conversation (spec 7, 3.1)", () => {
   });
 });
 
+describe("A conversation's top, ride and field (spec 31, 3.13)", () => {
+  const driving = { ...chatBooking, viewer: "driver" as const };
+
+  it("keeps Back, the name and who they are over the conversation, with Report and Block in a menu", async () => {
+    await openConversation();
+    const top = within(await screen.findByTestId("screen-top-bar"));
+    expect(top.getByRole("button", { name: "Back" })).toBeVisible();
+    expect(top.getByRole("header", { name: "Anna" })).toBeVisible();
+    expect(top.getByText("Driver, White Toyota Yaris")).toBeVisible();
+    // Not the first things seen (spec 31, section 1): they are in the menu.
+    expect(screen.queryByRole("button", { name: "Report Anna" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Block Anna" })).toBeNull();
+
+    await fireEvent.press(top.getByRole("button", { name: "More", expanded: false }));
+    expect(top.getByRole("button", { name: "More", expanded: true })).toBeVisible();
+    expect(top.getByRole("button", { name: "Report Anna" })).toBeVisible();
+    // Blocking takes something away: red, and last (R31.3). Reporting is not red.
+    const rows = within(top.getByTestId("action-rows"));
+    expect(rows.getByText("Report Anna")).toHaveStyle({ color: colors.light.text });
+    expect(rows.getByText("Block Anna")).toHaveStyle({ color: colors.light.error });
+    expect(
+      rows.getAllByRole("button").map((row) => row.props.accessibilityLabel as string),
+    ).toEqual(["Report Anna", "Block Anna"]);
+
+    // The menu closes again, and nothing of it is left.
+    await fireEvent.press(top.getByRole("button", { name: "More" }));
+    expect(top.getByRole("button", { name: "More", expanded: false })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Report Anna" })).toBeNull();
+  });
+
+  it("reaches Report in two presses", async () => {
+    await openConversation({}, (client) => {
+      bookingApi(client, () => chatBooking);
+    });
+    await fireEvent.press(await screen.findByRole("button", { name: "More" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Report Anna" }));
+    expect(await screen.findByRole("header", { name: "Report Anna" })).toBeVisible();
+    expect(screen).toHaveSearchParams({ kind: "user", id: bookingId });
+  });
+
+  it("reaches Block in two presses, and has the menu closed on coming back", async () => {
+    await openConversation({}, (client) => {
+      bookingApi(client, () => chatBooking);
+    });
+    await fireEvent.press(await screen.findByRole("button", { name: "More" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Block Anna" }));
+    expect(await screen.findByRole("header", { name: "Block Anna?" })).toBeVisible();
+    expect(screen).toHavePathname(`/bookings/${bookingId}/block`);
+    await fireEvent.press(screen.getByRole("button", { name: "Back" }));
+    expect(await screen.findByRole("button", { name: "More", expanded: false })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Block Anna" })).toBeNull();
+  });
+
+  it("offers only Report in the menu once I blocked them", async () => {
+    await openConversation({ canWrite: false, blockedByMe: true });
+    await fireEvent.press(await screen.findByRole("button", { name: "More" }));
+    expect(screen.getByRole("button", { name: "Report Anna" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Block Anna" })).toBeNull();
+  });
+
+  it("says Passenger under a passenger's name, and Driver alone for a driver whose car is not shown", async () => {
+    const first = await openConversation({ booking: driving });
+    const top = within(await screen.findByTestId("screen-top-bar"));
+    expect(top.getByRole("header", { name: "Gunna" })).toBeVisible();
+    expect(top.getByText("Passenger")).toBeVisible();
+    await first.unmount();
+
+    await openConversation({ booking: { ...chatBooking, car: null } });
+    expect(await screen.findByText("Driver")).toBeVisible();
+    expect(screen.queryByText(/Toyota/)).toBeNull();
+  });
+
+  it("shows the ride as one line under the name, which opens the passenger's booking", async () => {
+    await openConversation({}, (client) => {
+      bookingApi(client, () => chatBooking);
+    });
+    const top = within(await screen.findByTestId("screen-top-bar"));
+    const ride = top.getByRole("link", {
+      name: "Sunday 15 November at 10:00, Borgarnes to Blönduós",
+    });
+    expect(within(ride).getByText("Sun 15 Nov, 10:00")).toBeVisible();
+    expect(within(ride).getByText(/Borgarnes → Blönduós/)).toBeVisible();
+    await fireEvent.press(ride);
+    expect(screen).toHavePathname(`/bookings/${bookingId}`);
+  });
+
+  it("opens the driver's ride from the ride line when I drive", async () => {
+    await openConversation({ booking: driving }, (client) => {
+      tripsApi(client, [northMyTrip]);
+      driverApi(client, [driving]);
+    });
+    await fireEvent.press(
+      await screen.findByRole("link", {
+        name: "Sunday 15 November at 10:00, Borgarnes to Blönduós",
+      }),
+    );
+    expect(screen).toHavePathname(`/drive/trips/${driving.trip.id}`);
+  });
+
+  it("has the safety line first in the conversation, as a quiet line and not a card", async () => {
+    await openConversation();
+    const line = await screen.findByTestId("safety-line");
+    expect(
+      within(line).getByText(
+        "Pay only in the app. PuffinRide never asks for card details in a chat.",
+      ),
+    ).toHaveStyle({ color: colors.light.textMuted });
+    // Over the messages, and it scrolls with them: the top keeps its place.
+    const scroll = within(screen.getByTestId("screen-scroll"));
+    expect(scroll.getByTestId("safety-line")).toBe(line);
+    expect(within(screen.getByTestId("screen-top-bar")).queryByTestId("safety-line")).toBeNull();
+    const read = scroll
+      .getAllByText(/./)
+      .map((text) => (Array.isArray(text.props.children) ? "" : String(text.props.children)));
+    expect(read[0]).toBe("Pay only in the app. PuffinRide never asks for card details in a chat.");
+  });
+
+  it("stands the picture and the two buttons at the top of a name of several lines, and lets a long place name break", async () => {
+    await openConversation();
+    const head = await screen.findByTestId("conversation-head");
+    // The picture stands with the name, not at the middle of a tall block (spec 31, 3.18).
+    const row = within(head).getByTestId("avatar", { includeHiddenElements: true }).parent;
+    expect(row).toHaveStyle({ flexDirection: "row", alignItems: "flex-start" });
+    // A word wider than the line is broken; it does not push the line wider than the screen.
+    expect(within(head).getByText(/Borgarnes → Blönduós/)).toHaveStyle({ flex: 1, minWidth: 0 });
+  });
+
+  // Text twice as large with long names on a narrow phone makes the top
+  // several times as tall; staying, it left the messages no room at all.
+  const tall = (height: number) => ({
+    nativeEvent: { layout: { x: 0, y: 0, width: 328, height } },
+  });
+
+  it("lets a top that leaves the rest too little of the window scroll with the conversation", async () => {
+    await openConversation();
+    const head = await screen.findByTestId("conversation-head");
+    expect(within(screen.getByTestId("screen-top-bar")).getByTestId("conversation-head")).toBe(
+      head,
+    );
+    // The test's window is 1334 high: 1000 leaves 334 for the messages and the bar.
+    await fireEvent(head, "layout", tall(1000));
+    expect(screen.queryByTestId("screen-top-bar")).toBeNull();
+    const reading = within(screen.getByTestId("screen-scroll"));
+    expect(reading.getByRole("button", { name: "Back" })).toBeVisible();
+    expect(reading.getByRole("header", { name: "Anna" })).toBeVisible();
+    expect(reading.getByRole("button", { name: "More", expanded: false })).toBeVisible();
+    expect(
+      reading.getByRole("link", { name: "Sunday 15 November at 10:00, Borgarnes to Blönduós" }),
+    ).toBeVisible();
+    // First in the conversation, over the safety line.
+    const read = reading
+      .getAllByText(/./)
+      .map((text) => (Array.isArray(text.props.children) ? "" : String(text.props.children)));
+    expect(read.indexOf("Anna")).toBeGreaterThanOrEqual(0);
+    expect(read.indexOf("Anna")).toBeLessThan(
+      read.indexOf("Pay only in the app. PuffinRide never asks for card details in a chat."),
+    );
+    // The field and the quick messages keep their places.
+    expect(
+      within(screen.getByTestId("bottom-bar")).getByLabelText("Write a message"),
+    ).toBeVisible();
+    expect(
+      within(screen.getByTestId("over-bar")).getByRole("button", { name: "Thank you!" }),
+    ).toBeVisible();
+
+    // With room again, as when the phone is turned upright, it stays.
+    await fireEvent(screen.getByTestId("conversation-head"), "layout", tall(120));
+    expect(
+      within(screen.getByTestId("screen-top-bar")).getByRole("header", { name: "Anna" }),
+    ).toBeVisible();
+  });
+
+  it("measures the top without its menu, so opening the menu moves nothing", async () => {
+    await openConversation();
+    await fireEvent.press(await screen.findByRole("button", { name: "More" }));
+    await fireEvent(screen.getByTestId("conversation-head"), "layout", tall(1000));
+    const top = within(screen.getByTestId("screen-top-bar"));
+    expect(top.getByRole("button", { name: "More", expanded: true })).toBeVisible();
+    expect(top.getByRole("button", { name: "Block Anna" })).toBeVisible();
+  });
+
+  it("has one field with its words inside it and a round Send, the screen's one filled button", async () => {
+    const { client } = await openConversation();
+    const bar = within(await screen.findByTestId("bottom-bar"));
+    const field = bar.getByLabelText("Write a message");
+    expect(field).toHaveProp("placeholder", "Write a message");
+    // No label over the field: the words are in it.
+    expect(screen.queryByText("Write a message")).toBeNull();
+    const send = bar.getByRole("button", { name: "Send" });
+    expect(filledButtons()).toBe(1);
+    expect(screen.getByTestId("filled-button")).toBe(send);
+    // Only an icon: "Send" is its name, not a word on it.
+    expect(screen.queryByText("Send")).toBeNull();
+
+    await fireEvent.changeText(field, "Where shall I wait?");
+    await fireEvent.press(send);
+    await waitFor(() => {
+      expect(sends(client).map(({ text }) => text)).toEqual(["Where shall I wait?"]);
+    });
+    expect(bar.getByLabelText("Write a message")).toHaveDisplayValue("");
+  });
+
+  it("keeps the quick answers as chips over the bar, not in it", async () => {
+    const { client } = await openConversation();
+    const bar = within(await screen.findByTestId("bottom-bar"));
+    expect(bar.queryByRole("button", { name: "I'm at the meeting point" })).toBeNull();
+    const chips = within(screen.getByTestId("over-bar"));
+    await fireEvent.press(chips.getByRole("button", { name: "I'm at the meeting point" }));
+    await waitFor(() => {
+      expect(sends(client).map(({ quick }) => quick)).toEqual([{ key: "atPoint" }]);
+    });
+  });
+});
+
 describe("A conversation while suspended (spec 9, 3.6.2)", () => {
   it("stays readable, and says why nothing can be sent instead of the field", async () => {
     await renderApp(conversationPage, {
@@ -682,7 +897,13 @@ describe("Conversations list (spec 7, 3.1, item 9)", () => {
         chatServer(client);
       },
     });
-    expect(await screen.findByRole("header", { name: "Messages" })).toBeVisible();
+    // A list: its title is at the left, with no Back on a place of the menu (spec 31, 3.17).
+    const head = within(await screen.findByTestId("screen-head"));
+    expect(head.getByRole("header", { name: "Messages" })).toBeVisible();
+    expect(head.queryByRole("button", { name: "Back" })).toBeNull();
+    // Under each name, the ride's day and route (spec 31, 3.13, item 4).
+    expect(screen.getByText("Sunday 15 November · Borgarnes → Blönduós")).toBeVisible();
+    expect(screen.getByText("Sunday 15 November · BSÍ bus terminal → Borgarnes")).toBeVisible();
     expect(screen.getByText("2 unread")).toBeVisible();
     expect(
       screen.getByRole("button", {
@@ -1008,9 +1229,19 @@ describe("Messages on a laptop (spec 18, 3.11)", () => {
     const open = screen.getByTestId("panes-open");
     expect(await within(open).findByRole("header", { name: "Anna" })).toBeVisible();
     expect(screen).toHavePathname(conversationPage);
-    expect(within(open).getByText("Sunday 15 November · Borgarnes → Blönduós")).toBeVisible();
+    // The same top as on a phone (spec 31, 3.13), and no bar of the phone's.
+    expect(within(open).getByText("Driver, White Toyota Yaris")).toBeVisible();
+    expect(
+      within(open).getByRole("link", {
+        name: "Sunday 15 November at 10:00, Borgarnes to Blönduós",
+      }),
+    ).toBeVisible();
+    expect(screen.queryByTestId("screen-top-bar")).toBeNull();
+    expect(within(open).queryByRole("button", { name: "Report Anna" })).toBeNull();
+    await fireEvent.press(within(open).getByRole("button", { name: "More" }));
     expect(within(open).getByRole("button", { name: "Report Anna" })).toBeVisible();
     expect(within(open).getByRole("button", { name: "Block Anna" })).toBeVisible();
+    await fireEvent.press(within(open).getByRole("button", { name: "More" }));
     expect(within(open).getByText("By the pumps.")).toBeVisible();
     expect(within(open).getByLabelText("Write a message")).toBeVisible();
     expect(screen.queryByTestId("bottom-bar")).toBeNull();
