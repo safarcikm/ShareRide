@@ -108,7 +108,7 @@ export function openProviderWindow(options: {
 }
 
 /**
- * The window for the sign-in buttons and for adding one in Settings. The
+ * The window for the sign-in buttons and for adding one in Sign-in methods. The
  * secret for the next try is made in advance, so a tap opens the window at
  * once; each try gets a new one. `ready` is false for the moment it takes.
  * If no secret can be made, a tap says sign-in didn't work. Leaving the

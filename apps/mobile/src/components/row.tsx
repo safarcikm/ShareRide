@@ -226,8 +226,10 @@ const styles = StyleSheet.create({
     columnGap: spacing.sm,
   },
   stacked: { flexDirection: "column", flexWrap: "nowrap", alignItems: "flex-start" },
-  title: { flexGrow: 1, flexShrink: 1, flexBasis: "auto" },
-  value: { flexShrink: 1 },
+  // Neither is wider than the row: a word longer than a line, as a long
+  // email is, breaks inside it, where the web would let it reach past.
+  title: { flexGrow: 1, flexShrink: 1, flexBasis: "auto", maxWidth: "100%" },
+  value: { flexShrink: 1, maxWidth: "100%" },
   under: { paddingBottom: spacing.ms },
   underInRows: { paddingHorizontal: spacing.md },
 });

@@ -92,7 +92,9 @@ profile photo, so passengers know who to look for.
 The registration number is shown only to booked passengers.
 
 **A4. Settings (Must).** Language, notification choices per category,
-blocked users, signed-in devices.
+blocked users, signed-in devices. Since
+[spec 31](../specs/2026-11-26-one-ride-one-ticket.md) (3.14) they are rows
+of Profile, not a page of their own.
 
 **A5. Export and delete my data (Must).** Download my data; delete my
 account from the app (required by Apple and Google, and by the GDPR). Open

@@ -11,8 +11,8 @@ import { BackToMenu } from "@/navigation/back-to-menu";
 import { spacing } from "@/theme/tokens";
 
 /**
- * Privacy in Settings (spec 11; plan 4.9): Download my data, Delete my
- * account, Ask about my data and the privacy policy.
+ * Privacy and your data, a page of Profile (spec 11; plan 4.9): Download
+ * my data, Delete my account, Ask about my data and the privacy policy.
  */
 export default function PrivacyScreen() {
   const { t } = useLanguage();
@@ -20,7 +20,7 @@ export default function PrivacyScreen() {
   if (me === null) return <BackToMenu />;
   return (
     <Screen>
-      <BackButton fallback="/settings" />
+      <BackButton fallback="/profile" />
       <Title>{t("privacy.title")}</Title>
       <Body>{t("privacy.intro")}</Body>
       <View style={styles.rows}>

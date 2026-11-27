@@ -1583,6 +1583,17 @@ releases follow [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- While an account waits to be deleted, Blocked people, My reports and
+  the privacy request are closed as the other pages of Profile are (spec
+  11, 3.4.4); their addresses still opened them. The pages that close are
+  one list, and a test fails for a page of Profile that is not in it.
+- A row of Profile keeps what it said when it cannot be read again on
+  coming back, and the room of the rating's line is kept while it is
+  read, so the rows do not move (spec 31, 3.14).
+- A long email breaks inside its row on a narrow phone; on the website it
+  reached past the row's edge (spec 31, 3.14).
+- The email to the old address after the sign-in email changed opens
+  Profile directly.
 - Titles keep their words apart on the website (spec 31, 3.18): Fredoka's
   space is narrow and its kerning closed it further, so "N1 Vík" read as
   "N1Vík". Titles, headings, times, prices and button labels are set
@@ -1810,6 +1821,22 @@ releases follow [Semantic Versioning](https://semver.org/).
   top too tall for the room the conversation has, as with text twice as
   large and long names, scrolls with it. Messages has its title at the
   left on a phone.
+- Profile and Settings are one page (spec 31, 3.14). Profile has who you
+  are in a card, with your rating and what is checked as others see them,
+  Edit and the photo's controls, then rows in four groups, each row with
+  what is set now: Driving (My cars, Driving licence), Account (Email,
+  Phone number, Sign-in methods, Notifications, Language), Safety and
+  privacy (Privacy and your data, Blocked people, My reports, Notices)
+  and Help (Meeting points, Send feedback, My feedback, About PuffinRide,
+  Legal documents), and Sign out as its last row. The language and the
+  notifications each have a page of their own, the notifications' two
+  switches as rows of one card. "Sign out on all devices" is at the end
+  of Sign-in methods. `/settings` leads to Profile, and the texts and
+  emails that said "in Settings" say where the thing is on Profile. On a
+  laptop the card is the side column and the groups the main one. Quick
+  choices of a language are saved one after the other and end on the
+  last. Back from Beta news opened by itself leads to Notifications. The
+  legal texts still say "Settings".
 - The web journeys never give two test accounts the same phone number: a
   run in ten did, and a sign-in journey then failed.
 - CI skips its code jobs (bundles, unit, integration and web tests, the API

@@ -22,8 +22,8 @@ function goOn() {
  * account with a verified email. "Use Face ID or fingerprint", where the
  * device has it, sets it up at once, then says so with Done; "Add a
  * password" opens Choose a password at once. The fresh sign-in is the proof
- * for both. "Not now" goes on to where sign-up goes. Both stay in Settings,
- * Sign-in methods.
+ * for both. "Not now" goes on to where sign-up goes. Both stay in Sign-in
+ * methods, on Profile.
  */
 export default function FasterScreen() {
   const { t } = useLanguage();

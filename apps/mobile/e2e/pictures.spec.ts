@@ -917,4 +917,73 @@ test.describe("pictures", () => {
     await shoot("chat", "dark");
     await other.close();
   });
+
+  // Profile as built (spec 31, 3.14): the person's card, the four groups
+  // and Sign out on one page; the pages of the language, of the
+  // notifications and of the ways to sign in; Profile in Icelandic at
+  // night. On a laptop, the card in the side column and the groups in the
+  // main one.
+  test("Profile and settings (spec 31)", async ({ page }, info) => {
+    test.setTimeout(300_000);
+    const folder = join(root ?? "", "one-ride-one-ticket", "built");
+    mkdirSync(folder, { recursive: true });
+    const wide = info.project.name === "desktop";
+    const window = wide ? { width: 1280, height: 720 } : (page.viewportSize() ?? null);
+    if (window === null) throw new Error("The page has no size");
+    await page.setViewportSize(window);
+    const visible = { visible: true };
+    const kind = wide ? "laptop" : "phone";
+    const shoot = async (name: string, scheme: "light" | "dark") => {
+      await showWhole(page, window.width);
+      // Away from the rows: one under the pointer would show as hovered.
+      await page.mouse.move(0, 0);
+      await page.screenshot({
+        path: join(folder, `${name}-${kind}-${scheme}.png`),
+        scale: wide ? "css" : "device",
+      });
+      await page.setViewportSize(window);
+    };
+    const heading = (name: string) =>
+      page.getByRole("heading", { name, exact: true }).filter(visible);
+    const row = (name: string | RegExp) => page.getByRole("link", { name }).filter(visible);
+
+    // Bára has posted a ride: her photo, her car and her licence are in place.
+    await signUp(page, english, "Bára");
+    await postTripToSelfoss(page, "17:30");
+    await page.goto("/profile");
+    await expect(heading("My profile")).toBeVisible();
+    await expect(row("My cars, Toyota Yaris")).toBeVisible();
+    await expect(row("Driving licence, Confirmed")).toBeVisible();
+    await expect(row(/^Sign-in methods, /)).toBeVisible();
+    await expect(page.getByTestId("person-card-standing").filter(visible)).toBeVisible();
+    await shoot("profile", "light");
+    if (wide) return;
+
+    // The language's page and the notifications'.
+    await row("Language, English").click();
+    await expect(heading("Language")).toBeVisible();
+    await expect(page.getByRole("radio", { name: "Íslenska" }).filter(visible)).toBeVisible();
+    await shoot("language", "light");
+    await page.goto("/settings/notifications");
+    await expect(heading("Notifications")).toBeVisible();
+    await expect(page.getByRole("switch").filter(visible).first()).toBeVisible();
+    await shoot("notifications", "light");
+    // The ways to sign in, with "Sign out on all devices" at their end.
+    await page.goto("/settings/sign-in-methods");
+    await expect(
+      page.getByRole("button", { name: "Sign out on all devices" }).filter(visible),
+    ).toBeVisible();
+    await shoot("sign-in-methods", "light");
+
+    // In Icelandic, at night: the language is changed on its own page.
+    await page.emulateMedia({ colorScheme: "dark" });
+    await page.goto("/settings/language");
+    await page.getByRole("radio", { name: "Íslenska" }).filter(visible).click();
+    await expect(heading("Tungumál")).toBeVisible();
+    await page.goto("/profile");
+    await expect(row("Tungumál, Íslenska")).toBeVisible();
+    await expect(row("Bílarnir mínir, Toyota Yaris")).toBeVisible();
+    await expect(page.getByTestId("person-card-standing").filter(visible)).toBeVisible();
+    await shoot("profile", "dark");
+  });
 });

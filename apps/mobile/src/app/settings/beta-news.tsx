@@ -17,7 +17,7 @@ import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
 /**
- * Beta news (spec 10, 3.5; plan 4.7), in Settings: ShareRide's
+ * Beta news (spec 10, 3.5; plan 4.7), opened from Notifications: PuffinRide's
  * announcements sent to me, the latest first, in the app's language. A
  * push about one opens this page, and it is where someone without an
  * email address reads them.
@@ -37,7 +37,7 @@ function BetaNews() {
 
   const header = (
     <>
-      <BackButton fallback="/settings" />
+      <BackButton fallback="/settings/notifications" />
       <Title>{t("betaNews.title")}</Title>
       <Body>{t("betaNews.help")}</Body>
     </>

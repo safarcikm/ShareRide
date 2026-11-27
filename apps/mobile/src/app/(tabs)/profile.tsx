@@ -1,12 +1,38 @@
-import { driverReadinessRoute, type Me } from "@shareride/contracts";
-import { peopleColourOf } from "@shareride/domain";
+import {
+  driverReadinessRoute,
+  listSignInMethodsRoute,
+  listVehiclesRoute,
+  publicProfileRoute,
+  type Me,
+} from "@shareride/contracts";
+import { formatPhoneNumber, peopleColourOf } from "@shareride/domain";
 import { router } from "expo-router";
-import { useCallback, useState } from "react";
+import {
+  Ban,
+  Bell,
+  BellRing,
+  Car,
+  FileText,
+  Flag,
+  IdCard,
+  Inbox,
+  Info,
+  KeyRound,
+  Languages,
+  Lock,
+  LogOut,
+  Mail,
+  MapPin,
+  Megaphone,
+  Phone,
+} from "lucide-react-native";
+import { useCallback, useState, type ReactNode } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useMe, useSession } from "@/auth/session";
 import { useSignOut } from "@/auth/use-sign-out";
-import { Avatar } from "@/components/avatar";
 import { useOpenFeedback } from "@/beta/feedback";
+import { ShakeRow } from "@/beta/shake";
+import { ActionRows } from "@/components/action-rows";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
 import { Columns } from "@/components/columns";
@@ -14,7 +40,8 @@ import { LanguageSwitch } from "@/components/language-switch";
 import { Notice } from "@/components/notice";
 import { Row } from "@/components/row";
 import { Screen, useWideScreen } from "@/components/screen";
-import { Title } from "@/components/text";
+import { ScreenHead } from "@/components/screen-head";
+import { Heading } from "@/components/text";
 import { TextLink } from "@/components/text-link";
 import { useLanguage } from "@/i18n/language";
 import { useSaveLanguage } from "@/i18n/use-save-language";
@@ -23,19 +50,22 @@ import { useLoadedOnFocus } from "@/lib/use-loaded";
 import { openPlace } from "@/navigation/open-place";
 import { SignInFirst } from "@/navigation/sign-in-first";
 import { languagesText } from "@/people/languages";
+import { PersonCard } from "@/people/person-card";
 import { memberSinceText } from "@/people/texts";
 import { PhotoControls } from "@/profile/photo-controls";
-import { spacing, typography } from "@/theme/tokens";
+import { providerNames } from "@/sign-in/provider-window";
+import { sizes, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
 /**
- * Profile, a place of the menu (spec 16, 3.1). Signed in, my profile
- * (spec 16, 3.4): who I am, then rows for my cars, my licence, the meeting
- * points, Settings and About with the legal documents (spec 30, 3.2), and
- * Sign out, which signs out of this device and returns to Find, as
- * Settings does. Signed out: what an account is for and Sign in, then the
- * rows for the meeting points and About, as signed in, and the language,
- * in one column on any screen.
+ * Profile, a place of the menu (spec 16, 3.1). Signed in, my profile and
+ * what was Settings on one page (spec 31, 3.14): the title at the left,
+ * who I am in a card, then groups of rows, each row with what is set now
+ * and each opening the page it had before: Driving, Account, Safety and
+ * privacy, Help, and Sign out, which signs out of this device and returns
+ * to Find. Signed out: what an account is for and Sign in, then the rows
+ * for the meeting points and About, and the language, in one centred
+ * column on any screen.
  */
 export default function ProfileScreen() {
   const me = useMe();
@@ -69,12 +99,11 @@ function SignedOut() {
 }
 
 function MyProfile({ me }: { readonly me: Me }) {
-  const { t } = useLanguage();
+  const { locale, t } = useLanguage();
   const session = useSession();
   const openFeedback = useOpenFeedback();
-  const load = useCallback(() => session.call(driverReadinessRoute, {}), [session]);
-  const { value: readiness } = useLoadedOnFocus(load);
   const wide = useWideScreen();
+  const [legalOpen, setLegalOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { signingOut, signOut } = useSignOut({
     onSignedOut: () => {
@@ -82,146 +111,229 @@ function MyProfile({ me }: { readonly me: Me }) {
     },
     onError: setError,
   });
-  // Without an answer the row just leaves the value out.
+
+  // What the rows say is set now. Each is loaded again when the page comes
+  // back into view, as after adding a car; without an answer its row just
+  // leaves the value out, and one that cannot be read again keeps what it
+  // said.
+  const { profileId } = me;
+  const loadStanding = useCallback(
+    () => session.call(publicProfileRoute, { params: { profileId } }),
+    [session, profileId],
+  );
+  const loadReadiness = useCallback(() => session.call(driverReadinessRoute, {}), [session]);
+  const loadCars = useCallback(() => session.call(listVehiclesRoute, {}), [session]);
+  const loadSignIn = useCallback(() => session.call(listSignInMethodsRoute, {}), [session]);
+  const { value: standing } = useLoadedOnFocus(loadStanding, answered);
+  const { value: readiness } = useLoadedOnFocus(loadReadiness, answered);
+  const { value: cars } = useLoadedOnFocus(loadCars, answered);
+  const { value: signIn } = useLoadedOnFocus(loadSignIn, answered);
+
   const licence =
     readiness?.ok === true
       ? readiness.data.items.find((item) => item.item === "licence")?.done
       : undefined;
+  const carNames =
+    cars?.ok === true
+      ? cars.data.vehicles
+          .map(({ make, model }) => t("trip.carWithoutColour", { make, model }))
+          .join(", ")
+      : "";
+  // The email signs in by a code sent to it; then what is linked or set up.
+  const signInWays =
+    signIn?.ok === true
+      ? [
+          me.email === null ? null : t("settings.email"),
+          ...signIn.data.methods.map((method) => providerNames[method.provider]),
+          (signIn.data.password ?? null) === null ? null : t("auth.password"),
+          signIn.data.passkeys.length === 0 ? null : t("auth.passkey"),
+        ]
+          .filter((way) => way !== null)
+          .join(", ")
+      : "";
+
+  const languages = languagesText(me, locale);
   const person = (
-    <>
-      <Person me={me} />
-      <PhotoControls me={me} />
-      <Button
-        variant="secondary"
-        label={t("profile.edit")}
-        onPress={() => {
-          router.push("/profile/edit");
-        }}
-      />
-      <TextLink label={t("profile.preview")} href="/profile/preview" />
-    </>
-  );
-  const rows = (
-    <>
-      <Card>
-        <Row
-          title={t("profile.myCars")}
+    <PersonCard
+      firstName={me.firstName ?? ""}
+      colour={peopleColourOf(me.id)}
+      photo={me.photo?.url ?? null}
+      lines={[
+        ...(languages === "" ? [] : [t("profile.speaks", { languages })]),
+        memberSinceText(t, locale, dayOf(new Date(me.memberSince))),
+      ]}
+      standing={standing === undefined ? "reading" : standing.ok ? standing.data : undefined}
+      action={
+        <Button
+          variant="secondary"
+          label={t("profile.editShort")}
+          accessibilityLabel={t("profile.edit")}
           onPress={() => {
-            router.push("/drive/cars");
+            router.push("/profile/edit");
           }}
         />
+      }
+    >
+      {/* Each is as high as a finger needs, so nothing more is between them. */}
+      <View>
+        <PhotoControls me={me} align="start" />
+        <TextLink label={t("profile.preview")} href="/profile/preview" align="start" />
+      </View>
+    </PersonCard>
+  );
+  const groups = (
+    <>
+      <Group title={t("profile.driving")}>
         <Row
+          icon={Car}
+          title={t("profile.myCars")}
+          value={carNames === "" ? undefined : carNames}
+          href="/drive/cars"
+        />
+        <Row
+          icon={IdCard}
           title={t("driver.ready.licence")}
           value={
             licence === undefined
               ? undefined
               : t(licence ? "profile.licenceConfirmed" : "profile.licenceNotYet")
           }
-          onPress={() => {
-            router.push("/drive/licence");
-          }}
+          href="/drive/licence"
         />
+      </Group>
+      <Group
+        title={t("profile.account")}
+        under={me.phoneNumber === null ? undefined : t("profile.phoneHelp")}
+      >
         <Row
-          title={t("meetingPoints.title")}
-          onPress={() => {
-            router.push("/meeting-points");
-          }}
+          icon={Mail}
+          title={t("settings.email")}
+          value={
+            me.pendingEmail !== null
+              ? t("settings.emailWaiting", { email: me.pendingEmail })
+              : (me.email ?? t("settings.signInMethods.noEmail"))
+          }
+          href="/settings/email"
         />
-      </Card>
-      <Card>
+        {me.phoneNumber === null ? null : (
+          <Row
+            icon={Phone}
+            title={t("profile.phone")}
+            value={formatPhoneNumber(me.phoneNumber)}
+            shows
+          />
+        )}
         <Row
-          title={t("settings.open")}
-          onPress={() => {
-            router.push("/settings");
-          }}
+          icon={KeyRound}
+          title={t("settings.signInMethods")}
+          value={signInWays === "" ? undefined : signInWays}
+          href="/settings/sign-in-methods"
         />
+        <Row icon={Bell} title={t("settings.notifications")} href="/settings/notifications" />
         <Row
-          title={t("about.title")}
-          onPress={() => {
-            router.push("/about");
-          }}
+          icon={Languages}
+          title={t("settings.language")}
+          value={t(locale === "en" ? "language.english" : "language.icelandic")}
+          href="/settings/language"
         />
-        <Row title={t("feedback.title")} onPress={openFeedback} />
+      </Group>
+      <Group title={t("profile.safety")}>
+        <Row icon={Lock} title={t("settings.privacy")} href="/settings/privacy" />
+        <Row icon={Ban} title={t("blocks.title")} href="/settings/blocked" />
+        <Row icon={Flag} title={t("reports.title")} href="/settings/reports" />
+        <Row icon={BellRing} title={t("notices.title")} href="/notices" />
+      </Group>
+      <Group title={t("profile.help")}>
+        <Row icon={MapPin} title={t("meetingPoints.title")} href="/meeting-points" />
+        <Row icon={Megaphone} title={t("feedback.title")} onPress={openFeedback} />
+        <ShakeRow />
+        <Row icon={Inbox} title={t("feedback.mine")} href="/settings/feedback" />
+        <Row icon={Info} title={t("about.title")} href="/about" />
         <Row
-          title={t("notices.title")}
-          onPress={() => {
-            router.push("/notices");
+          icon={FileText}
+          title={t("settings.legal")}
+          expanded={legalOpen}
+          onToggle={() => {
+            setLegalOpen((open) => !open);
           }}
-        />
-      </Card>
-      <Small>{t("profile.inSettings")}</Small>
-      {/* On a wide page it starts at the left, with the rows. */}
-      <View style={wide ? styles.start : null}>
-        <Button
-          variant="secondary"
-          label={t("settings.signOut")}
-          busy={signingOut !== null}
+        >
+          <View style={styles.documents}>
+            {legalDocuments.map(({ title, href }) => (
+              <TextLink key={href} label={t(title)} href={href} align="start" />
+            ))}
+          </View>
+        </Row>
+      </Group>
+      <ActionRows>
+        <Row
+          icon={LogOut}
+          title={t("settings.signOut")}
+          disabled={signingOut !== null}
           onPress={() => void signOut(false)}
         />
-      </View>
+      </ActionRows>
       <Notice message={error} />
     </>
   );
-  // A wide screen (spec 18, 3.12): who I am in a card at the left, which
-  // stays while the rows scroll, and the rows in the room beside it.
+  // A wide screen (spec 31, 3.16 item 5): who I am in the side column, at
+  // the left, which stays while the groups scroll in the main column.
   if (wide) {
     return (
       <Screen width="page">
-        <Title align="start">{t("profile.title")}</Title>
-        <Columns sideAt="start" side={<Card>{person}</Card>}>
-          {rows}
+        <ScreenHead title={t("profile.title")} back={null} />
+        <Columns sideAt="start" side={person}>
+          {groups}
         </Columns>
       </Screen>
     );
   }
   return (
     <Screen>
-      <Title>{t("profile.title")}</Title>
+      <ScreenHead title={t("profile.title")} back={null} />
       {person}
-      {rows}
+      {groups}
     </Screen>
   );
 }
 
-/** My avatar, first name, languages and when I joined (3.4 item 1). */
-function Person({ me }: { readonly me: Me }) {
-  const { locale, t } = useLanguage();
+/** Whether a call was answered: a row keeps what it said when it was not. */
+const answered = (result: { readonly ok: boolean }) => result.ok;
+
+/** The three documents, each on its own page; About holds them too (spec 30, 3.2). */
+const legalDocuments = [
+  { title: "legal.terms", href: "/legal/terms" },
+  { title: "legal.rules", href: "/legal/community-rules" },
+  { title: "legal.privacy", href: "/legal/privacy" },
+] as const;
+
+/**
+ * A group of rows under its heading, with at most one small line `under`
+ * it about one of its rows, as who can see the phone number.
+ */
+function Group({
+  title,
+  under,
+  children,
+}: {
+  readonly title: string;
+  readonly under?: string | undefined;
+  readonly children: ReactNode;
+}) {
   const palette = usePalette();
-  const firstName = me.firstName ?? "";
-  const languages = languagesText(me, locale);
-  const summary = [
-    languages === "" ? null : t("profile.speaks", { languages }),
-    memberSinceText(t, locale, dayOf(new Date(me.memberSince))),
-  ]
-    .filter((part) => part !== null)
-    .join(" · ");
   return (
-    <View style={styles.person}>
-      <Avatar firstName={firstName} colour={peopleColourOf(me.id)} photo={me.photo?.url ?? null} />
-      <Text style={[typography.figure, styles.centre, { color: palette.text }]}>{firstName}</Text>
-      <Small centre>{summary}</Small>
+    <View style={styles.group}>
+      <Heading>{title}</Heading>
+      <ActionRows>{children}</ActionRows>
+      {under === undefined ? null : (
+        <Text style={[typography.small, { color: palette.textMuted }]}>{under}</Text>
+      )}
     </View>
   );
 }
 
-function Small({
-  children,
-  centre = false,
-}: {
-  readonly children: string;
-  readonly centre?: boolean;
-}) {
-  const palette = usePalette();
-  return (
-    <Text style={[typography.small, centre ? styles.centre : null, { color: palette.textMuted }]}>
-      {children}
-    </Text>
-  );
-}
-
 const styles = StyleSheet.create({
-  person: { alignItems: "center", gap: spacing.xs },
   links: { gap: spacing.sm, paddingTop: spacing.lg },
-  start: { flexDirection: "row" },
-  centre: { textAlign: "center" },
+  group: { gap: spacing.sm },
+  // The documents start under the row's words, past its icon.
+  documents: { alignItems: "flex-start", paddingLeft: sizes.rowIcon + spacing.ms },
 });

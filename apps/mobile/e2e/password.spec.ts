@@ -67,7 +67,7 @@ test("a new member adds a password after signing up, then signs in with it", asy
   await menuLink(page, english.profileTab).click();
   await expect(page.getByText("Birta", { exact: true }).filter(visible)).toBeVisible();
 
-  // Settings, Sign-in methods, says it is set, and removes it.
+  // Sign-in methods says it is set, and removes it.
   await page.goto("/settings/sign-in-methods");
   await expect(page.getByText(/^Set on \d{1,2} \w+ \d{4}$/)).toBeVisible();
   await page.getByRole("button", { name: "Remove password" }).click();

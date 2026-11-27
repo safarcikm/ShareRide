@@ -17,7 +17,7 @@ test.use({ locale: "en-GB" });
 const visible = { visible: true } as const;
 const offerTitle = "Use Face ID or fingerprint next time?";
 const notSetUp =
-  "This device's sign-in isn't set up for your PuffinRide account. Use your email, then set it up again in Settings.";
+  "This device's sign-in isn't set up for your PuffinRide account. Use your email, then set it up again in Profile, under Sign-in methods.";
 
 interface DeviceLock {
   readonly session: CDPSession;
@@ -105,7 +105,7 @@ test("a new member sets up Face ID or fingerprint, signs in with it, then remove
   await menuLink(page, english.profileTab).click();
   await expect(page.getByText("Hekla", { exact: true }).filter(visible)).toBeVisible();
 
-  // Settings lists the device, used today, and removes it after asking (3.6).
+  // Sign-in methods lists the device, used today, and removes it after asking (3.6).
   await page.goto("/settings/sign-in-methods");
   await expect(page.getByText(/^Last used \d{1,2} \w+ \d{4}$/)).toBeVisible();
   await page.getByRole("button", { name: /^Remove Face ID or fingerprint for / }).click();

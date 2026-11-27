@@ -136,7 +136,7 @@ describe("decideLink (plan 4.2; R19.1, R19.3)", () => {
     ).toEqual({ action: "replace", replacedIdentityId: "identity-1" });
   });
 
-  it("refuses a second link of the same provider from Settings", () => {
+  it("refuses a second link of the same provider from Sign-in methods", () => {
     expect(
       decideLink({ via: "settings", accountId: "me", subjectOwnerId: null, accountLink: link }),
     ).toEqual({ action: "refuse", code: "provider_already_linked" });

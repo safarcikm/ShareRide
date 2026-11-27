@@ -36,6 +36,7 @@ import { BackToMenu } from "@/navigation/back-to-menu";
 import { ConfirmWithCode } from "@/privacy/confirm-with-code";
 import { PasskeyDevices } from "@/sign-in/passkey-devices";
 import { providerNames, useProviderWindow } from "@/sign-in/provider-window";
+import { SignOutEverywhere } from "@/sign-in/sign-out-everywhere";
 import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
@@ -65,8 +66,8 @@ function refusalText(t: Translate, failure: CallFailure, provider: string): stri
 }
 
 /**
- * Settings, Sign-in methods (spec 19, 3.4; spec 26, 3.8; spec 27, 3.6): the
- * phone number, which stays, the email, which signs in and can be changed,
+ * Sign-in methods, a page of Profile (spec 19, 3.4; spec 26, 3.8; spec 27,
+ * 3.6): the phone number, which stays, the email, which signs in and can be changed,
  * Google and Apple, each linked with its email or not linked, and the
  * password, set on a day or not set, which Choose a password adds or
  * changes and which is removed here after asking, and Face ID or
@@ -76,7 +77,8 @@ function refusalText(t: Translate, failure: CallFailure, provider: string): stri
  * email, else by text to the account's own number (spec 26, 3.6).
  * Removing one asks first; sessions stay signed in. After a change the list
  * shows it at once and is loaded again; a list that fails to load then
- * stays as it was.
+ * stays as it was. "Sign out on all devices" is at its end (spec 31, 3.14),
+ * also when the list could not be loaded.
  */
 export default function SignInMethodsScreen() {
   const me = useMe();
@@ -242,7 +244,7 @@ function SignInMethods({
 
   const header = (
     <>
-      <BackButton fallback="/settings" />
+      <BackButton fallback="/profile" />
       <Title>{t("settings.signInMethods")}</Title>
       <Body>{t("settings.signInMethods.help")}</Body>
     </>
@@ -269,6 +271,7 @@ function SignInMethods({
         {header}
         <Notice message={errorText(t, answer)} />
         <Button variant="secondary" label={t("common.retry")} onPress={reload} />
+        <SignOutEverywhere />
       </Screen>
     );
   }
@@ -443,6 +446,7 @@ function SignInMethods({
           />
         </View>
       )}
+      <SignOutEverywhere />
     </Screen>
   );
 }

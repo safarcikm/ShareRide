@@ -23,15 +23,18 @@ export function reliabilityText(t: Translate, percent: number | null): string {
 export function RatingLine({
   rating,
   strong = false,
+  inline = false,
 }: {
   readonly rating: Rating;
   /** As large as the text around it, as on the profile; small beside a name. */
   readonly strong?: boolean;
+  /** As wide as its words, with more beside it on the line, such as what is checked. */
+  readonly inline?: boolean;
 }) {
   const { locale, t } = useLanguage();
   const palette = usePalette();
   return (
-    <View style={styles.rating}>
+    <View style={[styles.rating, inline && styles.shrink]}>
       <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
         <Icon
           icon={Star}
@@ -43,7 +46,7 @@ export function RatingLine({
       <Text
         style={[
           strong ? typography.bodyStrong : typography.small,
-          styles.grow,
+          inline ? styles.shrink : styles.grow,
           { color: palette.text },
         ]}
       >
@@ -56,4 +59,5 @@ export function RatingLine({
 const styles = StyleSheet.create({
   rating: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   grow: { flex: 1 },
+  shrink: { flexShrink: 1 },
 });

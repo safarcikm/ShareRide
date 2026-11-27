@@ -120,9 +120,9 @@ test("the driver and passenger of a confirmed booking message each other", async
     driver.getByRole("link", { name: "Messages, 1 unread", exact: true }).filter(visible),
   ).toBeVisible();
 
-  // The driver switches the app to Icelandic in Settings and answers from
-  // the trip page.
-  await driver.goto("/settings");
+  // The driver switches the app to Icelandic on the language's page and
+  // answers from the trip page.
+  await driver.goto("/settings/language");
   // "Íslenska" is read with an Icelandic voice in the English app.
   await expect(driver.getByRole("radio", { name: "Íslenska" })).toHaveAttribute("lang", "is");
   await driver.getByRole("radio", { name: "Íslenska" }).click();

@@ -608,7 +608,7 @@ describe("a member (spec 19, 3.3; plan 4.2)", () => {
   });
 });
 
-describe("Sign-in methods in Settings (spec 19, 3.4)", () => {
+describe("Sign-in methods, a page of Profile (spec 19, 3.4)", () => {
   async function prepare(accessToken: string, person: number) {
     const verifier = newVerifier();
     const ticket = await ticketFor(person, verifier);

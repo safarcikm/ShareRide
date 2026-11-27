@@ -24,12 +24,15 @@ export function PhotoControls({
   me,
   onAdded,
   prominent = false,
+  align = "center",
 }: {
   readonly me: Me;
   /** After a photo is added or changed, in place of saying so here. */
   readonly onAdded?: () => void;
   /** Adding a photo is the screen's main action, not a link under the avatar. */
   readonly prominent?: boolean;
+  /** At the left in the person's card on Profile, where everything starts there. */
+  readonly align?: "center" | "start";
 }) {
   const { t } = useLanguage();
   const palette = usePalette();
@@ -111,7 +114,9 @@ export function PhotoControls({
       {me.photo?.hidden === true ? (
         <Notice kind="info" urgent={false} message={t("profile.photo.hidden")} />
       ) : null}
-      <View style={prominent ? styles.stacked : styles.buttons}>
+      <View
+        style={prominent ? styles.stacked : [styles.buttons, align === "start" && styles.start]}
+      >
         <Button
           main={prominent}
           variant={prominent ? "primary" : "text"}
@@ -146,7 +151,13 @@ export function PhotoControls({
         ) : null}
       </View>
       {hasPhoto ? null : (
-        <Text style={[typography.small, styles.centre, { color: palette.textMuted }]}>
+        <Text
+          style={[
+            typography.small,
+            align === "center" && styles.centre,
+            { color: palette.textMuted },
+          ]}
+        >
           {t("profile.photo.help")}
         </Text>
       )}
@@ -164,6 +175,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     columnGap: spacing.md,
   },
+  // The first button's words start where the card's other lines do.
+  start: { justifyContent: "flex-start", marginLeft: -spacing.sm },
   stacked: { gap: spacing.sm },
   centre: { textAlign: "center" },
 });

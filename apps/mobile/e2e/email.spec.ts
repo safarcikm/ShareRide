@@ -4,7 +4,7 @@ import { confirmCodeSubject, emailedCode, emailTo, linkIn } from "./support/emai
 import { postTripToSelfoss } from "./support/trips";
 
 // An email on the web build (plan 4.6; spec 26, 3.7): a passenger signs up
-// with an email and sees it in Settings, changes it with a confirm code
+// with an email and sees it on Profile, changes it with a confirm code
 // emailed to the address she has, opens the new address's link from the
 // test API's email outbox, and the old address is told. Then, with no push in a
 // browser, they get the "Pay now" email at the new address when the driver
@@ -31,16 +31,18 @@ test("a passenger changes their email and gets the Pay now email there", async (
   const driver = await driverContext.newPage();
   const visible = { visible: true } as const;
 
-  // Settings, Your account, shows the email she signed up with.
+  // Profile, under Account, shows the email she signed up with.
   const { email: first } = await signUp(passenger, english, "Edda");
-  await passenger.goto("/settings");
-  await expect(passenger.getByRole("heading", { name: "Your account" })).toBeVisible();
-  await expect(passenger.getByText(first, { exact: true }).filter(visible)).toBeVisible();
+  await passenger.goto("/profile");
+  await expect(passenger.getByRole("heading", { name: "Account", exact: true })).toBeVisible();
+  const emailRow = (email: string) =>
+    passenger.getByRole("link", { name: `Email, ${email}`, exact: true }).filter(visible);
+  await expect(emailRow(first)).toBeVisible();
 
   // A new address signs in, so it takes a code sent to the one she has
   // (spec 26, R26.5), then waits for its link.
   const address = newEmail();
-  await passenger.getByRole("link", { name: "Change your email" }).click();
+  await emailRow(first).click();
   await passenger.getByRole("textbox", { name: "Email", exact: true }).fill(address);
   const code = await emailedCode(first, confirmCodeSubject, () =>
     passenger.getByRole("button", { name: "Send the link" }).click(),
@@ -62,9 +64,8 @@ test("a passenger changes their email and gets the Pay now email there", async (
   await passenger.goto(link);
   await expect(passenger.getByRole("heading", { name: "Your email is added" })).toBeVisible();
   await expect(passenger).toHaveURL(/\/verify-email$/);
-  await passenger.getByRole("link", { name: "Go to Settings" }).click();
-  await expect(passenger.getByText(address, { exact: true }).filter(visible)).toBeVisible();
-  await expect(passenger.getByRole("link", { name: "Change your email" })).toBeVisible();
+  await passenger.getByRole("link", { name: "Go to your profile" }).click();
+  await expect(emailRow(address)).toBeVisible();
   // The old address is told, in case it was not her (spec 26, R26.6).
   await emailTo(first, /^Your PuffinRide sign-in email changed$/);
 

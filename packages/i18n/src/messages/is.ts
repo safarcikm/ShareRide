@@ -242,7 +242,6 @@ export const is = {
   "auth.provider.dismiss": "Loka skilaboðunum",
   "beta.badge": "Beta",
   "beta.badgeFeedback": "Beta. Senda ábendingu",
-  "feedback.heading": "Ábendingar",
   "feedback.title": "Senda ábendingu",
   "feedback.intro":
     "Segðu okkur hvað virkar ekki eða hvað myndi gera PuffinRide betra. Við lesum allt.",
@@ -266,7 +265,7 @@ export const is = {
   "feedback.send": "Senda ábendingu",
   "feedback.tooMany": "Þú hefur sent margar ábendingar í dag. Reyndu aftur eftir {wait}.",
   "feedback.thanks":
-    "Takk fyrir. Við fengum ábendinguna þína. Ef við svörum sérðu svarið undir Ábendingarnar mínar í stillingum.",
+    "Takk fyrir. Við fengum ábendinguna þína. Ef við svörum sérðu svarið undir Ábendingarnar mínar í Prófílnum.",
   "feedback.done": "Lokið",
   "feedback.mine": "Ábendingarnar mínar",
   "feedback.mineHelp": "Það sem þú sendir okkur og svör okkar. Aðeins þú sérð þetta.",
@@ -365,6 +364,11 @@ export const is = {
   "profile.saved": "Prófíllinn var vistaður.",
   "profile.title": "Prófíllinn minn",
   "profile.edit": "Breyta prófíl",
+  "profile.editShort": "Breyta",
+  "profile.driving": "Akstur",
+  "profile.account": "Aðgangur",
+  "profile.safety": "Öryggi og persónuvernd",
+  "profile.help": "Aðstoð",
   "profile.phone": "Símanúmer",
   "profile.phoneHelp": "Aðeins þú sérð símanúmerið þitt.",
   "profile.speaks": "Tungumál: {languages}",
@@ -374,7 +378,6 @@ export const is = {
   "profile.licenceNotYet": "Ekki staðfest enn",
   "profile.welcome":
     "Skráðu þig inn til að bóka sæti, bjóða far og hafa ferðirnar og skilaboðin á einum stað.",
-  "profile.inSettings": "Símanúmer, tungumál og útskráning á öllum tækjum eru í stillingum.",
   "profile.noCars": "Engir bílar enn. Bættu við bílnum sem þú ekur.",
   "profile.photo.add": "Bæta við mynd",
   "profile.photo.take": "Taka mynd",
@@ -394,15 +397,12 @@ export const is = {
   "profile.photo.off": "Enn er ekki hægt að bæta við myndum.",
   "preview.title": "Eins og aðrir sjá þig",
   "preview.intro": "Þetta er opinberi prófíllinn þinn. Símanúmerið þitt er aldrei hluti af honum.",
-  "settings.title": "Stillingar",
-  "settings.open": "Stillingar",
   "settings.language": "Tungumál",
   "settings.legal": "Lagaleg skjöl",
   "settings.signOut": "Skrá út",
   "settings.signOutAll": "Skrá út á öllum tækjum",
   "settings.signOutAllHelp":
     "Notaðu þetta ef þú týndir síma eða skráðir þig inn á tæki sem aðrir nota.",
-  "settings.yourAccount": "Aðgangurinn þinn",
   "settings.email": "Netfang",
   "settings.signInMethods": "Innskráningarleiðir",
   "settings.signInMethods.help":
@@ -433,7 +433,7 @@ export const is = {
   "settings.signInMethods.passwordRemoved": "Lykilorðið þitt hefur verið fjarlægt.",
   /** Face ID or fingerprint, a passkey kept on each device (spec 27, 3.3 and 3.6). */
   "passkey.unknown":
-    "Innskráning þessa tækis er ekki sett upp fyrir PuffinRide-aðganginn þinn. Notaðu netfangið þitt og settu hana svo upp aftur í Stillingum.",
+    "Innskráning þessa tækis er ekki sett upp fyrir PuffinRide-aðganginn þinn. Notaðu netfangið þitt og settu hana svo upp aftur í Prófílnum, undir Innskráningarleiðir.",
   "passkey.unknownDevice": "Vafri",
   "passkey.notSetUp": "Ekki sett upp",
   "passkey.added": "Bætt við {date}",
@@ -453,8 +453,6 @@ export const is = {
   "passkey.expired": "Þetta tók of langan tíma. Reyndu aftur.",
   "passkey.failed":
     "Ekki tókst að setja upp Face ID eða fingrafar. Reyndu aftur eða notaðu áfram netfangið þitt.",
-  "settings.addEmail": "Bæta við netfangi",
-  "settings.changeEmail": "Breyta netfangi",
   "settings.emailWaiting": "Bíður þess að þú opnir hlekkinn sem var sendur á {email}.",
   "settings.notifications": "Tilkynningar",
   "settings.reminders": "Áminningar um ferðir",
@@ -489,15 +487,15 @@ export const is = {
   "verifyEmail.doneBody": "{email} er nú netfang PuffinRide-aðgangsins þíns.",
   "verifyEmail.invalid": "Þessi hlekkur virkar ekki lengur",
   "verifyEmail.invalidBody":
-    "Hlekkur virkar einu sinni, í sólarhring, og aðeins sá nýjasti. Biddu um nýjan í Stillingum.",
+    "Hlekkur virkar einu sinni, í sólarhring, og aðeins sá nýjasti. Biddu um nýjan í Prófílnum, undir Netfang.",
   "verifyEmail.taken": "Þetta netfang tilheyrir öðrum aðgangi",
   "verifyEmail.takenBody":
-    "Annar PuffinRide-aðgangur notar þegar þetta netfang. Bættu öðru við í Stillingum.",
-  "verifyEmail.toSettings": "Fara í Stillingar",
+    "Annar PuffinRide-aðgangur notar þegar þetta netfang. Bættu öðru við í Prófílnum, undir Netfang.",
+  "verifyEmail.toProfile": "Fara í prófílinn þinn",
   "verifyEmail.toApp": "Opna PuffinRide",
   "verifyEmail.noLink": "Opnaðu hlekkinn í tölvupóstinum",
   "verifyEmail.noLinkBody":
-    "Þessi síða bætir netfangi við þegar hún er opnuð úr hlekknum sem við sendum. Ef þú opnaðir hann nú þegar er netfangið þitt í Stillingum.",
+    "Þessi síða bætir netfangi við þegar hún er opnuð úr hlekknum sem við sendum. Ef þú opnaðir hann nú þegar er netfangið þitt í Prófílnum.",
   "comingSoon.title": "Kemur fljótlega",
   "comingSoon.body": "Leit og bókun ferða opnar með prufuútgáfunni. Takk fyrir þolinmæðina.",
   "meetingPoints.open": "Skoða mótsstaði",
@@ -1091,7 +1089,6 @@ export const is = {
   "trip.own": "Þetta er ferðin þín.",
   "trip.share": "Deila",
   "trip.shareText": "{route} á PuffinRide",
-  "safety.title": "Öryggi",
   "safety.weatherAndRoads": "Veður og færð",
   "safety.beforeYouGo": "Áður en lagt er af stað: kannaðu veður, færð og SafeTravel.",
   "safety.weather": "Veður (vedur.is)",
@@ -1106,7 +1103,7 @@ export const is = {
   "block.done": "Lokað á: {name}.",
   "block.together":
     "{count, plural, one {Þið eigið enn bókun saman. Þú getur afbókað hana samkvæmt venjulegum reglum.} other {Þið eigið enn # bókanir saman. Þú getur afbókað þær samkvæmt venjulegum reglum.}}",
-  "block.youBlocked": "Þú lokaðir á: {name}. Þú getur opnað aftur í Stillingum, undir Öryggi.",
+  "block.youBlocked": "Þú lokaðir á: {name}. Þú getur opnað aftur í Prófílnum, undir Lokað á.",
   "block.cancelLabel": "Afbóka, {day}, {route}",
   "block.withdrawLabel": "Draga beiðni til baka, {day}, {route}",
   "block.declineLabel": "Hafna beiðni, {day}, {route}",
@@ -1150,7 +1147,7 @@ export const is = {
   "report.send": "Senda tilkynningu",
   "report.thanks": "Takk. Við förum yfir allar tilkynningar.",
   "report.thanksHelp":
-    "Við segjum þér almennt frá niðurstöðunni í Stillingum, undir Öryggi. Sá sem þú tilkynntir fær ekki að vita hver tilkynnti.",
+    "Við segjum þér almennt frá niðurstöðunni í Prófílnum, undir Tilkynningarnar mínar. Sá sem þú tilkynntir fær ekki að vita hver tilkynnti.",
   "report.blockToo": "Loka líka á: {name}",
   "report.gone": "Ekki er lengur hægt að tilkynna þetta.",
   "report.windowClosed":
@@ -1728,7 +1725,8 @@ export const is = {
   "notify.feedbackRepliedEmail": "Takk fyrir ábendinguna sem þú sendir {date}. Svar okkar:",
   "notify.feedbackOpen": "Opna ábendingarnar þínar í PuffinRide",
   "announcement.footer": "Þú færð þetta af því að þú tekur þátt í beta-prófun PuffinRide.",
-  "announcement.turnOff": "Þú getur slökkt á fréttum af beta-prófuninni í stillingum.",
+  "announcement.turnOff":
+    "Þú getur slökkt á fréttum af beta-prófuninni í Prófílnum, undir Tilkynningar.",
   "announcement.open": "Opna fréttir af beta-prófuninni í PuffinRide",
   "announcement.test": "Prófun: {title}",
   "notify.switchStillOff": "Rofi er enn óvirkur",
@@ -1818,7 +1816,7 @@ export const is = {
     "Þú færð þennan póst því þú ert með aðgang að PuffinRide. Fréttir af bókunum þínum eru alltaf sendar, því aðrir treysta á þær.",
   "email.verifySubject": "Staðfestu netfangið þitt hjá PuffinRide",
   "email.verifyBody":
-    "Opnaðu hlekkinn innan sólarhrings til að staðfesta að þetta sé netfangið þitt. Eftir það geturðu beðið um nýjan í Stillingum.",
+    "Opnaðu hlekkinn innan sólarhrings til að staðfesta að þetta sé netfangið þitt. Eftir það geturðu beðið um nýjan í Prófílnum, undir Netfang.",
   "email.verifyOpen": "Staðfesta netfangið",
   "email.verifyFooter":
     "Þú færð þennan póst því þetta netfang var slegið inn í PuffinRide. Ef það varst ekki þú skaltu hunsa hann: netfanginu er ekki bætt við.",
@@ -1839,7 +1837,7 @@ export const is = {
   "email.passkeyAddedSubject": "Face ID eða fingrafar var sett upp fyrir PuffinRide-aðganginn þinn",
   "email.passkeyAddedOn": "Það var sett upp í {device}. ",
   "email.signInChangeBody":
-    "Ef þetta varst þú þarftu ekkert að gera. Ef ekki skaltu skrá þig inn með kóða í tölvupósti, breyta lykilorðinu eða fjarlægja það og skrá þig út á öllum tækjum undir Stillingum, og láta okkur svo vita undir „Senda ábendingu“ í appinu.",
+    "Ef þetta varst þú þarftu ekkert að gera. Ef ekki skaltu skrá þig inn með kóða í tölvupósti, breyta lykilorðinu eða fjarlægja það og skrá þig út á öllum tækjum í Prófílnum, undir Innskráningarleiðir, og láta okkur svo vita undir „Senda ábendingu“ í appinu.",
   "passkey.device": "{browser} á {system}",
   "passkey.someBrowser": "vafra",
   "oauth.page.title": "Innskráning í PuffinRide",
@@ -2334,7 +2332,7 @@ export const is = {
     "Skömmu eftir að einhver lýkur skráningu. Þeir sem bætast við á klukkustundinni eftir það koma í næsta pósti, svo í mesta lagi einn á klukkustund. Hve margir, aldrei hverjir.",
   "admin.emails.address": "Pósturinn fer á {address}.",
   "admin.emails.noAddress":
-    "Ekkert staðfest netfang er á aðganginum þínum, svo ekkert er hægt að senda. Bættu því við í PuffinRide undir Stillingar.",
+    "Ekkert staðfest netfang er á aðganginum þínum, svo ekkert er hægt að senda. Bættu því við í PuffinRide, í Prófílnum undir Netfang.",
   "admin.emails.saved": "Vistað.",
   "admin.emails.saveFailed": "Þetta vistaðist ekki. Reyndu aftur.",
   "admin.emails.loadFailed": "Ekki tókst að sækja póstvalið þitt.",

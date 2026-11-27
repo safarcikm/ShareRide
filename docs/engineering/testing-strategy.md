@@ -90,10 +90,10 @@ and its seats. Find, where the app
 opens, shows a ride leaving soon and searches a route, leads from "Offer a
 ride" and from Sign in under Profile to signing in, and shows the menu of
 five places on every main screen, marking the one you are on
-(`apps/mobile/e2e/welcome.spec.ts`). A passenger adds an email in Settings,
+(`apps/mobile/e2e/welcome.spec.ts`). A passenger adds an email from Profile,
 opens the link from the email, and gets the "Pay now" email once a request
 is accepted (`apps/mobile/e2e/email.spec.ts`). Ride reminders are turned off
-in Settings and stay off after a reload
+on the notifications' page of Profile and stay off after a reload
 (`apps/mobile/e2e/notification-settings.spec.ts`). After posting a trip on
 the web, the driver is asked to add an email and closes it with "Not now"
 (`apps/mobile/e2e/post-a-trip.spec.ts`); so is the passenger after booking

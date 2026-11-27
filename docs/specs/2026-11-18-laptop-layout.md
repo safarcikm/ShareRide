@@ -22,6 +22,10 @@ stays in "Trip day"), and the actions are named "Find a ride", "Offer a
 ride" and "Publish ride". The keys keep their names;
 `packages/i18n/src/messages/en.ts` has the words as they are.
 
+Amended by spec 31 (3.14; 3.16, item 5) too: on a laptop Profile is the
+person's card in the side column and the groups of rows in the main one,
+with Settings gone (3.12).
+
 ## 1. Problem and goal
 
 On a laptop the app is a phone screen in the middle of the window:
@@ -405,6 +409,10 @@ changes on a phone.
    Notices), the line about what is in Settings, and Sign out, at the left
    (spec 16, 3.4 item 4). Since 2026-11-26 Terms, rules and privacy is
    About PuffinRide ([spec 30](2026-11-26-about-page-and-footer.md)).
+   Since [spec 31](2026-11-26-one-ride-one-ticket.md) (3.14) the side
+   column is the person's card, with the rating and what is checked, a
+   short "Edit" and the photo's controls, and the main column the four
+   groups of rows that hold what Settings held, then Sign out.
 3. The title starts at the left, over the card. The card stays in view
    while the rows scroll.
 4. Signed out, Profile stays one centred column.

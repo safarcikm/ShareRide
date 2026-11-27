@@ -18,7 +18,7 @@ import { spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
 /**
- * Blocked people (spec 9, 3.2, item 4), in Settings: whom I blocked and
+ * Blocked people (spec 9, 3.2, item 4), a page of Profile: whom I blocked and
  * since when, the latest first, each with Unblock. Only I see this list.
  */
 export default function BlockedScreen() {
@@ -59,7 +59,7 @@ function Blocked() {
 
   const header = (
     <>
-      <BackButton fallback="/settings" />
+      <BackButton fallback="/profile" />
       <Title>{t("blocks.title")}</Title>
       <Body>{t("blocks.help")}</Body>
     </>

@@ -110,7 +110,7 @@ describe("About PuffinRide", () => {
 
   it("opens from Profile, signed in", async () => {
     await renderApp("/profile", { me: completeMe });
-    await fireEvent.press(await screen.findByRole("button", { name: "About PuffinRide" }));
+    await fireEvent.press(await screen.findByRole("link", { name: "About PuffinRide" }));
     expect(await screen.findByRole("header", { name: "About PuffinRide" })).toBeVisible();
     expect(screen).toHavePathname("/about");
   });

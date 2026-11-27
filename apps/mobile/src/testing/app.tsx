@@ -64,18 +64,12 @@ export async function renderApp(
     store.value = "sr_rt_stored";
     currentClient.answer("/v1/auth/refresh", () => ok(200, tokens(1)));
     currentClient.answer("/v1/me", () => ok(200, me));
-    // My own profile as others see it, with no reviews yet: the last
-    // posting step reads it for the ticket people will see (spec 31, 3.11).
-    // Anyone else's is for the test to answer, as every call is.
-    currentClient.answer("/v1/people/{profileId}", (input) => {
-      const { profileId } = input["params"] as { profileId: string };
-      if (profileId !== me.profileId) throw new Error("No fake answer for /v1/people/{profileId}");
-      return ok(200, ownProfile(me));
-    });
+    answerOwnProfile(currentClient, me);
   }
   // Once signed in, unless a test says otherwise: nothing in My rides and
-  // Your next ride, a new driver for the licence row on Profile, no chats
-  // for the Messages badge, trip reminders and beta news on in Settings,
+  // Your next ride, a new driver with no car for the Driving rows on
+  // Profile and nothing linked for its Sign-in methods row, no chats for
+  // the Messages badge, trip reminders and beta news on in Notifications,
   // and no beta news yet. A change answers with the settings changed.
   currentClient.answer("/v1/me/notification-settings", (input) =>
     ok(200, { reminders: true, betaNews: true, ...(input["body"] as object | undefined) }),
@@ -84,10 +78,28 @@ export async function renderApp(
   currentClient.answer("/v1/me/bookings", () => ok(200, { bookings: [] }));
   currentClient.answer("/v1/me/trips", () => ok(200, { trips: [] }));
   currentClient.answer("/v1/me/driver-readiness", () => ok(200, newDriver));
+  currentClient.answer("/v1/me/vehicles", () => ok(200, { vehicles: [] }));
+  currentClient.answer("/v1/me/sign-in-methods", () =>
+    ok(200, { methods: [], password: null, passkeys: [] }),
+  );
   currentClient.answer("/v1/me/conversations", () => ok(200, { conversations: [], unread: 0 }));
   options.setUp?.(currentClient);
   const result = await renderRouter("./src/app", { initialUrl });
   return { ...result, client: currentClient, store };
+}
+
+/**
+ * My own profile as others see it, with no reviews yet: Profile reads it
+ * for my rating (spec 31, 3.14) and the last posting step for the ticket
+ * people will see (3.11). Anyone else's is for the test to answer, as
+ * every call is.
+ */
+function answerOwnProfile(client: FakeClient, me: Me) {
+  client.answer("/v1/people/{profileId}", (input) => {
+    const { profileId } = input["params"] as { profileId: string };
+    if (profileId !== me.profileId) throw new Error("No fake answer for /v1/people/{profileId}");
+    return ok(200, ownProfile(me));
+  });
 }
 
 /** A signed-in person's profile as others see it, before any ride: no reviews, no figure. */
@@ -155,6 +167,7 @@ export function legalDocument(type: string, version: number, body = "Draft text.
  * 26): an account that has finished signing up, unless `me` is given.
  */
 export async function signInByEmail(client: FakeClient, me: Me = completeMe): Promise<void> {
+  answerOwnProfile(client, me);
   client.answer("/v1/auth/email/start", () => ok(202, { resendAfterSeconds: 30 }));
   client.answer("/v1/auth/email/verify", () =>
     ok(200, { status: "signedIn", ...tokens(1), user: me, isNewUser: false }),

@@ -80,8 +80,8 @@ async function openDeleteScreen({
   remove = () => ok(202, { deleteAfter }),
 }: Api = {}) {
   let looked = 0;
-  // Through Settings, which stays underneath and closes once signed out.
-  const app = await renderApp("/settings", {
+  // Through Profile, which stays underneath and asks to sign in once signed out.
+  const app = await renderApp("/profile", {
     me: completeMe,
     setUp: (client: FakeClient) => {
       client.answer("/v1/me/deletion-check", () =>
@@ -107,7 +107,7 @@ async function openDeleteScreen({
       }
     },
   });
-  await fireEvent.press(await screen.findByRole("button", { name: "Privacy and your data" }));
+  await fireEvent.press(await screen.findByRole("link", { name: "Privacy and your data" }));
   await fireEvent.press(await screen.findByRole("button", { name: "Delete my account" }));
   expect(await screen.findByRole("header", { name: "Delete my account" })).toBeVisible();
   return app;
@@ -273,13 +273,20 @@ describe("While the deletion waits (spec 11, 3.4.4)", () => {
     expect(screen.queryByRole("tab", { name: "Find" })).toBeNull();
   });
 
-  it.each(["/drive/trips/new", "/settings", "/settings/privacy/delete", `/messages/${bookingId}`])(
-    "is what %s opens meanwhile",
-    async (url) => {
-      await openApp(url);
-      expect(screen).toHavePathname("/account/deletion");
-    },
-  );
+  it.each([
+    "/drive/trips/new",
+    "/settings",
+    "/settings/privacy/delete",
+    "/settings/privacy/ask",
+    "/settings/language",
+    "/settings/notifications",
+    "/settings/blocked",
+    "/settings/reports",
+    `/messages/${bookingId}`,
+  ])("is what %s opens meanwhile", async (url) => {
+    await openApp(url);
+    expect(screen).toHavePathname("/account/deletion");
+  });
 
   it("does one thing at a time: no signing out while keeping", async () => {
     let answer: (value: unknown) => void = () => undefined;

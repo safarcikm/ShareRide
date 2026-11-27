@@ -3,7 +3,7 @@ import { apiUrl } from "../playwright.config";
 import { english, signUp } from "./support/account";
 
 // Spec 12's feedback on the web build: a tester sends feedback from
-// Settings (a browser takes no screenshot), reads it back under My
+// Profile (a browser takes no screenshot), reads it back under My
 // feedback, PuffinRide replies (the test API does what the console does), and
 // the reply shows there.
 
@@ -17,7 +17,7 @@ test("a tester sends feedback and reads PuffinRide's reply", async ({ page }) =>
   const visible = { visible: true } as const;
   const { phone } = await signUp(page, english, "Ari");
 
-  await page.goto("/settings");
+  await page.goto("/profile");
   await page.getByRole("button", { name: "Send feedback", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Send feedback" })).toBeVisible();
   // No picture of the screen from a browser.

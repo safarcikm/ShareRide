@@ -4,12 +4,12 @@ import { errorText } from "./errors";
 import { useSession } from "./session";
 
 /**
- * Signing out of this device, or of every device (`all`), as Settings and
- * Profile offer it. Once signed out, the signed-in screens close: Settings
- * goes back to Find by itself, and `onSignedOut` runs for a screen that
- * stays. When signing out fails, the person stays signed in and `onError`
- * gets why, to show so they can try again; it gets null as signing out
- * starts again.
+ * Signing out of this device, as Profile offers it, or of every device
+ * (`all`), as Sign-in methods does. Once signed out, the signed-in screens
+ * close: Sign-in methods goes back to Find by itself, and `onSignedOut`
+ * runs for a screen that stays. When signing out fails, the person stays
+ * signed in and `onError` gets why, to show so they can try again; it
+ * gets null as signing out starts again.
  */
 export function useSignOut({
   onSignedOut,

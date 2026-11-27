@@ -16,7 +16,7 @@ import { Body, Title } from "@/components/text";
 import { LanguageProvider, useLanguage } from "@/i18n/language";
 import { useSaveLanguage } from "@/i18n/use-save-language";
 import { reportError, startErrorReporting } from "@/lib/error-reporting";
-import { memberScreens } from "@/navigation/member-screens";
+import { memberScreens, notWhileDeleting } from "@/navigation/member-screens";
 import { PushNotifications } from "@/notifications/push-notifications";
 import { ProviderLinkNotice } from "@/sign-in/provider-link-notice";
 import { useAppFonts } from "@/theme/fonts";
@@ -54,7 +54,7 @@ export default function RootLayout() {
  * account" (spec 11, 3.4.4). When the
  * session changes (signed in, a step done, signed out, or the session ended
  * elsewhere), screens that no longer fit close and the app returns to the
- * start, which leads on from there. Sign-in and Settings,
+ * start, which leads on from there. Sign-in and the pages of Profile
  * where the session changes, close themselves back to the menu instead: a
  * guard would open a second menu on top of the first. Fonts load at the same
  * time; if they fail, the app opens with the system fonts. Wide screens show
@@ -89,24 +89,15 @@ function Navigation() {
       <Stack.Screen name="search/index" />
       <Stack.Screen name="search/results" />
       <Stack.Screen name="trips/[id]/index" />
-      {/* Sign-in and Settings close themselves when the session changes (BackToMenu). */}
+      {/* Sign-in and Profile's pages close themselves when the session changes (BackToMenu). */}
       <Stack.Screen name="sign-in" />
       {/* An invite link: on to sign-in with its code. */}
       <Stack.Screen name="invite/[code]" />
       {/* Open signed in or out, but not while an account waits to be deleted. */}
       <Stack.Protected guard={!deleting}>
-        <Stack.Screen name="settings" />
-        <Stack.Screen name="settings/email" />
-        <Stack.Screen name="settings/sign-in-methods" />
-        <Stack.Screen name="settings/password" />
-        <Stack.Screen name="settings/feedback" />
-        <Stack.Screen name="settings/beta-news" />
-        <Stack.Screen name="feedback" />
-        <Stack.Screen name="settings/privacy/index" />
-        <Stack.Screen name="settings/privacy/download" />
-        <Stack.Screen name="settings/privacy/delete" />
-        <Stack.Screen name="messages/[bookingId]" />
-        <Stack.Screen name="verify-email" />
+        {notWhileDeleting.map((name) => (
+          <Stack.Screen key={name} name={name} />
+        ))}
       </Stack.Protected>
       <Stack.Protected guard={deleting}>
         <Stack.Screen name="account/deletion" />

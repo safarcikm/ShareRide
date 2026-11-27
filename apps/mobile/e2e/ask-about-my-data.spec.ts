@@ -12,8 +12,8 @@ test.use({ locale: "en-GB" });
 test("asks about my data, answered at the account's email", async ({ page }) => {
   const visible = { visible: true } as const;
   const { email: address } = await signUp(page, english, "Rósa");
-  await page.goto("/settings");
-  await page.getByRole("button", { name: "Privacy and your data" }).click();
+  await page.goto("/profile");
+  await page.getByRole("link", { name: "Privacy and your data" }).click();
   await page.getByRole("button", { name: "Ask about my data" }).click();
   await expect(page.getByRole("heading", { name: "Ask about my data" })).toBeVisible();
   await expect(page.getByText(`We answer at ${address}.`).filter(visible)).toBeVisible();

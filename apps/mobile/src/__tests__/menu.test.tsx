@@ -221,7 +221,6 @@ describe("The menu (spec 16, 3.1)", () => {
     expect(await screen.findByRole("tab", { name: "Find", selected: true })).toBeVisible();
     expect(menuCopies(app.getRouterState())).toBe(1);
     await fireEvent.press(tab("Profile"));
-    await fireEvent.press(await screen.findByRole("button", { name: "Settings" }));
     await fireEvent.press(await screen.findByRole("button", { name: "Sign out" }));
     expect(await screen.findByRole("tab", { name: "Find", selected: true })).toBeVisible();
     expect(menuCopies(app.getRouterState())).toBe(1);

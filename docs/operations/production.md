@@ -205,7 +205,8 @@ These work as in the [staging runbook](staging.md), on `puffinride-api`,
 - [Rotate a secret](staging.md#rotate-a-secret).
 - `WEB_APP_URL` stays `https://puffinride.is`: members' Face ID or
   fingerprint is bound to its host (ADR 0048), so a change stops every
-  device set up before it, and each member sets it up again in Settings.
+  device set up before it, and each member sets it up again in Profile,
+  under Sign-in methods.
 - [Show the puffin beside our emails](staging.md#show-the-puffin-beside-our-emails):
   one `hello@` user for both.
 

@@ -21,9 +21,9 @@ test("deletes an account after cancelling its booking, then keeps it on signing 
   const { page: dora, close } = await secondPage(browser, testInfo);
   const { booking, passengerEmail } = await confirmedBooking(driver, dora);
 
-  // Settings, then Privacy: the booking must be settled first.
-  await dora.goto("/settings");
-  await dora.getByRole("button", { name: "Privacy and your data" }).click();
+  // Profile, then Privacy: the booking must be settled first.
+  await dora.goto("/profile");
+  await dora.getByRole("link", { name: "Privacy and your data" }).click();
   await dora.getByRole("button", { name: "Delete my account" }).click();
   await expect(dora.getByRole("heading", { name: "Delete my account" })).toBeVisible();
   await expect(

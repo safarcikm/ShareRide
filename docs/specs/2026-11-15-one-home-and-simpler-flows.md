@@ -31,6 +31,13 @@ and the results' chips are one row with one Filters chip (3.8, item 2).
 A ride's details, Check and pay and "You're booked" show the ride as a
 ticket (3.7, item 6).
 
+Amended by spec 31 (3.14) as well: Profile and Settings are one page.
+Profile's rows stand in four groups with what is set now, the phone
+number, the language and the notifications among them, and Sign out is
+its last row; "Sign out on all devices" is at the end of Sign-in methods
+(3.4, items 3 and 4; 3.8, item 4). The line that said what was in
+Settings (`profile.inSettings`) is gone.
+
 ## 1. Problem and goal
 
 Walking through the app on 2026-11-15 found these problems:

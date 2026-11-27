@@ -380,10 +380,10 @@ function operatorText(facts: OperatorNoticeFacts, locale: Locale): NotificationT
 /** The app's screen of the person's notices, where they read and appeal them (spec 9, R9.5). */
 export const noticesPath = "/notices";
 
-/** "My feedback" under Settings, where a reply shows (spec 12, 3.3.5). */
+/** "My feedback", a page of Profile, where a reply shows (spec 12, 3.3.5). */
 export const myFeedbackPath = "/settings/feedback";
 
-/** "Beta news" under Settings, where the announcements sent to the person are (plan 4.7). */
+/** "Beta news", opened from Profile's Notifications, where the announcements sent to the person are (plan 4.7). */
 export const betaNewsPath = "/settings/beta-news";
 
 /** An announcement's email: the message, then why they get it and how to stop it (spec 10, 7). */

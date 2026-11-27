@@ -21,8 +21,8 @@ function goOn() {
 /**
  * "Use Face ID or fingerprint next time?" (spec 29, 3.2): once, after a
  * member signs in another way on a browser that can keep a passkey. "Set it
- * up" works as in Settings, with the fresh sign-in as the proof, then says
- * so with Done; a device set up already says so too. "Not now" goes on, and
+ * up" works as in Sign-in methods, with the fresh sign-in as the proof, then
+ * says so with Done; a device set up already says so too. "Not now" goes on, and
  * this browser is not asked again for 30 days.
  */
 export default function FaceIdOfferScreen() {

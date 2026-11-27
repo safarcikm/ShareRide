@@ -176,7 +176,7 @@ describe("Opened from a link", () => {
       }),
     );
     await fireEvent.press(screen.getByRole("button", { name: "Confirm" }));
-    expect(await screen.findByRole("button", { name: "Driving licence, Confirmed" })).toBeVisible();
+    expect(await screen.findByRole("link", { name: "Driving licence, Confirmed" })).toBeVisible();
     expect(screen).toHavePathname("/profile");
   });
 });
@@ -253,7 +253,7 @@ describe("Driving licence (spec 3, 3.3)", () => {
       setUp: (client) => driver(client, { cars: [yaris] }),
     });
     await fireEvent.press(
-      await screen.findByRole("button", { name: "Driving licence, Not confirmed yet" }),
+      await screen.findByRole("link", { name: "Driving licence, Not confirmed yet" }),
     );
     expect(await screen.findByRole("header", { name: "Your driving licence" })).toBeVisible();
     await fireEvent.press(screen.getByRole("button", { name: "Confirm" }));
@@ -265,7 +265,7 @@ describe("Driving licence (spec 3, 3.3)", () => {
       }),
     );
     await fireEvent.press(screen.getByRole("button", { name: "Confirm" }));
-    expect(await screen.findByRole("button", { name: "Driving licence, Confirmed" })).toBeVisible();
+    expect(await screen.findByRole("link", { name: "Driving licence, Confirmed" })).toBeVisible();
     expect(screen).toHavePathname("/profile");
     expect(
       app.client.calls.find((call) => call.path === "/v1/me/driver-licence-declaration")?.input,

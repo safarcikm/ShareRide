@@ -18,7 +18,7 @@ jest.mock("@/sign-in/return-address", () => ({
   providerReturnUrl: () => "puffinride://sign-in/return",
 }));
 
-// Settings, Sign-in methods (spec 19, 3.4).
+// Sign-in methods, a page of Profile (spec 19, 3.4).
 
 const ticket = `sr_pt_${"t".repeat(43)}`;
 const pendingSignIn = `sr_ps_${"p".repeat(43)}`;
@@ -75,9 +75,9 @@ async function openMethods(linked: SignInMethod[], setUp?: (client: FakeClient) 
 const callsTo = (app: { client: FakeClient }, path: string) =>
   app.client.calls.filter((call) => call.path === path);
 
-describe("Sign-in methods in Settings", () => {
-  it("opens from Settings, Your account, when Google or Apple is set up", async () => {
-    await renderApp("/settings", {
+describe("Sign-in methods, from Profile", () => {
+  it("opens from Profile, under Account, when Google or Apple is set up", async () => {
+    await renderApp("/profile", {
       me: completeMe,
       setUp: (client) => {
         withProviders(client);
@@ -88,12 +88,12 @@ describe("Sign-in methods in Settings", () => {
         );
       },
     });
-    await fireEvent.press(await screen.findByRole("button", { name: "Sign-in methods" }));
+    await fireEvent.press(await screen.findByRole("link", { name: "Sign-in methods" }));
     expect(await screen.findByRole("header", { name: "Sign-in methods" })).toBeVisible();
   });
 
-  it("opens from Settings while neither is set up, for the email and a password (spec 27)", async () => {
-    await renderApp("/settings", {
+  it("opens from Profile while neither is set up, for the email and a password (spec 27)", async () => {
+    await renderApp("/profile", {
       me: completeMe,
       setUp: (client) => {
         client.answer(
@@ -103,7 +103,7 @@ describe("Sign-in methods in Settings", () => {
         );
       },
     });
-    await fireEvent.press(await screen.findByRole("button", { name: "Sign-in methods" }));
+    await fireEvent.press(await screen.findByRole("link", { name: "Sign-in methods" }));
     expect(await screen.findByRole("header", { name: "Sign-in methods" })).toBeVisible();
   });
 
