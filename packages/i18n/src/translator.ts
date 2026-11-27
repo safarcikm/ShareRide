@@ -2,6 +2,7 @@ import { IntlMessageFormat } from "intl-messageformat";
 import type { Locale } from "./locales.ts";
 import { en, type MessageKey } from "./messages/en.ts";
 import { is } from "./messages/is.ts";
+import { ensurePluralRules } from "./plural-rules.ts";
 
 export type { MessageKey };
 
@@ -18,6 +19,8 @@ export function isMessageKey(key: string): key is MessageKey {
 
 /** Returns `t(key, values)` for one language. Parsed messages are cached. */
 export function createTranslator(locale: Locale): Translate {
+  // The texts' plurals need Intl.PluralRules, which the phones' engine lacks.
+  ensurePluralRules();
   const cache = new Map<MessageKey, IntlMessageFormat>();
   return (key, values) => {
     let format = cache.get(key);

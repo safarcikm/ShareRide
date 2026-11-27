@@ -73,6 +73,12 @@ imports end in `.ts`.
   locale. They carry their own month and weekday names and digit grouping,
   because not every browser or phone has Intl's Icelandic data
   ([ADR 0025](../decisions/0025-own-date-and-number-formatting.md)).
+- Hermes, the phones' JavaScript engine, has no `Intl.PluralRules` or
+  `Intl.DisplayNames`, and the unit tests run on Node, which has both. The
+  texts' plurals use the CLDR rules in `packages/i18n/src/plural-rules.ts`,
+  tested against Node's data, which the translator gives `Intl` where it
+  has none; a new language adds its rules there. Only the phone journeys
+  (`phone-apps.yml`) run the real engine.
 - Translations for Icelandic and English are required for merge; CI checks for
   missing keys.
 
