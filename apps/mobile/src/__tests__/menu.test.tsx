@@ -77,6 +77,20 @@ describe("The menu (spec 16, 3.1)", () => {
     expect(screen.getByTestId("tab-bar")).toBeVisible();
   });
 
+  it("gives each place an ID of its own, which the phone journeys tap in any language", async () => {
+    await renderApp("/");
+    await screen.findAllByRole("tab");
+    for (const [id, name] of [
+      ["tab-index", "Find"],
+      ["tab-my-rides", "My rides"],
+      ["tab-offer", "Offer"],
+      ["tab-messages", "Messages"],
+      ["tab-profile", "Profile"],
+    ] as const) {
+      expect(screen.getByTestId(id)).toHaveAccessibleName(name);
+    }
+  });
+
   it("asks to sign in on My rides when signed out", async () => {
     await renderApp("/");
     await fireEvent.press(await screen.findByRole("tab", { name: "My rides" }));

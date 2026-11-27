@@ -6,9 +6,7 @@ name: Sign up
 ---
 - launchApp
 - tapOn:
-    text: "Profile"
-    childOf:
-      id: "tab-bar"
+    id: "tab-profile"
 - tapOn: "Sign in"
 - runScript: ../scripts/new-person.js
 - tapOn:

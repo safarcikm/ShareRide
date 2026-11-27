@@ -16,8 +16,6 @@ name: Signed out
     timeout: 20000
 - takeScreenshot: screenshots/02-find-leaving-soon
 - tapOn:
-    text: "Profile"
-    childOf:
-      id: "tab-bar"
+    id: "tab-profile"
 - assertVisible: "Sign in"
 - takeScreenshot: screenshots/03-profile-signed-out

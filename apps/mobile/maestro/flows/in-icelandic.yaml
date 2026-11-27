@@ -4,24 +4,18 @@ name: In Icelandic
 ---
 - launchApp
 - tapOn:
-    text: "Find"
-    childOf:
-      id: "tab-bar"
+    id: "tab-index"
 - tapOn: "Change the language to Icelandic"
 - extendedWaitUntil:
     visible: "Hæ Gunna"
     timeout: 20000
 - takeScreenshot: screenshots/15-find-icelandic
 - tapOn:
-    text: "Prófíll"
-    childOf:
-      id: "tab-bar"
+    id: "tab-profile"
 - waitForAnimationToEnd
 - takeScreenshot: screenshots/16-profile-icelandic
 - tapOn:
-    text: "Leita"
-    childOf:
-      id: "tab-bar"
+    id: "tab-index"
 - tapOn: "Skipta yfir í ensku"
 - extendedWaitUntil:
     visible: "Hi Gunna"

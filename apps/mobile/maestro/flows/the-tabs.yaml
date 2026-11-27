@@ -4,26 +4,18 @@ name: The tabs
 ---
 - launchApp
 - tapOn:
-    text: "My rides"
-    childOf:
-      id: "tab-bar"
+    id: "tab-my-rides"
 - waitForAnimationToEnd
 - takeScreenshot: screenshots/11-my-rides
 - tapOn:
-    text: "Offer"
-    childOf:
-      id: "tab-bar"
+    id: "tab-offer"
 - waitForAnimationToEnd
 - takeScreenshot: screenshots/12-offer
 - tapOn:
-    text: "Messages"
-    childOf:
-      id: "tab-bar"
+    id: "tab-messages"
 - waitForAnimationToEnd
 - takeScreenshot: screenshots/13-messages
 - tapOn:
-    text: "Profile"
-    childOf:
-      id: "tab-bar"
+    id: "tab-profile"
 - waitForAnimationToEnd
 - takeScreenshot: screenshots/14-profile

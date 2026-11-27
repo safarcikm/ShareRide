@@ -4,9 +4,7 @@ name: Sign out
 ---
 - launchApp
 - tapOn:
-    text: "Profile"
-    childOf:
-      id: "tab-bar"
+    id: "tab-profile"
 - scrollUntilVisible:
     element: "Sign out"
     timeout: 20000

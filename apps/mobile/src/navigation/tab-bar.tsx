@@ -139,6 +139,8 @@ export function TabButton({
       {...pressable}
       {...role}
       accessibilityLabel={spoken}
+      // For the phone journeys (apps/mobile/maestro), whatever the language.
+      testID={`tab-${tab.name}`}
       style={[styles.tab, wholeWords]}
     >
       <View style={[styles.pill, { backgroundColor: isFocused ? palette.primarySoft : undefined }]}>

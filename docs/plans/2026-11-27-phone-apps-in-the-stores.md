@@ -88,8 +88,9 @@ from a workflow button.
   - **Android** (`ubuntu-latest`): PostgreSQL 18 with PostGIS as a service,
     the test API on port 3001, `expo prebuild --platform android`,
     `./gradlew assembleRelease` with `EXPO_PUBLIC_API_URL=http://10.0.2.2:3001`
-    and `E2E_CLEARTEXT=1`, an emulator (`reactivecircus/android-emulator-runner`,
-    pinned by commit), Maestro (pinned version), the journeys.
+    and `E2E_CLEARTEXT=1`, an emulator started from the runner's SDK (an
+    emulator action tried first hung after the journeys), Maestro (pinned
+    version), the journeys.
   - **iPhone** (`macos-latest`): PostgreSQL 18 and PostGIS from Homebrew
     (Postgres.app if Homebrew's PostGIS lacks 18), the test API,
     `expo prebuild --platform ios`, `pod install`, `xcodebuild` Release for
