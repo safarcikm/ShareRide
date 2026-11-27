@@ -238,7 +238,9 @@ spec is approved.
 - **Update PuffinRide:** the puffin, the title "Update PuffinRide", one line
   ("This version no longer works. The new one is waiting in the store."),
   and one main button, "Open the App Store" or "Open Google Play". No tab
-  bar, no way past it.
+  bar, no way past it. As built:
+  [iPhone, English](images/phone-apps/update-puffinride-iphone-en.png) and
+  [Android, Icelandic, dark](images/phone-apps/update-puffinride-android-is-dark.png).
 - **Sign-in on the iPhone:** the sign-in screen and step 1 without the
   Google button; everything else as on Android and the website.
 - **Account deletion page** on the website (`/delete-account`, public, both

@@ -31,6 +31,7 @@ const quiet: Config = {
   passkeySignIn: false,
   payInPerson: false,
   analytics: null,
+  oldestAppVersion: null,
 };
 
 const ConfigContext = createContext<Config>(quiet);

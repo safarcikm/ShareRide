@@ -2,7 +2,7 @@ import { createPrivateKey } from "node:crypto";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { z } from "zod";
-import { isGoogleMeasurementId, operatorPasswordRules } from "@shareride/domain";
+import { isAppVersion, isGoogleMeasurementId, operatorPasswordRules } from "@shareride/domain";
 import type { SearchEngines } from "./search-engines.ts";
 import type { Analytics } from "./web-app.ts";
 
@@ -136,6 +136,14 @@ const environmentSchema = z
         .string()
         .refine(isGoogleMeasurementId, "not a Google Analytics measurement ID (G-…)")
         .optional(),
+    ),
+    /**
+     * The oldest phone app version the API still serves (spec 32, R32.4):
+     * an app below it shows only "Update PuffinRide". Unset, every version
+     * is served.
+     */
+    OLDEST_APP_VERSION: unsetIfEmpty(
+      z.string().refine(isAppVersion, "not an app version (x.y.z, such as 1.0.0)").optional(),
     ),
     /**
      * The operator console's origin, which its passkeys are bound to (ADR
@@ -537,6 +545,8 @@ export interface Config {
   readonly searchEngines: SearchEngines;
   /** Google Analytics on the website, or null where there is none (spec 23). */
   readonly analytics: Analytics | null;
+  /** The oldest phone app version the API serves, or null for every one (spec 32, R32.4). */
+  readonly oldestAppVersion: string | null;
 }
 
 export class ConfigError extends Error {
@@ -697,5 +707,6 @@ export function loadConfig(environment: Readonly<Record<string, string | undefin
       env.GOOGLE_ANALYTICS_ID === undefined
         ? null
         : { googleMeasurementId: env.GOOGLE_ANALYTICS_ID },
+    oldestAppVersion: env.OLDEST_APP_VERSION ?? null,
   };
 }
