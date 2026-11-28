@@ -308,9 +308,11 @@ Milestone 16: ready for the beta
 - [x] Every screen of the member app on the same rules, "One ride, one
       ticket" ([spec 31](../specs/2026-11-26-one-ride-one-ticket.md)):
       built in #257 to #278 and on puffinride.is since 2026-11-27. Its
-      section 3.22 says what is left, with Martin's part: listening with
-      a screen reader, a few things to try in the phone apps, and Q31
-      (which pages close for an account that waits to be deleted). The
+      section 3.22 says what is left. Of Martin's part, a listen on a
+      phone with a screen reader and typing in a conversation are closed
+      on his word of 2026-11-27, and Q31 is answered (A59: Report, the
+      two block pages and "What's wrong here?" for a meeting point close
+      for an account that waits to be deleted, Notices stays open). The
       legal texts name the pages in Profile in the Terms' version 3 and
       the Privacy Policy's version 4 (written 2026-11-27, on
       puffinride.is with the release after; Martin then announces them

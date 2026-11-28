@@ -66,7 +66,12 @@ export const accountScreens = [
  * Open signed in or out, but not while an account waits to be deleted:
  * then the app shows only when the account goes and "Keep my account"
  * (spec 11, 3.4.4). Every page of Profile under `settings/` is here; a
- * page left out would be open to such an account (member-screens.test.ts).
+ * page left out would be open to such an account, so member-screens.test.ts
+ * asks of every page which list it is in, or why it is in none.
+ * Report, the two pages that block a person and "What's wrong here?" for a
+ * meeting point are here too (A59): "Keep my account" opens them again.
+ * Notices from PuffinRide is not: a notice's email links there, and a
+ * person may read or appeal one before the account goes.
  */
 export const notWhileDeleting = [
   "settings",
@@ -86,4 +91,9 @@ export const notWhileDeleting = [
   "settings/privacy/delete",
   "messages/[bookingId]",
   "verify-email",
+  "report",
+  "bookings/[id]/block",
+  "people/[profileId]/block",
+  // Signed out, it asks to sign in first.
+  "meeting-points/[id]/problem",
 ] as const;

@@ -1792,7 +1792,8 @@ open one leaves the menu open. "After Show all rides focus goes to the first rid
 applies: it opens the All rides page, which has its own title. To hear
 on a phone, and in NVDA on Windows, which cannot be done from here: what
 is said of a main button just pressed while it waits, and the lines
-above as VoiceOver and TalkBack say them. Seen and left: with text twice
+above as VoiceOver and TalkBack say them (3.22 says what Martin was
+asked and answered on 2026-11-27, and what stays unheard). Seen and left: with text twice
 as large on a phone 360 wide the words of "Where you sit" stay beside the
 car, in a column of some ten letters; narrower than that they go under it.
 
@@ -1957,15 +1958,22 @@ to take them, and the ones that change what a screen does.
   (`apps/api/src/legal-places.test.ts`). Neither is material, so nobody
   accepts anything again; they are on puffinride.is with the release
   after, and then Martin announces them in the console, as the Terms
-  promise for a smaller change (16.1). Listening to the screens with
-  VoiceOver, TalkBack and NVDA: the build names and orders
-  what a screen reader meets (3.20), and no one has heard it on a phone.
-  In the phone apps, which a cloud session cannot open: the keyboard in a
-  conversation on Android and on an iPhone, the strip under a
-  conversation that is loading or could not be read, and whether
-  VoiceOver says "Write a message" twice for the empty field.
-  [Q31](../strategy/open-questions.md): which pages close for an account
-  that waits to be deleted.
+  promise for a smaller change (16.1). Listening to the screens: Martin
+  was asked for a listen on a real phone with VoiceOver or TalkBack, and
+  for typing in a conversation on an iPhone and on Android, and answered
+  "listen is alright, mark resolved" (2026-11-27). The item is closed on
+  that. The build names and orders what a screen reader meets (3.20); no
+  cloud session has heard it or opened the phone apps. He was not asked
+  about the particulars, so as far as these docs know nobody has heard
+  or seen them: NVDA on Windows, the strip under a conversation that is
+  loading or could not be read, and whether VoiceOver says "Write a
+  message" twice for the empty field. Q31, which pages close for an
+  account that waits to be deleted, is answered as recommended (A59 in
+  [open questions](../strategy/open-questions.md), Martin, 2026-11-27):
+  Report and the two pages that block a person close, as the other pages
+  do, and Notices from PuffinRide stays open. "What's wrong here?" for a
+  meeting point, a fifth page of the same kind found when this was
+  built, closes with them.
 - **For spec 29's thread:** the ride over the sign-in form as a ticket
   (3.15); Sign-in methods' "Change email" in the middle of its page; and
   whether focus moves on that page, which has two `TakesFocus` in one

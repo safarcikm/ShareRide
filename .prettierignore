@@ -10,3 +10,5 @@ marketing/social-pages/src/iceland-map.json
 # Spec 31's proposal page: the page as published, and the template make.py fills in
 docs/specs/images/one-ride-one-ticket/proposal/index.html
 docs/specs/images/one-ride-one-ticket/src/page/page.html
+# Spec 33's moving preview, published as an Artifact page as it stands
+docs/specs/images/small-animations/preview.html

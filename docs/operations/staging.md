@@ -646,57 +646,58 @@ Google Cloud once the API runs with the new.
 
 ## Turn on Sign in with Apple
 
-Staging shows no "Continue with Apple" until Apple knows PuffinRide
+Staging and production show no "Continue with Apple" until Apple knows
+PuffinRide
 ([ADR 0034](../decisions/0034-google-and-apple-sign-in-through-our-api.md),
 [spec 19](../specs/2026-11-22-google-and-apple-sign-in.md)). It needs the
-paid Apple Developer Program, even for the web. The beta uses Martin's own
-developer account with the test App ID `is.puffinride.app.preview`, so the
-store's `is.puffinride.app` stays free for the company's account (spec 19,
-3.5). Spec 32 has since put the store app in Martin's account
-([ADR 0051](../decisions/0051-store-apps-in-martins-name-until-the-company.md))
-and dropped the `.preview` App ID: when Apple sign-in is turned on, use
-`is.puffinride.app` wherever these steps say `is.puffinride.app.preview`.
-Martin's steps:
+paid Apple Developer Program, even for the web. Since spec 32 the store app
+is in Martin's own account
+([ADR 0051](../decisions/0051-store-apps-in-martins-name-until-the-company.md)),
+so sign-in uses the store's App ID `is.puffinride.app`, and one Services ID
+and one key serve both sites. Martin chose on 2026-11-28 to turn it on
+before the App Store submission. Martin's steps:
 
-1. If not a member yet: [Apple Developer Program](https://developer.apple.com/programs/enroll/),
-   **Start your enrollment**, as an individual (99 USD a year). Apple can
-   take up to two days to confirm.
-2. Open [Certificates, Identifiers and Profiles](https://developer.apple.com/account/resources/identifiers/list),
-   **Identifiers**, **+**, **App IDs**, **App**: description
-   `PuffinRide preview`, bundle ID **Explicit** `is.puffinride.app.preview`,
-   and under capabilities tick **Sign in with Apple**. **Continue**,
-   **Register**.
-3. **Identifiers**, **+**, **Services IDs**: description `PuffinRide`
+1. Open [Certificates, Identifiers and Profiles](https://developer.apple.com/account/resources/identifiers/list),
+   **Identifiers**, the App ID `is.puffinride.app`: tick **Sign in with
+   Apple** (as a primary App ID), **Save**, **Confirm**. Apple may then
+   count the App Store profile as out of date: if the next iPhone build
+   stops on it, run `npx eas-cli@27.11.0 credentials --platform ios` once
+   on the PC (**production**, then let it make a new profile).
+2. **Identifiers**, **+**, **Services IDs**: description `PuffinRide`
    (Apple may show it to people when they sign in), identifier
-   `is.puffinride.preview.web`. **Continue**, **Register**. Open it again:
-   the list shows App IDs, so switch the menu at its top right to
-   **Services IDs** first. Tick **Sign in with Apple**,
-   **Configure**: primary App ID `is.puffinride.app.preview`, domain
-   `staging.puffinride.is`, and one return URL, exactly
+   `is.puffinride.web`. **Continue**, **Register**. Open it again: the
+   list shows App IDs, so switch the menu at its top right to **Services
+   IDs** first. Tick **Sign in with Apple**, **Configure**: primary App ID
+   `is.puffinride.app`, the domains `puffinride.is` and
+   `staging.puffinride.is`, and two return URLs, exactly
+   `https://puffinride.is/v1/auth/oauth/apple/callback` and
    `https://staging.puffinride.is/v1/auth/oauth/apple/callback`. **Next**,
    **Done**, **Continue**, **Save**. There is no file to upload.
-4. **Keys**, **+**: name `PuffinRide sign-in`, tick **Sign in with Apple**,
-   **Configure**, primary App ID `is.puffinride.app.preview`, **Save**,
+3. **Keys**, **+**: name `PuffinRide sign-in`, tick **Sign in with Apple**,
+   **Configure**, primary App ID `is.puffinride.app`, **Save**,
    **Continue**, **Register**. **Download** the `AuthKey_….p8` file: Apple
    gives it once. Note the key ID (ten letters and digits) shown with it.
    The team ID is under the name at the top right, or in **Membership
    details**.
-5. Apple's private email relay: in Certificates, Identifiers and Profiles,
-   **Services**, **Sign in with Apple for Email Communication**,
-   **Configure**, **+**, and add `hello@puffinride.is`. Apple checks the
+4. Apple's private email relay: **Services**, **Sign in with Apple for
+   Email Communication**, **Configure**, **+**, and add the domain
+   `puffinride.is` and the address `hello@puffinride.is`. Apple checks the
    sender's SPF and DKIM. Until this is done, PuffinRide's emails do not
    reach people who hid their email from us, and nothing says so.
-6. Open `shareride-staging-api`, **Environment**, and add `APPLE_SIGN_IN`
-   set to `apple`, `APPLE_SERVICES_ID` set to `is.puffinride.preview.web`,
+5. Open `shareride-staging-api`, **Environment**, and add `APPLE_SIGN_IN`
+   set to `apple`, `APPLE_SERVICES_ID` set to `is.puffinride.web`,
    `APPLE_TEAM_ID`, `APPLE_KEY_ID`, and `APPLE_PRIVATE_KEY` (as a secret):
    open the `.p8` file in a text editor and paste all of it, the
    `BEGIN` and `END` lines too. Save; Render deploys the service again. A
    missing or wrong value stops the API from starting, and the running
    version stays. Keep the `.p8` file somewhere safe and nowhere else:
-   never in chat, email or the repository.
-7. Check, once the app's buttons are out (plan PR 3): in a laptop's browser
-   and a phone's browser, continue with Apple as someone new and choose
-   **Hide my email**, then sign out and continue with Apple again. Then
+   never in chat, email or the repository. `GET /v1/config` then lists
+   `apple` under `signInProviders`.
+6. Once staging passes step 7, add the same five values to
+   `puffinride-api` (production runbook, step 7).
+7. Check: in a laptop's browser, a phone's browser and the iPhone app,
+   continue with Apple as someone new and choose **Hide my email**, then
+   sign out and continue with Apple again. Then
    have PuffinRide email that account (for example, offer a test trip as the
    Apple member and ask for a seat on it as another member) and check the
    email arrives in the inbox behind the hidden address. As with Google, in
@@ -710,8 +711,8 @@ Martin's steps:
    Settings, or use another Apple Account.
 
 To turn Apple off, set `APPLE_SIGN_IN` to `off`. If the key leaks, revoke
-it under **Keys** and make a new one (step 4 and the two key values of
-step 6). When the company's Apple account takes over, every Apple member
+it under **Keys** and make a new one (step 3 and the two key values of
+step 5, on both services). When the company's Apple account takes over, every Apple member
 gives their phone number once more (spec 19, 3.5).
 
 ## Turn on paying the driver in person

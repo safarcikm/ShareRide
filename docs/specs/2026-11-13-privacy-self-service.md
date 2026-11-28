@@ -124,7 +124,15 @@ else goes through "Ask about my data" (3.6).
 4. **Waiting period (decision 1):** the data is erased 7 days later. Until
    then the person can sign in, which shows "Your account will be deleted on
    {date}" with an undo button. Undoing brings the account back as it was;
-   trips and bookings cancelled before deleting stay cancelled.
+   trips and bookings cancelled before deleting stay cancelled. While it
+   waits, the pages that need an account are closed to it, by their
+   address too, and lead to that page: the member screens, Profile's
+   pages, a conversation, Report, the two pages that block a person and
+   "What's wrong here?" for a meeting point. "Keep my account" opens them
+   again. Notices from PuffinRide stays open: a notice's email links
+   there, and a person may read or appeal one before the account goes
+   (A59). The pages open to anyone, such as Find, a ride and the meeting
+   points, are open to it as to a visitor.
 5. A confirmation goes to their verified email, if any, and that address is
    then erased with the rest.
 
