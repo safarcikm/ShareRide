@@ -2,6 +2,7 @@ import {
   driverReadinessRoute,
   listSignInMethodsRoute,
   listVehiclesRoute,
+  myCo2Route,
   publicProfileRoute,
   type Me,
 } from "@shareride/contracts";
@@ -32,6 +33,7 @@ import { useMe, useSession } from "@/auth/session";
 import { useSignOut } from "@/auth/use-sign-out";
 import { useOpenFeedback } from "@/beta/feedback";
 import { ShakeRow } from "@/beta/shake";
+import { MyCo2 } from "@/co2/my-co2";
 import { ActionRows } from "@/components/action-rows";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
@@ -122,10 +124,13 @@ function MyProfile({ me }: { readonly me: Me }) {
   const loadReadiness = useCallback(() => session.call(driverReadinessRoute, {}), [session]);
   const loadCars = useCallback(() => session.call(listVehiclesRoute, {}), [session]);
   const loadSignIn = useCallback(() => session.call(listSignInMethodsRoute, {}), [session]);
+  const loadCo2 = useCallback(() => session.call(myCo2Route, {}), [session]);
   const { value: standing } = useLoadedOnFocus(loadStanding, answered);
   const { value: readiness } = useLoadedOnFocus(loadReadiness, answered);
   const { value: cars } = useLoadedOnFocus(loadCars, answered);
   const { value: signIn } = useLoadedOnFocus(loadSignIn, answered);
+  // Mine alone (spec 34, 3.8): without an answer there is no group.
+  const { value: co2 } = useLoadedOnFocus(loadCo2, answered);
 
   const licence =
     readiness?.ok === true
@@ -174,6 +179,7 @@ function MyProfile({ me }: { readonly me: Me }) {
   );
   const groups = (
     <>
+      {co2?.ok === true ? <MyCo2 totals={co2.data} /> : null}
       <Group title={t("profile.driving")}>
         <Row
           icon={Car}

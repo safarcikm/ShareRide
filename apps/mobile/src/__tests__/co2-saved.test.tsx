@@ -1,6 +1,7 @@
 import { act, fireEvent, screen, within } from "expo-router/testing-library";
 import { Dimensions } from "react-native";
 import type { Booking } from "@shareride/contracts";
+import type { Co2Totals } from "@shareride/contracts";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
 import {
@@ -12,6 +13,7 @@ import {
   northStop,
   paidBooking,
 } from "@/testing/bookings";
+import { bothRoles, co2Api, noCo2Totals } from "@/testing/co2";
 import { ok } from "@/testing/fake-client";
 import { completedBooking } from "@/testing/reviews";
 import { northCo2, northResult, northTrip, tripDetailsApi } from "@/testing/search";
@@ -240,6 +242,79 @@ describe("the driver's ride (3.7)", () => {
     await drive(null);
     expect(await screen.findByTestId("passengers")).toBeVisible();
     expect(card()).toBeNull();
+  });
+});
+
+describe("my profile (3.8)", () => {
+  async function profile(totals: () => Co2Totals) {
+    const app = await renderApp("/profile", {
+      me: completeMe,
+      setUp: (client) => {
+        co2Api(client, totals);
+      },
+    });
+    expect(await screen.findByRole("header", { name: "My profile" })).toBeVisible();
+    return app;
+  }
+  const group = () => screen.queryByRole("header", { name: "Your shared rides" });
+
+  it("shows my total in a group of its own, each role unfolded, for me alone", async () => {
+    await profile(() => bothRoles);
+    expect(await screen.findByRole("header", { name: "Your shared rides" })).toBeVisible();
+    expect(screen.getByText("About 161 kg, estimated")).toBeVisible();
+    expect(screen.getByText("Only you can see this.")).toBeVisible();
+    // Not on the card of me that others see.
+    expect(within(screen.getByTestId("person-card")).queryByTestId("co2-card")).toBeNull();
+    await fireEvent.press(row(161));
+    for (const line of [
+      "As a passenger: 66 kg on 2 rides.",
+      "As a driver: 95 kg with 2 passengers on 1 ride.",
+      "Each compared with driving alone.",
+      how,
+    ]) {
+      expect(screen.getByText(line)).toBeVisible();
+    }
+    expect(screen.getByRole("link", { name: "How we estimate it" })).toBeVisible();
+  });
+
+  it("stands right under the person's card, before the other groups", async () => {
+    await profile(() => bothRoles);
+    await screen.findByTestId("co2-card");
+    expect(
+      screen.getAllByTestId(/^(person-card|co2-card)$/).map((part) => String(part.props.testID)),
+    ).toEqual(["person-card", "co2-card"]);
+    const headings = screen.getAllByRole("header").map((heading) => String(heading.props.children));
+    expect(headings.indexOf("Your shared rides") + 1).toBe(headings.indexOf("Driving"));
+  });
+
+  it("leaves out a role under 1 kg, while the total shows (Review Focus 3)", async () => {
+    await profile(() => ({
+      grams: 95_900,
+      asPassenger: { grams: 800, rides: 1 },
+      asDriver: { grams: 95_100, rides: 1, passengers: 2 },
+    }));
+    await fireEvent.press(await screen.findByRole("button", { name: /^CO2 saved, about 95 / }));
+    expect(screen.getByText("As a driver: 95 kg with 2 passengers on 1 ride.")).toBeVisible();
+    expect(screen.queryByText(/^As a passenger/)).toBeNull();
+  });
+
+  it("has no group under 1 kg, or before a ride counts", async () => {
+    await profile(() => ({ grams: 800, asPassenger: { grams: 800, rides: 1 }, asDriver: null }));
+    expect(await screen.findByTestId("person-card")).toBeVisible();
+    expect(group()).toBeNull();
+    await profile(() => noCo2Totals);
+    expect(await screen.findByTestId("person-card")).toBeVisible();
+    expect(group()).toBeNull();
+  });
+
+  it("is read again when Profile comes back into view", async () => {
+    let totals: Co2Totals = noCo2Totals;
+    await profile(() => totals);
+    expect(group()).toBeNull();
+    totals = bothRoles;
+    await fireEvent.press(screen.getByRole("link", { name: "Meeting points" }));
+    await fireEvent.press(await screen.findByRole("button", { name: "Back" }));
+    expect(await screen.findByText("About 161 kg, estimated")).toBeVisible();
   });
 });
 
