@@ -35,7 +35,7 @@ import { whenArrived } from "@/theme/motion-sheet";
 import { bsi, hof, kef, meetingPoints } from "@/testing/meeting-points";
 import {
   colors,
-  icelandScene,
+  icelandSeasons,
   pageMaxWidth,
   radii,
   sizes,
@@ -407,13 +407,31 @@ describe("Find: search, rides and offering (spec 16, 3.2; spec 4, 3.8)", () => {
       nativeEvent: { layout: { x: 0, y: 0, width: 343, height: 180 } },
     });
     expect(scene).toHaveStyle({ height: spacing.md + 180 + spacing.sm });
-    // Behind the status bar, over the notch, the sky goes on.
+    // Behind the status bar, over the notch, the sky goes on: its top, in
+    // the season of the day (14 November is winter).
     expect(screen.getByTestId("screen-safe-area")).toHaveStyle({
-      backgroundColor: icelandScene.light.sky,
+      backgroundColor: icelandSeasons.winter.light.skyTop,
     });
     expect(screen.getByTestId("screen-scroll-area")).toHaveStyle({
       backgroundColor: colors.light.background,
     });
+  });
+
+  it("draws the scene in the season of the day in Iceland (spec 36, 3.1)", async () => {
+    mockedNow.mockReturnValue(new Date("2027-07-01T09:00:00Z"));
+    try {
+      await openFrontPage();
+      await screen.findByRole("header", { name: "Share your ride" });
+      expect(screen.getByTestId("screen-safe-area")).toHaveStyle({
+        backgroundColor: icelandSeasons.summer.light.skyTop,
+      });
+      const scene = screen.getByTestId("iceland-scene", { includeHiddenElements: true });
+      expect(
+        within(scene).getAllByTestId("lupine", { includeHiddenElements: true }),
+      ).not.toHaveLength(0);
+    } finally {
+      mockedNow.mockImplementation(() => new Date("2026-11-14T12:00:00Z"));
+    }
   });
 
   it("ends with Offer a ride as a secondary button, and the meeting points", async () => {

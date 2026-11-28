@@ -3,9 +3,27 @@
 import { useId, useState } from "react";
 import { StyleSheet, useColorScheme, View } from "react-native";
 import Svg, { Circle, ClipPath, Defs, G, Path, Rect } from "react-native-svg";
+import type { BannerSeason } from "@shareride/domain";
+import { seasonLooks, sceneTop } from "@/banner/season-looks";
+import {
+  at,
+  Aurora,
+  backHillAt,
+  Farmhouse,
+  Flowers,
+  footZones,
+  Heather,
+  HighSun,
+  Lupines,
+  MidnightSun,
+  SkyGradient,
+  SnowBanks,
+  Stars,
+  type Room,
+} from "@/banner/scene-layers";
 import {
   carDrawing,
-  icelandScene,
+  icelandSeasons,
   pageMaxWidth,
   people,
   puffin,
@@ -248,9 +266,9 @@ export function PuffinByPin({
 
 /**
  * The ridge of the mountains: points across the width, each at a part of
- * the height over the ground; glaciers cap the two highest. A screen as
- * wide as a page has more of them, and a valley in the middle, under the
- * title.
+ * the height over the ground. A screen as wide as a page has more of them,
+ * and a valley in the middle, under the title. The far range behind is
+ * lower and paler (spec 36, 3.1).
  */
 const ridges = {
   narrow: [
@@ -283,62 +301,123 @@ const ridges = {
   ],
 } as const;
 
+const farRidges = {
+  narrow: [
+    [0, 0.6],
+    [0.1, 0.42],
+    [0.22, 0.6],
+    [0.31, 0.38],
+    [0.46, 0.58],
+    [0.6, 0.4],
+    [0.76, 0.62],
+    [0.9, 0.46],
+    [1, 0.58],
+  ],
+  wide: [
+    [0, 0.5],
+    [0.08, 0.36],
+    [0.14, 0.48],
+    [0.22, 0.27],
+    [0.3, 0.46],
+    [0.42, 0.38],
+    [0.56, 0.55],
+    [0.66, 0.34],
+    [0.74, 0.5],
+    [0.8, 0.27],
+    [0.88, 0.42],
+    [0.95, 0.3],
+    [1, 0.45],
+  ],
+} as const;
+
+/** A ridge as an outline closed along the ground. */
+function range(points: readonly (readonly [number, number])[], width: number, ground: number) {
+  return `M0 ${String(ground)} ${points.map(([x, y]) => `L${at(x, y)}`).join(" ")} L${String(width)} ${String(ground)} Z`;
+}
+
 /**
- * Iceland behind the front page's top (decision 15): a sky, mountains with
- * glaciers on the two highest, green hills, and from `ground` down a road
- * with a dashed line, where the car drives; or, with `road={false}`, the
- * hills go on down, as under a wide page's search. `width` and `height` are
- * the drawing's. At night the same land in the dark (`icelandScene`).
+ * Glaciers on the `count` highest peaks, never at the edges: each a cap
+ * down `depth` of each side of its peak, with a ragged lower edge.
+ */
+function glaciersOn(points: readonly (readonly [number, number])[], count: number, depth: number) {
+  return points
+    .map(([, y], index) => ({ y, index }))
+    .slice(1, -1)
+    .sort((a, b) => a.y - b.y)
+    .slice(0, count)
+    .map(({ index }) => {
+      const [px, py] = points[index] ?? [0, 0];
+      const [lx, ly] = points[index - 1] ?? [0, 0];
+      const [rx, ry] = points[index + 1] ?? [0, 0];
+      const left = [px + (lx - px) * depth, py + (ly - py) * depth] as const;
+      const right = [px + (rx - px) * depth, py + (ry - py) * depth] as const;
+      const dip = (left[1] + right[1]) / 2 - py;
+      return [
+        `M${at(...left)}`,
+        `L${at(px, py)}`,
+        `L${at(...right)}`,
+        `L${at(px + (right[0] - px) / 2, py + dip * 0.7)}`,
+        `L${at(px, py + dip)}`,
+        `L${at(px + (left[0] - px) / 2, py + dip * 0.7)}`,
+        "Z",
+      ].join(" ");
+    });
+}
+
+/**
+ * Iceland behind the front page's top in its season (decision 15; spec
+ * 36, 3.1 and 3.3): a sky paling towards the land, a far range, mountains
+ * with glaciers, a back hill with a farmhouse, the front hills, and from
+ * `ground` down a road with a dashed line, where the car drives; or, with
+ * `road={false}`, the hills go on down, as under a wide page's search.
+ * Each season brings its own (`seasonLooks`): snow, flowers, lupines and
+ * the sun, heather, stars and the northern lights. The small things go in
+ * `room`, the part of the width given to them: all of it on a phone, the
+ * car's room on a laptop (R36.5). `layout` says which the scene is behind,
+ * a phone's top or a laptop's panel, as the name's row and the title stand
+ * where the layout puts them, whatever the window's width. `width` and
+ * `height` are the drawing's.
  */
 export function IcelandScene({
+  season,
   width,
   height,
   ground = height - sizes.sceneRoad,
   road = true,
+  room = [0, width],
+  layout = "phone",
 }: {
+  readonly season: BannerSeason;
   readonly width: number;
   readonly height: number;
   readonly ground?: number;
   readonly road?: boolean;
+  readonly room?: Room;
+  readonly layout?: "phone" | "panel";
 }) {
   const { scheme } = useScene();
-  const land = icelandScene[scheme];
+  const ids = useId().replaceAll(":", "");
+  const land = icelandSeasons[season][scheme];
+  const snow = "snow" in land ? land.snow : undefined;
+  const look = seasonLooks[season][scheme];
   if (width <= 0 || height <= 0) return null;
-  const ridge = width > 4 * ground ? ridges.wide : ridges.narrow;
-  const points = ridge.map(([x, y]) => [x * width, y * ground] as const);
-  // The two highest peaks, which are never at the edges.
-  const capped = points
-    .map(([, y], index) => ({ y, index }))
-    .slice(1, -1)
-    .sort((a, b) => a.y - b.y)
-    .slice(0, 2)
-    .map(({ index }) => index);
-  const at = ([x, y]: readonly [number, number]) => `${x.toFixed(1)} ${y.toFixed(1)}`;
-  const mountains = `M0 ${String(ground)} ${points.map((point) => `L${at(point)}`).join(" ")} L${String(width)} ${String(ground)} Z`;
-  // A cap down a third of each side of its peak, with a ragged lower edge.
-  const glaciers = capped.map((index) => {
-    const [px, py] = points[index] ?? [0, 0];
-    const [lx, ly] = points[index - 1] ?? [0, 0];
-    const [rx, ry] = points[index + 1] ?? [0, 0];
-    const left = [px + (lx - px) / 3, py + (ly - py) / 3] as const;
-    const right = [px + (rx - px) / 3, py + (ry - py) / 3] as const;
-    const dip = (left[1] + right[1]) / 2 - py;
-    return [
-      `M${at(left)}`,
-      `L${at([px, py])}`,
-      `L${at(right)}`,
-      `L${at([px + (right[0] - px) / 2, py + dip * 0.7])}`,
-      `L${at([px, py + dip])}`,
-      `L${at([px + (left[0] - px) / 2, py + dip * 0.7])}`,
-      "Z",
-    ].join(" ");
-  });
+  const wide = layout === "panel";
+  const shape = (points: readonly (readonly [number, number])[]) =>
+    points.map(([x, y]) => [x * width, y * ground] as const);
+  const peaks = shape(wide ? ridges.wide : ridges.narrow);
   const hills = [
     `M0 ${String(ground)} L0 ${String(ground - 16)}`,
-    `C${at([width * 0.22, ground - 40])} ${at([width * 0.4, ground - 2])} ${at([width * 0.58, ground - 18])}`,
-    `S${at([width * 0.86, ground - 36])} ${at([width, ground - 12])}`,
+    `C${at(width * 0.22, ground - 40)} ${at(width * 0.4, ground - 2)} ${at(width * 0.58, ground - 18)}`,
+    `S${at(width * 0.86, ground - 36)} ${at(width, ground - 12)}`,
     `L${String(width)} ${String(ground)} Z`,
   ].join(" ");
+  const back: string[] = [];
+  for (let x = 0; x <= width + 6; x += 6) {
+    const along = Math.min(x, width);
+    back.push(`L${at(along, backHillAt(along, width, ground, wide))}`);
+  }
+  const house = wide ? room[1] - 44 : width * 0.1;
+  const zones = footZones(width, room, wide);
   const below = height - ground;
   return (
     <View
@@ -348,17 +427,36 @@ export function IcelandScene({
       style={{ width, height }}
     >
       <Svg width={width} height={height}>
-        <Rect x={0} y={0} width={width} height={height} fill={land.sky} />
+        <SkyGradient id={`sky-${ids}`} ground={ground} top={land.skyTop} low={land.sky} />
+        <Rect x={0} y={0} width={width} height={height} fill={`url(#sky-${ids})`} />
+        {look.stars ? <Stars room={room} ground={ground} wide={wide} /> : null}
+        {look.aurora ? (
+          <Aurora id={`aurora-${ids}`} room={room} ground={ground} wide={wide} />
+        ) : null}
+        {look.sun === "high" ? (
+          <HighSun width={width} room={room} ground={ground} wide={wide} />
+        ) : null}
+        {look.sun === "midnight" ? (
+          <MidnightSun width={width} room={room} ground={ground} wide={wide} />
+        ) : null}
         <Path
-          d={mountains}
+          d={range(shape(wide ? farRidges.wide : farRidges.narrow), width, ground)}
+          fill={land.far}
+          stroke={land.far}
+          strokeWidth={3}
+          strokeLinejoin="round"
+        />
+        <Path
+          d={range(peaks, width, ground)}
           fill={land.mountain}
           stroke={land.mountain}
           strokeWidth={4}
           strokeLinejoin="round"
         />
-        {glaciers.map((d) => (
+        {glaciersOn(peaks, look.caps, look.capDepth).map((d) => (
           <Path
             key={d}
+            testID="glacier"
             d={d}
             fill={land.glacier}
             stroke={land.glacier}
@@ -366,7 +464,29 @@ export function IcelandScene({
             strokeLinejoin="round"
           />
         ))}
+        <Path
+          d={`M0 ${String(ground)} ${back.join(" ")} L${String(width)} ${String(ground)} Z`}
+          fill={land.hillBack}
+        />
+        <Farmhouse
+          x={house}
+          y={backHillAt(house, width, ground, wide) + 1.5}
+          roof={land.roof}
+          snow={snow}
+          scheme={scheme}
+        />
         <Path d={hills} fill={land.hill} />
+        {look.heather ? (
+          <Heather
+            id={`hills-${ids}`}
+            hills={hills}
+            zones={zones}
+            ground={ground}
+            scheme={scheme}
+          />
+        ) : null}
+        {look.lupines ? <Lupines zones={zones} ground={ground} wide={wide} /> : null}
+        {look.flowers ? <Flowers zones={zones} ground={ground} wide={wide} /> : null}
         {road ? (
           <>
             <Rect
@@ -377,6 +497,7 @@ export function IcelandScene({
               height={below}
               fill={land.road}
             />
+            {snow === undefined ? null : <SnowBanks width={width} ground={ground} snow={snow} />}
             <Path
               d={`M${String(spacingOnRoad)} ${String(ground + below / 2)} H${String(width)}`}
               stroke={land.roadLine}
@@ -403,14 +524,19 @@ export function IcelandScene({
 /**
  * The scene in a rounded panel as wide as its room, for a wide front page
  * (spec 18): the sky first, so the panel shows at once, then the land once
- * its width is known; the hills go on from `ground` to the bottom.
+ * its width is known; the hills go on from `ground` to the bottom. The
+ * small things go in the car's room, `room` wide at the right (R36.5).
  */
 export function IcelandPanel({
+  season,
   height,
   ground,
+  room,
 }: {
+  readonly season: BannerSeason;
   readonly height: number;
   readonly ground: number;
+  readonly room: number;
 }) {
   const { scheme } = useScene();
   const [width, setWidth] = useState(0);
@@ -420,9 +546,17 @@ export function IcelandPanel({
       onLayout={(event) => {
         setWidth(event.nativeEvent.layout.width);
       }}
-      style={[styles.panel, { height, backgroundColor: icelandScene[scheme].sky }]}
+      style={[styles.panel, { height, backgroundColor: sceneTop(season, scheme) }]}
     >
-      <IcelandScene width={width} height={height} ground={ground} road={false} />
+      <IcelandScene
+        season={season}
+        width={width}
+        height={height}
+        ground={ground}
+        road={false}
+        room={[Math.max(0, width - room), width]}
+        layout="panel"
+      />
     </View>
   );
 }

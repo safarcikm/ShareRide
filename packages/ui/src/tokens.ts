@@ -117,7 +117,7 @@ export const puffinCar = {
 } as const;
 
 /**
- * The Iceland scene behind the front page's top (spec 15, section 5.3,
+ * The Iceland scene (spec 15, section 5.3,
  * decision 15): a sky, grey mountains with white glaciers, green hills and
  * a grey road with a white line, where the puffins' car drives; at night
  * the same land in the dark. The name and the language switch stand on the
@@ -141,6 +141,176 @@ export const icelandScene = {
     road: "#3E525C",
     roadLine: "#6E7D85",
   },
+} as const;
+
+/**
+ * The Iceland scene behind the front page's top in each season (spec 36,
+ * 3.1 and 3.3), in the Clear day colours Martin chose: a sky that pales
+ * from its top towards the land, a far range behind the mountains and
+ * their glaciers, a back hill and the front hills in two greens, a
+ * farmhouse's red roof, the road and its line; at night the same land
+ * under a night sky. Winter's land is white and has snow on the road's
+ * edge (`snow`), spring's fresh green, summer's deep green under a dusk
+ * sky at night, autumn's heather and birch. Words stand on it (R36.1): on
+ * a phone the name and the language link on the sky's top, so `text` and
+ * `primary` keep 4.5:1 on `skyTop`; on a laptop the title on any colour of
+ * the land, so `text` keeps 4.5:1 on each (the tests check it). Other
+ * screens' roads and the share pictures keep `icelandScene`. Only for
+ * drawings.
+ */
+export const icelandSeasons = {
+  winter: {
+    light: {
+      skyTop: "#CDE4F0",
+      sky: "#F1F8FB",
+      far: "#D5E2EC",
+      mountain: "#A6BBCD",
+      glacier: "#FFFFFF",
+      hillBack: "#F2F7FA",
+      hill: "#DFEAF0",
+      road: "#C1CAD0",
+      roadLine: "#FFFFFF",
+      roof: "#C8463D",
+      snow: "#FFFFFF",
+    },
+    dark: {
+      skyTop: "#091828",
+      sky: "#15304A",
+      far: "#1C3247",
+      mountain: "#2A4358",
+      glacier: "#4F6676",
+      hillBack: "#34495A",
+      hill: "#3F5767",
+      road: "#34454E",
+      roadLine: "#6E7D85",
+      roof: "#A03C34",
+      snow: "#587080",
+    },
+  },
+  spring: {
+    light: {
+      skyTop: "#BFE3F3",
+      sky: "#EBF7FA",
+      far: "#C9DAE8",
+      mountain: "#90ADC5",
+      glacier: "#FFFFFF",
+      hillBack: "#CDEBAA",
+      hill: "#9CD585",
+      road: "#C3CBD0",
+      roadLine: "#FFFFFF",
+      roof: "#C8463D",
+    },
+    dark: {
+      skyTop: "#0D2032",
+      sky: "#1C3A4D",
+      far: "#1E3448",
+      mountain: "#2B4457",
+      glacier: "#47616F",
+      hillBack: "#21442F",
+      hill: "#2A5838",
+      road: "#3E525C",
+      roadLine: "#6E7D85",
+      roof: "#A03C34",
+    },
+  },
+  summer: {
+    light: {
+      skyTop: "#BDE1F3",
+      sky: "#E8F6FB",
+      far: "#C2D6E6",
+      mountain: "#8AA8C1",
+      glacier: "#FFFFFF",
+      hillBack: "#A9D88F",
+      hill: "#74BC6C",
+      road: "#C3CBD0",
+      roadLine: "#FFFFFF",
+      roof: "#C8463D",
+    },
+    dark: {
+      skyTop: "#241F42",
+      sky: "#5A3C57",
+      far: "#36304F",
+      mountain: "#3A3757",
+      glacier: "#4E4A6A",
+      hillBack: "#26462F",
+      hill: "#2C5536",
+      road: "#3D4558",
+      roadLine: "#767A90",
+      roof: "#A03C34",
+    },
+  },
+  autumn: {
+    light: {
+      skyTop: "#C9DFEA",
+      sky: "#F5EEE3",
+      far: "#CFD5DE",
+      mountain: "#9DABBA",
+      glacier: "#FFFFFF",
+      hillBack: "#E6C07D",
+      hill: "#DA9B63",
+      road: "#C6C9CB",
+      roadLine: "#FFFFFF",
+      roof: "#C8463D",
+    },
+    dark: {
+      skyTop: "#0B1A28",
+      sky: "#1D2F3F",
+      far: "#20303F",
+      mountain: "#2C3D4D",
+      glacier: "#4A5E6C",
+      hillBack: "#4A3E28",
+      hill: "#523629",
+      road: "#3E4A52",
+      roadLine: "#6E7D85",
+      roof: "#A03C34",
+    },
+  },
+} as const;
+
+/**
+ * What the front page's banner draws through the year (spec 36), besides
+ * the people, puffin and car colours: the Icelandic flag's blue and red,
+ * Yule red, a navy cap, a sky blue, chocolate, a tree's greens, a tent, a
+ * sleeping bag, a guitar, a cream bun with jam, stems, lupines, heather,
+ * birch, the northern lights, the low summer sun, snowflakes (their edge
+ * on a light sky, their colour at night) and the stars. Only for
+ * drawings.
+ */
+export const bannerDrawing = {
+  red: "#D8423A",
+  flagBlue: "#02529C",
+  flagRed: "#DC1E35",
+  navy: "#23395B",
+  sky: "#4F95D0",
+  choc: "#7A4A2E",
+  chocDark: "#55311C",
+  tree: "#2F7A4E",
+  treeLight: "#3F9862",
+  tent: "#3E8E5A",
+  tentDark: "#2E6B43",
+  bag: "#4F86B8",
+  bagDark: "#3B6C96",
+  guitar: "#C8763A",
+  bun: "#DDA65E",
+  cream: "#FFF8EC",
+  jam: "#C8463D",
+  stem: "#4E9A5A",
+  lupine: "#8E6CCB",
+  lupineLight: "#B9A0E6",
+  heather: "#B4553F",
+  birch: "#E8B34E",
+  aurora: "#6FE3B4",
+  aurora2: "#7FD0F0",
+  sunLow: "#F6A15A",
+  flakeEdge: "#9FB3BF",
+  nightFlake: "#DCE7EC",
+  star: "#FFFFFF",
+} as const;
+
+/** The farmhouse in the Iceland scene: its wall and windows, lit at night (spec 36, 3.1). */
+export const bannerHouse = {
+  light: { wall: "#F7F5F0", window: "#5B6B73" },
+  dark: { wall: "#A7B4BA", window: "#F4C04E" },
 } as const;
 
 /** The five people colours a driver's shape person and initial can have, in a fixed order. */
