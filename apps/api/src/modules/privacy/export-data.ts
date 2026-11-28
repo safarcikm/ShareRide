@@ -10,6 +10,7 @@ import {
 import { and, asc, eq, gte, inArray, isNotNull, isNull, or } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import type { Queryable } from "../bookings/seats.ts";
+import { co2TotalsOf } from "../co2/totals.ts";
 import { quickOf, systemLineOf } from "../chat/service.ts";
 
 // What "Download my data" holds (spec 11, 3.2.3): the person's own data,
@@ -567,8 +568,12 @@ export async function collectExport(
     cancelReason: booking.cancelReason,
     cancelNote: booking.cancelNote,
     refund: booking.refundAmount,
+    co2Grams: booking.co2Grams,
     ...(booking.cancelledBy === "driver" ? {} : countingOf(booking)),
   }));
+
+  // What the person's shared rides saved, by role (spec 34, 3.11).
+  const co2 = await co2TotalsOf(q, userId);
 
   const paid = await q
     .select({ payment: payments })
@@ -836,6 +841,7 @@ export async function collectExport(
         shownAt: when(row.shownAt),
         hiddenAt: when(row.hiddenAt),
       })),
+      co2_saved: { ...co2, carried: null },
       payments: paymentsSection,
       conversations: conversationsSection,
       reports: filed.map((row) => ({

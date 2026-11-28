@@ -42,6 +42,11 @@ export const exportSections = [
   "bookings",
   /** Reviews about the person from trips made anonymous, by nobody and on no ride (A51). */
   "earlier_reviews",
+  /**
+   * The CO2 the person's shared rides saved, as a passenger and as a
+   * driver, and the part carried over from rides made anonymous (spec 34).
+   */
+  "co2_saved",
   "payments",
   "conversations",
   /** Reports the person filed and their outcomes, never who reported them (spec 9). */

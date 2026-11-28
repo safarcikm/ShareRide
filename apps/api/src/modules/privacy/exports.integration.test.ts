@@ -12,7 +12,7 @@ import {
   sendMessageRoute,
 } from "@shareride/contracts";
 import { schema } from "@shareride/db";
-import { exportSections } from "@shareride/domain";
+import { defaultTripDaySettings, exportSections } from "@shareride/domain";
 import { asc, eq, inArray } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { createLogger } from "../../logger.ts";
@@ -29,6 +29,7 @@ import {
   type Member,
 } from "../bookings/testing.ts";
 import { createNotificationWorker } from "../notifications/worker.ts";
+import { moveTripsOn } from "../trips/completion.ts";
 import { unlabelledFields } from "./export-page.ts";
 import type { ExportData } from "./export-data.ts";
 import {
@@ -951,6 +952,48 @@ describe("download my data (spec 11, 3.2)", () => {
     const siggi = await exportOf(await newMember("Siggi"));
     expect(siggi.data.sections.account).toMatchObject({ photo: null, photoHiddenAt: null });
     api.photos.files.clear();
+  });
+
+  it("gives the CO2 each booking kept and the person's totals by role (spec 34, 3.11)", async () => {
+    const { airport } = sampleTrip;
+    const jon = await driverOf(airport, "Jón");
+    const gunna = await newMember("Gunna");
+    const gunnas = await booked(gunna.accessToken, airport, { fromStop: 0, toStop: 2, seats: 2 });
+    await paid(gunna.accessToken, gunnas.id);
+    const [trip] = await api.connection.db
+      .select({ arrivesAt: schema.trips.arrivesAt })
+      .from(schema.trips)
+      .where(eq(schema.trips.id, airport));
+    const completesAt = (trip?.arrivesAt?.getTime() ?? 0) + 2 * 3_600_000;
+    await later(Math.round((completesAt - api.now().getTime()) / 1000) + 1, jon, gunna);
+    await moveTripsOn(api.connection.db, api.now(), defaultTripDaySettings);
+    const [kept] = await api.connection.db
+      .select({ grams: schema.bookings.co2Grams })
+      .from(schema.bookings)
+      .where(eq(schema.bookings.id, gunnas.id));
+    const grams = kept?.grams ?? null;
+    expect(grams).toBeGreaterThan(1000);
+
+    const passenger = await exportOf(gunna);
+    expect(passenger.data.sections.bookings).toEqual([
+      expect.objectContaining({ id: gunnas.id, status: "completed", co2Grams: grams }),
+    ]);
+    // Two seats are one car not driven.
+    expect(passenger.data.sections.co2_saved).toEqual({
+      asPassenger: { grams, rides: 1 },
+      asDriver: { grams: 0, rides: 0, passengers: 0 },
+      carried: null,
+    });
+    expect(passenger.html).toContain("<h2>CO2 saved</h2>");
+    expect(unlabelledFields(passenger.data)).toEqual([]);
+
+    const driver = await exportOf(jon);
+    expect(driver.data.sections.co2_saved).toEqual({
+      asPassenger: { grams: 0, rides: 0 },
+      asDriver: { grams, rides: 1, passengers: 1 },
+      carried: null,
+    });
+    expect(unlabelledFields(driver.data)).toEqual([]);
   });
 
   it("labels every field of the readable page in both languages", async () => {
