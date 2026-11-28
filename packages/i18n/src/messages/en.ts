@@ -87,7 +87,7 @@ export const en = {
   "footer.facebook": "Facebook",
   "footer.instagram": "Instagram",
   "appPromotion.banner.label": "The PuffinRide app",
-  "appPromotion.banner.line": "Notifications about your rides, straight to your phone.",
+  "appPromotion.banner.line": "Get notified about your rides.",
   "appPromotion.banner.install": "Install",
   "appPromotion.banner.close": "Close",
   "appPromotion.about.title": "The PuffinRide app",

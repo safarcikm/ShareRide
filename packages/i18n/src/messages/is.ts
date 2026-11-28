@@ -88,7 +88,7 @@ export const is = {
   "footer.facebook": "Facebook",
   "footer.instagram": "Instagram",
   "appPromotion.banner.label": "PuffinRide-appið",
-  "appPromotion.banner.line": "Tilkynningar um ferðirnar þínar beint í símann.",
+  "appPromotion.banner.line": "Fáðu tilkynningar um ferðirnar þínar.",
   "appPromotion.banner.install": "Sækja",
   "appPromotion.banner.close": "Loka",
   "appPromotion.about.title": "PuffinRide-appið",

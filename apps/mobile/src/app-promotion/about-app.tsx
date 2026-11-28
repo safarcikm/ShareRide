@@ -30,7 +30,7 @@ export function AboutApp() {
     <View testID="about-app" style={styles.section}>
       <Heading>{t("appPromotion.about.title")}</Heading>
       <Text style={[typography.body, { color: palette.text }]}>{t("appPromotion.about.line")}</Text>
-      <View style={wide ? styles.beside : styles.under}>
+      <View style={styles.under}>
         <StoreBadges place="about" />
         {wide ? (
           <View style={styles.code}>
@@ -60,9 +60,8 @@ export function AboutApp() {
 const styles = StyleSheet.create({
   section: { gap: spacing.sm },
   under: { gap: spacing.md },
-  // On a laptop the code stands after the badges, with its line beside it.
-  beside: { flexDirection: "row", alignItems: "center", gap: spacing.lg },
-  code: { flexDirection: "row", alignItems: "center", gap: spacing.md, flexShrink: 1 },
+  // On a laptop the code stands under the badges, with its line beside it.
+  code: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   // The code's own white margin is its quiet zone; the edge sets it off
   // from a light page.
   qr: {

@@ -202,7 +202,7 @@ describe("the strip on an Android phone (spec 35, 3.4)", () => {
     const banner = within(await strip());
     expect(banner.getByText("PuffinRide")).toBeVisible();
     expect(
-      banner.getByText("Notifications about your rides, straight to your phone."),
+      banner.getByText("Get notified about your rides."),
     ).toBeVisible();
     expect(banner.getByRole("button", { name: "Install" })).toBeVisible();
     expect(banner.getByRole("button", { name: "Close" })).toBeVisible();
@@ -233,7 +233,7 @@ describe("the strip on an Android phone (spec 35, 3.4)", () => {
     (getLocales as jest.Mock).mockReturnValue([{ languageTag: "is-IS" }]);
     await renderApp("/", listed(["google_play"]));
     const banner = within(await screen.findByLabelText("PuffinRide-appið"));
-    expect(banner.getByText("Tilkynningar um ferðirnar þínar beint í símann.")).toBeVisible();
+    expect(banner.getByText("Fáðu tilkynningar um ferðirnar þínar.")).toBeVisible();
     expect(banner.getByRole("button", { name: "Sækja" })).toBeVisible();
     expect(banner.getByRole("button", { name: "Loka" })).toBeVisible();
   });

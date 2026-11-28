@@ -98,8 +98,8 @@ On the website in an Android phone's browser, with the Google Play switch
 on, a strip across the top of the window, above everything else, which
 pushes the page down rather than covering it:
 
-- PuffinRide's logo, **PuffinRide**, and one line: "Notifications about
-  your rides, straight to your phone."
+- PuffinRide's logo, **PuffinRide**, and one line: "Get notified about
+  your rides.", which the app does with push and the website cannot.
 - **Install**, a secondary button (R31.1: not the screen's main button),
   which opens PuffinRide's Google Play page. Android opens it in the Play
   Store app.
@@ -134,7 +134,7 @@ opening paragraphs, before the documents:
   app for your phone. It tells you at once when something happens on your
   rides."
 - The badges, as in the footer.
-- On a laptop (the width with the top bar), a QR code beside the badges,
+- On a laptop (the width with the top bar), a QR code under the badges,
   with "Or point your phone's camera at the code." The code is
   `https://puffinride.is/app` (3.7). Not on a phone: the phone is the
   camera.
@@ -240,7 +240,7 @@ Apple draws the iPhone banner itself; how it looks is Apple's
 | Key | English | Icelandic |
 | --- | ------- | --------- |
 | `appPromotion.banner.label` | The PuffinRide app | PuffinRide-appið |
-| `appPromotion.banner.line` | Notifications about your rides, straight to your phone. | Tilkynningar um ferðirnar þínar beint í símann. |
+| `appPromotion.banner.line` | Get notified about your rides. | Fáðu tilkynningar um ferðirnar þínar. |
 | `appPromotion.banner.install` | Install | Sækja |
 | `appPromotion.banner.close` | Close | Loka |
 | `appPromotion.about.title` | The PuffinRide app | PuffinRide-appið |
