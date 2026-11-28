@@ -16,6 +16,7 @@ import { signUpRoute } from "@/auth/next-route";
 import { useMe, useSession } from "@/auth/session";
 import { useMaxSeats, usePayInPerson, useTimings } from "@/beta/config";
 import { bookingHref, keepPendingBooking } from "@/booking/pending-booking";
+import { Co2Card, partCo2Lines } from "@/co2/co2-card";
 import { ActionRows } from "@/components/action-rows";
 import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
@@ -318,6 +319,15 @@ function Trip({
     </Card>
   );
 
+  // What the part saves, for anyone who opens the ride; a cancelled ride
+  // has none (spec 34, 3.5).
+  const co2 = cancelled ? null : (
+    <Co2Card
+      grams={trip.part.co2Grams}
+      lines={partCo2Lines(t, locale, { distanceM: trip.part.distanceM, grams: trip.part.co2Grams })}
+    />
+  );
+
   // What cancelling costs, or how the driver is paid: nothing on a free
   // ride, or on one that was cancelled, where there is no seat to book.
   const paying =
@@ -412,6 +422,7 @@ function Trip({
           {partTicket}
           {driver}
           {whereYouSit}
+          {co2}
           {rows}
         </Columns>
       </Screen>
@@ -428,6 +439,7 @@ function Trip({
       {driver}
       {whereYouSit}
       {wholeRoute}
+      {co2}
       {rows}
     </Screen>
   );

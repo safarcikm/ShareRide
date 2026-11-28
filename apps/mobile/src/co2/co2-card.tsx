@@ -1,5 +1,5 @@
 import { shownKilograms } from "@shareride/domain";
-import { formatCount } from "@shareride/i18n";
+import { formatCount, type Locale, type Translate } from "@shareride/i18n";
 import { Leaf } from "lucide-react-native";
 import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
@@ -34,27 +34,69 @@ export function Co2Card({
   const kg = formatCount(kilograms, locale);
   return (
     <Card>
-      <Row
-        icon={Leaf}
-        title={t("co2.title")}
-        value={t("co2.value", { kg })}
-        accessibilityLabel={t("co2.spoken", { kg })}
-        expanded={open}
-        onToggle={() => {
-          setOpen((was) => !was);
-        }}
-      >
-        <View style={styles.under}>
-          {lines.map((line) => (
-            <Text key={line} style={[typography.body, { color: palette.text }]}>
-              {line}
-            </Text>
-          ))}
-          <TextLink align="start" label={t("co2.link")} href="/about#co2" />
-        </View>
-      </Row>
+      <View testID="co2-card">
+        <Row
+          icon={Leaf}
+          title={t("co2.title")}
+          value={t("co2.value", { kg })}
+          accessibilityLabel={t("co2.spoken", { kg })}
+          expanded={open}
+          onToggle={() => {
+            setOpen((was) => !was);
+          }}
+        >
+          <View style={styles.under}>
+            {lines.map((line) => (
+              <Text key={line} style={[typography.body, { color: palette.text }]}>
+                {line}
+              </Text>
+            ))}
+            <TextLink align="start" label={t("co2.link")} href="/about#co2" />
+          </View>
+        </Row>
+      </View>
     </Card>
   );
+}
+
+/** Whole kilometres of a part, as the card's sentences say them. */
+function kilometres(distanceM: number, locale: Locale): string {
+  return formatCount(Math.round(distanceM / 1000), locale);
+}
+
+/** The kilograms the card shows, in its sentences too; 0 where it shows none. */
+function kilograms(grams: number | null, locale: Locale): string {
+  return formatCount(shownKilograms(grams) ?? 0, locale);
+}
+
+/** A passenger's part, on a ride's details and a booked seat (3.5, 3.6). */
+export function partCo2Lines(
+  t: Translate,
+  locale: Locale,
+  figure: { readonly distanceM: number; readonly grams: number | null },
+): string[] {
+  return [
+    t("co2.part", {
+      km: kilometres(figure.distanceM, locale),
+      kg: kilograms(figure.grams, locale),
+    }),
+    t("co2.how"),
+  ];
+}
+
+/** The driver's ride: its passengers' parts added (3.7). */
+export function driverCo2Lines(
+  t: Translate,
+  locale: Locale,
+  figure: { readonly distanceM: number; readonly grams: number },
+): string[] {
+  return [
+    t("co2.driver", {
+      km: kilometres(figure.distanceM, locale),
+      kg: kilograms(figure.grams, locale),
+    }),
+    t("co2.how"),
+  ];
 }
 
 const styles = StyleSheet.create({
