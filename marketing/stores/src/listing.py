@@ -8,8 +8,8 @@
 # more than 100 meeting points (136 on puffinride.is), the driver's profile
 # before booking, a verified phone number for everyone, chat once a booking is
 # confirmed, word (push or email) when someone asks for a seat, Icelandic and
-# English. Nothing about Google sign-in: the iPhone app has none in version 1
-# (spec 32, 3.3).
+# English. No sign-in service by name on the App Store page, so it never goes
+# stale: the apps offer what the server offers (Apple and Google, spec 37).
 import re
 import sys
 
@@ -205,8 +205,8 @@ def check():
             found = pattern.search(text)
             if found and not (rule == "money" and key == "app_store.keywords"):
                 problems.append(f"{name}: says {found.group(0)!r} ({rule})")
-    if re.search(r"google", LISTING["app_store"]["description"], re.IGNORECASE):
-        problems.append("App Store: the iPhone app has no Google sign-in in version 1")
+    if re.search(r"google|sign in with apple", LISTING["app_store"]["description"], re.IGNORECASE):
+        problems.append("App Store: no sign-in service by name (spec 37)")
     return problems
 
 

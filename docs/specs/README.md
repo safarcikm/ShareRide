@@ -60,3 +60,4 @@ Specs follow the order in [features](../product/features.md#spec-order).
 | 33 | [A few small animations on the website and in the apps](2026-11-27-small-animations.md) | All screens | Accepted (2026-11-28) |
 | 34 | [The CO2 a shared ride saves](2026-11-28-co2-saved.md) | A2, C5, D2, D4, H4, H5 | Approved (2026-11-28) |
 | 35 | [The phone apps, shown on the website](2026-11-28-app-promotion-on-the-website.md) | A6, the website, H4 | Accepted (2026-11-28) |
+| 37 | [Sign in with Apple in the store apps, and ending it with the account](2026-11-28-sign-in-with-apple-in-the-stores.md) | A1, A4, the phone apps | Proposed (2026-11-28) |

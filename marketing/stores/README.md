@@ -22,9 +22,9 @@ ready to paste and upload, with the scripts that make it.
   screenshots show the app's screens as they are, so a ride's price shows
   on its card, as it does in the app.
 - **True to the app today:** open to everyone aged 18 and over, more than
-  100 meeting points, Icelandic and English. **Nothing about Google
-  sign-in** on the App Store page: the iPhone app has none in version 1
-  (spec 32, 3.3).
+  100 meeting points, Icelandic and English. **No sign-in service by name**
+  on the App Store page, so it never goes stale: the apps offer what the
+  server offers, Apple and Google since 2026-11-28 (spec 37).
 - **Sample data only** (R32.6): the screenshots come from the phone
   journeys against the test API's sample rides and people, signed out.
 - **Google Play's rules for pictures:** no "best", "#1", "top", "new",

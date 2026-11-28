@@ -339,7 +339,9 @@ Events (in the logs, by provider and user ID): `SignInMethodLinked`, `SignInMeth
 ## 10. Out of scope
 
 - Revoking Apple's tokens when an account is deleted, which the App Store
-  asks of apps with Sign in with Apple. It is needed before the App Store
+  asks of apps with Sign in with Apple (now
+  [spec 37](2026-11-28-sign-in-with-apple-in-the-stores.md), with the token
+  kept at sign-in instead, ADR 0056). It is needed before the App Store
   release (milestone 16); it can ask the person to continue with Apple once
   more at deletion, so nothing has to be stored for it now.
 - Apple's server notifications (a person stops using Apple with ShareRide,

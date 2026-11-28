@@ -89,7 +89,7 @@ People who meet through the app can report and block each other: Report and Bloc
 
 Deleting an account: Profile, Privacy and your data, Delete my account. The steps are also at https://puffinride.is/delete-account.
 
-Version 1.0 has no Sign in with Apple and no other third-party sign-in on the iPhone: email code and password only.
+Continue with Apple and Continue with Google work too, but a new account made with them still needs the one-time phone check by an Icelandic text message, so please use the review account above.
 
 The app is for people aged 18 and over (Terms of Service, confirmed at sign-up).
 ```
@@ -162,8 +162,6 @@ as on the App Store.
 
 ## What changes when
 
-- Sign in with Apple and Google sign-in on the iPhone: take the line about
-  third-party sign-in out of the App Store notes.
 - Payments in the app (milestone 15): rewrite the payment paragraph of the
   notes (Apple's rules for services used outside the app still apply), and
   Financial features on Google Play.

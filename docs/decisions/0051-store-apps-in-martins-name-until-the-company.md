@@ -1,7 +1,9 @@
 # 0051. The store apps in Martin's name until the company, checked on emulators first
 
 - **Status:** Accepted (accounts: Martin, 2026-11-27, on a decision card);
-  Proposed (the rest)
+  Proposed (the rest); the iPhone sign-in sentence superseded by
+  [ADR 0056](0056-keep-apples-token-to-end-sign-in-with-apple.md) (Martin
+  turned Sign in with Apple on, 2026-11-28)
 - **Date:** 2026-11-27
 - **Deciders:** Martin
 - **Related:** [spec 32](../specs/2026-11-27-phone-apps-in-the-stores.md),
