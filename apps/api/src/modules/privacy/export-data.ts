@@ -10,6 +10,8 @@ import {
 import { and, asc, eq, gte, inArray, isNotNull, isNull, or } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import type { Queryable } from "../bookings/seats.ts";
+import { co2CarriedOf } from "../co2/carried.ts";
+import { co2TotalsOf } from "../co2/totals.ts";
 import { quickOf, systemLineOf } from "../chat/service.ts";
 
 // What "Download my data" holds (spec 11, 3.2.3): the person's own data,
@@ -476,6 +478,7 @@ export async function collectExport(
           total: booking.totalPrice,
           currency: booking.currency,
           status: booking.status,
+          co2Grams: booking.co2Grams,
           message: booking.message,
           declineReason: booking.declineReason,
           cancelledBy: booking.cancelledBy,
@@ -567,8 +570,12 @@ export async function collectExport(
     cancelReason: booking.cancelReason,
     cancelNote: booking.cancelNote,
     refund: booking.refundAmount,
+    co2Grams: booking.co2Grams,
     ...(booking.cancelledBy === "driver" ? {} : countingOf(booking)),
   }));
+
+  // What the person's shared rides saved, by role (spec 34, 3.11).
+  const [co2, carried] = await Promise.all([co2TotalsOf(q, userId), co2CarriedOf(q, userId)]);
 
   const paid = await q
     .select({ payment: payments })
@@ -836,6 +843,7 @@ export async function collectExport(
         shownAt: when(row.shownAt),
         hiddenAt: when(row.hiddenAt),
       })),
+      co2_saved: { ...co2, carried },
       payments: paymentsSection,
       conversations: conversationsSection,
       reports: filed.map((row) => ({

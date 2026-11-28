@@ -334,6 +334,14 @@ detailed in [spec 13](../specs/2026-11-13-payments.md#6-data-and-api):
   and waiting sign-in are kept; the row is deleted when used, cancelled or
   failed, and the hourly clean-up deletes the rest an hour after they end
   ([plan 4.1](../plans/2026-11-22-google-and-apple-sign-in.md#4-design)).
+- `Co2Carried` (table `co2_carried`): a member's CO2 totals from their
+  trips made anonymous 3 years after: grams and rides as a passenger, and
+  grams, trips and passengers as a driver. What a trip's completed bookings
+  saved is added here in the same transaction that moves its records to
+  the former member, so the member's totals stay; one row per member, never
+  for the former member, erased with the account
+  ([spec 34, 3.11](../specs/2026-11-28-co2-saved.md),
+  [ADR 0054](../decisions/0054-estimate-co2-saved-as-one-car-not-driven.md)).
 - `MemberPassword` (table `member_passwords`): a member's optional
   password, as a scrypt hash with its settings and salt, and when it was
   set; one per account, which needs a verified email
