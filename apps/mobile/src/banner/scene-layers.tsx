@@ -498,7 +498,13 @@ export function Sunrise({
  * the sky, on a laptop in the car's room; with Jólakötturinn over the
  * farmhouse (spec 36, 3.11), clear of him.
  */
-function burstsOf(width: number, room: Room, ground: number, wide: boolean, cat: boolean) {
+export function fireworkBursts(
+  width: number,
+  room: Room,
+  ground: number,
+  wide: boolean,
+  cat: boolean,
+) {
   const span = room[1] - room[0];
   if (wide) {
     return cat
@@ -548,7 +554,7 @@ export function Fireworks({
   readonly cat?: boolean;
 }) {
   const turns = motion.moments.burst.at;
-  const bursts = burstsOf(width, room, ground, wide, cat);
+  const bursts = fireworkBursts(width, room, ground, wide, cat);
   return (
     <>
       {bursts.map(([x, y, r, colour], turn) => {

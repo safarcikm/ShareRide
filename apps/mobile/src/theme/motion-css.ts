@@ -181,7 +181,7 @@ const moments = {
   },
   cover: { frames: "0%,18%{opacity:0}100%{opacity:1}", curve: "ease-out" },
   // The Yule Lad rises from behind the front hill (spec 36, 3.11).
-  lad: { frames: "0%{transform:translateY(30px)}100%{transform:none}" },
+  lad: { frames: "0%{transform:translateY(44px)}100%{transform:none}" },
   // Jólakötturinn's tail swishes about its root, and his eyes blink.
   "cat-tail": {
     frames:

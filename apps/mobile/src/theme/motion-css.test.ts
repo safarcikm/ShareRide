@@ -91,11 +91,12 @@ describe("motionCss (spec 33, 3.2)", () => {
     expect(css).toContain(
       `animation:pr-cat-tail ${String(tail.duration)}ms ${String(tail.delay)}ms `,
     );
-    // The Lad rises from behind the hill; the eyes close about their middle,
-    // the tail turns about its root.
-    expect(css).toMatch(
-      /@keyframes pr-lad\{0%\{transform:translateY\(\d+px\)\}100%\{transform:none\}\}/,
-    );
+    // The Lad rises from behind the hill, from low enough that the tip of
+    // his cap is hidden too; the eyes close about their middle, the tail
+    // turns about its root.
+    const rise =
+      /@keyframes pr-lad\{0%\{transform:translateY\((\d+)px\)\}100%\{transform:none\}\}/.exec(css);
+    expect(Number(rise?.[1])).toBeGreaterThanOrEqual(44);
     expect(css).toContain(
       '[data-motion="cat-eyes"]{transform-box:fill-box;transform-origin:50% 50%;',
     );

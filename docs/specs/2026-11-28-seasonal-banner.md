@@ -220,8 +220,9 @@ Lad of 12 + n December is the (n + 1)th:
   laptop left of it in the car's room (R36.5), which grows a little to the
   left on his nights, the title's line keeping clear of it.
 - **The ones who came before** peek over the back hill as small heads in
-  red caps, as many as fit clear of the car, the Lad of the day and the
-  farmhouse: never crowded, so on the later days some stay out of sight.
+  red caps, side by side and never one over another, as many as fit clear
+  of the car, the Lad of the day and the farmhouse or the cat: so on the
+  later days some stay out of sight.
 - **No Lads after 24 December.** Their walk home is left out (Martin).
 
 **Jólakötturinn, 24 December to 6 January,** New Year's Eve and Day
@@ -230,12 +231,13 @@ him, giant and out of proportion: a shaggy black cat standing on the back
 hill with the farmhouse between his front paws, his head over its roof,
 his tail up behind. Huge yellow eyes and a sly grin, but no teeth. He is
 as tall as the room above the farmhouse allows: on a phone up to just
-under the name's row, on a laptop near the panel's top, his tail clear of
-its edge. On New Year's Eve
-and Day the fireworks burst clear of him.
+under the name's row, wherever it ends (lower with large text), on a
+laptop near the panel's top. All of him stays in the picture, his side on
+the narrowest phone and his tail clear of a panel's edge. On New Year's
+Eve and Day the fireworks burst clear of him, every ray.
 
 **The moments** (3.6): the Lad of the day pops up over the hill as the
-car stops; the cat blinks and swishes his tail. Both are over within
+car stops, from low enough that not even his cap shows before; the cat blinks and swishes his tail. Both are over within
 3.5 seconds and leave the look standing; with reduce motion on, they
 stand still from the start.
 

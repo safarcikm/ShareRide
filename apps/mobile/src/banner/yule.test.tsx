@@ -1,10 +1,10 @@
 import { render, screen } from "@testing-library/react-native";
 import { yuleLads, type Yule } from "@shareride/domain";
 import { IcelandScene } from "@/components/puffin-scenes";
-import { drawn, fillsIn, valuesIn } from "@/testing/drawing";
+import { drawn, fillsIn } from "@/testing/drawing";
 import { bannerYule, sizes } from "@/theme/tokens";
-import { backHillAt, frontHillAt, panelCarFromEdge } from "./scene-layers";
-import { catHeight, catTop, catReach, yulePlaces } from "./yule";
+import { backHillAt, fireworkBursts, frontHillAt, panelCarFromEdge } from "./scene-layers";
+import { catHeight, catReach, headWidth, yulePlaces } from "./yule";
 
 // Spec 36, 3.11: a Yule Lad a night from 12 to 24 December, the ones who
 // came before peeking over the back hill, and the giant Jólakötturinn over
@@ -26,17 +26,29 @@ const parts = (testID: string) => screen.queryAllByTestId(testID, { includeHidde
 const lad = (n: number): Yule => ({ lad: yuleLads[n] ?? null, cat: n === 12 });
 const catAlone: Yule = { lad: null, cat: true };
 
+/** Where the name's row over a phone's scene ends, the cat kept under it; a laptop's top. */
+const phoneTop = 64;
+const panelTop = 16;
+
 /** A phone's scene, `width` wide, as Find draws it. */
 function phone(yule: Yule | null, width = 390) {
   const ground = 175;
-  return { yule, width, ground, room: [0, width] as const, wide: false, house: width * 0.1 };
+  return {
+    yule,
+    width,
+    ground,
+    room: [0, width] as const,
+    wide: false,
+    house: width * 0.1,
+    top: phoneTop,
+  };
 }
 
 /** A laptop's panel, its car's room at the right, as wide as on a Lad's day. */
 function laptop(yule: Yule | null) {
   const width = 900;
   const room = [900 - (panelCarFromEdge + sizes.sceneCarWide + 24 + 48), 900] as const;
-  return { yule, width, ground: 140, room, wide: true, house: room[1] - 44 };
+  return { yule, width, ground: 140, room, wide: true, house: room[1] - 44, top: panelTop };
 }
 
 /** Where the car stands: in the middle of a phone, at the right of a laptop's room. */
@@ -74,18 +86,20 @@ describe("where the Yule folk stand (spec 36, 3.11)", () => {
         const [carFrom, carTo] = carOf(at) as [number, number];
         const ladX = places.lad?.x ?? 0;
         expect(places.heads.length).toBeLessThanOrEqual(n);
+        // A head is `headWidth` wide: all of it stays clear, not only its middle.
+        const half = headWidth / 2;
+        const clear = (x: number, [from, to]: readonly [number, number]) =>
+          x + half < from || x - half > to;
         places.heads.forEach(({ x, y }, index) => {
           expect(y).toBeCloseTo(backHillAt(x, at.width, at.ground, at.wide) + 0.6, 5);
-          expect(x >= carFrom && x <= carTo).toBe(false);
-          expect(x >= ladX - 22 && x <= ladX + 26).toBe(false);
-          expect(x >= at.room[0] && x <= at.room[1]).toBe(true);
-          if (places.cat === null) expect(Math.abs(x - at.house)).toBeGreaterThan(12);
-          else {
-            const [left, right] = catReach(places.cat);
-            expect(x >= left && x <= right).toBe(false);
-          }
+          expect(clear(x, [carFrom, carTo])).toBe(true);
+          if (places.lad !== null) expect(clear(x, [ladX - 22, ladX + 26])).toBe(true);
+          expect(x - half >= at.room[0] && x + half <= at.room[1]).toBe(true);
+          if (places.cat === null) expect(clear(x, [at.house - 9, at.house + 9])).toBe(true);
+          else expect(clear(x, catReach(places.cat))).toBe(true);
+          // Never crowded: side by side, not one over the other.
           const next = places.heads[index + 1];
-          if (next !== undefined) expect(next.x - x).toBeGreaterThanOrEqual(6);
+          if (next !== undefined) expect(next.x - x).toBeGreaterThanOrEqual(headWidth);
         });
       }
     },
@@ -102,9 +116,26 @@ describe("where the Yule folk stand (spec 36, 3.11)", () => {
       expect(cat?.x).toBe(at.house);
       expect(cat?.y).toBeCloseTo(backHillAt(at.house, width, at.ground, false) + 2, 5);
       const scale = cat?.scale ?? 0;
-      expect((cat?.y ?? 0) - catHeight * scale).toBeGreaterThanOrEqual(catTop.phone - 0.01);
+      expect((cat?.y ?? 0) - catHeight * scale).toBeGreaterThanOrEqual(phoneTop - 0.01);
       // Far too big for the farm: several times the farmhouse's height.
       expect(catHeight * scale).toBeGreaterThan(13.4 * 3);
+      // All of him on the screen, on the narrowest phone too.
+      if (cat === null) throw new Error("No cat");
+      expect(catReach(cat)[0]).toBeGreaterThanOrEqual(0);
+    }
+  });
+
+  it("keeps the cat under a name's row grown taller, as with large text", () => {
+    // The scene grows with the row, its ground lower by as much.
+    for (const [width, grown] of [
+      [390, 20],
+      [430, 46],
+    ] as const) {
+      const top = phoneTop + grown;
+      const at = { ...phone(catAlone, width), ground: 175 + grown, top };
+      const cat = yulePlaces(at).cat;
+      if (cat === null) throw new Error("No cat");
+      expect(cat.y - catHeight * cat.scale).toBeGreaterThanOrEqual(top - 0.01);
     }
   });
 
@@ -116,10 +147,10 @@ describe("where the Yule folk stand (spec 36, 3.11)", () => {
     expect((ladAt?.x ?? 0) + 26).toBeLessThan(carFrom);
     if (cat === null) throw new Error("No cat on Christmas Eve");
     const [left, right] = catReach(cat);
-    expect(left).toBeGreaterThan(carFrom + sizes.sceneCarWide - 8);
+    expect(left).toBeGreaterThan(carFrom + sizes.sceneCarWide);
     // His tail clear of the panel's rounded edge.
     expect(right).toBeLessThanOrEqual(at.width - 4);
-    expect(cat.y - catHeight * cat.scale).toBeGreaterThanOrEqual(catTop.panel - 0.01);
+    expect(cat.y - catHeight * cat.scale).toBeGreaterThanOrEqual(panelTop - 0.01);
   });
 });
 
@@ -191,23 +222,34 @@ describe("the Yule folk in the scene (spec 36, 3.11)", () => {
     expect(parts("yule-cat")).toHaveLength(0);
   });
 
-  it.each([
-    ["a phone", { width: 390, height: 200 }, [0, 390], false],
-    ["a laptop", { width: 900, height: 180, road: false, layout: "panel" }, [560, 900], true],
-  ] as const)("bursts New Year's fireworks clear of the cat on %s", async (_, size, room, wide) => {
-    await render(
-      <IcelandScene season="winter" day="newyear" yule={catAlone} room={room} {...size} />,
-    );
-    const ground = size.height - sizes.sceneRoad;
-    const house = wide ? room[1] - 44 : size.width * 0.1;
-    const { cat } = yulePlaces({ yule: catAlone, width: size.width, ground, room, wide, house });
-    if (cat === null) throw new Error("No cat on New Year's Eve");
-    const [left, right] = catReach(cat);
-    expect(parts("yule-cat")).toHaveLength(1);
-    expect(parts("firework")).toHaveLength(3);
-    for (const burst of parts("firework")) {
-      const middle = (valuesIn(burst, "cx") as number[]).at(-1) ?? 0;
-      expect(middle > right + 12 || middle < left - 12).toBe(true);
+  it("bursts New Year's fireworks clear of the cat, every ray of them", () => {
+    const room = panelCarFromEdge + sizes.sceneCarWide + 24;
+    for (const at of [
+      { ...phone(catAlone, 320), height: 197 },
+      { ...phone(catAlone), height: 197 },
+      { ...laptop(catAlone), room: [900 - room, 900] as const, height: 180 },
+    ]) {
+      const cat = yulePlaces(at).cat;
+      if (cat === null) throw new Error("No cat on New Year's Eve");
+      const [left, right] = catReach(cat);
+      for (const [x, , r] of fireworkBursts(at.width, at.room, at.ground, at.wide, true)) {
+        expect(x - r > right || x + r < left).toBe(true);
+      }
     }
+  });
+
+  it("keeps the cat under the name's row the scene is given", async () => {
+    await render(
+      <IcelandScene
+        season="winter"
+        day="christmas"
+        yule={catAlone}
+        width={320}
+        height={240}
+        nameRowBottom={120}
+      />,
+    );
+    const [scale = 0, , , , , y = 0] = part("yule-cat").props.matrix as number[];
+    expect(y - catHeight * scale).toBeGreaterThanOrEqual(120);
   });
 });

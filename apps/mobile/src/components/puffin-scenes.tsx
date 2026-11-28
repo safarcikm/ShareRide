@@ -42,6 +42,7 @@ import {
   bannerDrawing,
   carDrawing,
   icelandSeasons,
+  minTouchTarget,
   pageMaxWidth,
   people,
   puffin,
@@ -452,8 +453,10 @@ function glaciersOn(points: readonly (readonly [number, number])[], count: numbe
  * the sun, heather, stars and the northern lights; a `day` its sky (the
  * sunrise, fireworks) or the first snow over the land (spec 36, 3.4);
  * at Christmas its `yule` folk: the Yule Lad of the night, the heads of
- * those who came before, and Jólakötturinn (3.11). The small things go in `room`, the part of the width given to them: all of
- * it on a phone, the car's room on a laptop (R36.5). `layout` says which
+ * those who came before, and Jólakötturinn (3.11), on a phone under
+ * `nameRowBottom`, where the name's row over the scene ends. The small
+ * things go in `room`, the part of the width given to them: all of it on
+ * a phone, the car's room on a laptop (R36.5). `layout` says which
  * the scene is behind, a phone's top or a laptop's panel, as the name's
  * row and the title stand where the layout puts them, whatever the
  * window's width. `width` and `height` are the drawing's. While
@@ -471,6 +474,7 @@ export function IcelandScene({
   road = true,
   room = [0, width],
   layout = "phone",
+  nameRowBottom = spacing.md + minTouchTarget,
   playing = false,
 }: {
   readonly season: BannerSeason;
@@ -482,6 +486,7 @@ export function IcelandScene({
   readonly road?: boolean;
   readonly room?: Room;
   readonly layout?: "phone" | "panel";
+  readonly nameRowBottom?: number;
   readonly playing?: boolean;
 }) {
   const { scheme, black } = useScene();
@@ -511,7 +516,8 @@ export function IcelandScene({
   const house = wide ? room[1] - 44 : width * 0.1;
   const houseAt = backHillAt(house, width, ground, wide) + 1.5;
   const zones = footZones(width, room, wide);
-  const folk = yulePlaces({ yule, width, ground, room, wide, house });
+  const top = wide ? spacing.md : nameRowBottom + spacing.xs;
+  const folk = yulePlaces({ yule, width, ground, room, wide, house, top });
   const below = height - ground;
   // On a laptop a day's cover, the first snow, shows only in the car's
   // room, fading in at its left edge: never under the words (R36.5).

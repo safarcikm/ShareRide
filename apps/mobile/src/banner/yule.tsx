@@ -6,7 +6,6 @@ import { motionMark } from "@/theme/motion";
 import {
   bannerDrawing,
   bannerYule,
-  minTouchTarget,
   people,
   puffin,
   sizes,
@@ -23,15 +22,6 @@ import { backHillAt, frontHillAt, panelCarFromEdge, type Room } from "./scene-la
 
 /** The cat's height in his own units, from his paws to the tips of his ears. */
 export const catHeight = 72;
-
-/**
- * How high the cat may reach from the scene's top: on a phone just under
- * the name's row, on a laptop near the panel's top.
- */
-export const catTop = {
-  phone: spacing.md + minTouchTarget + spacing.xs,
-  panel: spacing.md,
-} as const;
 
 /** How far the cat reaches left of where he stands, and right, his tail up. */
 const catLeft = 32;
@@ -62,8 +52,8 @@ const ladRight = 26;
 /** The Lad as he is drawn: Stúfur, Stubby, is the small one. */
 const ladScale = (lad: YuleLad) => (lad === "stufur" ? 0.78 : 1);
 
-/** How close the heads may stand, on a phone and on a laptop. */
-const headStep = { phone: 6, panel: 9 } as const;
+/** How wide a head over the back hill is drawn, its cap and all. */
+export const headWidth = 12;
 
 export interface YulePlaces {
   readonly lad: Place | null;
@@ -74,9 +64,10 @@ export interface YulePlaces {
 /**
  * Where the Yule folk stand in a scene `width` wide on `ground`: the Lad
  * on the front hill, right of a phone's car or left of a laptop's in its
- * room; the cat over the farmhouse at `house`, as tall as the room above
- * it allows; and as many of the Lads who came before as fit over the back
- * hill, clear of the car, the Lad and the farmhouse or the cat.
+ * room; the cat over the farmhouse at `house`, as tall as the room between
+ * `top` and the hill allows, all of him in the room; and as many of the
+ * Lads who came before as fit over the back hill side by side, clear of
+ * the car, the Lad and the farmhouse or the cat.
  */
 export function yulePlaces({
   yule,
@@ -85,6 +76,7 @@ export function yulePlaces({
   room,
   wide,
   house,
+  top,
 }: {
   readonly yule: Yule | null;
   readonly width: number;
@@ -92,6 +84,8 @@ export function yulePlaces({
   readonly room: Room;
   readonly wide: boolean;
   readonly house: number;
+  /** How high the cat may reach: under the name's row, or the panel's top. */
+  readonly top: number;
 }): YulePlaces {
   if (yule === null) return { lad: null, heads: [], cat: null };
   const car: Room = wide
@@ -110,22 +104,22 @@ export function yulePlaces({
   let cat: Place | null = null;
   const base = backHillAt(house, width, ground, wide) + 2;
   if (yule.cat) {
-    const tall = (base - (wide ? catTop.panel : catTop.phone)) / catHeight;
-    // His tail clear of the panel's rounded edge.
-    const fits = (room[1] - spacing.xs - house) / catRight;
-    cat = { x: house, y: base, scale: Math.max(0.6, Math.min(1.1, tall, fits)) };
+    const tall = (base - top) / catHeight;
+    // All of him in the room: his tail clear of a panel's rounded edge.
+    const right = (room[1] - spacing.xs - house) / catRight;
+    const left = (house - room[0] - spacing.xs) / catLeft;
+    cat = { x: house, y: base, scale: Math.max(0.6, Math.min(1.1, tall, right, left)) };
     kept.push(catReach(cat));
   } else kept.push([house - 12, house + 12]);
   const others = yule.lad === null ? 0 : yuleLads.indexOf(yule.lad);
   const zone: Room = wide ? [room[0] + 6, room[1] - 6] : [4, width - 4];
+  // Where a head's middle may stand: all of the head clear of what is kept.
+  const half = headWidth / 2;
   const free: number[] = [];
-  for (let x = Math.ceil(zone[0] + 4); x <= zone[1] - 4; x += 1) {
-    if (!kept.some(([from, to]) => x >= from && x <= to)) free.push(x);
+  for (let x = Math.ceil(zone[0] + half); x <= zone[1] - half; x += 1) {
+    if (!kept.some(([from, to]) => x + half >= from && x - half <= to)) free.push(x);
   }
-  const step =
-    others === 0
-      ? 1
-      : Math.max(wide ? headStep.panel : headStep.phone, Math.floor(free.length / others));
+  const step = others === 0 ? 1 : Math.max(headWidth, Math.floor(free.length / others));
   const heads: { x: number; y: number }[] = [];
   for (
     let index = Math.floor(step / 2);

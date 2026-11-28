@@ -350,6 +350,8 @@ function FrontPage() {
           yule={yule}
           width={windowWidth}
           height={spacing.md + band + spacing.sm}
+          // The name's row ends above the gap and the car: lower with large text.
+          nameRowBottom={spacing.md + band - (sceneBand - minTouchTarget)}
           playing={playing}
         />
       }
