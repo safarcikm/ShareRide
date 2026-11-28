@@ -201,9 +201,7 @@ describe("the strip on an Android phone (spec 35, 3.4)", () => {
     await renderApp("/", listed(["google_play"]));
     const banner = within(await strip());
     expect(banner.getByText("PuffinRide")).toBeVisible();
-    expect(
-      banner.getByText("Get notified about your rides."),
-    ).toBeVisible();
+    expect(banner.getByText("Get notified about your rides.")).toBeVisible();
     expect(banner.getByRole("button", { name: "Install" })).toBeVisible();
     expect(banner.getByRole("button", { name: "Close" })).toBeVisible();
   });
@@ -245,6 +243,13 @@ describe("the strip on an Android phone (spec 35, 3.4)", () => {
     expect(screen.queryByLabelText("The PuffinRide app")).toBeNull();
     await fireEvent.press(screen.getByRole("button", { name: "Decline" }));
     expect(await strip()).toBeVisible();
+  });
+
+  it("shows on the Cookies page, which asks with its switch, not the question", async () => {
+    setAnalyticsHost(createFakeAnalyticsHost());
+    await renderApp("/cookies", listed(["google_play"], "G-ABC123XYZ9"));
+    expect(await strip()).toBeVisible();
+    expect(screen.queryByTestId("consent-layer")).toBeNull();
   });
 
   it("is not there while signing in", async () => {

@@ -849,6 +849,19 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
   });
 
   const photoOrigin = dependencies.features?.photos?.origin ?? null;
+  // The website does not wait on the database for the switches: while they
+  // cannot be read, it shows no store, as if both were off (R35.1).
+  const storesOfSwitches = dependencies.appStoresListed ?? appStoresOfSettings;
+  const listedStores: ListedAppStores | undefined =
+    storesOfSwitches &&
+    (async () => {
+      try {
+        return await storesOfSwitches();
+      } catch (error) {
+        logger.warn({ err: error }, "the app store switches could not be read");
+        return [];
+      }
+    });
   const webApp =
     dependencies.webAppDir === undefined
       ? undefined
@@ -862,7 +875,7 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
               ? undefined
               : subjectFinder(dependencies.features.db)),
           dependencies.findRide ?? rideFinderOfApp,
-          dependencies.appStoresListed ?? appStoresOfSettings,
+          listedStores,
         );
   const adminApp =
     dependencies.adminAppDir === undefined

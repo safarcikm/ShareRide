@@ -29,7 +29,11 @@ function exportedWebApp(): string {
   return dir;
 }
 
-function setup(webAppDir?: string, lines: string[] = [], appStores: readonly AppStore[] = []) {
+function setup(
+  webAppDir?: string,
+  lines: string[] = [],
+  appStores: readonly AppStore[] | Error = [],
+) {
   const destination = new Writable({
     write: (chunk: Buffer, _encoding, callback) => {
       lines.push(chunk.toString());
@@ -40,7 +44,8 @@ function setup(webAppDir?: string, lines: string[] = [], appStores: readonly App
     logger: createLogger({ level: "info", destination }),
     checkDatabase: () => Promise.resolve(),
     ...(webAppDir === undefined ? {} : { webAppDir }),
-    appStoresListed: () => Promise.resolve(appStores),
+    appStoresListed: () =>
+      appStores instanceof Error ? Promise.reject(appStores) : Promise.resolve(appStores),
   });
 }
 
@@ -262,6 +267,18 @@ describe("the phone apps on the website (spec 35)", () => {
     }
     const icelandic = await both.request("/app?lang=is", { headers: { "user-agent": laptop } });
     expect(icelandic.headers.get("location")).toBe("/about?lang=is");
+  });
+
+  it("still serves the website while the switches cannot be read, as if both were off", async () => {
+    const lines: string[] = [];
+    const unread = setup(dir, lines, new Error("the database is down"));
+    const page = await unread.request("/");
+    expect(page.status).toBe(200);
+    expect(await page.text()).not.toContain("apple-itunes-app");
+    const app = await unread.request("/app", { headers: { "user-agent": iphone } });
+    expect(app.status).toBe(302);
+    expect(app.headers.get("location")).toBe("/about");
+    expect(lines.join("")).toContain("the app store switches could not be read");
   });
 });
 

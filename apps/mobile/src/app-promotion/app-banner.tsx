@@ -4,6 +4,7 @@ import { X } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import { Linking, StyleSheet, Text, View } from "react-native";
 import { useAnalytics } from "@/analytics/analytics";
+import { consentAsksOn, signingIn } from "@/analytics/consent-bar";
 import { screenPattern } from "@/analytics/screen-pattern";
 import { Button } from "@/components/button";
 import { IconButton } from "@/components/icon-button";
@@ -41,13 +42,6 @@ function useClosedBefore(): readonly [boolean | undefined, () => void] {
   return [closed, close];
 }
 
-/** Sign-in, its codes and steps, and the steps after it (as the cookies question waits, spec 29, 3.6). */
-function signingIn(pattern: string): boolean {
-  return ["/sign-in", "/onboarding"].some(
-    (start) => pattern === start || pattern.startsWith(`${start}/`),
-  );
-}
-
 /**
  * The strip about the app on an Android phone's browser (spec 35, 3.4),
  * across the top of the window above everything, pushing the page down
@@ -65,7 +59,9 @@ export function AppBanner({ wide }: { readonly wide: boolean }) {
   const { available, choice } = useAnalytics();
   const pattern = screenPattern(useSegments());
   const [closed, close] = useClosedBefore();
-  const asking = available && (choice === null || choice === undefined);
+  // The question is open, or its answer is still being read, on a screen
+  // that asks it.
+  const asking = available && (choice === null || choice === undefined) && consentAsksOn(pattern);
   const android = storeOfUserAgent(browserUserAgent()) === "google_play";
   if (
     !android ||
