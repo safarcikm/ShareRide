@@ -315,8 +315,10 @@ Milestone 16: ready for the beta
       for an account that waits to be deleted, Notices stays open). The
       legal texts name the pages in Profile in the Terms' version 3 and
       the Privacy Policy's version 4 (written 2026-11-27, on
-      puffinride.is with the release after; Martin then announces them
-      in the console)
+      puffinride.is since 2026-11-28). The Terms' version 4 and the
+      Privacy Policy's version 5, which say how people sign in, followed
+      the same day. Neither change was announced in the console: Martin
+      made them quietly, as PuffinRide had no real users yet
 
 Martin's steps, in the order of what they unblock:
 
