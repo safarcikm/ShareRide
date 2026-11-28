@@ -35,7 +35,7 @@ const screens = {
   laptop: { viewport: { width: 1280, height: 900 }, height: 420, cols: 2, scale: 0.75 },
 };
 const config = {
-  beta: false,
+  beta: true,
   paused: [],
   maxSeats: 8,
   freeCancellationMinutes: 15,

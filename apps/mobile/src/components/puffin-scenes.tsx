@@ -2,7 +2,17 @@
    coordinates; the types mark the transform style of the same name as deprecated. */
 import { useId, useState } from "react";
 import { StyleSheet, useColorScheme, View } from "react-native";
-import Svg, { Circle, ClipPath, Defs, G, Path, Rect } from "react-native-svg";
+import Svg, {
+  Circle,
+  ClipPath,
+  Defs,
+  G,
+  LinearGradient,
+  Mask,
+  Path,
+  Rect,
+  Stop,
+} from "react-native-svg";
 import type { BannerDay, BannerSeason } from "@shareride/domain";
 import { Balloons, Bouquet, Bun, Egg, Flag, Heart, RoofCase, Tent, Tree } from "@/banner/car-loads";
 import { carLook, dayLooks, everyday, type DayLook } from "@/banner/day-looks";
@@ -35,6 +45,7 @@ import {
   puffinCar,
   radii,
   sizes,
+  spacing,
 } from "@/theme/tokens";
 import { arrivalProps, motionMark } from "@/theme/motion";
 import { usePalette } from "@/theme/use-palette";
@@ -106,6 +117,7 @@ export function PuffinsInCar({
       style={[styles.scene, arrival.style]}
     >
       <Svg
+        testID="car-drawing"
         width={width + aside * scale}
         height={(car.height + above) * scale}
         viewBox={`${String(left)} ${String(car.top - above)} ${String(across + aside)} ${String(car.height + above)}`}
@@ -490,8 +502,13 @@ export function IcelandScene({
   const mountains = range(peaks, width, ground);
   const backHill = `M0 ${String(ground)} ${back.join(" ")} L${String(width)} ${String(ground)} Z`;
   const house = wide ? room[1] - 44 : width * 0.1;
+  const houseAt = backHillAt(house, width, ground, wide) + 1.5;
   const zones = footZones(width, room, wide);
   const below = height - ground;
+  // On a laptop a day's cover, the first snow, shows only in the car's
+  // room, fading in at its left edge: never under the words (R36.5).
+  const edge = `cover-edge-${ids}`;
+  const masked = wide && cover !== null ? `url(#${edge})` : undefined;
   return (
     <View
       testID="iceland-scene"
@@ -541,13 +558,7 @@ export function IcelandScene({
           />
         ))}
         <Path d={backHill} fill={land.hillBack} />
-        <Farmhouse
-          x={house}
-          y={backHillAt(house, width, ground, wide) + 1.5}
-          roof={land.roof}
-          snow={snow}
-          scheme={scheme}
-        />
+        <Farmhouse x={house} y={houseAt} roof={land.roof} snow={snow} scheme={scheme} />
         <Path d={hills} fill={land.hill} />
         {look.heather ? (
           <Heather
@@ -558,8 +569,11 @@ export function IcelandScene({
             scheme={scheme}
           />
         ) : null}
+        {masked === undefined ? null : (
+          <CoverEdge id={edge} room={room} width={width} height={height} />
+        )}
         {cover === null || coverLook === null ? null : (
-          <G testID="cover">
+          <G testID="cover" mask={masked}>
             <Path d={farRange} fill={cover.far} />
             <Path
               d={mountains}
@@ -579,6 +593,8 @@ export function IcelandScene({
               />
             ))}
             <Path d={backHill} fill={cover.hillBack} />
+            {/* The farmhouse again, over the white, with snow on its roof. */}
+            <Farmhouse x={house} y={houseAt} roof={cover.roof} snow={coverSnow} scheme={scheme} />
             <Path d={hills} fill={cover.hill} />
           </G>
         )}
@@ -596,7 +612,7 @@ export function IcelandScene({
             />
             {snow === undefined ? null : <SnowBanks width={width} ground={ground} snow={snow} />}
             {coverSnow === undefined ? null : (
-              <G testID="cover-banks">
+              <G testID="cover-banks" mask={masked}>
                 <SnowBanks width={width} ground={ground} snow={coverSnow} />
               </G>
             )}
@@ -609,20 +625,86 @@ export function IcelandScene({
             />
           </>
         ) : (
-          <Rect
-            testID="scene-ground"
-            x={0}
-            y={ground}
-            width={width}
-            height={below}
-            fill={cover === null ? land.hill : cover.hill}
-          />
+          <>
+            <Rect
+              testID="scene-ground"
+              x={0}
+              y={ground}
+              width={width}
+              height={below}
+              fill={land.hill}
+            />
+            {cover === null ? null : (
+              <Rect
+                testID="cover-ground"
+                x={0}
+                y={ground}
+                width={width}
+                height={below}
+                fill={cover.hill}
+                mask={masked}
+              />
+            )}
+          </>
         )}
         {sky === "fireworks" ? (
           <Fireworks width={width} room={room} ground={ground} wide={wide} />
         ) : null}
       </Svg>
     </View>
+  );
+}
+
+/** How far the first snow fades in from the car room's left edge, on a laptop. */
+const coverFade = spacing.xxl;
+
+/**
+ * A mask's colour is never seen, only how light it is: white shows what is
+ * under it, and where it fades out, nothing shows.
+ */
+const shows = "#FFFFFF";
+
+/**
+ * The mask that keeps a day's cover in the car's room on a laptop
+ * (R36.5): nothing left of the room, then the cover fading in over
+ * `coverFade`, then all of it.
+ */
+function CoverEdge({
+  id,
+  room,
+  width,
+  height,
+}: {
+  readonly id: string;
+  readonly room: Room;
+  readonly width: number;
+  readonly height: number;
+}) {
+  return (
+    <Defs>
+      <LinearGradient
+        id={`${id}-fade`}
+        gradientUnits="userSpaceOnUse"
+        x1={room[0]}
+        y1={0}
+        x2={room[0] + coverFade}
+        y2={0}
+      >
+        <Stop offset={0} stopColor={shows} stopOpacity={0} />
+        <Stop offset={1} stopColor={shows} stopOpacity={1} />
+      </LinearGradient>
+      <Mask
+        id={id}
+        testID="cover-edge"
+        maskUnits="userSpaceOnUse"
+        x={0}
+        y={0}
+        width={width}
+        height={height}
+      >
+        <Rect x={0} y={0} width={width} height={height} fill={`url(#${id}-fade)`} />
+      </Mask>
+    </Defs>
   );
 }
 

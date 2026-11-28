@@ -1,9 +1,10 @@
 import { render, screen, within } from "@testing-library/react-native";
 import { StyleSheet } from "react-native";
+import { bannerDays } from "@shareride/domain";
 import { onWebsite } from "@/lib/on-website";
 import { drawn, fillsIn, valuesIn } from "@/testing/drawing";
 import { bannerDrawing, icelandSeasons, people, puffin, puffinCar } from "@/theme/tokens";
-import { IcelandScene, PuffinByPin, PuffinsInCar } from "./puffin-scenes";
+import { carHeight, IcelandScene, PuffinByPin, PuffinsInCar } from "./puffin-scenes";
 
 // Spec 15, section 5.3, "Puffin scenes": drawings around the screens, hidden
 // from screen readers, so these tests look at what they draw.
@@ -355,6 +356,55 @@ describe("the car and the scene on a day (spec 36, 3.4 and 3.5)", () => {
     expect(on("you", "hat-wool")).toHaveLength(1);
     await render(<IcelandScene season="autumn" day="winterday" width={390} height={200} />);
     expect(fillsIn(part("cover"))).toContainEqual(drawn(icelandSeasons.winter.light.hill));
+    // The whole scene on a phone: nothing keeps any of it out.
+    expect(part("cover").props.mask).toBeUndefined();
+  });
+
+  it("keeps the farmhouse on the first day of winter, snow on its roof", async () => {
+    const winter = icelandSeasons.winter.light;
+    for (const layout of ["phone", "panel"] as const) {
+      await render(
+        <IcelandScene
+          season="autumn"
+          day="winterday"
+          width={900}
+          height={180}
+          road={layout === "phone"}
+          room={[600, 900]}
+          layout={layout}
+        />,
+      );
+      // Drawn over the white hills, so the snow does not bury it.
+      const house = within(part("cover")).getByTestId("farmhouse", { includeHiddenElements: true });
+      expect(fillsIn(house)).toContainEqual(drawn(winter.roof));
+      expect(fillsIn(house)).toContainEqual(drawn(winter.snow));
+    }
+  });
+
+  it("keeps the first snow in the car's room on a laptop, fading in at its edge (R36.5)", async () => {
+    await render(
+      <IcelandScene
+        season="autumn"
+        day="winterday"
+        width={900}
+        height={180}
+        ground={110}
+        road={false}
+        room={[600, 900]}
+        layout="panel"
+      />,
+    );
+    // The white shows only through the room's mask: none of it under the
+    // words, which stand at the left of the room.
+    const edge = part("cover-edge");
+    expect(part("cover").props.mask).toBe(edge.props.name);
+    expect(part("cover-ground").props.mask).toBe(edge.props.name);
+    // Its gradient: nothing at the room's left edge, all of it a little in.
+    const scene = part("iceland-scene");
+    expect(valuesIn(scene, "x1")).toContain(600);
+    expect(valuesIn(scene, "x2")).toContain(600 + 48);
+    // The land outside the room keeps autumn's colours.
+    expect(fillsIn(part("scene-ground"))).toContainEqual(drawn(icelandSeasons.autumn.light.hill));
   });
 
   it("flies one flag on the roof on Sovereignty Day", async () => {
@@ -423,5 +473,37 @@ describe("the car and the scene on a day (spec 36, 3.4 and 3.5)", () => {
       expect(x).toBeGreaterThanOrEqual(600);
       expect(x).toBeLessThanOrEqual(900);
     }
+    await render(
+      <IcelandScene
+        season="spring"
+        day="summerday"
+        width={900}
+        height={180}
+        road={false}
+        room={[600, 900]}
+        layout="panel"
+      />,
+    );
+    for (const x of valuesIn(part("sunrise"), "cx")) {
+      expect(x).toBeGreaterThanOrEqual(600);
+      expect(x).toBeLessThanOrEqual(900);
+    }
   });
+
+  it.each(bannerDays)(
+    "keeps the car where it stands on a plain day, its size and place, on %s",
+    async (day) => {
+      await render(<PuffinsInCar width={170} day={day} season="winter" />);
+      // What a day adds draws past the car's own area: the drawing grows
+      // up and to the left by as much as its margins take back.
+      const svg = part("car-drawing");
+      const { width, height } = svg.props as { width: number; height: number };
+      const { marginTop = 0, marginLeft = 0 } = StyleSheet.flatten(svg.props.style) as {
+        marginTop?: number;
+        marginLeft?: number;
+      };
+      expect(height + marginTop).toBeCloseTo(carHeight(170), 5);
+      expect(width + marginLeft).toBeCloseTo(170, 5);
+    },
+  );
 });
