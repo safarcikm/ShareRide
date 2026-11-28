@@ -3763,11 +3763,11 @@ export const is = {
     "Þetta eru áætlanir. Tveir sem bóka saman teljast einn bíll. Sá sem hefði annars tekið strætó, eða setið heima, sparar minna. Þínar eigin tölur eru á prófílnum þínum og aðeins þú sérð þær.",
   "co2.title": "Minni losun CO₂",
   "co2.value": "Um {kg}\u00a0kg, áætlað",
-  "co2.spoken": "Minni losun CO2, um {kg} kíló, áætlað",
+  "co2.spoken": "Minni losun CO2, um {kg} {count, plural, other {kíló}}, áætlað",
   "co2.part":
     "Einum bíl færra á veginum í {km}\u00a0km: um {kg}\u00a0kg minni losun CO₂ en að aka einn.",
   "co2.driver":
-    "Farþegarnir þínir fara {km}\u00a0km með þér í stað þess að aka sjálfir: um {kg}\u00a0kg minni losun CO₂ en að aka einn.",
+    "{passengers, plural, one {Farþeginn þinn fer} other {Farþegarnir þínir fara}} {km}\u00a0km með þér í stað þess að aka {passengers, plural, one {sjálfur} other {sjálfir}}: um {kg}\u00a0kg minni losun CO₂ en að aka einn.",
   "co2.how": "Áætlað út frá vegalengdinni og meðalbíl á Íslandi.",
   "co2.link": "Svona áætlum við",
   "co2.group": "Ferðirnar þínar",

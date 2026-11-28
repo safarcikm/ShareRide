@@ -132,7 +132,7 @@ describe("tripCo2", () => {
         ],
         150,
       ),
-    ).toEqual({ distanceM: 634_000, grams: 95_100 });
+    ).toEqual({ distanceM: 634_000, grams: 95_100, passengers: 2 });
   });
 
   it("is nothing with no booking that counts, or at 0", () => {

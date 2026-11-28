@@ -16,6 +16,17 @@ export const co2FigureSchema = z.object({
 export type Co2Figure = z.infer<typeof co2FigureSchema>;
 
 /**
+ * A driver's ride's figure (spec 34, 3.7): its bookings' figures added,
+ * with how many bookings count, so the sentence says passenger or
+ * passengers; null from an API that does not say.
+ */
+export const co2RideFigureSchema = co2FigureSchema.extend({
+  passengers: z.int().positive().nullable().default(null),
+});
+
+export type Co2RideFigure = z.infer<typeof co2RideFigureSchema>;
+
+/**
  * My own totals (spec 34, 3.8), as a passenger and as a driver: the
  * bookings completed, with the grams each kept, and those carried past the
  * 3-year anonymisation. A role is null with no rides in it; both are null,

@@ -11,7 +11,7 @@ import {
   tripStatuses,
 } from "@shareride/domain";
 import { z } from "zod";
-import { co2FigureSchema } from "./co2.ts";
+import { co2RideFigureSchema } from "./co2.ts";
 import { moneySchema, timestampSchema } from "./common.ts";
 import { accountSuspendedResponse, errorResponseSchema } from "./errors.ts";
 import { dateSchema, localisedTextSchema, meetingPointSummarySchema } from "./meeting-points.ts";
@@ -329,7 +329,7 @@ export const myTripSchema = z.object({
    * (spec 34, 3.7); null with none, while the operator's value is 0, and
    * from an API that does not say.
    */
-  co2: co2FigureSchema.nullable().default(null),
+  co2: co2RideFigureSchema.nullable().default(null),
 });
 
 export type MyTrip = z.infer<typeof myTripSchema>;

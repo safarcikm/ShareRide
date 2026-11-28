@@ -56,13 +56,23 @@ export function bookingCo2(booking: Co2Booking, gramsPerCarKm: number): Co2Figur
   return null;
 }
 
+/** A driver's ride's figure: its bookings' figures added, and how many there are. */
+export interface Co2RideFigure extends Co2Figure {
+  /** The bookings that count, one car each, so the sentence says passenger or passengers. */
+  readonly passengers: number;
+}
+
 /** The driver's figure for a ride (3.7): its bookings' figures added; null when none counts. */
-export function tripCo2(bookings: readonly Co2Booking[], gramsPerCarKm: number): Co2Figure | null {
+export function tripCo2(
+  bookings: readonly Co2Booking[],
+  gramsPerCarKm: number,
+): Co2RideFigure | null {
   const figures = bookings.flatMap((booking) => bookingCo2(booking, gramsPerCarKm) ?? []);
   if (figures.length === 0) return null;
   return {
     distanceM: figures.reduce((total, figure) => total + figure.distanceM, 0),
     grams: figures.reduce((total, figure) => total + figure.grams, 0),
+    passengers: figures.length,
   };
 }
 
