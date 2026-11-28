@@ -5,6 +5,7 @@ import { StyleSheet, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AnalyticsProvider } from "@/analytics/analytics";
 import { ConsentBar } from "@/analytics/consent-bar";
+import { UpdateScreen, useNeedsUpdate } from "@/app-version/update-screen";
 import { SessionProvider, useSession, useSessionState } from "@/auth/session";
 import { ConfigProvider } from "@/beta/config";
 import { ShakeForFeedback } from "@/beta/shake";
@@ -80,13 +81,17 @@ function NewPageHolds() {
  * time; if they fail, the app opens with the system fonts. Wide screens show
  * the menu in a bar above every screen (spec 16, 3.1). On a website with
  * Google Analytics, the question about cookies shows over every screen
- * until it is answered (spec 23, 3.1).
+ * until it is answered (spec 23, 3.1). A phone app older than the oldest
+ * version the API serves shows only "Update PuffinRide", in place of all of
+ * it (spec 32, R32.4).
  */
 function Navigation() {
   const state = useSessionState();
   // Fonts load while the session is restored; both finish behind Loading.
   const fontsReady = useAppFonts();
+  const needsUpdate = useNeedsUpdate();
   if (state.status === "loading" || !fontsReady) return <Loading />;
+  if (needsUpdate) return <UpdateScreen />;
   if (state.status === "unreachable") return <Unreachable />;
   const me = state.status === "signedIn" ? state.me : null;
   const deleting = me !== null && me.deletionScheduledFor !== null;

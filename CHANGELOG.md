@@ -1614,6 +1614,13 @@ releases follow [Semantic Versioning](https://semver.org/).
   stretch. Each ride in `GET /v1/me/trips` says who asks in the request
   that closes first (`firstRequest`: the first name, the seats and the two
   stops' names), for "Dóra asks for 1 seat".
+- The iPhone app offers no Google sign-in until Sign in with Apple comes
+  (spec 32, 3.3; R32.5), as Apple's guideline 4.8 asks: the domain's
+  `providersOffered` leaves Google out on iOS unless Apple is on too. Step 1
+  says, under the email field, that members who joined with Google type
+  their Google email for a code, and sign in once on puffinride.is to add an
+  email if that does not work; Sign-in methods on the iPhone can remove a
+  linked Google but not add one. Android and the website are unchanged.
 
 ### Fixed
 

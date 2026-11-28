@@ -25,6 +25,7 @@ import { Body, Title } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
 import { useSignInFlow } from "@/sign-in/flow";
 import { KeptRideCard } from "@/sign-in/kept-ride-card";
+import { useOfferedProviders } from "@/sign-in/offered-providers";
 import { devicePasskeys, type PasskeyAssertion } from "@/sign-in/passkey";
 import { pendingExpiredText, phoneStepHelp } from "@/sign-in/pending";
 import { ProviderButtons } from "@/sign-in/provider-buttons";
@@ -82,7 +83,9 @@ function ChooseHowScreen() {
   const { locale, t } = useLanguage();
   const session = useSession();
   const flow = useSignInFlow();
-  const { signInProviders, emailSignIn, passkeySignIn } = useConfig();
+  const { emailSignIn, passkeySignIn } = useConfig();
+  // No Google on the iPhone until Sign in with Apple comes (spec 32, 3.3).
+  const { offered: signInProviders, googleLeftOut } = useOfferedProviders();
   const providerWindow = useProviderWindow();
   const passkeyOffered = usePasskeysOffered();
   const [fieldError, setFieldError] = useState<string>();
@@ -259,7 +262,7 @@ function ChooseHowScreen() {
   // For members who joined with their number: after every way in, as it is about both.
   const before = emailSignIn ? (
     <View style={styles.form}>
-      <Body>{t("auth.email.before")}</Body>
+      <Body>{t(googleLeftOut ? "auth.email.beforeNoGoogle" : "auth.email.before")}</Body>
     </View>
   ) : null;
   const ways = (
@@ -276,6 +279,7 @@ function ChooseHowScreen() {
               setFieldError(undefined);
             }}
             error={fieldError}
+            help={googleLeftOut ? t("auth.email.googleOnIphone") : undefined}
             keyboardType="email-address"
             autoComplete="username"
             // The browser lists the site's passkeys among its suggestions (spec 29, 3.1).

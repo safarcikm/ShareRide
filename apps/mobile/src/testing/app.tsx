@@ -9,6 +9,7 @@ import type { DriverReadiness, Me, PublicProfile } from "@shareride/contracts";
 import { peopleColourOf } from "@shareride/domain";
 import { fireEvent, renderRouter, screen } from "expo-router/testing-library";
 import type { ReactNode } from "react";
+import type { Device } from "@/auth/session-manager";
 import { PressGuard } from "@/components/press-guard";
 import { createFakeClient, ok, testMe, tokens, type FakeClient } from "./fake-client";
 import { memoryTokenStore } from "./memory-token-store";
@@ -16,11 +17,15 @@ import { memoryTokenStore } from "./memory-token-store";
 let currentClient: FakeClient = createFakeClient();
 const store = memoryTokenStore();
 
+/** The phone the app runs on in a test, unless it says otherwise. */
+const testDevice: Device = { platform: "ios", appVersion: "0.1.0" };
+let currentDevice = testDevice;
+
 /** Stands in for `@/auth/api`: the app talks to the current fake client. */
 export const mockApiModule = {
   apiBaseUrl: () => "http://localhost:3000",
   createClient: (): ApiClient => ({ call: (route, input) => currentClient.call(route, input) }),
-  thisDevice: () => ({ platform: "ios" as const, appVersion: "0.1.0" }),
+  thisDevice: (): Device => currentDevice,
 };
 
 /** Stands in for `@/auth/token-store`. */
@@ -42,9 +47,12 @@ export async function renderApp(
      * than anyone.
      */
     readonly holdsPresses?: boolean;
+    /** The platform and app version the app says it is: an iPhone with 0.1.0 when left out. */
+    readonly device?: Device;
   } = {},
 ) {
   currentClient = createFakeClient();
+  currentDevice = options.device ?? testDevice;
   store.value = null;
   const { me } = options;
   currentClient.answer("/v1/legal/{type}/current", (input) => {

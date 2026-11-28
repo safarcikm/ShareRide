@@ -7,6 +7,7 @@ import {
   isChallengeShaped,
   providerReturnPath,
   providerSignInRules,
+  providersOffered,
   readProviderClaims,
 } from "./sign-in-providers.ts";
 
@@ -262,5 +263,26 @@ describe("isChallengeShaped", () => {
     "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw+cM",
   ])("refuses %j", (challenge) => {
     expect(isChallengeShaped(challenge)).toBe(false);
+  });
+});
+
+describe("providersOffered (spec 32, 3.3; R32.5)", () => {
+  it.each(["web", "android"] as const)(
+    "offers on %s every provider the API has set up",
+    (platform) => {
+      expect(providersOffered(["google", "apple"], platform)).toEqual(["google", "apple"]);
+      expect(providersOffered(["google"], platform)).toEqual(["google"]);
+      expect(providersOffered([], platform)).toEqual([]);
+    },
+  );
+
+  it("offers no Google on the iPhone without Sign in with Apple beside it", () => {
+    expect(providersOffered(["google"], "ios")).toEqual([]);
+  });
+
+  it("offers Google on the iPhone together with Sign in with Apple, in the API's order", () => {
+    expect(providersOffered(["google", "apple"], "ios")).toEqual(["google", "apple"]);
+    expect(providersOffered(["apple", "google"], "ios")).toEqual(["apple", "google"]);
+    expect(providersOffered(["apple"], "ios")).toEqual(["apple"]);
   });
 });

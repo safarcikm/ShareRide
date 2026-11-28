@@ -83,3 +83,4 @@ Statuses: `Proposed`, `Accepted`, `Rejected`, `Deprecated`, `Superseded by ADR N
 | [0050](0050-passkey-saved-by-the-browser-after-a-password.md) | A passkey the browser saves by itself after a password | Accepted |
 | [0051](0051-store-apps-in-martins-name-until-the-company.md) | The store apps in Martin's name until the company, checked on emulators first | Accepted (accounts); Proposed (the rest) |
 | [0052](0052-animations-css-on-the-web-reanimated-on-phones.md) | Animations: CSS on the website, Reanimated and expo-haptics in the phone apps | Proposed |
+| [0053](0053-a-private-limited-company-not-a-nonprofit.md) | A private limited company (ehf.), not a nonprofit | Accepted |
