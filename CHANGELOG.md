@@ -2011,6 +2011,14 @@ releases follow [Semantic Versioning](https://semver.org/).
   or appeal a notice before the account goes (A59, Martin's answer to
   Q31). A test asks of every page of the app which list it is in, so a
   new page is not open to such an account by being forgotten.
+- Cards stand off the page with a hairline and a soft shadow, and
+  buttons keep a solid edge that is as thick at the corners as in the
+  middle (spec 15, decision 16: Martin chose "Soft cards, solid
+  buttons" on 2026-11-28, after the first iPhone build). The solid strip
+  under each card thinned out at its rounded corners and looked cheap.
+  At night a card has a faint light line along its top. Android 7 and 8
+  keep the strip under buttons and get the system's shadow under cards.
+  The console looks the same.
 - The web journeys never give two test accounts the same phone number: a
   run in ten did, and a sign-in journey then failed.
 - CI skips its code jobs (bundles, unit, integration and web tests, the API
