@@ -27,8 +27,9 @@ Spec 32, step 9, and R32.6 (sample data only):
 
 ## Testers (TestFlight and Google Play testing)
 
-Invite testers by their email address alone, with no names: Privacy Policy
-version 4 says we give Apple or Google only the email address. In
+Invite testers by their email address alone, with no names: the privacy
+policy, from version 4, says we give Apple or Google only the email
+address. In
 TestFlight, leave the first and last name empty; in Google Play testing,
 add the addresses to the testers' list (or a Google Group).
 

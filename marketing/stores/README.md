@@ -12,7 +12,7 @@ ready to paste and upload, with the scripts that make it.
 | Google Play icon, 512 x 512 | `google-play/icon-512.png` |
 | Apple's privacy label and Google's data safety answers | [privacy-answers.md](privacy-answers.md) |
 | Age rating, notes for the reviewers, the review account, the other forms | [review-and-rating.md](review-and-rating.md) |
-| What the apps add to the privacy policy (published as version 4) | [privacy-policy-v4-paragraphs.md](privacy-policy-v4-paragraphs.md) |
+| What the apps add to the privacy policy (published from version 4) | [privacy-policy-v4-paragraphs.md](privacy-policy-v4-paragraphs.md) |
 | The phones' own screenshots the pictures are made from | `screens/ios/`, `screens/android/` |
 
 ## The rules they keep
