@@ -348,7 +348,10 @@ connections (Herjólfur, Baldur, Norræna), corporate accounts with invoicing,
 parcel delivery along trips, connecting two trips into one journey.
 
 CO2 saved per ride (an estimate, with a total on the member's own profile) is
-planned in [spec 34](../specs/2026-11-28-co2-saved.md).
+built ([spec 34](../specs/2026-11-28-co2-saved.md),
+[plan](../plans/2026-11-28-co2-saved.md)): a card on a ride, a booked seat,
+the driver's ride and My profile, About's method, the console's setting and
+two weekly figures, and totals kept past the 3-year anonymisation.
 
 ## Spec order
 
