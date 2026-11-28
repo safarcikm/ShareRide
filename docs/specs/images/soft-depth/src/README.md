@@ -10,6 +10,7 @@ to draw cards and buttons. Nothing here ships in the app or runs in CI.
 | `1-close-up.webp`, `2-close-up-night.webp` | One card and one button in each look, by day and at night |
 | `3-find-phone.webp`, `4-ride-phone.webp`, `5-driver-phone-night.webp` | Find, a ride and a driver's ride on an iPhone's screen, in each look |
 | `6-laptop.webp` | Find on a laptop, before and in look 2 |
+| `7-ticket-notches.webp` | The notches of a ticket's tear line as built, three times as large: under the pointer (moss) and at rest (hairline), by day and at night (`shoot.cjs`) |
 
 | File | What it is |
 | ---- | ---------- |
@@ -17,6 +18,7 @@ to draw cards and buttons. Nothing here ships in the app or runs in CI.
 | `looks.config.ts` | Its own Playwright settings: no web server of its own, one worker |
 | `serve-looks.cjs` | Serves the web build that the link `current` names, read again at every request, so the script can switch looks on the same address and keep its people signed in |
 | `boards.py` | Puts the pictures side by side, with the looks' names (needs Pillow) |
+| `shoot.cjs` | Takes the notches of the first tickets on the front page, on a laptop, with the pointer on the first, by day and at night: `node shoot.cjs <folder>` from `apps/mobile`, with the build served on port 8082 |
 
 ## Making them
 
