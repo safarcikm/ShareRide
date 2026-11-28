@@ -107,7 +107,7 @@ Each plays its moment with the car's arrival (3.6).
 
 | Day | When | Scene | Looks | Moves | Greeting (IS / EN) |
 | --- | ---- | ----- | ----- | ----- | ------------------ |
-| Christmas (Jólin) | 12 December, when the first Yule Lad comes to town, to 6 January (Þrettándinn), except 31 December and 1 January | Winter | A little tree on the roof; Yule hats | The tree's lights come on one by one as the car stops, under a little snow | Gleðileg jól / Merry Christmas |
+| Christmas (Jólin) | 12 December, when the first Yule Lad comes to town, to 6 January (Þrettándinn), except 31 December and 1 January | Winter | A little tree on the roof; Yule hats; the Yule Lads and Jólakötturinn (3.11) | The tree's lights come on one by one as the car stops, under a little snow | Gleðileg jól / Merry Christmas |
 | New Year (Áramót) | 31 December and 1 January | Winter | Party hats | Three fireworks go up and burst, one after another | Gleðilegt nýtt ár / Happy New Year |
 | Easter (Páskar) | Maundy Thursday (Skírdagur) to Easter Monday (Annar í páskum) | Spring | A big Easter egg on the roof, its chick on top | The chick pops up out of the egg as the car stops | Gleðilega páska / Happy Easter |
 | First day of summer (Sumardagurinn fyrsti) | The Thursday between 19 and 25 April | Spring | The sun over the mountains; the driver in sunglasses, still in the woolly hat | The sun rises over the mountains and its rays come out | Gleðilegt sumar / Happy first day of summer |
@@ -185,6 +185,65 @@ date written `YYYY-MM-DD` from 2000 to 2099 counts; anything else, such as
    app update after the first App Store release; their moments with 1.1,
    with the rest of spec 33 (spec 33, 3.11).
 
+### 3.11 The Yule Lads and Jólakötturinn
+
+Added on Martin's ask (2026-11-28): "Do we have the Icelandic elf's and
+Christmas cat?", "Can u have them day by day as the tradition goes", and
+on the first sketch, "let's just have it till the Christmas, then only
+the cat stays till 6th, also make the cat look more like the Icelandic
+version of it (bit disproportional)". The
+[sketch](https://claude.ai/artifact/GkYQEBMRcLD8jXs1J3SHA4)
+([its source](images/seasonal-banner/yule-preview.html)) shows every day.
+
+**The Yule Lads, 12 to 24 December.** One comes to town each night, in
+the order of Jóhannes úr Kötlum's poem *Jólasveinarnir* (1932), so the
+Lad of 12 + n December is the (n + 1)th:
+
+| Date | Lad | What he holds |
+| ---- | --- | ------------- |
+| 12 Dec | Stekkjastaur (Sheep-Cote Clod) | A lamb |
+| 13 Dec | Giljagaur (Gully Gawk) | A milk pail with its froth |
+| 14 Dec | Stúfur (Stubby) | A frying pan; he is drawn smaller |
+| 15 Dec | Þvörusleikir (Spoon-Licker) | A long wooden spoon |
+| 16 Dec | Pottaskefill (Pot-Scraper) | A pot |
+| 17 Dec | Askasleikir (Bowl-Licker) | An askur, the lidded wooden bowl |
+| 18 Dec | Hurðaskellir (Door-Slammer) | A door |
+| 19 Dec | Skyrgámur (Skyr-Gobbler) | A tub of skyr |
+| 20 Dec | Bjúgnakrækir (Sausage-Swiper) | A string of sausages |
+| 21 Dec | Gluggagægir (Window-Peeper) | A window to peek through |
+| 22 Dec | Gáttaþefur (Doorway-Sniffer) | His big nose, sniffing laufabrauð |
+| 23 Dec | Ketkrókur (Meat-Hook) | A hook with hangikjöt |
+| 24 Dec | Kertasníkir (Candle-Stealer) | A candle |
+
+- **The Lad of the day** stands behind the front hill from the chest up,
+  in a red cap, with what he is after: on a phone right of the car, on a
+  laptop left of it in the car's room (R36.5), which grows a little to the
+  left on his nights, the title's line keeping clear of it.
+- **The ones who came before** peek over the back hill as small heads in
+  red caps, side by side and never one over another, as many as fit clear
+  of the car, the Lad of the day and the farmhouse or the cat: so on the
+  later days some stay out of sight.
+- **No Lads after 24 December.** Their walk home is left out (Martin).
+
+**Jólakötturinn, 24 December to 6 January,** New Year's Eve and Day
+included, alone after the 24th. He is drawn as Icelandic pictures show
+him, giant and out of proportion: a shaggy black cat standing on the back
+hill with the farmhouse between his front paws, his head over its roof,
+his tail up behind. Huge yellow eyes and a sly grin, but no teeth. He is
+as tall as the room above the farmhouse allows: on a phone up to just
+under the name's row, wherever it ends (lower with large text), on a
+laptop near the panel's top. All of him stays in the picture, his side on
+the narrowest phone and his tail clear of a panel's edge. On New Year's
+Eve and Day the fireworks burst clear of him, every ray.
+
+**The moments** (3.6): the Lad of the day pops up over the hill as the
+car stops, from low enough that not even his cap shows before; the cat blinks and swishes his tail. Both are over within
+3.5 seconds and leave the look standing; with reduce motion on, they
+stand still from the start.
+
+**Left out:** the Lads going home after Christmas, and the elves' bonfire
+on Þrettándinn (in the first sketch; Martin chose without them).
+
 ## 4. Rules
 
 | # | Rule |
@@ -196,6 +255,7 @@ date written `YYYY-MM-DD` from 2000 to 2099 counts; anything else, such as
 | R36.5 | On a laptop, nothing a day adds goes under the words. |
 | R36.6 | Greetings are text through i18n, in Icelandic and English. |
 | R36.7 | The console switch turns the days off; the seasons stay. |
+| R36.8 | Which Yule Lad shows, and whether Jólakötturinn does, comes from the same pure function as the day (R36.2); the switch off shows neither. |
 
 ## 5. Screens
 
@@ -216,6 +276,26 @@ they stand once their moment is over ([how they were made](images/seasonal-banne
 ![National Day on a laptop](images/seasonal-banner/3-laptop-june17-light.webp)
 
 ![New Year on a laptop, dark: fireworks and northern lights over the car](images/seasonal-banner/3-laptop-newyear-dark.webp)
+
+The Yule Lads and Jólakötturinn (3.11), from the
+[sketch](https://claude.ai/artifact/GkYQEBMRcLD8jXs1J3SHA4):
+
+![The Yule Lads on 12, 13, 14, 18 and 24 December, and the cat alone on 25 and 31 December and 6 January, light](images/seasonal-banner/5-yule-light.webp)
+
+![The same, dark](images/seasonal-banner/5-yule-dark.webp)
+
+![Christmas Eve on a laptop: Kertasníkir left of the car, the giant cat over the farmhouse](images/seasonal-banner/5-yule-laptop-light.webp)
+
+As built, Find through `?day=` on eight of their days, on a phone and a
+laptop:
+
+![The built banner on a phone from 12 December to 6 January, light](images/seasonal-banner/6-built-yule-phone-light.webp)
+
+![The same, dark](images/seasonal-banner/6-built-yule-phone-dark.webp)
+
+![The built banner on a laptop from 12 December to 6 January, light](images/seasonal-banner/6-built-yule-laptop-light.webp)
+
+![The same, dark](images/seasonal-banner/6-built-yule-laptop-dark.webp)
 
 ## 6. Implementation
 
@@ -243,6 +323,12 @@ they stand once their moment is over ([how they were made](images/seasonal-banne
 - **Setting:** a new operator setting, `festive_days` (on), in the console's
   Settings, and `festiveDays` in `/v1/config`.
 - **Texts:** `home.greeting.<day>` in `en.ts` and `is.ts`.
+- **The Yule Lads and the cat** (3.11): `bannerFor` also returns `yule`,
+  the Lad of the date (`yuleLads`, in the poem's order) and whether the
+  cat shows, or nothing outside 12 December to 6 January or with the
+  festive days off. The drawings are in `apps/mobile/src/banner/yule.tsx`,
+  their colours in `bannerYule` (`packages/ui`), their moments in
+  `motion.moments`.
 
 As built, in `apps/mobile/src/banner/`:
 
@@ -302,6 +388,14 @@ Icelandic ones should be read by a native speaker before they go live.
   edges (31 March, 1 April, the day before the first day of winter,
   11 and 12 December, 30 and 31 December, 6 and 7 January); two days
   together (2038).
+- **Unit (domain), Yule:** each date from 12 to 24 December gives its Lad
+  in the poem's order; 11 December and 7 January give nothing; the cat
+  from 24 December to 6 January, on 31 December and 1 January too; the
+  switch off gives nothing.
+- **Unit (Jest), Yule:** the Lad of the day, the heads of those before
+  him and the cat each show on their days and not on others; the heads
+  and the cat keep clear of the car (R36.5); the fireworks keep clear of
+  the cat.
 - **Unit (Jest):** the scene and the car render each season and day; the
   greeting shows on a day and not in a season; the switch off shows the
   season.
@@ -343,6 +437,9 @@ Martin, 2026-11-28: "Ok lets do it I love all the proposals".
 | 1 | Seasonal banner at all? | Yes (Martin, 2026-11-28) |
 | 2 | Season boundaries | As Iceland looks: winter from the first day of winter to 31 March (my call, 3.2) |
 | 3 | Christmas from when? | 12 December, the first Yule Lad (my call) |
+| 4 | The Yule Lads and the cat (3.11)? | Yes: the Lads 12 to 24 December, the cat 24 December to 6 January, drawn giant (Martin, 2026-11-28) |
+| 5 | The Lads going home, the elves' bonfire? | Left out (Martin, 2026-11-28) |
+| 6 | Where the cat shows on New Year's Eve and Day | With the fireworks, which burst clear of him (my call: "the cat stays till 6th") |
 | 4 | Moments loop? | No, once with the arrival (my call, from spec 33) |
 | 5 | A way to turn the days off? | Yes, one console switch (my call, 3.8) |
 | 6 | Phones | Still look with the first update after the App Store release, moments with 1.1 (my call, 3.10) |

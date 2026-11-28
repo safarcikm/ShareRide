@@ -13,11 +13,12 @@ import Svg, {
   Rect,
   Stop,
 } from "react-native-svg";
-import type { BannerDay, BannerSeason } from "@shareride/domain";
+import type { BannerDay, BannerSeason, Yule } from "@shareride/domain";
 import { Balloons, Bouquet, Bun, Egg, Flag, Heart, RoofCase, Tent, Tree } from "@/banner/car-loads";
 import { carLook, dayLooks, everyday, type DayLook } from "@/banner/day-looks";
 import { MomentOverlay, momentOf } from "@/banner/moment-overlay";
 import { seasonLooks, sceneTop } from "@/banner/season-looks";
+import { LadsInTown, YuleCat, YuleLadFigure, yulePlaces } from "@/banner/yule";
 import {
   at,
   Aurora,
@@ -26,6 +27,7 @@ import {
   Fireworks,
   Flowers,
   footZones,
+  frontHills,
   Heather,
   HighSun,
   Lupines,
@@ -40,6 +42,7 @@ import {
   bannerDrawing,
   carDrawing,
   icelandSeasons,
+  minTouchTarget,
   pageMaxWidth,
   people,
   puffin,
@@ -448,9 +451,12 @@ function glaciersOn(points: readonly (readonly [number, number])[], count: numbe
  * `road={false}`, the hills go on down, as under a wide page's search.
  * Each season brings its own (`seasonLooks`): snow, flowers, lupines and
  * the sun, heather, stars and the northern lights; a `day` its sky (the
- * sunrise, fireworks) or the first snow over the land (spec 36, 3.4). The
- * small things go in `room`, the part of the width given to them: all of
- * it on a phone, the car's room on a laptop (R36.5). `layout` says which
+ * sunrise, fireworks) or the first snow over the land (spec 36, 3.4);
+ * at Christmas its `yule` folk: the Yule Lad of the night, the heads of
+ * those who came before, and Jólakötturinn (3.11), on a phone under
+ * `nameRowBottom`, where the name's row over the scene ends. The small
+ * things go in `room`, the part of the width given to them: all of it on
+ * a phone, the car's room on a laptop (R36.5). `layout` says which
  * the scene is behind, a phone's top or a laptop's panel, as the name's
  * row and the title stand where the layout puts them, whatever the
  * window's width. `width` and `height` are the drawing's. While
@@ -461,22 +467,26 @@ function glaciersOn(points: readonly (readonly [number, number])[], count: numbe
 export function IcelandScene({
   season,
   day = null,
+  yule = null,
   width,
   height,
   ground = height - sizes.sceneRoad,
   road = true,
   room = [0, width],
   layout = "phone",
+  nameRowBottom = spacing.md + minTouchTarget,
   playing = false,
 }: {
   readonly season: BannerSeason;
   readonly day?: BannerDay | null;
+  readonly yule?: Yule | null;
   readonly width: number;
   readonly height: number;
   readonly ground?: number;
   readonly road?: boolean;
   readonly room?: Room;
   readonly layout?: "phone" | "panel";
+  readonly nameRowBottom?: number;
   readonly playing?: boolean;
 }) {
   const { scheme, black } = useScene();
@@ -494,12 +504,7 @@ export function IcelandScene({
   const shape = (points: readonly (readonly [number, number])[]) =>
     points.map(([x, y]) => [x * width, y * ground] as const);
   const peaks = shape(wide ? ridges.wide : ridges.narrow);
-  const hills = [
-    `M0 ${String(ground)} L0 ${String(ground - 16)}`,
-    `C${at(width * 0.22, ground - 40)} ${at(width * 0.4, ground - 2)} ${at(width * 0.58, ground - 18)}`,
-    `S${at(width * 0.86, ground - 36)} ${at(width, ground - 12)}`,
-    `L${String(width)} ${String(ground)} Z`,
-  ].join(" ");
+  const hills = frontHills(width, ground);
   const back: string[] = [];
   for (let x = 0; x <= width + 6; x += 6) {
     const along = Math.min(x, width);
@@ -511,6 +516,8 @@ export function IcelandScene({
   const house = wide ? room[1] - 44 : width * 0.1;
   const houseAt = backHillAt(house, width, ground, wide) + 1.5;
   const zones = footZones(width, room, wide);
+  const top = wide ? spacing.md : nameRowBottom + spacing.xs;
+  const folk = yulePlaces({ yule, width, ground, room, wide, house, top });
   const below = height - ground;
   // On a laptop a day's cover, the first snow, shows only in the car's
   // room, fading in at its left edge: never under the words (R36.5).
@@ -568,8 +575,13 @@ export function IcelandScene({
             strokeLinejoin="round"
           />
         ))}
+        <LadsInTown heads={folk.heads} />
         <Path d={backHill} fill={land.hillBack} />
+        {folk.cat === null ? null : <YuleCat place={folk.cat} scheme={scheme} />}
         <Farmhouse x={house} y={houseAt} roof={land.roof} snow={snow} scheme={scheme} />
+        {folk.lad === null || yule === null || yule.lad === null ? null : (
+          <YuleLadFigure lad={yule.lad} place={folk.lad} />
+        )}
         <Path d={hills} fill={land.hill} />
         {look.heather ? (
           <Heather
@@ -659,7 +671,14 @@ export function IcelandScene({
           </>
         )}
         {sky === "fireworks" ? (
-          <Fireworks width={width} room={room} ground={ground} wide={wide} rising={moving} />
+          <Fireworks
+            width={width}
+            room={room}
+            ground={ground}
+            wide={wide}
+            rising={moving}
+            cat={folk.cat !== null}
+          />
         ) : null}
         {moment === null ? null : (
           <MomentOverlay
@@ -739,6 +758,7 @@ function CoverEdge({
 export function IcelandPanel({
   season,
   day = null,
+  yule = null,
   height,
   ground,
   room,
@@ -746,6 +766,7 @@ export function IcelandPanel({
 }: {
   readonly season: BannerSeason;
   readonly day?: BannerDay | null;
+  readonly yule?: Yule | null;
   readonly height: number;
   readonly ground: number;
   readonly room: number;
@@ -764,6 +785,7 @@ export function IcelandPanel({
       <IcelandScene
         season={season}
         day={day}
+        yule={yule}
         width={width}
         height={height}
         ground={ground}

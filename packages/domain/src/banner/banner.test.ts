@@ -3,6 +3,7 @@ import {
   bannerFor,
   easterSunday,
   parseCalendarDate,
+  yuleLads,
   type BannerDay,
   type CalendarDate,
 } from "./banner.ts";
@@ -196,10 +197,12 @@ describe("the seasons (spec 36, 3.2)", () => {
     expect(bannerFor(date("2027-12-25"), { festiveDays: false })).toEqual({
       season: "winter",
       day: null,
+      yule: null,
     });
     expect(bannerFor(date("2027-10-23"), { festiveDays: false })).toEqual({
       season: "winter",
       day: null,
+      yule: null,
     });
   });
 });
@@ -207,11 +210,23 @@ describe("the seasons (spec 36, 3.2)", () => {
 describe("the scene a day is drawn in", () => {
   it("is the day's own, not the date's", () => {
     // Maundy Thursday in March is spring, though March is winter.
-    expect(bannerFor(date("2027-03-25"), withDays)).toEqual({ season: "spring", day: "easter" });
+    expect(bannerFor(date("2027-03-25"), withDays)).toMatchObject({
+      season: "spring",
+      day: "easter",
+    });
     // The first day of winter is autumn's land, which turns white.
-    expect(bannerFor(date("2027-10-23"), withDays)).toEqual({ season: "autumn", day: "winterday" });
-    expect(bannerFor(date("2027-06-06"), withDays)).toEqual({ season: "summer", day: "seafarers" });
-    expect(bannerFor(date("2027-12-01"), withDays)).toEqual({ season: "winter", day: "dec1" });
+    expect(bannerFor(date("2027-10-23"), withDays)).toMatchObject({
+      season: "autumn",
+      day: "winterday",
+    });
+    expect(bannerFor(date("2027-06-06"), withDays)).toMatchObject({
+      season: "summer",
+      day: "seafarers",
+    });
+    expect(bannerFor(date("2027-12-01"), withDays)).toMatchObject({
+      season: "winter",
+      day: "dec1",
+    });
   });
 });
 
@@ -220,6 +235,68 @@ describe("two days together", () => {
     // 2038: Maundy Thursday is also the first day of summer.
     expect(dayOn("2038-04-22")).toBe("summerday");
     expect(dayOn("2027-12-31")).toBe("newyear");
+  });
+});
+
+describe("the Yule Lads and Jólakötturinn (spec 36, 3.11; R36.8)", () => {
+  const yuleOn = (text: string) => bannerFor(date(text), withDays).yule;
+
+  it("has the thirteen Lads in the order of Jóhannes úr Kötlum's poem", () => {
+    expect(yuleLads).toEqual([
+      "stekkjastaur",
+      "giljagaur",
+      "stufur",
+      "thvorusleikir",
+      "pottaskefill",
+      "askasleikir",
+      "hurdaskellir",
+      "skyrgamur",
+      "bjugnakraekir",
+      "gluggagaegir",
+      "gattathefur",
+      "ketkrokur",
+      "kertasnikir",
+    ]);
+  });
+
+  it.each([2026, 2027, 2030, 2036])("brings one Lad a night from 12 to 24 December %i", (year) => {
+    yuleLads.forEach((lad, n) => {
+      expect(bannerFor({ year, month: 12, day: 12 + n }, withDays).yule?.lad).toBe(lad);
+    });
+  });
+
+  it("shows the cat from Christmas Eve, not before", () => {
+    expect(yuleOn("2027-12-23")).toEqual({ lad: "ketkrokur", cat: false });
+    expect(yuleOn("2027-12-24")).toEqual({ lad: "kertasnikir", cat: true });
+  });
+
+  it.each(["2027-12-25", "2027-12-26", "2027-12-30", "2028-01-02", "2028-01-06"])(
+    "leaves the cat alone on %s",
+    (text) => {
+      expect(yuleOn(text)).toEqual({ lad: null, cat: true });
+    },
+  );
+
+  it("keeps the cat with New Year's fireworks", () => {
+    expect(bannerFor(date("2027-12-31"), withDays)).toEqual({
+      season: "winter",
+      day: "newyear",
+      yule: { lad: null, cat: true },
+    });
+    expect(bannerFor(date("2028-01-01"), withDays).yule).toEqual({ lad: null, cat: true });
+  });
+
+  it.each(["2027-12-11", "2028-01-07", "2027-12-01", "2027-06-17", "2027-11-30"])(
+    "shows neither on %s",
+    (text) => {
+      expect(yuleOn(text)).toBeNull();
+    },
+  );
+
+  it("shows neither with the festive days off", () => {
+    for (const text of ["2027-12-12", "2027-12-24", "2027-12-31", "2028-01-06"]) {
+      expect(bannerFor(date(text), { festiveDays: false }).yule).toBeNull();
+    }
   });
 });
 
