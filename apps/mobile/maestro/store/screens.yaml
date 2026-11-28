@@ -77,12 +77,12 @@ appId: ${APP_ID}
       - extendedWaitUntil:
           visible: ${FIND_TITLE}
           timeout: 60000
-      # In the middle of the screen: at the bottom, the iPhone's tab bar
-      # covers the link and takes the tap.
+      # The link is the page's last line: one more swipe brings it up from
+      # under the iPhone's tab bar, which would take the tap.
       - scrollUntilVisible:
           element: ${HOW}
-          centerElement: true
           timeout: 20000
+      - scroll
       - tapOn: ${HOW}
       - extendedWaitUntil:
           visible: ${CARPOOL_TITLE}
