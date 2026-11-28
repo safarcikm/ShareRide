@@ -1,7 +1,8 @@
 # 0056. Keep Apple's refresh token to end Sign in with Apple with the account
 
-- **Status:** Proposed (Martin's decision card, 2026-11-28). Supersedes the
-  sentence of [ADR 0051](0051-store-apps-in-martins-name-until-the-company.md)
+- **Status:** Accepted (Martin chose it on his decision card, 2026-11-28
+  11:38 UTC). Supersedes the sentence of
+  [ADR 0051](0051-store-apps-in-martins-name-until-the-company.md)
   that kept Google and Apple sign-in off the iPhone (Martin turned Apple on,
   2026-11-28), and amends what [ADR 0034](0034-google-and-apple-sign-in-through-our-api.md)
   keeps from Apple

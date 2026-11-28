@@ -19,7 +19,7 @@ cron job holds no Apple keys; the API does.
 
 **Spec:** [spec 37](../specs/2026-11-28-sign-in-with-apple-in-the-stores.md),
 with [ADR 0056](../decisions/0056-keep-apples-token-to-end-sign-in-with-apple.md)
-(Proposed, Martin's card).
+(Accepted, Martin's card, 2026-11-28 11:38 UTC).
 
 ## Global constraints
 
