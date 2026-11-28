@@ -34,7 +34,7 @@ for less motion.
 - As someone opening PuffinRide in December, I see snow and a Christmas
   tree on the car's roof, and the page feels alive and Icelandic.
 - As someone looking for a ride for the August long weekend, the car
-  carries a tent and wishes me a good trip.
+  carries a tent and wishes me a good ride.
 - As someone with reduce motion on, I see the day's look, standing still.
 - As the operator, I can turn the days off on a sad day.
 
@@ -112,7 +112,7 @@ Each plays its moment with the car's arrival (3.6).
 | Easter (Páskar) | Maundy Thursday (Skírdagur) to Easter Monday (Annar í páskum) | Spring | A big Easter egg on the roof, its chick on top | The chick pops up out of the egg as the car stops | Gleðilega páska / Happy Easter |
 | First day of summer (Sumardagurinn fyrsti) | The Thursday between 19 and 25 April | Spring | The sun over the mountains; the driver in sunglasses, still in the woolly hat | The sun rises over the mountains and its rays come out | Gleðilegt sumar / Happy first day of summer |
 | National Day (17. júní) | 17 June | Summer | Icelandic flags on the car's front and back; balloons in blue, white and red | The flags flutter and the balloons swing as the car stops | Gleðilega þjóðhátíð / Happy National Day |
-| The August long weekend (Verslunarmannahelgin) | The Wednesday before the first Monday in August, to that Monday | Summer | A tent, a sleeping bag and a guitar on the roof | The load rocks forward as the car stops, and settles | Góða ferð um helgina / Have a good trip this weekend |
+| The August long weekend (Verslunarmannahelgin) | The Wednesday before the first Monday in August, to that Monday | Summer | A tent, a sleeping bag and a guitar on the roof | The load rocks forward as the car stops, and settles | Góða ferð um helgina / Have a good ride this weekend |
 | First day of winter (Fyrsti vetrardagur) | The Saturday between 21 and 27 October | Autumn, turning to winter | Both puffins in woolly hats | Snow falls and the autumn hills turn white | Gleðilegan vetur / Happy first day of winter |
 | Sovereignty Day (Fullveldisdagurinn) | 1 December | Winter | An Icelandic flag on the roof | The flag flutters as the car stops | Til hamingju með fullveldisdaginn / Happy Sovereignty Day |
 

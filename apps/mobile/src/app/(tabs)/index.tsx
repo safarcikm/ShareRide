@@ -26,6 +26,7 @@ import { LanguageSwitch } from "@/components/language-switch";
 import { Logo } from "@/components/logo";
 import { carHeight, IcelandPanel, IcelandScene, PuffinsInCar } from "@/components/puffin-scenes";
 import { Screen, useWideScreen } from "@/components/screen";
+import { Tag } from "@/components/tag";
 import { Body, Heading, Title } from "@/components/text";
 import { offerRide } from "@/drive/offer-ride";
 import { useLanguage } from "@/i18n/language";
@@ -156,8 +157,9 @@ function FrontPage() {
   // Each grows with what it is measured to hold.
   const { width: windowWidth } = useWindowDimensions();
   const scheme = useColorScheme() === "dark" ? "dark" : "light";
-  // The scene in the season of the day in Iceland (spec 36, 3.1).
-  const { season } = useBanner(at);
+  // The scene in the season of the day in Iceland, and dressed for a
+  // festive day unless the console has turned them off (spec 36, 3.1 to 3.8).
+  const { season, day } = useBanner(at);
   const [band, setBand] = useState(sceneBand);
   const [line, setLine] = useState<number>(sizes.sceneLine);
   // The car arrives the first time Find shows on the website (spec 33, 3.2).
@@ -165,7 +167,18 @@ function FrontPage() {
   // Someone signed in is greeted by name (spec 31, 3.5); what PuffinRide
   // is, is said to someone new, and until the account has a first name.
   const firstName = me?.firstName ?? null;
-  const titles =
+  // On a festive day a greeting stands above the title (spec 36, 3.7):
+  // centred over a centred title, at the start over one at the left.
+  const greeting =
+    day === null ? null : (
+      <View
+        testID="greeting"
+        style={[styles.greeting, !wide && firstName === null && styles.greetingCentred]}
+      >
+        <Tag kind="positive" label={t(`home.greeting.${day}`)} />
+      </View>
+    );
+  const name =
     firstName === null ? (
       <>
         <Title large={wide} align={wide ? "start" : "center"}>
@@ -180,6 +193,12 @@ function FrontPage() {
         {t("home.hi", { name: firstName })}
       </Title>
     );
+  const titles = (
+    <>
+      {greeting}
+      {name}
+    </>
+  );
   const title = wide ? (
     <View
       testID="title-line"
@@ -194,6 +213,8 @@ function FrontPage() {
       <View testID="car-room" {...roomProps(arriving)} style={styles.carRoom}>
         <View testID="car-on-hills" style={styles.carOnHills}>
           <PuffinsInCar
+            day={day}
+            season={season}
             width={sizes.sceneCarWide}
             arriveFrom={arriving ? -(sizes.sceneCarWide + spacing.lg) : null}
           />
@@ -241,6 +262,7 @@ function FrontPage() {
           <View style={styles.panelRoom}>
             <IcelandPanel
               season={season}
+              day={day}
               height={line + spacing.md + searchRowTop}
               ground={line + spacing.sm}
               room={carFromEdge + sizes.sceneCarWide + spacing.lg}
@@ -303,7 +325,12 @@ function FrontPage() {
       refresh={refresh}
       refreshAsked={refreshAsked}
       backdrop={
-        <IcelandScene season={season} width={windowWidth} height={spacing.md + band + spacing.sm} />
+        <IcelandScene
+          season={season}
+          day={day}
+          width={windowWidth}
+          height={spacing.md + band + spacing.sm}
+        />
       }
       topColour={sceneTop(season, scheme)}
     >
@@ -334,6 +361,8 @@ function FrontPage() {
         </View>
         {/* On the website it drives in from beyond the left edge (spec 33, 3.2). */}
         <PuffinsInCar
+          day={day}
+          season={season}
           width={sizes.sceneCar}
           arriveFrom={arriving ? -(windowWidth + sizes.sceneCar) / 2 - spacing.sm : null}
         />
@@ -644,6 +673,9 @@ const styles = StyleSheet.create({
   // text's own colour: on a wide page it stands on the mountains, where the
   // muted one is too faint.
   intro: { flexShrink: 1, gap: spacing.xs },
+  // The greeting's tag keeps its own width, in a row of its own.
+  greeting: { flexDirection: "row", justifyContent: "flex-start" },
+  greetingCentred: { justifyContent: "center" },
   // On a phone both texts stretch across the screen, centred within it.
   introText: { textAlign: "center" },
   // Where the page's own room is, so the panel lines up with the page.

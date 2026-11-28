@@ -15,3 +15,12 @@ node docs/specs/images/seasonal-banner/src/build.cjs
 
 It writes the pictures into `../`. Once the banner is built, the website's
 own journeys check the real thing with `?day=`.
+
+`built.cjs` takes the `4-built-*.webp` sheets from the app itself: Find on
+each of the thirteen days through `?day=`, on a phone and a laptop, light
+and dark. It needs the web export served on its own (see the script's
+first lines); the API is answered in the page, signed out with no rides:
+
+```sh
+node docs/specs/images/seasonal-banner/src/built.cjs http://localhost:8082
+```
