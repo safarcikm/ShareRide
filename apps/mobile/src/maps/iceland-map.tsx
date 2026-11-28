@@ -12,6 +12,7 @@ import { controlOutline, edges, mapDrawing, radii } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 import {
   alongRoads,
+  columnShape,
   dotsNear,
   glaciers,
   land,
@@ -19,6 +20,7 @@ import {
   roads,
   viewFor,
   wholeMap,
+  wideShape,
   type MapXY,
   type Position,
 } from "@shareride/ui/map";
@@ -68,7 +70,7 @@ const guessedWidth = 343;
  * Our own map of Iceland (ADR 0024): the land, glaciers, main roads and the
  * Ring Road, with meeting points as dots and routes as lines along the
  * roads. It shows the whole of Iceland, or with `fit` the part that holds
- * its dots and lines, and does not zoom. One image for screen readers;
+ * its dots and lines, as a band with `fit="wide"`, and does not zoom. One image for screen readers;
  * every screen with a map also lists its points. With `onPressDots`, a tap
  * tells which dots are near it, nearest first, or none.
  */
@@ -82,7 +84,7 @@ export function IcelandMap({
   readonly label: string;
   readonly dots: readonly MapDot[];
   readonly lines?: readonly MapLine[];
-  readonly fit?: boolean;
+  readonly fit?: boolean | "wide";
   readonly onPressDots?: (ids: string[]) => void;
 }) {
   const palette = usePalette();
@@ -91,7 +93,10 @@ export function IcelandMap({
   const placed = dots.map((one) => ({ ...one, at: project(one.position) }));
   const drawn = useDrawnLines(lines);
   const view = fit
-    ? viewFor([...placed.map((one) => one.at), ...drawn.flatMap((line) => line.points)])
+    ? viewFor(
+        [...placed.map((one) => one.at), ...drawn.flatMap((line) => line.points)],
+        fit === "wide" ? wideShape : columnShape,
+      )
     : wholeMap;
   const unitsPerPoint = view.width / (width > 0 ? width : guessedWidth);
   const units = (points: number) => points * unitsPerPoint;

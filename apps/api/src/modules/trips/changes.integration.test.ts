@@ -1215,6 +1215,10 @@ describe("adding a stop (spec 6, 3.2; milestone 6 plan, decision 2)", () => {
       },
     ]);
     expect((await read(dora, borgarnes.id)).board.position).toBe(2);
+    // The map has the new stop, and each part where it now is (spec 31, 3.8).
+    expect(gunnaReads.route).toMatchObject({ board: 0, alight: 4 });
+    expect(gunnaReads.route?.stops).toHaveLength(5);
+    expect((await read(dora, borgarnes.id)).route).toMatchObject({ board: 2, alight: 3 });
 
     // Recorded, and told on the booking, in the chat and by an event each (spec 7, 3.3).
     const [recorded] = await changesOf(north);

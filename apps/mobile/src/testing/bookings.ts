@@ -14,15 +14,20 @@ export const northStop = (position: number) => {
   return stop;
 };
 
-/** Borgarnes to Blönduós on the north trip, one seat, as its passenger sees it. */
+/**
+ * Borgarnes to Blönduós on the north trip, one seat, as its passenger sees
+ * it. The trip on the map has the booking's own stops as its part, unless
+ * `changes` says it has no map (null).
+ */
 export function northBooking(changes: Partial<Booking> = {}): Booking {
-  return {
+  const booking: Booking = {
     id: "0190a1d6-0000-7000-8000-0000000000b1",
     status: "requested",
     viewer: "passenger",
     trip: { id: northResult.tripId, bookingMode: "approval" },
     board: northStop(1),
     alight: northStop(2),
+    route: null,
     seats: 1,
     total: { amount: 2900, currency: "ISK" },
     payment: "in_app",
@@ -51,6 +56,17 @@ export function northBooking(changes: Partial<Booking> = {}): Booking {
     dispute: null,
     review: null,
     ...changes,
+  };
+  return {
+    ...booking,
+    route:
+      changes.route === null
+        ? null
+        : {
+            stops: northStops.map((stop) => stop.meetingPoint.position),
+            board: booking.board.position,
+            alight: booking.alight.position,
+          },
   };
 }
 

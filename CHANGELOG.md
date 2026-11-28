@@ -1621,6 +1621,13 @@ releases follow [Semantic Versioning](https://semver.org/).
   their Google email for a code, and sign in once on puffinride.is to add an
   email if that does not work; Sign-in methods on the iPhone can remove a
   linked Google but not add one. Android and the website are unchanged.
+- The ride on a map on a booked seat and on the ride I drive (spec 31,
+  3.8 and 3.12): a card headed "The route" with our map of Iceland, the
+  passenger's part solid and the rest of the ride dashed, or the whole way
+  for the driver, before the rows; on a laptop a band in the main column.
+  A booking in the API gains `route`: where its ride's stops are, with the
+  part as places among them, or null where a stop of the part was taken
+  off the ride.
 
 ### Fixed
 
