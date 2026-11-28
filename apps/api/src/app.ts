@@ -95,7 +95,7 @@ import {
   registerInviteAdminRoutes,
   registerInviteRoutes,
 } from "./modules/beta/index.ts";
-import { registerCo2Routes } from "./modules/co2/index.ts";
+import { registerCo2Routes, type Co2SettingsSource } from "./modules/co2/index.ts";
 import { createDrivingService, registerDrivingRoutes } from "./modules/driving/index.ts";
 import { createLegalService, registerLegalRoutes } from "./modules/legal/index.ts";
 import {
@@ -294,6 +294,11 @@ export interface AppDependencies {
    * (spec 23, 3.10); by default through the trip details.
    */
   readonly findRide?: FindRide;
+  /**
+   * The CO2 figures' value, for About's section on the page search engines
+   * read (spec 34, 3.9); by default the operator's setting.
+   */
+  readonly co2Settings?: Co2SettingsSource;
   /** Google Analytics on the website (spec 23); none when left out. */
   readonly analytics?: Analytics | null;
   /** The oldest phone app version served (spec 32, R32.4); every one when left out. */
@@ -438,6 +443,8 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
 
   /** Finds a shared ride's address for its own link preview (spec 23, 3.10), from the trip details. */
   let rideFinderOfApp: FindRide | undefined;
+  /** The CO2 figures' value as it is now (spec 34, 3.3), for About's page too. */
+  let co2SettingsOfApp: Co2SettingsSource | undefined;
   if (dependencies.features !== undefined) {
     const { features } = dependencies;
     // First: the guard covers only routes registered after it, and closes
@@ -637,6 +644,7 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
     const ruleSettings = ruleSettingsSource(operatorSettings);
     // The CO2 figures' value as it is now (spec 34, 3.3).
     const co2Settings = async () => co2SettingsFrom((await operatorSettings.current()).values);
+    co2SettingsOfApp = co2Settings;
     const tripDetails = createTripDetailsService({
       ...features,
       settings: () => ruleSettings.search(),
@@ -860,6 +868,7 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
               ? undefined
               : subjectFinder(dependencies.features.db)),
           dependencies.findRide ?? rideFinderOfApp,
+          dependencies.co2Settings ?? co2SettingsOfApp,
         );
   const adminApp =
     dependencies.adminAppDir === undefined
