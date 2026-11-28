@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import type { ViewProps } from "react-native";
 import { onWebsite } from "@/lib/on-website";
 import type { MomentPart } from "./motion-css";
-import { whenArrived } from "./motion-sheet";
+import { whenArrived, whenCarStopped } from "./motion-sheet";
 
 /*
  * Marks for the website's motion style sheet (spec 33, ADR 0052;
@@ -105,6 +105,23 @@ export function useArrival(): boolean {
     });
   }, [arriving]);
   return arriving;
+}
+
+/**
+ * Whether the arriving car still drives in (spec 33, 3.2): until the
+ * driver's hop ends, while what it carries and the moment of the day may
+ * still move (spec 36, 3.6). Its room on a laptop hides what of it is
+ * still outside only this long.
+ */
+export function useDriving(arriving: boolean): boolean {
+  const [driving, setDriving] = useState(arriving);
+  useEffect(() => {
+    if (!driving) return undefined;
+    return whenCarStopped(() => {
+      setDriving(false);
+    });
+  }, [driving]);
+  return arriving && driving;
 }
 
 /** As if the page had just loaded: for tests. */

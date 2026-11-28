@@ -237,9 +237,9 @@ they stand once their moment is over ([how they were made](images/seasonal-banne
   the day and carries its load, flags, balloons and hats. Sky things on a
   laptop are drawn only in the car's room.
 - **Motion** (ADR 0052): the moments are CSS keyframes in the motion sheet
-  (`apps/mobile/src/theme/motion-css.ts`), from new `motion.seasons` tokens,
-  on parts marked with `motionMark`; they play under the same arriving
-  mark as the car, so once a visit and reduce motion come for free.
+  (`apps/mobile/src/theme/motion-css.ts`), from new `motion.moments` tokens,
+  on parts marked with `motionMark`; they play with the car's arrival, so
+  once a visit and reduce motion come for free (as built, below).
 - **Setting:** a new operator setting, `festive_days` (on), in the console's
   Settings, and `festiveDays` in `/v1/config`.
 - **Texts:** `home.greeting.<day>` in `en.ts` and `is.ts`.
@@ -263,16 +263,25 @@ As built, in `apps/mobile/src/banner/`:
   way in `--d`, `--t`, `--dx`, `--dy` and `--r` (`motionMark`). Snow,
   leaves and the flying puffins (`moment-overlay.tsx`) and the fireworks'
   trails are drawn only while the moment plays, on the website, unseen
-  until their animation shows them; a day's moment replaces its season's
-  (`momentOf`), so a day without one (Easter, Öskudagur) has none. They are
-  drawn in the scene, so behind the car, where the preview had snow and
-  leaves in front. A laptop's flying puffins set off at the car room's
-  edge, fading in.
+  until their animation shows them; a day's snow, or none, replaces its
+  season's snow, leaves or flying puffins (`momentOf`), so Easter has no
+  flying puffins. The season's own small motions in the scene (the
+  northern lights, the sun's glow, the lupines and the flowers) play on
+  its days too. Snow, leaves and puffins are drawn in the scene, so behind
+  the car, where the preview had snow and leaves in front. A laptop's
+  flying puffins set off at the car room's edge, fading in.
+- **The look Find opened with:** the moment plays for the season and day
+  Find first showed. When the first read of the console's settings turns
+  the day off (3.8), the moment stops there, the season's does not start
+  late, and the arrival ends with the car.
 - **When it ends:** `whenArrived` ends the arrival when a part of the car
   or the moment ends and nothing under either mark still moves
   (`document.getAnimations()`); where the browser cannot list its
-  animations, at the driver's hop, as before. Every moment ends by
-  3.3 seconds (checked for every season and day in the browser).
+  animations, at the driver's hop, as before. The laptop's car room hides
+  what of the car is outside it only until the driver's hop ends
+  (`whenCarStopped`, `useDriving`), as spec 33 says, while the car's load
+  may still move. Every moment ends by 3.3 seconds (checked for every
+  season and day in the browser).
 
 ## 7. Privacy and safety
 

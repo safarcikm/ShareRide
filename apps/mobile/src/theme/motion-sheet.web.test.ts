@@ -1,5 +1,5 @@
 import { lastOfArrival, playingParts } from "./motion-css";
-import { whenArrived } from "./motion-sheet.web";
+import { whenArrived, whenCarStopped } from "./motion-sheet.web";
 
 // Tests run without a browser: a page with only what `whenArrived` uses.
 
@@ -97,6 +97,37 @@ describe("whenArrived (spec 33, 3.2)", () => {
     const done = jest.fn();
     const stop = whenArrived(done);
     stop();
+    page.dispatchEvent(animation("animationend", new Part(lastOfArrival)));
+    expect(done).not.toHaveBeenCalled();
+  });
+});
+
+describe("whenCarStopped (spec 33, 3.2)", () => {
+  it("says the car has stopped when the driver's hop ends, while the moment still plays", () => {
+    const snow = running(new Part('[data-motion="flake"]'));
+    Object.assign(page, { getAnimations: () => [snow] });
+    const done = jest.fn();
+    whenCarStopped(done);
+    page.dispatchEvent(animation("animationend", new Part('[data-motion="puffin-you"]')));
+    expect(done).not.toHaveBeenCalled();
+    page.dispatchEvent(animation("animationend", new Part(lastOfArrival)));
+    expect(done).toHaveBeenCalledTimes(1);
+  });
+
+  it("says so when the hop stops before its end, and at once with reduce motion on", () => {
+    const left = jest.fn();
+    whenCarStopped(left);
+    page.dispatchEvent(animation("animationcancel", new Part(lastOfArrival)));
+    expect(left).toHaveBeenCalledTimes(1);
+    reduceMotion = true;
+    const still = jest.fn();
+    whenCarStopped(still);
+    expect(still).toHaveBeenCalledTimes(1);
+  });
+
+  it("stops listening when asked", () => {
+    const done = jest.fn();
+    whenCarStopped(done)();
     page.dispatchEvent(animation("animationend", new Part(lastOfArrival)));
     expect(done).not.toHaveBeenCalled();
   });

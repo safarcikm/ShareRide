@@ -7,13 +7,17 @@ import {
   motionMark,
   roomProps,
   useArrival,
+  useDriving,
 } from "./motion";
-import { whenArrived } from "./motion-sheet";
+import { whenArrived, whenCarStopped } from "./motion-sheet";
 
 jest.mock("@/lib/on-website", () => ({ onWebsite: jest.fn(() => true) }));
 // The page says when the arrival has ended; the tests say it here.
 const mockStopListening = jest.fn();
-jest.mock("./motion-sheet", () => ({ whenArrived: jest.fn(() => mockStopListening) }));
+jest.mock("./motion-sheet", () => ({
+  whenArrived: jest.fn(() => mockStopListening),
+  whenCarStopped: jest.fn(() => mockStopListening),
+}));
 
 /** Says the car has arrived, as the page does when the driver's hop ends. */
 function arrive() {
@@ -112,5 +116,53 @@ describe("useArrival (spec 33, 3.2: once a visit)", () => {
     const { result } = await renderHook(() => useArrival());
     expect(result.current).toBe(false);
     expect(whenArrived).not.toHaveBeenCalled();
+  });
+});
+
+describe("useDriving (spec 33, 3.2)", () => {
+  beforeEach(() => {
+    (whenCarStopped as jest.Mock).mockClear();
+    mockStopListening.mockClear();
+  });
+
+  /** Says the car has stopped, as the page does when the driver's hop ends. */
+  function stop() {
+    const [done] = (whenCarStopped as jest.Mock<() => void, [() => void]>).mock.calls.at(-1) ?? [];
+    if (done === undefined) throw new Error("nothing waits for the car");
+    done();
+  }
+
+  it("drives while it arrives, until the driver's hop ends, while what it carries may move on", async () => {
+    const { result, rerender } = await renderHook(
+      ({ arriving }: { arriving: boolean }) => useDriving(arriving),
+      {
+        initialProps: { arriving: true },
+      },
+    );
+    expect(result.current).toBe(true);
+    await act(() => {
+      stop();
+    });
+    expect(result.current).toBe(false);
+    expect(mockStopListening).toHaveBeenCalled();
+    await rerender({ arriving: false });
+    expect(result.current).toBe(false);
+  });
+
+  it("stops driving when the whole arrival is over first", async () => {
+    const { result, rerender } = await renderHook(
+      ({ arriving }: { arriving: boolean }) => useDriving(arriving),
+      {
+        initialProps: { arriving: true },
+      },
+    );
+    await rerender({ arriving: false });
+    expect(result.current).toBe(false);
+  });
+
+  it("never drives a car that does not arrive", async () => {
+    const { result } = await renderHook(() => useDriving(false));
+    expect(result.current).toBe(false);
+    expect(whenCarStopped).not.toHaveBeenCalled();
   });
 });

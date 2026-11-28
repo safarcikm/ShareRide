@@ -8,3 +8,9 @@ export function whenArrived(done: () => void): () => void {
   done();
   return () => undefined;
 }
+
+/** On the website, calls `done` once the car itself has stopped; phones have no arrival yet. */
+export function whenCarStopped(done: () => void): () => void {
+  done();
+  return () => undefined;
+}

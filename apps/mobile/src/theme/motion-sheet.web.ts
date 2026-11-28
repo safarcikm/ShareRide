@@ -40,6 +40,27 @@ function stillPlaying(): boolean | null {
  * what stops listening.
  */
 export function whenArrived(done: () => void): () => void {
+  return onEachEnd(done, (target) => {
+    const playing = stillPlaying();
+    return playing === null ? target.matches(lastOfArrival) : !playing;
+  });
+}
+
+/**
+ * Calls `done` once the car itself has stopped (spec 33, 3.2): when the
+ * driver's hop, which moves last of it, ends or stops, while what it
+ * carries and the moment may still move. At once with reduce motion on.
+ * Gives back what stops listening.
+ */
+export function whenCarStopped(done: () => void): () => void {
+  return onEachEnd(done, (target) => target.matches(lastOfArrival));
+}
+
+/**
+ * Calls `done` when a part's animation ends or stops and `over` says that
+ * was the end; at once where nothing moves. Gives back what stops listening.
+ */
+function onEachEnd(done: () => void, over: (target: Element) => boolean): () => void {
   if (
     typeof document === "undefined" ||
     window.matchMedia("(prefers-reduced-motion: reduce)").matches
@@ -48,9 +69,7 @@ export function whenArrived(done: () => void): () => void {
     return () => undefined;
   }
   const ended = (event: Event) => {
-    if (!(event.target instanceof Element)) return;
-    const playing = stillPlaying();
-    if (playing === null ? event.target.matches(lastOfArrival) : !playing) done();
+    if (event.target instanceof Element && over(event.target)) done();
   };
   document.addEventListener("animationend", ended);
   document.addEventListener("animationcancel", ended);
