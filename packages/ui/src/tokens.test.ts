@@ -236,7 +236,7 @@ describe("motion (spec 33, section 6)", () => {
       for (const value of [timing.duration, "delay" in timing ? timing.delay : 0]) {
         if (typeof value === "number") continue;
         expect(value).toHaveLength(2);
-        expect(value[0]).toBeLessThanOrEqual(value[1] ?? 0);
+        expect(value[0]).toBeLessThanOrEqual(value[1]);
       }
     }
   });
