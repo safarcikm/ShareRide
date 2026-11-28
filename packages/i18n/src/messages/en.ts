@@ -2489,6 +2489,8 @@ export const en = {
   "admin.metrics.metric.money_refunded": "Refunded to passengers",
   "admin.metrics.metric.active_drivers": "Drivers with a trip",
   "admin.metrics.metric.active_passengers": "Passengers with a booking",
+  "admin.metrics.metric.car_km_saved": "Car km saved",
+  "admin.metrics.metric.co2_saved_grams": "CO2 saved (kg)",
   "admin.announcements.title": "Announcements",
   "admin.announcements.intro":
     "News about the beta and the service, in Icelandic and in English, for testers who have Beta news on. Never advertising.",
@@ -2592,6 +2594,7 @@ export const en = {
   "admin.settings.group.booking": "Booking and paying",
   "admin.settings.group.changes": "Changes and cancellations",
   "admin.settings.group.trip_day": "Trip day and reliability",
+  "admin.settings.group.co2": "CO2",
   "admin.settings.groupNote.terms":
     "The terms of service state these values. Publish new terms with a change, or the terms and the app will disagree.",
   "admin.settings.group.switches": "Switches for emergencies",
@@ -2672,6 +2675,9 @@ export const en = {
   "admin.settings.name.reliability_watch_level": "Watch level",
   "admin.settings.help.reliability_watch_level":
     "People whose figure is below this are listed for you on the Reliability page. Nothing suspends anyone on its own.",
+  "admin.settings.name.co2_grams_per_car_km": "CO2 per car km",
+  "admin.settings.help.co2_grams_per_car_km":
+    "The CO2 an average car in Iceland emits per kilometre, for the CO2 saved figures. Check it each autumn. 0 hides every figure.",
   "admin.settings.on": "On",
   "admin.settings.off": "Off",
   "admin.settings.unit.people": "{count, plural, one {{value} person} other {{value} people}}",
@@ -2687,6 +2693,8 @@ export const en = {
   "admin.settings.unit.records":
     "{count, plural, one {{value} trip or booking} other {{value} trips and bookings}}",
   "admin.settings.newValue.records": "New value, in trips and bookings",
+  "admin.settings.unit.g_per_km": "{value} g per km",
+  "admin.settings.newValue.g_per_km": "New value, in g per km",
   "admin.settings.unit.seats": "{count, plural, one {{value} seat} other {{value} seats}}",
   "admin.settings.newValue.seats": "New value, in seats",
   "admin.settings.unit.minutes": "{count, plural, one {{value} minute} other {{value} minutes}}",

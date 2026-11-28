@@ -32,6 +32,7 @@ const quiet: Config = {
   payInPerson: false,
   analytics: null,
   oldestAppVersion: null,
+  co2GramsPerCarKm: 0,
 };
 
 const ConfigContext = createContext<Config>(quiet);

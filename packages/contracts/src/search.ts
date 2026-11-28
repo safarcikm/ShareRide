@@ -221,6 +221,14 @@ export const tripDetailsSchema = z.object({
      * open.
      */
     state: z.enum(partStates),
+    /** The part's road metres; 0 from an API that does not say. */
+    distanceM: z.int().nonnegative().default(0),
+    /**
+     * The grams of CO2 one car not driven saves on the part, whatever its
+     * seats (spec 34, 3.5); null while the operator's value is 0, as from
+     * an API that does not say.
+     */
+    co2Grams: z.int().nonnegative().nullable().default(null),
   }),
   /** Seats the driver offers on the trip (R3.9). */
   seatsOffered: z.int().positive(),

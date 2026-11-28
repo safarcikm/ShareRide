@@ -57,7 +57,9 @@ testers; and a console home that shows what needs attention today.
 1. One page lists every setting from
    [pricing and seats](../product/pricing-and-seats.md#configuration-values)
    and the later specs, grouped: prices; booking and paying; changes and
-   cancellations; trip day and reliability; chat and notifications; safety.
+   cancellations; trip day and reliability; chat and notifications; safety;
+   CO2 (`co2_grams_per_car_km`, 150 g per car km to start, 0 hides every
+   CO2 figure; [spec 34](2026-11-28-co2-saved.md)).
 2. Each setting shows its value, unit, default, allowed range and a short
    explanation. A value outside the range is refused.
 3. Saving needs a reason. The page first shows the effect: for price settings,
@@ -126,6 +128,7 @@ old by then.
    | Reports per 1 000 trips, and time to answer | From spec 9 |
    | Money | Paid, refunded and paid out (spec 13) |
    | Active people | Drivers with a trip, passengers with a booking |
+   | Car km saved and CO2 saved | Road km of the bookings completed in the week, one car not driven each, and the grams they kept, shown in whole kg ([spec 34](2026-11-28-co2-saved.md), 3.10) |
 
 3. **Exit criteria:** a panel compares the last 4 weeks on the launch
    corridors with the beta targets, each marked met or not met (decision 2):

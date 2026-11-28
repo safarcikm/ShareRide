@@ -4,14 +4,16 @@
 // confirmed bookings, which then hold no seats (rule S1).
 import { schema } from "@shareride/db";
 import {
+  co2GramsFor,
   completesAt,
   completesWithTrip,
+  partDistanceM,
   tripStatusAt,
   type BookingStatus,
   type TripDaySettings,
   type TripStatus,
 } from "@shareride/domain";
-import { and, eq, inArray, isNull, lte } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, lte } from "drizzle-orm";
 import {
   changeOccupancy,
   expireDueBookings,
@@ -20,9 +22,10 @@ import {
   type Queryable,
   type Transaction,
 } from "../bookings/seats.ts";
+import { gramsPerCarKmIn } from "../co2/store.ts";
 import { recordEvents } from "../notifications/outbox.ts";
 
-const { bookings, disputes, trips } = schema;
+const { bookings, disputes, segments, trips } = schema;
 
 /** The trips time moves on: published or departed. */
 const runningStatuses: TripStatus[] = ["published", "departed"];
@@ -124,12 +127,24 @@ async function complete(tx: Transaction, tripId: string, completedAt: Date, now:
   );
   if (completing.length === 0) return;
   const stops = await stopsOf(tx, tripId);
+  // Each keeps the CO2 its part saves at the value in force now (spec 34, R34.2).
+  const [gramsPerCarKm, stretches] = await Promise.all([
+    gramsPerCarKmIn(tx),
+    tx
+      .select({ distanceM: segments.distanceM })
+      .from(segments)
+      .where(eq(segments.tripId, tripId))
+      .orderBy(asc(segments.position)),
+  ]);
+  const distances = stretches.map((stretch) => stretch.distanceM);
   for (const booking of completing) {
+    const part = partOf(stops, booking);
+    const co2Grams = co2GramsFor(partDistanceM(distances, part.board, part.alight), gramsPerCarKm);
     await tx
       .update(bookings)
-      .set({ status: "completed", completedAt, updatedAt: now })
+      .set({ status: "completed", completedAt, co2Grams, updatedAt: now })
       .where(eq(bookings.id, booking.id));
-    await changeOccupancy(tx, tripId, partOf(stops, booking), -booking.seats);
+    await changeOccupancy(tx, tripId, part, -booking.seats);
   }
   // "How was your trip?" (spec 8, 3.7.6).
   await recordEvents(

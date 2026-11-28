@@ -85,6 +85,17 @@ export function reliabilitySettingsFrom(now: SettingValues): ReliabilitySettings
   };
 }
 
+/** The CO2 figures' value (spec 34, 3.3; ADR 0054). */
+export interface Co2Settings {
+  /** Grams per car kilometre; 0 hides every figure. */
+  readonly gramsPerCarKm: number;
+}
+
+/** The CO2 figures' value as it is now: a booking keeps the grams counted when it completed. */
+export function co2SettingsFrom(now: SettingValues): Co2Settings {
+  return { gramsPerCarKm: now.co2_grams_per_car_km };
+}
+
 /** The example a price value's effect is shown on: Reykjavík to Akureyri, 3 seats. */
 export const pricePreviewExample = { distanceM: 388_000, seats: 3 } as const;
 

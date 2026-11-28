@@ -727,6 +727,17 @@ version }` with the version the page loaded: it takes a lock on the
   the console's two reliability lists carry `periodMonths`. The terms of
   service state the wait, the completion delay, the period and the count
   too, so this group has the same note.
+- CO2 ([spec 34](../specs/2026-11-28-co2-saved.md), ADR 0054):
+  `co2_grams_per_car_km`, 150 to start, 0 hides every CO2 figure in the
+  apps and on About. The figures shown before a ride (a ride's details, a
+  confirmed booking, the driver's ride, a member's totals) read it as it
+  is now, through `co2Settings` in `app.ts` (the 5-second cache). A
+  booking keeps the grams at the value in force when it completes:
+  `trips/completion.ts` and `trip-day/outcome.ts` read it from the
+  database in the same transaction (`gramsPerCarKmIn`). `GET /v1/config`
+  gives `co2GramsPerCarKm` for About's method. The weekly figures
+  `car_km_saved` and `co2_saved_grams` count the bookings completed in the
+  week, whatever the value now.
 - The apps' texts no longer state these numbers: `GET /v1/config` gives
   `freeCancellationMinutes` and `maxMoveMinutes` as they are now, and a
   booking carries its own `cancellationRules`. The terms of service do
