@@ -49,6 +49,14 @@ describe("Co2Card", () => {
     expect(screen.queryByText(line)).toBeNull();
   });
 
+  it("says one kilogram, not kilograms, at 1 kg", async () => {
+    await inApp(<Co2Card grams={1_400} lines={[line]} />);
+    expect(screen.getByText("About 1\u00a0kg, estimated")).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: "CO2 saved, about 1 kilogram, estimated" }),
+    ).toBeTruthy();
+  });
+
   it("shows nothing under 1 kg or without a figure (R34.7)", async () => {
     await inApp(<Co2Card grams={999} lines={[line]} />);
     expect(screen.queryByText("CO₂ saved")).toBeNull();

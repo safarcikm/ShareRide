@@ -39,7 +39,7 @@ export function Co2Card({
           icon={Leaf}
           title={t("co2.title")}
           value={t("co2.value", { kg })}
-          accessibilityLabel={t("co2.spoken", { kg })}
+          accessibilityLabel={t("co2.spoken", { kg, count: kilograms })}
           expanded={open}
           onToggle={() => {
             setOpen((was) => !was);
@@ -88,10 +88,16 @@ export function partCo2Lines(
 export function driverCo2Lines(
   t: Translate,
   locale: Locale,
-  figure: { readonly distanceM: number; readonly grams: number },
+  figure: {
+    readonly distanceM: number;
+    readonly grams: number;
+    /** Null from an API that does not say: the sentence speaks of passengers. */
+    readonly passengers: number | null;
+  },
 ): string[] {
   return [
     t("co2.driver", {
+      passengers: figure.passengers ?? 0,
       km: kilometres(figure.distanceM, locale),
       kg: kilograms(figure.grams, locale),
     }),

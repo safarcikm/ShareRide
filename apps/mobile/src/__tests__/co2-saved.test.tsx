@@ -209,7 +209,7 @@ describe("the driver's ride (3.7)", () => {
   }
 
   it("shows its passengers' figure right after Passengers", async () => {
-    await drive({ distanceM: 634_000, grams: 95_100 });
+    await drive({ distanceM: 634_000, grams: 95_100, passengers: 2 });
     expect(await screen.findByText("About 95\u00a0kg, estimated")).toBeVisible();
     expect(
       screen
@@ -225,10 +225,37 @@ describe("the driver's ride (3.7)", () => {
     expect(screen.getByText(how)).toBeVisible();
   });
 
+  it("speaks of one passenger when there is one", async () => {
+    await drive({ distanceM: 389_000, grams: 58_350, passengers: 1 });
+    await fireEvent.press(row(58));
+    expect(
+      screen.getByText(
+        "Your passenger rides 389\u00a0km with you instead of driving: about 58\u00a0kg less CO₂ than driving alone.",
+      ),
+    ).toBeVisible();
+  });
+
+  it("speaks of one passenger in Icelandic", async () => {
+    mockLanguage = "is-IS";
+    try {
+      await drive({ distanceM: 389_000, grams: 58_350, passengers: 1 });
+      await fireEvent.press(
+        await screen.findByRole("button", { name: "Minni losun CO2, um 58 kíló, áætlað" }),
+      );
+      expect(
+        screen.getByText(
+          "Farþeginn þinn fer 389\u00a0km með þér í stað þess að aka sjálfur: um 58\u00a0kg minni losun CO₂ en að aka einn.",
+        ),
+      ).toBeVisible();
+    } finally {
+      mockLanguage = "en-GB";
+    }
+  });
+
   it("stands in the main column on a laptop", async () => {
     Dimensions.set({ window: { width: 1280, height: 800, scale: 1, fontScale: 1 } });
     try {
-      await drive({ distanceM: 634_000, grams: 95_100 });
+      await drive({ distanceM: 634_000, grams: 95_100, passengers: 2 });
       const main = within(screen.getByTestId("columns-main"));
       expect(await main.findByTestId("co2-card")).toBeVisible();
       expect(within(screen.getByTestId("columns-side")).queryByTestId("co2-card")).toBeNull();

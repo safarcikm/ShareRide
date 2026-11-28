@@ -3732,11 +3732,12 @@ export const en = {
     "These are estimates. Two people booking together count as one car. Someone who would have taken the bus, or stayed at home, saves less. Your own figures are on My profile, where only you see them.",
   "co2.title": "CO₂ saved",
   "co2.value": "About {kg}\u00a0kg, estimated",
-  "co2.spoken": "CO2 saved, about {kg} kilograms, estimated",
+  "co2.spoken":
+    "CO2 saved, about {kg} {count, plural, one {kilogram} other {kilograms}}, estimated",
   "co2.part":
     "One car fewer on the road for {km}\u00a0km: about {kg}\u00a0kg less CO₂ than driving alone.",
   "co2.driver":
-    "Your passengers ride {km}\u00a0km with you instead of driving: about {kg}\u00a0kg less CO₂ than driving alone.",
+    "{passengers, plural, one {Your passenger rides} other {Your passengers ride}} {km}\u00a0km with you instead of driving: about {kg}\u00a0kg less CO₂ than driving alone.",
   "co2.how": "Estimated from the road distance and an average car in Iceland.",
   "co2.link": "How we estimate it",
   "co2.group": "Your shared rides",

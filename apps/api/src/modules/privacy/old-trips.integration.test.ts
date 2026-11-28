@@ -700,10 +700,17 @@ describe("the CO2 totals carried over when a trip is made anonymous (spec 34, 3.
     await paid(gunna.accessToken, gunnas.id);
     const siggas = await booked(sigga.accessToken, airport, { fromStop: 2, toStop: 3 });
     await paid(sigga.accessToken, siggas.id);
-    await completed(gunnas.id, 7_500);
-    await completed(siggas.id, 3_000);
+    await completed(gunnas.id, 7_400);
+    await completed(siggas.id, 3_350);
     return { jon, gunna, sigga, siggas };
   }
+
+  /** Jón's, Gunna's and Sigga's totals once the airport trip is carried, in whole kilograms. */
+  const rounded = [
+    { grams: 11_000, asPassenger: null, asDriver: { grams: 11_000, rides: 1, passengers: 2 } },
+    { grams: 7_000, asPassenger: { grams: 7_000, rides: 1 }, asDriver: null },
+    { grams: 3_000, asPassenger: { grams: 3_000, rides: 1 }, asDriver: null },
+  ];
 
   async function totalsOf(member: Member) {
     const found = await api.client.call(myCo2Route, { accessToken: member.accessToken });
@@ -732,26 +739,26 @@ describe("the CO2 totals carried over when a trip is made anonymous (spec 34, 3.
     await api.connection.db.delete(schema.co2Carried);
   });
 
-  it("keeps each member's totals as they were, as a passenger and as a driver (Review Focus 4)", async () => {
+  it("keeps each member's totals to the nearest kilogram, as a passenger and as a driver (Review Focus 4)", async () => {
     const { jon, gunna, sigga } = await ridesThatSaved();
-    const before = await Promise.all([jon, gunna, sigga].map(totalsOf));
-    expect(before).toEqual([
-      { grams: 10_500, asPassenger: null, asDriver: { grams: 10_500, rides: 1, passengers: 2 } },
-      { grams: 7_500, asPassenger: { grams: 7_500, rides: 1 }, asDriver: null },
-      { grams: 3_000, asPassenger: { grams: 3_000, rides: 1 }, asDriver: null },
+    expect(await Promise.all([jon, gunna, sigga].map(totalsOf))).toEqual([
+      { grams: 10_750, asPassenger: null, asDriver: { grams: 10_750, rides: 1, passengers: 2 } },
+      { grams: 7_400, asPassenger: { grams: 7_400, rides: 1 }, asDriver: null },
+      { grams: 3_350, asPassenger: { grams: 3_350, rides: 1 }, asDriver: null },
     ]);
 
     expect(await anonymise()).toMatchObject({ trips: 1, failed: 0 });
 
+    // Whole kilograms only, so the sums do not give a ride's exact grams.
     expect((await tripOf(airport)).driverId).toBe(formerMemberId);
-    expect(await Promise.all([jon, gunna, sigga].map(totalsOf))).toEqual(before);
+    expect(await Promise.all([jon, gunna, sigga].map(totalsOf))).toEqual(rounded);
     const none = { passengerGrams: 0, passengerRides: 0 };
     expect(await carried()).toEqual(
       [
-        { userId: jon.userId, ...none, driverGrams: 10_500, driverRides: 1, driverPassengers: 2 },
+        { userId: jon.userId, ...none, driverGrams: 11_000, driverRides: 1, driverPassengers: 2 },
         {
           userId: gunna.userId,
-          passengerGrams: 7_500,
+          passengerGrams: 7_000,
           passengerRides: 1,
           driverGrams: 0,
           driverRides: 0,
@@ -790,7 +797,7 @@ describe("the CO2 totals carried over when a trip is made anonymous (spec 34, 3.
 
     expect(await anonymise()).toMatchObject({ trips: 1, failed: 0 });
     expect(await anonymise()).toMatchObject({ trips: 0, failed: 0 });
-    expect(await Promise.all([jon, gunna].map(totalsOf))).toEqual(before);
+    expect(await Promise.all([jon, gunna].map(totalsOf))).toEqual(rounded.slice(0, 2));
     expect(await carried()).toHaveLength(3);
   });
 
@@ -811,25 +818,27 @@ describe("the CO2 totals carried over when a trip is made anonymous (spec 34, 3.
     const { jon, gunna } = await ridesThatSaved();
     await api.connection.db.insert(schema.co2Carried).values([
       { userId: jon.userId, driverGrams: 4_000, driverRides: 1, driverPassengers: 1 },
-      { userId: gunna.userId, passengerGrams: 1_200, passengerRides: 1 },
+      { userId: gunna.userId, passengerGrams: 1_000, passengerRides: 1 },
     ]);
-    const before = await Promise.all([jon, gunna].map(totalsOf));
-    expect(before).toEqual([
-      { grams: 14_500, asPassenger: null, asDriver: { grams: 14_500, rides: 2, passengers: 3 } },
-      { grams: 8_700, asPassenger: { grams: 8_700, rides: 2 }, asDriver: null },
+    expect(await Promise.all([jon, gunna].map(totalsOf))).toEqual([
+      { grams: 14_750, asPassenger: null, asDriver: { grams: 14_750, rides: 2, passengers: 3 } },
+      { grams: 8_400, asPassenger: { grams: 8_400, rides: 2 }, asDriver: null },
     ]);
 
     expect(await anonymise()).toMatchObject({ trips: 1, failed: 0 });
 
-    expect(await Promise.all([jon, gunna].map(totalsOf))).toEqual(before);
+    expect(await Promise.all([jon, gunna].map(totalsOf))).toEqual([
+      { grams: 15_000, asPassenger: null, asDriver: { grams: 15_000, rides: 2, passengers: 3 } },
+      { grams: 8_000, asPassenger: { grams: 8_000, rides: 2 }, asDriver: null },
+    ]);
     const rows = await carried();
     expect(rows.find((row) => row.userId === jon.userId)).toMatchObject({
-      driverGrams: 14_500,
+      driverGrams: 15_000,
       driverRides: 2,
       driverPassengers: 3,
     });
     expect(rows.find((row) => row.userId === gunna.userId)).toMatchObject({
-      passengerGrams: 8_700,
+      passengerGrams: 8_000,
       passengerRides: 2,
     });
   });
@@ -841,12 +850,11 @@ describe("the CO2 totals carried over when a trip is made anonymous (spec 34, 3.
       .update(schema.bookings)
       .set({ passengerId: formerMemberId, message: "" })
       .where(eq(schema.bookings.id, siggas.id));
-    const driver = { grams: 10_500, rides: 1, passengers: 2 };
-    expect((await totalsOf(jon)).asDriver).toEqual(driver);
+    expect((await totalsOf(jon)).asDriver).toEqual({ grams: 10_750, rides: 1, passengers: 2 });
 
     await anonymise();
 
-    expect((await totalsOf(jon)).asDriver).toEqual(driver);
+    expect((await totalsOf(jon)).asDriver).toEqual({ grams: 11_000, rides: 1, passengers: 2 });
     expect((await carried()).map((row) => row.userId)).not.toContain(formerMemberId);
   });
 
