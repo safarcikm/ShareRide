@@ -1721,6 +1721,12 @@ releases follow [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Render builds the server only for changes that reach its image, which
+  saves its paid build minutes: marketing, `.github/`, `infra/`, tests, the
+  web and phone journeys and `apps/mobile/eas.json` no longer start a build,
+  and the hourly clean-up job no longer builds for the website or the
+  console. A change to a legal text alone now deploys: the filter left out
+  every Markdown file, the texts the server reads too.
 - A booking's status tag follows what the colours say (spec 31, 3.2, rule
   6): declined, expired, cancelled and withdrawn are a quiet grey tag, as
   nothing is asked of anyone, and "No-show" is red. They were amber, or
