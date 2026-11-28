@@ -11,9 +11,11 @@ import {
   Rect,
   Stop,
 } from "react-native-svg";
+import { motionMark } from "@/theme/motion";
 import {
   bannerDrawing,
   bannerHouse,
+  motion,
   people,
   puffin,
   puffinCar,
@@ -24,6 +26,8 @@ import { seeded } from "./random";
 // The layers of the Iceland scene in its season (spec 36, 3.3), drawn as the
 // preview draws them (docs/specs/images/seasonal-banner/preview.html,
 // `scene()`). Each takes what it needs; `IcelandScene` puts them in order.
+// The parts that move in the moment (spec 36, 3.6) carry their marks
+// (`motionMark`); without the moment, they stand where it leaves them.
 
 /** A point as SVG path numbers, to one decimal. */
 export const at = (x: number, y: number) => `${x.toFixed(1)} ${y.toFixed(1)}`;
@@ -153,8 +157,10 @@ export function Aurora({
           <Stop offset={1} stopColor={bannerDrawing.aurora2} stopOpacity={0.25} />
         </LinearGradient>
       </Defs>
-      <Path d={ribbon(0, 5, 16, 0)} fill={`url(#${id})`} />
-      <Path d={ribbon(8, 4, 11, 1.7)} fill={`url(#${id})`} opacity={0.6} />
+      <G {...motionMark("aurora")}>
+        <Path d={ribbon(0, 5, 16, 0)} fill={`url(#${id})`} />
+        <Path d={ribbon(8, 4, 11, 1.7)} fill={`url(#${id})`} opacity={0.6} />
+      </G>
     </G>
   );
 }
@@ -175,7 +181,9 @@ export function HighSun({
   const y = wide ? 40 : Math.max(64, ground * 0.44);
   return (
     <G testID="sun">
-      <Circle cx={x} cy={y} r={17} fill={people.sun} opacity={0.22} />
+      <G {...motionMark("glow")}>
+        <Circle cx={x} cy={y} r={17} fill={people.sun} opacity={0.22} />
+      </G>
       <Circle cx={x} cy={y} r={10} fill={people.sun} />
     </G>
   );
@@ -301,7 +309,11 @@ export function Lupines({
   return (
     <>
       {along(zones, wide ? 9 : 4, 11).map(({ x, zone, index }) => (
-        <G key={`${String(zone)}-${String(index)}`} testID="lupine">
+        <G
+          key={`${String(zone)}-${String(index)}`}
+          testID="lupine"
+          {...motionMark("lupine", { delay: Math.min(1500, 120 + index * 90 + zone * 60) })}
+        >
           {[-4, 0, 4].map((dx, spike) => {
             const tall = 7 + ((index + spike) % 3) * 1.6;
             return (
@@ -342,7 +354,11 @@ export function Flowers({
       {along(zones, wide ? 12 : 5, 17).map(({ x, zone, index }) => {
         const y = ground - 4 - (index % 3) * 3;
         return (
-          <G key={`${String(zone)}-${String(index)}`} testID="flower">
+          <G
+            key={`${String(zone)}-${String(index)}`}
+            testID="flower"
+            {...motionMark("flower", { delay: Math.min(1500, 300 + index * 110 + zone * 70) })}
+          >
             <Path
               d={`M${at(x, ground - 1)} V${y.toFixed(1)}`}
               stroke={bannerDrawing.stem}
@@ -404,8 +420,10 @@ export function Sunrise({
     return `M${at(x + 15 * Math.cos(angle), y + 15 * Math.sin(angle))} L${at(x + 22 * Math.cos(angle), y + 22 * Math.sin(angle))}`;
   }).join(" ");
   return (
-    <G testID="sunrise">
-      <Path d={rays} stroke={people.sun} strokeWidth={3} strokeLinecap="round" />
+    <G testID="sunrise" {...motionMark("sunrise")}>
+      <G {...motionMark("rays")}>
+        <Path d={rays} stroke={people.sun} strokeWidth={3} strokeLinecap="round" />
+      </G>
       <Circle cx={x} cy={y} r={12} fill={people.sun} />
       <Path
         d={`M${at(x - 5, y + 2)} Q${at(x, y + 6.5)} ${at(x + 5, y + 2)}`}
@@ -422,19 +440,23 @@ export function Sunrise({
 
 /**
  * New Year's three fireworks, burst in the sky: on a phone across it, on a
- * laptop in the car's room.
+ * laptop in the car's room. While `rising`, in the moment, each goes up on
+ * a trail first and bursts in its turn.
  */
 export function Fireworks({
   width,
   room,
   ground,
   wide,
+  rising = false,
 }: {
   readonly width: number;
   readonly room: Room;
   readonly ground: number;
   readonly wide: boolean;
+  readonly rising?: boolean;
 }) {
+  const turns = motion.moments.burst.at;
   const span = room[1] - room[0];
   const bursts = wide
     ? ([
@@ -449,27 +471,40 @@ export function Fireworks({
       ] as const);
   return (
     <>
-      {bursts.map(([x, y, r, colour]) => {
+      {bursts.map(([x, y, r, colour], turn) => {
+        const delay = turns[turn] ?? 0;
         const rays = Array.from({ length: 12 }, (_, index) => {
           const angle = (index * Math.PI) / 6 + 0.2;
           return `M${at(x + r * 0.35 * Math.cos(angle), y + r * 0.35 * Math.sin(angle))} L${at(x + r * Math.cos(angle), y + r * Math.sin(angle))}`;
         }).join(" ");
         return (
-          <G key={`${x.toFixed(1)}-${y.toFixed(1)}`} testID="firework">
-            <Path d={rays} stroke={colour} strokeWidth={2.2} strokeLinecap="round" />
-            {Array.from({ length: 12 }, (_, index) => {
-              const angle = (index * Math.PI) / 6 + 0.2 + Math.PI / 12;
-              return (
-                <Circle
-                  key={index}
-                  cx={x + r * 0.78 * Math.cos(angle)}
-                  cy={y + r * 0.78 * Math.sin(angle)}
-                  r={1.3}
-                  fill={puffin.white}
-                />
-              );
-            })}
-            <Circle cx={x} cy={y} r={2} fill={colour} />
+          <G key={`${x.toFixed(1)}-${y.toFixed(1)}`}>
+            {rising ? (
+              <Path
+                testID="trail"
+                {...motionMark("trail", { delay })}
+                d={`M${at(x, y + 26)} L${at(x, y + 4)}`}
+                stroke={colour}
+                strokeWidth={1.6}
+                strokeLinecap="round"
+              />
+            ) : null}
+            <G testID="firework" {...motionMark("burst", { delay })}>
+              <Path d={rays} stroke={colour} strokeWidth={2.2} strokeLinecap="round" />
+              {Array.from({ length: 12 }, (_, index) => {
+                const angle = (index * Math.PI) / 6 + 0.2 + Math.PI / 12;
+                return (
+                  <Circle
+                    key={index}
+                    cx={x + r * 0.78 * Math.cos(angle)}
+                    cy={y + r * 0.78 * Math.sin(angle)}
+                    r={1.3}
+                    fill={puffin.white}
+                  />
+                );
+              })}
+              <Circle cx={x} cy={y} r={2} fill={colour} />
+            </G>
           </G>
         );
       })}

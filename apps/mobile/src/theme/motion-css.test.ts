@@ -1,4 +1,4 @@
-import { motionCss } from "./motion-css";
+import { momentParts, motionCss } from "./motion-css";
 import { motion, spacing } from "./tokens";
 
 describe("motionCss (spec 33, 3.2)", () => {
@@ -50,11 +50,50 @@ describe("motionCss (spec 33, 3.2)", () => {
 
   it("animates only where things are and how see-through they are (R33.2)", () => {
     const frames = [...css.matchAll(/@keyframes [\w-]+\{(.*?)\}\}/g)].map((m) => m[1] ?? "");
-    expect(frames).toHaveLength(4);
+    expect(frames).toHaveLength(4 + momentParts.length);
     const properties = new Set(
       frames.flatMap((body) => [...body.matchAll(/([a-z-]+):/g)].map((m) => m[1])),
     );
     expect([...properties].sort()).toEqual(["animation-timing-function", "opacity", "transform"]);
+  });
+
+  it("has a rule and its own keyframes for every part of a moment (spec 36, 3.6)", () => {
+    expect(momentParts).toEqual(
+      expect.arrayContaining(["flake", "leaf", "flyer", "aurora", "sunrise", "burst", "bulb"]),
+    );
+    for (const part of momentParts) {
+      // While the car arrives, or in the scene of the moment that plays.
+      expect(css).toContain(`[data-motion="arrive"] [data-motion="${part}"],`);
+      expect(css).toContain(`[data-motion="moment"] [data-motion="${part}"]{`);
+      expect(css).toContain(`animation:pr-${part} `);
+      expect(css).toContain(`@keyframes pr-${part}{`);
+    }
+  });
+
+  it("times each moment as the tokens say, or as each drawn thing says", () => {
+    const { aurora, sunrise, flake } = motion.moments;
+    expect(css).toContain(`animation:pr-aurora ${String(aurora.duration)}ms `);
+    expect(css).toContain(
+      `animation:pr-sunrise ${String(sunrise.duration)}ms ${String(sunrise.delay)}ms `,
+    );
+    // Snow falls as long and as late as each flake is told, with a default.
+    expect(css).toContain(
+      `animation:pr-flake var(--t,${String(flake.duration[1])}ms) var(--d,0ms) linear both`,
+    );
+  });
+
+  it("plays each moment once: nothing goes on for ever (R33.3)", () => {
+    expect(css).not.toContain("infinite");
+  });
+
+  it("keeps snow, leaves, trails and flying puffins unseen until their moment shows them", () => {
+    for (const part of ["flake", "leaf", "trail", "flyer"]) {
+      expect(css).toMatch(new RegExp(`\\[data-motion="${part}"\\][^{]*\\{opacity:0\\}`));
+    }
+  });
+
+  it("fades the flying puffins in as they set off, where a laptop's start in sight", () => {
+    expect(css).toContain("@keyframes pr-flyer{0%{opacity:0;transform:translateX(0)}");
   });
 
   it("stops everything for someone who asked for less motion (R33.4)", () => {

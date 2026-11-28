@@ -31,7 +31,7 @@ import {
 import { blonduos, borgarnes, tripsApi } from "@/testing/trips";
 import { cardFace } from "@/testing/lift";
 import { forgetArrival } from "@/theme/motion";
-import { whenArrived } from "@/theme/motion-sheet";
+import { whenArrived, whenCarStopped } from "@/theme/motion-sheet";
 import { bsi, hof, kef, meetingPoints } from "@/testing/meeting-points";
 import {
   colors,
@@ -63,6 +63,7 @@ jest.mock("@/lib/on-website", () => ({ onWebsite: jest.fn(() => false) }));
 jest.mock("@/theme/motion-sheet", () => ({
   installMotion: jest.fn(),
   whenArrived: jest.fn(() => () => undefined),
+  whenCarStopped: jest.fn(() => () => undefined),
 }));
 // Saturday 14 November 2026, noon in Iceland; a test may move the clock on.
 jest.mock("@/lib/clock", () => ({ now: jest.fn(() => new Date("2026-11-14T12:00:00Z")) }));
@@ -986,6 +987,12 @@ describe("The car arrives on the website (spec 33, 3.2)", () => {
   const car = () => screen.getByTestId("puffins-in-car", { includeHiddenElements: true });
   const styleOf = (node: ReturnType<typeof car>) =>
     StyleSheet.flatten(node.props.style as object) as Record<string, unknown>;
+  /** Says the car itself has stopped, as the page does when the driver's hop ends. */
+  const carStopped = () => {
+    const [stopped] =
+      (whenCarStopped as jest.Mock<() => void, [() => void]>).mock.calls.at(-1) ?? [];
+    stopped?.();
+  };
 
   beforeEach(() => {
     forgetArrival();
@@ -994,6 +1001,7 @@ describe("The car arrives on the website (spec 33, 3.2)", () => {
 
   afterEach(async () => {
     (onWebsite as jest.Mock).mockReturnValue(false);
+    mockedNow.mockImplementation(() => new Date("2026-11-14T12:00:00Z"));
     await act(() => {
       Dimensions.set({ window: { width: 750, height: 1334, scale: 2, fontScale: 2 } });
     });
@@ -1038,6 +1046,70 @@ describe("The car arrives on the website (spec 33, 3.2)", () => {
     expect(styleOf(car())).toMatchObject({
       "--from": `${String(-(sizes.sceneCarWide + spacing.lg))}px`,
     });
+  });
+
+  it("on a laptop, opens its room once the car has stopped, while what it carries may still move", async () => {
+    Dimensions.set({ window: { width: 1280, height: 800, scale: 1, fontScale: 1 } });
+    await openFrontPage();
+    await screen.findByRole("header", { name: "Share your ride" });
+    const room = () => screen.getByTestId("car-room", { includeHiddenElements: true });
+    expect(room()).toHaveProp("dataSet", { motion: "arrive-room" });
+    await act(() => {
+      carStopped();
+    });
+    expect(room().props.dataSet).toBeUndefined();
+    expect(car()).toHaveProp("dataSet", { motion: "arrive" });
+  });
+
+  it("plays the moment only for the day Find opened with: turned off in the console, it stops, and the season's does not start late (spec 36, 3.6 and 3.8)", async () => {
+    mockedNow.mockImplementation(() => new Date("2027-12-31T20:00:00Z"));
+    // The settings come late, as they may on a slow line.
+    let settingsRead: (() => void) | undefined;
+    await openFrontPage((fake) => {
+      fake.answer(
+        "/v1/config",
+        () =>
+          new Promise((resolve) => {
+            settingsRead = () => {
+              resolve(
+                ok(200, {
+                  beta: false,
+                  paused: [],
+                  maxSeats: 8,
+                  freeCancellationMinutes: 15,
+                  maxMoveMinutes: 120,
+                  reliabilityMonths: 12,
+                  signInProviders: [],
+                  emailSignIn: true,
+                  festiveDays: false,
+                }),
+              );
+            };
+          }),
+      );
+    });
+    // Until then the day is on, and its moment plays.
+    await screen.findByText("Happy New Year");
+    expect(screen.getByTestId("iceland-scene", { includeHiddenElements: true })).toHaveProp(
+      "dataSet",
+      { motion: "moment" },
+    );
+    await act(() => {
+      settingsRead?.();
+    });
+    await waitFor(() => {
+      expect(screen.queryByTestId("greeting")).toBeNull();
+    });
+    const scene = screen.getByTestId("iceland-scene", { includeHiddenElements: true });
+    expect(scene.props.dataSet).toBeUndefined();
+    expect(screen.queryAllByTestId("flake", { includeHiddenElements: true })).toHaveLength(0);
+    expect(screen.queryAllByTestId("trail", { includeHiddenElements: true })).toHaveLength(0);
+    // Without its moment, the arrival is over once the car has stopped.
+    expect(car()).toHaveProp("dataSet", { motion: "arrive" });
+    await act(() => {
+      carStopped();
+    });
+    expect(car().props.dataSet).toBeUndefined();
   });
 
   it("stands still in the phone apps, until their motion comes (3.11)", async () => {

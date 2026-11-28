@@ -1,4 +1,4 @@
-import { lastOfArrival, motionCss } from "./motion-css";
+import { lastOfArrival, motionCss, playingParts } from "./motion-css";
 
 const id = "puffinride-motion";
 
@@ -12,14 +12,55 @@ export function installMotion(): void {
 }
 
 /**
- * Calls `done` once the car has arrived (spec 33, 3.2): when the
- * driver's hop, which moves last, ends or stops, as when Find is left
- * meanwhile or reduce motion is turned on. So the arrival is over when
- * the page shows it over, even when its first frame came late or the
- * page waited in a tab behind. With reduce motion on nothing moves, and
- * it is over at once. Gives back what stops listening.
+ * Whether anything of the arriving car, or of the moment its scene plays,
+ * still moves or is still to move. Null where the browser cannot list
+ * its animations.
+ */
+function stillPlaying(): boolean | null {
+  if (typeof document.getAnimations !== "function") return null;
+  return document.getAnimations().some((animation) => {
+    if (animation.playState === "finished") return false;
+    const target =
+      animation.effect !== null && "target" in animation.effect
+        ? (animation.effect as KeyframeEffect).target
+        : null;
+    return target instanceof Element && target.closest(playingParts) !== null;
+  });
+}
+
+/**
+ * Calls `done` once the car has arrived (spec 33, 3.2) and the moment of
+ * the day or season has played (spec 36, 3.6): when a part of them ends
+ * or stops, as when Find is left meanwhile or reduce motion is turned on,
+ * and nothing of them moves or is still to move. Where the browser cannot
+ * list its animations, when the driver's hop, which moves last of the
+ * car, ends. So the arrival is over when the page shows it over, even
+ * when its first frame came late or the page waited in a tab behind.
+ * With reduce motion on nothing moves, and it is over at once. Gives back
+ * what stops listening.
  */
 export function whenArrived(done: () => void): () => void {
+  return onEachEnd(done, (target) => {
+    const playing = stillPlaying();
+    return playing === null ? target.matches(lastOfArrival) : !playing;
+  });
+}
+
+/**
+ * Calls `done` once the car itself has stopped (spec 33, 3.2): when the
+ * driver's hop, which moves last of it, ends or stops, while what it
+ * carries and the moment may still move. At once with reduce motion on.
+ * Gives back what stops listening.
+ */
+export function whenCarStopped(done: () => void): () => void {
+  return onEachEnd(done, (target) => target.matches(lastOfArrival));
+}
+
+/**
+ * Calls `done` when a part's animation ends or stops and `over` says that
+ * was the end; at once where nothing moves. Gives back what stops listening.
+ */
+function onEachEnd(done: () => void, over: (target: Element) => boolean): () => void {
   if (
     typeof document === "undefined" ||
     window.matchMedia("(prefers-reduced-motion: reduce)").matches
@@ -28,7 +69,7 @@ export function whenArrived(done: () => void): () => void {
     return () => undefined;
   }
   const ended = (event: Event) => {
-    if (event.target instanceof Element && event.target.matches(lastOfArrival)) done();
+    if (event.target instanceof Element && over(event.target)) done();
   };
   document.addEventListener("animationend", ended);
   document.addEventListener("animationcancel", ended);

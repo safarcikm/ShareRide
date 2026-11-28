@@ -10,6 +10,7 @@ import { expect, test, type Page } from "@playwright/test";
 const visible = { visible: true } as const;
 const car = '[data-testid="puffins-in-car"]';
 const arriving = '[data-motion="arrive"]';
+const moment = '[data-motion="moment"]';
 
 /**
  * The arriving car's drive: the names of its animations, and where the
@@ -145,6 +146,8 @@ test.describe("the car arrives on the front page (spec 33, 3.2)", () => {
     await expect(page.locator(car).filter(visible)).toBeVisible();
     await expect(page.locator(arriving)).toHaveCount(0, { timeout: 5000 });
     expect(await stillMoving(page)).toBe(0);
+    // Nor does the day's or season's moment play again (spec 36, 3.6).
+    await expect(page.locator(moment)).toHaveCount(0);
     if (testInfo.project.name === "phone") {
       // The phone's logo loads Find again, and the car stays still.
       await page.getByRole("button", { name: "PuffinRide, update the front page" }).click();
@@ -152,6 +155,66 @@ test.describe("the car arrives on the front page (spec 33, 3.2)", () => {
       await expect(page.locator(arriving)).toHaveCount(0);
       expect(await stillMoving(page)).toBe(0);
     }
+  });
+});
+
+/**
+ * What moves with the arriving car and in the scene's moment: the names of
+ * their animations, and when the last of them ends, in milliseconds from
+ * the start.
+ */
+function playing(page: Page) {
+  return page.evaluate(
+    ([carPart, scenePart]) => {
+      const parts = document.getAnimations().filter((animation) => {
+        const target =
+          animation.effect !== null && "target" in animation.effect
+            ? (animation.effect as KeyframeEffect).target
+            : null;
+        return target instanceof Element && target.closest(`${carPart},${scenePart}`) !== null;
+      });
+      return {
+        names: [
+          ...new Set(
+            parts.map((animation) =>
+              "animationName" in animation ? String(animation.animationName) : "",
+            ),
+          ),
+        ],
+        end: Math.max(
+          ...parts.map((animation) => Number(animation.effect?.getComputedTiming().endTime ?? 0)),
+        ),
+      };
+    },
+    [arriving, moment],
+  );
+}
+
+test.describe("the day's or season's moment plays with the car (spec 36, 3.6)", () => {
+  test.use({ locale: "en-GB", reducedMotion: "no-preference" });
+
+  test("New Year's fireworks go up and burst, all over within 3.5 s, and then stand", async ({
+    page,
+  }) => {
+    await page.goto("/?day=2027-12-31");
+    await expect(page.locator(moment)).toHaveCount(1);
+    const seen = await playing(page);
+    expect(seen.names).toEqual(expect.arrayContaining(["pr-trail", "pr-burst", "pr-hop"]));
+    expect(seen.end).toBeLessThanOrEqual(3500);
+    // Then nothing of it moves: the trails are gone, the bursts stay.
+    await expect(page.locator(moment)).toHaveCount(0, { timeout: 6000 });
+    await expect(page.locator(arriving)).toHaveCount(0);
+    await expect(page.getByTestId("trail")).toHaveCount(0);
+    await expect(page.getByTestId("firework")).toHaveCount(3);
+  });
+
+  test("snow falls in winter, and is gone once it has fallen", async ({ page }) => {
+    await page.goto("/?day=2027-01-15");
+    await expect(page.locator(moment)).toHaveCount(1);
+    expect(await page.locator('[data-motion="flake"]').count()).toBeGreaterThan(10);
+    expect((await playing(page)).names).toContain("pr-flake");
+    await expect(page.locator(moment)).toHaveCount(0, { timeout: 6000 });
+    await expect(page.locator('[data-motion="flake"]')).toHaveCount(0);
   });
 });
 
@@ -167,5 +230,18 @@ test.describe("with reduce motion on (spec 33, 3.9)", () => {
     if (testInfo.project.name !== "phone") {
       await expect(page.getByTestId("car-room")).toHaveCSS("overflow", "visible");
     }
+  });
+
+  test("the day's look stands still from the start: the tree lit, no snow (spec 36, 3.6)", async ({
+    page,
+  }) => {
+    await page.goto("/?day=2027-12-24");
+    await expect(page.getByTestId("tree").filter(visible)).toBeVisible();
+    const bulbs = page.locator('[data-motion="bulb"]');
+    await expect(bulbs).toHaveCount(10);
+    for (const bulb of await bulbs.all()) await expect(bulb).toHaveCSS("opacity", "1");
+    await expect(page.locator(moment)).toHaveCount(0);
+    await expect(page.locator('[data-motion="flake"]')).toHaveCount(0);
+    expect(await stillMoving(page)).toBe(0);
   });
 });

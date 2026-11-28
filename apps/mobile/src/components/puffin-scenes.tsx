@@ -16,6 +16,7 @@ import Svg, {
 import type { BannerDay, BannerSeason } from "@shareride/domain";
 import { Balloons, Bouquet, Bun, Egg, Flag, Heart, RoofCase, Tent, Tree } from "@/banner/car-loads";
 import { carLook, dayLooks, everyday, type DayLook } from "@/banner/day-looks";
+import { MomentOverlay, momentOf } from "@/banner/moment-overlay";
 import { seasonLooks, sceneTop } from "@/banner/season-looks";
 import {
   at,
@@ -47,7 +48,8 @@ import {
   sizes,
   spacing,
 } from "@/theme/tokens";
-import { arrivalProps, motionMark } from "@/theme/motion";
+import { onWebsite } from "@/lib/on-website";
+import { arrivalProps, momentProps, motionMark } from "@/theme/motion";
 import { usePalette } from "@/theme/use-palette";
 import { Puffin } from "./puffin";
 
@@ -451,7 +453,10 @@ function glaciersOn(points: readonly (readonly [number, number])[], count: numbe
  * it on a phone, the car's room on a laptop (R36.5). `layout` says which
  * the scene is behind, a phone's top or a laptop's panel, as the name's
  * row and the title stand where the layout puts them, whatever the
- * window's width. `width` and `height` are the drawing's.
+ * window's width. `width` and `height` are the drawing's. While
+ * `playing`, on the website, the season's or day's moment plays once with
+ * the car's arrival (spec 36, 3.6): snow falls, leaves blow, puffins fly
+ * past, the fireworks go up; after, the day's look stands still.
  */
 export function IcelandScene({
   season,
@@ -462,6 +467,7 @@ export function IcelandScene({
   road = true,
   room = [0, width],
   layout = "phone",
+  playing = false,
 }: {
   readonly season: BannerSeason;
   readonly day?: BannerDay | null;
@@ -471,8 +477,9 @@ export function IcelandScene({
   readonly road?: boolean;
   readonly room?: Room;
   readonly layout?: "phone" | "panel";
+  readonly playing?: boolean;
 }) {
-  const { scheme } = useScene();
+  const { scheme, black } = useScene();
   const ids = useId().replaceAll(":", "");
   const land = icelandSeasons[season][scheme];
   const snow = "snow" in land ? land.snow : undefined;
@@ -509,9 +516,13 @@ export function IcelandScene({
   // room, fading in at its left edge: never under the words (R36.5).
   const edge = `cover-edge-${ids}`;
   const masked = wide && cover !== null ? `url(#${edge})` : undefined;
+  // What moves is drawn only on the website, the phone apps' motion coming later (spec 33, 3.11).
+  const moving = playing && onWebsite();
+  const moment = moving ? momentOf(day, season) : null;
   return (
     <View
       testID="iceland-scene"
+      {...momentProps(playing)}
       aria-hidden
       importantForAccessibility="no-hide-descendants"
       style={{ width, height }}
@@ -573,7 +584,7 @@ export function IcelandScene({
           <CoverEdge id={edge} room={room} width={width} height={height} />
         )}
         {cover === null || coverLook === null ? null : (
-          <G testID="cover" mask={masked}>
+          <G testID="cover" mask={masked} {...motionMark("cover")}>
             <Path d={farRange} fill={cover.far} />
             <Path
               d={mountains}
@@ -648,8 +659,18 @@ export function IcelandScene({
           </>
         )}
         {sky === "fireworks" ? (
-          <Fireworks width={width} room={room} ground={ground} wide={wide} />
+          <Fireworks width={width} room={room} ground={ground} wide={wide} rising={moving} />
         ) : null}
+        {moment === null ? null : (
+          <MomentOverlay
+            kind={moment}
+            room={room}
+            ground={ground}
+            wide={wide}
+            scheme={scheme}
+            black={black}
+          />
+        )}
       </Svg>
     </View>
   );
@@ -712,7 +733,8 @@ function CoverEdge({
  * The scene in a rounded panel as wide as its room, for a wide front page
  * (spec 18): the sky first, so the panel shows at once, then the land once
  * its width is known; the hills go on from `ground` to the bottom. The
- * small things go in the car's room, `room` wide at the right (R36.5).
+ * small things go in the car's room, `room` wide at the right (R36.5),
+ * and so does the moment, while `playing`.
  */
 export function IcelandPanel({
   season,
@@ -720,12 +742,14 @@ export function IcelandPanel({
   height,
   ground,
   room,
+  playing = false,
 }: {
   readonly season: BannerSeason;
   readonly day?: BannerDay | null;
   readonly height: number;
   readonly ground: number;
   readonly room: number;
+  readonly playing?: boolean;
 }) {
   const { scheme } = useScene();
   const [width, setWidth] = useState(0);
@@ -746,6 +770,7 @@ export function IcelandPanel({
         road={false}
         room={[Math.max(0, width - room), width]}
         layout="panel"
+        playing={playing}
       />
     </View>
   );

@@ -507,3 +507,72 @@ describe("the car and the scene on a day (spec 36, 3.4 and 3.5)", () => {
     },
   );
 });
+
+describe("the moment of the day or season, on the website (spec 36, 3.6)", () => {
+  beforeEach(() => {
+    (onWebsite as jest.Mock).mockReturnValue(true);
+  });
+
+  afterEach(() => {
+    (onWebsite as jest.Mock).mockReturnValue(false);
+  });
+
+  it("marks the scene while its moment plays, and lets a little snow fall in winter", async () => {
+    await render(<IcelandScene season="winter" width={390} height={200} playing />);
+    expect(part("iceland-scene")).toHaveProp("dataSet", { motion: "moment" });
+    expect(parts("flake").length).toBeGreaterThan(10);
+  });
+
+  it("brings the day's moment in place of its season's: none at Easter, more snow on the first day of winter", async () => {
+    await render(<IcelandScene season="spring" day="easter" width={390} height={200} playing />);
+    expect(parts("flyer")).toHaveLength(0);
+    await render(<IcelandScene season="autumn" day="winterday" width={390} height={200} playing />);
+    expect(parts("leaf")).toHaveLength(0);
+    expect(parts("flake").length).toBeGreaterThan(30);
+  });
+
+  it("flies two puffins past in spring, and blows leaves along in autumn", async () => {
+    await render(<IcelandScene season="spring" width={390} height={200} playing />);
+    expect(parts("flyer")).toHaveLength(2);
+    await render(<IcelandScene season="autumn" width={390} height={200} playing />);
+    expect(parts("leaf")).toHaveLength(8);
+  });
+
+  it("sends up a trail before each of New Year's bursts", async () => {
+    await render(<IcelandScene season="winter" day="newyear" width={390} height={200} playing />);
+    expect(parts("trail")).toHaveLength(3);
+    expect(parts("firework")).toHaveLength(3);
+  });
+
+  it("keeps a laptop's moment in the car's room", async () => {
+    await render(
+      <IcelandScene
+        season="winter"
+        width={900}
+        height={180}
+        road={false}
+        room={[600, 900]}
+        layout="panel"
+        playing
+      />,
+    );
+    const xs = valuesIn(parts("flake"), "cx") as number[];
+    expect(xs.length).toBeGreaterThan(0);
+    for (const x of xs) expect(x).toBeGreaterThanOrEqual(600);
+  });
+
+  it("draws none of it once the moment has played, and leaves the bursts standing", async () => {
+    await render(<IcelandScene season="winter" day="newyear" width={390} height={200} />);
+    expect(part("iceland-scene").props.dataSet).toBeUndefined();
+    expect(parts("trail")).toHaveLength(0);
+    expect(parts("flake")).toHaveLength(0);
+    expect(parts("firework")).toHaveLength(3);
+  });
+
+  it("draws none of it in the phone apps, whose motion comes later (spec 33, 3.11)", async () => {
+    (onWebsite as jest.Mock).mockReturnValue(false);
+    await render(<IcelandScene season="winter" width={390} height={200} playing />);
+    expect(part("iceland-scene").props.dataSet).toBeUndefined();
+    expect(parts("flake")).toHaveLength(0);
+  });
+});

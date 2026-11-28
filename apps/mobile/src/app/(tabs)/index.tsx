@@ -42,7 +42,7 @@ import { useRides } from "@/my-rides/use-rides";
 import { FindMap } from "@/search/find-map";
 import { ResultTicket } from "@/search/result-ticket";
 import { openSearch, useRouteSearch } from "@/search/route-search";
-import { roomProps, useArrival } from "@/theme/motion";
+import { roomProps, useArrival, useDriving } from "@/theme/motion";
 import { controlOutline, minTouchTarget, sizes, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
@@ -163,7 +163,16 @@ function FrontPage() {
   const [band, setBand] = useState(sceneBand);
   const [line, setLine] = useState<number>(sizes.sceneLine);
   // The car arrives the first time Find shows on the website (spec 33, 3.2).
-  const arriving = useArrival();
+  const arrival = useArrival();
+  const driving = useDriving(arrival);
+  // The day's or season's moment plays with it, for the look Find opened
+  // with (spec 36, 3.6): when the first read of the console's settings
+  // turns the day off (3.8), the moment stops there and the season's does
+  // not start late. Without its moment the arrival ends with the car.
+  const look = `${season} ${String(day)}`;
+  const [opened] = useState(look);
+  const playing = arrival && look === opened;
+  const arriving = playing || driving;
   // Someone signed in is greeted by name (spec 31, 3.5); what PuffinRide
   // is, is said to someone new, and until the account has a first name.
   const firstName = me?.firstName ?? null;
@@ -210,7 +219,7 @@ function FrontPage() {
       <View style={styles.intro}>{titles}</View>
       {/* The car's room, which the title keeps free: on the website the car
           arrives out of its left edge, never under the words (spec 33, 3.2). */}
-      <View testID="car-room" {...roomProps(arriving)} style={styles.carRoom}>
+      <View testID="car-room" {...roomProps(driving)} style={styles.carRoom}>
         <View testID="car-on-hills" style={styles.carOnHills}>
           <PuffinsInCar
             day={day}
@@ -266,6 +275,7 @@ function FrontPage() {
               height={line + spacing.md + searchRowTop}
               ground={line + spacing.sm}
               room={carFromEdge + sizes.sceneCarWide + spacing.lg}
+              playing={playing}
             />
           </View>
         }
@@ -330,6 +340,7 @@ function FrontPage() {
           day={day}
           width={windowWidth}
           height={spacing.md + band + spacing.sm}
+          playing={playing}
         />
       }
       topColour={sceneTop(season, scheme)}
