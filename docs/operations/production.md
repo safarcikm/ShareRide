@@ -195,6 +195,10 @@ say both changes if neither was announced yet. The texts to paste, in
 both languages, are kept in
 [announcements of changed legal texts](../compliance/legal-texts/announcements.md).
 
+The announcement for those four versions was not sent: Martin made the
+changes quietly on 2026-11-28, as PuffinRide had no real users yet. From the
+first member on, a changed text gets its announcement.
+
 ## Roll back
 
 1. Open `puffinride-api`, **Deploys**, find the last good deploy and choose
