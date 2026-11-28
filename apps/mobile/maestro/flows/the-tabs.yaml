@@ -1,6 +1,8 @@
 # Each place in the menu, signed in.
 appId: ${APP_ID}
 name: The tabs
+onFlowStart:
+  - runFlow: ../helpers/close-stuck-box.yaml
 ---
 - launchApp
 - tapOn:

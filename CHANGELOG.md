@@ -1624,6 +1624,13 @@ releases follow [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- The Android phone journeys failed on every run from about 01:30 on
+  2026-11-28. The workflow's key press reached the Pixel Launcher before it
+  had a window, the launcher stalled, and its "isn't responding" box hid
+  the whole app, because the setting that stops such boxes came after the
+  key press. It comes first now, and each journey also first closes such
+  a box of one of the phone's own apps. A box about PuffinRide stays, so a
+  stall of ours still fails the journey.
 - A tap on a notification about beta news, about a reply to feedback, or
   about an answer to a question on one's data, opens its page in the
   phone apps. The server named the three pages and the app ignored them.
