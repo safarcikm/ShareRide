@@ -129,6 +129,7 @@ export function retentionSteps({
         "provider_sign_ins",
         "email_sign_ins",
         "passkey_challenges",
+        "apple_tokens",
       ],
       async run(now) {
         const counts = await cleanUpSignInRecords(db, now);
@@ -144,6 +145,7 @@ export function retentionSteps({
             provider_sign_ins: counts.providerSignIns,
             email_sign_ins: counts.emailSignIns,
             passkey_challenges: counts.passkeyChallenges,
+            apple_tokens: counts.appleTokens,
           },
         };
       },

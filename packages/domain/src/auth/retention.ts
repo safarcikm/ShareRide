@@ -16,6 +16,8 @@ export const retention = {
   emailSignInsSeconds: 3600,
   /** A member's passkey challenge stays an hour after it expired (spec 27, 5). */
   passkeyChallengesSeconds: 3600,
+  /** An ended Apple link's token Apple did not take is dropped after 7 days (spec 37, 3.2). */
+  appleTokensSeconds: 7 * 24 * 3600,
 } as const;
 
 export interface RetentionCutoffs {
@@ -39,6 +41,8 @@ export interface RetentionCutoffs {
   readonly emailSignInsExpiredBefore: Date;
   /** Members' passkey challenges that expired before this time are deleted. */
   readonly passkeyChallengesExpiredBefore: Date;
+  /** Apple tokens queued for revocation before this time are dropped. */
+  readonly appleTokensQueuedBefore: Date;
 }
 
 export function retentionCutoffs(now: Date): RetentionCutoffs {
@@ -53,5 +57,6 @@ export function retentionCutoffs(now: Date): RetentionCutoffs {
     providerSignInsExpiredBefore: ago(retention.providerSignInsSeconds),
     emailSignInsExpiredBefore: ago(retention.emailSignInsSeconds),
     passkeyChallengesExpiredBefore: ago(retention.passkeyChallengesSeconds),
+    appleTokensQueuedBefore: ago(retention.appleTokensSeconds),
   };
 }

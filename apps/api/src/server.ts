@@ -7,6 +7,7 @@ import { defaultReviewSettings, tripDaySettingsFrom } from "@shareride/domain";
 import { createApp } from "./app.ts";
 import { ConfigError, loadConfig, type Config } from "./config.ts";
 import { createLogger } from "./logger.ts";
+import { revokeDueAppleTokens } from "./modules/auth/apple-revocations.ts";
 import { expireAllDueBookings } from "./modules/bookings/index.ts";
 import { createWeeklyMetricsService } from "./modules/metrics/index.ts";
 import { endDueSuspensions } from "./modules/moderation/index.ts";
@@ -68,6 +69,8 @@ const email = selectEmail(config.email, (line) => {
 const exportCipher = createFileCipher(config.authSecret, exportCipherPurpose);
 // Meeting point and profile photos (ADRs 0022 and 0033); none when PHOTO_STORAGE is none.
 const photoStorage = selectPhotoStorage(config.photos);
+// Google and Apple sign-in (ADR 0034); loadConfig refuses the stand-in in production.
+const signIn = selectSignIn(config.signIn);
 const app = createApp({
   logger,
   checkDatabase: () => pingDatabase(database.pool),
@@ -100,8 +103,7 @@ const app = createApp({
     ...(payments === undefined ? {} : { payments }),
     ...(email === undefined ? {} : { email }),
     ...photoStorage,
-    // Google and Apple sign-in (ADR 0034); loadConfig refuses the stand-in in production.
-    signIn: selectSignIn(config.signIn),
+    signIn,
   },
 });
 
@@ -187,6 +189,23 @@ if (photos !== undefined) {
         logger,
       });
       if (deleted > 0) logger.info({ deleted }, "photo files deleted");
+    }),
+  );
+}
+// Apple ends our access to the Apple accounts of links that ended (spec 37,
+// 3.2): queued by the erasure, which holds no Apple keys, and by Sign-in
+// methods. Without Apple there is nothing to send to.
+const revokeApple = signIn.providers.find((provider) => provider.name === "apple")?.revoke;
+if (revokeApple !== undefined) {
+  jobs.push(
+    every(60_000, "apple-revocations", async () => {
+      const result = await revokeDueAppleTokens({
+        db: database.db,
+        revoke: (token) => revokeApple(token),
+        now: new Date(),
+        logger,
+      });
+      if (result.revoked > 0) logger.info({ revoked: result.revoked }, "Apple links ended");
     }),
   );
 }

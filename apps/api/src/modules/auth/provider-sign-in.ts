@@ -18,10 +18,12 @@ import { hashToken, newToken, type KeyedHasher } from "../../platform/crypto.ts"
 import { uniqueViolation } from "../../platform/database-errors.ts";
 import { pkceChallenge, type IdentityProvider } from "../../platform/identity-providers.ts";
 import type { RateLimiter } from "../../platform/memory-rate-limiter.ts";
+import { queueAppleToken } from "./apple-revocations.ts";
 import {
   applyLink,
   linkStateOf,
   lockPendingSignIn,
+  newerAppleToken,
   providerTakenConstraint,
   subjectTakenConstraint,
 } from "./identities.ts";
@@ -200,6 +202,7 @@ export function createProviderSignInService(
         subject: providerSignIns.subject,
         email: providerSignIns.email,
         firstName: providerSignIns.firstName,
+        appleRefreshToken: providerSignIns.appleRefreshToken,
         expiresAt: providerSignIns.expiresAt,
       })
       .from(providerSignIns)
@@ -362,6 +365,8 @@ export function createProviderSignInService(
           subject: claims.value.subject,
           email: claims.value.email,
           firstName: claims.value.firstName,
+          // Apple's only, to end the link later (spec 37, R37.1).
+          appleRefreshToken: claims.value.refreshToken ?? null,
           ticketHash: hashToken(ticket),
           ticketExpiresAt: addSeconds(answeredAt, providerSignInRules.ticketValidSeconds),
           expiresAt: addSeconds(answeredAt, providerSignInRules.pendingValidSeconds),
@@ -405,7 +410,7 @@ export function createProviderSignInService(
           if (!canSignIn(owner.status)) return err({ code: "account_unavailable" });
           await tx
             .update(identities)
-            .set({ lastUsedAt: now, updatedAt: now })
+            .set({ lastUsedAt: now, updatedAt: now, ...newerAppleToken(row.appleRefreshToken) })
             .where(eq(identities.id, owner.identityId));
           const { sessionId, tokens } = await openSession(tx, {
             userId: owner.userId,
@@ -520,12 +525,17 @@ export function createProviderSignInService(
     },
 
     async remove(userId, provider) {
-      const removed = await db
-        .delete(identities)
-        .where(and(eq(identities.userId, userId), eq(identities.provider, provider)))
-        .returning({ id: identities.id });
-      if (removed.length > 0) logger.info({ userId, provider }, "sign-in method removed");
-      return removed.length > 0;
+      const removed = await db.transaction(async (tx) => {
+        const [link] = await tx
+          .delete(identities)
+          .where(and(eq(identities.userId, userId), eq(identities.provider, provider)))
+          .returning({ appleRefreshToken: identities.appleRefreshToken });
+        // Apple ends our access to that Apple account (spec 37, 3.2).
+        if (link !== undefined) await queueAppleToken(tx, link.appleRefreshToken, clock());
+        return link !== undefined;
+      });
+      if (removed) logger.info({ userId, provider }, "sign-in method removed");
+      return removed;
     },
   };
 }

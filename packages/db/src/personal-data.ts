@@ -138,6 +138,9 @@ export const personalData: Readonly<Record<string, TablePrivacy>> = {
     personColumns: ["linkUserId"],
     onDeletion: erase,
   },
+  apple_tokens_to_revoke: notAboutAPerson(
+    "Apple's refresh tokens of links that ended, with no account ID, sent to Apple to revoke within minutes and dropped after 7 days",
+  ),
   legal_documents: notAboutAPerson("the documents themselves, the same for everyone"),
   legal_acceptances: {
     category: "consents",

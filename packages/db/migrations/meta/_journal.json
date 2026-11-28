@@ -477,6 +477,13 @@
       "when": 1795834928635,
       "tag": "0067_co2_carried",
       "breakpoints": true
+    },
+    {
+      "idx": 68,
+      "version": "7",
+      "when": 1795863686592,
+      "tag": "0068_apple_tokens",
+      "breakpoints": true
     }
   ]
 }

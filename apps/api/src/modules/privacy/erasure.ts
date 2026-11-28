@@ -9,6 +9,7 @@ import { and, asc, eq, inArray, lte, notExists, or, sql } from "drizzle-orm";
 import type { Logger } from "../../logger.ts";
 import type { KeyedHasher } from "../../platform/crypto.ts";
 import { queuePhotoFile } from "../account/photo-files.ts";
+import { queueAppleTokensOf } from "../auth/apple-revocations.ts";
 import type { Transaction } from "../bookings/seats.ts";
 import { reportCovers } from "../chat/clean-up.ts";
 import { catalogued, emptiedOf, freshIdsOf, tableOf } from "./catalogue.ts";
@@ -56,6 +57,9 @@ async function eraseAccount(
   hasher: KeyedHasher,
 ): Promise<void> {
   const userId = user.id;
+  // Apple ends our access to their Apple account (spec 37, 3.2): the token
+  // waits alone in the queue; their link goes with the account.
+  await queueAppleTokensOf(tx, userId, now);
 
   const theirTrips = () =>
     tx.select({ id: trips.id }).from(trips).where(eq(trips.driverId, userId));
