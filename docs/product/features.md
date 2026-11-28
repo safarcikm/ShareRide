@@ -340,10 +340,12 @@ Already planned for later phases (see the [roadmap](../strategy/roadmap.md)):
 - Saved favourite routes and meeting points
 - Partner programmes (employers, universities, tourism)
 
-Ideas parking lot (not planned): carbon savings per trip, Strætó timetable
-connections, ferry connections (Herjólfur, Baldur, Norræna), corporate
-accounts with invoicing, parcel delivery along trips, connecting two trips into
-one journey.
+Ideas parking lot (not planned): Strætó timetable connections, ferry
+connections (Herjólfur, Baldur, Norræna), corporate accounts with invoicing,
+parcel delivery along trips, connecting two trips into one journey.
+
+CO2 saved per ride (an estimate, with a total on the member's own profile) is
+planned in [spec 34](../specs/2026-11-28-co2-saved.md).
 
 ## Spec order
 

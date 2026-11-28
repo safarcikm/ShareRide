@@ -57,3 +57,4 @@ Specs follow the order in [features](../product/features.md#spec-order).
 | 30 | [An About page, and a footer on the website](2026-11-26-about-page-and-footer.md) | A6, the website | Accepted (2026-11-27) |
 | 31 | [One ride, one ticket: the same rules for every screen](2026-11-26-one-ride-one-ticket.md) | All screens | Approved (2026-11-26); built (2026-11-27) |
 | 32 | [The Android and iPhone apps in the stores](2026-11-27-phone-apps-in-the-stores.md) | All screens, the phone apps | Proposed (2026-11-27) |
+| 34 | [The CO2 a shared ride saves](2026-11-28-co2-saved.md) | A2, C5, D2, D4, H4, H5 | Proposed (2026-11-28) |
