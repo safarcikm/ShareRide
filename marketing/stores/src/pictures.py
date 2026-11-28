@@ -114,7 +114,9 @@ def finish(out):
     with one, and Play's feature graphic must have none. Play's icon is a 32-bit PNG."""
     from PIL import Image
 
-    for folder, _, names in os.walk(out):
+    # Only the stores' folders: <out> also holds screens/, the phones' own screenshots.
+    walks = (os.walk(os.path.join(out, store)) for store in ("app-store", "google-play"))
+    for folder, _, names in (step for walk in walks for step in walk):
         for name in names:
             path = os.path.join(folder, name)
             if name.endswith(".png") and name != "icon-512.png":
