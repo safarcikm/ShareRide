@@ -35,7 +35,7 @@ import { whenArrived } from "@/theme/motion-sheet";
 import { bsi, hof, kef, meetingPoints } from "@/testing/meeting-points";
 import {
   colors,
-  icelandScene,
+  icelandSeasons,
   pageMaxWidth,
   radii,
   sizes,
@@ -407,9 +407,10 @@ describe("Find: search, rides and offering (spec 16, 3.2; spec 4, 3.8)", () => {
       nativeEvent: { layout: { x: 0, y: 0, width: 343, height: 180 } },
     });
     expect(scene).toHaveStyle({ height: spacing.md + 180 + spacing.sm });
-    // Behind the status bar, over the notch, the sky goes on.
+    // Behind the status bar, over the notch, the sky goes on: its top, in
+    // the season of the day (14 November is winter).
     expect(screen.getByTestId("screen-safe-area")).toHaveStyle({
-      backgroundColor: icelandScene.light.sky,
+      backgroundColor: icelandSeasons.winter.light.skyTop,
     });
     expect(screen.getByTestId("screen-scroll-area")).toHaveStyle({
       backgroundColor: colors.light.background,

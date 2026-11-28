@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react-native";
 import { StyleSheet } from "react-native";
 import { onWebsite } from "@/lib/on-website";
-import { icelandScene, people, puffin, puffinCar } from "@/theme/tokens";
+import { bannerDrawing, icelandSeasons, people, puffin, puffinCar } from "@/theme/tokens";
 import { IcelandScene, PuffinByPin, PuffinsInCar } from "./puffin-scenes";
 
 // Spec 15, section 5.3, "Puffin scenes": drawings around the screens, hidden
@@ -21,6 +21,9 @@ const drawn = (hex: string) => ({
   type: 0,
   payload: 0xff000000 + Number.parseInt(hex.slice(1), 16),
 });
+
+/** A colour in a gradient as react-native-svg hands it over: a signed 0xAARRGGBB. */
+const gradientColour = (hex: string) => (0xff000000 + Number.parseInt(hex.slice(1), 16)) | 0;
 
 const part = (testID: string) => screen.getByTestId(testID, { includeHiddenElements: true });
 const parts = (testID: string) => screen.queryAllByTestId(testID, { includeHiddenElements: true });
@@ -152,54 +155,135 @@ describe("in dark mode", () => {
   });
 });
 
-describe("IcelandScene (spec 15, section 5.3, decision 15)", () => {
-  const light = icelandScene.light;
+describe("IcelandScene in its season (spec 15, 5.3; spec 36, 3.1 and 3.3)", () => {
+  const summer = icelandSeasons.summer.light;
 
-  it("draws a sky, mountains with glaciers on the two highest, hills and a road with its line", async () => {
-    await render(<IcelandScene width={390} height={200} />);
+  it("draws a sky that pales towards the land, mountains, hills and a road with its line", async () => {
+    await render(<IcelandScene season="summer" width={390} height={200} />);
     // A picture: screen readers skip it.
     expect(screen.queryByTestId("iceland-scene")).toBeNull();
     const scene = part("iceland-scene");
+    // The sky's gradient: its top, then its colour where it meets the land.
+    expect(valuesIn(scene, "gradient")).toContainEqual([
+      0,
+      gradientColour(summer.skyTop),
+      1,
+      gradientColour(summer.sky),
+    ]);
     const fills = fillsIn(scene);
-    for (const colour of [light.sky, light.mountain, light.hill, light.road]) {
+    for (const colour of [summer.far, summer.mountain, summer.hillBack, summer.hill, summer.road]) {
       expect(fills).toContainEqual(drawn(colour));
     }
-    expect(fills.filter((fill) => isEqual(fill, drawn(light.glacier)))).toHaveLength(2);
-    expect(valuesIn(scene, "stroke")).toContainEqual(drawn(light.roadLine));
+    expect(valuesIn(scene, "stroke")).toContainEqual(drawn(summer.roadLine));
     expect(valuesIn(scene, "strokeDasharray")).toHaveLength(1);
     expect(valuesIn(scene, "width")).toContain(390);
-    expect(valuesIn(scene, "height")).toContain(200);
   });
 
   it("puts the road along the bottom, where the car drives", async () => {
-    await render(<IcelandScene width={390} height={200} />);
-    const road = part("scene-road");
-    expect(road.props).toMatchObject({ y: 200 - 22, height: 22, fill: drawn(light.road) });
-  });
-
-  it("draws hills down to the bottom without a road, from the ground asked for", async () => {
-    await render(<IcelandScene width={1144} height={170} ground={108} road={false} />);
-    const scene = part("iceland-scene");
-    expect(fillsIn(scene)).not.toContainEqual(drawn(light.road));
-    // No dashed line: the glaciers' white edge is the only white line.
-    expect(valuesIn(scene, "strokeDasharray")).toEqual([]);
-    expect(part("scene-ground").props).toMatchObject({
-      y: 108,
-      height: 170 - 108,
-      fill: drawn(light.hill),
+    await render(<IcelandScene season="summer" width={390} height={200} />);
+    expect(part("scene-road").props).toMatchObject({
+      y: 200 - 22,
+      height: 22,
+      fill: drawn(summer.road),
     });
   });
 
-  it("draws Iceland at night in dark mode", async () => {
+  it("draws the land down to the bottom without a road, and no snow on its edge", async () => {
+    await render(
+      <IcelandScene season="winter" width={1144} height={170} ground={108} road={false} />,
+    );
+    expect(valuesIn(part("iceland-scene"), "strokeDasharray")).toEqual([]);
+    expect(parts("snow-banks")).toHaveLength(0);
+    expect(part("scene-ground").props).toMatchObject({
+      y: 108,
+      height: 170 - 108,
+      fill: drawn(icelandSeasons.winter.light.hill),
+    });
+  });
+
+  it("has a farmhouse with a red roof in every season", async () => {
+    for (const season of ["winter", "spring", "summer", "autumn"] as const) {
+      await render(<IcelandScene season={season} width={390} height={200} />);
+      expect(fillsIn(part("farmhouse"))).toContainEqual(drawn(icelandSeasons[season].light.roof));
+    }
+  });
+
+  it("covers winter in snow: white land, a glacier on every peak, snow on the road's edge and the roof", async () => {
+    await render(<IcelandScene season="winter" width={390} height={200} />);
+    const winter = icelandSeasons.winter.light;
+    expect(fillsIn(part("iceland-scene"))).toContainEqual(drawn(winter.hill));
+    expect(parts("glacier")).toHaveLength(7);
+    expect(fillsIn(part("snow-banks"))).toContainEqual(drawn(winter.snow));
+    expect(fillsIn(part("farmhouse"))).toContainEqual(drawn(winter.snow));
+    expect(parts("aurora")).toHaveLength(0);
+  });
+
+  it("brings the northern lights and stars to winter and autumn nights", async () => {
     mockScheme = "dark";
-    await render(<IcelandScene width={390} height={200} />);
-    const fills = fillsIn(part("iceland-scene"));
-    expect(fills).toContainEqual(drawn(icelandScene.dark.sky));
-    expect(fills).not.toContainEqual(drawn(light.sky));
+    for (const season of ["winter", "autumn"] as const) {
+      await render(<IcelandScene season={season} width={390} height={200} />);
+      expect(parts("aurora")).toHaveLength(1);
+      expect(parts("stars")).toHaveLength(1);
+    }
+  });
+
+  it("has stars only at night", async () => {
+    await render(<IcelandScene season="spring" width={390} height={200} />);
+    expect(parts("stars")).toHaveLength(0);
+    mockScheme = "dark";
+    await render(<IcelandScene season="spring" width={390} height={200} />);
+    expect(parts("stars")).toHaveLength(1);
+  });
+
+  it("puts flowers in spring's grass", async () => {
+    await render(<IcelandScene season="spring" width={390} height={200} />);
+    expect(parts("flower").length).toBeGreaterThan(0);
+    expect(parts("lupine")).toHaveLength(0);
+  });
+
+  it("gives summer lupines and the sun high, and the midnight sun at night", async () => {
+    await render(<IcelandScene season="summer" width={390} height={200} />);
+    expect(parts("lupine").length).toBeGreaterThan(0);
+    expect(fillsIn(part("sun"))).toContainEqual(drawn(people.sun));
+    expect(parts("midnight-sun")).toHaveLength(0);
+    mockScheme = "dark";
+    await render(<IcelandScene season="summer" width={390} height={200} />);
+    expect(fillsIn(part("midnight-sun"))).toContainEqual(drawn(bannerDrawing.sunLow));
+    expect(parts("sun")).toHaveLength(0);
+  });
+
+  it("puts heather and birch on autumn's hills", async () => {
+    await render(<IcelandScene season="autumn" width={390} height={200} />);
+    const heather = fillsIn(part("heather"));
+    expect(heather).toContainEqual(drawn(bannerDrawing.heather));
+    expect(heather).toContainEqual(drawn(bannerDrawing.birch));
+  });
+
+  it("keeps the small things in the room it is given, as a laptop's car room", async () => {
+    await render(
+      <IcelandScene
+        season="summer"
+        width={900}
+        height={170}
+        ground={108}
+        road={false}
+        room={[600, 900]}
+      />,
+    );
+    const xs = parts("lupine").flatMap((lupine) => valuesIn(lupine, "cx")) as number[];
+    expect(xs.length).toBeGreaterThan(0);
+    for (const x of xs) {
+      expect(x).toBeGreaterThanOrEqual(600 - 8);
+      expect(x).toBeLessThanOrEqual(900 + 8);
+    }
+    const [house] = valuesIn(part("farmhouse"), "x") as number[];
+    expect(house).toBeGreaterThanOrEqual(600);
+  });
+
+  it("draws the same every time", async () => {
+    await render(<IcelandScene season="autumn" width={390} height={200} />);
+    const first = JSON.stringify(valuesIn(part("heather"), "cx"));
+    await render(<IcelandScene season="autumn" width={390} height={200} />);
+    expect(JSON.stringify(valuesIn(part("heather"), "cx"))).toBe(first);
   });
 });
-
-/** Whether two drawn colours are the same. */
-function isEqual(a: unknown, b: unknown) {
-  return JSON.stringify(a) === JSON.stringify(b);
-}
