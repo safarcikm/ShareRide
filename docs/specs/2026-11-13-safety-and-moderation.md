@@ -169,7 +169,9 @@ decision, with every operator action logged.
    in the app, within 14 days. A copy goes by email to a verified address
    (milestone 9 plan, decision 1, which replaced appealing by replying to
    the email). The operator looks at the appeal and answers; that answer is
-   final in the app.
+   final in the app. Notices is open while the account is suspended, and
+   while it waits to be deleted (A59), so a notice can be read and
+   appealed until the account goes.
 5. **Other checks:** the console lists each driver's request decline rate,
    so a pattern that could be discrimination can be looked at (spec 5).
 

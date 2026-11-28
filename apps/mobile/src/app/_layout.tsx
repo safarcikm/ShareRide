@@ -105,8 +105,6 @@ function Navigation() {
       <Stack.Screen name="cookies" />
       <Stack.Screen name="meeting-points/index" />
       <Stack.Screen name="meeting-points/[id]/index" />
-      {/* Signed out, it asks to sign in first. */}
-      <Stack.Screen name="meeting-points/[id]/problem" />
       <Stack.Screen name="places/[id]" />
       <Stack.Screen name="rides/index" />
       <Stack.Screen name="search/index" />
