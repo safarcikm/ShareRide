@@ -1644,6 +1644,14 @@ releases follow [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- The price level's handle slides: it follows a finger or the mouse
+  along the track, a step at a time, in the phone apps and on the
+  website. It took only taps and minus and plus, which Martin found on
+  the first iPhone build. A finger that moves up or down on the track
+  still scrolls the page; one that slides the handle holds it still. The
+  track is 44 tall to touch, and on an iPhone the two price screens go
+  back only for a swipe from the left edge, so a slide to the right does
+  not go back a step (iOS 26).
 - The Android phone journeys failed on every run from about 01:30 on
   2026-11-28. The workflow's key press reached the Pixel Launcher before it
   had a window, the launcher stalled, and its "isn't responding" box hid
