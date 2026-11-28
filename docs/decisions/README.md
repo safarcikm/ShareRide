@@ -85,3 +85,4 @@ Statuses: `Proposed`, `Accepted`, `Rejected`, `Deprecated`, `Superseded by ADR N
 | [0052](0052-animations-css-on-the-web-reanimated-on-phones.md) | Animations: CSS on the website, Reanimated and expo-haptics in the phone apps | Accepted |
 | [0053](0053-a-private-limited-company-not-a-nonprofit.md) | A private limited company (ehf.), not a nonprofit | Accepted |
 | [0054](0054-estimate-co2-saved-as-one-car-not-driven.md) | Estimate the CO2 a shared ride saves as one car not driven | Accepted |
+| [0056](0056-a-switch-for-the-festive-days-on-the-front-page.md) | A switch for the festive days on the front page | Proposed |
