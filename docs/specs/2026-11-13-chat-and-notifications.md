@@ -186,7 +186,9 @@ within 50 m tells nobody.
 
 ### 3.4 SMS for last-minute news
 
-SMS is only for sign-in codes (spec 1) and for news that could leave someone
+SMS is only for the codes of R7.10 (since spec 26 the phone step's code,
+and a confirm code for an account without an email; sign-in codes go by
+email) and for news that could leave someone
 waiting at a meeting point (decision 1). It goes only to passengers, and only
 within 24 hours of their boarding time, when:
 
