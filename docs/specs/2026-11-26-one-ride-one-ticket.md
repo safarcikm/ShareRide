@@ -431,6 +431,13 @@ and on a laptop
   booking panel, beside the price they change, and the panel keeps the
   free cancellation sentence, so the rows leave it out.
 
+Since [spec 34](2026-11-28-co2-saved.md) (3.4, 3.5), the CO₂ the part
+saves is a card of one folded row after the whole route, before the rows:
+"CO₂ saved" with "About 25 kg, estimated". It unfolds the sentence for the
+part and "How we estimate it", which opens About's section. A cancelled
+ride has none, nor a part under 1 kg. On a laptop it is in the main
+column, after "Where you sit".
+
 ### 3.8 A booked seat
 
 1. The **title is the state**: "Request sent", "Bára said yes: pay to keep
@@ -527,6 +534,11 @@ and on a laptop
   ("Sunday 15 November", "Borgarnes to Blönduós") with the status under
   them, no road, and "Message Gunna" as the first row. Nothing of the
   passenger's is offered: no Pay, no cancelling.
+
+Since [spec 34](2026-11-28-co2-saved.md) (3.6), the same card follows the
+driver and where to stand, before the rows, for the passenger: an estimate
+while the seat is confirmed, and the grams kept once the ride is done. On
+a laptop it is in the main column.
 
 ### 3.9 Trip day
 
@@ -879,6 +891,11 @@ in 3.10.
   the title, the ticket, the request, the passengers and the seats hold
   what is in them, and Message stays in its row.
 
+Since [spec 34](2026-11-28-co2-saved.md) (3.7), the CO₂ card follows
+Passengers: its passengers' parts added, from the confirmed and completed
+bookings, and none before one counts. On a laptop it is in the main
+column.
+
 ### 3.13 Messages
 
 1. A conversation's top: Back, the picture, the name with "Driver, White
@@ -1105,6 +1122,10 @@ preview and Edit profile, made Report and Block rows, and put the heads at
 the left on the pages Profile opens: 3.19, as built. Sign-in methods'
 picture above was taken again then, with its title at the left.
 
+Since [spec 34](2026-11-28-co2-saved.md) (3.8), the first group is "Your
+shared rides": one CO₂ card with what I saved as a passenger and as a
+driver, and "Only you can see this." under it. It is not there under 1 kg.
+
 ### 3.15 Sign-in
 
 Not changed here: [spec 29](2026-11-25-easier-sign-in.md) is changing that
@@ -1174,6 +1195,11 @@ changes:
    button under it.
 
 ![The driver's ride on a laptop, proposed](images/one-ride-one-ticket/proposal/img/new-laptop-driver-ride-first.webp)
+
+Since [spec 34](2026-11-28-co2-saved.md) (R34.8), the CO₂ card is in the
+main column of a ride's details, a booked seat and the driver's ride,
+never in a side column, so the side columns stay whole in a window 1280 by
+720.
 
 ### 3.17 Titles at the left
 
