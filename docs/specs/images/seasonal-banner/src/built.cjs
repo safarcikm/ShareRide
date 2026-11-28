@@ -1,5 +1,7 @@
 // Takes Find, as built, on each of spec 36's thirteen days:
 //   node built.cjs [website] [out folder]
+// or, with `yule` after them, on eight days of the Yule Lads and
+// Jólakötturinn (3.11), saved as the `6-built-yule-*.webp` sheets.
 // The website is the app's web export served on its own, such as
 // `EXPO_PUBLIC_API_URL=http://localhost:3001 npx expo export --platform web`
 // then `node scripts/serve-web.ts 8082` in apps/mobile (the default
@@ -13,9 +15,10 @@ const { chromium } = require("playwright");
 const site = process.argv[2] ?? "http://localhost:8082";
 const out = path.resolve(process.argv[3] ?? path.join(__dirname, ".."));
 const api = "http://localhost:3001";
+const yule = process.argv[4] === "yule";
 
 // A date in 2027 for each day, as packages/domain's bannerFor gives them.
-const days = {
+const festive = {
   christmas: "2027-12-24",
   newyear: "2027-12-31",
   easter: "2027-03-28",
@@ -30,6 +33,19 @@ const days = {
   oskudagur: "2027-02-10",
   seafarers: "2027-06-06",
 };
+// The first Lads, one with the most heads before him, Christmas Eve, and
+// the cat alone after it, at New Year and on Þrettándinn.
+const yuleDays = {
+  "12 December": "2027-12-12",
+  "14 December": "2027-12-14",
+  "18 December": "2027-12-18",
+  "23 December": "2027-12-23",
+  "24 December": "2027-12-24",
+  "27 December": "2027-12-27",
+  "31 December": "2027-12-31",
+  "6 January": "2028-01-06",
+};
+const days = yule ? yuleDays : festive;
 const screens = {
   phone: { viewport: { width: 390, height: 844 }, height: 420, cols: 5, scale: 1 },
   laptop: { viewport: { width: 1280, height: 900 }, height: 420, cols: 2, scale: 0.75 },
@@ -120,7 +136,7 @@ async function answerApi(tab) {
         },
         { list: shots, cols: screen.cols, scale: screen.scale, dark: scheme === "dark" },
       );
-      const file = `4-built-${device}-${scheme}.webp`;
+      const file = `${yule ? "6-built-yule" : "4-built"}-${device}-${scheme}.webp`;
       fs.writeFileSync(path.join(out, file), Buffer.from(webp, "base64"));
       console.log(file);
       await tab.close();

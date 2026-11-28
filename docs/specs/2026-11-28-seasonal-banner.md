@@ -217,7 +217,8 @@ Lad of 12 + n December is the (n + 1)th:
 
 - **The Lad of the day** stands behind the front hill from the chest up,
   in a red cap, with what he is after: on a phone right of the car, on a
-  laptop left of it in the car's room (R36.5).
+  laptop left of it in the car's room (R36.5), which grows a little to the
+  left on his nights, the title's line keeping clear of it.
 - **The ones who came before** peek over the back hill as small heads in
   red caps, as many as fit clear of the car, the Lad of the day and the
   farmhouse: never crowded, so on the later days some stay out of sight.
@@ -229,7 +230,8 @@ him, giant and out of proportion: a shaggy black cat standing on the back
 hill with the farmhouse between his front paws, his head over its roof,
 his tail up behind. Huge yellow eyes and a sly grin, but no teeth. He is
 as tall as the room above the farmhouse allows: on a phone up to just
-under the name's row, on a laptop near the panel's top. On New Year's Eve
+under the name's row, on a laptop near the panel's top, his tail clear of
+its edge. On New Year's Eve
 and Day the fireworks burst clear of him.
 
 **The moments** (3.6): the Lad of the day pops up over the hill as the
@@ -281,6 +283,17 @@ The Yule Lads and Jólakötturinn (3.11), from the
 ![The same, dark](images/seasonal-banner/5-yule-dark.webp)
 
 ![Christmas Eve on a laptop: Kertasníkir left of the car, the giant cat over the farmhouse](images/seasonal-banner/5-yule-laptop-light.webp)
+
+As built, Find through `?day=` on eight of their days, on a phone and a
+laptop:
+
+![The built banner on a phone from 12 December to 6 January, light](images/seasonal-banner/6-built-yule-phone-light.webp)
+
+![The same, dark](images/seasonal-banner/6-built-yule-phone-dark.webp)
+
+![The built banner on a laptop from 12 December to 6 January, light](images/seasonal-banner/6-built-yule-laptop-light.webp)
+
+![The same, dark](images/seasonal-banner/6-built-yule-laptop-dark.webp)
 
 ## 6. Implementation
 

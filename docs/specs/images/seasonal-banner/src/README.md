@@ -34,3 +34,7 @@ a copy of the preview with the Lads and the cat added:
 ```sh
 node docs/specs/images/seasonal-banner/src/yule.cjs
 ```
+
+With `yule` after the website and the folder, `built.cjs` takes the
+`6-built-yule-*.webp` sheets instead: Find on eight days from 12 December
+to 6 January.
