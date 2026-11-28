@@ -1631,6 +1631,9 @@ releases follow [Semantic Versioning](https://semver.org/).
   key press. It comes first now, and each journey also first closes such
   a box of one of the phone's own apps. A box about PuffinRide stays, so a
   stall of ours still fails the journey.
+- The phone Sign up journey types each 6-digit code again, into an emptied
+  field, when the next step does not show. A busy iPhone simulator dropped
+  one digit, and the journey failed with five digits in the field.
 - A tap on a notification about beta news, about a reply to feedback, or
   about an answer to a question on one's data, opens its page in the
   phone apps. The server named the three pages and the app ignored them.

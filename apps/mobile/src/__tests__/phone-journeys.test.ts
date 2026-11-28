@@ -44,3 +44,37 @@ describe("A stalled phone app's box on the emulator", () => {
     expect(text).toMatch(/^\s*- tapOn: "Close app"$/m);
   });
 });
+
+// A busy iPhone simulator dropped one digit of an emailed code (2026-11-28:
+// five of six in the field), so the next step never came. Each code is
+// typed into an emptied field again until the next step shows.
+describe("A code typed in the Sign up journey", () => {
+  const lines = readFileSync(join(maestro, "flows", "sign-up.yaml"), "utf8").split("\n");
+  const indentOf = (line: string): number => line.length - line.trimStart().length;
+  const typings = lines.flatMap((line, index) =>
+    line.includes("inputText: ${output.code.charAt(output.digit)}") ? [index] : [],
+  );
+
+  it("is typed twice, once for each code", () => {
+    expect(typings).toHaveLength(2);
+  });
+
+  it.each(typings.map((index, order) => [order + 1, index] as const))(
+    "code %i is typed again, into an emptied field, when the next step does not show",
+    (_order, index) => {
+      const typed = lines[index] ?? "";
+      const retry = lines.findLastIndex(
+        (line, at) => at < index && line.trim() === "- retry:" && indentOf(line) < indentOf(typed),
+      );
+      expect(retry).toBeGreaterThanOrEqual(0);
+      const block = lines.slice(retry, index + 1);
+      const after = lines.slice(index + 1);
+      const end = after.findIndex(
+        (line) => line.trim() !== "" && indentOf(line) <= indentOf(lines[retry] ?? ""),
+      );
+      const rest = end === -1 ? after : after.slice(0, end);
+      expect(block.some((line) => /^\s*- eraseText/.test(line))).toBe(true);
+      expect(rest.some((line) => /^\s*- extendedWaitUntil:/.test(line))).toBe(true);
+    },
+  );
+});
