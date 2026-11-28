@@ -37,11 +37,22 @@ projects:
             # The release action checked the commit's CI before moving the
             # branch, so each move deploys.
             autoDeployTrigger: commit
+            # Changes that leave the image as it is start no build: builds use
+            # Render's paid minutes (apps/api/src/render-blueprints.test.ts).
             buildFilter:
               ignoredPaths:
                 - docs/**
-                - "**/*.md"
+                - marketing/**
+                - "*.md"
                 - .claude/**
+                - .github/**
+                - infra/**
+                - "**/*.test.ts"
+                - "**/*.test.tsx"
+                - apps/mobile/e2e/**
+                - apps/mobile/maestro/**
+                - apps/mobile/eas.json
+                - apps/admin/e2e/**
             # Render switches traffic to a new deploy only once this answers
             # 200, which needs the database.
             healthCheckPath: /v1/health/ready
@@ -125,11 +136,20 @@ projects:
             dockerfilePath: ./apps/api/Dockerfile
             dockerContext: .
             autoDeployTrigger: commit
+            # As for the API, and the job never serves the website or the
+            # console, so their changes start no build either.
             buildFilter:
               ignoredPaths:
                 - docs/**
-                - "**/*.md"
+                - marketing/**
+                - "*.md"
                 - .claude/**
+                - .github/**
+                - infra/**
+                - "**/*.test.ts"
+                - "**/*.test.tsx"
+                - apps/mobile/**
+                - apps/admin/**
             schedule: "17 * * * *"
             dockerCommand: node apps/api/src/clean-up-cli.ts
             envVars:

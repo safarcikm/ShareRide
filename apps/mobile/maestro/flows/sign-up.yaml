@@ -3,6 +3,8 @@
 # name, so the field is the second match (index 1).
 appId: ${APP_ID}
 name: Sign up
+onFlowStart:
+  - runFlow: ../helpers/close-stuck-box.yaml
 ---
 - launchApp
 - tapOn:
