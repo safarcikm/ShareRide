@@ -84,3 +84,4 @@ Statuses: `Proposed`, `Accepted`, `Rejected`, `Deprecated`, `Superseded by ADR N
 | [0051](0051-store-apps-in-martins-name-until-the-company.md) | The store apps in Martin's name until the company, checked on emulators first | Accepted (accounts); Proposed (the rest) |
 | [0052](0052-animations-css-on-the-web-reanimated-on-phones.md) | Animations: CSS on the website, Reanimated and expo-haptics in the phone apps | Accepted |
 | [0053](0053-a-private-limited-company-not-a-nonprofit.md) | A private limited company (ehf.), not a nonprofit | Accepted |
+| [0054](0054-estimate-co2-saved-as-one-car-not-driven.md) | Estimate the CO2 a shared ride saves as one car not driven | Accepted |

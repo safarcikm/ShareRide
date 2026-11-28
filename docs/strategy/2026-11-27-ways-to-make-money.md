@@ -295,7 +295,7 @@ options 3, 4 and 9 easier to sell.
   through the EEA yet is not checked (**verify**), and Iceland's marketing
   law already bans misleading claims. Say "estimated", show the method, and
   never say "carbon neutral". This changes the product, so it needs its own
-  spec.
+  spec: [spec 34](../specs/2026-11-28-co2-saved.md) (2026-11-28).
 
 To make the figure honest, PuffinRide would need to know how passengers
 would have travelled otherwise. One optional question after a trip, reported
