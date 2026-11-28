@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { ViewProps } from "react-native";
 import { onWebsite } from "@/lib/on-website";
+import type { MomentPart } from "./motion-css";
 import { whenArrived } from "./motion-sheet";
 
 /*
@@ -12,17 +13,47 @@ import { whenArrived } from "./motion-sheet";
  * car stands still as before.
  */
 
-/** A part of the puffins' car that moves on its own. */
-export type MotionPart = "car-body" | "puffin-you" | "puffin-driver";
+/**
+ * A part of the puffins' car that moves on its own as it arrives, or a
+ * part of a season's or day's moment (spec 36, 3.6).
+ */
+export type MotionPart = "car-body" | "puffin-you" | "puffin-driver" | MomentPart;
+
+/**
+ * When a drawn thing of a moment starts and how long it takes, in
+ * milliseconds, and how far it goes: across and down in points, and how
+ * far it turns in degrees.
+ */
+export interface MotionTiming {
+  readonly delay?: number;
+  readonly duration?: number;
+  readonly dx?: number;
+  readonly dy?: number;
+  readonly turn?: number;
+}
 
 /** The mark of a moving part, spread on its group: nothing in the apps. */
 interface Mark {
   readonly dataSet?: { readonly motion: MotionPart };
+  readonly style?: Readonly<Record<string, string>>;
 }
 
-/** Marks a moving part of a drawing, such as the car's body. */
-export function motionMark(part: MotionPart): Mark {
-  return onWebsite() ? { dataSet: { motion: part } } : {};
+/**
+ * Marks a moving part of a drawing, such as the car's body, with its own
+ * `timing` as the style sheet reads it (`--d`, `--t`, `--dx`, `--dy`, `--r`).
+ */
+export function motionMark(part: MotionPart, timing: MotionTiming = {}): Mark {
+  if (!onWebsite()) return {};
+  const { delay, duration, dx, dy, turn } = timing;
+  const style: Record<string, string> = {};
+  if (delay !== undefined) style["--d"] = `${String(delay)}ms`;
+  if (duration !== undefined) style["--t"] = `${String(duration)}ms`;
+  if (dx !== undefined) style["--dx"] = `${String(dx)}px`;
+  if (dy !== undefined) style["--dy"] = `${String(dy)}px`;
+  if (turn !== undefined) style["--r"] = `${String(turn)}deg`;
+  return Object.keys(style).length === 0
+    ? { dataSet: { motion: part } }
+    : { dataSet: { motion: part }, style };
 }
 
 /**
@@ -45,6 +76,14 @@ export function roomProps(arriving: boolean): ViewProps {
   return arriving && onWebsite()
     ? ({ dataSet: { motion: "arrive-room" } } as unknown as ViewProps)
     : {};
+}
+
+/**
+ * Marks the front page's scene while its moment plays with the car's
+ * arrival (spec 36, 3.6): what the season or day adds moves once.
+ */
+export function momentProps(playing: boolean): ViewProps {
+  return playing && onWebsite() ? ({ dataSet: { motion: "moment" } } as unknown as ViewProps) : {};
 }
 
 /** Whether the car has arrived on the front page since the page loaded. */

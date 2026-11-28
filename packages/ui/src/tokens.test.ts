@@ -217,6 +217,30 @@ describe("motion (spec 33, section 6)", () => {
     expect(motion.celebrate).toBeLessThan(5000);
   });
 
+  it("ends every season's and day's moment within 3.5 seconds of the arrival (spec 36, 3.6)", () => {
+    const { limit, ...parts } = motion.moments;
+    expect(limit).toBe(3500);
+    const latest = (value: number | readonly number[] | undefined) =>
+      value === undefined ? 0 : typeof value === "number" ? value : Math.max(...value);
+    for (const [part, timing] of Object.entries(parts)) {
+      const times = "times" in timing ? timing.times : 1;
+      const at = "at" in timing ? latest(timing.at) : latest("delay" in timing ? timing.delay : 0);
+      const end = at + latest(timing.duration) * times;
+      expect({ part, end: end <= limit }).toEqual({ part, end: true });
+    }
+  });
+
+  it("gives what is set for each drawn thing a range, its earliest first", () => {
+    for (const timing of Object.values(motion.moments)) {
+      if (typeof timing === "number") continue;
+      for (const value of [timing.duration, "delay" in timing ? timing.delay : 0]) {
+        if (typeof value === "number") continue;
+        expect(value).toHaveLength(2);
+        expect(value[0]).toBeLessThanOrEqual(value[1] ?? 0);
+      }
+    }
+  });
+
   it("lets what arrives leave at once, never starting slowly (no ease-in)", () => {
     for (const curve of [motion.curves.out, motion.curves.brake, motion.curves.rise]) {
       const handle = /^cubic-bezier\(([\d.]+), ([\d.]+),/.exec(curve);

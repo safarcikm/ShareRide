@@ -1,6 +1,13 @@
 import { act, renderHook } from "@testing-library/react-native";
 import { onWebsite } from "@/lib/on-website";
-import { arrivalProps, forgetArrival, motionMark, roomProps, useArrival } from "./motion";
+import {
+  arrivalProps,
+  forgetArrival,
+  momentProps,
+  motionMark,
+  roomProps,
+  useArrival,
+} from "./motion";
 import { whenArrived } from "./motion-sheet";
 
 jest.mock("@/lib/on-website", () => ({ onWebsite: jest.fn(() => true) }));
@@ -43,11 +50,29 @@ describe("marks for the website's motion style sheet (spec 33, ADR 0052)", () =>
     expect(roomProps(false)).toEqual({});
   });
 
+  it("gives a part of a moment its own timing, as the style sheet reads it (spec 36, 3.6)", () => {
+    expect(motionMark("flake", { delay: 300 })).toEqual({
+      dataSet: { motion: "flake" },
+      style: { "--d": "300ms" },
+    });
+    expect(motionMark("leaf", { delay: 150, duration: 1800, dx: -40, dy: 12, turn: 200 })).toEqual({
+      dataSet: { motion: "leaf" },
+      style: { "--d": "150ms", "--t": "1800ms", "--dx": "-40px", "--dy": "12px", "--r": "200deg" },
+    });
+  });
+
+  it("marks the scene while its moment plays", () => {
+    expect(momentProps(true)).toEqual({ dataSet: { motion: "moment" } });
+    expect(momentProps(false)).toEqual({});
+  });
+
   it("marks nothing in the phone apps, which keep the car still for now (3.11)", () => {
     website(false);
     expect(motionMark("car-body")).toEqual({});
+    expect(motionMark("flake", { delay: 300 })).toEqual({});
     expect(arrivalProps(-250)).toEqual({});
     expect(roomProps(true)).toEqual({});
+    expect(momentProps(true)).toEqual({});
   });
 });
 

@@ -650,6 +650,40 @@ export const motion = {
     dip: [2.6, -0.8],
     hopHeight: 5,
   },
+  /**
+   * The front page's moments (spec 36, 3.6): each season's and day's own
+   * motion, from the preview. It starts with the car's arrival, plays
+   * once, and is over within `limit`, in milliseconds. A pair is the
+   * earliest and the latest for what each drawn thing is given (`--d`,
+   * `--t`); `at` is when each burst of the fireworks comes; `times` is
+   * how often a short motion repeats within its part's.
+   */
+  moments: {
+    limit: 3500,
+    flake: { duration: [1700, 2600], delay: [0, 900] },
+    leaf: { duration: [1500, 2200], delay: [150, 1150] },
+    flyer: { duration: [2500, 2700], delay: [200, 520] },
+    "flyer-bob": { duration: 400, delay: [200, 520], times: 6 },
+    "flyer-wing": { duration: 120, delay: [200, 520], times: 22 },
+    aurora: { duration: 3000 },
+    sunrise: { duration: 1900, delay: 150 },
+    rays: { duration: 2600 },
+    glow: { duration: 2000 },
+    burst: { duration: 1300, at: [300, 850, 1400] },
+    // Each trail rises in the time before its burst, and is gone as it bursts.
+    trail: { duration: 420, at: [300, 850, 1400] },
+    // The tree's lights, one after another from the car's stop.
+    bulb: { duration: 520, delay: [1450, 2305] },
+    chick: { duration: 2400 },
+    cloth: { duration: 1700, delay: 500 },
+    balloons: { duration: 2300 },
+    load: { duration: 1500 },
+    heart: { duration: 2300 },
+    sparkle: { duration: 2200 },
+    flower: { duration: 450, delay: [300, 1500] },
+    lupine: { duration: 1900, delay: [100, 1500] },
+    cover: { duration: 3200 },
+  },
   curves: {
     out: "cubic-bezier(0.23, 1, 0.32, 1)",
     inOut: "cubic-bezier(0.77, 0, 0.175, 1)",
