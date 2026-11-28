@@ -17,12 +17,17 @@ Spec 32, step 9, and R32.6 (sample data only):
 2. Make a second one the same way, **Puffin**, as a driver, with a car
    (any make, model and colour, and no number plate, so no real car's plate
    shows) and the puffin as its photo. Post a ride
-   from it about three weeks ahead, from **N1 Borgarnes** to **Olís
-   Blönduós**, two seats, booked instantly, with the note "A sample ride for
+   from it about three weeks ahead, from **Borgarnes – N1** to **Blönduós –
+   N1**, two seats, booked instantly, with the note "A sample ride for
    the App Store and Google Play reviewers."
-3. Put the Review account's email and password into both stores' forms
+3. Each account needs its own number for the one-time phone check. A
+   number already on an account signs in to that account instead (and the
+   new email replaces its old one). A private virtual number works: for a
+   Vonage number, set its inbound SMS webhook to a page that shows incoming
+   requests, with the account's default SMS setting on "SMS API".
+4. Put the Review account's email and password into both stores' forms
    (below). Write them nowhere else.
-4. After each review, cancel any booking the reviewers made, and post the
+5. After each review, cancel any booking the reviewers made, and post the
    sample ride again before the next one.
 
 ## Testers (TestFlight and Google Play testing)
