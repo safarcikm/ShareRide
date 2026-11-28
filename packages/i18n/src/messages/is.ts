@@ -3698,4 +3698,19 @@ export const is = {
   "admin.meetingPoint.photoIssue.metadata":
     "Myndin ber enn önnur gögn en myndina sjálfa. Prófaðu annan vafra.",
   "admin.meetingPoint.photoIssue.tooLarge": "Myndin er of stór, jafnvel minnkuð. Veldu minni mynd.",
+  // The CO2 a shared ride saves (spec 34, section 8).
+  "co2.title": "Minni losun CO₂",
+  "co2.value": "Um {kg} kg, áætlað",
+  "co2.spoken": "Minni losun CO2, um {kg} kíló, áætlað",
+  "co2.part": "Einum bíl færra á veginum í {km} km: um {kg} kg minni losun CO₂ en að aka einn.",
+  "co2.driver":
+    "Farþegarnir þínir fara {km} km með þér í stað þess að aka sjálfir: um {kg} kg minni losun CO₂ en að aka einn.",
+  "co2.how": "Áætlað út frá vegalengdinni og meðalbíl á Íslandi.",
+  "co2.link": "Svona áætlum við",
+  "co2.group": "Ferðirnar þínar",
+  "co2.asPassenger": "Sem farþegi: {kg} kg í {rides, plural, one {# ferð} other {# ferðum}}.",
+  "co2.asDriver":
+    "Sem bílstjóri: {kg} kg með {passengers} farþega í {rides, plural, one {# ferð} other {# ferðum}}.",
+  "co2.compared": "Alltaf miðað við að aka einn.",
+  "co2.onlyYou": "Aðeins þú sérð þetta.",
 } as const satisfies Record<MessageKey, string>;

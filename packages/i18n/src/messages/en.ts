@@ -3665,6 +3665,21 @@ export const en = {
     "The photo still carries data besides the picture. Try another browser.",
   "admin.meetingPoint.photoIssue.tooLarge":
     "The photo is too large, even made smaller. Choose a smaller one.",
+  // The CO2 a shared ride saves (spec 34, section 8).
+  "co2.title": "CO₂ saved",
+  "co2.value": "About {kg} kg, estimated",
+  "co2.spoken": "CO2 saved, about {kg} kilograms, estimated",
+  "co2.part": "One car fewer on the road for {km} km: about {kg} kg less CO₂ than driving alone.",
+  "co2.driver":
+    "Your passengers ride {km} km with you instead of driving: about {kg} kg less CO₂ than driving alone.",
+  "co2.how": "Estimated from the road distance and an average car in Iceland.",
+  "co2.link": "How we estimate it",
+  "co2.group": "Your shared rides",
+  "co2.asPassenger": "As a passenger: {kg} kg on {rides, plural, one {# ride} other {# rides}}.",
+  "co2.asDriver":
+    "As a driver: {kg} kg with {passengers, plural, one {# passenger} other {# passengers}} on {rides, plural, one {# ride} other {# rides}}.",
+  "co2.compared": "Each compared with driving alone.",
+  "co2.onlyYou": "Only you can see this.",
 } as const satisfies Record<string, string>;
 
 export type MessageKey = keyof typeof en;
