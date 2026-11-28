@@ -1,8 +1,7 @@
 import { act, fireEvent, screen, within } from "expo-router/testing-library";
 import { Dimensions } from "react-native";
-import type { Booking } from "@shareride/contracts";
-import type { Co2Totals } from "@shareride/contracts";
-import { completeMe, renderApp } from "@/testing/app";
+import type { Booking, Co2Totals } from "@shareride/contracts";
+import { completeMe, ownProfile, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
 import {
   bookingApi,
@@ -16,6 +15,7 @@ import {
 import { bothRoles, co2Api, noCo2Totals } from "@/testing/co2";
 import { ok } from "@/testing/fake-client";
 import { completedBooking } from "@/testing/reviews";
+import { annaProfile, annaProfileId, findPersonCard, profileApi } from "@/testing/people";
 import { northCo2, northResult, northTrip, tripDetailsApi } from "@/testing/search";
 import { tripsApi } from "@/testing/trips";
 
@@ -23,7 +23,8 @@ jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app"
 jest.mock("@/auth/token-store", () => {
   return jest.requireActual<typeof TestApp>("@/testing/app").mockTokenStoreModule;
 });
-jest.mock("expo-localization", () => ({ getLocales: () => [{ languageTag: "en-GB" }] }));
+let mockLanguage = "en-GB";
+jest.mock("expo-localization", () => ({ getLocales: () => [{ languageTag: mockLanguage }] }));
 jest.mock("@/lib/preferences", () => ({
   readPreference: jest.fn(() => Promise.resolve(null)),
   writePreference: jest.fn(() => Promise.resolve()),
@@ -305,6 +306,53 @@ describe("my profile (3.8)", () => {
     await profile(() => noCo2Totals);
     expect(await screen.findByTestId("person-card")).toBeVisible();
     expect(group()).toBeNull();
+  });
+
+  it("speaks Icelandic, with the plural each number takes", async () => {
+    mockLanguage = "is-IS";
+    try {
+      await renderApp("/profile", {
+        me: completeMe,
+        setUp: (client) => {
+          co2Api(client, () => ({
+            grams: 96_100,
+            asPassenger: { grams: 21_000, rides: 21 },
+            asDriver: { grams: 75_100, rides: 1, passengers: 2 },
+          }));
+        },
+      });
+      expect(await screen.findByRole("header", { name: "Ferðirnar þínar" })).toBeVisible();
+      expect(screen.getByText("Um 96\u00a0kg, áætlað")).toBeVisible();
+      expect(screen.getByText("Aðeins þú sérð þetta.")).toBeVisible();
+      await fireEvent.press(
+        screen.getByRole("button", { name: "Minni losun CO2, um 96 kíló, áætlað" }),
+      );
+      for (const line of [
+        "Sem farþegi: 21\u00a0kg í 21 ferð.",
+        "Sem bílstjóri: 75\u00a0kg með 2 farþega í 1 ferð.",
+        "Alltaf miðað við að aka einn.",
+      ]) {
+        expect(screen.getByText(line)).toBeVisible();
+      }
+    } finally {
+      mockLanguage = "en-GB";
+    }
+  });
+
+  it("is not on a person's profile, mine as others see it included (R34.6)", async () => {
+    for (const profileId of [completeMe.profileId, annaProfileId]) {
+      await renderApp(`/people/${profileId}`, {
+        me: completeMe,
+        setUp: (client) => {
+          profileApi(client, [annaProfile, ownProfile(completeMe)], []);
+          co2Api(client, () => bothRoles);
+        },
+      });
+      await findPersonCard(profileId === annaProfileId ? "Anna" : (completeMe.firstName ?? ""));
+      expect(card()).toBeNull();
+      expect(screen.queryByText(/kg, estimated$/)).toBeNull();
+      expect(group()).toBeNull();
+    }
   });
 
   it("is read again when Profile comes back into view", async () => {
