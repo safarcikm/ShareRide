@@ -1,0 +1,15 @@
+# Run by every journey before its first step (onFlowStart). On a busy CI
+# runner one of the phone's own apps can stall while the emulator starts,
+# and its "isn't responding" box then covers the whole app: Maestro sees
+# only the box (2026-11-28, the Pixel Launcher). The workflow asks Android
+# for no such boxes first thing; this closes one that came up all the same.
+# A box about PuffinRide is left alone, so a stall of ours still fails the
+# journey.
+appId: ${APP_ID}
+---
+- runFlow:
+    when:
+      platform: Android
+      visible: "(?!PuffinRide).+ isn.t responding"
+    commands:
+      - tapOn: "Close app"
