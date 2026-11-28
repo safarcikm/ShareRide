@@ -5,6 +5,7 @@ import type { Database } from "@shareride/db";
 import {
   appStoresListed,
   bookingSettingsFrom,
+  co2SettingsFrom,
   defaultChatSettings,
   clientPlatformHeader,
   defaultMeetingPointIssueSettings,
@@ -95,6 +96,7 @@ import {
   registerInviteAdminRoutes,
   registerInviteRoutes,
 } from "./modules/beta/index.ts";
+import { registerCo2Routes } from "./modules/co2/index.ts";
 import { createDrivingService, registerDrivingRoutes } from "./modules/driving/index.ts";
 import { createLegalService, registerLegalRoutes } from "./modules/legal/index.ts";
 import {
@@ -643,10 +645,13 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       });
     }
     const ruleSettings = ruleSettingsSource(operatorSettings);
+    // The CO2 figures' value as it is now (spec 34, 3.3).
+    const co2Settings = async () => co2SettingsFrom((await operatorSettings.current()).values);
     const tripDetails = createTripDetailsService({
       ...features,
       settings: () => ruleSettings.search(),
       reliabilitySettings,
+      co2Settings,
     });
     // A trip page whose ride cannot be read keeps the general card, and says why.
     rideFinderOfApp = rideFinder(tripDetails, (error) => {
@@ -683,6 +688,7 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       tripDaySettings,
       reviewSettings: defaultReviewSettings,
       driving,
+      co2Settings,
     });
     registerDraftRoutes(app, trips, requireAuth, paused);
     registerTripChangeRoutes(
@@ -703,8 +709,10 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       tripDaySettings,
       reliabilitySettings,
       bookingsPausedIn: (tx) => pausedHeldIn(tx, "bookings"),
+      co2Settings,
     });
     registerBookingRoutes(app, bookings, requireAuth, trips, paused);
+    registerCo2Routes(app, { ...features, co2Settings }, requireAuth);
     registerChatRoutes(
       app,
       createChatService({ ...features, bookings, settings: defaultChatSettings }),

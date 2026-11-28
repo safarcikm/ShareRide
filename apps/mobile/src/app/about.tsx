@@ -15,7 +15,8 @@ import { usePalette } from "@/theme/use-palette";
 
 /**
  * About PuffinRide (spec 30, 3.1), open to everyone: what PuffinRide is,
- * the legal documents, who runs it and how to reach us, from `aboutPage`,
+ * the legal documents and how to delete an account (spec 32, section 5),
+ * who runs it and how to reach us, from `aboutPage`,
  * which the server also writes for search engines that do not run the
  * app. It takes the place of "Terms, rules and privacy" (3.2). Every link
  * is a real one: the documents and Carpool in Iceland open in the app, the
@@ -52,6 +53,11 @@ export default function AboutScreen() {
             <Row key={document.href} title={t(document.label)} href={document.href} />
           ))}
         </Card>
+        <TextLink
+          label={t(aboutPage.deleteAccount.label)}
+          href={aboutPage.deleteAccount.href}
+          align="start"
+        />
       </View>
       <View style={styles.section}>
         <Heading>{t(aboutPage.operatorTitle)}</Heading>

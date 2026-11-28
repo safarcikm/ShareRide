@@ -9,6 +9,7 @@ import { defaultTripSettings } from "../trips/settings.ts";
 import {
   bookingSettingsFrom,
   cancellationSettingsFrom,
+  co2SettingsFrom,
   pricePreview,
   priceSettingsFrom,
   reliabilitySettingsFrom,
@@ -144,6 +145,15 @@ describe("the trip day and reliability values", () => {
       periodMonths: 6,
       minCount: 3,
       watchPercent: 70,
+    });
+  });
+});
+
+describe("co2SettingsFrom", () => {
+  it("gives the grams per car km, 150 while nothing was changed", () => {
+    expect(co2SettingsFrom(defaultSettingValues)).toEqual({ gramsPerCarKm: 150 });
+    expect(co2SettingsFrom({ ...defaultSettingValues, co2_grams_per_car_km: 0 })).toEqual({
+      gramsPerCarKm: 0,
     });
   });
 });

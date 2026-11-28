@@ -26,8 +26,10 @@ type Translate = ReturnType<typeof useConsole>["t"];
 
 const weekChoices = [8, 13, 26] as const;
 
-/** How a metric reads: a count, a share, or one of the three with a unit of their own. */
-const kindOf = (metric: MetricKey): "count" | "share" | "per_thousand" | "hours" | "money" => {
+/** How a metric reads: a count, a share, or one of those with a unit of their own. */
+const kindOf = (
+  metric: MetricKey,
+): "count" | "share" | "per_thousand" | "hours" | "money" | "kilograms" => {
   switch (metric) {
     case "searches":
     case "trips_posted":
@@ -36,7 +38,10 @@ const kindOf = (metric: MetricKey): "count" | "share" | "per_thousand" | "hours"
     case "seats_booked":
     case "active_drivers":
     case "active_passengers":
+    case "car_km_saved":
       return "count";
+    case "co2_saved_grams":
+      return "kilograms";
     case "reports_per_trip":
       return "per_thousand";
     case "report_answer_minutes":
@@ -53,6 +58,8 @@ const kindOf = (metric: MetricKey): "count" | "share" | "per_thousand" | "hours"
 function numberOf(metric: MetricKey, { numerator, denominator }: MetricValue): number | null {
   const kind = kindOf(metric);
   if (kind === "count" || kind === "money") return numerator;
+  // Whole kilograms, rounded down, as the apps show them (spec 34, R34.7).
+  if (kind === "kilograms") return Math.floor(numerator / 1000);
   if (denominator === null || denominator === 0) return null;
   if (kind === "share") return Math.round((numerator / denominator) * 100);
   if (kind === "per_thousand") return Math.round((numerator / denominator) * 1000);

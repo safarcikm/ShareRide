@@ -44,6 +44,7 @@ export function registerConfigRoutes(
         analytics:
           analytics === null ? null : { googleMeasurementId: analytics.googleMeasurementId },
         oldestAppVersion,
+        co2GramsPerCarKm: values.co2_grams_per_car_km,
         appStores: appStoresListed(values),
       },
       200,

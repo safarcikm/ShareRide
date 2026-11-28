@@ -6,6 +6,7 @@ export * from "./auth/index.ts";
 export * from "./beta/index.ts";
 export * from "./bookings/index.ts";
 export * from "./chat/index.ts";
+export * from "./co2/index.ts";
 export * from "./countries.ts";
 export * from "./driving/index.ts";
 export * from "./meeting-points/index.ts";

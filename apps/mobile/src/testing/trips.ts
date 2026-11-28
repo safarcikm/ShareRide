@@ -267,6 +267,7 @@ export function tripsApi(
       cancellation: null,
       phase: null,
       priceSettings: startingPriceSettings,
+      co2: null,
     };
     return ok(201, store(trip));
   });
@@ -587,6 +588,7 @@ export function plannedDraft(changes: Partial<MyTrip> = {}): MyTrip {
     cancellation: null,
     phase: null,
     priceSettings: startingPriceSettings,
+    co2: null,
     ...changes,
   };
 }

@@ -16,6 +16,7 @@ export const groupKeys = {
   booking: "admin.settings.group.booking",
   changes: "admin.settings.group.changes",
   trip_day: "admin.settings.group.trip_day",
+  co2: "admin.settings.group.co2",
   apps: "admin.settings.group.apps",
 } as const satisfies Record<SettingGroup, MessageKey>;
 
@@ -145,6 +146,10 @@ const settingTexts = {
     name: "admin.settings.name.google_play_listed",
     help: "admin.settings.help.google_play_listed",
   },
+  co2_grams_per_car_km: {
+    name: "admin.settings.name.co2_grams_per_car_km",
+    help: "admin.settings.help.co2_grams_per_car_km",
+  },
 } as const satisfies Record<SettingKey, SettingTexts>;
 
 interface UnitTexts {
@@ -164,6 +169,7 @@ const unitTexts = {
   hours: { value: "admin.settings.unit.hours", field: "admin.settings.newValue.hours" },
   months: { value: "admin.settings.unit.months", field: "admin.settings.newValue.months" },
   records: { value: "admin.settings.unit.records", field: "admin.settings.newValue.records" },
+  g_per_km: { value: "admin.settings.unit.g_per_km", field: "admin.settings.newValue.g_per_km" },
 } as const satisfies Record<SettingUnit, UnitTexts>;
 
 const isUnit = (unit: string | null): unit is SettingUnit =>

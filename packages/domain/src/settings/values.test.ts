@@ -31,6 +31,18 @@ describe("the settings catalogue", () => {
     });
   });
 
+  it("has the CO2 per car km, 150 g to start, 0 hiding every figure (ADR 0054)", () => {
+    expect(settingDefinitions.co2_grams_per_car_km).toEqual({
+      group: "co2",
+      kind: "number",
+      unit: "g_per_km",
+      default: 150,
+      min: 0,
+      max: 300,
+      step: 1,
+    });
+  });
+
   it("gives every setting a default inside its range and on its step (R10.1)", () => {
     for (const key of settingKeys) {
       const { default: value, min, max, step } = settingDefinitions[key];
@@ -105,6 +117,17 @@ describe("checkSettingChange", () => {
       expect(checkSettingChange("beta_max_testers", value, "Why", current)).toEqual({
         ok: false,
         error: { code: "out_of_range", min: 0, max: 1000 },
+      });
+    }
+  });
+
+  it("takes the CO2 per car km from 0, which hides every figure, to 300 (ADR 0054)", () => {
+    expect(checkSettingChange("co2_grams_per_car_km", 0, "A doubt", current).ok).toBe(true);
+    expect(checkSettingChange("co2_grams_per_car_km", 300, "New factors", current).ok).toBe(true);
+    for (const value of [-1, 301]) {
+      expect(checkSettingChange("co2_grams_per_car_km", value, "Why", current)).toEqual({
+        ok: false,
+        error: { code: "out_of_range", min: 0, max: 300 },
       });
     }
   });

@@ -1,0 +1,28 @@
+# The store's screens in Icelandic, for Google Play's Icelandic page (the
+# App Store has no Icelandic page). The app's own switch chooses the
+# language, which it keeps through each launch.
+appId: ${APP_ID}
+name: Store screens in Icelandic
+onFlowStart:
+  - runFlow: ../../helpers/close-stuck-box.yaml
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Share your ride"
+    timeout: 120000
+- tapOn: "Change the language to Icelandic"
+- extendedWaitUntil:
+    visible: "Verum samferða"
+    timeout: 20000
+- runFlow:
+    file: ../screens.yaml
+    env:
+      LANG: is
+      FIND_TITLE: "Verum samferða"
+      FROM_FIELD: "Frá: .*"
+      TO_FIELD: "Til: .*"
+      FIND_BUTTON: "Finna far"
+      POINTS: "Mótsstaðir"
+      HOW: "Svona virkar samakstur"
+      CARPOOL_TITLE: "Samferða um Ísland"

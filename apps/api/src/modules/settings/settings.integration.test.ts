@@ -149,6 +149,8 @@ describe("the console's settings", () => {
       { key: "reliability_period", unit: "months", value: 12, min: 3, max: 24, step: 1 },
       { key: "reliability_min_count", unit: "records", value: 5, min: 1, max: 20, step: 1 },
       { key: "reliability_watch_level", unit: "percent", value: 80, min: 50, max: 95, step: 1 },
+      // The CO2 a shared ride saves (spec 34, ADR 0054).
+      { key: "co2_grams_per_car_km", unit: "g_per_km", value: 150, min: 0, max: 300, step: 1 },
       // Both stores off until their page is public (spec 35, ADR 0055).
       { key: "app_store_listed", unit: null, value: 0, min: 0, max: 1, step: 1 },
       { key: "google_play_listed", unit: null, value: 0, min: 0, max: 1, step: 1 },
@@ -325,6 +327,8 @@ describe("GET /v1/config", () => {
       passkeySignIn: true,
       // Without OLDEST_APP_VERSION every app version is served (spec 32, R32.4).
       oldestAppVersion: null,
+      // For About's method (spec 34, 3.9).
+      co2GramsPerCarKm: 150,
       // Both store switches start off (spec 35, R35.1).
       appStores: [],
     });
@@ -350,6 +354,8 @@ describe("GET /v1/config", () => {
       passkeySignIn: true,
       // Without OLDEST_APP_VERSION every app version is served (spec 32, R32.4).
       oldestAppVersion: null,
+      // For About's method (spec 34, 3.9).
+      co2GramsPerCarKm: 150,
       // Both store switches start off (spec 35, R35.1).
       appStores: [],
     });

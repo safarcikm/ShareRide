@@ -1,6 +1,8 @@
 # Find and Profile in Icelandic, then back to English.
 appId: ${APP_ID}
 name: In Icelandic
+onFlowStart:
+  - runFlow: ../helpers/close-stuck-box.yaml
 ---
 - launchApp
 - tapOn:

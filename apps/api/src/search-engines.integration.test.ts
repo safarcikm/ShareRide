@@ -90,6 +90,7 @@ describe("the sitemap on production (spec 23, 3.7)", () => {
         "/",
         "/carpool-iceland",
         "/about",
+        "/delete-account",
         "/meeting-points",
         `/meeting-points/${point("active")}`,
         `/places/${point("place")}`,
