@@ -8,6 +8,11 @@ import { describe, expect, it } from "vitest";
 // and the texts kept the old names until a new version of each. These tests
 // hold the newest version of each text to the names the app has now, so the
 // next renaming fails here and not in front of a reader.
+//
+// The ways to sign in changed too (spec 26: a code by email, and a text
+// message only to check a number; spec 27: a password, and Face ID or
+// fingerprint), and the texts went on saying "a code sent to your phone". The
+// second group holds them to the ways the sign-in screen offers.
 
 type Named = "terms" | "privacy" | "community-rules";
 const named = ["terms", "privacy", "community-rules"] as const satisfies readonly Named[];
@@ -94,6 +99,64 @@ describe("where the newest legal texts send people (spec 31, 3.22)", () => {
       for (const language of locales) {
         for (const name of gone) {
           expect(textOf(type, language), `${type} (${language})`).not.toMatch(name);
+        }
+      }
+    }
+  });
+});
+
+describe("how the newest legal texts say you sign in (specs 26 and 27)", () => {
+  /** The ways in, by the names the sign-in screen gives them. */
+  function ways(language: Locale) {
+    const t = createTranslator(language);
+    return {
+      password: t("auth.password").toLowerCase(),
+      // In Icelandic the name takes its case after "með", "fingrafari", which
+      // still holds the name as the app writes it.
+      passkey: t("auth.passkey"),
+    };
+  }
+
+  /** The first paragraph of a text that names Face ID or fingerprint: where it says how one signs in. */
+  const paragraphOn = (text: string, name: string) =>
+    text.split("\n\n").find((paragraph) => paragraph.includes(name)) ?? "";
+
+  it("the Terms say a code by email signs you in, with a password and Face ID or fingerprint beside it, named as the app does", () => {
+    const byEmail = {
+      en: "You sign in with a code we send to your email address.",
+      is: "Þú skráir þig inn með kóða sem við sendum á netfangið þitt.",
+    };
+    for (const language of locales) {
+      const way = ways(language);
+      const account = paragraphOn(textOf("terms", language), way.passkey);
+      expect(account, language).toContain(byEmail[language]);
+      expect(account, language).toContain(way.password);
+    }
+  });
+
+  it("the Privacy Policy says in one place what is kept of a password and of Face ID or fingerprint, and where to remove them", () => {
+    for (const language of locales) {
+      const way = ways(language);
+      const records = paragraphOn(textOf("privacy", language), way.passkey);
+      expect(records, language).toContain(way.password);
+      expect(records, language).toContain(places(language).signInMethods);
+    }
+  });
+
+  it("say nowhere that a text message signs you in: no code sent to the phone to sign in, and no sign-in code by SMS", () => {
+    const gone = [
+      "a code sent to your phone",
+      "kóða sem er sendur í símann þinn",
+      // One sentence with both a sign-in code and SMS in it, as the old texts
+      // had twice. It is a net for those words, not for every way of saying it:
+      // the sentence the Terms must have, above, is what holds the rule.
+      /sign-in codes?[^.]*\bSMS\b|\bSMS\b[^.]*sign-in codes?/i,
+      /innskráningarkóð[^.]*\bSMS\b|\bSMS\b[^.]*innskráningarkóð/i,
+    ];
+    for (const type of named) {
+      for (const language of locales) {
+        for (const phrase of gone) {
+          expect(textOf(type, language), `${type} (${language})`).not.toMatch(phrase);
         }
       }
     }
