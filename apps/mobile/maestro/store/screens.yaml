@@ -1,0 +1,109 @@
+# The store's screens in one language, named store-<lang>-<n>-<screen>. Each
+# starts from a fresh launch on Find, so one that fails leaves the next
+# (optional). The flows in flows/ give the language's words.
+appId: ${APP_ID}
+---
+- runFlow:
+    label: Find
+    commands:
+      - launchApp
+      - extendedWaitUntil:
+          visible: ${FIND_TITLE}
+          timeout: 120000
+      - waitForAnimationToEnd
+      - takeScreenshot: screenshots/store-${LANG}-1-find
+- runFlow:
+    label: Rides leaving soon, and one of them
+    optional: true
+    commands:
+      - launchApp
+      - extendedWaitUntil:
+          visible: ${FIND_TITLE}
+          timeout: 60000
+      - scrollUntilVisible:
+          element:
+            id: "trip-result"
+          timeout: 20000
+      - scroll
+      - waitForAnimationToEnd
+      - takeScreenshot: screenshots/store-${LANG}-2-leaving-soon
+      - tapOn:
+          id: "trip-result"
+      - waitForAnimationToEnd
+      - takeScreenshot: screenshots/store-${LANG}-3-ride
+- runFlow:
+    label: Borgarnes to Blönduós, part of Reykjavík to Akureyri
+    optional: true
+    commands:
+      - launchApp
+      - extendedWaitUntil:
+          visible: ${FIND_TITLE}
+          timeout: 60000
+      - tapOn: ${FROM_FIELD}
+      - inputText: "borgarn"
+      - tapOn: "N1 Borgarnes.*"
+      - tapOn: ${TO_FIELD}
+      - inputText: "blondu"
+      - tapOn: "Olís Blönduós.*"
+      - tapOn: ${FIND_BUTTON}
+      - extendedWaitUntil:
+          visible:
+            id: "trip-result"
+          timeout: 20000
+      - waitForAnimationToEnd
+      - takeScreenshot: screenshots/store-${LANG}-4-results
+- runFlow:
+    label: The meeting points on the map
+    optional: true
+    commands:
+      - launchApp
+      - extendedWaitUntil:
+          visible: ${FIND_TITLE}
+          timeout: 60000
+      - tapOn:
+          id: "tab-profile"
+      - tapOn: ${POINTS}
+      - extendedWaitUntil:
+          visible:
+            id: "points-map"
+          timeout: 20000
+      - waitForAnimationToEnd
+      - takeScreenshot: screenshots/store-${LANG}-5-meeting-points
+- runFlow:
+    label: How carpooling works
+    optional: true
+    commands:
+      - launchApp
+      - extendedWaitUntil:
+          visible: ${FIND_TITLE}
+          timeout: 60000
+      # The rides leaving soon come first: until they are there, a phone
+      # leaves them out and the link sits higher, then moves down.
+      - scrollUntilVisible:
+          element:
+            id: "trip-result"
+          timeout: 20000
+      # The link is the page's last line: one more swipe brings it up from
+      # under the iPhone's tab bar, which would take the tap.
+      - scrollUntilVisible:
+          element: ${HOW}
+          timeout: 20000
+      - scroll
+      - tapOn: ${HOW}
+      - extendedWaitUntil:
+          visible: ${CARPOOL_TITLE}
+          timeout: 20000
+      - waitForAnimationToEnd
+      - takeScreenshot: screenshots/store-${LANG}-6-how-it-works
+- runFlow:
+    label: Offer a ride
+    optional: true
+    commands:
+      - launchApp
+      - extendedWaitUntil:
+          visible: ${FIND_TITLE}
+          timeout: 60000
+      - tapOn:
+          id: "tab-offer"
+      - waitForAnimationToEnd
+      - takeScreenshot: screenshots/store-${LANG}-7-offer

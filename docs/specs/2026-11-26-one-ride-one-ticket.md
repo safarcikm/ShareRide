@@ -185,7 +185,7 @@ decision 17), added two: its edge and its fill under the pointer.
      or "New driver", and the seats left; on a booking in My rides, the
      driver and the booking's state as a tag; on a ride I drive, "1 of 3
      seats taken" and what it needs ("1 request"). A ride that is mine has
-     a moss bottom edge.
+     a moss outline (a moss bottom edge until spec 15's decision 16).
    - It is one link, as the cards are today. Tickets in one row of a grid
      are equally tall, with the foot at the bottom.
 2. **`Road`**: a grey road with a dashed middle line, the part behind the
@@ -197,7 +197,8 @@ decision 17), added two: its edge and its fill under the pointer.
    steps (signing up keeps the bars). Its marks are not links: on the last posting step the rows open
    the earlier steps (3.11).
 3. **`NeedsYouCard`**: a card in `warningSoft` (the soft yellow of an
-   amber tag) with a bottom edge in the car's yellow (`people.sun`):
+   amber tag) with an outline in the car's yellow (`people.sun`; a bottom
+   edge until spec 15's decision 16):
    a yellow square with an icon, one bold line saying what is asked ("Dóra
    asks for 1 seat"), one line of detail in `warning` ("Mjódd to Selfoss,
    Fri 27 Nov. 11 h left to answer."), and one button. On the
@@ -219,7 +220,7 @@ decision 17), added two: its edge and its fill under the pointer.
    - **The colours** are the pair the tags use, `warningSoft` and
      `warning`, which spec 15 names for warnings. From this spec they mean
      "yours and now" (rule 6); the tokens keep their names. `people.sun`
-     gains one use outside drawings, the card's bottom edge and the square
+     gains one use outside drawings, the card's outline and the square
      behind its icon; it is never text and never the only sign, since the
      bold line says what is asked.
    - **Status tags follow rule 6** (decision 10). "Driver said yes: pay"

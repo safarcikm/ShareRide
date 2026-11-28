@@ -105,7 +105,7 @@ export function Screen({
 }) {
   const palette = usePalette();
   const wide = useWideScreen();
-  const { scrollRef, scroll, keyboardRoom } = useRevealing();
+  const { scrollRef, scroll, keyboardRoom, held } = useRevealing();
   const safeEdges = useContext(ScreenEdgesContext);
   // The height the screen scrolls in: the window less any bar above it.
   const [viewHeight, setViewHeight] = useState<number | null>(null);
@@ -152,6 +152,7 @@ export function Screen({
           ref={scrollRef}
           testID="screen-scroll"
           refreshControl={refreshing.control}
+          scrollEnabled={!held}
           onLayout={(event) => {
             // Only the web's sticky aside and side column use the height. It
             // is measured from the start, as they can come later, with data.
@@ -424,6 +425,12 @@ export interface ScreenScroll {
    * hidden. Returns a function that ends this.
    */
   readonly reveal: (target: RefObject<ViewRef | null>) => () => void;
+  /**
+   * Keeps the screen from scrolling while `held`, as while a finger drags
+   * the price level's handle: otherwise an iPhone scrolls the page with
+   * any up or down in the finger's sideways move.
+   */
+  readonly hold: (held: boolean) => void;
 }
 
 const ScreenScrollContext = createContext<ScreenScroll | null>(null);
@@ -437,13 +444,15 @@ export function useScreenScroll(): ScreenScroll | null {
  * Scrolls a part being revealed to near the top. While it is, the content
  * gets room at the bottom as tall as the keyboard, so the part can be
  * scrolled that far even on a short page. On the web there is no keyboard
- * to make room for, and nothing scrolls.
+ * to make room for, and nothing scrolls. A part can also hold the scroll
+ * still (`ScreenScroll.hold`).
  */
 function useRevealing() {
   const scrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
   const target = useRef<RefObject<ViewRef | null> | null>(null);
   const [revealing, setRevealing] = useState(false);
   const [keyboard, setKeyboard] = useState(0);
+  const [held, setHeld] = useState(false);
 
   useEffect(() => {
     if (Platform.OS === "web") return undefined;
@@ -487,10 +496,11 @@ function useRevealing() {
           setRevealing(false);
         };
       },
+      hold: setHeld,
     }),
     [scrollToTarget],
   );
-  return { scrollRef, scroll, keyboardRoom: revealing ? keyboard : 0 };
+  return { scrollRef, scroll, keyboardRoom: revealing ? keyboard : 0, held };
 }
 
 /**

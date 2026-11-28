@@ -2,6 +2,7 @@ import { fireEvent, render, screen, within } from "@testing-library/react-native
 import { Text } from "react-native";
 import { LanguageProvider } from "@/i18n/language";
 import { ringInside as webRing } from "@/theme/ring-inside.web";
+import { cardFace } from "@/testing/lift";
 import { colors } from "@/theme/tokens";
 import { ChevronLeft, Pencil, Share, X, Zap } from "lucide-react-native";
 import { ActionRows } from "./action-rows";
@@ -123,10 +124,8 @@ describe("Card", () => {
       borderRadius: 22,
       padding: 16,
     });
-    expect(screen.getByTestId("card")).toHaveStyle({
-      borderBottomWidth: 3,
-      borderBottomColor: colors.light.edge,
-    });
+    // A hairline round it and a soft shadow under it (spec 15, 4.4).
+    expect(screen.getByTestId("card-face")).toHaveStyle(cardFace());
     expect(screen.queryByRole("button")).toBeNull();
   });
 
@@ -141,21 +140,18 @@ describe("Card", () => {
     expect(onPress).toHaveBeenCalledTimes(1);
   });
 
-  it("turns its edge primary under the pointer when it can be pressed (spec 18, 3.4)", async () => {
+  it("turns its outline primary under the pointer when it can be pressed (spec 18, 3.4)", async () => {
     await render(
       <Card onPress={jest.fn()} accessibilityLabel="BSÍ, Bus hub">
         <Text>BSÍ</Text>
       </Card>,
     );
     await fireEvent(screen.getByRole("button"), "hoverIn");
-    expect(screen.getByTestId("card")).toHaveStyle({
-      borderBottomWidth: 3,
-      borderBottomColor: colors.light.primary,
-    });
+    expect(screen.getByTestId("card-face")).toHaveStyle(cardFace(colors.light.primary));
     // What sits on tints of its own, such as a tag, keeps the surface under it.
     expect(screen.getByTestId("card-face")).toHaveStyle({ backgroundColor: colors.light.surface });
     await fireEvent(screen.getByRole("button"), "hoverOut");
-    expect(screen.getByTestId("card")).toHaveStyle({ borderBottomColor: colors.light.edge });
+    expect(screen.getByTestId("card-face")).toHaveStyle(cardFace());
   });
 
   it("fills the room it is given when asked, as in a grid's row", async () => {
@@ -184,7 +180,7 @@ describe("Card", () => {
     );
     await fireEvent(screen.getByRole("button"), "hoverIn");
     expect(onHoverIn).toHaveBeenCalledTimes(1);
-    expect(screen.getByTestId("card")).toHaveStyle({ borderBottomColor: colors.light.primary });
+    expect(screen.getByTestId("card-face")).toHaveStyle(cardFace(colors.light.primary));
     await fireEvent(screen.getByRole("button"), "focus");
     expect(onFocus).toHaveBeenCalledTimes(1);
   });
@@ -232,9 +228,9 @@ describe("Card", () => {
     const share = screen.getByRole("button", { name: "Share BSÍ" });
     await fireEvent(share, "hoverIn");
     expect(onHoverIn).toHaveBeenCalledTimes(1);
-    expect(screen.getByTestId("card")).toHaveStyle({ borderBottomColor: colors.light.primary });
+    expect(screen.getByTestId("card-face")).toHaveStyle(cardFace(colors.light.primary));
     await fireEvent(share, "hoverOut");
-    expect(screen.getByTestId("card")).toHaveStyle({ borderBottomColor: colors.light.edge });
+    expect(screen.getByTestId("card-face")).toHaveStyle(cardFace());
     await fireEvent(share, "focus");
     expect(onFocus).toHaveBeenCalledTimes(1);
   });
@@ -466,7 +462,7 @@ describe("ActionRows", () => {
       overflow: "hidden",
       backgroundColor: colors.light.surface,
     });
-    expect(screen.getByTestId("card")).toHaveStyle({ borderBottomWidth: 3 });
+    expect(screen.getByTestId("card-face")).toHaveStyle(cardFace());
     // The lines are the card of rows showing between its rows, 2 wide; a
     // row that is left out leaves none.
     const rows = screen.getByTestId("action-rows");
@@ -537,8 +533,10 @@ describe("IconButton", () => {
     );
     // The whole 44 is the button, as the web has no hitSlop; the circle is 36.
     const quiet = screen.getByRole("button", { name: "Share" });
-    expect(quiet).toHaveStyle({ width: 44, height: 44, borderBottomWidth: 0 });
-    expect(screen.getByTestId("face")).toHaveStyle({ width: 36, height: 36 });
+    expect(quiet).toHaveStyle({ width: 44, height: 44 });
+    // No edge under it.
+    expect(quiet).not.toHaveStyle({ paddingBottom: 3 });
+    expect(screen.getByTestId("face")).toHaveStyle({ width: 36, height: 36, boxShadow: undefined });
     expect(screen.getByTestId("face")).not.toHaveStyle({ backgroundColor: colors.light.surface });
     await fireEvent(quiet, "hoverIn");
     expect(screen.getByTestId("face")).toHaveStyle({ backgroundColor: colors.light.primarySoft });

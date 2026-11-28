@@ -1,9 +1,9 @@
 import { createContext, useContext, useMemo, type ReactNode } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { useHover } from "@/theme/hover";
-import { chunky } from "@/theme/pressable";
-import { edges, radii, sizes, spacing } from "@/theme/tokens";
-import { usePalette } from "@/theme/use-palette";
+import { cardLift, cardRing } from "@/theme/pressable";
+import { radii, sizes, spacing } from "@/theme/tokens";
+import { usePalette, useScheme } from "@/theme/use-palette";
 import { linkProps, type AppPath } from "@/navigation/link-props";
 
 interface CardProps {
@@ -48,8 +48,13 @@ interface CardProps {
    */
   readonly flush?: boolean;
   /**
-   * A ride that is mine (spec 31, 3.3): a `primary` bottom edge, which
-   * turns `primaryEdge` where another card's edge turns `primary`.
+   * A ride ticket (spec 31, 3.3): `flush`, but what it holds is not cut at
+   * its edges, so the notches of its tear line reach over its outline.
+   */
+  readonly notched?: boolean;
+  /**
+   * A ride that is mine (spec 31, 3.3): a `primary` outline, which turns
+   * `primaryEdge` where another card's outline turns `primary`.
    */
   readonly mine?: boolean;
 }
@@ -70,6 +75,20 @@ export interface CardCornerEvents {
 
 const CardCorner = createContext<CardCornerEvents | null>(null);
 
+/** The line round a card, as `cardRing` gives it: for a ticket's notches. */
+export type CardRingLine = ReturnType<typeof cardRing>;
+
+const CardRing = createContext<CardRingLine | null>(null);
+
+/**
+ * The line round the card this is in, as it is drawn now: in its colour
+ * under the pointer, for one that is `marked` and for one that is `mine`.
+ * Null outside a card.
+ */
+export function useCardRing(): CardRingLine | null {
+  return useContext(CardRing);
+}
+
 /**
  * For the button in a card's `corner`: the pointer over it, or the keyboard
  * on it, counts as on the card, so the card keeps its edge and a map beside
@@ -80,11 +99,11 @@ export function useCardCorner(): CardCornerEvents | null {
 }
 
 /**
- * A surface with rounded corners and a chunky bottom edge (spec 15, section
- * 5.2). A card that can be pressed sinks over its edge, like a button.
- * Under the pointer its edge turns `primary`; the face stays `surface`, so
- * a tag or an avatar on a tint of its own keeps its shape (spec 18, 3.4).
- * A `marked` card keeps that edge.
+ * A surface with rounded corners, a hairline round it and a soft shadow
+ * under it (spec 15, sections 4.4 and 5.2). A card that can be pressed sinks
+ * a little when pressed. Under the pointer its outline turns `primary`; the
+ * face stays `surface`, so a tag or an avatar on a tint of its own keeps its
+ * shape (spec 18, 3.4). A `marked` card keeps that outline.
  */
 export function Card({
   children,
@@ -97,6 +116,7 @@ export function Card({
   fill = false,
   corner,
   flush = false,
+  notched = false,
   mine = false,
 }: CardProps) {
   const [cornerHovered, cornerHover] = useHover();
@@ -123,6 +143,7 @@ export function Card({
       marked={marked || cornerHovered}
       fill={fill}
       flush={flush}
+      notched={notched}
       mine={mine}
     >
       {children}
@@ -149,32 +170,38 @@ function PlainCard({
   marked = false,
   fill = false,
   flush = false,
+  notched = false,
   mine = false,
 }: Omit<CardProps, "corner">) {
   const palette = usePalette();
+  const scheme = useScheme();
   const [hovered, hover] = useHover();
-  const resting = mine ? palette.primary : palette.edge;
+  const resting = mine ? palette.primary : undefined;
   const shown = mine ? palette.primaryEdge : palette.primary;
-  const edgeColor = hovered || marked ? shown : resting;
+  const pressable = onPress !== undefined || href !== undefined;
+  // Only a card that can be pressed answers the pointer (spec 15, Card).
+  const ring = pressable && (hovered || marked) ? shown : resting;
+  const line = useMemo(() => cardRing(scheme, ring), [scheme, ring]);
   const face = (pressed: boolean) => (
     <View
       testID="card-face"
       style={[
         styles.face,
-        flush && styles.flush,
+        (flush || notched) && styles.flush,
+        flush && !notched && styles.clip,
         fill && styles.fill,
         { backgroundColor: palette.surface },
-        chunky(edges.card, edgeColor, pressed).face,
+        cardLift(scheme, { pressed, ring }).face,
       ]}
     >
-      {children}
+      <CardRing.Provider value={line}>{children}</CardRing.Provider>
     </View>
   );
-  if (onPress === undefined && href === undefined) {
+  if (!pressable) {
     return (
       <View
         testID="card"
-        style={[styles.outer, fill && styles.fill, chunky(edges.card, resting, false).outer]}
+        style={[styles.outer, fill && styles.fill, cardLift(scheme, { ring }).outer]}
       >
         {face(false)}
       </View>
@@ -195,7 +222,7 @@ function PlainCard({
       style={({ pressed }) => [
         styles.outer,
         fill && styles.fill,
-        chunky(edges.card, edgeColor, pressed).outer,
+        cardLift(scheme, { pressed, ring }).outer,
       ]}
     >
       {({ pressed }) => face(pressed)}
@@ -207,7 +234,8 @@ const styles = StyleSheet.create({
   outer: { borderRadius: radii.card },
   fill: { flexGrow: 1 },
   face: { borderRadius: radii.card, padding: spacing.md, gap: spacing.ms },
-  flush: { padding: 0, gap: 0, overflow: "hidden" },
+  flush: { padding: 0, gap: 0 },
+  clip: { overflow: "hidden" },
   // The tap area's corner: the button it holds is drawn 4 further in.
   corner: { position: "absolute", top: spacing.xs, right: spacing.xs },
 });

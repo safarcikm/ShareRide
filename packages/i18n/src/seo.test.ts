@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { aboutCo2Values, aboutPage, carpoolPage, pageText } from "./seo.ts";
+import {
+  aboutCo2Values,
+  aboutPage,
+  carpoolPage,
+  deleteAccountPage,
+  deleteAccountSteps,
+  pageText,
+} from "./seo.ts";
 import { createTranslator } from "./translator.ts";
 
 const en = createTranslator("en");
@@ -144,5 +151,39 @@ describe("aboutCo2Values", () => {
   it("gives the grams per car km and the example's whole kilograms (spec 34, 3.9)", () => {
     expect(aboutCo2Values(150, "en")).toEqual({ grams: "150", kg: "58" });
     expect(aboutCo2Values(208, "is")).toEqual({ grams: "208", kg: "81" });
+  });
+});
+
+describe("the account deletion page (spec 32, section 5)", () => {
+  it("has its own title and description, naming the app as the stores do", () => {
+    expect(pageText(en, { kind: "deleteAccount" })).toEqual({
+      title: "Delete your PuffinRide account · PuffinRide",
+      description:
+        "How to delete your PuffinRide account in the app or on the website, what we erase and what we keep, and for how long.",
+    });
+    expect(pageText(is, { kind: "deleteAccount" }).title).toBe(
+      "Eyða PuffinRide-aðgangi · PuffinRide",
+    );
+  });
+
+  it("names the places to go as the app names them, in both languages", () => {
+    expect(deleteAccountPage.path).toBe("/delete-account");
+    expect(deleteAccountSteps(en)[1]).toBe(
+      `Open ${en("nav.profile")}, then ${en("settings.privacy")}.`,
+    );
+    expect(deleteAccountSteps(en)[2]).toContain(en("privacy.delete"));
+    expect(deleteAccountSteps(is)[1]).toBe(
+      `Opnaðu „${is("nav.profile")}“ og svo „${is("settings.privacy")}“.`,
+    );
+    expect(deleteAccountSteps(is)[2]).toContain(is("privacy.delete"));
+  });
+
+  it("gives the same address as About, and links to the Privacy Policy", () => {
+    expect(deleteAccountPage.email).toBe(aboutPage.email);
+    expect(deleteAccountPage.privacyPolicy.href).toBe("/legal/privacy");
+    expect(aboutPage.deleteAccount).toEqual({
+      label: "deleteAccount.link",
+      href: "/delete-account",
+    });
   });
 });
