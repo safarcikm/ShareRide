@@ -97,7 +97,12 @@ changes on a phone.
    - **Two columns:** a main column that takes the room left, and a side
      column 400 wide (`sideColumnWidth`) at the right. The side column stays
      in view while the main column scrolls, and scrolls on its own when it
-     is taller than the window, as the map on meeting points does.
+     is taller than the window, as the map on meeting points does. It
+     scrolls up and down only: what stands a little out of its cards (a
+     ticket's notches, a card's outline and shadow) is whole, as its box
+     reaches 16 round the column into the gaps beside it (since
+     2026-11-28, when Martin saw a scrollbar under "Your next ride";
+     [pictures](images/laptop-layout/side-column/)).
    - **Grid:** cards in as many columns as fit at 320 or more each.
 4. Between 900 and 1144 the main column gives way first; nothing is cut and
    the page never scrolls sideways.
@@ -576,7 +581,9 @@ Every other text is one the app has.
   and keep passing. `laptop.spec.ts` walks every laptop layout at 900, 1280
   and 1440 wide, in English and in Icelandic: the two columns or panes
   level, everything to press whole inside its column, no page scrolling
-  sideways, and what must be pressed whole in a window 1280 by 720.
+  sideways, and what must be pressed whole in a window 1280 by 720. "No
+  page scrolling sideways" counts the side column's own box too, which
+  `my-rides.spec.ts` checks on Find with a ticket under "Your next ride".
 - The look journey photographs Find at desktop size, light in English and
   dark in Icelandic. Pictures of every changed screen, before and now at
   1440 wide, are in the project files under `laptop-web/built`. On Find

@@ -540,15 +540,22 @@ export function useScreenViewHeight(): number | null {
  * On the web, the aside or side column stays in view while the rest
  * scrolls, and scrolls on its own when it is taller than the screen's
  * scroll, which is the window less any bar above it, such as the top bar.
+ *
+ * A box that scrolls cuts off what stands out of it, and one that scrolls
+ * up and down scrolls sideways too, to reach it: a card's outline and
+ * shadow, and the notches of a ticket's tear line. With `room`, the box
+ * reaches that far round what it holds, into the gaps beside it; what it
+ * holds stays where it would be without it.
  */
-export function stickyOnWeb(viewHeight: number | null): object {
+export function stickyOnWeb(viewHeight: number | null, room = 0): object {
   if (Platform.OS !== "web") return {};
-  const room = 2 * spacing.md;
+  const gaps = 2 * spacing.md - 2 * room;
   return {
     position: "sticky",
-    top: spacing.md,
-    maxHeight: viewHeight === null ? `calc(100vh - ${String(room)}px)` : viewHeight - room,
+    top: spacing.md - room,
+    maxHeight: viewHeight === null ? `calc(100vh - ${String(gaps)}px)` : viewHeight - gaps,
     overflowY: "auto",
+    ...(room === 0 ? {} : { padding: room, margin: -room }),
   };
 }
 

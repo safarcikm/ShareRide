@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { english, icelandic, signUp, type Texts } from "./support/account";
+import { expectNoSidewaysScroll, laptop, widths } from "./support/laptop";
 import { focused, openTrip, type TripSearch } from "./support/trips";
 
 // Spec 5's requests, My rides (spec 16, 3.3) and what Find shows of my own
@@ -134,6 +135,16 @@ for (const journey of journeys) {
       if (testInfo.project.name === "phone") {
         const search = await page.getByRole("button", { name: journey.fromField }).boundingBox();
         expect((await next.boundingBox())?.y).toBeLessThan(search?.y ?? 0);
+      } else {
+        // Beside the rides, the ticket is whole: its outline and the notches
+        // of its tear line stand a little out of it, and the side column does
+        // not scroll sideways to reach them.
+        const window = page.viewportSize();
+        for (const width of widths) {
+          await page.setViewportSize(laptop(width));
+          await expectNoSidewaysScroll(page);
+        }
+        if (window !== null) await page.setViewportSize(window);
       }
       await page.getByRole("button", { name: ticket }).click();
       await expect(page).toHaveURL(/\/bookings\/[0-9a-f-]+$/);
