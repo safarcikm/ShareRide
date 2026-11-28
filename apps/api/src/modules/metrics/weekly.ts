@@ -23,6 +23,7 @@ import {
   type WeekMetrics,
 } from "@shareride/domain";
 import { and, asc, eq, gte, inArray, isNull, or, sql } from "drizzle-orm";
+import { partDistanceSql } from "../co2/figures.ts";
 
 const { corridors, weeklyMetrics } = schema;
 
@@ -171,7 +172,7 @@ async function load(tx: Transaction, start: Date, end: Date): Promise<Loaded> {
         select b.trip_id from bookings b
         where (b.created_at >= ${iso(before)} and b.created_at < ${iso(end)})
           or (b.confirmed_at >= ${iso(before)} and b.confirmed_at < ${iso(end)})
-          or ${window(sql`b.cancelled_at`)}
+          or ${window(sql`b.cancelled_at`)} or ${window(sql`b.completed_at`)}
       )
     )
   `);
@@ -197,10 +198,18 @@ async function load(tx: Transaction, start: Date, end: Date): Promise<Loaded> {
             cancelled_by: "passenger" | "driver" | "operator" | null;
             counts_on_reliability: boolean;
             refund_amount: number | null;
+            completed_at: Date | null;
+            distance_m: number | string;
+            co2_grams: number | null;
           }>(sql`
-            select id, trip_id, passenger_id, seats, created_at, confirmed_at, cancelled_at, status,
-              cancelled_by, counts_on_reliability, refund_amount
-            from bookings where trip_id in (${idList})
+            select b.id, b.trip_id, b.passenger_id, b.seats, b.created_at, b.confirmed_at,
+              b.cancelled_at, b.status, b.cancelled_by, b.counts_on_reliability, b.refund_amount,
+              b.completed_at, b.co2_grams,
+              ${partDistanceSql(sql`b.trip_id`, sql`f.position`, sql`a.position`)} as distance_m
+            from bookings b
+              join trip_stops f on f.id = b.from_stop_id
+              join trip_stops a on a.id = b.to_stop_id
+            where b.trip_id in (${idList})
           `)
         ).rows;
 
@@ -258,6 +267,9 @@ async function load(tx: Transaction, start: Date, end: Date): Promise<Loaded> {
       status: row.status as BookingStatus,
       cancelledBy: row.cancelled_by,
       countsOnReliability: row.counts_on_reliability,
+      completedAt: maybe(row.completed_at),
+      distanceM: Number(row.distance_m),
+      co2Grams: row.co2_grams,
     })),
     reports: reportRows.rows.map((row) => ({
       createdAt: date(row.created_at),

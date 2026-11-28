@@ -2507,6 +2507,8 @@ export const is = {
   "admin.metrics.metric.money_refunded": "Endurgreitt til farþega",
   "admin.metrics.metric.active_drivers": "Bílstjórar með ferð",
   "admin.metrics.metric.active_passengers": "Farþegar með bókun",
+  "admin.metrics.metric.car_km_saved": "Eknir km sparaðir",
+  "admin.metrics.metric.co2_saved_grams": "Minni losun CO2 (kg)",
   "admin.announcements.title": "Tilkynningar",
   "admin.announcements.intro":
     "Fréttir af beta-prófuninni og þjónustunni, á íslensku og ensku, til þátttakenda sem hafa kveikt á fréttum af beta-prófuninni. Aldrei auglýsingar.",

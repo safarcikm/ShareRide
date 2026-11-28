@@ -2489,6 +2489,8 @@ export const en = {
   "admin.metrics.metric.money_refunded": "Refunded to passengers",
   "admin.metrics.metric.active_drivers": "Drivers with a trip",
   "admin.metrics.metric.active_passengers": "Passengers with a booking",
+  "admin.metrics.metric.car_km_saved": "Car km saved",
+  "admin.metrics.metric.co2_saved_grams": "CO2 saved (kg)",
   "admin.announcements.title": "Announcements",
   "admin.announcements.intro":
     "News about the beta and the service, in Icelandic and in English, for testers who have Beta news on. Never advertising.",
