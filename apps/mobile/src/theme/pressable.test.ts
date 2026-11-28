@@ -1,19 +1,84 @@
-import { chunky, focusRingCss } from "./pressable";
-import { colors } from "./tokens";
+import { cardLift, chunky, drawsBoxShadows, focusRingCss } from "./pressable";
+import { colors, depth } from "./tokens";
 
 describe("chunky", () => {
-  it("draws a solid bottom edge under the face", () => {
-    expect(chunky(4, "#1F4A36", false)).toEqual({
-      outer: { borderBottomWidth: 4, borderBottomColor: "#1F4A36" },
-      face: {},
+  it("draws the edge as a second face under the face, as thick at the corners", () => {
+    expect(chunky(4, "#1F4A36", false, true)).toEqual({
+      outer: { paddingBottom: 4 },
+      face: { boxShadow: "0px 4px 0px #1F4A36" },
     });
   });
 
-  it("sinks the face into the edge when pressed, keeping the box height", () => {
-    expect(chunky(4, "#1F4A36", true)).toEqual({
-      outer: { borderBottomWidth: 4, borderBottomColor: "#1F4A36" },
+  it("sinks the face over the edge when pressed, keeping the box height", () => {
+    expect(chunky(4, "#1F4A36", true, true)).toEqual({
+      outer: { paddingBottom: 4 },
       face: { transform: [{ translateY: 4 }] },
     });
+  });
+
+  it("draws nothing for a part with no edge", () => {
+    expect(chunky(0, "transparent", false, true)).toEqual({ outer: {}, face: {} });
+  });
+
+  it("keeps a solid bottom border where no box shadows are drawn", () => {
+    expect(chunky(3, "#D2DDE1", false, false)).toEqual({
+      outer: { borderBottomWidth: 3, borderBottomColor: "#D2DDE1" },
+      face: {},
+    });
+    expect(chunky(3, "#D2DDE1", true, false).face).toEqual({ transform: [{ translateY: 3 }] });
+  });
+});
+
+describe("cardLift", () => {
+  it("rings a card with a hairline and puts a soft shadow under it by day", () => {
+    expect(cardLift("light", {}, true)).toEqual({
+      outer: {},
+      face: { boxShadow: `0px 0px 0px 1px ${depth.light.ring}, ${depth.light.shadow}` },
+    });
+  });
+
+  it("adds a light line along the top at night", () => {
+    expect(cardLift("dark", {}, true).face.boxShadow).toBe(
+      `${depth.dark.highlight}, 0px 0px 0px 1px ${depth.dark.ring}, ${depth.dark.shadow}`,
+    );
+  });
+
+  it("draws a ring of its own colour twice as thick", () => {
+    expect(cardLift("light", { ring: colors.light.primary }, true).face.boxShadow).toBe(
+      `0px 0px 0px 2px ${colors.light.primary}, ${depth.light.shadow}`,
+    );
+  });
+
+  it("sinks a little when pressed and keeps only the near shadow", () => {
+    expect(cardLift("light", { pressed: true }, true).face).toEqual({
+      boxShadow: `0px 0px 0px 1px ${depth.light.ring}, ${depth.light.pressed}`,
+      transform: [{ translateY: 1 }],
+    });
+  });
+
+  it("keeps every layer soft: no layer darker than 8% by day", () => {
+    const alphas = [...`${depth.light.shadow}, ${depth.light.pressed}`.matchAll(/, ([\d.]+)\)/g)];
+    expect(alphas.length).toBeGreaterThan(0);
+    for (const [, alpha] of alphas) expect(Number(alpha)).toBeLessThan(0.08);
+  });
+
+  it("uses the system's own shadow where no box shadows are drawn", () => {
+    expect(cardLift("light", {}, false).face).toEqual({ elevation: 2 });
+    expect(cardLift("light", { ring: "#F4C04E", pressed: true }, false).face).toEqual({
+      elevation: 1,
+      borderWidth: 2,
+      borderColor: "#F4C04E",
+      transform: [{ translateY: 1 }],
+    });
+  });
+});
+
+describe("drawsBoxShadows", () => {
+  it("is false only on Android before 9", () => {
+    expect(drawsBoxShadows("ios", "26.1")).toBe(true);
+    expect(drawsBoxShadows("web", 0)).toBe(true);
+    expect(drawsBoxShadows("android", 28)).toBe(true);
+    expect(drawsBoxShadows("android", 27)).toBe(false);
   });
 });
 

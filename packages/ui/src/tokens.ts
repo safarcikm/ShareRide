@@ -274,6 +274,29 @@ export const radii = { checkbox: 9, tag: 12, control: 16, card: 22, pill: 999 } 
 /** Widths of the solid bottom edge that makes parts look chunky. */
 export const edges = { card: 3, buttonPrimary: 4, buttonSecondary: 3 } as const;
 
+/**
+ * How a card stands off the page (spec 15, section 4.4): a hairline round
+ * it and a soft shadow in two layers under it, tinted with the text's
+ * colour by day, as CSS's `box-shadow`, which React Native draws on the
+ * iPhone, on Android from version 9, and on the web. A card that is pressed
+ * keeps only the near layer. At night shadows hardly show, so the hairline
+ * is lighter than the page and a faint light line runs along the card's top.
+ */
+export const depth = {
+  light: {
+    ring: "rgba(31, 42, 48, 0.08)",
+    shadow: "0px 1px 2px rgba(31, 42, 48, 0.06), 0px 4px 14px rgba(31, 42, 48, 0.07)",
+    pressed: "0px 1px 2px rgba(31, 42, 48, 0.06)",
+    highlight: null,
+  },
+  dark: {
+    ring: "rgba(236, 242, 244, 0.09)",
+    shadow: "0px 1px 2px rgba(0, 0, 0, 0.32), 0px 4px 14px rgba(0, 0, 0, 0.28)",
+    pressed: "0px 1px 2px rgba(0, 0, 0, 0.32)",
+    highlight: "inset 0px 1px 0px rgba(255, 255, 255, 0.05)",
+  },
+} as const;
+
 export const sizes = {
   buttonHeight: 48,
   mainButtonHeight: 56,

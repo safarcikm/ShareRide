@@ -12,6 +12,7 @@ import { failure, ok } from "@/testing/fake-client";
 import { bsi, hof, thorlakshofn } from "@/testing/meeting-points";
 import { northResult, resultOn, searchApi, searchesOf, type SearchAnswers } from "@/testing/search";
 import { blonduos, borgarnes, tripsApi } from "@/testing/trips";
+import { cardFace } from "@/testing/lift";
 import { colors, typography } from "@/theme/tokens";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
@@ -767,8 +768,8 @@ describe("Search results on a laptop (spec 18, 3.6)", () => {
   });
   const map = () => within(screen.getByTestId("aside")).getByRole("image");
   const mapOf = (route: string) => `The ride on a map of Iceland: ${route}.`;
-  /** The edge of the card whose trip the map shows. */
-  const marked = { borderBottomColor: colors.light.primary };
+  /** The outline of the card whose trip the map shows. */
+  const marked = cardFace(colors.light.primary);
   /** The card of the trip at this place in the list, from 0. */
   const card = (place: number) => {
     // By price a card's name starts with its day.
@@ -776,6 +777,8 @@ describe("Search results on a laptop (spec 18, 3.6)", () => {
     if (found === undefined) throw new Error(`No ride at ${String(place)}`);
     return found;
   };
+  /** The face of that card, which draws its outline. */
+  const face = (place: number) => within(card(place)).getByTestId("card-face");
   /** The map's drawn parts, which screen readers skip: the label says them. */
   const drawn = (testID: string) =>
     within(map()).queryAllByTestId(testID, { includeHiddenElements: true });
@@ -795,21 +798,21 @@ describe("Search results on a laptop (spec 18, 3.6)", () => {
     await openResults("", { results: () => [northResult, wholeTrip] });
     expect(await screen.findAllByRole("button", { name: /^Leaves / })).toHaveLength(2);
     // The first trip's card carries the mark from the start.
-    expect(card(0)).toHaveStyle(marked);
-    expect(card(1)).not.toHaveStyle(marked);
+    expect(face(0)).toHaveStyle(marked);
+    expect(face(1)).not.toHaveStyle(marked);
 
     await fireEvent(card(1), "focus");
     expect(map()).toHaveProp("accessibilityLabel", mapOf("BSÍ bus terminal → Hof, Akureyri"));
-    expect(card(1)).toHaveStyle(marked);
-    expect(card(0)).not.toHaveStyle(marked);
+    expect(face(1)).toHaveStyle(marked);
+    expect(face(0)).not.toHaveStyle(marked);
 
     await fireEvent(card(0), "hoverIn");
     expect(map()).toHaveProp("accessibilityLabel", mapOf("Borgarnes → Blönduós"));
     // The map keeps the trip once the pointer has left its card.
     await fireEvent(card(0), "hoverOut");
     expect(map()).toHaveProp("accessibilityLabel", mapOf("Borgarnes → Blönduós"));
-    expect(card(0)).toHaveStyle(marked);
-    expect(card(1)).not.toHaveStyle(marked);
+    expect(face(0)).toHaveStyle(marked);
+    expect(face(1)).not.toHaveStyle(marked);
   });
 
   it("keeps the map still as it shows one trip and then another", async () => {
@@ -841,8 +844,8 @@ describe("Search results on a laptop (spec 18, 3.6)", () => {
     // By price each card says its day, and the list is one, not one a day.
     expect(await screen.findAllByText("Sun 15 Nov")).toHaveLength(2);
     expect(map()).toHaveProp("accessibilityLabel", mapOf("BSÍ bus terminal → Hof, Akureyri"));
-    expect(card(1)).toHaveStyle(marked);
-    expect(card(0)).not.toHaveStyle(marked);
+    expect(face(1)).toHaveStyle(marked);
+    expect(face(0)).not.toHaveStyle(marked);
   });
 
   it("goes back to the first trip when the one shown is filtered away", async () => {
@@ -967,7 +970,7 @@ describe("Search results on a laptop (spec 18, 3.6)", () => {
     await screen.findAllByTestId("trip-result");
     expect(screen.queryByTestId("aside")).toBeNull();
     expect(screen.queryByTestId("iceland-map")).toBeNull();
-    expect(card(0)).not.toHaveStyle(marked);
+    expect(face(0)).not.toHaveStyle(marked);
     // Nothing scrolls sideways: two chips and the count fit a phone.
     expect(resultsRow().getByRole("button", { name: "Sort: Earliest" })).toBeVisible();
     expect(resultsRow().getByRole("button", { name: "Filters" })).toBeVisible();

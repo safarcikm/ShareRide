@@ -3,8 +3,8 @@ import type { ReactNode } from "react";
 import { Platform, StyleSheet, Text, View, type TextStyle, type ViewStyle } from "react-native";
 import Svg, { Line } from "react-native-svg";
 import type { AppPath } from "@/navigation/link-props";
-import { controlOutline, edges, radii, sizes, spacing, typography } from "@/theme/tokens";
-import { usePalette } from "@/theme/use-palette";
+import { controlOutline, depth, edges, radii, sizes, spacing, typography } from "@/theme/tokens";
+import { usePalette, useScheme } from "@/theme/use-palette";
 import { Card, cardCornerRoom } from "./card";
 import { Heard, spokenAs } from "./spoken";
 import { Tag, type TagKind } from "./tag";
@@ -409,11 +409,15 @@ function PlaceOfEnd({ end, testID }: { readonly end: TicketEnd; readonly testID:
 /**
  * A dashed line with a notch in each edge, in the page's colour, where a
  * ticket would be torn (spec 31, 3.3). Half of each notch is outside the
- * card, which cuts it off.
+ * card, which cuts it off; the card's hairline runs round the half inside.
  */
 function TearLine() {
   const palette = usePalette();
-  const notch = { backgroundColor: palette.background };
+  const scheme = useScheme();
+  const notch = {
+    backgroundColor: palette.background,
+    boxShadow: `inset 0px 0px 0px 1px ${depth[scheme].ring}`,
+  };
   return (
     <Unspoken testID="ticket-tear" style={styles.tear}>
       <View testID="ticket-notch" style={[styles.notch, styles.notchStart, notch]} />

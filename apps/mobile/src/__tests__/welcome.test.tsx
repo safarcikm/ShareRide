@@ -28,6 +28,7 @@ import {
   tripDetailsApi,
 } from "@/testing/search";
 import { blonduos, borgarnes, tripsApi } from "@/testing/trips";
+import { cardFace } from "@/testing/lift";
 import { bsi, hof, kef, meetingPoints } from "@/testing/meeting-points";
 import {
   colors,
@@ -887,14 +888,16 @@ describe("Find on a laptop (spec 18, 3.5)", () => {
     >;
     return { minX, minY, vbWidth, vbHeight };
   };
-  /** The edge of the card whose ride the map shows. */
-  const marked = { borderBottomColor: colors.light.primary };
+  /** The outline of the card whose ride the map shows. */
+  const marked = cardFace(colors.light.primary);
   /** The card of the ride at this place among those leaving soon, from 0. */
   const card = (place: number) => {
     const found = screen.getAllByRole("button", { name: /, Leaves / })[place];
     if (found === undefined) throw new Error(`No ride at ${String(place)}`);
     return found;
   };
+  /** The face of that card, which draws its outline. */
+  const face = (place: number) => within(card(place)).getByTestId("card-face");
   const meetingPointsCalls = (client: FakeClient) =>
     client.calls.filter((call) => call.path === "/v1/meeting-points");
 
@@ -1270,8 +1273,8 @@ describe("Find on a laptop (spec 18, 3.5)", () => {
     expect(drawn("map-line-part")).toHaveLength(1);
     expect(drawn("map-line-route")).toHaveLength(0);
     expect(drawn("map-touch")).toHaveLength(0);
-    expect(card(0)).toHaveStyle(marked);
-    expect(card(1)).not.toHaveStyle(marked);
+    expect(face(0)).toHaveStyle(marked);
+    expect(face(1)).not.toHaveStyle(marked);
     expect(meetingPointsCalls(client)).toHaveLength(1);
   });
 
@@ -1359,8 +1362,8 @@ describe("Find on a laptop (spec 18, 3.5)", () => {
 
     await fireEvent(card(1), "focus");
     expect(map()).toHaveProp("accessibilityLabel", mapOf("Keflavík Airport → BSÍ bus terminal"));
-    expect(card(1)).toHaveStyle(marked);
-    expect(card(0)).not.toHaveStyle(marked);
+    expect(face(1)).toHaveStyle(marked);
+    expect(face(0)).not.toHaveStyle(marked);
     expect(drawn("map-line-part")).toHaveLength(1);
     expect(drawn("map-dot-chosen")).toHaveLength(2);
     // The whole of Iceland, whichever ride is shown.
@@ -1371,8 +1374,8 @@ describe("Find on a laptop (spec 18, 3.5)", () => {
     // The map keeps the ride once the pointer has left its card.
     await fireEvent(card(0), "hoverOut");
     expect(map()).toHaveProp("accessibilityLabel", mapOf("BSÍ bus terminal → Hof, Akureyri"));
-    expect(card(0)).toHaveStyle(marked);
-    expect(card(1)).not.toHaveStyle(marked);
+    expect(face(0)).toHaveStyle(marked);
+    expect(face(1)).not.toHaveStyle(marked);
     expect(view()).toEqual(whole);
   });
 
@@ -1462,7 +1465,7 @@ describe("Find on a laptop (spec 18, 3.5)", () => {
       expect(screen.getAllByTestId("trip-result")).toHaveLength(1);
     });
     expect(map()).toHaveProp("accessibilityLabel", mapOf("BSÍ bus terminal → Hof, Akureyri"));
-    expect(card(0)).toHaveStyle(marked);
+    expect(face(0)).toHaveStyle(marked);
   });
 
   it("shows the offer and the meeting points on the map when the rides cannot be loaded", async () => {
@@ -1573,7 +1576,7 @@ describe("Find on a laptop (spec 18, 3.5)", () => {
     expect(screen.queryByTestId("iceland-map")).toBeNull();
     expect(meetingPointsCalls(client)).toHaveLength(0);
     // No ride is marked where no map shows one.
-    expect(card(0)).not.toHaveStyle(marked);
+    expect(face(0)).not.toHaveStyle(marked);
   });
 
   it("names every part of the row in Icelandic", async () => {

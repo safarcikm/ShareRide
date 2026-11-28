@@ -1,6 +1,7 @@
 import {
   colors,
   controlOutline,
+  depth,
   edges,
   focusRing,
   mapDrawing,
@@ -25,9 +26,24 @@ export function faceParts(face: string): { family: string; weight: number } {
   return { family: match[1], weight: Number(match[2]) };
 }
 
-const palette = (scheme: Palette, map: (typeof mapDrawing)["light" | "dark"]) => [
+/**
+ * A card's hairline and soft shadow (spec 15, section 4.4), as the app draws
+ * them, with the light line along its top at night.
+ */
+export function cardLift(lift: (typeof depth)["light" | "dark"]): string {
+  return [lift.highlight, `0 0 0 1px ${lift.ring}`, lift.shadow]
+    .filter((layer) => layer !== null)
+    .join(", ");
+}
+
+const palette = (
+  scheme: Palette,
+  map: (typeof mapDrawing)["light" | "dark"],
+  lift: (typeof depth)["light" | "dark"],
+) => [
   ...Object.entries(scheme).map(([name, value]) => `  --color-${kebab(name)}: ${value};`),
   ...Object.entries(map).map(([name, value]) => `  --map-${kebab(name)}: ${value};`),
+  `  --card-lift: ${cardLift(lift)};`,
 ];
 
 /**
@@ -61,12 +77,12 @@ export function tokenStylesheet(): string {
   return [
     ":root {",
     "  color-scheme: light dark;",
-    ...palette(colors.light, mapDrawing.light),
+    ...palette(colors.light, mapDrawing.light, depth.light),
     ...sizes,
     "}",
     "@media (prefers-color-scheme: dark) {",
     "  :root {",
-    ...palette(colors.dark, mapDrawing.dark).map((line) => `  ${line}`),
+    ...palette(colors.dark, mapDrawing.dark, depth.dark).map((line) => `  ${line}`),
     "  }",
     "}",
     ...types,

@@ -4,6 +4,7 @@ import type { ReactElement } from "react";
 import { Text } from "react-native";
 import { LanguageProvider } from "@/i18n/language";
 import { filledButtons } from "@/testing/buttons";
+import { cardFace } from "@/testing/lift";
 import { colors, icelandScene, people } from "@/theme/tokens";
 import { Button } from "./button";
 import { IconButton } from "./icon-button";
@@ -71,17 +72,14 @@ describe("RideTicket", () => {
     expect(screen.getByText("per seat")).toHaveStyle({ color: colors.light.textMuted });
   });
 
-  it("is a surface with the card's corners and edge, and no padding of its own", async () => {
+  it("is a surface with the card's corners and shadow, and no padding of its own", async () => {
     await render(<RideTicket day="Sat 28 Nov" from={selfoss} to={vik} between="1 h 35 min" />);
     expect(screen.getByTestId("card-face")).toHaveStyle({
       backgroundColor: colors.light.surface,
       borderRadius: 22,
       padding: 0,
     });
-    expect(screen.getByTestId("card")).toHaveStyle({
-      borderBottomWidth: 3,
-      borderBottomColor: colors.light.edge,
-    });
+    expect(screen.getByTestId("card-face")).toHaveStyle(cardFace());
   });
 
   it("shows no price without one, and Free where that is the amount", async () => {
@@ -424,14 +422,16 @@ describe("RideTicket", () => {
     expect(screen.queryByTestId("ticket-foot")).toBeNull();
   });
 
-  it.each(["light", "dark"] as const)("has a moss edge when it is mine, in %s", async (scheme) => {
-    mockScheme = scheme;
-    await render(<RideTicket mine day="Sat 28 Nov" from={selfoss} to={vik} between="1 h 35 min" />);
-    expect(screen.getByTestId("card")).toHaveStyle({
-      borderBottomWidth: 3,
-      borderBottomColor: colors[scheme].primary,
-    });
-  });
+  it.each(["light", "dark"] as const)(
+    "has a moss outline when it is mine, in %s",
+    async (scheme) => {
+      mockScheme = scheme;
+      await render(
+        <RideTicket mine day="Sat 28 Nov" from={selfoss} to={vik} between="1 h 35 min" />,
+      );
+      expect(screen.getByTestId("card-face")).toHaveStyle(cardFace(colors[scheme].primary, scheme));
+    },
+  );
 
   it("is one link, named in one line", async () => {
     await render(
@@ -508,11 +508,9 @@ describe("RideTicket", () => {
     );
     await render(ticket(false));
     await fireEvent(screen.getByRole("button"), "hoverIn");
-    expect(screen.getByTestId("card")).toHaveStyle({ borderBottomColor: colors.light.primary });
+    expect(screen.getByTestId("card-face")).toHaveStyle(cardFace(colors.light.primary));
     await screen.rerender(ticket(true));
-    expect(screen.getByTestId("card")).toHaveStyle({
-      borderBottomColor: colors.light.primaryEdge,
-    });
+    expect(screen.getByTestId("card-face")).toHaveStyle(cardFace(colors.light.primaryEdge));
   });
 
   it("holds a button of its own in its corner, which does not press it", async () => {
@@ -569,7 +567,7 @@ describe("RideTicket", () => {
         onShow={onShow}
       />,
     );
-    expect(screen.getByTestId("card")).toHaveStyle({ borderBottomColor: colors.light.primary });
+    expect(screen.getByTestId("card-face")).toHaveStyle(cardFace(colors.light.primary));
     await fireEvent(screen.getByRole("button"), "hoverIn");
     await fireEvent(screen.getByRole("button"), "focus");
     expect(onShow).toHaveBeenCalledTimes(2);
@@ -775,14 +773,11 @@ describe("NeedsYouCard", () => {
           action={{ label: "See the request", onPress: jest.fn() }}
         />,
       );
-      expect(screen.getByTestId("needs-you-card")).toHaveStyle({
-        borderRadius: 22,
-        borderBottomWidth: 3,
-        borderBottomColor: people.sun,
-      });
+      expect(screen.getByTestId("needs-you-card")).toHaveStyle({ borderRadius: 22 });
       expect(screen.getByTestId("needs-you-face")).toHaveStyle({
         backgroundColor: colors[scheme].warningSoft,
         borderRadius: 22,
+        ...cardFace(people.sun, scheme),
       });
       expect(hidden("needs-you-icon")).toHaveStyle({
         width: 36,
