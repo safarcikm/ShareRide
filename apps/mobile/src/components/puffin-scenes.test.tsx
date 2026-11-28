@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react-native";
 import { StyleSheet } from "react-native";
 import { onWebsite } from "@/lib/on-website";
+import { drawn, fillsIn, valuesIn } from "@/testing/drawing";
 import { bannerDrawing, icelandSeasons, people, puffin, puffinCar } from "@/theme/tokens";
 import { IcelandScene, PuffinByPin, PuffinsInCar } from "./puffin-scenes";
 
@@ -16,32 +17,11 @@ jest.mock("react-native/Libraries/Utilities/useColorScheme", () => ({
   default: () => mockScheme,
 }));
 
-/** A colour as react-native-svg hands it to the native view: 0xAARRGGBB. */
-const drawn = (hex: string) => ({
-  type: 0,
-  payload: 0xff000000 + Number.parseInt(hex.slice(1), 16),
-});
-
 /** A colour in a gradient as react-native-svg hands it over: a signed 0xAARRGGBB. */
 const gradientColour = (hex: string) => (0xff000000 + Number.parseInt(hex.slice(1), 16)) | 0;
 
 const part = (testID: string) => screen.getByTestId(testID, { includeHiddenElements: true });
 const parts = (testID: string) => screen.queryAllByTestId(testID, { includeHiddenElements: true });
-
-/** Every value of a prop inside a drawn part, nested shapes included. */
-function valuesIn(node: unknown, prop: string): unknown[] {
-  if (Array.isArray(node)) return node.flatMap((child) => valuesIn(child, prop));
-  if (typeof node !== "object" || node === null) return [];
-  const own: unknown[] = [];
-  if ("props" in node && typeof node.props === "object" && node.props !== null) {
-    const value = (node.props as Record<string, unknown>)[prop];
-    if (value !== undefined) own.push(value);
-  }
-  return "children" in node ? [...own, ...valuesIn(node.children, prop)] : own;
-}
-
-/** Every fill inside a drawn part, nested shapes included. */
-const fillsIn = (node: unknown) => valuesIn(node, "fill");
 
 afterEach(() => {
   mockScheme = "light";
