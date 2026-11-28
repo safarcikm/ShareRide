@@ -24,6 +24,38 @@ export const bannerDays = [
 ] as const;
 export type BannerDay = (typeof bannerDays)[number];
 
+/**
+ * The Yule Lads in the order they come to town, one a night from
+ * 12 December, as in Jóhannes úr Kötlum's poem Jólasveinarnir (1932)
+ * (spec 36, 3.11).
+ */
+export const yuleLads = [
+  "stekkjastaur",
+  "giljagaur",
+  "stufur",
+  "thvorusleikir",
+  "pottaskefill",
+  "askasleikir",
+  "hurdaskellir",
+  "skyrgamur",
+  "bjugnakraekir",
+  "gluggagaegir",
+  "gattathefur",
+  "ketkrokur",
+  "kertasnikir",
+] as const;
+export type YuleLad = (typeof yuleLads)[number];
+
+/**
+ * Who of Christmas folk shows on a date (3.11): the Yule Lad who came to
+ * town last night, 12 to 24 December, and Jólakötturinn, 24 December to
+ * 6 January.
+ */
+export interface Yule {
+  readonly lad: YuleLad | null;
+  readonly cat: boolean;
+}
+
 /** A day on the calendar: month 1 to 12, day 1 to 31. */
 export interface CalendarDate {
   readonly year: number;
@@ -38,6 +70,7 @@ export interface CalendarDate {
 export interface Banner {
   readonly season: BannerSeason;
   readonly day: BannerDay | null;
+  readonly yule: Yule | null;
 }
 
 const dayMs = 86_400_000;
@@ -156,18 +189,32 @@ function seasonOf(date: CalendarDate): BannerSeason {
   return "autumn";
 }
 
+/** The first Yule Lad's night, the cat's first and last days (3.11). */
+const firstLad = 12;
+const christmasEve = 24;
+const threttandinn = 6;
+
+/** The Yule Lad and the cat on a date, or null outside 12 December to 6 January. */
+function yuleOf({ month, day }: CalendarDate): Yule | null {
+  if (month === 1 && day <= threttandinn) return { lad: null, cat: true };
+  if (month !== 12 || day < firstLad) return null;
+  return { lad: yuleLads[day - firstLad] ?? null, cat: day >= christmasEve };
+}
+
 /**
  * What the banner shows on a date in Iceland (R36.2): the festive day, if
  * the operator has them on and one falls on it, in its own scene, or else
- * the season.
+ * the season; with the days on, the Yule Lad and the cat too (R36.8).
  */
 export function bannerFor(date: CalendarDate, options: { readonly festiveDays: boolean }): Banner {
   if (options.festiveDays) {
     const today = count(date);
+    const yule = yuleOf(date);
     const found = daysOf(date.year).find(({ from, to }) => today >= from && today <= to);
-    if (found !== undefined) return { season: sceneOf[found.day], day: found.day };
+    if (found !== undefined) return { season: sceneOf[found.day], day: found.day, yule };
+    return { season: seasonOf(date), day: null, yule };
   }
-  return { season: seasonOf(date), day: null };
+  return { season: seasonOf(date), day: null, yule: null };
 }
 
 const written = /^(\d{4})-(\d{2})-(\d{2})$/;
