@@ -1572,6 +1572,15 @@ releases follow [Semantic Versioning](https://semver.org/).
   says "Leave it empty and we'll email you a code." in place of the line
   about a 6-digit code, and the cookie question waits until signing in or
   up is done.
+- The front page's car arrives on the website (spec 33, 3.2; ADR 0052
+  Proposed): the first time Find shows after the page loads, the puffins'
+  car drives in from the left and slows to a stop, bobbing on the road and
+  dipping its nose as it brakes; then the passenger hops, then the driver,
+  and all is still, in under 2 seconds. On a laptop it comes out of its own
+  room beside the title, never under the words. Not again in the same
+  visit, and nothing moves with the system's reduce motion on. CSS
+  keyframes in one style sheet (`motionCss`), so nothing waits for it and
+  the phone apps are unchanged; the motion tokens are in `packages/ui`.
 - About PuffinRide (spec 30), a public page at `/about`: what PuffinRide is,
   the Terms of Service, Community Rules, Privacy Policy and Cookies, who
   runs PuffinRide (as the Terms say it) and how to reach us

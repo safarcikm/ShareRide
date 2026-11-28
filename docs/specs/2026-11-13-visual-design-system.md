@@ -287,6 +287,11 @@ name. Shape people and the car are our own drawings.
   150 ms). Screens otherwise use the platform's own transitions.
 - With reduce motion turned on, the pop is skipped and nothing else moves.
 - Nothing moves on its own: no looping animations.
+- A few small animations are added by
+  [spec 33](2026-11-27-small-animations.md), with their own motion tokens:
+  the front page's car arrives once a visit, and after the first App Store
+  release a few moments of success and things that open. None loops, and
+  reduce motion keeps everything still.
 
 ### 4.7 Dark mode
 

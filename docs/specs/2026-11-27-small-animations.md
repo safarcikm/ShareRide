@@ -87,10 +87,12 @@ moves.
 
 - **On a phone** the car comes in from beyond the screen's left edge to the
   middle, on the road.
-- **On a laptop** the car stands on the hills to the right of the title. It
-  rolls in over the last 200 points (less if the title reaches nearer),
-  fading in over the first third of the way, so it never passes under the
-  words.
+- **On a laptop** the car stands on the hills to the right of the title,
+  in the room the title keeps free for it. It comes out of that room's left
+  edge: it starts its own length and a little more (about 190 points) to
+  the left of its place, where the room hides it, and rolls in, fading in
+  over the first part of the way. The room's left edge is soft, and the car
+  never passes under the words.
 - **Once a visit:** on the website, the first time Find shows after the
   page loads; in the apps, the first time Find shows after the app starts.
   Not when coming back to Find from another screen, not on pull to refresh
@@ -246,8 +248,13 @@ and colours, in the reader's light or dark mode.
   1100, `celebrate` 1900 ms) and curves (`out` cubic-bezier(0.23, 1, 0.32,
   1) for things arriving, `inOut` cubic-bezier(0.77, 0, 0.175, 1) for
   things moving on the screen, `brake` cubic-bezier(0.33, 1, 0.68, 1) for
-  the car slowing to a stop). Never `ease-in` on its own: it starts slowly,
-  just when people look. The preview uses exactly these.
+  the car slowing to a stop, and for a hop `rise` cubic-bezier(0.25, 0.6,
+  0.4, 1) up, then `fall` cubic-bezier(0.5, 0, 0.75, 0) down as things
+  fall). Never `ease-in` on its own: it starts slowly, just when people
+  look; `fall` only ever follows `rise`. The arrival's timings and how far
+  its parts move (two bumps of 1.6 and 1.3 points, a dip of 2.6 degrees, a
+  hop of 5 points) are tokens too (`motion.arrival`). The preview uses
+  exactly these.
 - **Website** (ADR 0052): CSS keyframes in one style sheet added at start,
   as the focus ring already is (`theme/focus-ring.web.ts`), with the
   reduce-motion media query inside it; the parts that move carry a data
@@ -265,7 +272,12 @@ and colours, in the reader's light or dark mode.
   link pictures that copy it stay as they are.
 - **Screen changes** keep the native stack's own animation; under reduce
   motion the stack's `animation` is `fade`.
-- **Once a visit** is a flag kept in memory, not in storage.
+- **Once a visit** is a flag kept in memory, not in storage. On the
+  website the arrival is over when the driver's hop, which moves last,
+  ends or stops (`animationend` or `animationcancel`), not after a timer:
+  so a late first frame or a tab opened behind another never cuts it
+  short, and leaving Find meanwhile ends it. With reduce motion on it is
+  over at once.
 
 ## 7. Privacy and safety
 

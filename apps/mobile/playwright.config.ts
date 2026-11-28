@@ -27,6 +27,9 @@ export default defineConfig({
     // A failed journey keeps a picture of the page beside Playwright's own
     // page snapshot (error-context.md); CI keeps both (ci.yml).
     screenshot: "only-on-failure",
+    // The front page's car stands still, as with the system's reduce
+    // motion on (spec 33, 3.9): e2e/banner.spec.ts turns its arrival on.
+    reducedMotion: "reduce",
     launchOptions: {
       // Lets a machine with a preinstalled Chromium use it; CI installs its own.
       executablePath: env["PLAYWRIGHT_CHROMIUM_PATH"],

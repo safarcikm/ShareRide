@@ -13,6 +13,7 @@ import {
   radii,
   sizes,
 } from "@/theme/tokens";
+import { arrivalProps, motionMark } from "@/theme/motion";
 import { usePalette } from "@/theme/use-palette";
 import { Puffin } from "./puffin";
 
@@ -39,13 +40,20 @@ function useScene() {
  * through the side windows, and a case on the roof. `moving` draws three
  * lines behind it, for a seat just booked. `width` is the whole drawing's,
  * lines included.
+ *
+ * On the website, `arriveFrom` makes it arrive (spec 33, 3.2): it drives in
+ * from that many points to the left of its place, its body bobbing and
+ * dipping as it stops, then its puffins hop (`motionCss`). Its body and
+ * each puffin are groups of their own for that; the drawing is the same.
  */
 export function PuffinsInCar({
   width,
   moving = false,
+  arriveFrom = null,
 }: {
   readonly width: number;
   readonly moving?: boolean;
+  readonly arriveFrom?: number | null;
 }) {
   const palette = usePalette();
   const { black } = useScene();
@@ -53,12 +61,14 @@ export function PuffinsInCar({
   const clip = `windows-${useId().replaceAll(":", "")}`;
   const left = moving ? car.left - behind : car.left;
   const across = moving ? car.width + behind : car.width;
+  const arrival = arrivalProps(arriveFrom);
   return (
     <View
       testID="puffins-in-car"
       aria-hidden
       importantForAccessibility="no-hide-descendants"
-      style={styles.scene}
+      {...arrival}
+      style={[styles.scene, arrival.style]}
     >
       <Svg
         width={width}
@@ -79,74 +89,81 @@ export function PuffinsInCar({
             strokeLinecap="round"
           />
         ) : null}
-        {/* The case on the roof rack. */}
-        <Rect x={58} y={16} width={42} height={12} rx={3} fill={people.crowberry} />
-        <Rect
-          x={75}
-          y={13}
-          width={9}
-          height={4}
-          rx={2}
-          fill="none"
-          stroke={black}
-          strokeWidth={1.6}
-        />
-        <Path d="M64 16 V28 M94 16 V28" stroke={puffinCar.strap} strokeWidth={2} />
-        <Path
-          d="M52 29 H106 M60 29 V33 M98 29 V33"
-          stroke={black}
-          strokeWidth={2.4}
-          strokeLinecap="round"
-        />
-        {/* The body: a round roof, a short round back and a sloping bonnet. */}
-        <Path
-          d="M14 98 C10 86 16 74 30 69 C34 46 54 31 80 31 C106 31 122 44 130 64 C152 65 172 70 182 81 C186 86 186 92 185 98 Z"
-          fill={puffinCar.body}
-        />
-        <Path d={windows} fill={puffinCar.glass} />
-        {/* The puffins sit inside, so the glass's edges cut them. */}
-        <G clipPath={`url(#${clip})`}>
-          <Puffin
-            testID="puffin-you"
-            x={58}
-            y={57}
-            size={0.54}
-            look={{ kind: "colour", scarf: people.mossLight }}
+        {/* The body: everything but the wheels, which stay on the road. */}
+        <G {...motionMark("car-body")}>
+          {/* The case on the roof rack. */}
+          <Rect x={58} y={16} width={42} height={12} rx={3} fill={people.crowberry} />
+          <Rect
+            x={75}
+            y={13}
+            width={9}
+            height={4}
+            rx={2}
+            fill="none"
+            stroke={black}
+            strokeWidth={1.6}
           />
-          <Puffin
-            testID="puffin-driver"
-            x={96}
-            y={58}
-            size={0.58}
-            look={{ kind: "colour", hat: people.crowberry }}
+          <Path d="M64 16 V28 M94 16 V28" stroke={puffinCar.strap} strokeWidth={2} />
+          <Path
+            d="M52 29 H106 M60 29 V33 M98 29 V33"
+            stroke={black}
+            strokeWidth={2.4}
+            strokeLinecap="round"
           />
+          {/* The body: a round roof, a short round back and a sloping bonnet. */}
+          <Path
+            d="M14 98 C10 86 16 74 30 69 C34 46 54 31 80 31 C106 31 122 44 130 64 C152 65 172 70 182 81 C186 86 186 92 185 98 Z"
+            fill={puffinCar.body}
+          />
+          <Path d={windows} fill={puffinCar.glass} />
+          {/* The puffins sit inside, so the glass's edges cut them. */}
+          <G clipPath={`url(#${clip})`}>
+            <G {...motionMark("puffin-you")}>
+              <Puffin
+                testID="puffin-you"
+                x={58}
+                y={57}
+                size={0.54}
+                look={{ kind: "colour", scarf: people.mossLight }}
+              />
+            </G>
+            <G {...motionMark("puffin-driver")}>
+              <Puffin
+                testID="puffin-driver"
+                x={96}
+                y={58}
+                size={0.58}
+                look={{ kind: "colour", hat: people.crowberry }}
+              />
+            </G>
+          </G>
+          {/* A glint on the windscreen, the door and its handle. */}
+          <Path
+            d="M114 48 L107 62"
+            stroke={puffin.white}
+            strokeWidth={2}
+            strokeLinecap="round"
+            opacity={0.7}
+          />
+          <Path d="M80 68 V91" stroke={puffinCar.wing} strokeWidth={1.6} strokeLinecap="round" />
+          <Rect x={85} y={72} width={8} height={2.6} rx={1.3} fill={puffinCar.wing} />
+          {/* The wings over the wheels, and the step between them. */}
+          <Path d="M26 98 C26 80 38 72 52 72 C66 72 77 80 78 98 Z" fill={puffinCar.wing} />
+          <Path d="M124 98 C125 80 137 72 151 72 C165 72 176 80 178 98 Z" fill={puffinCar.wing} />
+          <Rect x={74} y={93} width={54} height={6} rx={3} fill={puffinCar.trim} />
+          {/* The headlight, the back light and the bumpers. */}
+          <Circle
+            cx={170}
+            cy={80}
+            r={6.2}
+            fill={puffinCar.headlight}
+            stroke={puffinCar.trim}
+            strokeWidth={2}
+          />
+          <Rect x={11} y={78} width={6} height={9} rx={3} fill={people.crowberry} />
+          <Rect x={178} y={93} width={14} height={5.5} rx={2.75} fill={puffinCar.trim} />
+          <Rect x={6} y={93} width={14} height={5.5} rx={2.75} fill={puffinCar.trim} />
         </G>
-        {/* A glint on the windscreen, the door and its handle. */}
-        <Path
-          d="M114 48 L107 62"
-          stroke={puffin.white}
-          strokeWidth={2}
-          strokeLinecap="round"
-          opacity={0.7}
-        />
-        <Path d="M80 68 V91" stroke={puffinCar.wing} strokeWidth={1.6} strokeLinecap="round" />
-        <Rect x={85} y={72} width={8} height={2.6} rx={1.3} fill={puffinCar.wing} />
-        {/* The wings over the wheels, and the step between them. */}
-        <Path d="M26 98 C26 80 38 72 52 72 C66 72 77 80 78 98 Z" fill={puffinCar.wing} />
-        <Path d="M124 98 C125 80 137 72 151 72 C165 72 176 80 178 98 Z" fill={puffinCar.wing} />
-        <Rect x={74} y={93} width={54} height={6} rx={3} fill={puffinCar.trim} />
-        {/* The headlight, the back light and the bumpers. */}
-        <Circle
-          cx={170}
-          cy={80}
-          r={6.2}
-          fill={puffinCar.headlight}
-          stroke={puffinCar.trim}
-          strokeWidth={2}
-        />
-        <Rect x={11} y={78} width={6} height={9} rx={3} fill={people.crowberry} />
-        <Rect x={178} y={93} width={14} height={5.5} rx={2.75} fill={puffinCar.trim} />
-        <Rect x={6} y={93} width={14} height={5.5} rx={2.75} fill={puffinCar.trim} />
         {[52, 151].map((cx) => (
           <Wheel key={cx} cx={cx} tyre={black} />
         ))}
