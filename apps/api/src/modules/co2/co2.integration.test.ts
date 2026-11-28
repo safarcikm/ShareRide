@@ -7,7 +7,7 @@ import {
 } from "@shareride/contracts";
 import { schema } from "@shareride/db";
 import { co2GramsFor, defaultTripDaySettings as settings, partDistanceM } from "@shareride/domain";
-import { asc, eq } from "drizzle-orm";
+import { asc, eq, inArray } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { startTestApi, type TestApi } from "../../testing.ts";
 import {
@@ -24,7 +24,7 @@ import { moveTripsOn } from "../trips/completion.ts";
 // at 05:30, 2 seats, instant; the north trip, BSÍ to Hof, has no bookings.
 
 let api: TestApi;
-const { airport, north } = sampleTrip;
+const { airport, north, vik } = sampleTrip;
 const hourMs = 3_600_000;
 const { segments, trips } = schema;
 
@@ -48,18 +48,19 @@ afterAll(async () => {
 
 const { newMember, later, rewind, driverOf, details, booked, paid } = bookingHelpers(() => api);
 
-/** The airport trip's stretches, in metres, as stored. */
-async function stretches() {
+/** A trip's stretches, in metres, as stored. */
+async function stretches(tripId: string) {
   const rows = await api.connection.db
     .select({ distanceM: segments.distanceM })
     .from(segments)
-    .where(eq(segments.tripId, airport))
+    .where(eq(segments.tripId, tripId))
     .orderBy(asc(segments.position));
   return rows.map((row) => row.distanceM);
 }
 
-async function figureOf(board: number, alight: number, gramsPerCarKm = 150) {
-  const distanceM = partDistanceM(await stretches(), board, alight);
+/** The airport trip's part, or another trip's. */
+async function figureOf(board: number, alight: number, gramsPerCarKm = 150, tripId = airport) {
+  const distanceM = partDistanceM(await stretches(tripId), board, alight);
   return { distanceM, grams: co2GramsFor(distanceM, gramsPerCarKm) };
 }
 
@@ -75,12 +76,18 @@ async function aFullRide() {
   return { jon, gunna, gunnas, sigga, siggas };
 }
 
+/** Moves the clock past the airport trip's completion, or the last of `tripIds`'. */
 async function completeTheTrip(...members: Member[]) {
-  const [trip] = await api.connection.db
+  await completeTrips([airport], ...members);
+}
+
+async function completeTrips(tripIds: readonly string[], ...members: Member[]) {
+  const rows = await api.connection.db
     .select({ arrivesAt: trips.arrivesAt })
     .from(trips)
-    .where(eq(trips.id, airport));
-  const completesAt = (trip?.arrivesAt?.getTime() ?? 0) + 2 * hourMs;
+    .where(inArray(trips.id, [...tripIds]));
+  const last = Math.max(...rows.map((row) => row.arrivesAt?.getTime() ?? 0));
+  const completesAt = last + 2 * hourMs;
   await later(Math.round((completesAt - api.now().getTime()) / 1000) + 1, ...members);
   await moveTripsOn(api.connection.db, api.now(), settings);
 }
@@ -200,6 +207,30 @@ describe("my own totals (3.8)", () => {
       grams: first.grams + second.grams,
       asPassenger: null,
       asDriver: { grams: first.grams + second.grams, rides: 1, passengers: 2 },
+    });
+  });
+
+  it("give a member who drove and rode both roles, and never another member's bookings", async () => {
+    const { jon, gunna, sigga } = await aFullRide();
+    // Jón rides to Vík on Sunday, beside Gunna, who rides part of the way.
+    const jons = await booked(jon.accessToken, vik, { fromStop: 0, toStop: 3 });
+    await paid(jon.accessToken, jons.id);
+    const gunnas = await booked(gunna.accessToken, vik, { fromStop: 1, toStop: 3 });
+    await paid(gunna.accessToken, gunnas.id);
+    await completeTrips([airport, vik], jon, gunna, sigga);
+
+    const droveGrams = (await figureOf(0, 2)).grams + (await figureOf(2, 3)).grams;
+    const rode = await figureOf(0, 3, 150, vik);
+    expect(await totalsOf(jon)).toEqual({
+      grams: droveGrams + rode.grams,
+      asPassenger: { grams: rode.grams, rides: 1 },
+      asDriver: { grams: droveGrams, rides: 1, passengers: 2 },
+    });
+    const gunnaRode = (await figureOf(0, 2)).grams + (await figureOf(1, 3, 150, vik)).grams;
+    expect(await totalsOf(gunna)).toEqual({
+      grams: gunnaRode,
+      asPassenger: { grams: gunnaRode, rides: 2 },
+      asDriver: null,
     });
   });
 

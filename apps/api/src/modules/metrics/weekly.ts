@@ -4,6 +4,7 @@ import {
   addWeekMetrics,
   checkExitCriteria,
   compareIsoWeeks,
+  emptyWeekMetrics,
   endOfIsoWeek,
   exitCriteriaWeeks,
   inIceland,
@@ -444,7 +445,11 @@ export function createWeeklyMetricsService(dependencies: {
           ]),
         ) as Record<MetricKey, WeekMetrics[MetricKey]>;
         // A metric added since the week was counted reads as nothing until it is counted again.
-        return { week, metrics: addWeekMetrics([metrics]), computedAt: any.computedAt };
+        return {
+          week,
+          metrics: addWeekMetrics([{ ...emptyWeekMetrics, ...metrics }]),
+          computedAt: any.computedAt,
+        };
       };
 
       // The targets are held on the launch corridors: the active ones, added
