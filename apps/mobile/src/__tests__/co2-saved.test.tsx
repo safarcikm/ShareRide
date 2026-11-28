@@ -3,10 +3,19 @@ import { Dimensions } from "react-native";
 import type { Booking } from "@shareride/contracts";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
-import { bookingApi, cancelledBooking, northBooking, paidBooking } from "@/testing/bookings";
+import {
+  bookingApi,
+  cancelledBooking,
+  driverApi,
+  northBooking,
+  northMyTrip,
+  northStop,
+  paidBooking,
+} from "@/testing/bookings";
 import { ok } from "@/testing/fake-client";
 import { completedBooking } from "@/testing/reviews";
 import { northCo2, northResult, northTrip, tripDetailsApi } from "@/testing/search";
+import { tripsApi } from "@/testing/trips";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
 jest.mock("@/auth/token-store", () => {
@@ -170,6 +179,67 @@ describe("a booked seat (3.6)", () => {
       expect(await screen.findByTestId("screen-scroll")).toBeVisible();
       expect(card()).toBeNull();
     }
+  });
+});
+
+describe("the driver's ride (3.7)", () => {
+  /** Jón rides from the bus terminal to Blönduós with a friend, paid. */
+  const jon = northBooking({
+    id: "0190a1d6-0000-7000-8000-0000000000b5",
+    viewer: "driver",
+    status: "confirmed",
+    board: northStop(0),
+    alight: northStop(2),
+    seats: 2,
+    requestExpiresAt: null,
+    confirmed: { registration: "AB 123", whereToStand: null },
+  });
+
+  async function drive(co2: (typeof northMyTrip)["co2"]) {
+    await renderApp(`/drive/trips/${northMyTrip.id}`, {
+      me: completeMe,
+      setUp: (client) => {
+        tripsApi(client, [{ ...northMyTrip, co2 }]);
+        driverApi(client, [jon]);
+      },
+    });
+  }
+
+  it("shows its passengers' figure right after Passengers", async () => {
+    await drive({ distanceM: 634_000, grams: 95_100 });
+    expect(await screen.findByText("About 95 kg, estimated")).toBeVisible();
+    expect(
+      screen
+        .getAllByTestId(/^(passengers|co2-card|ride-rows)$/)
+        .map((part) => String(part.props.testID)),
+    ).toEqual(["passengers", "co2-card", "ride-rows"]);
+    await fireEvent.press(row(95));
+    expect(
+      screen.getByText(
+        "Your passengers ride 634 km with you instead of driving: about 95 kg less CO₂ than driving alone.",
+      ),
+    ).toBeVisible();
+    expect(screen.getByText(how)).toBeVisible();
+  });
+
+  it("stands in the main column on a laptop", async () => {
+    Dimensions.set({ window: { width: 1280, height: 800, scale: 1, fontScale: 1 } });
+    try {
+      await drive({ distanceM: 634_000, grams: 95_100 });
+      const main = within(screen.getByTestId("columns-main"));
+      expect(await main.findByTestId("co2-card")).toBeVisible();
+      expect(within(screen.getByTestId("columns-side")).queryByTestId("co2-card")).toBeNull();
+    } finally {
+      await act(() => {
+        Dimensions.set({ window: { width: 750, height: 1334, scale: 2, fontScale: 2 } });
+      });
+    }
+  });
+
+  it("shows nothing with no booking that counts", async () => {
+    await drive(null);
+    expect(await screen.findByTestId("passengers")).toBeVisible();
+    expect(card()).toBeNull();
   });
 });
 
