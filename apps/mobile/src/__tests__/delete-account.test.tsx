@@ -1,10 +1,11 @@
 import { fireEvent, screen, within } from "expo-router/testing-library";
 import { AccessibilityInfo } from "react-native";
-import type { DeletionCheck, Me } from "@shareride/contracts";
+import type { DeletionCheck, Me, Notice } from "@shareride/contracts";
 import { failure, ok, type FakeClient } from "@/testing/fake-client";
 import { completeMe, renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
 import { filledButtons, inBar, inPage } from "@/testing/buttons";
+import { northResult, northTrip, tripDetailsApi } from "@/testing/search";
 import { colors } from "@/theme/tokens";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
@@ -369,9 +370,54 @@ describe("While the deletion waits (spec 11, 3.4.4)", () => {
     "/settings/blocked",
     "/settings/reports",
     `/messages/${bookingId}`,
+    // Report and the two pages that block a person (A59).
+    "/report?kind=trip&id=0190a1d6-0000-7000-8000-0000000000d1",
+    `/bookings/${bookingId}/block`,
+    "/people/0190a1d6-0000-7000-8000-0000000000a2/block",
+    // "What's wrong here?" for a meeting point: a report too, found after.
+    "/meeting-points/0190a1d6-0000-7000-8000-0000000000b1/problem",
   ])("is what %s opens meanwhile", async (url) => {
     await openApp(url);
     expect(screen).toHavePathname("/account/deletion");
+  });
+
+  it('is where "Report this ride" leads from a ride\'s page, which is open to anyone', async () => {
+    await renderApp(`/trips/${northResult.tripId}?from=1&to=2`, {
+      me: waiting,
+      setUp: (client) => {
+        tripDetailsApi(client, () => ok(200, northTrip({ board: 1, alight: 2 })));
+      },
+    });
+    expect(await screen.findByRole("header", { name: "Borgarnes to Blönduós" })).toBeVisible();
+    await fireEvent.press(screen.getByRole("link", { name: "Report this ride" }));
+    expect(
+      await screen.findByRole("header", { name: "Your account will be deleted on 20 November." }),
+    ).toBeVisible();
+    expect(screen).toHavePathname("/account/deletion");
+  });
+
+  it("leaves Notices from PuffinRide open, to read or appeal one before the account goes (A59)", async () => {
+    const notice: Notice = {
+      id: "0190a1d6-0000-7000-8000-0000000000e1",
+      kind: "suspension",
+      rule: "harassment",
+      reason: "Repeated messages after being asked to stop.",
+      content: null,
+      until: "2026-12-13T12:00:00.000Z",
+      at: "2026-11-13T12:00:00.000Z",
+      appealUntil: "2026-11-27T12:00:00.000Z",
+      canAppeal: true,
+      appeal: null,
+    };
+    await renderApp("/notices", {
+      me: waiting,
+      setUp: (client) => {
+        client.answer("/v1/me/notices", () => ok(200, { notices: [notice] }), "get");
+      },
+    });
+    expect(await screen.findByRole("header", { name: "Notices" })).toBeVisible();
+    expect(await screen.findByRole("button", { name: "Appeal" })).toBeVisible();
+    expect(screen).toHavePathname("/notices");
   });
 
   it("does one thing at a time: no signing out while keeping", async () => {
