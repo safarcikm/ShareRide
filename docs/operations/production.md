@@ -191,7 +191,9 @@ Privacy Policy's version 5 (2026-11-28): the texts say how people sign in
 now (a code by email, Google or Apple, a password, Face ID or
 fingerprint; a text message only checks a phone number), and the Privacy
 Policy says what is kept of a password and of Face ID or fingerprint. One announcement can
-say both changes if neither was announced yet.
+say both changes if neither was announced yet. The texts to paste, in
+both languages, are kept in
+[announcements of changed legal texts](../compliance/legal-texts/announcements.md).
 
 ## Roll back
 

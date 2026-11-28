@@ -33,6 +33,9 @@
 > provider", as not every provider it names has a data processing
 > agreement (Apple and Google run their testing under their own terms).
 
+What Martin announces in the console after a version that is not material
+is kept in [announcements.md](announcements.md).
+
 | Document | At sign-up | Draft |
 | -------- | ---------- | ----- |
 | Terms of Service | Accepted, with the age confirmation | [terms-of-service.md](terms-of-service.md) |
