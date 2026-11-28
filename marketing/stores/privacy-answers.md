@@ -46,7 +46,7 @@ account. **Purpose** is the one Apple lists. None is used for tracking.
 | User Content: Customer Support     | Feedback and its reply; "Ask about my data" and its answer                                                                                                | Yes    | App Functionality |
 | User Content: Other User Content   | Chat messages, a booking request's message, a driver's note on a ride, reviews, reports, the bio                                                          | Yes    | App Functionality |
 | Search History                     | The searches made in Find (from, to, the day and seats), kept without the account, a device ID or the network address                                     | No     | Analytics         |
-| Identifiers: User ID               | The account's ID                                                                                                                                          | Yes    | App Functionality |
+| Identifiers: User ID               | The account's ID, and Google's or Apple's ID for the person when they sign in with one                                                                    | Yes    | App Functionality |
 | Identifiers: Device ID             | The phone's push token; Expo's random install ID for app updates                                                                                          | Yes    | App Functionality |
 | Diagnostics: Crash Data            | After a launch that failed, its error message, sent to Expo with the update check so the app goes back to the version that worked                         | No     | App Functionality |
 | Diagnostics: Other Diagnostic Data | App version, phone system and model, with feedback and with each device signed in to the account                                                          | Yes    | App Functionality |
@@ -72,7 +72,7 @@ and messages; the push token is a device-level ID, so it is declared.
 | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
 | Does your app collect or share any of the required user data types?      | Yes                                                                                                                                          |
 | Is all of the user data collected by your app encrypted in transit?      | Yes (HTTPS only)                                                                                                                             |
-| Which ways of making an account does your app support?                   | Username, password and other authentication (a code by email); OAuth (Google sign-in)                                                        |
+| Which ways of making an account does your app support?                   | Username, password and other authentication (a code by email); OAuth (Google and Apple sign-in)                                              |
 | Delete account URL                                                       | `https://puffinride.is/delete-account`                                                                                                       |
 | Can people ask for some data to be deleted without deleting the account? | Yes: they remove their photo, bio and cars in the app, and ask for anything else with "Ask about my data" or by email to `admin@puffinride.is` |
 | Has your app completed an independent security review?                   | No                                                                                                                                           |
@@ -113,7 +113,5 @@ apps, web browsing, app interactions, other actions, performance data.
   add Crash Data and Diagnostics, linked, for App Functionality.
 - Payments in the app (milestone 15): add Financial Info (purchase history;
   card details stay with the payment provider) in both forms.
-- Sign in with Apple on the iPhone: Apple's ID for the person is a User ID,
-  as Google's already is.
 - Location for nearby meeting points: Approximate location, optional, App
   functionality, not stored.

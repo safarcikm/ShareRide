@@ -64,7 +64,7 @@ Statuses: `Proposed`, `Accepted`, `Rejected`, `Deprecated`, `Superseded by ADR N
 | [0031](0031-distances-from-our-own-road-file.md) | Distances between meeting points from our own road file | Accepted |
 | [0032](0032-operator-settings-list-ranges-and-versions.md) | Operator settings: the list, their ranges, and versions on trips and bookings | Accepted (the `invite_code_required` default superseded by 0035) |
 | [0033](0033-profile-photos-made-in-the-app-and-checked-by-the-api.md) | Profile photos made in the app and checked by the API | Accepted |
-| [0034](0034-google-and-apple-sign-in-through-our-api.md) | Google and Apple sign-in through our API, in a browser window | Accepted (app IDs and scheme renamed by 0039) |
+| [0034](0034-google-and-apple-sign-in-through-our-api.md) | Google and Apple sign-in through our API, in a browser window | Accepted (app IDs and scheme renamed by 0039; what it keeps from Apple amended by 0056) |
 | [0035](0035-open-web-beta-reached-by-email.md) | An open beta on the web, reaching members by email | Accepted |
 | [0036](0036-meeting-points-go-live-before-their-photo.md) | A meeting point can go live before it has a photo | Accepted |
 | [0037](0037-photo-storage-in-nuremberg.md) | Store photos in Hetzner Object Storage in Nuremberg | Accepted |
@@ -81,7 +81,8 @@ Statuses: `Proposed`, `Accepted`, `Rejected`, `Deprecated`, `Superseded by ADR N
 | [0048](0048-member-passkeys-on-the-device-only.md) | Face ID or fingerprint for members: passkeys kept on the device | Accepted (user verification at setup amended by 0050) |
 | [0049](0049-draw-link-preview-pictures-with-resvg.md) | Draw link preview pictures on the server with resvg | Accepted |
 | [0050](0050-passkey-saved-by-the-browser-after-a-password.md) | A passkey the browser saves by itself after a password | Accepted |
-| [0051](0051-store-apps-in-martins-name-until-the-company.md) | The store apps in Martin's name until the company, checked on emulators first | Accepted (accounts); Proposed (the rest) |
+| [0051](0051-store-apps-in-martins-name-until-the-company.md) | The store apps in Martin's name until the company, checked on emulators first | Accepted (accounts); Proposed (the rest); iPhone sign-in superseded by 0056 |
 | [0052](0052-animations-css-on-the-web-reanimated-on-phones.md) | Animations: CSS on the website, Reanimated and expo-haptics in the phone apps | Accepted |
 | [0053](0053-a-private-limited-company-not-a-nonprofit.md) | A private limited company (ehf.), not a nonprofit | Accepted |
 | [0054](0054-estimate-co2-saved-as-one-car-not-driven.md) | Estimate the CO2 a shared ride saves as one car not driven | Accepted |
+| [0056](0056-keep-apples-token-to-end-sign-in-with-apple.md) | Keep Apple's refresh token to end Sign in with Apple with the account | Proposed |
