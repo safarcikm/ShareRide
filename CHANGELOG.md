@@ -1625,6 +1625,15 @@ releases follow [Semantic Versioning](https://semver.org/).
   stretch. Each ride in `GET /v1/me/trips` says who asks in the request
   that closes first (`firstRequest`: the first name, the seats and the two
   stops' names), for "Dóra asks for 1 seat".
+- Google is told who we are (spec 23, 3.6, item 8): the front page's
+  structured data names the site and PuffinRide as an organization, also
+  written "Puffin Ride", with its logo, what it is, the email address that
+  receives mail and our Facebook and Instagram pages (`sameAs`). Carpool in
+  Iceland's questions start with "What is PuffinRide?", one paragraph an
+  answer can quote. The Facebook and Instagram addresses are now
+  `socialProfiles` in `@shareride/i18n`, for the app and the server.
+- `marketing/search/`: Martin's Search Console steps for our name, and
+  honest places to be mentioned and linked from.
 - The iPhone app offers no Google sign-in until Sign in with Apple comes
   (spec 32, 3.3; R32.5), as Apple's guideline 4.8 asks: the domain's
   `providersOffered` leaves Google out on iOS unless Apple is on too. Step 1
@@ -1652,9 +1661,24 @@ releases follow [Semantic Versioning](https://semver.org/).
   size and on the emulator, signed out, with a tidy status bar. The
   privacy register lists the App Store, Google Play and Google Play
   testing.
+- The ride on a map on a booked seat and on the ride I drive (spec 31,
+  3.8 and 3.12): a card headed "The route" with our map of Iceland, the
+  passenger's part solid and the rest of the ride dashed, or the whole way
+  for the driver, before the rows; on a laptop a band in the main column.
+  A booking in the API gains `route`: where its ride's stops are, with the
+  part as places among them; null where a stop of the part was taken off
+  the ride, and on a booking that ended before its ride.
 
 ### Fixed
 
+- The price level's handle slides: it follows a finger or the mouse
+  along the track, a step at a time, in the phone apps and on the
+  website. It took only taps and minus and plus, which Martin found on
+  the first iPhone build. A finger that moves up or down on the track
+  still scrolls the page; one that slides the handle holds it still. The
+  track is 44 tall to touch, and on an iPhone the two price screens go
+  back only for a swipe from the left edge, so a slide to the right does
+  not go back a step (iOS 26).
 - The Android phone journeys failed on every run from about 01:30 on
   2026-11-28. The workflow's key press reached the Pixel Launcher before it
   had a window, the launcher stalled, and its "isn't responding" box hid
@@ -2070,6 +2094,14 @@ releases follow [Semantic Versioning](https://semver.org/).
   or appeal a notice before the account goes (A59, Martin's answer to
   Q31). A test asks of every page of the app which list it is in, so a
   new page is not open to such an account by being forgotten.
+- Cards stand off the page with a hairline and a soft shadow, and
+  buttons keep a solid edge that is as thick at the corners as in the
+  middle (spec 15, decision 16: Martin chose "Soft cards, solid
+  buttons" on 2026-11-28, after the first iPhone build). The solid strip
+  under each card thinned out at its rounded corners and looked cheap.
+  At night a card has a faint light line along its top. Android 7 and 8
+  keep the strip under buttons and get the system's shadow under cards.
+  The console looks the same.
 - The web journeys never give two test accounts the same phone number: a
   run in ten did, and a sign-in journey then failed.
 - CI skips its code jobs (bundles, unit, integration and web tests, the API

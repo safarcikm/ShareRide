@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { finishProviderSignInRoute } from "@shareride/contracts";
 import { providerReturnPath } from "@shareride/domain";
+import { aboutPage } from "@shareride/i18n";
 import type { Context } from "hono";
 import { isConsolePath } from "./admin-app.ts";
 import {
@@ -12,6 +13,7 @@ import {
   type ListedAppStores,
 } from "./app-promotion.ts";
 import type { AppEnv } from "./context.ts";
+import type { Co2SettingsSource } from "./modules/co2/figures.ts";
 import type { FindRide } from "./modules/search/link-preview.ts";
 import {
   fillPage,
@@ -140,6 +142,7 @@ export function createWebApp(
   analytics: Analytics | null = null,
   findSubject?: FindSubject,
   findRide?: FindRide,
+  co2Settings?: Co2SettingsSource,
   listedStores: ListedAppStores = () => Promise.resolve([]),
 ): WebApp {
   const contentSecurityPolicy = webContentSecurityPolicy(photoOrigin, analytics !== null);
@@ -191,6 +194,9 @@ export function createWebApp(
     const ride = await findRide?.(c.req.path, (name) => c.req.query(name));
     // A meeting point or place the sitemap does not list stays out of the index.
     if (subject?.kind === "missing") c.header("X-Robots-Tag", noIndex);
+    // About's section on the CO2 a shared ride saves says the value in force (spec 34, 3.9).
+    const gramsPerCarKm =
+      c.req.path === aboutPage.path ? ((await co2Settings?.())?.gramsPerCarKm ?? 0) : 0;
     const head = pageHead(
       {
         path: c.req.path,
@@ -201,6 +207,7 @@ export function createWebApp(
       searchEngines,
       subject,
       ride,
+      gramsPerCarKm,
     );
     if (head.fromBrowser) c.header("Vary", "Accept-Language, X-Facebook-Locale");
     const page = fillPage(html, head);

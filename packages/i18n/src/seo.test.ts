@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { aboutPage, carpoolPage, deleteAccountPage, deleteAccountSteps, pageText } from "./seo.ts";
+import {
+  aboutCo2Values,
+  aboutPage,
+  carpoolPage,
+  deleteAccountPage,
+  deleteAccountSteps,
+  pageText,
+  socialProfiles,
+} from "./seo.ts";
 import { createTranslator } from "./translator.ts";
 
 const en = createTranslator("en");
@@ -49,6 +57,20 @@ describe("the Carpool in Iceland page (spec 23, 3.9)", () => {
     });
     expect(pageText(is, { kind: "carpool" }).title).toBe(
       "Samferða um Ísland: finndu far eða bjóddu far · PuffinRide",
+    );
+  });
+
+  it("says first what PuffinRide is, in words an answer can quote, also as Puffin Ride (3.9)", () => {
+    const [first] = carpoolPage.sections.flatMap((section) => section.questions ?? []);
+    expect(first).toBeDefined();
+    if (first === undefined) return;
+    expect(en(first.question)).toBe("What is PuffinRide?");
+    expect(en(first.answer)).toMatch(
+      /^PuffinRide \(puffinride\.is, sometimes written Puffin Ride\) is a carpooling website for Iceland, started in November 2026\./,
+    );
+    expect(is(first.question)).toBe("Hvað er PuffinRide?");
+    expect(is(first.answer)).toMatch(
+      /^PuffinRide \(puffinride\.is\) er íslenskur vefur fyrir samakstur sem opnaði í nóvember 2026\./,
     );
   });
 
@@ -140,6 +162,13 @@ describe("the About page (spec 30, 3.1 and 3.4)", () => {
   });
 });
 
+describe("aboutCo2Values", () => {
+  it("gives the grams per car km and the example's whole kilograms (spec 34, 3.9)", () => {
+    expect(aboutCo2Values(150, "en")).toEqual({ grams: "150", kg: "58" });
+    expect(aboutCo2Values(208, "is")).toEqual({ grams: "208", kg: "81" });
+  });
+});
+
 describe("the account deletion page (spec 32, section 5)", () => {
   it("has its own title and description, naming the app as the stores do", () => {
     expect(pageText(en, { kind: "deleteAccount" })).toEqual({
@@ -170,6 +199,15 @@ describe("the account deletion page (spec 32, section 5)", () => {
     expect(aboutPage.deleteAccount).toEqual({
       label: "deleteAccount.link",
       href: "/delete-account",
+    });
+  });
+});
+
+describe("PuffinRide elsewhere (spec 30, 3.1; spec 23, 3.6, item 8)", () => {
+  it("names our Facebook Page and Instagram profile, in one place for the app and the server", () => {
+    expect(socialProfiles).toEqual({
+      facebook: "https://www.facebook.com/profile.php?id=61597055066444",
+      instagram: "https://www.instagram.com/puffinride.is/",
     });
   });
 });

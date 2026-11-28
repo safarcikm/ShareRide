@@ -135,8 +135,9 @@ changes on a phone.
 
 ### 3.4 Pointer and keyboard
 
-1. Under the pointer, a part that can be pressed shows it: the bottom edge
-   of a card that opens something turns `primary` (its fill stays, because
+1. Under the pointer, a part that can be pressed shows it: the outline of
+   a card that opens something turns `primary` (its bottom edge until spec
+   15's decision 16; its fill stays, because
    tags and avatars on it sit on `primarySoft` themselves and would lose
    their shape on a tinted card); a row is tinted `primarySoft`; a primary
    button turns `primaryHover`, a new colour one step from `primary`

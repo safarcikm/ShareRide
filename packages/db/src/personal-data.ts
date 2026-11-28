@@ -282,6 +282,14 @@ export const personalData: Readonly<Record<string, TablePrivacy>> = {
     personColumns: [],
     onDeletion: keep([]),
   },
+  // What the person's rides saved on trips made anonymous 3 years after,
+  // kept so their totals stay (spec 34, 3.11): only theirs, gone with them.
+  co2_carried: {
+    category: "account",
+    export: { section: "co2_saved" },
+    personColumns: ["userId"],
+    onDeletion: erase,
+  },
   payments: {
     category: "payments",
     export: { section: "payments" },

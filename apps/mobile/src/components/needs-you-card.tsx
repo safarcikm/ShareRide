@@ -2,9 +2,9 @@ import type { LucideIcon } from "lucide-react-native";
 import type { ReactNode } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import type { AppPath } from "@/navigation/link-props";
-import { chunky } from "@/theme/pressable";
-import { edges, halfMinWidth, people, radii, sizes, spacing, typography } from "@/theme/tokens";
-import { usePalette } from "@/theme/use-palette";
+import { cardLift } from "@/theme/pressable";
+import { halfMinWidth, people, radii, sizes, spacing, typography } from "@/theme/tokens";
+import { usePalette, useScheme } from "@/theme/use-palette";
 import { Button } from "./button";
 import { Icon } from "./icon";
 
@@ -36,19 +36,27 @@ type NeedsYouCardProps =
 /**
  * What needs you now, in the car's yellow (spec 31, 3.2, rule 3, and 3.3):
  * a request to answer, a seat to pay for, a ride on its trip day. A card in
- * `warningSoft` with a bottom edge and an icon square in `people.sun`. The
+ * `warningSoft` with a yellow outline and an icon square in `people.sun`. The
  * bold line says what is asked; the yellow only repeats it, and is used for
  * nothing else (R31.4). A button in it does not count as the screen's main
  * button (R31.1).
  */
 export function NeedsYouCard(props: NeedsYouCardProps) {
   const palette = usePalette();
+  const scheme = useScheme();
   return (
     <View
       testID="needs-you-card"
-      style={[styles.outer, chunky(edges.card, people.sun, false).outer]}
+      style={[styles.outer, cardLift(scheme, { ring: people.sun }).outer]}
     >
-      <View testID="needs-you-face" style={[styles.face, { backgroundColor: palette.warningSoft }]}>
+      <View
+        testID="needs-you-face"
+        style={[
+          styles.face,
+          { backgroundColor: palette.warningSoft },
+          cardLift(scheme, { ring: people.sun }).face,
+        ]}
+      >
         {"title" in props ? <Lines {...props} /> : props.children}
       </View>
     </View>

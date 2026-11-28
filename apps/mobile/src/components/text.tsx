@@ -50,15 +50,19 @@ export function Title({
 export function Heading({
   children,
   level = 2,
+  anchor,
 }: {
   readonly children: ReactNode;
   /** A heading inside a section with its own heading is a level 3 (an h3 on the web). */
   readonly level?: 2 | 3;
+  /** Its `id` on the web, for an address that leads to it, as `/about#co2`. */
+  readonly anchor?: string;
 }) {
   const palette = usePalette();
   return (
     <Text
       accessibilityRole="header"
+      {...(anchor === undefined ? {} : { nativeID: anchor })}
       {...(level === 2 || Platform.OS !== "web" ? sectionLevel : { "aria-level": 3 })}
       style={[typography.heading, { color: palette.text }]}
     >

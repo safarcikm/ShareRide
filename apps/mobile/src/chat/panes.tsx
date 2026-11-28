@@ -4,9 +4,9 @@ import { SafeAreaView, type Edge } from "react-native-safe-area-context";
 import { evenGutterOnWeb, useScreenEdges, useStickToEnd, useWideScreen } from "@/components/screen";
 import { Title } from "@/components/text";
 import { useLanguage } from "@/i18n/language";
-import { chunky } from "@/theme/pressable";
-import { controlOutline, edges, listPaneWidth, pageMaxWidth, radii, spacing } from "@/theme/tokens";
-import { usePalette } from "@/theme/use-palette";
+import { cardLift } from "@/theme/pressable";
+import { controlOutline, listPaneWidth, pageMaxWidth, radii, spacing } from "@/theme/tokens";
+import { usePalette, useScheme } from "@/theme/use-palette";
 
 /**
  * Messages on a wide screen (spec 18, 3.11): one card across the page, as
@@ -30,7 +30,7 @@ export function Panes({
   const palette = usePalette();
   const wide = useWideScreen();
   const safeEdges = useScreenEdges();
-  const card = chunky(edges.card, palette.edge, false);
+  const card = cardLift(useScheme());
   return (
     <SafeAreaView
       edges={wide ? safeEdges : noEdges}
@@ -40,7 +40,7 @@ export function Panes({
         <View
           {...(wide ? { testID: "panes" } : {})}
           style={
-            wide ? [styles.card, card.outer, { backgroundColor: palette.surface }] : styles.fill
+            wide ? [styles.card, card.face, { backgroundColor: palette.surface }] : styles.fill
           }
         >
           {wide ? (

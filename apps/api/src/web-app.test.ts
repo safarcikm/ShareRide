@@ -14,14 +14,14 @@ const secret = "a file next to the export that must never be served";
  * A small stand-in for `expo export --platform web` output, with a file next
  * to it that a path traversal would reach.
  */
-function exportedWebApp(): string {
+function exportedWebApp(body = '<div id="root"></div>'): string {
   const parent = mkdtempSync(join(tmpdir(), "shareride-web-"));
   writeFileSync(join(parent, "secret.txt"), secret);
   const dir = join(parent, "web");
   mkdirSync(dir);
   writeFileSync(
     join(dir, "index.html"),
-    '<!doctype html><html lang="en"><head><title>PuffinRide</title></head><body><div id="root"></div></body></html>',
+    `<!doctype html><html lang="en"><head><title>PuffinRide</title></head><body>${body}</body></html>`,
   );
   writeFileSync(join(dir, "favicon.ico"), "icon");
   mkdirSync(join(dir, "_expo", "static", "js", "web"), { recursive: true });
@@ -32,7 +32,7 @@ function exportedWebApp(): string {
 function setup(
   webAppDir?: string,
   lines: string[] = [],
-  appStores: readonly AppStore[] | Error = [],
+  more: Partial<Parameters<typeof createApp>[0]> = {},
 ) {
   const destination = new Writable({
     write: (chunk: Buffer, _encoding, callback) => {
@@ -44,9 +44,17 @@ function setup(
     logger: createLogger({ level: "info", destination }),
     checkDatabase: () => Promise.resolve(),
     ...(webAppDir === undefined ? {} : { webAppDir }),
-    appStoresListed: () =>
-      appStores instanceof Error ? Promise.reject(appStores) : Promise.resolve(appStores),
+    appStoresListed: () => Promise.resolve([]),
+    ...more,
   });
+}
+
+/** The stores whose switch is on, or the error reading them gives. */
+function listing(stores: readonly AppStore[] | Error) {
+  return {
+    appStoresListed: () =>
+      stores instanceof Error ? Promise.reject(stores) : Promise.resolve(stores),
+  };
 }
 
 describe("the web app on the API's origin", () => {
@@ -122,6 +130,38 @@ describe("the web app on the API's origin", () => {
     expect(english.headers.get("location")).toBe("/about?lang=en");
     // The documents stay where they are.
     expect((await app.request("/legal/privacy")).status).toBe(200);
+  });
+
+  it("writes About's CO2 section with the value in force, and none without one (spec 34, 3.9)", async () => {
+    const asked: string[] = [];
+    // As the export has it: the text goes in the page's noscript.
+    const withValue = setup(exportedWebApp('<noscript></noscript><div id="root"></div>'), [], {
+      co2Settings: () => {
+        asked.push("asked");
+        return Promise.resolve({ gramsPerCarKm: 208 });
+      },
+    });
+    const about = await (await withValue.request("/about?lang=en")).text();
+    expect(about).toContain('<h2 id="co2">What a shared ride saves</h2>');
+    expect(about).toContain("Iceland: 208\u00a0g per kilometre.</p>");
+    // Only About reads the setting.
+    await withValue.request("/sign-in");
+    expect(asked).toHaveLength(1);
+    const without = setup(exportedWebApp('<noscript></noscript><div id="root"></div>'));
+    const plain = await (await without.request("/about?lang=en")).text();
+    expect(plain).toContain("<h2>Terms and policies</h2>");
+    expect(plain).not.toContain('id="co2"');
+  });
+
+  it("still serves About, without the CO2 section, when the setting cannot be read", async () => {
+    const failing = setup(exportedWebApp('<noscript></noscript><div id="root"></div>'), [], {
+      co2Settings: () => Promise.reject(new Error("the database is away")),
+    });
+    const response = await failing.request("/about?lang=en");
+    expect(response.status).toBe(200);
+    const page = await response.text();
+    expect(page).toContain("<h2>Terms and policies</h2>");
+    expect(page).not.toContain('id="co2"');
   });
 
   it("keeps trip pages out of search engines (R4.6; spec 23 has the rest)", async () => {
@@ -215,8 +255,8 @@ const laptop =
 describe("the phone apps on the website (spec 35)", () => {
   const dir = exportedWebApp();
   const neither = setup(dir);
-  const both = setup(dir, [], ["app_store", "google_play"]);
-  const playOnly = setup(dir, [], ["google_play"]);
+  const both = setup(dir, [], listing(["app_store", "google_play"]));
+  const playOnly = setup(dir, [], listing(["google_play"]));
 
   it("gives Safari Apple's banner only while the App Store's page is public (3.3, R35.1)", async () => {
     expect(await (await neither.request("/")).text()).not.toContain("apple-itunes-app");
@@ -271,7 +311,7 @@ describe("the phone apps on the website (spec 35)", () => {
 
   it("still serves the website while the switches cannot be read, as if both were off", async () => {
     const lines: string[] = [];
-    const unread = setup(dir, lines, new Error("the database is down"));
+    const unread = setup(dir, lines, listing(new Error("the database is down")));
     const page = await unread.request("/");
     expect(page.status).toBe(200);
     expect(await page.text()).not.toContain("apple-itunes-app");

@@ -1,6 +1,6 @@
 # 0055. Show the phone apps on the website, switched on per store in the console
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-11-28, by Martin in the project thread: "Approved")
 - **Date:** 2026-11-28
 - **Deciders:** Martin
 - **Related:** [spec 35](../specs/2026-11-28-app-promotion-on-the-website.md),

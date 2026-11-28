@@ -59,4 +59,4 @@ Specs follow the order in [features](../product/features.md#spec-order).
 | 32 | [The Android and iPhone apps in the stores](2026-11-27-phone-apps-in-the-stores.md) | All screens, the phone apps | Proposed (2026-11-27) |
 | 33 | [A few small animations on the website and in the apps](2026-11-27-small-animations.md) | All screens | Accepted (2026-11-28) |
 | 34 | [The CO2 a shared ride saves](2026-11-28-co2-saved.md) | A2, C5, D2, D4, H4, H5 | Approved (2026-11-28) |
-| 35 | [The phone apps, shown on the website](2026-11-28-app-promotion-on-the-website.md) | A6, the website, H4 | Proposed (2026-11-28) |
+| 35 | [The phone apps, shown on the website](2026-11-28-app-promotion-on-the-website.md) | A6, the website, H4 | Accepted (2026-11-28) |

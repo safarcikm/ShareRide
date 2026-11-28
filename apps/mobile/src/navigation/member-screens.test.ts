@@ -1,6 +1,6 @@
-import { readdirSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { memberScreens, notWhileDeleting } from "./member-screens";
+import { memberScreens, notWhileDeleting, swipeBackFromEdgeOnly } from "./member-screens";
 
 const app = join(__dirname, "..", "app");
 
@@ -101,5 +101,16 @@ describe("The screens closed while an account waits to be deleted (spec 11, 3.4.
     expect(
       [...memberScreens, ...notWhileDeleting, ...decidedElsewhere].filter((name) => !known(name)),
     ).toEqual([]);
+  });
+});
+
+describe("The screens with the price level (spec 3, 3.6)", () => {
+  it("go back on an iPhone only for a swipe from the edge, so the handle slides right", () => {
+    const withPriceLevel = pagesUnder(".").filter((page) =>
+      readFileSync(join(app, `${page}.tsx`), "utf8").includes("@/trips/price-card"),
+    );
+    expect(withPriceLevel).not.toEqual([]);
+    expect([...swipeBackFromEdgeOnly].sort()).toEqual(withPriceLevel);
+    expect(swipeBackFromEdgeOnly.filter((name) => !listed(memberScreens, name))).toEqual([]);
   });
 });

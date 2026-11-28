@@ -1,6 +1,7 @@
 // Search results as the API returns them, and a fake search API, for screen
 // tests. Not used by the app itself.
 import type { TripDetails, TripSearchResult } from "@shareride/contracts";
+import { co2GramsFor, partDistanceM } from "@shareride/domain";
 import { failure, ok, type FakeClient } from "./fake-client";
 import { bsi, hof, thorlakshofn } from "./meeting-points";
 import { blonduos, borgarnes, tripPoints } from "./trips";
@@ -91,6 +92,15 @@ export const northStops = [
   { meetingPoint: hof, plannedAt: "2026-11-15T14:00:00.000Z" },
 ].map((stop, position) => ({ ...stop, position }));
 const stretchPrices = [1100, 2900, 2000];
+
+/** The road metres of the north trip's three stretches: 389 km from BSÍ to Hof. */
+export const northStretchM = [74_000, 170_000, 145_000] as const;
+
+/** A part's road metres and the CO2 one car saves on it, at 150 g per car km (spec 34). */
+export function northCo2(board: number, alight: number) {
+  const distanceM = partDistanceM(northStretchM, board, alight);
+  return { distanceM, co2Grams: co2GramsFor(distanceM, 150) };
+}
 
 /** The north trip opened for a part, as the API answers it; `changes` override the rest. */
 export function northTrip(

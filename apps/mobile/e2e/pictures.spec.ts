@@ -3,7 +3,13 @@ import { join } from "node:path";
 import { expect, test, type Page } from "@playwright/test";
 import { apiUrl } from "../playwright.config";
 import { english, signUp } from "./support/account";
-import { confirmedBooking, requestSeat, secondPage } from "./support/cancelling";
+import {
+  askForSeat,
+  confirmedBooking,
+  requestSeat,
+  secondPage,
+  withinADay,
+} from "./support/cancelling";
 import { passengerRow } from "./support/driver-ride";
 import { twiceAsLarge } from "./support/layout";
 import { aPerson, personId, showPerson } from "./support/person";
@@ -558,6 +564,12 @@ test.describe("pictures", () => {
     await expect(
       einar.page.getByText("Your seat is confirmed", { exact: true }).filter(visible),
     ).toBeVisible();
+    // Einar's seat is on the first stretch: the map draws his part solid
+    // and the rest of the ride dashed (spec 31, 3.8).
+    const route = einar.page.getByTestId("route-card").filter(visible);
+    await route.scrollIntoViewIfNeeded();
+    await einar.page.waitForTimeout(500);
+    await route.screenshot({ path: join(folder, "booking-route-part-phone-light.png") });
 
     // The ride now leaves in 20 minutes: the trip day, with "I'm here" in the bar.
     const moved = await page.request.post(`${apiUrl}/e2e/trips/${tripId}/move`, {
@@ -1251,5 +1263,142 @@ test.describe("pictures", () => {
       path: join(folder, "not-found-phone-light.png"),
       scale: "device",
     });
+  });
+
+  // The CO2 a shared ride saves as built (spec 34, section 5): a ride's
+  // details with the card unfolded; Bára drives Dóra to Selfoss and then
+  // rides on a ride Dóra offers, and both rides end; Dóra's booked seat
+  // after the ride, Bára's ride in Icelandic at night, Bára's profile with
+  // both roles, and About's section. Written as PNGs into co2-saved/built
+  // and kept as .webp in co2-saved (co2-saved/src/README.md).
+  test("the CO2 a shared ride saves (spec 34)", async ({ page, browser }, info) => {
+    test.setTimeout(420_000);
+    const folder = join(root ?? "", "co2-saved", "built");
+    mkdirSync(folder, { recursive: true });
+    const wide = info.project.name === "desktop";
+    const window = wide ? { width: 1280, height: 720 } : (page.viewportSize() ?? null);
+    if (window === null) throw new Error("The page has no size");
+    await page.setViewportSize(window);
+    const visible = { visible: true };
+    const { userAgent, isMobile, hasTouch, baseURL } = info.project.use;
+    const other = await browser.newContext({
+      viewport: window,
+      deviceScaleFactor: 2,
+      userAgent,
+      isMobile,
+      hasTouch,
+      baseURL,
+      locale: "en-GB",
+    });
+    const dora = await other.newPage();
+    const shootBara = shooter(page, folder, window, wide);
+    const shootDora = shooter(dora, folder, window, wide);
+    const card = (on: Page) => on.getByTestId("co2-card").filter(visible);
+    const unfold = async (on: Page) => {
+      await card(on)
+        .getByRole("button", { name: /^(CO2 saved|Minni losun CO2), / })
+        .click();
+      await expect(
+        card(on).getByRole("link", { name: /^(How we estimate it|Svona áætlum við)$/ }),
+      ).toBeVisible();
+    };
+
+    // 1. A ride's details before signing in: Anna's ride, Borgarnes to Blönduós.
+    if (!wide) {
+      await dora.goto("/search");
+      await choose(dora, "From", "borgarn", /^N1 Borgarnes,/);
+      await choose(dora, "To", "blondu", /^Olís Blönduós,/);
+      await dora.getByRole("button", { name: "Find a ride", exact: true }).click();
+      await dora
+        .getByRole("button", { name: /^Leaves N1 Borgarnes at \d\d:\d\d, .*Anna, New driver/ })
+        .first()
+        .click();
+      await unfold(dora);
+      await shootDora("1-ride", "light");
+    }
+
+    // Bára drives Dóra the whole way to Selfoss; twelve hours later Dóra
+    // drives the same way and Bára rides along. Then both rides end.
+    const { tripId, booking } = await confirmedBooking(page, dora, [], 3);
+    const [hours = 0, minutes = 0] = withinADay().split(":").map(Number);
+    const later = (hours * 60 + minutes + 12 * 60) % (24 * 60);
+    const pad = (value: number) => String(value).padStart(2, "0");
+    const dorasTrip = await postTripToSelfoss(
+      dora,
+      `${pad(Math.floor(later / 60))}:${pad(later % 60)}`,
+    );
+    const barasBooking = await askForSeat(page, dorasTrip, 3);
+    await dora.goto(`/drive/trips/${dorasTrip}`);
+    await dora.getByRole("button", { name: "Accept", exact: true }).click();
+    await expect(passengerRow(dora, "Bára", "Waiting for payment")).toBeVisible();
+    await page.goto(barasBooking);
+    await page.getByRole("button", { name: /^Pay [\d,]+ ISK$/ }).click();
+    await page.getByRole("button", { name: /^Pay [\d,]+ ISK$/ }).click();
+    await expect(
+      page.getByText("Your seat is confirmed", { exact: true }).filter(visible),
+    ).toBeVisible();
+    for (const [trip, minutesAgo] of [
+      [tripId, 36 * 60],
+      [dorasTrip, 30 * 60],
+    ] as const) {
+      const moved = await page.request.post(`${apiUrl}/e2e/trips/${trip}/move`, {
+        data: { minutes: -minutesAgo },
+      });
+      expect(moved.status()).toBe(204);
+    }
+
+    // 2 and 6. Dóra's booked seat after the ride, its card folded. The
+    // API's minute job ends the ride.
+    await expect(async () => {
+      await dora.goto(booking);
+      await expect(
+        dora.getByRole("heading", { name: "How was your ride?" }).filter(visible),
+      ).toBeVisible({ timeout: 3_000 });
+    }).toPass({ timeout: 120_000 });
+    await expect(card(dora)).toBeVisible();
+    await shootDora(wide ? "6-booking-after" : "2-booking-after", "light");
+
+    // 4 and 7. Bára's profile: what she saved as a passenger and as a driver.
+    await expect(async () => {
+      await page.goto(barasBooking);
+      await expect(
+        page.getByRole("heading", { name: "How was your ride?" }).filter(visible),
+      ).toBeVisible({ timeout: 3_000 });
+    }).toPass({ timeout: 120_000 });
+    await page.goto("/profile");
+    await expect(page.getByRole("heading", { name: "Your shared rides" })).toBeVisible();
+    await unfold(page);
+    await expect(card(page).getByText(/^As a driver: /)).toBeVisible();
+    await shootBara(wide ? "7-profile" : "4-profile", "light");
+
+    if (!wide) {
+      // 8. About down to the end of its new section.
+      await page.goto("/about");
+      await expect(page.getByRole("heading", { name: "What a shared ride saves" })).toBeVisible();
+      await showWhole(page, window.width);
+      await page.mouse.move(0, 0);
+      const next = await page.getByRole("heading", { name: "Terms and policies" }).boundingBox();
+      if (next === null) throw new Error("About has no Terms and policies");
+      await page.screenshot({
+        path: join(folder, "8-about-phone-light.png"),
+        clip: { x: 0, y: 0, width: window.width, height: Math.ceil(next.y) - 8 },
+        scale: "device",
+      });
+      await page.setViewportSize(window);
+
+      // 3 and 5. In Icelandic at night: Bára's ride, then her profile.
+      await page.emulateMedia({ colorScheme: "dark" });
+      await page.goto("/settings/language");
+      await page.getByRole("radio", { name: "Íslenska" }).filter(visible).click();
+      await expect(page.getByRole("heading", { name: "Tungumál" })).toBeVisible();
+      await page.goto(`/drive/trips/${tripId}`);
+      await unfold(page);
+      await shootBara("3-driver-ride", "dark");
+      await page.goto("/profile");
+      await expect(page.getByRole("heading", { name: "Ferðirnar þínar" })).toBeVisible();
+      await unfold(page);
+      await shootBara("5-profile", "dark");
+    }
+    await other.close();
   });
 });

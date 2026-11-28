@@ -1,8 +1,7 @@
 # Spec 35: The phone apps, shown on the website
 
-**Owner:** Martin · **Date:** 2026-11-28 · **Status:** Proposed
-(2026-11-28): Martin asked for it; the choices in the Decisions section are
-working choices he can change
+**Owner:** Martin · **Date:** 2026-11-28 · **Status:** Accepted (Martin,
+2026-11-28, after the pictures)
 
 Amends: [spec 30](2026-11-26-about-page-and-footer.md) (3.1, About gets a
 section on the app, and 3.3, the footer gets the store badges) and

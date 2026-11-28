@@ -1,3 +1,6 @@
+import { co2GramsFor, shownKilograms } from "@shareride/domain";
+import { formatCount } from "./format.ts";
+import type { Locale } from "./locales.ts";
 import type { MessageKey, Translate } from "./translator.ts";
 
 /**
@@ -104,6 +107,7 @@ export const carpoolPage: {
       heading: "carpool.questionsTitle",
       paragraphs: [],
       questions: [
+        { question: "carpool.whatQuestion", answer: "carpool.whatAnswer" },
         { question: "carpool.taxiQuestion", answer: "carpool.taxiAnswer" },
         { question: "carpool.wordQuestion", answer: "carpool.wordAnswer" },
         { question: "carpool.languageQuestion", answer: "carpool.languageAnswer" },
@@ -111,6 +115,17 @@ export const carpoolPage: {
       ],
     },
   ],
+};
+
+/**
+ * PuffinRide elsewhere: our Facebook Page (spec 28, 3.6) and Instagram
+ * profile, @puffinride.is (spec 30, 3.1). The app links to them, and the
+ * server names them to Google as ours (spec 23, 3.6, item 8). One place to
+ * change when the Page gets its short name.
+ */
+export const socialProfiles: { readonly facebook: string; readonly instagram: string } = {
+  facebook: "https://www.facebook.com/profile.php?id=61597055066444",
+  instagram: "https://www.instagram.com/puffinride.is/",
 };
 
 /** A link on the About page, or in the website's footer: its text and the app's address. */
@@ -127,11 +142,31 @@ export interface SiteLink {
  * run the app. Who runs PuffinRide is said as the published Terms say it
  * (R30.2); nothing about money (R30.3).
  */
+/** Reykjavík to Akureyri by road, About's example (spec 34, 3.9). */
+const aboutCo2ExampleM = 390_000;
+
+/**
+ * The values About's CO2 paragraphs take, from the operator's grams per car
+ * km: the value itself and the example's whole kilograms.
+ */
+export function aboutCo2Values(
+  gramsPerCarKm: number,
+  locale: Locale,
+): { readonly grams: string; readonly kg: string } {
+  const grams = co2GramsFor(aboutCo2ExampleM, gramsPerCarKm);
+  return {
+    grams: formatCount(gramsPerCarKm, locale),
+    kg: formatCount(shownKilograms(grams) ?? 0, locale),
+  };
+}
+
 export const aboutPage: {
   readonly path: "/about";
   readonly title: MessageKey;
   readonly intro: readonly MessageKey[];
   readonly howItWorks: SiteLink;
+  /** What a shared ride saves (spec 34, 3.9): shown only while the operator's value is not 0. */
+  readonly co2: { readonly title: MessageKey; readonly paragraphs: readonly MessageKey[] };
   readonly documentsTitle: MessageKey;
   readonly documents: readonly SiteLink[];
   /** How to delete an account (spec 32, section 5), under the documents. */
@@ -147,6 +182,10 @@ export const aboutPage: {
   title: "about.title",
   intro: ["about.intro", "about.beta"],
   howItWorks: { label: "home.howItWorks", href: carpoolPage.path },
+  co2: {
+    title: "about.co2Title",
+    paragraphs: ["about.co2Method", "about.co2Example", "about.co2Source", "about.co2Limits"],
+  },
   documentsTitle: "about.documents",
   documents: [
     { label: "legal.terms", href: "/legal/terms" },
