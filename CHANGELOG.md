@@ -1641,6 +1641,13 @@ releases follow [Semantic Versioning](https://semver.org/).
   size and on the emulator, signed out, with a tidy status bar. The
   privacy register lists the App Store, Google Play and Google Play
   testing.
+- The ride on a map on a booked seat and on the ride I drive (spec 31,
+  3.8 and 3.12): a card headed "The route" with our map of Iceland, the
+  passenger's part solid and the rest of the ride dashed, or the whole way
+  for the driver, before the rows; on a laptop a band in the main column.
+  A booking in the API gains `route`: where its ride's stops are, with the
+  part as places among them; null where a stop of the part was taken off
+  the ride, and on a booking that ended before its ride.
 
 ### Fixed
 

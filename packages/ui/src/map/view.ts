@@ -10,16 +10,32 @@ export interface MapView {
 
 export const wholeMap: MapView = { x: 0, y: 0, width: mapSize.width, height: mapSize.height };
 
-/** The narrowest part shown, about 85 km, and the widest and tallest shapes. */
+/** The narrowest part shown, about 85 km. */
 const smallest = 160;
-const ratio = { tallest: 1, widest: 1.6 };
+
+/** The shapes a part shown can take, as its width over its height. */
+export interface MapShape {
+  readonly tallest: number;
+  readonly widest: number;
+}
+
+/** As a phone's column holds it: from a square to 1.6 times as wide as tall. */
+export const columnShape: MapShape = { tallest: 1, widest: 1.6 };
+
+/**
+ * As the main column of a wide page holds it, which is about twice as wide
+ * as a phone's: a band, so the map is not taller than the window (spec 31,
+ * 3.8).
+ */
+export const wideShape: MapShape = { tallest: 1.8, widest: 2.4 };
 
 /**
  * The part of the map that holds the points with room around them: at least
- * a region wide, never a thin strip, and never off the map. The map does not
- * zoom (ADR 0024); this only chooses what one drawing shows.
+ * a region wide, never a thin strip, never off the map, and of the `shape`
+ * asked for. The map does not zoom (ADR 0024); this only chooses what one
+ * drawing shows.
  */
-export function viewFor(points: readonly MapXY[]): MapView {
+export function viewFor(points: readonly MapXY[], shape: MapShape = columnShape): MapView {
   if (points.length === 0) return wholeMap;
   const xs = points.map((point) => point.x);
   const ys = points.map((point) => point.y);
@@ -29,10 +45,16 @@ export function viewFor(points: readonly MapXY[]): MapView {
   const spanY = Math.max(...ys) - top;
   const room = Math.max(spanX, spanY) * 0.15 + 20;
   let width = Math.max(spanX + 2 * room, smallest);
-  let height = Math.max(spanY + 2 * room, smallest / ratio.widest);
-  if (width / height > ratio.widest) height = width / ratio.widest;
-  if (width / height < ratio.tallest) width = height * ratio.tallest;
-  if (width >= mapSize.width * 0.8 || height >= mapSize.height * 0.8) return wholeMap;
+  let height = Math.max(spanY + 2 * room, smallest / shape.widest);
+  if (width / height > shape.widest) height = width / shape.widest;
+  if (width / height < shape.tallest) width = height * shape.tallest;
+  if (width >= mapSize.width * 0.8) {
+    // Nearly as wide as the map: as wide as it, and as tall as the points
+    // and the shape need. A column's shape then needs all of the map.
+    width = mapSize.width;
+    height = Math.max(height, width / shape.widest);
+  }
+  if (height >= mapSize.height * 0.8) return wholeMap;
   const clamp = (start: number, size: number, limit: number) =>
     Math.min(Math.max(start, 0), limit - size);
   return {

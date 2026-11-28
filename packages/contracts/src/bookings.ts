@@ -14,7 +14,11 @@ import { z } from "zod";
 import { co2FigureSchema } from "./co2.ts";
 import { cancellationTermsSchema, moneySchema, timestampSchema } from "./common.ts";
 import { accountSuspendedResponse, errorResponseSchema } from "./errors.ts";
-import { localisedTextSchema, meetingPointSummarySchema } from "./meeting-points.ts";
+import {
+  localisedTextSchema,
+  meetingPointSummarySchema,
+  positionSchema,
+} from "./meeting-points.ts";
 import { bookingReviewSchema } from "./reviews.ts";
 import {
   peopleColourSchema,
@@ -86,6 +90,21 @@ export const bookingSchema = z.object({
   trip: z.object({ id: z.uuid(), bookingMode: z.enum(bookingModes) }),
   board: bookingStopSchema,
   alight: bookingStopSchema,
+  /**
+   * The trip on a map (spec 31, 3.8): where each of its stops is, in order,
+   * as the trip runs now, with the passenger's part as places in that list.
+   * Null where a stop of the part was removed since (spec 6, 3.2), on a
+   * booking that ended before its ride (cancelled, declined or expired),
+   * and from a server older than this field.
+   */
+  route: z
+    .object({
+      stops: z.array(positionSchema).min(2),
+      board: z.int().nonnegative(),
+      alight: z.int().positive(),
+    })
+    .nullable()
+    .default(null),
   seats: z.int().positive(),
   /** The price snapshot for every seat (rule P1, R5.3). */
   total: moneySchema,
