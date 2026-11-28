@@ -1614,6 +1614,15 @@ releases follow [Semantic Versioning](https://semver.org/).
   stretch. Each ride in `GET /v1/me/trips` says who asks in the request
   that closes first (`firstRequest`: the first name, the seats and the two
   stops' names), for "Dóra asks for 1 seat".
+- Google is told who we are (spec 23, 3.6, item 8): the front page's
+  structured data names the site and PuffinRide as an organization, also
+  written "Puffin Ride", with its logo, what it is, the email address that
+  receives mail and our Facebook and Instagram pages (`sameAs`). Carpool in
+  Iceland's questions start with "What is PuffinRide?", one paragraph an
+  answer can quote. The Facebook and Instagram addresses are now
+  `socialProfiles` in `@shareride/i18n`, for the app and the server.
+- `marketing/search/`: Martin's Search Console steps for our name, and
+  honest places to be mentioned and linked from.
 - The iPhone app offers no Google sign-in until Sign in with Apple comes
   (spec 32, 3.3; R32.5), as Apple's guideline 4.8 asks: the domain's
   `providersOffered` leaves Google out on iOS unless Apple is on too. Step 1

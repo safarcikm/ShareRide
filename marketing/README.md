@@ -10,6 +10,7 @@ puffinride.is today.
 | ------ | ---- | ---- |
 | `launch-ads/` | Facebook and Instagram ads (square, feed, story) in Icelandic and English, the Facebook cover and an A5 flyer with a QR code. Texts and tagged links in [ad-texts.md](launch-ads/ad-texts.md) | 2026-11-22 |
 | `social-pages/` | The Facebook Page and Instagram profile kit: profile picture, highlight covers, the first seven posts, a welcome story, a 15-second reel (MP4), and the texts (names, bios, captions, hashtags, alt text, a four-week plan, Messenger replies and the setup checklist) in [texts.md](social-pages/texts.md) | 2026-11-25 |
+| `search/` | Being found on Google for our name and in AI answers: Martin's Search Console and Bing steps, and honest places to be mentioned and linked from, in [README.md](search/README.md) | 2026-11-28 |
 
 ## Drawing them again
 

@@ -11,6 +11,7 @@ import {
   locales,
   pageText,
   pickLocale,
+  socialProfiles,
   type Locale,
   type MessageKey,
   type PublicPage,
@@ -245,8 +246,9 @@ export interface PageHead {
   /** The page's text for search engines that do not run the app, where it has one (3.9). */
   readonly noscript: string | null;
   /**
-   * On the front page, the site's name for Google, which shows it above a
-   * result (3.6, item 7): WebSite structured data, unmarked, so the app keeps it.
+   * On the front page, who we are for Google (3.6, items 7 and 8): the
+   * site's name, which it shows above a result, and PuffinRide with its
+   * pages elsewhere, as structured data, unmarked, so the app keeps it.
    */
   readonly website: string | null;
 }
@@ -347,22 +349,48 @@ export function pageHead(
       : request.path === aboutPage.path
         ? aboutText(t, address)
         : null;
-  const website =
-    origin !== null && request.path === "/" ? websiteData(t("app.name"), `${origin}/`) : null;
+  const website = origin !== null && request.path === "/" ? siteData(t, origin) : null;
   return { locale, fromBrowser: named === null, title, tags: tags.join(""), noscript, website };
 }
 
+/** How people also write our name, with a space (3.6, item 8). */
+const alternateName = "Puffin Ride";
+
 /**
- * The site's name as Google reads it from the home page (3.6, item 7), so a
- * result shows "PuffinRide" rather than the address. `<` is written as
- * `\u003c`, so nothing in it can close the script.
+ * Who we are, as Google reads it from the home page (3.6, items 7 and 8):
+ * the site, with its name and the other way people write it, which Google
+ * shows above a result; and PuffinRide itself, with its logo, what it is in
+ * the About page's words, the address that receives mail, and our Facebook
+ * and Instagram pages, which tie those to us. `<` is written as `\u003c`,
+ * so nothing in it can close the script.
  */
-function websiteData(name: string, url: string): string {
+function siteData(t: Translate, origin: string): string {
+  const home = `${origin}/`;
+  const organization = `${home}#organization`;
   const data = JSON.stringify({
     "@context": "https://schema.org",
-    "@type": "WebSite",
-    name,
-    url,
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": `${home}#website`,
+        name: t("app.name"),
+        alternateName,
+        url: home,
+        inLanguage: locales,
+        publisher: { "@id": organization },
+      },
+      {
+        "@type": "Organization",
+        "@id": organization,
+        name: t("app.name"),
+        alternateName,
+        url: home,
+        logo: `${origin}/icon-192.png`,
+        description: t("about.intro"),
+        email: aboutPage.email,
+        sameAs: [socialProfiles.facebook, socialProfiles.instagram],
+      },
+    ],
   }).replaceAll("<", "\\u003c");
   return `<script type="application/ld+json">${data}</script>`;
 }

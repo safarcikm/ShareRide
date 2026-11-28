@@ -325,6 +325,7 @@ describe("the page's head (spec 23, 3.6)", () => {
     expect(noscript).toContain("<h1>Samferða um Ísland</h1>");
     expect(noscript).toContain("<h2>Svona virkar þetta</h2>");
     expect(noscript).toContain("<h3>Er PuffinRide leigubíll?</h3>");
+    expect(noscript).toContain("<h3>Hvað er PuffinRide?</h3>");
     expect(noscript).toContain("<h3>Hvað þýðir að vera samferða?</h3>");
     // Its links keep the language the address asked for.
     expect(noscript).toContain('<a href="/meeting-points?lang=is">Skoða mótsstaði</a>');
@@ -374,20 +375,54 @@ describe("the page's head (spec 23, 3.6)", () => {
     }
   });
 
-  it("names the site PuffinRide for Google on the front page, which the app keeps (3.6, item 7)", () => {
-    const website =
-      '<script type="application/ld+json">' +
-      `{"@context":"https://schema.org","@type":"WebSite","name":"PuffinRide","url":"${site}/"}` +
-      "</script>";
-    for (const lang of [null, "is", "en"]) {
-      const page = fillPage(
-        exportedPage,
-        pageHead({ path: "/", lang, acceptLanguage: null }, production),
+  it("tells Google on the front page who we are, which the app keeps (3.6, items 7 and 8)", () => {
+    const siteData = (page: string): unknown => {
+      const found = /<script type="application\/ld\+json">(.*?)<\/script>/.exec(page);
+      return found?.[1] === undefined ? null : JSON.parse(found[1]);
+    };
+    const expected = (description: string) => ({
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebSite",
+          "@id": `${site}/#website`,
+          name: "PuffinRide",
+          alternateName: "Puffin Ride",
+          url: `${site}/`,
+          inLanguage: ["is", "en"],
+          publisher: { "@id": `${site}/#organization` },
+        },
+        {
+          "@type": "Organization",
+          "@id": `${site}/#organization`,
+          name: "PuffinRide",
+          alternateName: "Puffin Ride",
+          url: `${site}/`,
+          logo: `${site}/icon-192.png`,
+          description,
+          email: "admin@puffinride.is",
+          sameAs: [
+            "https://www.facebook.com/profile.php?id=61597055066444",
+            "https://www.instagram.com/puffinride.is/",
+          ],
+        },
+      ],
+    });
+    const front = (lang: string | null) =>
+      fillPage(exportedPage, pageHead({ path: "/", lang, acceptLanguage: null }, production));
+    // In the page's language: English when nothing names one.
+    for (const lang of [null, "en"]) {
+      expect(siteData(front(lang)), String(lang)).toEqual(
+        expected(
+          "PuffinRide is carpooling across Iceland. Drivers who are making a trip anyway offer the empty seats in their car, and passengers book a seat for the whole way or part of it, from one meeting point to another.",
+        ),
       );
-      expect(page, String(lang)).toContain(website);
     }
+    expect(siteData(front("is"))).toEqual(expected(createTranslator("is")("about.intro")));
+    // Unmarked, so the app's head keeps it.
+    expect(front("en")).toContain('<script type="application/ld+json">{');
     // Only the front page: Google reads a site's name from its home page.
-    for (const path of ["/meeting-points", "/carpool-iceland", "/legal/terms"]) {
+    for (const path of ["/meeting-points", "/carpool-iceland", "/about", "/legal/terms"]) {
       const page = fillPage(
         exportedPage,
         pageHead({ path, lang: null, acceptLanguage: null }, production),
