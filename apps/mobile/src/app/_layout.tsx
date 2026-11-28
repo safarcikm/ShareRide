@@ -25,9 +25,11 @@ import { ProviderLinkNotice } from "@/sign-in/provider-link-notice";
 import { useAppFonts } from "@/theme/fonts";
 import { TopBar } from "@/navigation/top-bar";
 import { installFocusRing } from "@/theme/focus-ring";
+import { installMotion } from "@/theme/motion-sheet";
 
 startErrorReporting();
 installFocusRing();
+installMotion();
 
 export default function RootLayout() {
   return (
@@ -106,8 +108,6 @@ function Navigation() {
       <Stack.Screen name="cookies" />
       <Stack.Screen name="meeting-points/index" />
       <Stack.Screen name="meeting-points/[id]/index" />
-      {/* Signed out, it asks to sign in first. */}
-      <Stack.Screen name="meeting-points/[id]/problem" />
       <Stack.Screen name="places/[id]" />
       <Stack.Screen name="rides/index" />
       <Stack.Screen name="search/index" />

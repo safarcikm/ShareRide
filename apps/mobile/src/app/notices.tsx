@@ -17,8 +17,9 @@ import { usePalette } from "@/theme/use-palette";
 /**
  * Notices from ShareRide (spec 9, 3.4.4; milestone 9 decision 1), in
  * Profile and where a notice's push opens: what ShareRide did about me and
- * why, the latest first, each with its appeal. Open while suspended. The
- * title is at the left, with what the page is under it (spec 31, 3.19).
+ * why, the latest first, each with its appeal. Open while suspended, and
+ * while the account waits to be deleted (A59). The title is at the left,
+ * with what the page is under it (spec 31, 3.19).
  * One appeal is written at a time, so the page never has two main buttons
  * (R31.1).
  */

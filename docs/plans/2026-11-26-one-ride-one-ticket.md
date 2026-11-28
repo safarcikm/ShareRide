@@ -1612,7 +1612,9 @@ and item 16, where spec 31 becomes Built and says what is left.
     lost, and a top too tall is drawn in the bar for one frame before
     it is measured; on a window under 400 high the two bars still take
     about 150 (item 9; kept, PR 12b: a conversation's field stays under
-    its messages at any height). To try on phones, in the apps: the keyboard
+    its messages at any height). To try on phones, in the apps (closed
+    on Martin's word of 2026-11-27; spec 31, 3.22, says what he was
+    asked and what stays unseen): the keyboard
     (Android makes the screen shorter, which may move the top into the
     conversation while writing; on an iPhone the messages keep about
     100 over it); the strip under a conversation that is loading or
@@ -1646,7 +1648,9 @@ and item 16, where spec 31 becomes Built and says what is left.
     languages are each a stop for Tab, with no arrow keys between them;
     and `notices`, `report`, the two `block` pages and `carpool-iceland`
     are in none of the root layout's lists, so the first four are open to
-    an account that waits to be deleted. **Left from PR 11b:** the page
+    an account that waits to be deleted (done after the plan, A59:
+    `report` and the two `block` pages close, `notices` stays open, and
+    a test asks of every page which list it is in). **Left from PR 11b:** the page
     an email's link opens (`verify-email.tsx`) keeps three centred
     titles; My cars lists its cars in a card of names, with no pictures
     and no `ActionRows`; Blocked people keeps an outlined "Unblock" on
@@ -2124,7 +2128,10 @@ where a person sees it):
   3.21); whether Notices, Report and the two block pages should close
   for an account that waits to be deleted (item 15), which is a
   question of spec 9 and spec 11 and not of the look: Q31 in
-  [open questions](../strategy/open-questions.md).
+  [open questions](../strategy/open-questions.md), answered after the
+  plan as A59 (Martin, 2026-11-27): Report and the two block pages
+  close, Notices stays open; and "What's wrong here?" for a meeting
+  point, a fifth such page found when it was built, closes too.
 
 As built, PR 12c, the second of its two (spec 31, 3.22, says the same
 where a person sees it):
@@ -2179,11 +2186,14 @@ migration and no new setting went with it. The closing pull request
 (PR 12c, its second) came after, and goes out with the next release.
 
 Martin's steps: walk a booking as a passenger and a ride as a driver on
-his phone, read the Icelandic texts of section 8, which are a
-non-native's, and listen to the screens with a screen reader. Still his
-to decide: Q31. The legal texts, which named "Settings", have a new
-version each, written on his word of 2026-11-27: the Terms' version 3 and
-the Privacy Policy's version 4 name the pages in Profile. They are on
+his phone, and read the Icelandic texts of section 8, which are a
+non-native's. A listen on a phone with a screen reader and typing in a
+conversation are closed on his word of 2026-11-27 ("listen is alright,
+mark resolved"; spec 31, 3.22, says what he was asked and what stays
+unheard), and Q31 is answered as recommended that day (A59). The legal
+texts, which named "Settings", have a new version each, written on his
+word of 2026-11-27: the Terms' version 3 and the Privacy Policy's
+version 4 name the pages in Profile. They are on
 puffinride.is with the release after; then Martin sends an announcement
 in the console that says so, as the Terms promise for a smaller change
 (16.1; [runbook](../operations/production.md#change-a-legal-text)).

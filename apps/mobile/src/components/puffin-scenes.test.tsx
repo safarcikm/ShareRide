@@ -1,9 +1,13 @@
 import { render, screen } from "@testing-library/react-native";
+import { StyleSheet } from "react-native";
+import { onWebsite } from "@/lib/on-website";
 import { icelandScene, people, puffin, puffinCar } from "@/theme/tokens";
 import { IcelandScene, PuffinByPin, PuffinsInCar } from "./puffin-scenes";
 
 // Spec 15, section 5.3, "Puffin scenes": drawings around the screens, hidden
 // from screen readers, so these tests look at what they draw.
+
+jest.mock("@/lib/on-website", () => ({ onWebsite: jest.fn(() => false) }));
 
 /** The colour scheme the drawings see; light unless a test says otherwise. */
 let mockScheme: "light" | "dark" = "light";
@@ -75,6 +79,27 @@ describe("two puffins in a round little car", () => {
   it("drives off with lines behind it when moving", async () => {
     await render(<PuffinsInCar width={200} moving />);
     expect(parts("moving-lines")).toHaveLength(1);
+  });
+
+  it("on the website, arrives from as far left as it is told (spec 33, 3.2)", async () => {
+    (onWebsite as jest.Mock).mockReturnValueOnce(true);
+    await render(<PuffinsInCar width={170} arriveFrom={-300} />);
+    expect(part("puffins-in-car")).toHaveProp("dataSet", { motion: "arrive" });
+    expect(StyleSheet.flatten(part("puffins-in-car").props.style as object)).toMatchObject({
+      "--from": "-300px",
+    });
+  });
+
+  it("stands still when not told to arrive, and in the phone apps", async () => {
+    await render(
+      <>
+        <PuffinsInCar width={170} />
+        <PuffinsInCar width={170} arriveFrom={-300} />
+      </>,
+    );
+    for (const car of parts("puffins-in-car")) {
+      expect(car.props.dataSet).toBeUndefined();
+    }
   });
 
   it("is only a picture: hidden from screen readers", async () => {

@@ -1,9 +1,10 @@
 import { act, fireEvent, screen, waitFor, within } from "expo-router/testing-library";
-import { AccessibilityInfo, BackHandler, Dimensions } from "react-native";
+import { AccessibilityInfo, BackHandler, Dimensions, StyleSheet } from "react-native";
 import { getLocales } from "expo-localization";
 import type { Booking, DriverReadiness, MyTrip } from "@shareride/contracts";
 import { readAppData, writeAppData } from "@/lib/app-data";
 import { now } from "@/lib/clock";
+import { onWebsite } from "@/lib/on-website";
 import { completeMe, renderApp } from "@/testing/app";
 import {
   bookingApi,
@@ -28,6 +29,8 @@ import {
   tripDetailsApi,
 } from "@/testing/search";
 import { blonduos, borgarnes, tripsApi } from "@/testing/trips";
+import { forgetArrival } from "@/theme/motion";
+import { whenArrived } from "@/theme/motion-sheet";
 import { bsi, hof, kef, meetingPoints } from "@/testing/meeting-points";
 import {
   colors,
@@ -52,6 +55,13 @@ jest.mock("@/lib/preferences", () => ({
 jest.mock("@/lib/app-data", () => ({
   readAppData: jest.fn(() => Promise.resolve(null)),
   writeAppData: jest.fn(() => Promise.resolve()),
+}));
+// The apps unless a test is the website (spec 33: the car arrives there only).
+jest.mock("@/lib/on-website", () => ({ onWebsite: jest.fn(() => false) }));
+// The car arrives until the page says the driver's hop has ended.
+jest.mock("@/theme/motion-sheet", () => ({
+  installMotion: jest.fn(),
+  whenArrived: jest.fn(() => () => undefined),
 }));
 // Saturday 14 November 2026, noon in Iceland; a test may move the clock on.
 jest.mock("@/lib/clock", () => ({ now: jest.fn(() => new Date("2026-11-14T12:00:00Z")) }));
@@ -844,6 +854,72 @@ describe("Find, signed in (spec 31, 3.5)", () => {
     await fireEvent.press(screen.getByRole("button", { name: "Try again" }));
     expect(await screen.findByRole("header", { name: "Your next ride" })).toBeVisible();
     expect(screen.queryByText("Your next ride could not be loaded.")).toBeNull();
+  });
+});
+
+describe("The car arrives on the website (spec 33, 3.2)", () => {
+  const car = () => screen.getByTestId("puffins-in-car", { includeHiddenElements: true });
+  const styleOf = (node: ReturnType<typeof car>) =>
+    StyleSheet.flatten(node.props.style as object) as Record<string, unknown>;
+
+  beforeEach(() => {
+    forgetArrival();
+    (onWebsite as jest.Mock).mockReturnValue(true);
+  });
+
+  afterEach(async () => {
+    (onWebsite as jest.Mock).mockReturnValue(false);
+    await act(() => {
+      Dimensions.set({ window: { width: 750, height: 1334, scale: 2, fontScale: 2 } });
+    });
+  });
+
+  it("drives in from beyond the left edge the first time Find shows", async () => {
+    await openFrontPage();
+    await screen.findByRole("header", { name: "Share your ride" });
+    const { width } = Dimensions.get("window");
+    expect(car()).toHaveProp("dataSet", { motion: "arrive" });
+    expect(styleOf(car())).toMatchObject({
+      "--from": `${String(-(width + sizes.sceneCar) / 2 - spacing.sm)}px`,
+    });
+    // Once the page has shown it to its end, the car simply stands there.
+    const [arrived] = (whenArrived as jest.Mock<() => void, [() => void]>).mock.calls.at(-1) ?? [];
+    await act(() => {
+      arrived?.();
+    });
+    expect(car().props.dataSet).toBeUndefined();
+    expect(styleOf(car())).not.toHaveProperty("--from");
+  });
+
+  it("on a laptop, comes out of its own room beside the title, never under the words", async () => {
+    Dimensions.set({ window: { width: 1280, height: 800, scale: 1, fontScale: 1 } });
+    await openFrontPage();
+    await screen.findByRole("header", { name: "Share your ride" });
+    const line = screen.getByTestId("title-line");
+    // The room is the strip the title keeps free for the car (spec 31, 3.16).
+    const room = within(line).getByTestId("car-room", { includeHiddenElements: true });
+    expect(room).toHaveProp("dataSet", { motion: "arrive-room" });
+    expect(room).toHaveStyle({
+      position: "absolute",
+      right: 0,
+      width: spacing.xxl * 2 + sizes.sceneCarWide + spacing.lg,
+      pointerEvents: "none",
+    });
+    expect(line).toHaveStyle({ paddingRight: spacing.xxl * 2 + sizes.sceneCarWide + spacing.lg });
+    expect(within(room).getByTestId("car-on-hills", { includeHiddenElements: true })).toHaveStyle({
+      position: "absolute",
+      right: spacing.xxl * 2,
+    });
+    expect(styleOf(car())).toMatchObject({
+      "--from": `${String(-(sizes.sceneCarWide + spacing.lg))}px`,
+    });
+  });
+
+  it("stands still in the phone apps, until their motion comes (3.11)", async () => {
+    (onWebsite as jest.Mock).mockReturnValue(false);
+    await openFrontPage();
+    await screen.findByRole("header", { name: "Share your ride" });
+    expect(car().props.dataSet).toBeUndefined();
   });
 });
 

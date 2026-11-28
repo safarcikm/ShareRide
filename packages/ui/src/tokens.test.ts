@@ -6,6 +6,7 @@ import {
   icelandScene,
   maxContentWidth,
   carDrawing,
+  motion,
   pageMaxWidth,
   people,
   puffin,
@@ -150,6 +151,43 @@ describe("tokens", () => {
   it("sets weights through the font face only", () => {
     for (const style of Object.values(typeScale)) {
       expect(style).not.toHaveProperty("fontWeight");
+    }
+  });
+});
+
+describe("motion (spec 33, section 6)", () => {
+  const { arrival } = motion;
+
+  it("ends the car's arrival by the time a celebration takes", () => {
+    expect(arrival.drive).toBeLessThanOrEqual(arrival.settle);
+    for (const at of arrival.hops) {
+      expect(at + arrival.hop).toBeLessThanOrEqual(motion.celebrate);
+    }
+    expect(arrival.settle).toBeLessThanOrEqual(motion.celebrate);
+  });
+
+  it("hops once the car has stopped, the passenger first", () => {
+    const [you, driver] = arrival.hops;
+    expect(you).toBeGreaterThan(arrival.drive);
+    expect(driver).toBeGreaterThan(you);
+  });
+
+  it("moves the drawing only a little: a few points, a few degrees", () => {
+    for (const bump of arrival.bumps) expect(bump).toBeLessThanOrEqual(2);
+    for (const dip of arrival.dip) expect(Math.abs(dip)).toBeLessThanOrEqual(3);
+    expect(arrival.hopHeight).toBeLessThanOrEqual(6);
+  });
+
+  it("moves nothing on its own for more than 5 seconds (R33.3)", () => {
+    expect(motion.celebrate).toBeLessThan(5000);
+  });
+
+  it("lets what arrives leave at once, never starting slowly (no ease-in)", () => {
+    for (const curve of [motion.curves.out, motion.curves.brake, motion.curves.rise]) {
+      const handle = /^cubic-bezier\(([\d.]+), ([\d.]+),/.exec(curve);
+      expect(handle).not.toBeNull();
+      // The first handle rises at least as fast as it goes along.
+      expect(Number(handle?.[2])).toBeGreaterThanOrEqual(Number(handle?.[1]));
     }
   });
 });
