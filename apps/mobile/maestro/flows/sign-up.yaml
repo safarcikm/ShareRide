@@ -32,21 +32,27 @@ onFlowStart:
           file: ../scripts/latest-code.js
           env:
             TO: ${output.email}
-- tapOn:
-    text: "6-digit code"
-    index: 1
 # One digit at a time, as a person types: the whole code at once on the
 # iPhone now and then outran the field, which showed six digits but did not
-# send them (a Build the apps run, 2026-11-27).
-- evalScript: ${output.digit = 0}
-- repeat:
-    times: ${output.code.length}
+# send them (a Build the apps run, 2026-11-27). A busy simulator can also
+# drop a digit (2026-11-28: five of six in the field), so the code is typed
+# again, into an emptied field, until the next step shows.
+- retry:
+    maxRetries: 2
     commands:
-      - inputText: ${output.code.charAt(output.digit)}
-      - evalScript: ${output.digit = output.digit + 1}
-- extendedWaitUntil:
-    visible: "Add your phone number"
-    timeout: 20000
+      - tapOn:
+          text: "6-digit code"
+          index: 1
+      - eraseText: 10
+      - evalScript: ${output.digit = 0}
+      - repeat:
+          times: ${output.code.length}
+          commands:
+            - inputText: ${output.code.charAt(output.digit)}
+            - evalScript: ${output.digit = output.digit + 1}
+      - extendedWaitUntil:
+          visible: "Add your phone number"
+          timeout: 20000
 - tapOn:
     text: "Mobile number"
     index: 1
@@ -66,20 +72,24 @@ onFlowStart:
           file: ../scripts/latest-code.js
           env:
             TO: ${output.phoneE164}
-- tapOn:
-    text: "6-digit code"
-    index: 1
-# One digit at a time, as above.
-- evalScript: ${output.digit = 0}
-- repeat:
-    times: ${output.code.length}
+# One digit at a time, and again into an emptied field, as above. The
+# step's title can be scrolled out of sight on Android; its fields are not.
+- retry:
+    maxRetries: 2
     commands:
-      - inputText: ${output.code.charAt(output.digit)}
-      - evalScript: ${output.digit = output.digit + 1}
-# The step's title can be scrolled out of sight on Android; its fields are not.
-- extendedWaitUntil:
-    visible: "Languages you speak"
-    timeout: 20000
+      - tapOn:
+          text: "6-digit code"
+          index: 1
+      - eraseText: 10
+      - evalScript: ${output.digit = 0}
+      - repeat:
+          times: ${output.code.length}
+          commands:
+            - inputText: ${output.code.charAt(output.digit)}
+            - evalScript: ${output.digit = output.digit + 1}
+      - extendedWaitUntil:
+          visible: "Languages you speak"
+          timeout: 20000
 - tapOn:
     text: "First name"
     index: 1

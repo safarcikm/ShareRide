@@ -14,7 +14,7 @@ review.
 | Application and API | Use cases and HTTP endpoints against a real database | Vitest; PostgreSQL with PostGIS in Docker (Testcontainers or a CI service container) | Every PR |
 | Contract | API matches the OpenAPI document; adapters match provider sandboxes | Schema checks in CI; provider sandbox tests on a schedule | Every PR; nightly for sandboxes |
 | Component | Screens and components render and behave correctly | React Native Testing Library with jest-expo | Every PR |
-| End-to-end, mobile | Critical journeys on iOS and Android | Maestro (`apps/mobile/maestro`), on an Android emulator and an iPhone simulator in GitHub Actions (`phone-apps.yml`) | Every PR to `main` touching the app, the API or the packages |
+| End-to-end, mobile | Critical journeys on iOS and Android | Maestro (`apps/mobile/maestro`), on an Android emulator and an iPhone simulator in GitHub Actions (`phone-apps.yml`) | Every PR to `main` touching the app, the API or the packages; the store screenshots (`maestro/store`) by hand |
 | End-to-end, web | Critical journeys on the web build | Playwright | Every PR touching the app |
 | Accessibility | Labels, contrast, focus order | Automated checks (axe on web), manual screen-reader passes before releases | Every PR (automated); each release (manual) |
 | Load | Search and booking under concurrent use | k6 against staging | Before beta and launch; after major changes |

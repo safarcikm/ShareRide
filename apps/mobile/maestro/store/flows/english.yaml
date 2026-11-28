@@ -1,0 +1,20 @@
+# The store's screens in English: the App Store's page and Google Play's
+# English one.
+appId: ${APP_ID}
+name: Store screens in English
+onFlowStart:
+  - runFlow: ../../helpers/close-stuck-box.yaml
+---
+- launchApp:
+    clearState: true
+- runFlow:
+    file: ../screens.yaml
+    env:
+      LANG: en
+      FIND_TITLE: "Share your ride"
+      FROM_FIELD: "From: .*"
+      TO_FIELD: "To: .*"
+      FIND_BUTTON: "Find a ride"
+      POINTS: "Meeting points"
+      HOW: "How carpooling works"
+      CARPOOL_TITLE: "Carpool in Iceland"

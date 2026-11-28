@@ -221,16 +221,25 @@ not secret), `docs/operations/production.md`.
 
 ## PR 8: the store kit and the deletion page (`feat(stores)`)
 
-- [ ] `/delete-account` on the website (spec 32, section 5), in the
-  sitemap, linked from About; test first in `about.test.tsx`'s style and
-  the server's `search-engines.test.ts`.
-- [ ] `marketing/stores/`: the store texts (Google Play in Icelandic and
+- [x] `/delete-account` on the website (spec 32, section 5), in the
+  sitemap, linked from About; test first in `about.test.tsx`'s style
+  (`delete-account-page.test.tsx`) and the server's
+  `search-engines.test.ts`. The steps name Profile, Privacy and your data
+  and Delete my account with the app's own texts.
+- [x] `marketing/stores/`: the store texts (Google Play in Icelandic and
   English, the App Store in English), the screenshots from PR 2's runs at
   each store's sizes, the Google Play feature graphic and icon (script
   committed), the privacy label and data safety answers from the privacy
-  register, the age rating answers, the reviewers' notes.
-- [ ] Privacy register: Google Play, the App Store and testers' details;
-  a new privacy policy version (ADR 0043) before testers outside the team.
+  register, the age rating answers, the reviewers' notes. The screenshots
+  come from journeys of their own, `apps/mobile/maestro/store`, which
+  Phone apps runs by hand with "Which journeys" set to `store`, on an iPhone
+  of the App Store's largest size, signed out, with a tidy status bar.
+- [x] Privacy register: Google Play, the App Store and testers' details
+  (Google Play testing joins TestFlight). The new privacy policy version
+  (ADR 0043) is #291, with the website redesign's new Terms: one Privacy
+  Policy version 4, which also carries the apps' paragraphs
+  (`marketing/stores/privacy-policy-v4-paragraphs.md`). Testers are
+  invited by email alone, as it says.
 
 ## Martin's steps, then releases
 

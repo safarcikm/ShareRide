@@ -44,6 +44,9 @@ const booking = (
   status: "completed",
   cancelledBy: null,
   countsOnReliability: false,
+  completedAt: null,
+  distanceM: 0,
+  co2Grams: null,
   ...more,
 });
 
@@ -295,6 +298,50 @@ describe("weekMetrics", () => {
     );
     expect(metrics.active_drivers.numerator).toBe(2);
     expect(metrics.active_passengers.numerator).toBe(2);
+  });
+
+  it("adds the car km and the CO2 saved by the bookings completed in the week (spec 34, 3.10)", () => {
+    const completed = at("2026-11-12T12:00:00Z");
+    const metrics = weekMetrics(
+      {
+        ...none,
+        bookings: [
+          booking("t1", "p1", { completedAt: completed, distanceM: 389_000, co2Grams: 58_350 }),
+          booking("t1", "p2", { completedAt: completed, distanceM: 245_000, co2Grams: 36_750 }),
+          // Completed the week after.
+          booking("t2", "p3", {
+            completedAt: at("2026-11-16T12:00:00Z"),
+            distanceM: 100_000,
+            co2Grams: 15_000,
+          }),
+          // Completed in the week, then found a no-show: no longer counts.
+          booking("t1", "p4", { status: "no_show", completedAt: completed, distanceM: 50_000 }),
+        ],
+      },
+      week,
+      now,
+    );
+    expect(metrics.car_km_saved).toEqual({ numerator: 634, denominator: null });
+    expect(metrics.co2_saved_grams).toEqual({ numerator: 95_100, denominator: null });
+  });
+
+  it("counts the kilometres of a completed booking without grams, but no grams", () => {
+    const metrics = weekMetrics(
+      {
+        ...none,
+        bookings: [
+          booking("t1", "p1", {
+            completedAt: at("2026-11-12T12:00:00Z"),
+            distanceM: 389_900,
+            co2Grams: null,
+          }),
+        ],
+      },
+      week,
+      now,
+    );
+    expect(metrics.car_km_saved.numerator).toBe(389);
+    expect(metrics.co2_saved_grams.numerator).toBe(0);
   });
 });
 

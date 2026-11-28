@@ -92,6 +92,15 @@ const answerIn = price("request_expiry", {
   max: 48,
 });
 
+const co2 = price("co2_grams_per_car_km", {
+  group: "co2",
+  unit: "g_per_km",
+  value: 150,
+  default: 150,
+  min: 0,
+  max: 300,
+});
+
 const changeOf = (more: Partial<AdminSettingChange> = {}): AdminSettingChange => ({
   version: 1,
   key: "beta_max_testers",
@@ -108,7 +117,7 @@ function start(path = "/admin/settings") {
   const api = createFakeApi();
   const state = {
     version: 1,
-    settings: [required, testers, rate, cost, seats, answerIn, freeUntil, period, shownFrom],
+    settings: [required, testers, rate, cost, seats, answerIn, freeUntil, period, shownFrom, co2],
     history: [changeOf()],
   };
   api.on(adminMeRoute, { status: 200, data: anna });
@@ -365,5 +374,16 @@ describe("the Settings page", () => {
       target: { value: "1" },
     });
     expect(from.getByText("Changes from 5 trips and bookings to 1 trip or booking.")).toBeTruthy();
+  });
+
+  it("shows the CO2 per car km in its own group, in grams per km, saying 0 hides the figures", async () => {
+    start();
+    expect(await screen.findByRole("heading", { name: "CO2", level: 2 })).toBeTruthy();
+    const factor = await card("CO2 per car km");
+    expect(factor.getByText("150 g per km")).toBeTruthy();
+    expect(factor.getByText("Default: 150 g per km. From 0 to 300.")).toBeTruthy();
+    expect(factor.getByText(/0 hides every figure/)).toBeTruthy();
+    fireEvent.click(factor.getByRole("button", { name: "Change CO2 per car km" }));
+    expect(factor.getByLabelText("New value, in g per km")).toBeTruthy();
   });
 });

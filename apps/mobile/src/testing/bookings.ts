@@ -55,6 +55,7 @@ export function northBooking(changes: Partial<Booking> = {}): Booking {
     },
     car: { make: "Toyota", model: "Yaris", colour: "white" },
     confirmed: null,
+    co2: null,
     changes: [],
     movedFar: false,
     cancellationRules: { freeUntilMinutes: 15, farMoveMinutes: 30 },

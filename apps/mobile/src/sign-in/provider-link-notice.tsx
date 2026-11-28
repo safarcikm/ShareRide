@@ -9,8 +9,9 @@ import { IconButton } from "@/components/icon-button";
 import { Notice } from "@/components/notice";
 import { TakesFocus } from "@/components/takes-focus";
 import { useLanguage } from "@/i18n/language";
-import { edges, maxContentWidth, radii, spacing } from "@/theme/tokens";
-import { usePalette } from "@/theme/use-palette";
+import { cardLift } from "@/theme/pressable";
+import { maxContentWidth, radii, spacing } from "@/theme/tokens";
+import { usePalette, useScheme } from "@/theme/use-palette";
 import { providerNames } from "./provider-window";
 
 /** What the phone step did with the Google or Apple account, in words. */
@@ -57,6 +58,7 @@ export function ProviderLinkNotice({ belowTopBar }: { readonly belowTopBar: bool
   const { t } = useLanguage();
   const session = useSession();
   const palette = usePalette();
+  const scheme = useScheme();
   const insets = useSafeAreaInsets();
   const news = useSyncExternalStore(session.subscribe, session.signInNews, session.signInNews);
   const link = news?.providerLink ?? null;
@@ -68,12 +70,7 @@ export function ProviderLinkNotice({ belowTopBar }: { readonly belowTopBar: bool
     <View style={[styles.layer, { top: (belowTopBar ? 0 : insets.top) + spacing.sm }]}>
       <View style={styles.width}>
         <TakesFocus>
-          <View
-            style={[
-              styles.card,
-              { backgroundColor: palette.surface, borderBottomColor: palette.edge },
-            ]}
-          >
+          <View style={[styles.card, { backgroundColor: palette.surface }, cardLift(scheme).face]}>
             <View style={styles.message}>
               <Notice message={text} kind="info" />
             </View>
@@ -107,8 +104,6 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     padding: spacing.sm,
     borderRadius: radii.card,
-    // A card's chunky edge (spec 15, section 5.2).
-    borderBottomWidth: edges.card,
   },
   message: { flex: 1 },
 });

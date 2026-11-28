@@ -119,6 +119,13 @@ export const bookings = pgTable(
      * `pay_in_person` switch is on. Older bookings were all paid in the app.
      */
     paymentMethod: text().notNull().default("in_app"),
+    /**
+     * The grams of CO2 one car not driven saves on this part, stored when
+     * the booking completed, at the setting in force then (spec 34, R34.2);
+     * null while it is not completed. No check ties it to the status, so a
+     * version from before it can still complete a booking during a deploy.
+     */
+    co2Grams: integer(),
     ...timestamps,
   },
   (table) => [
@@ -129,6 +136,7 @@ export const bookings = pgTable(
       sql`${table.seats} between 1 and ${sql.raw(String(defaultTripSettings.maxSeats))}`,
     ),
     check("bookings_price_check", sql`${table.totalPrice} >= 0`),
+    check("bookings_co2_grams_check", sql`${table.co2Grams} is null or ${table.co2Grams} >= 0`),
     check("bookings_currency_check", sql`${table.currency} = 'ISK'`),
     check(
       "bookings_message_check",

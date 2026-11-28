@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react-native";
 import { Plus } from "lucide-react-native";
 import { StyleSheet } from "react-native";
+import { edgeUnder } from "@/testing/lift";
 import { colors } from "@/theme/tokens";
 import { Button } from "./button";
 
@@ -9,11 +10,12 @@ const face = () => screen.getByTestId("button-face");
 describe("Button", () => {
   it("is a moss button with a darker edge", async () => {
     await render(<Button label="Continue" onPress={jest.fn()} />);
-    expect(screen.getByRole("button", { name: "Continue" })).toHaveStyle({
-      borderBottomWidth: 4,
-      borderBottomColor: colors.light.primaryEdge,
+    // The edge is a second face under it, 4 lower, with the room for it kept.
+    expect(screen.getByRole("button", { name: "Continue" })).toHaveStyle({ paddingBottom: 4 });
+    expect(face()).toHaveStyle({
+      backgroundColor: colors.light.primary,
+      ...edgeUnder(4, colors.light.primaryEdge),
     });
-    expect(face()).toHaveStyle({ backgroundColor: colors.light.primary });
     expect(screen.getByText("Continue")).toHaveStyle({
       color: colors.light.onPrimary,
       fontFamily: "Fredoka_600SemiBold",
@@ -23,10 +25,12 @@ describe("Button", () => {
   it("is a red button with a darker edge where it takes something away (spec 31, 3.19)", async () => {
     await render(<Button label="Cancel booking" variant="danger" onPress={jest.fn()} />);
     expect(screen.getByRole("button", { name: "Cancel booking" })).toHaveStyle({
-      borderBottomWidth: 4,
-      borderBottomColor: colors.light.errorEdge,
+      paddingBottom: 4,
     });
-    expect(face()).toHaveStyle({ backgroundColor: colors.light.error });
+    expect(face()).toHaveStyle({
+      backgroundColor: colors.light.error,
+      ...edgeUnder(4, colors.light.errorEdge),
+    });
     expect(screen.getByText("Cancel booking")).toHaveStyle({ color: colors.light.onError });
   });
 
@@ -78,7 +82,9 @@ describe("Button", () => {
     expect(screen.getByText("Continue")).toHaveStyle({ color: colors.light.textMuted });
     const outer = StyleSheet.flatten(screen.getByRole("button").props.style) as object;
     expect(outer).not.toHaveProperty("opacity");
-    expect(outer).toMatchObject({ borderBottomWidth: 0 });
+    // No edge, and no room for one.
+    expect(outer).not.toHaveProperty("paddingBottom");
+    expect(StyleSheet.flatten(face().props.style)).not.toHaveProperty("boxShadow");
   });
 
   it("grows with its text instead of a fixed height", async () => {

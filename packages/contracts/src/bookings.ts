@@ -11,6 +11,7 @@ import {
   noteMaxLength,
 } from "@shareride/domain";
 import { z } from "zod";
+import { co2FigureSchema } from "./co2.ts";
 import { cancellationTermsSchema, moneySchema, timestampSchema } from "./common.ts";
 import { accountSuspendedResponse, errorResponseSchema } from "./errors.ts";
 import {
@@ -275,6 +276,13 @@ export const bookingSchema = z.object({
    * as only completed bookings are reviewed (R8.8).
    */
   review: bookingReviewSchema.nullable(),
+  /**
+   * The CO2 one car not driven saves on the passenger's part (spec 34,
+   * 3.6): estimated while confirmed, the grams it kept once completed.
+   * Null in the driver's view, for a booking that does not count, while
+   * the operator's value is 0, and from an API that does not say.
+   */
+  co2: co2FigureSchema.nullable().default(null),
 });
 
 export type Booking = z.infer<typeof bookingSchema>;

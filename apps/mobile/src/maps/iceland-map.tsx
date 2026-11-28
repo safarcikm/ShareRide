@@ -8,7 +8,8 @@ import {
   View,
 } from "react-native";
 import Svg, { Circle, G, Polygon, Polyline } from "react-native-svg";
-import { controlOutline, edges, mapDrawing, radii } from "@/theme/tokens";
+import { cardLift } from "@/theme/pressable";
+import { mapDrawing, radii } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 import {
   alongRoads,
@@ -117,14 +118,7 @@ export function IcelandMap({
       accessibilityLabel={label}
       {...imageRole}
       testID="iceland-map"
-      style={[
-        styles.frame,
-        {
-          backgroundColor: mapDrawing[scheme].sea,
-          borderColor: palette.border,
-          borderBottomColor: palette.edge,
-        },
-      ]}
+      style={[styles.frame, { backgroundColor: mapDrawing[scheme].sea }, cardLift(scheme).face]}
     >
       <View
         testID="map-area"
@@ -362,7 +356,5 @@ const styles = StyleSheet.create({
   frame: {
     overflow: "hidden",
     borderRadius: radii.card,
-    borderWidth: controlOutline,
-    borderBottomWidth: edges.card,
   },
 });

@@ -22,16 +22,9 @@ import {
   type ScrollView,
 } from "react-native";
 import { useLanguage } from "@/i18n/language";
-import {
-  controlOutline,
-  edges,
-  iconSizes,
-  radii,
-  sizes,
-  spacing,
-  typography,
-} from "@/theme/tokens";
-import { usePalette } from "@/theme/use-palette";
+import { iconSizes, radii, sizes, spacing, typography } from "@/theme/tokens";
+import { cardLift } from "@/theme/pressable";
+import { usePalette, useScheme } from "@/theme/use-palette";
 import { Icon } from "./icon";
 import { pullMost, pullReady, pullTrigger, usePullOnWeb } from "./pull-gesture";
 
@@ -184,6 +177,7 @@ function createPullStore(): PullStore {
 function RefreshMark({ status, pull }: { readonly status: Status; readonly pull: PullStore }) {
   const { t } = useLanguage();
   const palette = usePalette();
+  const scheme = useScheme();
   const distance = useSyncExternalStore(pull.subscribe, pull.get, pull.get);
   const outcome =
     status.kind === "done" ? t(status.ok ? "refresh.updated" : "refresh.failed") : null;
@@ -193,11 +187,7 @@ function RefreshMark({ status, pull }: { readonly status: Status; readonly pull:
     }
   }, [outcome, status]);
 
-  const look = {
-    backgroundColor: palette.surface,
-    borderColor: palette.border,
-    borderBottomColor: palette.edge,
-  };
+  const look = [{ backgroundColor: palette.surface }, cardLift(scheme).face];
   let shown: ReactNode = null;
   let down = restingAt;
   if (status.kind === "done") {
@@ -262,8 +252,6 @@ const styles = StyleSheet.create({
     width: sizes.iconButton,
     height: sizes.iconButton,
     borderRadius: radii.pill,
-    borderWidth: controlOutline,
-    borderBottomWidth: edges.card,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -274,7 +262,5 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     paddingHorizontal: spacing.ms,
     borderRadius: radii.pill,
-    borderWidth: controlOutline,
-    borderBottomWidth: edges.card,
   },
 });

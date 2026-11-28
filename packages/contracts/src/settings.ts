@@ -74,6 +74,12 @@ export const configSchema = z.object({
    * every version, as from an API that does not say.
    */
   oldestAppVersion: z.string().refine(isAppVersion).nullable().default(null),
+  /**
+   * The grams of CO2 per car kilometre the CO2 figures count with (spec 34,
+   * 3.3), for About's method; 0 hides every figure, as from an API that
+   * does not say.
+   */
+  co2GramsPerCarKm: z.int().nonnegative().default(0),
 });
 
 export type Config = z.infer<typeof configSchema>;

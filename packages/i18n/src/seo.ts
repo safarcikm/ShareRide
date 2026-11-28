@@ -8,6 +8,7 @@ export type PublicPage =
   | { readonly kind: "find" }
   | { readonly kind: "carpool" }
   | { readonly kind: "about" }
+  | { readonly kind: "deleteAccount" }
   | { readonly kind: "meetingPoints" }
   | { readonly kind: "meetingPoint"; readonly name: string }
   | { readonly kind: "place"; readonly name: string };
@@ -35,6 +36,11 @@ export function pageText(t: Translate, page: PublicPage): PageText {
       return {
         title: t("seo.title", { page: t(aboutPage.title) }),
         description: t("seo.aboutDescription"),
+      };
+    case "deleteAccount":
+      return {
+        title: t("seo.title", { page: t(deleteAccountPage.title) }),
+        description: t("seo.deleteAccountDescription"),
       };
     case "meetingPoints":
       return {
@@ -128,6 +134,8 @@ export const aboutPage: {
   readonly howItWorks: SiteLink;
   readonly documentsTitle: MessageKey;
   readonly documents: readonly SiteLink[];
+  /** How to delete an account (spec 32, section 5), under the documents. */
+  readonly deleteAccount: SiteLink;
   readonly operatorTitle: MessageKey;
   readonly operator: MessageKey;
   readonly contactTitle: MessageKey;
@@ -146,9 +154,81 @@ export const aboutPage: {
     { label: "legal.privacy", href: "/legal/privacy" },
     { label: "cookies.title", href: "/cookies" },
   ],
+  deleteAccount: { label: "deleteAccount.link", href: "/delete-account" },
   operatorTitle: "about.operatorTitle",
   operator: "about.operator",
   contactTitle: "about.contactTitle",
   contact: "about.contact",
   email: "admin@puffinride.is",
 };
+
+/**
+ * The account deletion page (spec 32, section 5), at `/delete-account`:
+ * how to delete a PuffinRide account in the app or on the website, what is
+ * erased, what is kept and for how long (spec 11, 3.5, as the privacy
+ * register has it), and where to write. Google Play asks every app with
+ * accounts for such a page, open without the app. The screen shows it and
+ * the server writes it into the first answer's `<noscript>`, for search
+ * engines and Google's check, which do not run the app.
+ */
+export const deleteAccountPage: {
+  readonly path: "/delete-account";
+  readonly title: MessageKey;
+  readonly intro: MessageKey;
+  readonly howTitle: MessageKey;
+  readonly afterTitle: MessageKey;
+  readonly after: MessageKey;
+  readonly erasedTitle: MessageKey;
+  readonly erased: readonly MessageKey[];
+  readonly keptTitle: MessageKey;
+  readonly kept: readonly MessageKey[];
+  readonly helpTitle: MessageKey;
+  readonly help: MessageKey;
+  readonly privacyPolicy: SiteLink;
+  /** Where someone signed in deletes the account: Delete my account itself. */
+  readonly deleteHref: string;
+  readonly email: string;
+} = {
+  path: "/delete-account",
+  title: "deleteAccount.title",
+  intro: "deleteAccount.intro",
+  howTitle: "deleteAccount.howTitle",
+  afterTitle: "deleteAccount.afterTitle",
+  after: "deleteAccount.after",
+  erasedTitle: "deleteAccount.erasedTitle",
+  erased: [
+    "deleteAccount.erasedProfile",
+    "deleteAccount.erasedSignIn",
+    "deleteAccount.erasedRest",
+    "deleteAccount.erasedMessages",
+  ],
+  keptTitle: "deleteAccount.keptTitle",
+  kept: [
+    "deleteAccount.keptTrips",
+    "deleteAccount.keptReviews",
+    "deleteAccount.keptReports",
+    "deleteAccount.keptRequests",
+    "deleteAccount.keptSuspended",
+    "deleteAccount.keptLaw",
+    "deleteAccount.keptBackups",
+  ],
+  helpTitle: "deleteAccount.helpTitle",
+  help: "deleteAccount.help",
+  privacyPolicy: { label: "legal.readPrivacy", href: "/legal/privacy" },
+  deleteHref: "/settings/privacy/delete",
+  email: aboutPage.email,
+};
+
+/**
+ * The steps to delete an account, naming Profile, Privacy and your data
+ * and Delete my account as the app does, so the page follows the app when
+ * those names change.
+ */
+export function deleteAccountSteps(t: Translate): string[] {
+  return [
+    t("deleteAccount.step1"),
+    t("deleteAccount.step2", { profile: t("nav.profile"), privacy: t("settings.privacy") }),
+    t("deleteAccount.step3", { delete: t("privacy.delete") }),
+    t("deleteAccount.step4"),
+  ];
+}

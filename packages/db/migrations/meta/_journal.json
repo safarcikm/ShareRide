@@ -456,6 +456,20 @@
       "when": 1795652792769,
       "tag": "0064_quiet_passkey_setup",
       "breakpoints": true
+    },
+    {
+      "idx": 65,
+      "version": "7",
+      "when": 1795828988870,
+      "tag": "0065_co2_saved",
+      "breakpoints": true
+    },
+    {
+      "idx": 66,
+      "version": "7",
+      "when": 1795829771572,
+      "tag": "0066_weekly_co2_figures",
+      "breakpoints": true
     }
   ]
 }

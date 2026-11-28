@@ -69,7 +69,8 @@ a {
 }
 
 /* Buttons (spec 15, 5.1): verb-first labels, at least a touch target high,
-   with the chunky bottom edge. */
+   with the chunky edge: a second face under the button, as thick at the
+   corners as in the middle, and the room for it under the button. */
 .button-primary,
 .button-secondary,
 .button-quiet,
@@ -84,14 +85,16 @@ a {
 
 .button-primary {
   background: var(--color-primary);
-  border-bottom: var(--edge-button-primary) solid var(--color-primary-edge);
+  box-shadow: 0 var(--edge-button-primary) 0 var(--color-primary-edge);
+  margin-bottom: var(--edge-button-primary);
   color: var(--color-on-primary);
 }
 
 .button-secondary {
   background: var(--color-surface);
   border: var(--control-outline) solid var(--color-control);
-  border-bottom: var(--edge-button-secondary) solid var(--color-edge);
+  box-shadow: 0 var(--edge-button-secondary) 0 var(--color-edge);
+  margin-bottom: var(--edge-button-secondary);
   color: var(--color-text);
 }
 
@@ -112,7 +115,7 @@ button[aria-disabled="true"] {
   cursor: progress;
   background: var(--color-border);
   border-color: var(--color-border);
-  border-bottom-color: var(--color-border);
+  box-shadow: none;
   color: var(--color-text-muted);
 }
 
@@ -165,7 +168,7 @@ button[aria-disabled="true"] {
 .card,
 .panel {
   background: var(--color-surface);
-  border-bottom: var(--edge-card) solid var(--color-edge);
+  box-shadow: var(--card-lift);
   border-radius: var(--radius-card);
   padding: var(--space-md);
 }
@@ -626,7 +629,7 @@ legend + * {
   height: auto;
   background: var(--map-sea);
   border-radius: var(--radius-card);
-  border-bottom: var(--edge-card) solid var(--color-edge);
+  box-shadow: var(--card-lift);
 }
 
 .map-land {

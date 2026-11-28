@@ -611,6 +611,13 @@ const pages: readonly Page[] = [
   },
   // What the website says about itself: centred, as About is.
   { path: "/about", title: "About PuffinRide", main: null, setUp: mine, centred: true },
+  {
+    path: "/delete-account",
+    title: "Delete your PuffinRide account",
+    main: null,
+    setUp: mine,
+    centred: true,
+  },
   { path: "/legal", title: "About PuffinRide", main: null, setUp: mine, centred: true },
   { path: "/legal/terms", title: "Terms of Service", main: null, setUp: mine, centred: true },
   { path: "/cookies", title: "Cookies", main: null, setUp: mine, centred: true },
