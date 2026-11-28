@@ -1626,8 +1626,8 @@ releases follow [Semantic Versioning](https://semver.org/).
   passenger's part solid and the rest of the ride dashed, or the whole way
   for the driver, before the rows; on a laptop a band in the main column.
   A booking in the API gains `route`: where its ride's stops are, with the
-  part as places among them, or null where a stop of the part was taken
-  off the ride.
+  part as places among them; null where a stop of the part was taken off
+  the ride, and on a booking that ended before its ride.
 
 ### Fixed
 

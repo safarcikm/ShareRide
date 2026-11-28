@@ -563,7 +563,9 @@ function present(
     trip: { id: trip.id, bookingMode: trip.bookingMode as BookingMode },
     board: stopOf(row.boardPoint, row.boardStop),
     alight: stopOf(row.alightPoint, row.alightStop),
-    route: row.route,
+    // Only while the passenger rides with it, or rode: a booking that ended
+    // before its ride does not follow how the ride changes after (R9.4).
+    route: holdsSeats(status) || hasTripDay(status) ? row.route : null,
     seats: booking.seats,
     total: isk(booking.totalPrice),
     payment: methodOf(booking),

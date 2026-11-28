@@ -92,8 +92,9 @@ export const bookingSchema = z.object({
   /**
    * The trip on a map (spec 31, 3.8): where each of its stops is, in order,
    * as the trip runs now, with the passenger's part as places in that list.
-   * Null where a stop of the part was removed since (spec 6, 3.2), and from
-   * a server older than this field.
+   * Null where a stop of the part was removed since (spec 6, 3.2), on a
+   * booking that ended before its ride (cancelled, declined or expired),
+   * and from a server older than this field.
    */
   route: z
     .object({

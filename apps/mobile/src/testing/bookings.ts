@@ -1,7 +1,13 @@
 // Bookings as the API returns them, and fake booking answers, for screen
 // tests. Not used by the app itself.
 import type { Booking, CancelBookingBody, CancellationPreview, MyTrip } from "@shareride/contracts";
-import { cancelReasonsFor, type BookingStatus, type Money } from "@shareride/domain";
+import {
+  cancelReasonsFor,
+  hasTripDay,
+  holdsSeats,
+  type BookingStatus,
+  type Money,
+} from "@shareride/domain";
 import { failure, ok, type FakeClient } from "./fake-client";
 import { northResult, northStops } from "./search";
 import { myStop, plannedDraft, withTripDay } from "./trips";
@@ -16,7 +22,8 @@ export const northStop = (position: number) => {
 
 /**
  * Borgarnes to Blönduós on the north trip, one seat, as its passenger sees
- * it. The trip on the map has the booking's own stops as its part, unless
+ * it. The trip on the map has the booking's own stops as its part, as the
+ * API gives it: none for a booking that ended before its ride, or where
  * `changes` says it has no map (null).
  */
 export function northBooking(changes: Partial<Booking> = {}): Booking {
@@ -60,7 +67,7 @@ export function northBooking(changes: Partial<Booking> = {}): Booking {
   return {
     ...booking,
     route:
-      changes.route === null
+      changes.route === null || !(holdsSeats(booking.status) || hasTripDay(booking.status))
         ? null
         : {
             stops: northStops.map((stop) => stop.meetingPoint.position),

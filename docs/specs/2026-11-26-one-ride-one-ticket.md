@@ -514,14 +514,17 @@ and on a laptop
   roads with its two stops standing out, the rest of the ride dashed with
   its stops muted. It comes after the ticket, the driver, where to stand
   and the line about paying in person, before the rows, on the trip day
-  too. On a laptop it ends the main column as a band, 1.8 to 2.4 times as
-  wide as tall and across the whole of Iceland where the ride crosses
-  most of it, so it is never taller than the window. A screen reader
-  hears "The ride on a map of Iceland. Your part: Borgarnes → Blönduós.";
-  a driver who opens the booking hears "The passenger's part". It shows on
-  a booking that ended too, as a ride's details do, and not on one whose
-  stop was taken off the ride since (spec 6, 3.2): there is no part of the
-  ride to draw it on. In the pictures of this section the seat is the
+  too. On a laptop it ends the main column as a band, about twice as wide
+  as tall, so it is not taller than the window; a ride that crosses most
+  of Iceland shows all of it. A screen reader hears "The ride on a map of
+  Iceland. Your part: Borgarnes → Blönduós."; a driver who opens the
+  booking hears "The passenger's part". It shows while the seat is asked
+  for or held and once the ride is over, and not on a booking that ended
+  before its ride (cancelled, declined, expired or withdrawn): the ride
+  can change after, and is no longer the passenger's to follow, nor
+  anyone's who blocked the driver (R9.4). Nor on one whose stop was taken
+  off the ride since (spec 6, 3.2): there is no part of the ride to draw
+  it on. In the pictures of this section the seat is the
   whole ride; a seat on part of one is
   [drawn so](images/one-ride-one-ticket/built/booking-route-part-phone-light.webp).
 - The rows, each only when it has something to do: "The driver didn't
@@ -2141,10 +2144,13 @@ My rides load, named below.
   gains `route`, where each stop of its ride is (in order, the stops on
   the ride now) and my part as places in that list, `board` and `alight`.
   It is null where a stop of the part was taken off the ride since (spec
-  6, 3.2). The contract gives null when the field is missing, so an app
-  newer than its server shows no map instead of failing. It says nothing
-  new: the stops are meeting points, which everyone can see, and a ride's
-  details list them. The ride I drive already has its stops. On a wide
+  6, 3.2), and on a booking that ended before its ride, which follows the
+  ride no further, as its `changes` do not. The contract gives null when
+  the field is missing, so an app newer than its server shows no map
+  instead of failing. It says nothing new: the stops are meeting points,
+  which everyone can see, and the ride's details list them to the
+  passenger while the booking holds a seat. The ride I drive already has
+  its stops. On a wide
   page the map is a band (`wideShape` in `packages/ui`), where a phone's
   column keeps the shapes of before (`columnShape`).
 - Found while building the result ticket: a ride found carried its

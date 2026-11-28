@@ -1636,6 +1636,18 @@ describe("reading bookings (spec 5, 3.6 and 3.7)", () => {
     expect(await read(jon.accessToken)).toMatchObject({ data: { route: null } });
   });
 
+  it("draws no map for a booking that ended before its ride: the ride may change after (R9.4)", async () => {
+    const jon = await newMember("Jón");
+    const request = await booked(jon.accessToken, north, { fromStop: 1, toStop: 2 });
+    expect(request.route).not.toBeNull();
+    const withdrawn = await api.client.call(withdrawRequestRoute, {
+      accessToken: jon.accessToken,
+      params: { id: request.id },
+      body: {},
+    });
+    expect(withdrawn).toMatchObject({ data: { status: "cancelled", route: null } });
+  });
+
   it("shows the number plate and where to stand only once the booking is confirmed (R5.12)", async () => {
     await api.connection.db
       .update(schema.vehicles)
