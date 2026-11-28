@@ -521,7 +521,9 @@ and on a laptop
   a driver who opens the booking hears "The passenger's part". It shows on
   a booking that ended too, as a ride's details do, and not on one whose
   stop was taken off the ride since (spec 6, 3.2): there is no part of the
-  ride to draw it on.
+  ride to draw it on. In the pictures of this section the seat is the
+  whole ride; a seat on part of one is
+  [drawn so](images/one-ride-one-ticket/built/booking-route-part-phone-light.webp).
 - The rows, each only when it has something to do: "The driver didn't
   come" (after the ride, while it can still be said, R8.5), "Share the
   ride's details", "Weather and roads" (as on a ride's details), "Report
@@ -881,8 +883,9 @@ in 3.10.
   dots, after the seats and before the rows. On a laptop it is a band in
   the main column, after the passengers and before "Drive it again", so
   the side column stays whole in a small laptop's window. A screen reader
-  hears "Your ride on a map of Iceland: Mjódd → N1 Selfoss." A cancelled
-  ride has none: it keeps its ticket and the two rows that post it again.
+  hears "Your ride on a map of Iceland: Mjódd bus terminal → N1
+  Selfoss." A cancelled ride has none: it keeps its ticket and the two
+  rows that post it again.
 - **Rows:** Edit the ride, Share this ride, "Share the ride's details",
   "Weather and roads", Post it again, Post the way back, and Cancel the
   ride, red and last. The two in the middle are what the Safety card held
