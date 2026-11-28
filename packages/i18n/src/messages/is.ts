@@ -12,6 +12,7 @@ export const is = {
     "Verum samferða milli bæja á Íslandi: finndu far eða bjóddu laus sæti í bílnum þínum. Samakstur þar sem við deilum bíl og kostnaðinum við ferðina.",
   "seo.keywords":
     "samferða, far, fá far, bjóða far, samakstur, deila bíl, ferðir milli bæja, Ísland, Reykjavík, Akureyri",
+  "seo.needsJavaScript": "Til að finna, bjóða og bóka far þarf JavaScript að vera virkt.",
   "seo.meetingPointsDescription":
     "Mótsstaðirnir þar sem bílstjórar og farþegar PuffinRide hittast til samaksturs, um allt Ísland, á korti og eftir landshlutum.",
   "seo.meetingPointDescription":

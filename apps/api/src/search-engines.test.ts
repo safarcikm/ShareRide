@@ -3,7 +3,15 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Writable } from "node:stream";
 import { bodyOf, publishedVersions } from "@shareride/db/testing";
-import { aboutPage, createTranslator, locales } from "@shareride/i18n";
+import type { MeetingPointSummary, NearestMeetingPoints } from "@shareride/contracts";
+import {
+  aboutPage,
+  createTranslator,
+  formatDistance,
+  locales,
+  socialProfiles,
+  typeKeys,
+} from "@shareride/i18n";
 import { describe, expect, it } from "vitest";
 import { createApp } from "./app.ts";
 import { createLogger } from "./logger.ts";
@@ -15,6 +23,8 @@ import {
   robotsTxt,
   sitemapXml,
   type FindSubject,
+  type PageFacts,
+  type PageSubject,
   type SearchEngines,
 } from "./search-engines.ts";
 
@@ -322,8 +332,9 @@ describe("the page's head (spec 23, 3.6)", () => {
       head,
     );
     const noscript = /<noscript>([\s\S]*)<\/noscript>/.exec(page)?.[1] ?? "";
-    expect(noscript).toContain("You need to enable JavaScript to run this app.");
-    expect(noscript).toContain("<h1>Samferða um Ísland</h1>");
+    // Expo's sentence gives way to the page's own text (3.11, item 3).
+    expect(noscript).not.toContain("You need to enable JavaScript to run this app.");
+    expect(noscript.startsWith("<main><h1>Samferða um Ísland</h1>")).toBe(true);
     expect(noscript).toContain("<h2>Svona virkar þetta</h2>");
     expect(noscript).toContain("<h3>Er PuffinRide leigubíll?</h3>");
     expect(noscript).toContain("<h3>Hvað er PuffinRide?</h3>");
@@ -331,12 +342,12 @@ describe("the page's head (spec 23, 3.6)", () => {
     // Its links keep the language the address asked for.
     expect(noscript).toContain('<a href="/meeting-points?lang=is">Skoða mótsstaði</a>');
     expect(noscript).toContain('<a href="/legal/community-rules?lang=is">');
-    // Other pages keep the export's own.
-    const front = fillPage(
+    // A page outside 3.4 keeps the export's own.
+    const trip = fillPage(
       exportedPage.replace('<div id="root">', '<noscript>JS</noscript><div id="root">'),
-      pageHead({ path: "/", lang: "en", acceptLanguage: null }, production),
+      pageHead({ path: "/trips/abc", lang: "en", acceptLanguage: null }, production),
     );
-    expect(front).toContain("<noscript>JS</noscript>");
+    expect(trip).toContain("<noscript>JS</noscript>");
   });
 
   it("gives About its own title and canonical address (spec 30, 3.4)", () => {
@@ -373,7 +384,7 @@ describe("the page's head (spec 23, 3.6)", () => {
         production,
         undefined,
         undefined,
-        gramsPerCarKm,
+        { gramsPerCarKm },
       );
       return head.noscript ?? "";
     };
@@ -503,6 +514,308 @@ describe("the page's head (spec 23, 3.6)", () => {
   });
 });
 
+/** A meeting point as the service lists it, at Selfoss unless told otherwise. */
+function summaryOf(
+  id: string,
+  name: string,
+  more: Partial<MeetingPointSummary> = {},
+): MeetingPointSummary {
+  return {
+    id,
+    name: { is: name, en: name },
+    region: "south",
+    municipality: "Árborg",
+    type: "fuel-station",
+    amenities: [],
+    position: { latitude: 63.94, longitude: -21.0 },
+    status: "active",
+    season: null,
+    pauseReason: null,
+    sample: false,
+    ...more,
+  };
+}
+
+/** The text a page of 3.4 has before the app runs, in the language asked for. */
+function textOf(path: string, lang: "is" | "en", facts: PageFacts = {}, subject?: PageSubject) {
+  const head = pageHead(
+    { path, lang, acceptLanguage: null },
+    production,
+    subject,
+    undefined,
+    facts,
+  );
+  const page = fillPage(
+    exportedPage.replace(
+      '<div id="root">',
+      '<noscript> You need to enable JavaScript to run this app. </noscript><div id="root">',
+    ),
+    head,
+  );
+  return /<noscript>([\s\S]*)<\/noscript>/.exec(page)?.[1] ?? "";
+}
+
+describe("every public page's text before the app runs (spec 23, 3.11)", () => {
+  it("writes Find's title, line, how it works and links, and no ride", () => {
+    const text = textOf("/", "is");
+    const is = createTranslator("is");
+    expect(text.startsWith("<main><h1>Verum samferða</h1>")).toBe(true);
+    expect(text).toContain(`<p>${is("home.intro")}</p>`);
+    expect(text).toContain('<a href="/offer?lang=is">Bjóða far</a>');
+    expect(text).toContain(`<h2>${is("home.how.title")}</h2>`);
+    for (const key of [
+      "home.how.find",
+      "home.how.book",
+      "home.how.meet",
+      "home.how.offer",
+    ] as const) {
+      expect(text).toContain(is(key));
+    }
+    expect(text).toContain(`<a href="/carpool-iceland?lang=is">${is("home.howItWorks")}</a>`);
+    expect(text).toContain(`<a href="/meeting-points?lang=is">${is("meetingPoints.open")}</a>`);
+    // The rides name their drivers: never in the text (decision 13, R23.9).
+    expect(text).not.toContain(is("welcome.soon"));
+    expect(text).not.toContain("/trips/");
+  });
+
+  it("ends every page's text with the footer's links and a line on JavaScript, not Expo's sentence", () => {
+    const en = createTranslator("en");
+    for (const path of [
+      "/",
+      "/carpool-iceland",
+      "/about",
+      "/delete-account",
+      "/meeting-points",
+      "/cookies",
+    ]) {
+      const text = textOf(path, "en", { content: { kind: "meetingPoints", points: [] } });
+      expect(text, path).not.toContain("You need to enable JavaScript to run this app.");
+      const footer = /<footer>([\s\S]*)<\/footer>/.exec(text)?.[1] ?? "";
+      for (const [href, label] of [
+        ["/about?lang=en", "About PuffinRide"],
+        ["/carpool-iceland?lang=en", "Carpool in Iceland"],
+        ["/meeting-points?lang=en", "Meeting points"],
+        ["/legal/terms?lang=en", "Terms of Service"],
+        ["/legal/community-rules?lang=en", "Community Rules"],
+        ["/legal/privacy?lang=en", "Privacy Policy"],
+        ["/cookies?lang=en", "Cookies"],
+        ["mailto:admin@puffinride.is", "admin@puffinride.is"],
+        [socialProfiles.facebook, en("about.facebook")],
+        [socialProfiles.instagram, en("about.instagram")],
+      ] as const) {
+        expect(footer, `${path} ${href}`).toContain(`<a href="${href}">${label}</a>`);
+      }
+      // The export's style keeps the body from scrolling, for the app's own scroll views:
+      // without the app, the text scrolls.
+      expect(
+        text.endsWith(
+          `</footer><p>${en("seo.needsJavaScript")}</p><style>body{overflow:auto}</style>`,
+        ),
+        path,
+      ).toBe(true);
+    }
+    expect(createTranslator("is")("seo.needsJavaScript")).toBe(
+      "Til að finna, bjóða og bóka far þarf JavaScript að vera virkt.",
+    );
+  });
+
+  it("writes the active meeting points by region, as the list shows them, each a link", () => {
+    const points = [
+      summaryOf("p-vik", "Vík – N1", { municipality: "Mýrdalshreppur" }),
+      summaryOf("p-hlemmur", "Hlemmur", {
+        region: "capital",
+        municipality: "Reykjavík",
+        type: "bus-hub",
+      }),
+      summaryOf("p-hella", "Hella – Olís", { municipality: "Rangárþing ytra" }),
+      summaryOf("p-paused", "Lokað", { status: "paused" }),
+      summaryOf("p-sample", "Sýnishorn", { sample: true }),
+    ];
+    const text = textOf("/meeting-points", "en", { content: { kind: "meetingPoints", points } });
+    expect(text.startsWith("<main><h1>Meeting points</h1>")).toBe(true);
+    expect(text).toContain("<p>Passengers get in and out only at these public places.</p>");
+    // Regions in the list's order, names in the language's order within each.
+    const order = [
+      "<h2>Capital area</h2>",
+      "Hlemmur",
+      "<h2>South</h2>",
+      "Hella – Olís",
+      "Vík – N1",
+    ];
+    const at = order.map((part) => text.indexOf(part));
+    expect(at.every((index) => index >= 0)).toBe(true);
+    expect([...at].sort((a, b) => a - b)).toEqual(at);
+    expect(text).toContain(
+      '<li><a href="/meeting-points/p-hlemmur?lang=en">Hlemmur</a>: Bus hub · Reykjavík</li>',
+    );
+    // As the sitemap: no paused point or sample (3.11, item 6).
+    expect(text).not.toContain("Lokað");
+    expect(text).not.toContain("Sýnishorn");
+  });
+
+  it("writes no text for the meeting points when they cannot be read", () => {
+    const head = pageHead(
+      { path: "/meeting-points", lang: "en", acceptLanguage: null },
+      production,
+    );
+    expect(head.noscript).toBeNull();
+  });
+
+  it("writes the text into the body's noscript, never one in the head", () => {
+    const head = pageHead({ path: "/cookies", lang: "en", acceptLanguage: null }, production);
+    const page = fillPage(
+      exportedPage
+        .replace("</head>", "<noscript><style>.x{}</style></noscript></head>")
+        .replace('<div id="root">', '<noscript>JS</noscript><div id="root">'),
+      head,
+    );
+    expect(page).toContain("<noscript><style>.x{}</style></noscript>");
+    expect(page).not.toContain("<noscript>JS</noscript>");
+    expect(page.indexOf("<main>")).toBeGreaterThan(page.indexOf("<body>"));
+  });
+
+  it("writes a meeting point's and a place's text whatever the case of the address's ID", () => {
+    const point = {
+      ...summaryOf("3f2504e0-4f89-41d3-9a0c-0305e82c3301", "N1"),
+      aliases: [],
+      whereToStand: null,
+      pausedUntil: null,
+      lastCheckedOn: null,
+    };
+    const text = textOf(
+      "/meeting-points/3F2504E0-4F89-41D3-9A0C-0305E82C3301",
+      "en",
+      { content: { kind: "meetingPoint", point } },
+      { kind: "meetingPoint", name: point.name },
+    );
+    expect(text.startsWith("<main><h1>N1</h1>")).toBe(true);
+  });
+
+  it("writes a meeting point's details, without its photos", () => {
+    const point = {
+      ...summaryOf("p-hella", "Hella – Olís", {
+        name: { is: "Hella – Olís", en: "Hella – Olís station" },
+        municipality: "Rangárþing ytra",
+        amenities: ["toilets", "shop"],
+        season: { startMonth: 5, endMonth: 9 },
+      }),
+      aliases: ["Olís Hellu"],
+      whereToStand: { is: "Við dælurnar.", en: "By the pumps." },
+      pausedUntil: null,
+      lastCheckedOn: "2026-11-20",
+    };
+    const subject: PageSubject = { kind: "meetingPoint", name: point.name };
+    const text = textOf(
+      "/meeting-points/p-hella",
+      "en",
+      { content: { kind: "meetingPoint", point } },
+      subject,
+    );
+    expect(text.startsWith("<main><h1>Hella – Olís station</h1>")).toBe(true);
+    expect(text).toContain("<p>Fuel station · Rangárþing ytra, South</p>");
+    expect(text).toContain("<p>Hella – Olís</p>");
+    expect(text).toContain("<p>Also known as Olís Hellu</p>");
+    expect(text).toContain("<h2>Where to stand</h2><p>By the pumps.</p>");
+    expect(text).toContain("<h2>Amenities</h2><ul><li>Toilets</li><li>Shop</li></ul>");
+    expect(text).toContain("<p>In use from May to September</p>");
+    expect(text).toContain("<p>Last checked 20 November 2026</p>");
+    expect(text).toContain('<a href="/meeting-points?lang=en">Meeting points</a>');
+    expect(text).not.toContain("<img");
+  });
+
+  it("writes no text for a meeting point or place the sitemap leaves out (3.11, item 6)", () => {
+    const point = {
+      ...summaryOf("p", "Lokað", { status: "paused" }),
+      aliases: [],
+      whereToStand: null,
+      pausedUntil: null,
+      lastCheckedOn: null,
+    };
+    const head = pageHead(
+      { path: "/meeting-points/p", lang: "en", acceptLanguage: null },
+      production,
+      { kind: "missing" },
+      undefined,
+      { content: { kind: "meetingPoint", point } },
+    );
+    expect(head.noscript).toBeNull();
+  });
+
+  it("writes a place's nearest meeting points with their distance, each a link", () => {
+    const nearest: NearestMeetingPoints = {
+      place: { id: "pl", name: { is: "Hella", en: "Hella" }, kind: "village", region: "south" },
+      withinReach: true,
+      meetingPoints: [
+        {
+          meetingPoint: summaryOf("p-hella", "Hella – Olís", { municipality: "Rangárþing ytra" }),
+          distanceM: 400,
+        },
+        {
+          meetingPoint: summaryOf("p-hvols", "Hvolsvöllur – N1", {
+            municipality: "Rangárþing eystra",
+          }),
+          distanceM: 12400,
+        },
+      ],
+    };
+    const subject: PageSubject = { kind: "place", name: nearest.place.name };
+    const text = textOf("/places/pl", "is", { content: { kind: "place", nearest } }, subject);
+    const is = createTranslator("is");
+    expect(text.startsWith("<main><h1>Hella</h1>")).toBe(true);
+    expect(text).toContain(`<h2>${is("search.nearest")}</h2>`);
+    const summary = is("meetingPoints.summary", {
+      type: is(typeKeys["fuel-station"]),
+      municipality: "Rangárþing ytra",
+    });
+    const away = is("search.distanceAway", { distance: formatDistance(400, "is") });
+    expect(text).toContain(
+      `<li><a href="/meeting-points/p-hella?lang=is">Hella – Olís</a>: ${away}, ${summary}</li>`,
+    );
+    expect(text.indexOf("Hella – Olís")).toBeLessThan(text.indexOf("Hvolsvöllur – N1"));
+    expect(text).not.toContain(is("search.noneWithinReach"));
+    const far = textOf(
+      "/places/pl",
+      "en",
+      { content: { kind: "place", nearest: { ...nearest, withinReach: false } } },
+      subject,
+    );
+    expect(far).toContain(createTranslator("en")("search.noneWithinReach"));
+  });
+
+  it("writes a legal document's whole text: headings, paragraphs, lists and bold, escaped", () => {
+    const document = {
+      version: 4,
+      texts: {
+        is: { title: "Notendaskilmálar", body: "# Inngangur\n\nTexti." },
+        en: {
+          title: "Terms of Service",
+          body: "# 1. Who we are\n\nPuffinRide is run by **Martin**, <b>not</b> a company yet.\n\n- one\n- two & three",
+        },
+      },
+    };
+    const text = textOf("/legal/terms", "en", { content: { kind: "legal", document } });
+    expect(text.startsWith("<main><h1>Terms of Service</h1><p>Version 4</p>")).toBe(true);
+    expect(text).toContain("<h2>1. Who we are</h2>");
+    expect(text).toContain(
+      "<p>PuffinRide is run by <strong>Martin</strong>, &lt;b&gt;not&lt;/b&gt; a company yet.</p>",
+    );
+    expect(text).toContain("<ul><li>one</li><li>two &amp; three</li></ul>");
+    expect(textOf("/legal/terms", "is", { content: { kind: "legal", document } })).toContain(
+      "<h1>Notendaskilmálar</h1><p>Útgáfa 4</p><h2>Inngangur</h2><p>Texti.</p>",
+    );
+  });
+
+  it("writes Cookies, saying whether visits are counted", () => {
+    const en = createTranslator("en");
+    const counted = textOf("/cookies", "en", { countsVisits: true });
+    expect(counted.startsWith("<main><h1>Cookies</h1>")).toBe(true);
+    expect(counted).toContain(`<p>${en("cookies.needed")}</p>`);
+    expect(counted).toContain(`<p>${en("cookies.analyticsHelp")}</p>`);
+    expect(counted).toContain(`<a href="/legal/privacy?lang=en">${en("legal.readPrivacy")}</a>`);
+    expect(textOf("/cookies", "en")).toContain(`<p>${en("cookies.none")}</p>`);
+  });
+});
+
 describe("a shared ride's own card (spec 23, 3.10)", () => {
   it("names the ride and points at its picture, in the language asked for", () => {
     const head = pageHead(
@@ -618,6 +931,28 @@ describe("the web app for search engines", () => {
       "<title>Hlemmur: carpool meeting point · PuffinRide</title>",
     );
     expect(response.headers.get("x-robots-tag")).toBeNull();
+  });
+
+  it("still serves a page whose text cannot be read, without the text (3.11)", async () => {
+    const app = createApp({
+      logger: createLogger({
+        level: "silent",
+        destination: new Writable({
+          write: (_c, _e, done) => {
+            done();
+          },
+        }),
+      }),
+      checkDatabase: () => Promise.resolve(),
+      webAppDir: webApp(),
+      searchEngines: production,
+      findContent: () => Promise.reject(new Error("the database is away")),
+    });
+    const response = await app.request("/legal/terms?lang=en");
+    expect(response.status).toBe(200);
+    const page = await response.text();
+    expect(page).toContain("<title>");
+    expect(page).not.toContain("<main>");
   });
 
   it("keeps a meeting point or place that is not listed out of the index", async () => {

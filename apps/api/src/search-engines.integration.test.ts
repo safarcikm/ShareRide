@@ -6,7 +6,9 @@ import { sampleId, seedSampleMeetingPoints } from "@shareride/db/seed";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createApp } from "./app.ts";
 import { createLogger } from "./logger.ts";
-import { subjectFinder } from "./search-engines.ts";
+import { createLegalService } from "./modules/legal/index.ts";
+import { createMeetingPointService } from "./modules/meeting-points/service.ts";
+import { contentFinder, subjectFinder } from "./search-engines.ts";
 import { startTestApi, type TestApi } from "./testing.ts";
 
 let api: TestApi;
@@ -159,5 +161,76 @@ describe("what a meeting point's or a place's address is about (spec 23, 3.6)", 
     });
     const page = await (await app.request(`/places/${point("place")}?lang=en`)).text();
     expect(page).toContain("<title>Selfoss: nearest carpool meeting points · PuffinRide</title>");
+  });
+});
+
+describe("what a public page shows, for its text before the app runs (spec 23, 3.11)", () => {
+  const find = () =>
+    contentFinder({
+      meetingPoints: createMeetingPointService(api.features),
+      legal: createLegalService(api.features),
+    });
+
+  it("reads the meeting points, a meeting point, a place's nearest and a legal document", async () => {
+    const list = await find()("/meeting-points");
+    expect(list?.kind).toBe("meetingPoints");
+    if (list?.kind !== "meetingPoints") return;
+    expect(list.points.map(({ id }) => id)).toContain(point("active"));
+
+    const one = await find()(`/meeting-points/${point("active")}`);
+    expect(one?.kind === "meetingPoint" ? one.point.name.is : undefined).toBe("N1 Selfossi");
+
+    const place = await find()(`/places/${point("place")}`);
+    expect(place?.kind === "place" ? place.nearest.place.name.is : undefined).toBe("Selfoss");
+
+    // The versions published from the repository, as on every server (ADR 0043).
+    const terms = await find()("/legal/terms");
+    expect(terms?.kind === "legal" ? terms.document.texts.en.title : undefined).toBe(
+      "Terms of Service",
+    );
+  });
+
+  it("has none for an unknown point, place or document, or another address", async () => {
+    for (const path of [
+      `/meeting-points/${point("nobody")}`,
+      "/meeting-points/not-an-id",
+      `/places/${point("nobody")}`,
+      "/legal/unknown",
+      "/",
+      "/trips/abc",
+      "/meeting-points/x/problem",
+    ]) {
+      expect(await find()(path), path).toBeUndefined();
+    }
+  });
+
+  it("writes each page's text into the first answer", async () => {
+    const app = createApp({
+      logger: createLogger({ level: "silent" }),
+      checkDatabase: () => Promise.resolve(),
+      features: api.features,
+      searchEngines: { indexable: true, siteOrigin: site },
+      webAppDir: webApp(),
+    });
+    const textOf = async (path: string) => {
+      const page = await (await app.request(path)).text();
+      return /<noscript>([\s\S]*)<\/noscript>/.exec(page)?.[1] ?? "";
+    };
+    expect(await textOf("/meeting-points?lang=en")).toContain(
+      `<a href="/meeting-points/${point("active")}?lang=en">N1 Selfossi</a>`,
+    );
+    expect(await textOf(`/meeting-points/${point("active")}?lang=en`)).toContain(
+      "<h1>N1 Selfossi</h1>",
+    );
+    expect(await textOf(`/places/${point("place")}?lang=en`)).toContain(
+      `<a href="/meeting-points/${point("active")}?lang=en">N1 Selfossi</a>`,
+    );
+    const terms = await find()("/legal/terms");
+    const version = terms?.kind === "legal" ? terms.document.version : 0;
+    expect(await textOf("/legal/terms?lang=is")).toContain(
+      `<h1>Notendaskilmálar</h1><p>Útgáfa ${String(version)}</p>`,
+    );
+    // Not listed, so no text (3.11, item 6).
+    expect(await textOf(`/meeting-points/${point("paused")}?lang=en`)).toBe("");
   });
 });
