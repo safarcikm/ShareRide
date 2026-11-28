@@ -68,6 +68,55 @@ export async function chooseTime(
   await page.getByRole("button", { name: texts.done, exact: true }).click();
 }
 
+/**
+ * Drags the price level's handle along its track to the dot of `level`, in
+ * small moves as a hand makes them: with a finger where the page takes
+ * touches (the phone project), with the mouse elsewhere. The finger strays
+ * up and down on the way, and the page must not scroll for it.
+ */
+export async function dragPriceTo(page: Page, level: number) {
+  const track = page.getByTestId("price-track").filter({ visible: true });
+  await track.scrollIntoViewIfNeeded();
+  const centre = async (testId: string) => {
+    const box = await track.getByTestId(testId).boundingBox();
+    if (box === null) throw new Error(`${testId} is not on show`);
+    return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+  };
+  const from = await centre("price-handle");
+  const to = await centre(`price-step-${String(level)}`);
+  const moves = 8;
+  const along = (index: number) => ({
+    x: from.x + ((to.x - from.x) * index) / moves,
+    y: from.y + (index === moves / 2 ? 20 : 0),
+  });
+  const scroll = page.getByTestId("screen-scroll").filter({ visible: true });
+  const scrolledBefore = await scroll.evaluate((element) => element.scrollTop);
+  if (await page.evaluate(() => navigator.maxTouchPoints > 0)) {
+    const cdp = await page.context().newCDPSession(page);
+    const touch = (
+      type: "touchStart" | "touchMove" | "touchEnd",
+      point: { x: number; y: number } | null,
+    ) =>
+      cdp.send("Input.dispatchTouchEvent", {
+        type,
+        touchPoints: point === null ? [] : [{ x: point.x, y: point.y }],
+      });
+    await touch("touchStart", from);
+    for (let index = 1; index <= moves; index += 1) await touch("touchMove", along(index));
+    await touch("touchEnd", null);
+    await cdp.detach();
+  } else {
+    await page.mouse.move(from.x, from.y);
+    await page.mouse.down();
+    for (let index = 1; index <= moves; index += 1) {
+      const point = along(index);
+      await page.mouse.move(point.x, point.y);
+    }
+    await page.mouse.up();
+  }
+  expect(await scroll.evaluate((element) => element.scrollTop)).toBe(scrolledBefore);
+}
+
 /** Searches the part and opens the trip from the results; returns its ID. */
 export async function openTrip(page: Page, search: TripSearch) {
   await page.goto("/search");

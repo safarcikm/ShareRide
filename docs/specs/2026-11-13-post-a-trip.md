@@ -191,7 +191,9 @@ Drivers do not edit segment prices one by one (decision 2,
 2. One control sets the **price level** for the whole trip, in steps of 10%:
    from **Free** (0%) up to the highest level the cost-sharing cap allows
    (rule P4). The suggested level, 100%, is marked. Every price on the screen
-   updates as the level changes.
+   updates as the level changes. The level is chosen by dragging the
+   control's handle along its track, by a tap on the track, or a step at a
+   time with minus and plus.
 3. The default is the level of the driver's previous trip, or 100% the first
    time.
 4. The seats are chosen before the price (step 3), so the price step shows

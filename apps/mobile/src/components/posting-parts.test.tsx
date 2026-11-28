@@ -133,8 +133,17 @@ describe("PriceLevel", () => {
     });
   });
 
-  it("picks the step tapped on the track, without reading the tap's position", async () => {
-    const onChange = jest.fn();
+  // The track is hidden from screen readers, which use minus and plus.
+  const hidden = { includeHiddenElements: true };
+  // A track 236 wide: the handle's half at each end leaves 200 for the
+  // levels, so with 200% the highest, one point is one percent.
+  const laidOut = { nativeEvent: { layout: { x: 0, y: 0, width: 236, height: 36 } } };
+  const touch = (locationX: number, pageX: number) => ({
+    nativeEvent: { locationX, locationY: 18, pageX, pageY: 400 },
+  });
+
+  /** The level control at 100% of at most 200%, its track laid out. */
+  async function slider(onChange: (level: number) => void) {
     await inEnglish(
       <PriceLevel
         level={100}
@@ -145,15 +154,72 @@ describe("PriceLevel", () => {
         valueText="100%, the whole route costs 3,000 ISK"
       />,
     );
-    // The web hands a mouse event with no locationX; each step has its own place.
-    // The track is hidden from screen readers, which use minus and plus.
-    const hidden = { includeHiddenElements: true };
-    await fireEvent.press(screen.getByTestId("price-step-80", hidden), { nativeEvent: {} });
+    const track = screen.getByTestId("price-track", hidden);
+    await fireEvent(track, "layout", laidOut);
+    return track;
+  }
+
+  it("follows a finger dragged along the track, a step at a time", async () => {
+    const onChange = jest.fn();
+    const track = await slider(onChange);
+    // It takes the touch from the start, and keeps it once it moves.
+    const props = track.props as {
+      readonly onStartShouldSetResponder: () => boolean;
+      readonly onResponderTerminationRequest: () => boolean;
+    };
+    expect(props.onStartShouldSetResponder()).toBe(true);
+    expect(props.onResponderTerminationRequest()).toBe(false);
+
+    // Down on the handle, at 100%: nothing changes yet.
+    await fireEvent(track, "responderGrant", touch(118, 300));
+    expect(onChange).not.toHaveBeenCalled();
+    // 21 points to the left is 79%, nearest to 80%.
+    await fireEvent(track, "responderMove", touch(97, 279));
     expect(onChange).toHaveBeenLastCalledWith(80);
-    await fireEvent.press(screen.getByTestId("price-step-200", hidden), { nativeEvent: {} });
+    // Past the right end it stops at the highest level.
+    await fireEvent(track, "responderMove", touch(240, 422));
     expect(onChange).toHaveBeenLastCalledWith(200);
-    expect(screen.queryByTestId("price-step-210", hidden)).toBeNull();
+    // Past the left end, at free.
+    await fireEvent(track, "responderMove", touch(-40, 142));
+    expect(onChange).toHaveBeenLastCalledWith(0);
+    await fireEvent(track, "responderRelease", touch(-40, 142));
     expect(onChange.mock.calls.every(([level]) => Number.isFinite(level))).toBe(true);
+  });
+
+  it("picks the step nearest a tap on the track", async () => {
+    const onChange = jest.fn();
+    const track = await slider(onChange);
+    // 18 is the start of the levels, so 71 is 53%, nearest to 50%.
+    await fireEvent(track, "responderGrant", touch(71, 153));
+    await fireEvent(track, "responderRelease", touch(71, 153));
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenLastCalledWith(50);
+    // The steps' dots: none past the highest.
+    expect(screen.getByTestId("price-step-200", hidden)).toBeTruthy();
+    expect(screen.queryByTestId("price-step-210", hidden)).toBeNull();
+  });
+
+  it("holds the screen still while a finger moves the handle", async () => {
+    await inEnglish(
+      <Screen>
+        <PriceLevel
+          level={100}
+          highest={200}
+          step={10}
+          suggested={100}
+          onChange={jest.fn()}
+          valueText="100%"
+        />
+      </Screen>,
+    );
+    const scroll = screen.getByTestId("screen-scroll");
+    const track = screen.getByTestId("price-track", hidden);
+    await fireEvent(track, "layout", laidOut);
+    expect(scroll.props.scrollEnabled).not.toBe(false);
+    await fireEvent(track, "responderGrant", touch(118, 300));
+    expect(screen.getByTestId("screen-scroll").props.scrollEnabled).toBe(false);
+    await fireEvent(track, "responderTerminate", touch(118, 300));
+    expect(screen.getByTestId("screen-scroll").props.scrollEnabled).not.toBe(false);
   });
 
   it("stops at the highest level", async () => {
