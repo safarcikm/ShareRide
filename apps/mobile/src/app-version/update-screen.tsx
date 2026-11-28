@@ -1,4 +1,4 @@
-import { isOlderThan } from "@shareride/domain";
+import { isOlderThan, storePages } from "@shareride/domain";
 import { Linking } from "react-native";
 import { thisDevice } from "@/auth/api";
 import { useConfig } from "@/beta/config";
@@ -8,23 +8,6 @@ import { Screen } from "@/components/screen";
 import { ScreenHead } from "@/components/screen-head";
 import { useLanguage } from "@/i18n/language";
 import { sizes } from "@/theme/tokens";
-
-/**
- * PuffinRide's page in each store: the store's own app first, then its web
- * page where that does not open (a phone without the store app, or the
- * iPhone simulator). The App Store's ID is the app's Apple ID in App Store
- * Connect, as `eas.json` has it (`ascAppId`); Google Play's is the package.
- */
-export const storePages = {
-  ios: {
-    app: "itms-apps://apps.apple.com/app/id6840158626",
-    web: "https://apps.apple.com/app/id6840158626",
-  },
-  android: {
-    app: "market://details?id=is.puffinride.app",
-    web: "https://play.google.com/store/apps/details?id=is.puffinride.app",
-  },
-} as const;
 
 /**
  * Whether this app is older than the oldest version the API still serves
@@ -47,8 +30,10 @@ export function useNeedsUpdate(): boolean {
  */
 export function UpdateScreen() {
   const { t } = useLanguage();
+  // The store's own app first, then its web page where that does not open
+  // (a phone without the store app, or the iPhone simulator).
   const platform = thisDevice().platform === "android" ? "android" : "ios";
-  const page = storePages[platform];
+  const page = storePages[platform === "android" ? "google_play" : "app_store"];
   return (
     <Screen
       footer={

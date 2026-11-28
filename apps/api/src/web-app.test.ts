@@ -2,6 +2,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Writable } from "node:stream";
+import type { AppStore } from "@shareride/domain";
 import { describe, expect, it } from "vitest";
 import { createApp } from "./app.ts";
 import { createLogger } from "./logger.ts";
@@ -28,7 +29,7 @@ function exportedWebApp(): string {
   return dir;
 }
 
-function setup(webAppDir?: string, lines: string[] = []) {
+function setup(webAppDir?: string, lines: string[] = [], appStores: readonly AppStore[] = []) {
   const destination = new Writable({
     write: (chunk: Buffer, _encoding, callback) => {
       lines.push(chunk.toString());
@@ -39,6 +40,7 @@ function setup(webAppDir?: string, lines: string[] = []) {
     logger: createLogger({ level: "info", destination }),
     checkDatabase: () => Promise.resolve(),
     ...(webAppDir === undefined ? {} : { webAppDir }),
+    appStoresListed: () => Promise.resolve(appStores),
   });
 }
 
@@ -195,6 +197,71 @@ describe("the web app on the API's origin", () => {
       body: "{}",
     });
     expect(response.status).toBe(404);
+  });
+});
+
+const iphone =
+  "Mozilla/5.0 (iPhone; CPU iPhone OS 19_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/19.1 Mobile/15E148 Safari/604.1";
+const android =
+  "Mozilla/5.0 (Linux; Android 16; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Mobile Safari/537.36";
+const laptop =
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/19.1 Safari/605.1.15";
+
+describe("the phone apps on the website (spec 35)", () => {
+  const dir = exportedWebApp();
+  const neither = setup(dir);
+  const both = setup(dir, [], ["app_store", "google_play"]);
+  const playOnly = setup(dir, [], ["google_play"]);
+
+  it("gives Safari Apple's banner only while the App Store's page is public (3.3, R35.1)", async () => {
+    expect(await (await neither.request("/")).text()).not.toContain("apple-itunes-app");
+    expect(await (await playOnly.request("/")).text()).not.toContain("apple-itunes-app");
+    expect(await (await both.request("/")).text()).toContain(
+      '<meta name="apple-itunes-app" content="app-id=6840158626, app-argument=puffinride://"></head>',
+    );
+  });
+
+  it("opens the same screen in the app, from its path only, never the query", async () => {
+    const page = await (
+      await both.request("/trips/0190a1d6-0000-7000-8000-0000000000d1?fromStop=1&lang=is")
+    ).text();
+    expect(page).toContain(
+      '<meta name="apple-itunes-app" content="app-id=6840158626, app-argument=puffinride://trips/0190a1d6-0000-7000-8000-0000000000d1">',
+    );
+    // A path's odd characters stay inside the tag's value.
+    const odd = await (await both.request("/places/a,b'c")).text();
+    expect(odd).toContain('app-argument=puffinride://places/a%2Cb&#39;c"');
+  });
+
+  it("leaves it off the page Google's or Apple's sign-in comes back to, a pop-up", async () => {
+    expect(await (await both.request("/sign-in/return")).text()).not.toContain("apple-itunes-app");
+  });
+
+  it("sends a phone from /app to its store while that store's page is public (3.7)", async () => {
+    const fromIphone = await both.request("/app", { headers: { "user-agent": iphone } });
+    expect(fromIphone.status).toBe(302);
+    expect(fromIphone.headers.get("location")).toBe("https://apps.apple.com/app/id6840158626");
+    expect(fromIphone.headers.get("cache-control")).toBe("no-store");
+    expect(fromIphone.headers.get("vary")).toContain("User-Agent");
+    const fromAndroid = await both.request("/app", { headers: { "user-agent": android } });
+    expect(fromAndroid.headers.get("location")).toBe(
+      "https://play.google.com/store/apps/details?id=is.puffinride.app&referrer=utm_source%3Dpuffinride.is%26utm_medium%3Dqr",
+    );
+  });
+
+  it("sends anyone else from /app to About, in the language asked", async () => {
+    for (const [app, userAgent] of [
+      [both, laptop],
+      [playOnly, iphone],
+      [neither, android],
+    ] as const) {
+      const response = await app.request("/app", { headers: { "user-agent": userAgent } });
+      expect(response.status).toBe(302);
+      expect(response.headers.get("location")).toBe("/about");
+      expect(response.headers.get("cache-control")).toBe("no-store");
+    }
+    const icelandic = await both.request("/app?lang=is", { headers: { "user-agent": laptop } });
+    expect(icelandic.headers.get("location")).toBe("/about?lang=is");
   });
 });
 

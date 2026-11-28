@@ -3,6 +3,7 @@ import { OpenAPIHono } from "@hono/zod-openapi";
 import { appleCallbackRoute, healthReadyRoute, healthRoute } from "@shareride/contracts";
 import type { Database } from "@shareride/db";
 import {
+  appStoresListed,
   bookingSettingsFrom,
   defaultChatSettings,
   clientPlatformHeader,
@@ -185,6 +186,7 @@ import {
 } from "./platform/photo-storage.ts";
 import { createAdminApp } from "./admin-app.ts";
 import { createWebApp, openerPolicyFor, type Analytics } from "./web-app.ts";
+import type { ListedAppStores } from "./app-promotion.ts";
 import {
   mayIndex,
   noIndex,
@@ -296,6 +298,12 @@ export interface AppDependencies {
   readonly analytics?: Analytics | null;
   /** The oldest phone app version served (spec 32, R32.4); every one when left out. */
   readonly oldestAppVersion?: string | null;
+  /**
+   * The stores whose page is public, for the website's banners and `/app`
+   * (spec 35); by default from the operator's switches (ADR 0055), none
+   * without a database.
+   */
+  readonly appStoresListed?: ListedAppStores;
 }
 
 export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
@@ -436,6 +444,7 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
 
   /** Finds a shared ride's address for its own link preview (spec 23, 3.10), from the trip details. */
   let rideFinderOfApp: FindRide | undefined;
+  let appStoresOfSettings: ListedAppStores | undefined;
   if (dependencies.features !== undefined) {
     const { features } = dependencies;
     // First: the guard covers only routes registered after it, and closes
@@ -458,6 +467,7 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
         });
       },
     });
+    appStoresOfSettings = async () => appStoresListed((await operatorSettings.current()).values);
     const paused = createPausedCheck(operatorSettings);
     // The trip day's and reliability's values as they are now, for every
     // module that takes them as plain settings.
@@ -852,6 +862,7 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
               ? undefined
               : subjectFinder(dependencies.features.db)),
           dependencies.findRide ?? rideFinderOfApp,
+          dependencies.appStoresListed ?? appStoresOfSettings,
         );
   const adminApp =
     dependencies.adminAppDir === undefined

@@ -10,6 +10,7 @@ export const settingGroups = [
   "booking",
   "changes",
   "trip_day",
+  "apps",
 ] as const;
 export type SettingGroup = (typeof settingGroups)[number];
 
@@ -249,6 +250,12 @@ export const settingDefinitions = {
     max: 95,
     step: 1,
   },
+  // The phone apps on the website (spec 35; ADR 0055): read as they are
+  // now. Off until each store's page is public.
+  /** On: the website shows the App Store's badge, and Safari on an iPhone Apple's banner. */
+  app_store_listed: { group: "apps", ...offByDefault },
+  /** On: the website shows Google Play's badge, and Android browsers our own strip. */
+  google_play_listed: { group: "apps", ...offByDefault },
 } as const satisfies Record<string, SettingDefinition>;
 
 export type SettingKey = keyof typeof settingDefinitions;

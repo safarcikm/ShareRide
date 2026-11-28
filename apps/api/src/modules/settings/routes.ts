@@ -1,6 +1,6 @@
 import type { OpenAPIHono } from "@hono/zod-openapi";
 import { configRoute } from "@shareride/contracts";
-import { pausedNow, type SignInProvider } from "@shareride/domain";
+import { appStoresListed, pausedNow, type SignInProvider } from "@shareride/domain";
 import type { AppEnv } from "../../context.ts";
 import type { Analytics } from "../../web-app.ts";
 import { toOpenApiRoute } from "../../openapi.ts";
@@ -44,6 +44,7 @@ export function registerConfigRoutes(
         analytics:
           analytics === null ? null : { googleMeasurementId: analytics.googleMeasurementId },
         oldestAppVersion,
+        appStores: appStoresListed(values),
       },
       200,
     );

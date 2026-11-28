@@ -1,5 +1,6 @@
 import { aboutPage, pageText } from "@shareride/i18n";
 import { StyleSheet, Text, View } from "react-native";
+import { AboutApp } from "@/app-promotion/about-app";
 import { BackButton } from "@/components/back-button";
 import { Card } from "@/components/card";
 import { PageHead } from "@/components/page-head";
@@ -42,6 +43,8 @@ export default function AboutScreen() {
           align="start"
         />
       </View>
+      {/* The phone apps, on the website while a store's page is public (spec 35, 3.6). */}
+      <AboutApp />
       <View style={styles.section}>
         <Heading>{t(aboutPage.documentsTitle)}</Heading>
         <Card>

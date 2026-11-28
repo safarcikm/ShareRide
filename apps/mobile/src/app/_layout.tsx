@@ -5,6 +5,7 @@ import { StyleSheet, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AnalyticsProvider } from "@/analytics/analytics";
 import { ConsentBar } from "@/analytics/consent-bar";
+import { AppBanner } from "@/app-promotion/app-banner";
 import { UpdateScreen, useNeedsUpdate } from "@/app-version/update-screen";
 import { SessionProvider, useSession, useSessionState } from "@/auth/session";
 import { ConfigProvider } from "@/beta/config";
@@ -146,13 +147,15 @@ function Navigation() {
  * to it. The screens stay in the same place in the tree either way, so a
  * window turning wide or narrow keeps what they show. What signing in did
  * with a Google or Apple account shows over the screens, under the bar; the
- * question about cookies at the bottom.
+ * question about cookies at the bottom. On an Android phone's browser, the
+ * strip about the app above it all, pushing it down (spec 35, 3.4).
  */
 function WithTopBar({ children }: { readonly children: ReactNode }) {
   const wide = useWideScreen();
   const saveLanguage = useSaveLanguage();
   return (
     <View style={styles.frame}>
+      <AppBanner wide={wide} />
       {wide ? <TopBar onSwitchLanguage={saveLanguage} /> : null}
       <ScreenEdges value={wide ? belowTopBar : allEdges}>
         <View style={styles.frame}>

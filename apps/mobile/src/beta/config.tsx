@@ -32,6 +32,7 @@ const quiet: Config = {
   payInPerson: false,
   analytics: null,
   oldestAppVersion: null,
+  appStores: [],
 };
 
 const ConfigContext = createContext<Config>(quiet);

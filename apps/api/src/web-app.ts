@@ -5,6 +5,12 @@ import { finishProviderSignInRoute } from "@shareride/contracts";
 import { providerReturnPath } from "@shareride/domain";
 import type { Context } from "hono";
 import { isConsolePath } from "./admin-app.ts";
+import {
+  appLinkLocation,
+  appLinkPath,
+  withAppleAppBanner,
+  type ListedAppStores,
+} from "./app-promotion.ts";
 import type { AppEnv } from "./context.ts";
 import type { FindRide } from "./modules/search/link-preview.ts";
 import {
@@ -123,7 +129,9 @@ async function readPage(root: string): Promise<string | undefined> {
  * Which answers search engines may index is the app's middleware's to say
  * (spec 23, R23.6; trip pages, R4.6, add a robots tag of their own too);
  * this adds one for a meeting point or place that is not listed (3.6).
- * A shared ride's page gets its own link preview (3.10).
+ * A shared ride's page gets its own link preview (3.10). While the App
+ * Store's page is public, every page carries Apple's banner, and `/app`
+ * sends each phone to its store (spec 35, 3.3 and 3.7).
  */
 export function createWebApp(
   root: string,
@@ -132,6 +140,7 @@ export function createWebApp(
   analytics: Analytics | null = null,
   findSubject?: FindSubject,
   findRide?: FindRide,
+  listedStores: ListedAppStores = () => Promise.resolve([]),
 ): WebApp {
   const contentSecurityPolicy = webContentSecurityPolicy(photoOrigin, analytics !== null);
   const files = serveStatic<AppEnv>({ root });
@@ -160,6 +169,19 @@ export function createWebApp(
       const query = new URL(c.req.url).search;
       return c.redirect(`/about${query}`, 301);
     }
+    // The QR code's address: each phone to its store, anyone else to About
+    // (spec 35, 3.7). It depends on the browser and the switches, so it is
+    // never kept.
+    if (c.req.path === appLinkPath) {
+      c.header("Cache-Control", "no-store");
+      c.header("Vary", "User-Agent");
+      const location = appLinkLocation(
+        c.req.header("user-agent") ?? null,
+        await listedStores(),
+        c.req.query("lang") ?? null,
+      );
+      return c.redirect(location, 302);
+    }
     // A screen, the front page too: the page with its head filled, never the
     // export's index.html as it is.
     const html = await readPage(root);
@@ -181,6 +203,10 @@ export function createWebApp(
       ride,
     );
     if (head.fromBrowser) c.header("Vary", "Accept-Language, X-Facebook-Locale");
-    return c.html(fillPage(html, head));
+    const page = fillPage(html, head);
+    // Apple's banner while the App Store's page is public (spec 35, 3.3).
+    const listed = await listedStores();
+    const pathname = new URL(c.req.url).pathname;
+    return c.html(listed.includes("app_store") ? withAppleAppBanner(page, pathname) : page);
   };
 }

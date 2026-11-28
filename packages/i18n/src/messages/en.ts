@@ -86,6 +86,20 @@ export const en = {
   "footer.contact": "Contact",
   "footer.facebook": "Facebook",
   "footer.instagram": "Instagram",
+  "appPromotion.banner.label": "The PuffinRide app",
+  "appPromotion.banner.line": "Notifications about your rides, straight to your phone.",
+  "appPromotion.banner.install": "Install",
+  "appPromotion.banner.close": "Close",
+  "appPromotion.about.title": "The PuffinRide app",
+  "appPromotion.about.line":
+    "PuffinRide is also an app for your phone. It tells you at once when something happens on your rides.",
+  "appPromotion.about.scan": "Or point your phone's camera at the code.",
+  "appPromotion.about.qr": "QR code for the PuffinRide app",
+  "appPromotion.badge.appStore": "Download on the App Store",
+  "appPromotion.badge.googlePlay": "Get it on Google Play",
+  "appPromotion.trademark.appStore": "App Store is a service mark of Apple Inc.",
+  "appPromotion.trademark.googlePlay":
+    "Google Play and the Google Play logo are trademarks of Google LLC.",
   "consent.title": "Cookies",
   "consent.text":
     "May we count your visit with Google Analytics? It uses cookies and tells Google which pages you open, never your name.",
@@ -2592,6 +2606,7 @@ export const en = {
   "admin.settings.group.booking": "Booking and paying",
   "admin.settings.group.changes": "Changes and cancellations",
   "admin.settings.group.trip_day": "Trip day and reliability",
+  "admin.settings.group.apps": "Phone apps",
   "admin.settings.groupNote.terms":
     "The terms of service state these values. Publish new terms with a change, or the terms and the app will disagree.",
   "admin.settings.group.switches": "Switches for emergencies",
@@ -2672,6 +2687,12 @@ export const en = {
   "admin.settings.name.reliability_watch_level": "Watch level",
   "admin.settings.help.reliability_watch_level":
     "People whose figure is below this are listed for you on the Reliability page. Nothing suspends anyone on its own.",
+  "admin.settings.name.app_store_listed": "App Store page is public",
+  "admin.settings.help.app_store_listed":
+    "On: the website shows the App Store badge in its footer and on About, Safari on an iPhone shows Apple's banner for the app, and the QR code sends iPhones to the App Store. Turn it on only once PuffinRide's App Store page is public, or people land on a page that is not there.",
+  "admin.settings.name.google_play_listed": "Google Play page is public",
+  "admin.settings.help.google_play_listed":
+    "On: the website shows the Google Play badge in its footer and on About, Android phones see a small strip about the app at the top of the website, and the QR code sends them to Google Play. Turn it on only once PuffinRide's Google Play page is public, or people land on a page that is not there.",
   "admin.settings.on": "On",
   "admin.settings.off": "Off",
   "admin.settings.unit.people": "{count, plural, one {{value} person} other {{value} people}}",
