@@ -2612,6 +2612,7 @@ export const is = {
   "admin.settings.group.booking": "Bókun og greiðsla",
   "admin.settings.group.changes": "Breytingar og afbókanir",
   "admin.settings.group.trip_day": "Ferðadagur og áreiðanleiki",
+  "admin.settings.group.co2": "CO2",
   "admin.settings.groupNote.terms":
     "Þessi gildi standa í notkunarskilmálunum. Birtu nýja skilmála með breytingu, annars ber skilmálunum og appinu ekki saman.",
   "admin.settings.group.switches": "Neyðarrofar",
@@ -2692,6 +2693,9 @@ export const is = {
   "admin.settings.name.reliability_watch_level": "Eftirlitsmörk",
   "admin.settings.help.reliability_watch_level":
     "Fólk með áreiðanleika undir þessu er talið upp fyrir þig á síðunni Áreiðanleiki. Enginn er settur í bann sjálfkrafa.",
+  "admin.settings.name.co2_grams_per_car_km": "CO2 á ekinn km",
+  "admin.settings.help.co2_grams_per_car_km":
+    "Losun CO2 meðalbíls á Íslandi á kílómetra, fyrir tölur um minni losun. Farðu yfir hana á hverju hausti. 0 felur allar tölurnar.",
   "admin.settings.on": "Kveikt",
   "admin.settings.off": "Slökkt",
   "admin.settings.unit.people": "{count, plural, one {{value} manneskja} other {{value} manns}}",
@@ -2709,6 +2713,8 @@ export const is = {
   "admin.settings.newValue.records": "Nýtt gildi, fjöldi ferða og bókana",
   "admin.settings.unit.seats": "{count, plural, one {{value} sæti} other {{value} sæti}}",
   "admin.settings.newValue.seats": "Nýtt gildi, fjöldi sæta",
+  "admin.settings.unit.g_per_km": "{value} g á km",
+  "admin.settings.newValue.g_per_km": "Nýtt gildi, í g á km",
   "admin.settings.unit.minutes": "{count, plural, one {{value} mínúta} other {{value} mínútur}}",
   "admin.settings.newValue.minutes": "Nýtt gildi, í mínútum",
   "admin.settings.unit.hours":
