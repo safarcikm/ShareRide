@@ -1644,6 +1644,13 @@ releases follow [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- The Android phone journeys failed on every run from about 01:30 on
+  2026-11-28. The workflow's key press reached the Pixel Launcher before it
+  had a window, the launcher stalled, and its "isn't responding" box hid
+  the whole app, because the setting that stops such boxes came after the
+  key press. It comes first now, and each journey also first closes such
+  a box of one of the phone's own apps. A box about PuffinRide stays, so a
+  stall of ours still fails the journey.
 - A tap on a notification about beta news, about a reply to feedback, or
   about an answer to a question on one's data, opens its page in the
   phone apps. The server named the three pages and the app ignored them.
@@ -1741,6 +1748,12 @@ releases follow [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Render builds the server only for changes that reach its image, which
+  saves its paid build minutes: marketing, `.github/`, `infra/`, tests, the
+  web and phone journeys and `apps/mobile/eas.json` no longer start a build,
+  and the hourly clean-up job no longer builds for the website or the
+  console. A change to a legal text alone now deploys: the filter left out
+  every Markdown file, the texts the server reads too.
 - A booking's status tag follows what the colours say (spec 31, 3.2, rule
   6): declined, expired, cancelled and withdrawn are a quiet grey tag, as
   nothing is asked of anyone, and "No-show" is red. They were amber, or
@@ -2023,6 +2036,18 @@ releases follow [Semantic Versioning](https://semver.org/).
   downloads and tests (spec 32, section 7). Neither is material, so
   nobody accepts anything again. A test holds the newest legal texts to
   the names the app gives its pages.
+- The Terms of Service (version 4) and the Privacy Policy (version 5)
+  say how people sign in since specs 26 and 27, on Martin's word of
+  2026-11-28: with a code by email, with Google or Apple, with a
+  password or with Face ID or fingerprint, and that a text message only
+  checks a phone number. They said "a code sent to your phone". The
+  Privacy Policy says what is kept of a password (never the password)
+  and of Face ID or fingerprint (a passkey's public key, never the face
+  or the fingerprint), that we ask the browser to save a passkey after a
+  password, where to remove them, and that what keeps a person signed
+  in is sent with each request, which the policy had said stays on the
+  device. Neither is material. The same test holds the texts to the
+  ways the sign-in screen offers.
 - An account that waits to be deleted no longer opens Report, the two
   pages that block a person or "What's wrong here?" for a meeting point
   by their address: it lands on the page that says when the account

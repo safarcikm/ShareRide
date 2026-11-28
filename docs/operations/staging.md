@@ -298,13 +298,24 @@ once `/v1/health/ready` answers 200, so a version that cannot reach the
 database never takes over. If the migration or the health check fails, the
 deploy fails and the running version stays.
 
-Changes to `docs/`, Markdown files and `.claude/` do not deploy.
+Each build uses Render's build minutes: the workspace's plan includes 500
+a month, and more cost 5 USD per 1 000 (Workspace Settings, **Build
+Pipeline**; without them nothing deploys until the next month, as on
+2026-11-28). So changes that leave the image as it is start no build:
+`docs/`, `marketing/`, `.claude/`, `.github/`, `infra/`, Markdown files at
+the top of the repository, tests, the web and phone journeys and
+`apps/mobile/eas.json` (each service's `buildFilter`, held by
+`apps/api/src/render-blueprints.test.ts`). The legal texts in
+`packages/db/src/legal/texts/` are Markdown that the server reads, so they
+deploy.
 
 The clean-up cron job builds and deploys on its own and has no pre-deploy
 step, so for a few minutes it can run new code before the web service has
 migrated, or old code after. Migrations are expand then contract, and a
-failed run is retried the next hour, so this is harmless. It does mean each
-merge builds the image twice.
+failed run is retried the next hour, so this is harmless. It does mean a
+merge that changes the server builds the image twice. Changes to only the
+website or the console (`apps/mobile/`, `apps/admin/`) rebuild the web
+service alone: the job never serves them.
 
 CI already proves the image starts: it builds it and runs
 [`infra/docker/smoke-test.sh`](../../infra/docker/smoke-test.sh) against a

@@ -153,15 +153,19 @@ jobs:
             if [ "$(adb -s emulator-5554 shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ]; then break; fi
             sleep 2
           done
+          # No "isn't responding" boxes from the phone's own apps, set before
+          # anything reaches the phone: on a busy runner the key press below
+          # reached the Pixel Launcher before it had a window, the launcher
+          # stalled ("Application does not have a focused window"), and its
+          # box hid the whole app from Maestro (2026-11-28, three runs in a
+          # row while this was set after the key). Android closes such an app
+          # instead; a crash of ours still fails the journey. Each journey
+          # also first closes such a box (maestro/helpers/close-stuck-box.yaml).
+          adb -s emulator-5554 shell settings put global hide_error_dialogs 1
           adb -s emulator-5554 shell input keyevent 82
           for scale in window_animation_scale transition_animation_scale animator_duration_scale; do
             adb -s emulator-5554 shell settings put global "$scale" 0
           done
-          # No "isn't responding" boxes from the phone's own apps: on a busy
-          # runner the Pixel Launcher once stalled during the install, and its
-          # box hid the whole app from Maestro. Android closes such an app
-          # instead; a crash of ours still fails the journey.
-          adb -s emulator-5554 shell settings put global hide_error_dialogs 1
           # The store's screens show a tidy status bar: Android's demo mode.
           if [ "$JOURNEYS" = "maestro/store" ]; then
             adb -s emulator-5554 shell settings put global sysui_demo_allowed 1
