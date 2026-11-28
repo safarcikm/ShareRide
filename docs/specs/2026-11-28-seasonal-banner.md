@@ -1,13 +1,13 @@
 # Spec 36: The front page's banner through the year
 
-**Owner:** Martin · **Date:** 2026-11-28 · **Status:** Proposed
+**Owner:** Martin · **Date:** 2026-11-28 · **Status:** Accepted (2026-11-28)
 
 Builds on: [spec 33, 3.2](2026-11-27-small-animations.md#32-the-front-pages-banner)
 (the car's arrival, which stays as it is) and
 [ADR 0052](../decisions/0052-animations-css-on-the-web-reanimated-on-phones.md)
 (CSS on the website, Reanimated on phones). Amends:
 [spec 15, 5.3](2026-11-13-visual-design-system.md) (the Iceland scene's
-colours, if Martin picks new ones in section 12). No new dependency, service
+colours: Clear day, 3.1). No new dependency, service
 or data, so no ADR.
 
 ## 1. Problem and goal
@@ -50,10 +50,10 @@ Three palettes, each in light and dark (the preview's section 2):
 | Palette | Light | Dark |
 | ------- | ----- | ---- |
 | Today's colours | Pale grey-blue sky and mountains, one pale green | Flat night blue |
-| **Clear day** (recommended) | A clearer blue sky that pales towards the land, a far range of mountains behind the near one, two greens of hills, a farmhouse with a red roof | A night sky with stars, the farmhouse's window lit |
+| **Clear day** (chosen) | A clearer blue sky that pales towards the land, a far range of mountains behind the near one, two greens of hills, a farmhouse with a red roof | A night sky with stars, the farmhouse's window lit |
 | Golden hour | A peach sky, lilac mountains, olive hills, a low sun | Dusk purple, stars |
 
-Clear day is recommended: it is richer while staying calm, the seasons
+Martin chose Clear day (2026-11-28): it is richer while staying calm, the seasons
 change it clearly (white, green, purple, gold), and the yellow car still
 stands out, which it does less on Golden hour's warm sky. The seasons and
 days below are drawn on Clear day; with another palette they are tuned to
@@ -67,8 +67,8 @@ hills). Decorations never go under words (3.6).
 
 ### 3.2 What shows when
 
-The banner shows **the day** if today is one of the days in 3.4 (and 3.5,
-if Martin wants them), and otherwise **the season**:
+The banner shows **the day** if today is one of the days in 3.4 or the smaller
+ones in 3.5, and otherwise **the season**:
 
 | Season | From | To |
 | ------ | ---- | -- |
@@ -117,7 +117,7 @@ Each plays its moment with the car's arrival (3.6).
 The August long weekend starts on the Wednesday because that is when
 people look for rides for it.
 
-### 3.5 Smaller days (if Martin wants them)
+### 3.5 Smaller days
 
 Well-loved days that are not holidays, one day each, in the winter scene
 unless said:
@@ -130,7 +130,7 @@ unless said:
 | Öskudagur | Ash Wednesday (46 days before Easter Sunday) | The puffins dressed up: a mask and a crown | The crown sparkles | Gleðilegan öskudag / Happy Ash Wednesday |
 | Sjómannadagurinn (summer scene) | The first Sunday in June | Sailor caps | Only the hop | Til hamingju með sjómannadaginn / Happy Seafarers' Day |
 
-Left out unless Martin wants them: Valentine's Day, Halloween, Culture
+Left out for now: Valentine's Day, Halloween, Culture
 Night, Pride, 1 May, and the religious days besides Christmas and Easter.
 
 ### 3.6 How the moments move
@@ -214,8 +214,9 @@ they stand once their moment is over ([how they were made](images/seasonal-banne
 
 ## 6. Implementation
 
-- **Calendar** in `packages/domain`: `bannerFor(date, { smallerDays })`
-  returns `{ season, day }` for a calendar date, with Easter worked out by
+- **Calendar** in `packages/domain`: `bannerFor(date, { festiveDays })`
+  returns `{ season, day }` for a calendar date (`day` is empty with
+  `festiveDays` off, 3.8), with Easter worked out by
   the Gregorian rule (the anonymous algorithm) and the Icelandic days from
   their weekday rules. The builder checks the results for 2027 to 2036
   against the University of Iceland's almanac (Almanak Háskóla Íslands).
@@ -277,17 +278,19 @@ Icelandic ones should be read by a native speaker before they go live.
 
 ## 11. Martin's steps
 
-1. Choose in section 12.
+1. ~~Choose in section 12~~ (done, 2026-11-28).
 2. Ask someone Icelandic to read the greetings (section 8).
 3. Say when the website may go live with a release.
 
-## 12. Decision for Martin
+## 12. Martin's choices
 
-| Question | Options | Recommended |
-| -------- | ------- | ----------- |
-| Colours | Today's colours; **Clear day**; Golden hour | Clear day (3.1) |
-| Which days | **The four seasons and the eight big days**; also the five smaller days | The big days only: each one stays special, and the smaller ones can come later |
-| Greetings | **On**; off | On: they say why the car is dressed up |
+Martin, 2026-11-28: "Ok lets do it I love all the proposals".
+
+| Question | Options | Chosen |
+| -------- | ------- | ------ |
+| Colours | Today's colours; Clear day; Golden hour | **Clear day** (3.1) |
+| Which days | The four seasons and the eight big days; also the five smaller days | **All of them**: the seasons, the big days and the smaller days |
+| Greetings | On; off | **On** |
 
 ## 13. Decisions
 
@@ -299,3 +302,6 @@ Icelandic ones should be read by a native speaker before they go live.
 | 4 | Moments loop? | No, once with the arrival (my call, from spec 33) |
 | 5 | A way to turn the days off? | Yes, one console switch (my call, 3.8) |
 | 6 | Phones | Still look with the first update after the App Store release, moments with 1.1 (my call, 3.10) |
+| 7 | Colours | Clear day (Martin, 2026-11-28) |
+| 8 | Which days | The seasons, the eight big days and the five smaller days (Martin, 2026-11-28) |
+| 9 | Greetings | On (Martin, 2026-11-28) |
