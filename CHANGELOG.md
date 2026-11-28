@@ -1986,6 +1986,14 @@ releases follow [Semantic Versioning](https://semver.org/).
   2026-11-27 (#257 to #278). Its section 3.22 says where the screens
   differ from the drawings and what is left, and the pictures of the
   build were taken again from the finished screens.
+- The Terms of Service (version 3) and the Privacy Policy (version 4)
+  name the pages in Profile where they said "in Settings", a place the
+  app no longer has, and the Cookies page under About. The Privacy
+  Policy also says what the phone apps add: the app asks Expo for
+  updates, and Google Play, the App Store and their testing handle
+  downloads and tests (spec 32, section 7). Neither is material, so
+  nobody accepts anything again. A test holds the newest legal texts to
+  the names the app gives its pages.
 - The web journeys never give two test accounts the same phone number: a
   run in ten did, and a sign-in journey then failed.
 - CI skips its code jobs (bundles, unit, integration and web tests, the API

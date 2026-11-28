@@ -95,6 +95,42 @@ export const publishedVersions: readonly PublishedVersion[] = [
       is: "5667071cec558d164f11dd18ddc5c0e72bde60ce429c765b26e245bb32d2553d",
     },
   },
+  {
+    // Settings went with spec 31: its pages are under Profile. The two
+    // sentences that said "in Settings" name the page now. Not material:
+    // no rule changes, only where a thing is done.
+    type: "terms",
+    version: 3,
+    material: false,
+    title: { en: "Terms of Service", is: "Notendaskilmálar" },
+    summary: {
+      en: 'Where the terms said "in Settings", they name the page in Profile. Nothing else changed.',
+      is: "Þar sem áður stóð „í Stillingum“ nefna skilmálarnir nú síðuna í Prófílnum. Annað breyttist ekki.",
+    },
+    sha256: {
+      en: "d09e06652c6cbe772051d61b3187adec388b2ba2b2d90289151619a48152e426",
+      is: "6e35bf4787a6095d197664df9bbfa58371e47895c3d17189c3b392aafe2f1b18",
+    },
+  },
+  {
+    // The pages under Profile where it said "in Settings" (spec 31) and
+    // About PuffinRide where it said "Terms, rules and privacy" (spec 30),
+    // and what the phone apps add: Expo's check for an update, the two
+    // stores and their testing (spec 32, section 7). Not material: nobody
+    // has to accept anything new, and testers are invited one by one.
+    type: "privacy",
+    version: 4,
+    material: false,
+    title: { en: "Privacy Policy", is: "Persónuverndarstefna" },
+    summary: {
+      en: 'It names the pages in Profile where it said "in Settings", and the Cookies page under About PuffinRide. It also says what the phone apps add: the app asks Expo whether there is an update, Google Play and the App Store handle downloads, ratings and crash reports, and people who test the app before release are invited by email.',
+      is: "Hún nefnir síðurnar í Prófílnum þar sem áður stóð „í stillingum“, og síðuna Vafrakökur undir Um PuffinRide. Hún segir einnig hvað símaöppin bæta við: appið spyr Expo hvort uppfærsla sé til, Google Play og App Store sjá um niðurhal, einkunnir og hrunskýrslur, og þeim sem prófa appið fyrir útgáfu er boðið með tölvupósti.",
+    },
+    sha256: {
+      en: "6f12c97e7e1fb2f65eaf6819ec0570eb5047abe779ad447ed6317a93bd53718d",
+      is: "4aafc96a7dc40388e20ef67746347aa5eea74b21f80247a6883da66c004e2d77",
+    },
+  },
 ];
 
 /** A version ready to store, its texts read and checked. */
