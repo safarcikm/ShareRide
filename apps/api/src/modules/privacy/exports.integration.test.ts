@@ -996,6 +996,30 @@ describe("download my data (spec 11, 3.2)", () => {
     expect(unlabelledFields(driver.data)).toEqual([]);
   });
 
+  it("gives the CO2 carried over from trips made anonymous, within the totals (spec 34, 3.11)", async () => {
+    const sigga = await newMember("Sigga");
+    await api.connection.db.insert(schema.co2Carried).values({
+      userId: sigga.userId,
+      passengerGrams: 58_350,
+      passengerRides: 1,
+      driverGrams: 12_000,
+      driverRides: 2,
+      driverPassengers: 3,
+    });
+    try {
+      const { data, html } = await exportOf(sigga);
+      const carried = {
+        asPassenger: { grams: 58_350, rides: 1 },
+        asDriver: { grams: 12_000, rides: 2, passengers: 3 },
+      };
+      expect(data.sections.co2_saved).toEqual({ ...carried, carried });
+      expect(html).toContain("Of these, from rides over 3 years ago");
+      expect(unlabelledFields(data)).toEqual([]);
+    } finally {
+      await api.connection.db.delete(schema.co2Carried);
+    }
+  });
+
   it("labels every field of the readable page in both languages", async () => {
     const { passengers, anna } = await busyTrip();
     for (const member of [anna, ...passengers]) {

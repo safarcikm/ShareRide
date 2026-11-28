@@ -5,6 +5,7 @@ export * from "./auth.ts";
 export * from "./beta.ts";
 export * from "./bookings.ts";
 export * from "./chat.ts";
+export * from "./co2.ts";
 export * from "./legal.ts";
 export * from "./meeting-points.ts";
 export * from "./metrics.ts";

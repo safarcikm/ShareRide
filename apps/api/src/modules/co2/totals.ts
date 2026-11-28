@@ -1,19 +1,26 @@
 // A member's own CO2 record (spec 34, 3.8 and 3.11): the completed
 // bookings themselves, each with the grams it kept, as a passenger and as
-// the driver of their trips. Only the member reads it (R34.6).
+// the driver of their trips, plus what was carried over from those made
+// anonymous 3 years after. Only the member reads it (R34.6).
 import type { Co2Totals as Co2TotalsView } from "@shareride/contracts";
 import { schema } from "@shareride/db";
 import { co2TotalGrams, type Co2Totals } from "@shareride/domain";
 import { and, count, countDistinct, eq, isNotNull, sum } from "drizzle-orm";
 import type { Queryable } from "../bookings/seats.ts";
+import { co2CarriedOf } from "./carried.ts";
 
 const { bookings, trips } = schema;
+
+const noCarried: Co2Totals = {
+  asPassenger: { grams: 0, rides: 0 },
+  asDriver: { grams: 0, rides: 0, passengers: 0 },
+};
 
 const countedBooking = and(eq(bookings.status, "completed"), isNotNull(bookings.co2Grams));
 
 /** The member's totals from their completed bookings, as a passenger and as a driver. */
 export async function co2TotalsOf(q: Queryable, userId: string): Promise<Co2Totals> {
-  const [[rode], [drove]] = await Promise.all([
+  const [[rode], [drove], carried] = await Promise.all([
     q
       .select({ grams: sum(bookings.co2Grams).mapWith(Number), rides: count() })
       .from(bookings)
@@ -27,13 +34,19 @@ export async function co2TotalsOf(q: Queryable, userId: string): Promise<Co2Tota
       .from(bookings)
       .innerJoin(trips, eq(trips.id, bookings.tripId))
       .where(and(eq(trips.driverId, userId), countedBooking)),
+    co2CarriedOf(q, userId),
   ]);
+  // With what was carried over from their trips made anonymous (3.11).
+  const before = carried ?? noCarried;
   return {
-    asPassenger: { grams: rode?.grams ?? 0, rides: rode?.rides ?? 0 },
+    asPassenger: {
+      grams: (rode?.grams ?? 0) + before.asPassenger.grams,
+      rides: (rode?.rides ?? 0) + before.asPassenger.rides,
+    },
     asDriver: {
-      grams: drove?.grams ?? 0,
-      rides: drove?.rides ?? 0,
-      passengers: drove?.passengers ?? 0,
+      grams: (drove?.grams ?? 0) + before.asDriver.grams,
+      rides: (drove?.rides ?? 0) + before.asDriver.rides,
+      passengers: (drove?.passengers ?? 0) + before.asDriver.passengers,
     },
   };
 }

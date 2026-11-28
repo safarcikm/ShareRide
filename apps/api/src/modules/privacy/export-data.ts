@@ -10,6 +10,7 @@ import {
 import { and, asc, eq, gte, inArray, isNotNull, isNull, or } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import type { Queryable } from "../bookings/seats.ts";
+import { co2CarriedOf } from "../co2/carried.ts";
 import { co2TotalsOf } from "../co2/totals.ts";
 import { quickOf, systemLineOf } from "../chat/service.ts";
 
@@ -573,7 +574,7 @@ export async function collectExport(
   }));
 
   // What the person's shared rides saved, by role (spec 34, 3.11).
-  const co2 = await co2TotalsOf(q, userId);
+  const [co2, carried] = await Promise.all([co2TotalsOf(q, userId), co2CarriedOf(q, userId)]);
 
   const paid = await q
     .select({ payment: payments })
@@ -841,7 +842,7 @@ export async function collectExport(
         shownAt: when(row.shownAt),
         hiddenAt: when(row.hiddenAt),
       })),
-      co2_saved: { ...co2, carried: null },
+      co2_saved: { ...co2, carried },
       payments: paymentsSection,
       conversations: conversationsSection,
       reports: filed.map((row) => ({

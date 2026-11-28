@@ -1,4 +1,5 @@
 import { Writable } from "node:stream";
+import { myCo2Route } from "@shareride/contracts";
 import { schema } from "@shareride/db";
 import { defaultTripDaySettings, type HoldSubjectKind } from "@shareride/domain";
 import { and, asc, eq, inArray, notExists } from "drizzle-orm";
@@ -10,6 +11,7 @@ import {
   freshSampleTrips,
   sampleTrip,
   seedForBookings,
+  type Member,
 } from "../bookings/testing.ts";
 import { ratingsOf } from "../people/ratings.ts";
 import { createErasure } from "./erasure.ts";
@@ -673,5 +675,187 @@ describe("trips and bookings 3 years after the trip (spec 11, 3.7; plan 4.7)", (
 
     expect((await bookingOf(bookingId)).passengerId).toBe(formerMemberId);
     expect((await tripOf(airport)).vehicleId).toBe(car);
+  });
+});
+
+// The CO2 totals carried over (spec 34, 3.11; R34.9): a trip made anonymous
+// no longer names its people, so before it moves, what each completed
+// booking saved is added to its passenger's and its driver's carried
+// totals, and a member's totals stay as they were.
+describe("the CO2 totals carried over when a trip is made anonymous (spec 34, 3.11)", () => {
+  /** A booking ended with the grams it kept, as the completion stores them. */
+  async function completed(bookingId: string, grams: number) {
+    await api.connection.db
+      .update(schema.bookings)
+      .set({ status: "completed", co2Grams: grams, completedAt: await arrival(airport) })
+      .where(eq(schema.bookings.id, bookingId));
+  }
+
+  /** Jón drove Gunna, two seats, and Sigga on the airport trip; both rides ended. */
+  async function ridesThatSaved() {
+    const jon = await driverOf(airport, "Jón");
+    const gunna = await newMember("Gunna");
+    const sigga = await newMember("Sigga");
+    const gunnas = await booked(gunna.accessToken, airport, { fromStop: 0, toStop: 2, seats: 2 });
+    await paid(gunna.accessToken, gunnas.id);
+    const siggas = await booked(sigga.accessToken, airport, { fromStop: 2, toStop: 3 });
+    await paid(sigga.accessToken, siggas.id);
+    await completed(gunnas.id, 7_500);
+    await completed(siggas.id, 3_000);
+    return { jon, gunna, sigga, siggas };
+  }
+
+  async function totalsOf(member: Member) {
+    const found = await api.client.call(myCo2Route, { accessToken: member.accessToken });
+    if (!found.ok) throw new Error(found.error.code);
+    return found.data;
+  }
+
+  async function carried() {
+    return api.connection.db
+      .select({
+        userId: schema.co2Carried.userId,
+        passengerGrams: schema.co2Carried.passengerGrams,
+        passengerRides: schema.co2Carried.passengerRides,
+        driverGrams: schema.co2Carried.driverGrams,
+        driverRides: schema.co2Carried.driverRides,
+        driverPassengers: schema.co2Carried.driverPassengers,
+      })
+      .from(schema.co2Carried)
+      .orderBy(asc(schema.co2Carried.userId));
+  }
+
+  const anonymise = async () =>
+    anonymiseOldTrips(api.connection.db, await threeYearsAfter(airport), logger());
+
+  afterEach(async () => {
+    await api.connection.db.delete(schema.co2Carried);
+  });
+
+  it("keeps each member's totals as they were, as a passenger and as a driver (Review Focus 4)", async () => {
+    const { jon, gunna, sigga } = await ridesThatSaved();
+    const before = await Promise.all([jon, gunna, sigga].map(totalsOf));
+    expect(before).toEqual([
+      { grams: 10_500, asPassenger: null, asDriver: { grams: 10_500, rides: 1, passengers: 2 } },
+      { grams: 7_500, asPassenger: { grams: 7_500, rides: 1 }, asDriver: null },
+      { grams: 3_000, asPassenger: { grams: 3_000, rides: 1 }, asDriver: null },
+    ]);
+
+    expect(await anonymise()).toMatchObject({ trips: 1, failed: 0 });
+
+    expect((await tripOf(airport)).driverId).toBe(formerMemberId);
+    expect(await Promise.all([jon, gunna, sigga].map(totalsOf))).toEqual(before);
+    const none = { passengerGrams: 0, passengerRides: 0 };
+    expect(await carried()).toEqual(
+      [
+        { userId: jon.userId, ...none, driverGrams: 10_500, driverRides: 1, driverPassengers: 2 },
+        {
+          userId: gunna.userId,
+          passengerGrams: 7_500,
+          passengerRides: 1,
+          driverGrams: 0,
+          driverRides: 0,
+          driverPassengers: 0,
+        },
+        {
+          userId: sigga.userId,
+          passengerGrams: 3_000,
+          passengerRides: 1,
+          driverGrams: 0,
+          driverRides: 0,
+          driverPassengers: 0,
+        },
+      ].sort((a, b) => a.userId.localeCompare(b.userId)),
+    );
+  });
+
+  it("carries nothing from a trip that fails, and carries it once when tried again", async () => {
+    const { jon, gunna } = await ridesThatSaved();
+    const before = await Promise.all([jon, gunna].map(totalsOf));
+    const { pool } = api.connection;
+    await pool.query(`
+      CREATE FUNCTION old_trips_test_refuse() RETURNS trigger LANGUAGE plpgsql AS $$
+      BEGIN RAISE EXCEPTION 'refused'; END $$`);
+    await pool.query(`
+      CREATE TRIGGER old_trips_test_refuse BEFORE UPDATE ON trips FOR EACH ROW
+      WHEN (old.id = '${airport}') EXECUTE FUNCTION old_trips_test_refuse()`);
+    try {
+      expect(await anonymise()).toMatchObject({ trips: 0, failed: 1 });
+    } finally {
+      await pool.query(`DROP TRIGGER old_trips_test_refuse ON trips`);
+      await pool.query(`DROP FUNCTION old_trips_test_refuse`);
+    }
+    expect(await carried()).toEqual([]);
+    expect(await Promise.all([jon, gunna].map(totalsOf))).toEqual(before);
+
+    expect(await anonymise()).toMatchObject({ trips: 1, failed: 0 });
+    expect(await anonymise()).toMatchObject({ trips: 0, failed: 0 });
+    expect(await Promise.all([jon, gunna].map(totalsOf))).toEqual(before);
+    expect(await carried()).toHaveLength(3);
+  });
+
+  it("adds to what earlier trips carried over", async () => {
+    const { jon, gunna } = await ridesThatSaved();
+    await api.connection.db.insert(schema.co2Carried).values([
+      { userId: jon.userId, driverGrams: 4_000, driverRides: 1, driverPassengers: 1 },
+      { userId: gunna.userId, passengerGrams: 1_200, passengerRides: 1 },
+    ]);
+    const before = await Promise.all([jon, gunna].map(totalsOf));
+    expect(before).toEqual([
+      { grams: 14_500, asPassenger: null, asDriver: { grams: 14_500, rides: 2, passengers: 3 } },
+      { grams: 8_700, asPassenger: { grams: 8_700, rides: 2 }, asDriver: null },
+    ]);
+
+    expect(await anonymise()).toMatchObject({ trips: 1, failed: 0 });
+
+    expect(await Promise.all([jon, gunna].map(totalsOf))).toEqual(before);
+    const rows = await carried();
+    expect(rows.find((row) => row.userId === jon.userId)).toMatchObject({
+      driverGrams: 14_500,
+      driverRides: 2,
+      driverPassengers: 3,
+    });
+    expect(rows.find((row) => row.userId === gunna.userId)).toMatchObject({
+      passengerGrams: 8_700,
+      passengerRides: 2,
+    });
+  });
+
+  it("still counts an erased passenger's ride for the driver, before and after", async () => {
+    const { jon, siggas } = await ridesThatSaved();
+    // As Sigga's erasure leaves her booking: the former member's.
+    await api.connection.db
+      .update(schema.bookings)
+      .set({ passengerId: formerMemberId, message: "" })
+      .where(eq(schema.bookings.id, siggas.id));
+    const driver = { grams: 10_500, rides: 1, passengers: 2 };
+    expect((await totalsOf(jon)).asDriver).toEqual(driver);
+
+    await anonymise();
+
+    expect((await totalsOf(jon)).asDriver).toEqual(driver);
+    expect((await carried()).map((row) => row.userId)).not.toContain(formerMemberId);
+  });
+
+  it("deletes the carried totals with the account", async () => {
+    const { gunna } = await ridesThatSaved();
+    await anonymise();
+    expect((await carried()).map((row) => row.userId)).toContain(gunna.userId);
+    const { db } = api.connection;
+    await db
+      .update(schema.users)
+      .set({ deleteAfter: new Date(api.now().getTime() - 1000) })
+      .where(eq(schema.users.id, gunna.userId));
+    const erasure = createErasure({
+      db,
+      clock: () => api.now(),
+      hasher: api.features.hasher,
+      tripDaySettings: defaultTripDaySettings,
+      logger: logger(),
+    });
+
+    expect(await erasure.eraseOne(gunna.userId)).toBe(true);
+
+    expect((await carried()).map((row) => row.userId)).not.toContain(gunna.userId);
   });
 });

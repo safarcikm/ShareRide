@@ -19,6 +19,7 @@ import {
 import type { PgColumn, PgTable } from "drizzle-orm/pg-core";
 import type { Logger } from "../../logger.ts";
 import type { Transaction } from "../bookings/seats.ts";
+import { carryCo2 } from "../co2/carried.ts";
 import { catalogued, emptiedOf, freshIdsOf, tableOf } from "./catalogue.ts";
 import { tripNotHeld } from "./holds.ts";
 
@@ -226,6 +227,8 @@ async function anonymiseTrip(
       .where(and(eq(trips.id, tripId), stillNamed(tx), tripNotHeld(tx, now)))
       .for("no key update");
     if (trip === undefined) return null;
+    // What its rides saved stays in its people's CO2 totals (spec 34, 3.11).
+    await carryCo2(tx, tripId, now);
 
     const [named] = await tx
       .select({ count: count() })
