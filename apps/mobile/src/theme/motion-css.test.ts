@@ -92,6 +92,10 @@ describe("motionCss (spec 33, 3.2)", () => {
     }
   });
 
+  it("fades the flying puffins in as they set off, where a laptop's start in sight", () => {
+    expect(css).toContain("@keyframes pr-flyer{0%{opacity:0;transform:translateX(0)}");
+  });
+
   it("stops everything for someone who asked for less motion (R33.4)", () => {
     expect(css).toContain(
       "@media (prefers-reduced-motion: reduce){[data-motion]{animation:none !important;" +

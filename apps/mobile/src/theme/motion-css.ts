@@ -10,6 +10,9 @@ const moment = '[data-motion="moment"]';
  */
 export const lastOfArrival = `${arrive} [data-motion="puffin-driver"]`;
 
+/** What moves while the car arrives: the car, and the scene whose moment plays with it. */
+export const playingParts = `${arrive},${moment}`;
+
 /**
  * The website's motion (spec 33, ADR 0052): CSS keyframes in one style
  * sheet, for the parts marked with `data-motion` (`motionMark` and
@@ -79,10 +82,13 @@ const moments = {
       "0%{opacity:0;transform:translate(0,0) rotate(0deg)}12%{opacity:1}78%{opacity:1}" +
       "100%{opacity:0;transform:translate(var(--dx,0px),var(--dy,0px)) rotate(var(--r,0deg))}",
     curve: "cubic-bezier(0.3, 0.5, 0.6, 1)",
+    turn: "50% 50%",
   },
+  // A laptop's flying puffins set off in sight, at the car room's edge, so they fade in.
   flyer: {
     frames:
-      "0%{opacity:1;transform:translateX(0)}100%{opacity:1;transform:translateX(var(--dx,0px))}",
+      "0%{opacity:0;transform:translateX(0)}8%{opacity:1}" +
+      "100%{opacity:1;transform:translateX(var(--dx,0px))}",
     curve: "linear",
   },
   "flyer-bob": {

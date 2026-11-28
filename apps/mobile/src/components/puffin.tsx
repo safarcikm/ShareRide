@@ -2,6 +2,7 @@
    coordinates; the types mark the transform style of the same name as deprecated. */
 import { Circle, Ellipse, G, Path, Rect } from "react-native-svg";
 import { bannerDrawing, people, puffin, puffinCar } from "@/theme/tokens";
+import { motionMark } from "@/theme/motion";
 
 /** The head, in drawing units around its middle; the beak reaches 38.7 to the right. */
 const head =
@@ -107,7 +108,12 @@ function Hat({ headwear }: { readonly headwear: Headwear }) {
           <Circle cx={0} cy={-0.5} r={2.2} fill={people.crowberry} />
           <Circle cx={-8} cy={0.5} r={1.6} fill={bannerDrawing.sky} />
           <Circle cx={8} cy={0.5} r={1.6} fill={bannerDrawing.sky} />
-          <Path testID="crown-sparkle" d={star(13, -16, 4.6)} fill={puffin.white} />
+          <Path
+            testID="crown-sparkle"
+            {...motionMark("sparkle")}
+            d={star(13, -16, 4.6)}
+            fill={puffin.white}
+          />
         </G>
       );
     case "sailor":

@@ -2,12 +2,14 @@
    coordinates; the types mark the transform style of the same name as deprecated. */
 import { Circle, Ellipse, G, Path, Rect } from "react-native-svg";
 import { star } from "@/components/puffin";
+import { motionMark } from "@/theme/motion";
 import { bannerDrawing, people, puffin, puffinCar } from "@/theme/tokens";
 
 // What rides on the car on the front page's days (spec 36, 3.4 and 3.5),
 // drawn as the preview draws them (preview.html, `loads`, `flag()`,
 // `balloons()`), in the car's drawing units: its roof rack runs from 52 to
-// 106 at 29.
+// 106 at 29. The parts that move as the car arrives carry their marks
+// (spec 36, 3.6), and stand where the moment leaves them without it.
 
 /** The case on the roof rack, with snow on its lid in winter. */
 export function RoofCase({ tyre, snow }: { readonly tyre: string; readonly snow?: string }) {
@@ -39,7 +41,11 @@ const bulbs = [
   [93.5, 24.5, people.sun],
 ] as const;
 
-/** A little Christmas tree with its lights and a star on top. */
+/** When the tree's first light comes on, and how long after it each next one does. */
+const firstLight = 1450;
+const nextLight = 95;
+
+/** A little Christmas tree with its lights and a star on top, lit one by one as the car stops. */
 export function Tree() {
   return (
     <G testID="tree">
@@ -57,19 +63,32 @@ export function Tree() {
         fill="none"
         opacity={0.8}
       />
-      {bulbs.map(([cx, cy, fill]) => (
-        <Circle key={`${String(cx)}-${String(cy)}`} cx={cx} cy={cy} r={2.1} fill={fill} />
+      {bulbs.map(([cx, cy, fill], index) => (
+        <Circle
+          key={`${String(cx)}-${String(cy)}`}
+          {...motionMark("bulb", { delay: firstLight + index * nextLight })}
+          cx={cx}
+          cy={cy}
+          r={2.1}
+          fill={fill}
+        />
       ))}
-      <Path d={star(79, -6.5, 5.4)} fill={people.sun} stroke={puffinCar.wing} strokeWidth={0.8} />
+      <Path
+        {...motionMark("bulb", { delay: firstLight + bulbs.length * nextLight })}
+        d={star(79, -6.5, 5.4)}
+        fill={people.sun}
+        stroke={puffinCar.wing}
+        strokeWidth={0.8}
+      />
     </G>
   );
 }
 
-/** A big chocolate Easter egg, its chick on top. */
+/** A big chocolate Easter egg, its chick on top, peeping out as the car stops. */
 export function Egg() {
   return (
     <G testID="egg">
-      <G testID="chick">
+      <G testID="chick" {...motionMark("chick")}>
         <Circle cx={79} cy={-9} r={6.2} fill={people.sun} />
         <Circle cx={81.4} cy={-10.6} r={1.1} fill={people.face} />
         <Path d="M84.6 -9.6 L88.4 -8.4 L84.6 -7.2 Z" fill={puffin.beak} />
@@ -108,7 +127,7 @@ export function Egg() {
 /** A tent, a sleeping bag and a guitar, for the long weekend. */
 export function Tent() {
   return (
-    <G testID="tent">
+    <G testID="tent" {...motionMark("load")}>
       <Rect x={55} y={18} width={46} height={11} rx={5.5} fill={bannerDrawing.tent} />
       <Path d="M63 18 V29 M93 18 V29" stroke={bannerDrawing.tentDark} strokeWidth={1.8} />
       <Rect x={60} y={8.6} width={32} height={10.4} rx={5.2} fill={bannerDrawing.bag} />
@@ -127,7 +146,7 @@ export function Tent() {
 /** A cream bun with jam, its top in chocolate. */
 export function Bun() {
   return (
-    <G testID="bun">
+    <G testID="bun" {...motionMark("load")}>
       <Path
         d="M60 22 C60 18 66 17 79 17 C92 17 98 18 98 22 L97 26 C96 29.4 62 29.4 61 26 Z"
         fill={bannerDrawing.bun}
@@ -171,7 +190,7 @@ const tulips = [
 /** Tulips in a box, for Bóndadagur and Konudagur. */
 export function Bouquet() {
   return (
-    <G testID="bouquet">
+    <G testID="bouquet" {...motionMark("load")}>
       <Path
         d="M65 18 V7 M72 18 V3 M79 18 V1 M86 18 V3 M93 18 V7"
         stroke={bannerDrawing.stem}
@@ -190,7 +209,10 @@ export function Bouquet() {
   );
 }
 
-/** Iceland's flag on a pole at `x`, its cloth from `top`, streaming back to the left. */
+/**
+ * Iceland's flag on a pole at `x`, its cloth from `top`, streaming back to
+ * the left, and waving as the car stops.
+ */
 export function Flag({
   x,
   top,
@@ -211,14 +233,16 @@ export function Flag({
         strokeLinecap="round"
       />
       <Circle cx={x} cy={top - 1.4} r={1.3} fill={people.sun} />
-      <G
-        transform={`translate(${String(x)} ${String(top)}) scale(${String(-size)} ${String(size)})`}
-      >
-        <Rect width={25} height={18} fill={bannerDrawing.flagBlue} />
-        <Rect x={7} width={4} height={18} fill={puffin.white} />
-        <Rect y={7} width={25} height={4} fill={puffin.white} />
-        <Rect x={8} width={2} height={18} fill={bannerDrawing.flagRed} />
-        <Rect y={8} width={25} height={2} fill={bannerDrawing.flagRed} />
+      <G {...motionMark("cloth")}>
+        <G
+          transform={`translate(${String(x)} ${String(top)}) scale(${String(-size)} ${String(size)})`}
+        >
+          <Rect width={25} height={18} fill={bannerDrawing.flagBlue} />
+          <Rect x={7} width={4} height={18} fill={puffin.white} />
+          <Rect y={7} width={25} height={4} fill={puffin.white} />
+          <Rect x={8} width={2} height={18} fill={bannerDrawing.flagRed} />
+          <Rect y={8} width={25} height={2} fill={bannerDrawing.flagRed} />
+        </G>
       </G>
     </G>
   );
@@ -232,10 +256,23 @@ const balloons = [
   [-17, 47, bannerDrawing.flagRed],
 ] as const;
 
-/** Balloons in the flag's colours, tied at the car's back and trailing behind it. */
+/** How far an unseen square reaches around the tie, so the balloons sway about it. */
+const pivot = 60;
+
+/**
+ * Balloons in the flag's colours, tied at the car's back and trailing
+ * behind it, swaying as the car stops.
+ */
 export function Balloons() {
   return (
-    <G testID="balloons">
+    <G testID="balloons" {...motionMark("balloons")}>
+      <Rect
+        x={tie[0] - pivot}
+        y={tie[1] - pivot}
+        width={pivot * 2}
+        height={pivot * 2}
+        fill="none"
+      />
       {balloons.map(([x, y]) => (
         <Path
           key={`string-${String(x)}`}
@@ -259,16 +296,18 @@ export function Balloons() {
   );
 }
 
-/** A red heart over the puffin it is for. */
+/** A red heart over the puffin it is for, popping up as the car stops. */
 export function Heart({ over, high }: { readonly over: "driver" | "you"; readonly high: boolean }) {
   const x = over === "you" ? 62 : 104;
   const y = high ? -6 : 8;
   return (
-    <Path
-      testID={`heart-${over}`}
-      transform={`translate(${String(x)} ${String(y)}) scale(1.25)`}
-      d="M0 4 C-7 -1 -7 -8.4 -2.4 -8.4 C-0.8 -8.4 0 -7 0 -6 C0 -7 0.8 -8.4 2.4 -8.4 C7 -8.4 7 -1 0 4 Z"
-      fill={bannerDrawing.red}
-    />
+    <G {...motionMark("heart")}>
+      <Path
+        testID={`heart-${over}`}
+        transform={`translate(${String(x)} ${String(y)}) scale(1.25)`}
+        d="M0 4 C-7 -1 -7 -8.4 -2.4 -8.4 C-0.8 -8.4 0 -7 0 -6 C0 -7 0.8 -8.4 2.4 -8.4 C7 -8.4 7 -1 0 4 Z"
+        fill={bannerDrawing.red}
+      />
+    </G>
   );
 }

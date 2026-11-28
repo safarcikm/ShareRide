@@ -266,6 +266,7 @@ function FrontPage() {
               height={line + spacing.md + searchRowTop}
               ground={line + spacing.sm}
               room={carFromEdge + sizes.sceneCarWide + spacing.lg}
+              playing={arriving}
             />
           </View>
         }
@@ -330,6 +331,7 @@ function FrontPage() {
           day={day}
           width={windowWidth}
           height={spacing.md + band + spacing.sm}
+          playing={arriving}
         />
       }
       topColour={sceneTop(season, scheme)}
