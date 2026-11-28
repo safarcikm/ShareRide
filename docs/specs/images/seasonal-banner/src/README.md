@@ -13,8 +13,10 @@ and takes a picture of each banner as it stands once its moment is over
 node docs/specs/images/seasonal-banner/src/build.cjs
 ```
 
-It writes the pictures into `../`. Once the banner is built, the website's
-own journeys check the real thing with `?day=`.
+It writes the pictures into `../`. The website's own journeys
+(`apps/mobile/e2e/banner.spec.ts`) check the real thing with `?day=`: New
+Year's fireworks and winter's snow playing and ending within 3.5 seconds,
+and Christmas standing still with reduce motion on.
 
 `built.cjs` takes the `4-built-*.webp` sheets from the app itself: Find on
 each of the thirteen days through `?day=`, on a phone and a laptop, light

@@ -244,6 +244,36 @@ they stand once their moment is over ([how they were made](images/seasonal-banne
   Settings, and `festiveDays` in `/v1/config`.
 - **Texts:** `home.greeting.<day>` in `en.ts` and `is.ts`.
 
+As built, in `apps/mobile/src/banner/`:
+
+- **What shows:** `useBanner` (`use-banner.ts`) gives Find the season and
+  day of the date in Iceland, from `bannerFor` and the console's switch,
+  or of `?day=` on the website (3.9). `season-looks.ts` says what each
+  season adds to the scene, `day-looks.ts` what each day dresses the car
+  and the scene in (its load, flags, hats, sky and the first snow's
+  cover); the scene's layers are in `scene-layers.tsx`, the car's loads in
+  `car-loads.tsx`. On a laptop the first snow is masked to the car's room,
+  fading in at its left edge.
+- **The moments:** the tokens are `motion.moments` in `packages/ui` (each
+  part's time, or the earliest and latest for things drawn many times).
+  The motion sheet has one rule and keyframes per part, which play under
+  `[data-motion="arrive"]` (the car's loads, hats and hearts) or under
+  `[data-motion="moment"]`, which marks the scene while Find's `arriving`
+  is on (`playing`). Each drawn thing carries its own start, length and
+  way in `--d`, `--t`, `--dx`, `--dy` and `--r` (`motionMark`). Snow,
+  leaves and the flying puffins (`moment-overlay.tsx`) and the fireworks'
+  trails are drawn only while the moment plays, on the website, unseen
+  until their animation shows them; a day's moment replaces its season's
+  (`momentOf`), so a day without one (Easter, Öskudagur) has none. They are
+  drawn in the scene, so behind the car, where the preview had snow and
+  leaves in front. A laptop's flying puffins set off at the car room's
+  edge, fading in.
+- **When it ends:** `whenArrived` ends the arrival when a part of the car
+  or the moment ends and nothing under either mark still moves
+  (`document.getAnimations()`); where the browser cannot list its
+  animations, at the driver's hop, as before. Every moment ends by
+  3.3 seconds (checked for every season and day in the browser).
+
 ## 7. Privacy and safety
 
 No personal data: nothing is stored, sent or counted. The date comes from

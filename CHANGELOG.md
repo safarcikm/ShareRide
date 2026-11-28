@@ -1677,6 +1677,20 @@ releases follow [Semantic Versioning](https://semver.org/).
   minutes later, and the hourly clean-up drops one still queued after 7
   days. No token is logged, returned or exported. Links made before this
   have no token until their next Apple sign-in.
+- The front page's banner through the year (spec 36, ADR 0057): the
+  Iceland scene in Clear day's colours and in the season of the day in
+  Iceland (snow and the northern lights in winter, flowers in spring,
+  lupines and the sun in summer, heather in autumn), and on thirteen
+  festive days the car and the scene dressed for the day (a tree at
+  Christmas, fireworks at New Year, an egg at Easter, flags on National
+  Day, …) with a greeting above the title. On the website each season's
+  and day's moment plays once with the car's arrival and is over within
+  3.5 seconds: snow falls, leaves blow, two puffins fly past, the
+  fireworks go up; then the day's look stands still, and with reduce
+  motion on it does from the start. A console switch, "Festive days on the
+  front page" (`festive_days`, on), shows only the seasons when off, and
+  `?day=YYYY-MM-DD` on the website shows any date's banner. The phone apps
+  show the seasons and days standing still.
 
 ### Fixed
 

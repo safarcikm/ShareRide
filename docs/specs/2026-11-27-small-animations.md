@@ -75,7 +75,8 @@ Everything else stays still (3.10).
 The Iceland scene at the top of Find, with the yellow car and its two
 puffins (spec 15, 5.3, decision 15). The words, the search and the rides
 around it are there and usable from the first frame; only the drawing
-moves.
+moves. The scene changes with the seasons and festive days, and their
+moments play with the arrival: [spec 36](2026-11-28-seasonal-banner.md).
 
 **"Drive in, then hop"**, which Martin chose (A in section 12):
 
