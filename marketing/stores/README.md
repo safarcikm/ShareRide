@@ -6,7 +6,8 @@ ready to paste and upload, with the scripts that make it.
 | What | Where |
 | ---- | ----- |
 | The texts: names, subtitles, descriptions, keywords, each with its count | [texts.md](texts.md), written by `src/listing.py` |
-| App Store screenshots, English (U.K.), 1320 x 2868 (6.9-inch iPhone) | `app-store/en-GB/1-find.png` to `6-offer.png` |
+| App Store screenshots, English (U.K.), 1206 x 2622 (6.3-inch iPhone, required) | `app-store/en-GB-6.3/1-find.png` to `6-offer.png` |
+| The same at 1320 x 2868 (6.9-inch iPhone, optional) | `app-store/en-GB/1-find.png` to `6-offer.png` |
 | Google Play phone screenshots, 1080 x 1920, Icelandic and English | `google-play/is/` and `google-play/en/`, `1-find.png` to `6-offer.png` |
 | Google Play feature graphic, 1024 x 500 | `google-play/is/feature-graphic.png`, `google-play/en/feature-graphic.png` |
 | Google Play icon, 512 x 512 | `google-play/icon-512.png` |
@@ -46,9 +47,10 @@ presses Submit himself (R32.2).
    the privacy policy address.
 3. The 1.0 version, English (U.K.): promotional text, description,
    keywords, the support and marketing addresses from [texts.md](texts.md);
-   the six pictures in `app-store/en-GB/` in their order under "iPhone
-   6.9-inch display". App Store Connect makes the smaller iPhones' pictures
-   from them.
+   the six pictures in `app-store/en-GB-6.3/` in their order under "iPhone
+   with Dynamic Island (medium display)", which App Store Connect requires
+   since 2026 and makes the other iPhones' pictures from. The 6.9-inch ones
+   in `app-store/en-GB/` may go under "large display"; they are not needed.
 4. App Review Information: the review account and the notes.
 
 **Play Console**, PuffinRide:

@@ -9,11 +9,12 @@
 # android/store-<is|en>-*.png from the Android emulator. The pages and a
 # manifest go to <build dir>; render.cjs turns them into PNGs (build.sh).
 #
-# App Store: 1320 x 2868, the 6.9-inch size; App Store Connect makes the
-# smaller iPhones' pictures from it. Google Play: 1080 x 1920 (9:16), the
-# phones' size that Play shows in its lists, the feature graphic 1024 x 500
-# and the icon 512 x 512. The captions fill well under a fifth of each
-# picture, and nothing is drawn around the screen that looks like a phone.
+# App Store: 1320 x 2868, the 6.9-inch size, and the same scaled to
+# 1206 x 2622, the 6.3-inch size App Store Connect requires (medium_iphone).
+# Google Play: 1080 x 1920 (9:16), the phones' size that Play shows in its
+# lists, the feature graphic 1024 x 500 and the icon 512 x 512. The
+# captions fill well under a fifth of each picture, and nothing is drawn
+# around the screen that looks like a phone.
 import json
 import os
 import shutil
@@ -123,6 +124,27 @@ def finish(out):
                 Image.open(path).convert("RGB").save(path, optimize=True)
             elif name == "icon-512.png":
                 Image.open(path).convert("RGBA").save(path, optimize=True)
+    medium_iphone(out)
+
+
+# Since 2026 App Store Connect requires the iPhone of medium size (6.1 and
+# 6.3 inches, 1206 x 2622) and makes the others from it; the 6.9-inch
+# pictures may go under "large display". The two shapes differ by under
+# 0.1 %, so scaling is enough.
+MEDIUM_IPHONE = (1206, 2622)
+
+
+def medium_iphone(out):
+    from PIL import Image
+
+    large = os.path.join(out, "app-store", "en-GB")
+    medium = os.path.join(out, "app-store", "en-GB-6.3")
+    os.makedirs(medium, exist_ok=True)
+    for name in sorted(os.listdir(large)):
+        if name.endswith(".png"):
+            picture = Image.open(os.path.join(large, name)).convert("RGB")
+            smaller = picture.resize(MEDIUM_IPHONE, Image.LANCZOS)
+            smaller.save(os.path.join(medium, name), optimize=True)
 
 
 if __name__ == "__main__":
