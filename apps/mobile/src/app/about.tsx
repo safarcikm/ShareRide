@@ -85,7 +85,8 @@ export default function AboutScreen() {
  * On the web, an address ending in `#co2` (a card's "How we estimate it",
  * or a shared link) brings that section into view once it is shown: the
  * section waits for the settings, and the screen scrolls inside its own
- * view, so the browser does not do it by itself. Screens opened earlier
+ * view, so the browser does not do it by itself. Focus goes to it too, so
+ * the keyboard and a screen reader go on from there. Screens opened earlier
  * stay in the page, hidden, so it takes the one on show.
  */
 function useScrollToAnchor(anchor: string, shown: boolean) {
@@ -97,7 +98,10 @@ function useScrollToAnchor(anchor: string, shown: boolean) {
     const target = [...document.querySelectorAll(`[id="${anchor}"]`)]
       .reverse()
       .find((element) => element.getClientRects().length > 0);
-    target?.scrollIntoView({ block: "start" });
+    if (!(target instanceof HTMLElement)) return;
+    target.scrollIntoView({ block: "start" });
+    target.tabIndex = -1;
+    target.focus({ preventScroll: true });
   }, [anchor, shown]);
 }
 

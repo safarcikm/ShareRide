@@ -202,5 +202,7 @@ test.describe("ride details without an account", () => {
       .getByRole("heading", { name: "What a shared ride saves" })
       .filter({ visible: true });
     await expect(section).toBeInViewport();
+    // Focus goes there too, so the keyboard and a screen reader go on from it.
+    await expect(section).toBeFocused();
   });
 });
