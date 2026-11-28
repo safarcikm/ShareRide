@@ -70,6 +70,7 @@ export async function renderApp(
       reliabilityMonths: 12,
       signInProviders: [],
       emailSignIn: true,
+      festiveDays: true,
     }),
   );
   // The front page's rides leaving soon: none, unless a test says otherwise.

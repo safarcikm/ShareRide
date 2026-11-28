@@ -87,4 +87,4 @@ Statuses: `Proposed`, `Accepted`, `Rejected`, `Deprecated`, `Superseded by ADR N
 | [0054](0054-estimate-co2-saved-as-one-car-not-driven.md) | Estimate the CO2 a shared ride saves as one car not driven | Accepted |
 | [0055](0055-show-the-phone-apps-on-the-website-per-store.md) | Show the phone apps on the website, switched on per store in the console | Accepted |
 | [0056](0056-keep-apples-token-to-end-sign-in-with-apple.md) | Keep Apple's refresh token to end Sign in with Apple with the account | Accepted |
-| [0057](0057-a-switch-for-the-festive-days-on-the-front-page.md) | A switch for the festive days on the front page | Proposed |
+| [0057](0057-a-switch-for-the-festive-days-on-the-front-page.md) | A switch for the festive days on the front page | Accepted |

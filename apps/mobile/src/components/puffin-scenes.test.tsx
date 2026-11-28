@@ -1,8 +1,10 @@
-import { render, screen } from "@testing-library/react-native";
+import { render, screen, within } from "@testing-library/react-native";
 import { StyleSheet } from "react-native";
+import { bannerDays } from "@shareride/domain";
 import { onWebsite } from "@/lib/on-website";
+import { drawn, fillsIn, valuesIn } from "@/testing/drawing";
 import { bannerDrawing, icelandSeasons, people, puffin, puffinCar } from "@/theme/tokens";
-import { IcelandScene, PuffinByPin, PuffinsInCar } from "./puffin-scenes";
+import { carHeight, IcelandScene, PuffinByPin, PuffinsInCar } from "./puffin-scenes";
 
 // Spec 15, section 5.3, "Puffin scenes": drawings around the screens, hidden
 // from screen readers, so these tests look at what they draw.
@@ -16,32 +18,11 @@ jest.mock("react-native/Libraries/Utilities/useColorScheme", () => ({
   default: () => mockScheme,
 }));
 
-/** A colour as react-native-svg hands it to the native view: 0xAARRGGBB. */
-const drawn = (hex: string) => ({
-  type: 0,
-  payload: 0xff000000 + Number.parseInt(hex.slice(1), 16),
-});
-
 /** A colour in a gradient as react-native-svg hands it over: a signed 0xAARRGGBB. */
 const gradientColour = (hex: string) => (0xff000000 + Number.parseInt(hex.slice(1), 16)) | 0;
 
 const part = (testID: string) => screen.getByTestId(testID, { includeHiddenElements: true });
 const parts = (testID: string) => screen.queryAllByTestId(testID, { includeHiddenElements: true });
-
-/** Every value of a prop inside a drawn part, nested shapes included. */
-function valuesIn(node: unknown, prop: string): unknown[] {
-  if (Array.isArray(node)) return node.flatMap((child) => valuesIn(child, prop));
-  if (typeof node !== "object" || node === null) return [];
-  const own: unknown[] = [];
-  if ("props" in node && typeof node.props === "object" && node.props !== null) {
-    const value = (node.props as Record<string, unknown>)[prop];
-    if (value !== undefined) own.push(value);
-  }
-  return "children" in node ? [...own, ...valuesIn(node.children, prop)] : own;
-}
-
-/** Every fill inside a drawn part, nested shapes included. */
-const fillsIn = (node: unknown) => valuesIn(node, "fill");
 
 afterEach(() => {
   mockScheme = "light";
@@ -321,4 +302,208 @@ describe("IcelandScene in its season (spec 15, 5.3; spec 36, 3.1 and 3.3)", () =
     await render(<IcelandScene season="autumn" width={390} height={200} />);
     expect(JSON.stringify(valuesIn(part("heather"), "cx"))).toBe(first);
   });
+});
+
+describe("the car and the scene on a day (spec 36, 3.4 and 3.5)", () => {
+  /** What one of the puffins in the car wears: the test IDs drawn on it. */
+  const on = (who: "you" | "driver", testID: string) =>
+    within(part(`puffin-${who}`)).queryAllByTestId(testID, { includeHiddenElements: true });
+
+  it("carries a little tree at Christmas, both puffins in Yule hats", async () => {
+    await render(<PuffinsInCar width={170} day="christmas" season="winter" />);
+    expect(parts("tree")).toHaveLength(1);
+    expect(parts("roof-case")).toHaveLength(0);
+    expect(on("you", "hat-yule")).toHaveLength(1);
+    expect(on("driver", "hat-yule")).toHaveLength(1);
+  });
+
+  it("wears party hats at New Year, under three fireworks", async () => {
+    await render(<PuffinsInCar width={170} day="newyear" season="winter" />);
+    expect(on("you", "hat-party")).toHaveLength(1);
+    expect(on("driver", "hat-party")).toHaveLength(1);
+    expect(parts("roof-snow")).toHaveLength(1);
+    await render(<IcelandScene season="winter" day="newyear" width={390} height={200} />);
+    expect(parts("firework")).toHaveLength(3);
+  });
+
+  it("carries an Easter egg with its chick", async () => {
+    await render(<PuffinsInCar width={170} day="easter" season="spring" />);
+    expect(parts("egg")).toHaveLength(1);
+    expect(parts("chick")).toHaveLength(1);
+  });
+
+  it("has the sun rise on the first day of summer, the driver in sunglasses and the woolly hat", async () => {
+    await render(<PuffinsInCar width={170} day="summerday" season="spring" />);
+    expect(on("driver", "glasses")).toHaveLength(1);
+    expect(on("driver", "hat-wool")).toHaveLength(1);
+    await render(<IcelandScene season="spring" day="summerday" width={390} height={200} />);
+    expect(parts("sunrise")).toHaveLength(1);
+  });
+
+  it("flies two flags on National Day, with balloons", async () => {
+    await render(<PuffinsInCar width={170} day="june17" season="summer" />);
+    expect(parts("flag")).toHaveLength(2);
+    expect(fillsIn(part("balloons"))).toContainEqual(drawn(bannerDrawing.flagBlue));
+  });
+
+  it("carries a tent at the long weekend", async () => {
+    await render(<PuffinsInCar width={170} day="longweekend" season="summer" />);
+    expect(parts("tent")).toHaveLength(1);
+  });
+
+  it("turns the autumn white on the first day of winter, the passenger in a woolly hat too", async () => {
+    await render(<PuffinsInCar width={170} day="winterday" season="autumn" />);
+    expect(on("you", "hat-wool")).toHaveLength(1);
+    await render(<IcelandScene season="autumn" day="winterday" width={390} height={200} />);
+    expect(fillsIn(part("cover"))).toContainEqual(drawn(icelandSeasons.winter.light.hill));
+    // The whole scene on a phone: nothing keeps any of it out.
+    expect(part("cover").props.mask).toBeUndefined();
+  });
+
+  it("keeps the farmhouse on the first day of winter, snow on its roof", async () => {
+    const winter = icelandSeasons.winter.light;
+    for (const layout of ["phone", "panel"] as const) {
+      await render(
+        <IcelandScene
+          season="autumn"
+          day="winterday"
+          width={900}
+          height={180}
+          road={layout === "phone"}
+          room={[600, 900]}
+          layout={layout}
+        />,
+      );
+      // Drawn over the white hills, so the snow does not bury it.
+      const house = within(part("cover")).getByTestId("farmhouse", { includeHiddenElements: true });
+      expect(fillsIn(house)).toContainEqual(drawn(winter.roof));
+      expect(fillsIn(house)).toContainEqual(drawn(winter.snow));
+    }
+  });
+
+  it("keeps the first snow in the car's room on a laptop, fading in at its edge (R36.5)", async () => {
+    await render(
+      <IcelandScene
+        season="autumn"
+        day="winterday"
+        width={900}
+        height={180}
+        ground={110}
+        road={false}
+        room={[600, 900]}
+        layout="panel"
+      />,
+    );
+    // The white shows only through the room's mask: none of it under the
+    // words, which stand at the left of the room.
+    const edge = part("cover-edge");
+    expect(part("cover").props.mask).toBe(edge.props.name);
+    expect(part("cover-ground").props.mask).toBe(edge.props.name);
+    // Its gradient: nothing at the room's left edge, all of it a little in.
+    const scene = part("iceland-scene");
+    expect(valuesIn(scene, "x1")).toContain(600);
+    expect(valuesIn(scene, "x2")).toContain(600 + 48);
+    // The land outside the room keeps autumn's colours.
+    expect(fillsIn(part("scene-ground"))).toContainEqual(drawn(icelandSeasons.autumn.light.hill));
+  });
+
+  it("flies one flag on the roof on Sovereignty Day", async () => {
+    await render(<PuffinsInCar width={170} day="dec1" season="winter" />);
+    expect(parts("flag")).toHaveLength(1);
+  });
+
+  it("brings flowers and a heart over the driver on Bóndadagur, over the passenger on Konudagur", async () => {
+    await render(<PuffinsInCar width={170} day="bondadagur" season="winter" />);
+    expect(parts("bouquet")).toHaveLength(1);
+    expect(parts("heart-driver")).toHaveLength(1);
+    expect(parts("heart-you")).toHaveLength(0);
+    await render(<PuffinsInCar width={170} day="konudagur" season="winter" />);
+    expect(parts("heart-you")).toHaveLength(1);
+    expect(parts("heart-driver")).toHaveLength(0);
+  });
+
+  it("carries a cream bun on Bun Day", async () => {
+    await render(<PuffinsInCar width={170} day="bolludagur" season="winter" />);
+    expect(parts("bun")).toHaveLength(1);
+  });
+
+  it("dresses up on Ash Wednesday: a mask and a crown", async () => {
+    await render(<PuffinsInCar width={170} day="oskudagur" season="winter" />);
+    expect(on("you", "mask")).toHaveLength(1);
+    expect(on("driver", "hat-crown")).toHaveLength(1);
+  });
+
+  it("wears sailor caps on Seafarers' Day", async () => {
+    await render(<PuffinsInCar width={170} day="seafarers" season="summer" />);
+    expect(on("you", "hat-sailor")).toHaveLength(1);
+    expect(on("driver", "hat-sailor")).toHaveLength(1);
+  });
+
+  it("carries the case in a season, with snow on it in winter only", async () => {
+    await render(<PuffinsInCar width={170} season="winter" />);
+    expect(parts("roof-case")).toHaveLength(1);
+    expect(parts("roof-snow")).toHaveLength(1);
+    await render(<PuffinsInCar width={170} season="summer" />);
+    expect(parts("roof-snow")).toHaveLength(0);
+    expect(on("driver", "hat-wool")).toHaveLength(1);
+    expect(on("you", "hat-wool")).toHaveLength(0);
+  });
+
+  it("draws no day's things in the scene on a plain day", async () => {
+    await render(<IcelandScene season="winter" width={390} height={200} />);
+    expect(parts("firework")).toHaveLength(0);
+    expect(parts("sunrise")).toHaveLength(0);
+    expect(parts("cover")).toHaveLength(0);
+  });
+
+  it("keeps the fireworks and the sunrise in the car's room on a laptop", async () => {
+    await render(
+      <IcelandScene
+        season="winter"
+        day="newyear"
+        width={900}
+        height={180}
+        road={false}
+        room={[600, 900]}
+        layout="panel"
+      />,
+    );
+    expect(parts("firework")).toHaveLength(3);
+    for (const x of valuesIn(parts("firework"), "cx")) {
+      expect(x).toBeGreaterThanOrEqual(600);
+      expect(x).toBeLessThanOrEqual(900);
+    }
+    await render(
+      <IcelandScene
+        season="spring"
+        day="summerday"
+        width={900}
+        height={180}
+        road={false}
+        room={[600, 900]}
+        layout="panel"
+      />,
+    );
+    for (const x of valuesIn(part("sunrise"), "cx")) {
+      expect(x).toBeGreaterThanOrEqual(600);
+      expect(x).toBeLessThanOrEqual(900);
+    }
+  });
+
+  it.each(bannerDays)(
+    "keeps the car where it stands on a plain day, its size and place, on %s",
+    async (day) => {
+      await render(<PuffinsInCar width={170} day={day} season="winter" />);
+      // What a day adds draws past the car's own area: the drawing grows
+      // up and to the left by as much as its margins take back.
+      const svg = part("car-drawing");
+      const { width, height } = svg.props as { width: number; height: number };
+      const { marginTop = 0, marginLeft = 0 } = StyleSheet.flatten(svg.props.style) as {
+        marginTop?: number;
+        marginLeft?: number;
+      };
+      expect(height + marginTop).toBeCloseTo(carHeight(170), 5);
+      expect(width + marginLeft).toBeCloseTo(170, 5);
+    },
+  );
 });

@@ -2,14 +2,27 @@
    coordinates; the types mark the transform style of the same name as deprecated. */
 import { useId, useState } from "react";
 import { StyleSheet, useColorScheme, View } from "react-native";
-import Svg, { Circle, ClipPath, Defs, G, Path, Rect } from "react-native-svg";
-import type { BannerSeason } from "@shareride/domain";
+import Svg, {
+  Circle,
+  ClipPath,
+  Defs,
+  G,
+  LinearGradient,
+  Mask,
+  Path,
+  Rect,
+  Stop,
+} from "react-native-svg";
+import type { BannerDay, BannerSeason } from "@shareride/domain";
+import { Balloons, Bouquet, Bun, Egg, Flag, Heart, RoofCase, Tent, Tree } from "@/banner/car-loads";
+import { carLook, dayLooks, everyday, type DayLook } from "@/banner/day-looks";
 import { seasonLooks, sceneTop } from "@/banner/season-looks";
 import {
   at,
   Aurora,
   backHillAt,
   Farmhouse,
+  Fireworks,
   Flowers,
   footZones,
   Heather,
@@ -19,9 +32,11 @@ import {
   SkyGradient,
   SnowBanks,
   Stars,
+  Sunrise,
   type Room,
 } from "@/banner/scene-layers";
 import {
+  bannerDrawing,
   carDrawing,
   icelandSeasons,
   pageMaxWidth,
@@ -30,6 +45,7 @@ import {
   puffinCar,
   radii,
   sizes,
+  spacing,
 } from "@/theme/tokens";
 import { arrivalProps, motionMark } from "@/theme/motion";
 import { usePalette } from "@/theme/use-palette";
@@ -63,22 +79,34 @@ function useScene() {
  * from that many points to the left of its place, its body bobbing and
  * dipping as it stops, then its puffins hop (`motionCss`). Its body and
  * each puffin are groups of their own for that; the drawing is the same.
+ *
+ * On the front page it wears the `day`, or the `season` on a plain day
+ * (spec 36, 3.3 to 3.5): snow on the case in winter, a tree, an egg, flags
+ * and the puffins dressed up. What rides above the roof or trails behind
+ * draws past the car's own area, so the car stays where it was.
  */
 export function PuffinsInCar({
   width,
   moving = false,
   arriveFrom = null,
+  day = null,
+  season,
 }: {
   readonly width: number;
   readonly moving?: boolean;
   readonly arriveFrom?: number | null;
+  readonly day?: BannerDay | null;
+  readonly season?: BannerSeason;
 }) {
   const palette = usePalette();
-  const { black } = useScene();
+  const { black, scheme } = useScene();
   // Its own name for the windows' outline, as two cars can be on one page.
   const clip = `windows-${useId().replaceAll(":", "")}`;
-  const left = moving ? car.left - behind : car.left;
+  const look = carLook(day, season);
+  const { above, aside } = reachOf(look);
+  const left = (moving ? car.left - behind : car.left) - aside;
   const across = moving ? car.width + behind : car.width;
+  const scale = width / across;
   const arrival = arrivalProps(arriveFrom);
   return (
     <View
@@ -89,9 +117,11 @@ export function PuffinsInCar({
       style={[styles.scene, arrival.style]}
     >
       <Svg
-        width={width}
-        height={(width * car.height) / across}
-        viewBox={`${String(left)} ${String(car.top)} ${String(across)} ${String(car.height)}`}
+        testID="car-drawing"
+        width={width + aside * scale}
+        height={(car.height + above) * scale}
+        viewBox={`${String(left)} ${String(car.top - above)} ${String(across + aside)} ${String(car.height + above)}`}
+        style={{ marginTop: -above * scale, marginLeft: -aside * scale }}
       >
         <Defs>
           <ClipPath id={clip}>
@@ -107,27 +137,17 @@ export function PuffinsInCar({
             strokeLinecap="round"
           />
         ) : null}
+        {look.balloons ? <Balloons /> : null}
         {/* The body: everything but the wheels, which stay on the road. */}
         <G {...motionMark("car-body")}>
-          {/* The case on the roof rack. */}
-          <Rect x={58} y={16} width={42} height={12} rx={3} fill={people.crowberry} />
-          <Rect
-            x={75}
-            y={13}
-            width={9}
-            height={4}
-            rx={2}
-            fill="none"
-            stroke={black}
-            strokeWidth={1.6}
-          />
-          <Path d="M64 16 V28 M94 16 V28" stroke={puffinCar.strap} strokeWidth={2} />
+          <Load look={look} tyre={black} scheme={scheme} />
           <Path
             d="M52 29 H106 M60 29 V33 M98 29 V33"
             stroke={black}
             strokeWidth={2.4}
             strokeLinecap="round"
           />
+          {look.heart === null ? null : <Heart over={look.heart} high={look.load !== "case"} />}
           {/* The body: a round roof, a short round back and a sloping bonnet. */}
           <Path
             d="M14 98 C10 86 16 74 30 69 C34 46 54 31 80 31 C106 31 122 44 130 64 C152 65 172 70 182 81 C186 86 186 92 185 98 Z"
@@ -142,7 +162,7 @@ export function PuffinsInCar({
                 x={58}
                 y={57}
                 size={0.54}
-                look={{ kind: "colour", scarf: people.mossLight }}
+                look={{ kind: "colour", ...everyday.you, ...look.you }}
               />
             </G>
             <G {...motionMark("puffin-driver")}>
@@ -151,7 +171,7 @@ export function PuffinsInCar({
                 x={96}
                 y={58}
                 size={0.58}
-                look={{ kind: "colour", hat: people.crowberry }}
+                look={{ kind: "colour", ...everyday.driver, ...look.driver }}
               />
             </G>
           </G>
@@ -181,6 +201,13 @@ export function PuffinsInCar({
           <Rect x={11} y={78} width={6} height={9} rx={3} fill={people.crowberry} />
           <Rect x={178} y={93} width={14} height={5.5} rx={2.75} fill={puffinCar.trim} />
           <Rect x={6} y={93} width={14} height={5.5} rx={2.75} fill={puffinCar.trim} />
+          {look.flags === "wings" ? (
+            <>
+              <Flag x={172} top={44} pole={27} size={0.72} />
+              <Flag x={25} top={48} pole={24} size={0.64} />
+            </>
+          ) : null}
+          {look.flags === "roof" ? <Flag x={100} top={-4} pole={33} size={0.95} /> : null}
         </G>
         {[52, 151].map((cx) => (
           <Wheel key={cx} cx={cx} tyre={black} />
@@ -188,6 +215,53 @@ export function PuffinsInCar({
       </Svg>
     </View>
   );
+}
+
+/**
+ * How far a day's things draw past the car's own area, in its drawing
+ * units: above the roof (a tree, an egg's chick, a flag, a heart) and
+ * behind it (balloons).
+ */
+function reachOf(look: DayLook) {
+  const tall = look.load !== "case" || look.flags === "roof" || look.heart !== null;
+  return { above: tall ? 26 : 0, aside: look.balloons ? 30 : 0 };
+}
+
+/** What rides on the roof rack: the case, or a day's load. */
+function Load({
+  look,
+  tyre,
+  scheme,
+}: {
+  readonly look: DayLook;
+  readonly tyre: string;
+  readonly scheme: "light" | "dark";
+}) {
+  switch (look.load) {
+    case "case":
+      return (
+        <RoofCase
+          tyre={tyre}
+          snow={
+            look.roofSnow
+              ? scheme === "dark"
+                ? bannerDrawing.flakeEdge
+                : icelandSeasons.winter.light.snow
+              : undefined
+          }
+        />
+      );
+    case "tree":
+      return <Tree />;
+    case "egg":
+      return <Egg />;
+    case "tent":
+      return <Tent />;
+    case "bun":
+      return <Bun />;
+    case "flowers":
+      return <Bouquet />;
+  }
 }
 
 function Wheel({ cx, tyre }: { readonly cx: number; readonly tyre: string }) {
@@ -371,15 +445,17 @@ function glaciersOn(points: readonly (readonly [number, number])[], count: numbe
  * `ground` down a road with a dashed line, where the car drives; or, with
  * `road={false}`, the hills go on down, as under a wide page's search.
  * Each season brings its own (`seasonLooks`): snow, flowers, lupines and
- * the sun, heather, stars and the northern lights. The small things go in
- * `room`, the part of the width given to them: all of it on a phone, the
- * car's room on a laptop (R36.5). `layout` says which the scene is behind,
- * a phone's top or a laptop's panel, as the name's row and the title stand
- * where the layout puts them, whatever the window's width. `width` and
- * `height` are the drawing's.
+ * the sun, heather, stars and the northern lights; a `day` its sky (the
+ * sunrise, fireworks) or the first snow over the land (spec 36, 3.4). The
+ * small things go in `room`, the part of the width given to them: all of
+ * it on a phone, the car's room on a laptop (R36.5). `layout` says which
+ * the scene is behind, a phone's top or a laptop's panel, as the name's
+ * row and the title stand where the layout puts them, whatever the
+ * window's width. `width` and `height` are the drawing's.
  */
 export function IcelandScene({
   season,
+  day = null,
   width,
   height,
   ground = height - sizes.sceneRoad,
@@ -388,6 +464,7 @@ export function IcelandScene({
   layout = "phone",
 }: {
   readonly season: BannerSeason;
+  readonly day?: BannerDay | null;
   readonly width: number;
   readonly height: number;
   readonly ground?: number;
@@ -400,6 +477,11 @@ export function IcelandScene({
   const land = icelandSeasons[season][scheme];
   const snow = "snow" in land ? land.snow : undefined;
   const look = seasonLooks[season][scheme];
+  const sky = day === null ? null : dayLooks[day].sky;
+  const coverSeason = day === null ? null : dayLooks[day].cover;
+  const cover = coverSeason === null ? null : icelandSeasons[coverSeason][scheme];
+  const coverLook = coverSeason === null ? null : seasonLooks[coverSeason][scheme];
+  const coverSnow = cover !== null && "snow" in cover ? cover.snow : undefined;
   if (width <= 0 || height <= 0) return null;
   const wide = layout === "panel";
   const shape = (points: readonly (readonly [number, number])[]) =>
@@ -416,9 +498,17 @@ export function IcelandScene({
     const along = Math.min(x, width);
     back.push(`L${at(along, backHillAt(along, width, ground, wide))}`);
   }
+  const farRange = range(shape(wide ? farRidges.wide : farRidges.narrow), width, ground);
+  const mountains = range(peaks, width, ground);
+  const backHill = `M0 ${String(ground)} ${back.join(" ")} L${String(width)} ${String(ground)} Z`;
   const house = wide ? room[1] - 44 : width * 0.1;
+  const houseAt = backHillAt(house, width, ground, wide) + 1.5;
   const zones = footZones(width, room, wide);
   const below = height - ground;
+  // On a laptop a day's cover, the first snow, shows only in the car's
+  // room, fading in at its left edge: never under the words (R36.5).
+  const edge = `cover-edge-${ids}`;
+  const masked = wide && cover !== null ? `url(#${edge})` : undefined;
   return (
     <View
       testID="iceland-scene"
@@ -439,15 +529,18 @@ export function IcelandScene({
         {look.sun === "midnight" ? (
           <MidnightSun width={width} room={room} ground={ground} wide={wide} />
         ) : null}
+        {sky === "sunrise" ? (
+          <Sunrise width={width} room={room} ground={ground} wide={wide} />
+        ) : null}
         <Path
-          d={range(shape(wide ? farRidges.wide : farRidges.narrow), width, ground)}
+          d={farRange}
           fill={land.far}
           stroke={land.far}
           strokeWidth={3}
           strokeLinejoin="round"
         />
         <Path
-          d={range(peaks, width, ground)}
+          d={mountains}
           fill={land.mountain}
           stroke={land.mountain}
           strokeWidth={4}
@@ -464,17 +557,8 @@ export function IcelandScene({
             strokeLinejoin="round"
           />
         ))}
-        <Path
-          d={`M0 ${String(ground)} ${back.join(" ")} L${String(width)} ${String(ground)} Z`}
-          fill={land.hillBack}
-        />
-        <Farmhouse
-          x={house}
-          y={backHillAt(house, width, ground, wide) + 1.5}
-          roof={land.roof}
-          snow={snow}
-          scheme={scheme}
-        />
+        <Path d={backHill} fill={land.hillBack} />
+        <Farmhouse x={house} y={houseAt} roof={land.roof} snow={snow} scheme={scheme} />
         <Path d={hills} fill={land.hill} />
         {look.heather ? (
           <Heather
@@ -485,6 +569,35 @@ export function IcelandScene({
             scheme={scheme}
           />
         ) : null}
+        {masked === undefined ? null : (
+          <CoverEdge id={edge} room={room} width={width} height={height} />
+        )}
+        {cover === null || coverLook === null ? null : (
+          <G testID="cover" mask={masked}>
+            <Path d={farRange} fill={cover.far} />
+            <Path
+              d={mountains}
+              fill={cover.mountain}
+              stroke={cover.mountain}
+              strokeWidth={4}
+              strokeLinejoin="round"
+            />
+            {glaciersOn(peaks, coverLook.caps, coverLook.capDepth).map((d) => (
+              <Path
+                key={d}
+                d={d}
+                fill={cover.glacier}
+                stroke={cover.glacier}
+                strokeWidth={3}
+                strokeLinejoin="round"
+              />
+            ))}
+            <Path d={backHill} fill={cover.hillBack} />
+            {/* The farmhouse again, over the white, with snow on its roof. */}
+            <Farmhouse x={house} y={houseAt} roof={cover.roof} snow={coverSnow} scheme={scheme} />
+            <Path d={hills} fill={cover.hill} />
+          </G>
+        )}
         {look.lupines ? <Lupines zones={zones} ground={ground} wide={wide} /> : null}
         {look.flowers ? <Flowers zones={zones} ground={ground} wide={wide} /> : null}
         {road ? (
@@ -498,6 +611,11 @@ export function IcelandScene({
               fill={land.road}
             />
             {snow === undefined ? null : <SnowBanks width={width} ground={ground} snow={snow} />}
+            {coverSnow === undefined ? null : (
+              <G testID="cover-banks" mask={masked}>
+                <SnowBanks width={width} ground={ground} snow={coverSnow} />
+              </G>
+            )}
             <Path
               d={`M${String(spacingOnRoad)} ${String(ground + below / 2)} H${String(width)}`}
               stroke={land.roadLine}
@@ -507,17 +625,86 @@ export function IcelandScene({
             />
           </>
         ) : (
-          <Rect
-            testID="scene-ground"
-            x={0}
-            y={ground}
-            width={width}
-            height={below}
-            fill={land.hill}
-          />
+          <>
+            <Rect
+              testID="scene-ground"
+              x={0}
+              y={ground}
+              width={width}
+              height={below}
+              fill={land.hill}
+            />
+            {cover === null ? null : (
+              <Rect
+                testID="cover-ground"
+                x={0}
+                y={ground}
+                width={width}
+                height={below}
+                fill={cover.hill}
+                mask={masked}
+              />
+            )}
+          </>
         )}
+        {sky === "fireworks" ? (
+          <Fireworks width={width} room={room} ground={ground} wide={wide} />
+        ) : null}
       </Svg>
     </View>
+  );
+}
+
+/** How far the first snow fades in from the car room's left edge, on a laptop. */
+const coverFade = spacing.xxl;
+
+/**
+ * A mask's colour is never seen, only how light it is: white shows what is
+ * under it, and where it fades out, nothing shows.
+ */
+const shows = "#FFFFFF";
+
+/**
+ * The mask that keeps a day's cover in the car's room on a laptop
+ * (R36.5): nothing left of the room, then the cover fading in over
+ * `coverFade`, then all of it.
+ */
+function CoverEdge({
+  id,
+  room,
+  width,
+  height,
+}: {
+  readonly id: string;
+  readonly room: Room;
+  readonly width: number;
+  readonly height: number;
+}) {
+  return (
+    <Defs>
+      <LinearGradient
+        id={`${id}-fade`}
+        gradientUnits="userSpaceOnUse"
+        x1={room[0]}
+        y1={0}
+        x2={room[0] + coverFade}
+        y2={0}
+      >
+        <Stop offset={0} stopColor={shows} stopOpacity={0} />
+        <Stop offset={1} stopColor={shows} stopOpacity={1} />
+      </LinearGradient>
+      <Mask
+        id={id}
+        testID="cover-edge"
+        maskUnits="userSpaceOnUse"
+        x={0}
+        y={0}
+        width={width}
+        height={height}
+      >
+        <Rect x={0} y={0} width={width} height={height} fill={`url(#${id}-fade)`} />
+      </Mask>
+    </Defs>
   );
 }
 
@@ -529,11 +716,13 @@ export function IcelandScene({
  */
 export function IcelandPanel({
   season,
+  day = null,
   height,
   ground,
   room,
 }: {
   readonly season: BannerSeason;
+  readonly day?: BannerDay | null;
   readonly height: number;
   readonly ground: number;
   readonly room: number;
@@ -550,6 +739,7 @@ export function IcelandPanel({
     >
       <IcelandScene
         season={season}
+        day={day}
         width={width}
         height={height}
         ground={ground}

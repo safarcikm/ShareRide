@@ -34,6 +34,7 @@ const quiet: Config = {
   oldestAppVersion: null,
   co2GramsPerCarKm: 0,
   appStores: [],
+  festiveDays: true,
 };
 
 const ConfigContext = createContext<Config>(quiet);
@@ -100,6 +101,14 @@ export function useReliabilityMonths(): number {
  */
 export function usePayInPerson(): boolean {
   return useContext(ConfigContext).payInPerson;
+}
+
+/**
+ * Whether the front page's banner dresses up for the festive days, or
+ * shows only the seasons (spec 36, 3.8; ADR 0057).
+ */
+export function useFestiveDays(): boolean {
+  return useContext(ConfigContext).festiveDays;
 }
 
 /** The seats a trip can offer and a booking can take, at most (rule S1), as the operator has it. */

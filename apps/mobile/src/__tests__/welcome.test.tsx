@@ -876,6 +876,112 @@ describe("Find, signed in (spec 31, 3.5)", () => {
   });
 });
 
+describe("Find on a festive day (spec 36, 3.4 to 3.8)", () => {
+  const christmasEve = () => new Date("2027-12-24T12:00:00Z");
+
+  beforeEach(() => {
+    mockedNow.mockImplementation(christmasEve);
+  });
+
+  afterEach(async () => {
+    mockedNow.mockImplementation(() => new Date("2026-11-14T12:00:00Z"));
+    await act(() => {
+      Dimensions.set({ window: { width: 750, height: 1334, scale: 2, fontScale: 2 } });
+    });
+  });
+
+  /** The words on the title's line, in the order they stand. */
+  const titleLineWords = () =>
+    within(screen.getByTestId("title-line"))
+      .getAllByText(/./)
+      .map((node) => node.props.children as unknown);
+  const car = () => screen.getByTestId("puffins-in-car", { includeHiddenElements: true });
+  const scene = () => screen.getByTestId("iceland-scene", { includeHiddenElements: true });
+
+  it("greets the day above the title, centred over it as the title is", async () => {
+    await openFrontPage();
+    await screen.findByRole("header", { name: "Share your ride" });
+    expect(screen.getByText("Merry Christmas")).toBeVisible();
+    expect(titleLineWords().slice(0, 2)).toEqual(["Merry Christmas", "Share your ride"]);
+    expect(screen.getByTestId("greeting")).toHaveStyle({ justifyContent: "center" });
+  });
+
+  it("greets the day above my name when I am signed in, at the left with it", async () => {
+    deviceLanguage("en-GB");
+    await renderApp("/", { me: completeMe });
+    await screen.findByRole("header", { name: "Hi Anna" });
+    expect(titleLineWords().slice(0, 2)).toEqual(["Merry Christmas", "Hi Anna"]);
+    expect(screen.getByTestId("greeting")).toHaveStyle({ justifyContent: "flex-start" });
+  });
+
+  it("greets in Icelandic on an Icelandic device", async () => {
+    deviceLanguage("is-IS");
+    await renderApp("/");
+    expect(await screen.findByText("Gleðileg jól")).toBeVisible();
+  });
+
+  it("has no greeting on a day that is only a season", async () => {
+    mockedNow.mockImplementation(() => new Date("2027-07-01T09:00:00Z"));
+    await openFrontPage();
+    await screen.findByRole("header", { name: "Share your ride" });
+    expect(screen.queryByTestId("greeting")).toBeNull();
+    expect(within(car()).queryByTestId("tree", { includeHiddenElements: true })).toBeNull();
+  });
+
+  it("dresses the car for the day: a tree on it at Christmas", async () => {
+    await openFrontPage();
+    await screen.findByRole("header", { name: "Share your ride" });
+    expect(within(car()).getByTestId("tree", { includeHiddenElements: true })).toBeTruthy();
+    expect(within(scene()).queryAllByTestId("firework", { includeHiddenElements: true })).toEqual(
+      [],
+    );
+  });
+
+  it("dresses the scene for the day: fireworks in the sky at New Year", async () => {
+    mockedNow.mockImplementation(() => new Date("2027-12-31T20:00:00Z"));
+    await openFrontPage();
+    await screen.findByText("Happy New Year");
+    expect(
+      within(scene()).getAllByTestId("firework", { includeHiddenElements: true }),
+    ).not.toHaveLength(0);
+  });
+
+  it("shows only the season with the festive days off in the console (3.8)", async () => {
+    await openFrontPage((fake) => {
+      fake.answer("/v1/config", () =>
+        ok(200, {
+          beta: false,
+          paused: [],
+          maxSeats: 8,
+          freeCancellationMinutes: 15,
+          maxMoveMinutes: 120,
+          reliabilityMonths: 12,
+          signInProviders: [],
+          emailSignIn: true,
+          festiveDays: false,
+        }),
+      );
+    });
+    await screen.findByRole("header", { name: "Share your ride" });
+    await waitFor(() => {
+      expect(screen.queryByTestId("greeting")).toBeNull();
+    });
+    expect(within(car()).queryByTestId("tree", { includeHiddenElements: true })).toBeNull();
+    expect(titleLineWords()[0]).toBe("Share your ride");
+  });
+
+  it("on a laptop greets in the title's line, above the title at the left, not in the car's room", async () => {
+    Dimensions.set({ window: { width: 1280, height: 800, scale: 1, fontScale: 1 } });
+    await openFrontPage();
+    await screen.findByRole("header", { name: "Share your ride" });
+    expect(titleLineWords().slice(0, 2)).toEqual(["Merry Christmas", "Share your ride"]);
+    expect(screen.getByTestId("greeting")).toHaveStyle({ justifyContent: "flex-start" });
+    const room = screen.getByTestId("car-room", { includeHiddenElements: true });
+    expect(within(room).queryByText("Merry Christmas")).toBeNull();
+    expect(within(car()).getByTestId("tree", { includeHiddenElements: true })).toBeTruthy();
+  });
+});
+
 describe("The car arrives on the website (spec 33, 3.2)", () => {
   const car = () => screen.getByTestId("puffins-in-car", { includeHiddenElements: true });
   const styleOf = (node: ReturnType<typeof car>) =>

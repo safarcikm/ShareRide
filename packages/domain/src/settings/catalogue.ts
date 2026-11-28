@@ -12,6 +12,7 @@ export const settingGroups = [
   "trip_day",
   "co2",
   "apps",
+  "front_page",
 ] as const;
 export type SettingGroup = (typeof settingGroups)[number];
 
@@ -280,6 +281,12 @@ export const settingDefinitions = {
   app_store_listed: { group: "apps", ...offByDefault },
   /** On: the website shows Google Play's badge, and Android browsers our own strip. */
   google_play_listed: { group: "apps", ...offByDefault },
+  /**
+   * The front page's banner dresses up for Christmas, 17 June and the
+   * other days (spec 36, 3.8; ADR 0057). Off: only the seasons, for a day
+   * when a party would be wrong.
+   */
+  festive_days: { group: "front_page", ...onByDefault },
 } as const satisfies Record<string, SettingDefinition>;
 
 export type SettingKey = keyof typeof settingDefinitions;

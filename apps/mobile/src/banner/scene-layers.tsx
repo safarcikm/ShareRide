@@ -384,3 +384,95 @@ export function SnowBanks({
     />
   );
 }
+
+/** The first day of summer's sun, rising over the mountains with its rays and a smile. */
+export function Sunrise({
+  width,
+  room,
+  ground,
+  wide,
+}: {
+  readonly width: number;
+  readonly room: Room;
+  readonly ground: number;
+  readonly wide: boolean;
+}) {
+  const x = wide ? room[1] - 46 : width * 0.2;
+  const y = wide ? 42 : Math.max(66, ground * 0.46);
+  const rays = Array.from({ length: 12 }, (_, index) => {
+    const angle = (index * Math.PI) / 6;
+    return `M${at(x + 15 * Math.cos(angle), y + 15 * Math.sin(angle))} L${at(x + 22 * Math.cos(angle), y + 22 * Math.sin(angle))}`;
+  }).join(" ");
+  return (
+    <G testID="sunrise">
+      <Path d={rays} stroke={people.sun} strokeWidth={3} strokeLinecap="round" />
+      <Circle cx={x} cy={y} r={12} fill={people.sun} />
+      <Path
+        d={`M${at(x - 5, y + 2)} Q${at(x, y + 6.5)} ${at(x + 5, y + 2)}`}
+        stroke={puffinCar.wing}
+        strokeWidth={1.6}
+        fill="none"
+        strokeLinecap="round"
+      />
+      <Circle cx={x - 4} cy={y - 3} r={1.3} fill={puffinCar.wing} />
+      <Circle cx={x + 4} cy={y - 3} r={1.3} fill={puffinCar.wing} />
+    </G>
+  );
+}
+
+/**
+ * New Year's three fireworks, burst in the sky: on a phone across it, on a
+ * laptop in the car's room.
+ */
+export function Fireworks({
+  width,
+  room,
+  ground,
+  wide,
+}: {
+  readonly width: number;
+  readonly room: Room;
+  readonly ground: number;
+  readonly wide: boolean;
+}) {
+  const span = room[1] - room[0];
+  const bursts = wide
+    ? ([
+        [room[0] + 50, 40, 20, people.crowberry],
+        [room[1] - 60, 34, 24, people.sun],
+        [room[0] + span * 0.52, 26, 14, bannerDrawing.aurora2],
+      ] as const)
+    : ([
+        [width * 0.15, Math.max(62, ground * 0.47), 15, people.crowberry],
+        [width * 0.86, Math.max(64, ground * 0.48), 17, people.sun],
+        [width * 0.31, 58, 9, bannerDrawing.aurora2],
+      ] as const);
+  return (
+    <>
+      {bursts.map(([x, y, r, colour]) => {
+        const rays = Array.from({ length: 12 }, (_, index) => {
+          const angle = (index * Math.PI) / 6 + 0.2;
+          return `M${at(x + r * 0.35 * Math.cos(angle), y + r * 0.35 * Math.sin(angle))} L${at(x + r * Math.cos(angle), y + r * Math.sin(angle))}`;
+        }).join(" ");
+        return (
+          <G key={`${x.toFixed(1)}-${y.toFixed(1)}`} testID="firework">
+            <Path d={rays} stroke={colour} strokeWidth={2.2} strokeLinecap="round" />
+            {Array.from({ length: 12 }, (_, index) => {
+              const angle = (index * Math.PI) / 6 + 0.2 + Math.PI / 12;
+              return (
+                <Circle
+                  key={index}
+                  cx={x + r * 0.78 * Math.cos(angle)}
+                  cy={y + r * 0.78 * Math.sin(angle)}
+                  r={1.3}
+                  fill={puffin.white}
+                />
+              );
+            })}
+            <Circle cx={x} cy={y} r={2} fill={colour} />
+          </G>
+        );
+      })}
+    </>
+  );
+}

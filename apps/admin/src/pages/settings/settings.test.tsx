@@ -101,6 +101,18 @@ const co2 = price("co2_grams_per_car_km", {
   max: 300,
 });
 
+const festive: AdminSetting = {
+  key: "festive_days",
+  group: "front_page",
+  kind: "switch",
+  unit: null,
+  value: 1,
+  default: 1,
+  min: 0,
+  max: 1,
+  step: 1,
+};
+
 const changeOf = (more: Partial<AdminSettingChange> = {}): AdminSettingChange => ({
   version: 1,
   key: "beta_max_testers",
@@ -117,7 +129,19 @@ function start(path = "/admin/settings") {
   const api = createFakeApi();
   const state = {
     version: 1,
-    settings: [required, testers, rate, cost, seats, answerIn, freeUntil, period, shownFrom, co2],
+    settings: [
+      required,
+      testers,
+      rate,
+      cost,
+      seats,
+      answerIn,
+      freeUntil,
+      period,
+      shownFrom,
+      co2,
+      festive,
+    ],
     history: [changeOf()],
   };
   api.on(adminMeRoute, { status: 200, data: anna });
@@ -385,5 +409,15 @@ describe("the Settings page", () => {
     expect(factor.getByText(/0 hides every figure/)).toBeTruthy();
     fireEvent.click(factor.getByRole("button", { name: "Change CO2 per car km" }));
     expect(factor.getByLabelText("New value, in g per km")).toBeTruthy();
+  });
+
+  it("has the festive days switch under Front page, saying the seasons stay (spec 36, 3.8)", async () => {
+    start();
+    expect(await screen.findByRole("heading", { name: "Front page", level: 2 })).toBeTruthy();
+    const days = await card("Festive days on the front page");
+    expect(days.getByText("On")).toBeTruthy();
+    expect(days.getByText(/the seasons stay\.$/)).toBeTruthy();
+    fireEvent.click(days.getByRole("button", { name: "Change Festive days on the front page" }));
+    expect(days.getByText("Changes from On to Off.")).toBeTruthy();
   });
 });
