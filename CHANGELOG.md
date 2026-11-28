@@ -1627,8 +1627,11 @@ releases follow [Semantic Versioning](https://semver.org/).
 - The price level's handle slides: it follows a finger or the mouse
   along the track, a step at a time, in the phone apps and on the
   website. It took only taps and minus and plus, which Martin found on
-  the first iPhone build. While a finger is on the track the screen does
-  not scroll, and the track is 44 tall to touch.
+  the first iPhone build. A finger that moves up or down on the track
+  still scrolls the page; one that slides the handle holds it still. The
+  track is 44 tall to touch, and on an iPhone the two price screens go
+  back only for a swipe from the left edge, so a slide to the right does
+  not go back a step (iOS 26).
 - A tap on a notification about beta news, about a reply to feedback, or
   about an answer to a question on one's data, opens its page in the
   phone apps. The server named the three pages and the app ignored them.

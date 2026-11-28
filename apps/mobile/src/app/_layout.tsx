@@ -19,7 +19,11 @@ import { Body, Title } from "@/components/text";
 import { LanguageProvider, useLanguage } from "@/i18n/language";
 import { useSaveLanguage } from "@/i18n/use-save-language";
 import { reportError, startErrorReporting } from "@/lib/error-reporting";
-import { memberScreens, notWhileDeleting } from "@/navigation/member-screens";
+import {
+  memberScreens,
+  notWhileDeleting,
+  swipeBackFromEdgeOnly,
+} from "@/navigation/member-screens";
 import { PushNotifications } from "@/notifications/push-notifications";
 import { ProviderLinkNotice } from "@/sign-in/provider-link-notice";
 import { useAppFonts } from "@/theme/fonts";
@@ -66,6 +70,9 @@ function NewPageHolds() {
   useNewPageHolds(usePathname());
   return null;
 }
+
+/** The screens an iPhone goes back from only for a swipe from its left edge. */
+const edgeOnly: ReadonlySet<string> = new Set(swipeBackFromEdgeOnly);
 
 /**
  * Which screens can open depends on the session: a new account goes
@@ -133,7 +140,11 @@ function Navigation() {
       </Stack.Protected>
       <Stack.Protected guard={me !== null && !deleting && !needsLegal && !needsProfile}>
         {memberScreens.map((name) => (
-          <Stack.Screen key={name} name={name} />
+          <Stack.Screen
+            key={name}
+            name={name}
+            options={edgeOnly.has(name) ? { fullScreenGestureEnabled: false } : undefined}
+          />
         ))}
       </Stack.Protected>
     </Stack>

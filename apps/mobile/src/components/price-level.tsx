@@ -1,26 +1,46 @@
 import { Minus, Plus } from "lucide-react-native";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Platform,
   StyleSheet,
   Text,
   View,
   type GestureResponderEvent,
+  type NativeTouchEvent,
   type ViewStyle,
 } from "react-native";
 import { useLanguage } from "@/i18n/language";
-import { controlOutline, radii, sizes, spacing, typography } from "@/theme/tokens";
+import { controlOutline, minTouchTarget, radii, sizes, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
-import { useScreenScroll } from "./screen";
+import { useScreenScroll, type ScreenScroll } from "./screen";
 import { Adjustable, StepButton } from "./stepper";
+
+/** How far a finger moves on the track before it is a slide or a scroll. */
+export const slideSlop = spacing.xs;
+
+/** Where a touch on the track stands. */
+type TrackTouch =
+  /** Down, and not moved enough to tell: let go here, it is a tap. */
+  | {
+      readonly kind: "deciding";
+      readonly id: number;
+      readonly x: number;
+      readonly pageX: number;
+      readonly pageY: number;
+    }
+  /** Moved mostly sideways: the handle follows it, from where it came down. */
+  | { readonly kind: "sliding"; readonly id: number; readonly x: number; readonly pageX: number }
+  /** Moved mostly up or down: the page scrolls, and the level stays. */
+  | { readonly kind: "scrolling" };
 
 /**
  * The price level of a trip (spec 3, 3.6; spec 15, `PriceLevel`): a track
  * from free to the highest level the cap allows, in steps, with the
  * suggested level marked; the handle sits at the level. The handle follows
- * a finger or the mouse dragged along the track, a step at a time, and a
- * tap on the track picks the nearest step. Minus and plus change it a step.
- * Phones read it as one adjustable element whose value is `valueText`.
+ * a finger or the mouse dragged sideways along the track, a step at a
+ * time, and a tap on the track picks the nearest step; a finger that moves
+ * up or down there scrolls the page instead. Minus and plus change it a
+ * step. Phones read it as one adjustable element whose value is `valueText`.
  */
 export function PriceLevel({
   level,
@@ -42,8 +62,18 @@ export function PriceLevel({
   const palette = usePalette();
   const screenScroll = useScreenScroll();
   const [width, setWidth] = useState(0);
-  // Where the finger came down on the track, and on the page.
-  const touched = useRef<{ readonly x: number; readonly pageX: number } | null>(null);
+  const touch = useRef<TrackTouch | null>(null);
+  // The level last asked for, which the level shown can lag behind while
+  // moves come quicker than the screen draws.
+  const sent = useRef(level);
+  // A track taken away in the middle of a slide, as when its prices cannot
+  // be had, gets no word that the finger left: the screen scrolls again.
+  useEffect(
+    () => () => {
+      if (touch.current?.kind === "sliding") holdScroll(screenScroll, false);
+    },
+    [screenScroll],
+  );
   const at = (value: number) => (highest === 0 ? 0 : value / highest);
   const lower = () => {
     onChange(Math.max(0, level - step));
@@ -63,12 +93,14 @@ export function PriceLevel({
     if (length <= 0) return;
     const share = Math.min(Math.max((x - sizes.priceHandle / 2) / length, 0), 1);
     const next = nearest(levels, share * highest);
-    if (next !== level) onChange(next);
+    if (next === sent.current) return;
+    sent.current = next;
+    onChange(next);
   };
-  // A finger, or the mouse, came off the track or was taken away.
+  // The finger, or the mouse, came off the track, or the scroll took it.
   const end = () => {
-    touched.current = null;
-    if (Platform.OS !== "web") screenScroll?.hold(false);
+    if (touch.current?.kind === "sliding") holdScroll(screenScroll, false);
+    touch.current = null;
   };
 
   return (
@@ -80,26 +112,46 @@ export function PriceLevel({
         <View
           testID="price-track"
           collapsable={false}
-          hitSlop={trackSlop}
           onLayout={(event) => {
             setWidth(event.nativeEvent.layout.width);
           }}
           onStartShouldSetResponder={() => true}
-          onResponderTerminationRequest={() => false}
+          // Until it slides, a scroll of the page may take the touch.
+          onResponderTerminationRequest={() => touch.current?.kind !== "sliding"}
           onResponderGrant={(event: GestureResponderEvent) => {
-            const { locationX, pageX } = event.nativeEvent;
-            touched.current = { x: locationX, pageX };
-            if (Platform.OS !== "web") screenScroll?.hold(true);
-            pick(locationX);
-            // Android's scroll does not take a touch the track has.
-            return true;
+            const { identifier, locationX, pageX, pageY } = event.nativeEvent;
+            touch.current = { kind: "deciding", id: identifier, x: locationX, pageX, pageY };
+            sent.current = level;
           }}
           onResponderMove={(event: GestureResponderEvent) => {
-            const start = touched.current;
-            if (start === null) return;
-            pick(start.x + event.nativeEvent.pageX - start.pageX);
+            const now = touch.current;
+            if (now === null || now.kind === "scrolling") return;
+            // Only the finger that came down on the track moves the handle.
+            const finger = ownFinger(event, now.id);
+            if (finger === undefined) return;
+            const moved = finger.pageX - now.pageX;
+            if (now.kind === "deciding") {
+              const upOrDown = finger.pageY - now.pageY;
+              if (Math.max(Math.abs(moved), Math.abs(upOrDown)) < slideSlop) return;
+              if (Math.abs(moved) <= Math.abs(upOrDown)) {
+                touch.current = { kind: "scrolling" };
+                return;
+              }
+              touch.current = { kind: "sliding", id: now.id, x: now.x, pageX: now.pageX };
+              holdScroll(screenScroll, true);
+            }
+            pick(now.x + moved);
           }}
-          onResponderRelease={end}
+          onResponderRelease={(event: GestureResponderEvent) => {
+            // A tap, or a slide too short for a phone's browser to tell of
+            // moves on the way: the step where the finger came off.
+            const now = touch.current;
+            const finger = now?.kind === "deciding" ? ownFinger(event, now.id) : undefined;
+            if (now?.kind === "deciding" && finger !== undefined) {
+              pick(now.x + finger.pageX - now.pageX);
+            }
+            end();
+          }}
           onResponderTerminate={end}
           style={[styles.slider, draggingOnWeb]}
         >
@@ -185,6 +237,31 @@ export function PriceLevel({
   );
 }
 
+/**
+ * Holds a phone's screen still while a finger slides the handle, or lets
+ * it scroll again: an iPhone would scroll the page with the finger's up
+ * and down. The browser keeps its scroll off the track itself.
+ */
+function holdScroll(screenScroll: ScreenScroll | null, held: boolean) {
+  if (Platform.OS !== "web") screenScroll?.hold(held);
+}
+
+/**
+ * The finger `id` as it is now, from a move of any finger on the screen,
+ * or as it came off.
+ */
+function ownFinger(event: GestureResponderEvent, id: number): NativeTouchEvent | undefined {
+  const { nativeEvent } = event;
+  const fingers = [
+    ...((nativeEvent.touches as readonly NativeTouchEvent[] | undefined) ?? []),
+    ...((nativeEvent.changedTouches as readonly NativeTouchEvent[] | undefined) ?? []),
+  ];
+  return (
+    fingers.find((finger) => finger.identifier === id) ??
+    (nativeEvent.identifier === id ? nativeEvent : undefined)
+  );
+}
+
 /** The level in `levels`, from low to high, nearest `value`; the lower of two as near. */
 function nearest(levels: readonly number[], value: number): number {
   return levels.reduce(
@@ -194,27 +271,23 @@ function nearest(levels: readonly number[], value: number): number {
 }
 
 const handleOffset = -sizes.priceHandle / 2;
-// Above and below the handle, so the track is as tall to touch as a day in the calendar.
-const trackSlop = {
-  top: (sizes.calendarDay - sizes.priceHandle) / 2,
-  bottom: (sizes.calendarDay - sizes.priceHandle) / 2,
-};
-
 /**
- * A browser neither scrolls nor selects text from a touch or a press on
- * the track, so the handle follows it; phones hold the screen still instead.
+ * A browser scrolls the page for a finger that moves up or down on the
+ * track and leaves one that moves sideways to the handle, and selects no
+ * text while the mouse drags it. Phones hold the screen still instead.
  */
 const draggingOnWeb =
   Platform.OS === "web"
-    ? ({ touchAction: "none", userSelect: "none", cursor: "pointer" } as unknown as ViewStyle)
+    ? ({ touchAction: "pan-y", userSelect: "none", cursor: "pointer" } as unknown as ViewStyle)
     : undefined;
 
 const styles = StyleSheet.create({
   control: { gap: spacing.md },
-  slider: { height: sizes.priceHandle },
+  // As tall as a touch target, the handle in its middle.
+  slider: { height: minTouchTarget, justifyContent: "center" },
   // The handle hangs over both ends, so the area leaves room for half of it.
   trackArea: {
-    flex: 1,
+    height: sizes.priceHandle,
     justifyContent: "center",
     marginHorizontal: sizes.priceHandle / 2,
   },
@@ -235,9 +308,9 @@ const styles = StyleSheet.create({
     borderRadius: radii.pill,
     borderWidth: controlOutline + 1,
   },
+  // The touch target's room under the handle stands between them.
   labels: {
     height: typography.caption.lineHeight,
-    marginTop: spacing.xs,
     marginHorizontal: sizes.priceHandle / 2,
   },
   start: { position: "absolute", left: 0 },

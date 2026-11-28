@@ -137,14 +137,20 @@ describe("PriceLevel", () => {
   const hidden = { includeHiddenElements: true };
   // A track 236 wide: the handle's half at each end leaves 200 for the
   // levels, so with 200% the highest, one point is one percent.
-  const laidOut = { nativeEvent: { layout: { x: 0, y: 0, width: 236, height: 36 } } };
-  const touch = (locationX: number, pageX: number) => ({
-    nativeEvent: { locationX, locationY: 18, pageX, pageY: 400 },
-  });
+  const laidOut = { nativeEvent: { layout: { x: 0, y: 0, width: 236, height: 44 } } };
+  /** Finger 1 at `locationX` on the track, `pageX` and `pageY` on the page. */
+  const touch = (locationX: number, pageX: number, pageY = 400) => {
+    const finger = { identifier: 1, locationX, locationY: 22, pageX, pageY };
+    return { nativeEvent: { ...finger, touches: [finger], changedTouches: [finger] } };
+  };
+  type TrackProps = {
+    readonly onStartShouldSetResponder: () => boolean;
+    readonly onResponderTerminationRequest: () => boolean;
+  };
 
   /** The level control at 100% of at most 200%, its track laid out. */
-  async function slider(onChange: (level: number) => void) {
-    await inEnglish(
+  async function slider(onChange: (level: number) => void, inScreen = false) {
+    const control = (
       <PriceLevel
         level={100}
         highest={200}
@@ -152,30 +158,27 @@ describe("PriceLevel", () => {
         suggested={100}
         onChange={onChange}
         valueText="100%, the whole route costs 3,000 ISK"
-      />,
+      />
     );
+    const shown = await inEnglish(inScreen ? <Screen>{control}</Screen> : control);
     const track = screen.getByTestId("price-track", hidden);
     await fireEvent(track, "layout", laidOut);
-    return track;
+    return { track, props: track.props as TrackProps, shown };
   }
+  const scrolls = () => screen.getByTestId("screen-scroll").props.scrollEnabled !== false;
 
-  it("follows a finger dragged along the track, a step at a time", async () => {
+  it("follows a finger dragged sideways along the track, a step at a time", async () => {
     const onChange = jest.fn();
-    const track = await slider(onChange);
-    // It takes the touch from the start, and keeps it once it moves.
-    const props = track.props as {
-      readonly onStartShouldSetResponder: () => boolean;
-      readonly onResponderTerminationRequest: () => boolean;
-    };
+    const { track, props } = await slider(onChange);
     expect(props.onStartShouldSetResponder()).toBe(true);
-    expect(props.onResponderTerminationRequest()).toBe(false);
 
     // Down on the handle, at 100%: nothing changes yet.
     await fireEvent(track, "responderGrant", touch(118, 300));
     expect(onChange).not.toHaveBeenCalled();
-    // 21 points to the left is 79%, nearest to 80%.
-    await fireEvent(track, "responderMove", touch(97, 279));
+    // 21 points to the left is 79%, nearest to 80%; once it slides, it keeps the touch.
+    await fireEvent(track, "responderMove", touch(97, 279, 403));
     expect(onChange).toHaveBeenLastCalledWith(80);
+    expect(props.onResponderTerminationRequest()).toBe(false);
     // Past the right end it stops at the highest level.
     await fireEvent(track, "responderMove", touch(240, 422));
     expect(onChange).toHaveBeenLastCalledWith(200);
@@ -183,43 +186,97 @@ describe("PriceLevel", () => {
     await fireEvent(track, "responderMove", touch(-40, 142));
     expect(onChange).toHaveBeenLastCalledWith(0);
     await fireEvent(track, "responderRelease", touch(-40, 142));
-    expect(onChange.mock.calls.every(([level]) => Number.isFinite(level))).toBe(true);
+    expect(onChange).toHaveBeenCalledTimes(3);
+  });
+
+  it("asks for a level the screen has not shown yet, as moves come quicker", async () => {
+    const onChange = jest.fn();
+    const { track } = await slider(onChange);
+    // The level shown stays 100% here: no move has been drawn.
+    await fireEvent(track, "responderGrant", touch(118, 300));
+    await fireEvent(track, "responderMove", touch(108, 290));
+    expect(onChange).toHaveBeenLastCalledWith(90);
+    await fireEvent(track, "responderMove", touch(118, 300));
+    expect(onChange).toHaveBeenLastCalledWith(100);
   });
 
   it("picks the step nearest a tap on the track", async () => {
     const onChange = jest.fn();
-    const track = await slider(onChange);
-    // 18 is the start of the levels, so 71 is 53%, nearest to 50%.
+    const { track } = await slider(onChange);
+    // 18 is the start of the levels, so 71 is 53%, nearest to 50%. A
+    // finger never stands quite still: 3 points is still a tap, where it
+    // comes off, at 56%, nearest to 60%.
     await fireEvent(track, "responderGrant", touch(71, 153));
-    await fireEvent(track, "responderRelease", touch(71, 153));
+    await fireEvent(track, "responderMove", touch(74, 156, 402));
+    expect(onChange).not.toHaveBeenCalled();
+    await fireEvent(track, "responderRelease", touch(74, 156, 402));
     expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenLastCalledWith(60);
+    // Lifted where it came down.
+    await fireEvent(track, "responderGrant", touch(71, 153));
+    await fireEvent(track, "responderRelease", {
+      nativeEvent: { ...touch(71, 153).nativeEvent, touches: [] },
+    });
     expect(onChange).toHaveBeenLastCalledWith(50);
     // The steps' dots: none past the highest.
     expect(screen.getByTestId("price-step-200", hidden)).toBeTruthy();
     expect(screen.queryByTestId("price-step-210", hidden)).toBeNull();
   });
 
-  it("holds the screen still while a finger moves the handle", async () => {
-    await inEnglish(
-      <Screen>
-        <PriceLevel
-          level={100}
-          highest={200}
-          step={10}
-          suggested={100}
-          onChange={jest.fn()}
-          valueText="100%"
-        />
-      </Screen>,
-    );
-    const scroll = screen.getByTestId("screen-scroll");
-    const track = screen.getByTestId("price-track", hidden);
-    await fireEvent(track, "layout", laidOut);
-    expect(scroll.props.scrollEnabled).not.toBe(false);
+  it("leaves a finger that moves up or down on the track to scroll the page", async () => {
+    const onChange = jest.fn();
+    const { track, props } = await slider(onChange, true);
+    await fireEvent(track, "responderGrant", touch(150, 332));
+    expect(props.onResponderTerminationRequest()).toBe(true);
+    await fireEvent(track, "responderMove", touch(152, 334, 380));
+    await fireEvent(track, "responderMove", touch(190, 372, 300));
+    expect(scrolls()).toBe(true);
+    expect(props.onResponderTerminationRequest()).toBe(true);
+    await fireEvent(track, "responderRelease", touch(190, 372, 300));
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("goes by the finger that came down on the track, not another", async () => {
+    const onChange = jest.fn();
+    const { track } = await slider(onChange);
     await fireEvent(track, "responderGrant", touch(118, 300));
-    expect(screen.getByTestId("screen-scroll").props.scrollEnabled).toBe(false);
-    await fireEvent(track, "responderTerminate", touch(118, 300));
-    expect(screen.getByTestId("screen-scroll").props.scrollEnabled).not.toBe(false);
+    // A second finger moves far off; the first stands where it came down.
+    const first = { identifier: 1, pageX: 300, pageY: 400 };
+    const second = { identifier: 2, locationX: 400, pageX: 600, pageY: 400 };
+    await fireEvent(track, "responderMove", {
+      nativeEvent: { ...second, touches: [first, second] },
+    });
+    expect(onChange).not.toHaveBeenCalled();
+    await fireEvent(track, "responderMove", touch(97, 279));
+    expect(onChange).toHaveBeenLastCalledWith(80);
+  });
+
+  it("holds the screen still while a finger slides the handle", async () => {
+    const { track } = await slider(jest.fn(), true);
+    expect(scrolls()).toBe(true);
+    await fireEvent(track, "responderGrant", touch(118, 300));
+    // Not yet: the finger may be about to scroll.
+    expect(scrolls()).toBe(true);
+    await fireEvent(track, "responderMove", touch(128, 310));
+    expect(scrolls()).toBe(false);
+    await fireEvent(track, "responderTerminate", touch(128, 310));
+    expect(scrolls()).toBe(true);
+  });
+
+  it("lets the screen scroll again when the track goes in the middle of a slide", async () => {
+    const { track, shown } = await slider(jest.fn(), true);
+    await fireEvent(track, "responderGrant", touch(118, 300));
+    await fireEvent(track, "responderMove", touch(128, 310));
+    expect(scrolls()).toBe(false);
+    // Its prices could not be had: the step shows a retry in its place.
+    await shown.rerender(
+      <LanguageProvider>
+        <Screen>
+          <Text>Retry</Text>
+        </Screen>
+      </LanguageProvider>,
+    );
+    expect(scrolls()).toBe(true);
   });
 
   it("stops at the highest level", async () => {

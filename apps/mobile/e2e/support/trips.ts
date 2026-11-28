@@ -68,6 +68,49 @@ export async function chooseTime(
   await page.getByRole("button", { name: texts.done, exact: true }).click();
 }
 
+/** Where a point of the price level's track is on the page: `price-handle` or `price-step-80`. */
+async function onTrack(page: Page, testId: string) {
+  const track = page.getByTestId("price-track").filter({ visible: true });
+  await track.scrollIntoViewIfNeeded();
+  const box = await track.getByTestId(testId).boundingBox();
+  if (box === null) throw new Error(`${testId} is not on show`);
+  return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+}
+
+/** Counts the scrolls of the screen on show from now; the count, once asked. */
+async function countScrolls(page: Page) {
+  const scroll = page.getByTestId("screen-scroll").filter({ visible: true });
+  const handle = await scroll.evaluateHandle((element) => {
+    const count = { scrolls: 0, top: element.scrollTop };
+    element.addEventListener("scroll", () => {
+      count.scrolls += 1;
+    });
+    return count;
+  });
+  return async () => {
+    // A scroll event comes in the frame after the scroll.
+    await page.evaluate(() => new Promise((done) => requestAnimationFrame(done)));
+    const counted = await handle.jsonValue();
+    const top = await scroll.evaluate((element) => element.scrollTop);
+    return { scrolls: counted.scrolls, moved: top - counted.top };
+  };
+}
+
+/** A finger along `points` and off, where the page takes touches; else null. */
+async function withFinger(page: Page, points: readonly { x: number; y: number }[]) {
+  if (!(await page.evaluate(() => navigator.maxTouchPoints > 0))) return null;
+  const cdp = await page.context().newCDPSession(page);
+  const [first, ...rest] = points;
+  if (first === undefined) return true;
+  await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [first] });
+  for (const point of rest) {
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [point] });
+  }
+  await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+  await cdp.detach();
+  return true;
+}
+
 /**
  * Drags the price level's handle along its track to the dot of `level`, in
  * small moves as a hand makes them: with a finger where the page takes
@@ -75,46 +118,40 @@ export async function chooseTime(
  * up and down on the way, and the page must not scroll for it.
  */
 export async function dragPriceTo(page: Page, level: number) {
-  const track = page.getByTestId("price-track").filter({ visible: true });
-  await track.scrollIntoViewIfNeeded();
-  const centre = async (testId: string) => {
-    const box = await track.getByTestId(testId).boundingBox();
-    if (box === null) throw new Error(`${testId} is not on show`);
-    return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
-  };
-  const from = await centre("price-handle");
-  const to = await centre(`price-step-${String(level)}`);
+  const from = await onTrack(page, "price-handle");
+  const to = await onTrack(page, `price-step-${String(level)}`);
   const moves = 8;
-  const along = (index: number) => ({
+  const points = Array.from({ length: moves + 1 }, (_, index) => ({
     x: from.x + ((to.x - from.x) * index) / moves,
-    y: from.y + (index === moves / 2 ? 20 : 0),
-  });
-  const scroll = page.getByTestId("screen-scroll").filter({ visible: true });
-  const scrolledBefore = await scroll.evaluate((element) => element.scrollTop);
-  if (await page.evaluate(() => navigator.maxTouchPoints > 0)) {
-    const cdp = await page.context().newCDPSession(page);
-    const touch = (
-      type: "touchStart" | "touchMove" | "touchEnd",
-      point: { x: number; y: number } | null,
-    ) =>
-      cdp.send("Input.dispatchTouchEvent", {
-        type,
-        touchPoints: point === null ? [] : [{ x: point.x, y: point.y }],
-      });
-    await touch("touchStart", from);
-    for (let index = 1; index <= moves; index += 1) await touch("touchMove", along(index));
-    await touch("touchEnd", null);
-    await cdp.detach();
-  } else {
+    // Sideways first; then, sliding, the finger strays down a little.
+    y: from.y + Math.max(0, index - moves / 2) * 2,
+  }));
+  const scrolled = await countScrolls(page);
+  if ((await withFinger(page, points)) === null) {
     await page.mouse.move(from.x, from.y);
     await page.mouse.down();
-    for (let index = 1; index <= moves; index += 1) {
-      const point = along(index);
-      await page.mouse.move(point.x, point.y);
-    }
+    for (const point of points.slice(1)) await page.mouse.move(point.x, point.y);
     await page.mouse.up();
   }
-  expect(await scroll.evaluate((element) => element.scrollTop)).toBe(scrolledBefore);
+  expect(await scrolled()).toEqual({ scrolls: 0, moved: 0 });
+}
+
+/**
+ * Where the page takes touches, a finger that comes down on the price
+ * level's track and moves up scrolls the page, and the level stays. Says
+ * whether it could be tried.
+ */
+export async function swipeUpFromPriceTrack(page: Page) {
+  const from = await onTrack(page, "price-handle");
+  const points = Array.from({ length: 9 }, (_, index) => ({
+    x: from.x + index,
+    y: from.y - index * 15,
+  }));
+  const scrolled = await countScrolls(page);
+  if ((await withFinger(page, points)) === null) return false;
+  const { moved } = await scrolled();
+  expect(moved).toBeGreaterThan(0);
+  return true;
 }
 
 /** Searches the part and opens the trip from the results; returns its ID. */

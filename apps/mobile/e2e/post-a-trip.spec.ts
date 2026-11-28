@@ -6,6 +6,7 @@ import {
   chooseTime,
   dragPriceTo,
   englishWheel,
+  swipeUpFromPriceTrack,
   timeField,
   tomorrow,
   type WheelTexts,
@@ -286,6 +287,10 @@ async function postTrip(page: Page, journey: Journey) {
   await dragPriceTo(page, 80);
   await expect(shownText(page, journey.lowerPrice)).toBeVisible();
   await expect(page.getByText("80%", { exact: true })).toBeVisible();
+  // On a phone, a finger that moves up from the track scrolls the page instead.
+  if (await swipeUpFromPriceTrack(page)) {
+    await expect(page.getByText("80%", { exact: true })).toBeVisible();
+  }
   await page.getByRole("button", { name: journey.toReview }).click();
 
   // 5. Check: the ride as others will see it, each part as a row with
