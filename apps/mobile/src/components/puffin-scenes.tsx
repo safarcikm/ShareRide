@@ -373,7 +373,10 @@ function glaciersOn(points: readonly (readonly [number, number])[], count: numbe
  * Each season brings its own (`seasonLooks`): snow, flowers, lupines and
  * the sun, heather, stars and the northern lights. The small things go in
  * `room`, the part of the width given to them: all of it on a phone, the
- * car's room on a laptop (R36.5). `width` and `height` are the drawing's.
+ * car's room on a laptop (R36.5). `layout` says which the scene is behind,
+ * a phone's top or a laptop's panel, as the name's row and the title stand
+ * where the layout puts them, whatever the window's width. `width` and
+ * `height` are the drawing's.
  */
 export function IcelandScene({
   season,
@@ -382,6 +385,7 @@ export function IcelandScene({
   ground = height - sizes.sceneRoad,
   road = true,
   room = [0, width],
+  layout = "phone",
 }: {
   readonly season: BannerSeason;
   readonly width: number;
@@ -389,6 +393,7 @@ export function IcelandScene({
   readonly ground?: number;
   readonly road?: boolean;
   readonly room?: Room;
+  readonly layout?: "phone" | "panel";
 }) {
   const { scheme } = useScene();
   const ids = useId().replaceAll(":", "");
@@ -396,7 +401,7 @@ export function IcelandScene({
   const snow = "snow" in land ? land.snow : undefined;
   const look = seasonLooks[season][scheme];
   if (width <= 0 || height <= 0) return null;
-  const wide = width > 4 * ground;
+  const wide = layout === "panel";
   const shape = (points: readonly (readonly [number, number])[]) =>
     points.map(([x, y]) => [x * width, y * ground] as const);
   const peaks = shape(wide ? ridges.wide : ridges.narrow);
@@ -550,6 +555,7 @@ export function IcelandPanel({
         ground={ground}
         road={false}
         room={[Math.max(0, width - room), width]}
+        layout="panel"
       />
     </View>
   );

@@ -268,6 +268,7 @@ describe("IcelandScene in its season (spec 15, 5.3; spec 36, 3.1 and 3.3)", () =
         ground={108}
         road={false}
         room={[600, 900]}
+        layout="panel"
       />,
     );
     const xs = parts("lupine").flatMap((lupine) => valuesIn(lupine, "cx")) as number[];
@@ -278,6 +279,40 @@ describe("IcelandScene in its season (spec 15, 5.3; spec 36, 3.1 and 3.3)", () =
     }
     const [house] = valuesIn(part("farmhouse"), "x") as number[];
     expect(house).toBeGreaterThanOrEqual(600);
+  });
+
+  it("keeps a laptop's placement in a panel taller than usual, as with larger text", async () => {
+    await render(
+      <IcelandScene
+        season="summer"
+        width={900}
+        height={320}
+        ground={300}
+        road={false}
+        room={[600, 900]}
+        layout="panel"
+      />,
+    );
+    const xs = parts("lupine").flatMap((lupine) => valuesIn(lupine, "cx")) as number[];
+    expect(xs.length).toBeGreaterThan(0);
+    expect(Math.min(...xs)).toBeGreaterThanOrEqual(600 - 8);
+  });
+
+  it("keeps a phone's placement on a website window as wide as a tablet: the northern lights and stars under the name's row", async () => {
+    mockScheme = "dark";
+    /** The lowest y the northern lights reach up to. */
+    const auroraTop = () =>
+      Math.min(
+        ...[...String(valuesIn(part("aurora"), "d")).matchAll(/(-?[\d.]+) (-?[\d.]+)/g)].map(
+          (pair) => Number(pair[2]),
+        ),
+      );
+    await render(<IcelandScene season="winter" width={390} height={189} />);
+    const onPhone = auroraTop();
+    await render(<IcelandScene season="winter" width={768} height={189} />);
+    expect(auroraTop()).toBeGreaterThanOrEqual(onPhone - 2);
+    const stars = valuesIn(part("stars"), "cy") as number[];
+    expect(Math.min(...stars)).toBeGreaterThanOrEqual(52);
   });
 
   it("draws the same every time", async () => {
