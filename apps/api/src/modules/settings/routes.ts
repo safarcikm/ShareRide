@@ -46,6 +46,7 @@ export function registerConfigRoutes(
         oldestAppVersion,
         co2GramsPerCarKm: values.co2_grams_per_car_km,
         appStores: appStoresListed(values),
+        festiveDays: values.festive_days === 1,
       },
       200,
     );

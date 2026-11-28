@@ -43,6 +43,18 @@ describe("the settings catalogue", () => {
     });
   });
 
+  it("has the festive days switch on the front page, on by default (spec 36, 3.8; ADR 0057)", () => {
+    expect(settingDefinitions.festive_days).toEqual({
+      group: "front_page",
+      kind: "switch",
+      unit: null,
+      default: 1,
+      min: 0,
+      max: 1,
+      step: 1,
+    });
+  });
+
   it("gives every setting a default inside its range and on its step (R10.1)", () => {
     for (const key of settingKeys) {
       const { default: value, min, max, step } = settingDefinitions[key];

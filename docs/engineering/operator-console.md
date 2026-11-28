@@ -738,6 +738,12 @@ version }` with the version the page loaded: it takes a lock on the
   gives `co2GramsPerCarKm` for About's method. The weekly figures
   `car_km_saved` and `co2_saved_grams` count the bookings completed in the
   week, whatever the value now.
+- Front page ([spec 36](../specs/2026-11-28-seasonal-banner.md), 3.8;
+  ADR 0057): `festive_days`, a switch, on by default. `GET /v1/config`
+  gives `festiveDays`, and the apps' `useBanner` shows a day's look only
+  while it is on; off, the front page's banner shows only the season.
+  The apps read the config again every 5 minutes, so it takes effect
+  within that.
 - The apps' texts no longer state these numbers: `GET /v1/config` gives
   `freeCancellationMinutes` and `maxMoveMinutes` as they are now, and a
   booking carries its own `cancellationRules`. The terms of service do

@@ -1,11 +1,14 @@
 import { renderRouter, screen } from "expo-router/testing-library";
 import { Text } from "react-native";
+import { useFestiveDays } from "@/beta/config";
 import { onWebsite } from "@/lib/on-website";
 import { useBanner } from "./use-banner";
 
 jest.mock("@/lib/on-website", () => ({ onWebsite: jest.fn(() => false) }));
+jest.mock("@/beta/config", () => ({ useFestiveDays: jest.fn(() => true) }));
 
 const mockedOnWebsite = onWebsite as jest.Mock<boolean, []>;
+const mockedFestiveDays = useFestiveDays as jest.Mock<boolean, []>;
 
 /** A screen that says the banner of `at`, at `url`; one a test. */
 async function bannerAt(at: string, url = "/") {
@@ -23,6 +26,7 @@ async function bannerAt(at: string, url = "/") {
 describe("useBanner (spec 36, 3.1 and 3.9)", () => {
   afterEach(() => {
     mockedOnWebsite.mockReturnValue(false);
+    mockedFestiveDays.mockReturnValue(true);
   });
 
   it.each([
@@ -54,8 +58,13 @@ describe("useBanner (spec 36, 3.1 and 3.9)", () => {
     }
   });
 
-  it("shows no festive day while the switch is still to come", async () => {
-    expect(await bannerAt("2027-06-17T12:00:00Z")).toBe("summer null");
+  it("shows the day, with the festive days on (spec 36, 3.8)", async () => {
+    expect(await bannerAt("2027-12-24T12:00:00Z")).toBe("winter christmas");
+  });
+
+  it("shows only the season with the festive days off", async () => {
+    mockedFestiveDays.mockReturnValue(false);
+    expect(await bannerAt("2027-12-24T12:00:00Z")).toBe("winter null");
   });
 
   it("on the website shows the date `?day=` names", async () => {

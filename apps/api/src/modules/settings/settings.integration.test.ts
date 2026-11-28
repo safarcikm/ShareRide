@@ -154,6 +154,8 @@ describe("the console's settings", () => {
       // Both stores off until their page is public (spec 35, ADR 0055).
       { key: "app_store_listed", unit: null, value: 0, min: 0, max: 1, step: 1 },
       { key: "google_play_listed", unit: null, value: 0, min: 0, max: 1, step: 1 },
+      // The front page's festive days (spec 36, 3.8; ADR 0057).
+      { key: "festive_days", unit: null, value: 1, min: 0, max: 1, step: 1 },
     ]);
   });
 
@@ -331,6 +333,8 @@ describe("GET /v1/config", () => {
       co2GramsPerCarKm: 150,
       // Both store switches start off (spec 35, R35.1).
       appStores: [],
+      // The front page's banner dresses up for the days (spec 36, 3.8).
+      festiveDays: true,
     });
 
     await change("invite_code_required", {
@@ -358,7 +362,15 @@ describe("GET /v1/config", () => {
       co2GramsPerCarKm: 150,
       // Both store switches start off (spec 35, R35.1).
       appStores: [],
+      festiveDays: true,
     });
+  });
+
+  it("says the festive days are off once the operator turns them off (spec 36, 3.8)", async () => {
+    const before = (await settings()).version;
+    await change("festive_days", { value: 0, reason: "A day of mourning", version: before });
+    const config = (await (await api.request("/v1/config")).json()) as Config;
+    expect(config.festiveDays).toBe(false);
   });
 });
 

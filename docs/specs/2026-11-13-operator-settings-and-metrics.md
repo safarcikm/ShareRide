@@ -59,7 +59,9 @@ testers; and a console home that shows what needs attention today.
    and the later specs, grouped: prices; booking and paying; changes and
    cancellations; trip day and reliability; chat and notifications; safety;
    CO2 (`co2_grams_per_car_km`, 150 g per car km to start, 0 hides every
-   CO2 figure; [spec 34](2026-11-28-co2-saved.md)).
+   CO2 figure; [spec 34](2026-11-28-co2-saved.md)); front page
+   (`festive_days`, on by default, off shows only the seasons;
+   [spec 36](2026-11-28-seasonal-banner.md), 3.8).
 2. Each setting shows its value, unit, default, allowed range and a short
    explanation. A value outside the range is refused.
 3. Saving needs a reason. The page first shows the effect: for price settings,

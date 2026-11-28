@@ -61,6 +61,12 @@ export const configSchema = z.object({
    */
   payInPerson: z.boolean().default(false),
   /**
+   * Whether the front page's banner dresses up for the festive days, or
+   * shows only the seasons (spec 36, 3.8; ADR 0057); true from an API that
+   * does not say.
+   */
+  festiveDays: z.boolean().default(true),
+  /**
    * Google Analytics on the website, asked about before it loads (spec 23,
    * 3.1): its measurement ID, or null where the site has none, as from an
    * API that does not say.

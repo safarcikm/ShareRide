@@ -2686,6 +2686,7 @@ export const is = {
   "admin.settings.group.trip_day": "Ferðadagur og áreiðanleiki",
   "admin.settings.group.co2": "CO2",
   "admin.settings.group.apps": "Símaöpp",
+  "admin.settings.group.front_page": "Forsíða",
   "admin.settings.groupNote.terms":
     "Þessi gildi standa í notkunarskilmálunum. Birtu nýja skilmála með breytingu, annars ber skilmálunum og appinu ekki saman.",
   "admin.settings.group.switches": "Neyðarrofar",
@@ -2775,6 +2776,9 @@ export const is = {
   "admin.settings.name.google_play_listed": "Google Play-síðan er opin",
   "admin.settings.help.google_play_listed":
     "Kveikt: vefurinn sýnir Google Play-merkið neðst á síðum og á Um okkur, Android-símar sjá lítinn borða um appið efst á vefnum og QR-kóðinn sendir þá á Google Play. Kveiktu aðeins þegar Google Play-síða PuffinRide er opin, annars lendir fólk á síðu sem er ekki til.",
+  "admin.settings.name.festive_days": "Hátíðisdagar á forsíðunni",
+  "admin.settings.help.festive_days":
+    "Borðinn efst á forsíðunni klæðist hátíðarbúningi um jólin, 17. júní og hina dagana. Slökktu á þessu á degi þegar veisla ætti ekki við; árstíðirnar haldast.",
   "admin.settings.on": "Kveikt",
   "admin.settings.off": "Slökkt",
   "admin.settings.unit.people": "{count, plural, one {{value} manneskja} other {{value} manns}}",

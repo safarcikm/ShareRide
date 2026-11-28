@@ -2665,6 +2665,7 @@ export const en = {
   "admin.settings.group.trip_day": "Trip day and reliability",
   "admin.settings.group.co2": "CO2",
   "admin.settings.group.apps": "Phone apps",
+  "admin.settings.group.front_page": "Front page",
   "admin.settings.groupNote.terms":
     "The terms of service state these values. Publish new terms with a change, or the terms and the app will disagree.",
   "admin.settings.group.switches": "Switches for emergencies",
@@ -2754,6 +2755,9 @@ export const en = {
   "admin.settings.name.google_play_listed": "Google Play page is public",
   "admin.settings.help.google_play_listed":
     "On: the website shows the Google Play badge in its footer and on About, Android phones see a small strip about the app at the top of the website, and the QR code sends them to Google Play. Turn it on only once PuffinRide's Google Play page is public, or people land on a page that is not there.",
+  "admin.settings.name.festive_days": "Festive days on the front page",
+  "admin.settings.help.festive_days":
+    "The front page's banner dresses up for Christmas, 17 June and the other days. Turn it off on a day when a party would be wrong; the seasons stay.",
   "admin.settings.on": "On",
   "admin.settings.off": "Off",
   "admin.settings.unit.people": "{count, plural, one {{value} person} other {{value} people}}",
