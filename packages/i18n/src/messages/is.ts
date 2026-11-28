@@ -3699,6 +3699,15 @@ export const is = {
     "Myndin ber enn önnur gögn en myndina sjálfa. Prófaðu annan vafra.",
   "admin.meetingPoint.photoIssue.tooLarge": "Myndin er of stór, jafnvel minnkuð. Veldu minni mynd.",
   // The CO2 a shared ride saves (spec 34, section 8).
+  "about.co2Title": "Hvað sparast með samferð",
+  "about.co2Method":
+    "Þegar þú ferð með öðrum er einum bíl færra á veginum þinn hluta leiðarinnar. Við áætlum hve mikil losun CO₂ sparast út frá vegalengd þíns hluta og losun meðalbíls á Íslandi: {grams}\u00a0g á hvern kílómetra.",
+  "about.co2Example":
+    "Frá Reykjavík til Akureyrar eru um 390\u00a0km, svo farþegi sparar um {kg}\u00a0kg af CO₂ miðað við að aka einn.",
+  "about.co2Source":
+    "Talan {grams}\u00a0g byggir á losunarstuðlum Umhverfis- og orkustofnunar fyrir fólksbíla (208\u00a0g á km fyrir bensín, 191 fyrir dísil, 136 fyrir tvinnbíl og nánast ekkert fyrir rafbíl), vegnum eftir því hve langt bílar hér aka á hverju. Við förum yfir hana einu sinni á ári.",
+  "about.co2Limits":
+    "Þetta eru áætlanir. Tveir sem bóka saman teljast einn bíll. Sá sem hefði annars tekið strætó, eða setið heima, sparar minna. Þínar eigin tölur eru á prófílnum þínum og aðeins þú sérð þær.",
   "co2.title": "Minni losun CO₂",
   "co2.value": "Um {kg}\u00a0kg, áætlað",
   "co2.spoken": "Minni losun CO2, um {kg} kíló, áætlað",

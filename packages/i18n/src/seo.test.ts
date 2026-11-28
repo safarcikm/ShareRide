@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { aboutPage, carpoolPage, pageText } from "./seo.ts";
+import { aboutCo2Values, aboutPage, carpoolPage, pageText } from "./seo.ts";
 import { createTranslator } from "./translator.ts";
 
 const en = createTranslator("en");
@@ -137,5 +137,12 @@ describe("the About page (spec 30, 3.1 and 3.4)", () => {
         /\b(pay|paid|payment|price|fee|fees|cost|costs|cheap|money|ISK|kr|greiða|greiðsl\w*|verð\w*|gjald\w*|kostnað\w*|ódýr\w*|krónu\w*)\b/iu,
       );
     }
+  });
+});
+
+describe("aboutCo2Values", () => {
+  it("gives the grams per car km and the example's whole kilograms (spec 34, 3.9)", () => {
+    expect(aboutCo2Values(150, "en")).toEqual({ grams: "150", kg: "58" });
+    expect(aboutCo2Values(208, "is")).toEqual({ grams: "208", kg: "81" });
   });
 });

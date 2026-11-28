@@ -1,5 +1,6 @@
-import { aboutPage, pageText } from "@shareride/i18n";
+import { aboutCo2Values, aboutPage, pageText } from "@shareride/i18n";
 import { StyleSheet, Text, View } from "react-native";
+import { useConfig } from "@/beta/config";
 import { BackButton } from "@/components/back-button";
 import { Card } from "@/components/card";
 import { PageHead } from "@/components/page-head";
@@ -22,8 +23,10 @@ import { usePalette } from "@/theme/use-palette";
  * browser.
  */
 export default function AboutScreen() {
-  const { t } = useLanguage();
+  const { locale, t } = useLanguage();
   const palette = usePalette();
+  const gramsPerCarKm = useConfig().co2GramsPerCarKm;
+  const co2Values = aboutCo2Values(gramsPerCarKm, locale);
   const paragraph = (text: string) => (
     <Text style={[typography.body, { color: palette.text }]}>{text}</Text>
   );
@@ -42,6 +45,17 @@ export default function AboutScreen() {
           align="start"
         />
       </View>
+      {/* What a shared ride saves (spec 34, 3.9), with the operator's value;
+          not there while it is 0. Its heading has no "CO₂", which Fredoka
+          cannot write. */}
+      {gramsPerCarKm === 0 ? null : (
+        <View style={styles.section}>
+          <Heading anchor="co2">{t(aboutPage.co2.title)}</Heading>
+          {aboutPage.co2.paragraphs.map((key) => (
+            <View key={key}>{paragraph(t(key, co2Values))}</View>
+          ))}
+        </View>
+      )}
       <View style={styles.section}>
         <Heading>{t(aboutPage.documentsTitle)}</Heading>
         <Card>

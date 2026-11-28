@@ -3,6 +3,7 @@ import { getLocales } from "expo-localization";
 import { aboutPage, createTranslator } from "@shareride/i18n";
 import { Linking } from "react-native";
 import { completeMe, renderApp } from "@/testing/app";
+import { ok } from "@/testing/fake-client";
 import type * as TestApp from "@/testing/app";
 
 jest.mock("@/auth/api", () => jest.requireActual<typeof TestApp>("@/testing/app").mockApiModule);
@@ -113,5 +114,55 @@ describe("About PuffinRide", () => {
     await fireEvent.press(await screen.findByRole("link", { name: "About PuffinRide" }));
     expect(await screen.findByRole("header", { name: "About PuffinRide" })).toBeVisible();
     expect(screen).toHavePathname("/about");
+  });
+});
+
+describe("What a shared ride saves (spec 34, 3.9)", () => {
+  async function aboutAt(co2GramsPerCarKm: number) {
+    await renderApp("/about", {
+      setUp: (client) => {
+        client.answer("/v1/config", () =>
+          ok(200, {
+            beta: false,
+            paused: [],
+            maxSeats: 8,
+            freeCancellationMinutes: 15,
+            maxMoveMinutes: 120,
+            reliabilityMonths: 12,
+            signInProviders: [],
+            emailSignIn: true,
+            co2GramsPerCarKm,
+          }),
+        );
+      },
+    });
+    expect(await screen.findByRole("header", { name: "About PuffinRide" })).toBeVisible();
+  }
+
+  it("says how the figure is made, with the operator's value, after the introduction", async () => {
+    await aboutAt(150);
+    const heading = await screen.findByRole("header", { name: "What a shared ride saves" });
+    // The target of /about#co2 on the web.
+    expect(heading).toHaveProp("nativeID", "co2");
+    expect(screen.getByText(/our part of the way\. .* 150\sg per kilometre\.$/)).toBeVisible();
+    expect(
+      screen.getByText(
+        "Reykjavík to Akureyri is about 390\u00a0km, so a passenger saves about 58\u00a0kg of CO₂ compared with driving alone.",
+      ),
+    ).toBeVisible();
+    expect(
+      screen.getByText(/^The 150\sg comes from the Environment and Energy Agency/),
+    ).toBeVisible();
+    expect(screen.getByText(/^These are estimates\. Two people booking together/)).toBeVisible();
+    const headings = screen.getAllByRole("header").map((one) => String(one.props.children));
+    expect(headings.indexOf("What a shared ride saves")).toBe(
+      headings.indexOf("Terms and policies") - 1,
+    );
+  });
+
+  it("is not there while the operator's value is 0", async () => {
+    await aboutAt(0);
+    expect(screen.getByRole("header", { name: "Terms and policies" })).toBeVisible();
+    expect(screen.queryByRole("header", { name: "What a shared ride saves" })).toBeNull();
   });
 });
