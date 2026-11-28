@@ -7,13 +7,19 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const maestro = join(__dirname, "..", "..", "maestro");
-const helper = "../helpers/close-stuck-box.yaml";
 
 /** A flow's settings: the part above its `---`. */
-const headerOf = (file: string): string =>
-  readFileSync(join(maestro, "flows", file), "utf8").split("\n---\n")[0] ?? "";
+const headerOf = (path: string): string => readFileSync(path, "utf8").split("\n---\n")[0] ?? "";
 
-const flows = readdirSync(join(maestro, "flows")).filter((file) => file.endsWith(".yaml"));
+/** The checks' journeys, and the store's screenshots (maestro/store), each with the helper's path from it. */
+const flows = [
+  { folder: "flows", helper: "../helpers/close-stuck-box.yaml" },
+  { folder: "store/flows", helper: "../../helpers/close-stuck-box.yaml" },
+].flatMap(({ folder, helper }) =>
+  readdirSync(join(maestro, folder))
+    .filter((file) => file.endsWith(".yaml"))
+    .map((file) => ({ name: `${folder}/${file}`, path: join(maestro, folder, file), helper })),
+);
 
 /** The box's title the helper looks for, as Maestro matches it: the whole text. */
 const boxTitle = (): RegExp => {
@@ -24,8 +30,9 @@ const boxTitle = (): RegExp => {
 };
 
 describe("A stalled phone app's box on the emulator", () => {
-  it.each(flows)("%s closes it before its first step", (file) => {
-    expect(headerOf(file)).toMatch(new RegExp(`\\nonFlowStart:\\n  - runFlow: ${helper}\\n?$`));
+  it.each(flows)("$name closes it before its first step", ({ path, helper }) => {
+    const step = helper.replaceAll(".", "\\.");
+    expect(headerOf(path)).toMatch(new RegExp(`\\nonFlowStart:\\n  - runFlow: ${step}\\n?$`));
   });
 
   it("closes the box of any app of the phone's own", () => {

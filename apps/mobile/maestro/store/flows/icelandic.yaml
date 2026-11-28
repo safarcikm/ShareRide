@@ -3,6 +3,8 @@
 # language, which it keeps through each launch.
 appId: ${APP_ID}
 name: Store screens in Icelandic
+onFlowStart:
+  - runFlow: ../../helpers/close-stuck-box.yaml
 ---
 - launchApp:
     clearState: true
