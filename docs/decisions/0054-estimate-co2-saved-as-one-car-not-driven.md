@@ -1,6 +1,6 @@
 # 0054. Estimate the CO2 a shared ride saves as one car not driven
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-11-28, by Martin in the project thread)
 - **Date:** 2026-11-28
 - **Deciders:** Martin
 - **Related:** [spec 34](../specs/2026-11-28-co2-saved.md);
