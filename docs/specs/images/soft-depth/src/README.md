@@ -4,6 +4,13 @@ The pictures in [`..`](..) compare the looks Martin chose from on
 2026-11-28 (spec 15, decision 16): the app as it was, and the three ways
 to draw cards and buttons. Nothing here ships in the app or runs in CI.
 
+| Picture | What it shows |
+| ------- | ------------- |
+| `0-now-on-iphone.webp` | The app before the change, from the iPhone check of the phone apps (the simulator) |
+| `1-close-up.webp`, `2-close-up-night.webp` | One card and one button in each look, by day and at night |
+| `3-find-phone.webp`, `4-ride-phone.webp`, `5-driver-phone-night.webp` | Find, a ride and a driver's ride on an iPhone's screen, in each look |
+| `6-laptop.webp` | Find on a laptop, before and in look 2 |
+
 | File | What it is |
 | ---- | ---------- |
 | `looks.spec.ts` | A Playwright script: Bára offers a ride, Dóra and Edda sign up, and each screen is taken in every look, on an iPhone's screen (393 by 852, three times as large) and on a laptop (1280 by 800, twice as large), by day and at night |
