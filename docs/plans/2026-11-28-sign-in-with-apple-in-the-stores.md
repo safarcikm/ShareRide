@@ -46,25 +46,25 @@ with [ADR 0056](../decisions/0056-keep-apples-token-to-end-sign-in-with-apple.md
 **Files:** `packages/db/src/schema/auth.ts`, `packages/db/src/personal-data.ts`,
 a migration from `pnpm --filter @shareride/db generate`.
 
-- [ ] `identities.apple_refresh_token` and
+- [x] `identities.apple_refresh_token` and
   `provider_sign_ins.apple_refresh_token`: `text`, null.
-- [ ] `apple_tokens_to_revoke`: `id` (uuid), `token` (text, not null),
+- [x] `apple_tokens_to_revoke`: `id` (uuid), `token` (text, not null),
   `revoke_after` and `queued_at` (timestamptz, not null), an index on
   `revoke_after`.
-- [ ] The register: the queue is not about a person (no account ID; gone
+- [x] The register: the queue is not about a person (no account ID; gone
   within 7 days). The register test passes.
 
 ### Task 2: the provider
 
 **Files:** `apps/api/src/platform/identity-providers.ts` and its test.
 
-- [ ] Failing test: Apple's `redeem` gives `refreshToken` from the token
+- [x] Failing test: Apple's `redeem` gives `refreshToken` from the token
   answer, and none when the answer has none. Google's gives none.
-- [ ] Failing test: `revoke(token)` posts `client_id`, `client_secret`,
+- [x] Failing test: `revoke(token)` posts `client_id`, `client_secret`,
   `token` and `token_type_hint=refresh_token` to
   `https://appleid.apple.com/auth/revoke`; true on 200, false otherwise or
   on a network failure.
-- [ ] The stand-in Apple gives a made-up refresh token and revokes without
+- [x] The stand-in Apple gives a made-up refresh token and revokes without
   a request.
 
 ### Task 3: keeping it
@@ -72,7 +72,7 @@ a migration from `pnpm --filter @shareride/db generate`.
 **Files:** `apps/api/src/modules/auth/provider-sign-in.ts`,
 `apps/api/src/modules/auth/identities.ts`, their integration tests.
 
-- [ ] Failing tests: the callback keeps the token on the waiting sign-in;
+- [x] Failing tests: the callback keeps the token on the waiting sign-in;
   a sign-in to an existing link replaces the link's token; a new link
   (sign-up or Settings) takes it; "already linked" replaces it.
 
@@ -82,7 +82,7 @@ a migration from `pnpm --filter @shareride/db generate`.
 and job), `provider-sign-in.ts` (`remove`), `identities.ts` (`replace`),
 `apps/api/src/modules/privacy/erasure.ts`, integration tests.
 
-- [ ] Failing tests: removing Apple, replacing it with another Apple
+- [x] Failing tests: removing Apple, replacing it with another Apple
   account and erasing the account each queue the token and leave none on
   an account; Google queues nothing.
 
@@ -91,16 +91,16 @@ and job), `provider-sign-in.ts` (`remove`), `identities.ts` (`replace`),
 **Files:** `apple-revocations.ts`, `apps/api/src/server.ts`,
 `apps/api/src/modules/auth/clean-up.ts`, integration tests.
 
-- [ ] Failing tests: the job revokes due tokens and deletes their rows;
+- [x] Failing tests: the job revokes due tokens and deletes their rows;
   a refusal moves `revoke_after` on by 10 minutes; a token queued more than
   7 days ago is dropped by the clean-up and counted.
-- [ ] `server.ts` runs `apple-revocations` every minute when Apple is on.
+- [x] `server.ts` runs `apple-revocations` every minute when Apple is on.
 
 ### Task 6: docs
 
-- [ ] `docs/compliance/privacy-gdpr.md`: the token and the queue in the
+- [x] `docs/compliance/privacy-gdpr.md`: the token and the queue in the
   record of processing.
-- [ ] `CHANGELOG.md`.
+- [x] `CHANGELOG.md`.
 
 ## After PR 2
 

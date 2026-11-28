@@ -15,6 +15,8 @@ export const personalDataKeys = [
   "token",
   "accessToken",
   "refreshToken",
+  // Apple's, kept on a link to end it with Apple (spec 37).
+  "appleRefreshToken",
   "authorization",
   "cookie",
   "password",

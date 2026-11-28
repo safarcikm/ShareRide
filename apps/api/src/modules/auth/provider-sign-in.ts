@@ -366,7 +366,8 @@ export function createProviderSignInService(
           email: claims.value.email,
           firstName: claims.value.firstName,
           // Apple's only, to end the link later (spec 37, R37.1).
-          appleRefreshToken: claims.value.refreshToken ?? null,
+          appleRefreshToken:
+            input.provider === "apple" ? (claims.value.refreshToken ?? null) : null,
           ticketHash: hashToken(ticket),
           ticketExpiresAt: addSeconds(answeredAt, providerSignInRules.ticketValidSeconds),
           expiresAt: addSeconds(answeredAt, providerSignInRules.pendingValidSeconds),

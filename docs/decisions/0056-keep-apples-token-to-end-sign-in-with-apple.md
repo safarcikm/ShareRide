@@ -47,18 +47,20 @@ leaves PuffinRide in a deleted member's Apple settings.
 
 We will keep Apple's refresh token on the waiting sign-in and on the link,
 replace it with each newer one, and, when an Apple link ends (erasure,
-removal, replacement), move it to a queue that the hourly clean-up sends to
-Apple's revoke endpoint, retried for 7 days. Google's tokens stay unkept.
-Option 1 is the only one that covers every erasure without changing the
-app (Martin's card, recommended).
+removal, replacement), move it to a queue that the API sends to Apple's
+revoke endpoint every minute, retried for 7 days. The API sends, not the
+hourly clean-up, because the clean-up's cron job holds no Apple keys, as
+with photos ([ADR 0033](0033-profile-photos-made-in-the-app-and-checked-by-the-api.md)).
+Google's tokens stay unkept. Option 1 is the only one that covers every
+erasure without changing the app (Martin's card, recommended).
 
 ## Consequences
 
 - No new app build for the review; the change ships with a production
   release.
 - One more column on `identities` and `provider_sign_ins`, and a small
-  `provider_revocations` table, all in the personal data register; never in
-  logs, responses or the export.
+  `apple_tokens_to_revoke` table with no account ID, all in the personal
+  data register; never in logs, responses or the export.
 - Apple links made between 2026-11-28 01:17 and the release have no token
   until their next Apple sign-in.
 - Moving to the company's Apple team later revokes nothing by itself: spec

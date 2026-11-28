@@ -205,7 +205,7 @@ if (revokeApple !== undefined) {
         now: new Date(),
         logger,
       });
-      if (result.revoked > 0) logger.info({ revoked: result.revoked }, "Apple links ended");
+      if (result.revoked > 0) logger.info({ revoked: result.revoked }, "Apple tokens revoked");
     }),
   );
 }

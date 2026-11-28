@@ -51,7 +51,8 @@ are not kept: Google asks nothing of the kind.
 ### 3.2 Ending the link
 
 When an Apple link goes, its token moves to a queue of revocations
-(`provider_revocations`), in the same transaction:
+(`apple_tokens_to_revoke`), alone and with no account ID, in the same
+transaction:
 
 - the account is erased, whichever way: the person's own deletion once its
   grace period ends, the console, the retention clean-up, or
@@ -59,11 +60,23 @@ When an Apple link goes, its token moves to a queue of revocations
 - the member removes Apple on Sign-in methods;
 - the member links another Apple account in its place.
 
-The hourly clean-up sends each queued token to Apple's revoke endpoint
+The API sends each queued token to Apple's revoke endpoint
 (`https://appleid.apple.com/auth/revoke`, with our Services ID, the client
-secret the API already signs, the token and `token_type_hint=refresh_token`).
-Apple's 200 deletes the row. Any other answer leaves it for the next hour;
-after 7 days the row is deleted and the failure logged, without the token.
+secret the API already signs, the token and `token_type_hint=refresh_token`)
+in a job, `apple-revocations`, that runs every minute while Apple is on. The
+API sends, not the hourly clean-up, because the clean-up's cron job holds no
+Apple keys, as with photos ([ADR 0033](../decisions/0033-profile-photos-made-in-the-app-and-checked-by-the-api.md)). A run
+takes up to 50 due tokens and holds them for 2 minutes, so no other run
+sends them meanwhile. Apple's 200 deletes the row. Any other answer, or no
+answer, sends it again 10 minutes later. The hourly clean-up deletes a row
+still queued after 7 days and logs a warning with the count, never the
+token.
+
+Apple keeps one Sign in with Apple state for each Apple account and app, so
+revoking a queued token also ends a newer link to the same Apple account
+made before the token was sent: within a minute, or longer while Apple
+refuses. The member stays signed in to PuffinRide; their next Apple sign-in
+shows Apple's first-time sheet and keeps a fresh token. Rare, and accepted.
 
 ### 3.3 Links made before this
 
@@ -72,11 +85,19 @@ token. The person's next Apple sign-in stores one. An account erased before
 that ends without revoking: there is nothing to send. Very few accounts, and
 the person can still remove PuffinRide in their Apple Account settings.
 
+An Apple sign-in that never becomes a link (a newcomer who stops at the
+phone step, a Settings link never confirmed) is not revoked either: no
+account was made, and the clean-up deletes the waiting sign-in and its
+token an hour after it ends. Revoking it could end a live link of the same
+Apple account (3.2). The person can remove PuffinRide in their Apple Account
+settings.
+
 ### 3.4 Staging, development and tests
 
 The stand-in provider gives a made-up refresh token, so tests see it kept
-and queued. Without Apple's keys nothing is sent anywhere: the clean-up
-deletes queued stand-in tokens and logs that it did.
+and queued. Its revoke answers yes without a request, so the job deletes
+queued stand-in tokens and nothing is sent anywhere. Without any Apple
+provider the job does not run.
 
 ## 4. Privacy and security
 
@@ -108,7 +129,7 @@ deletes queued stand-in tokens and logs that it did.
 | # | Requirement |
 | - | ----------- |
 | R37.1 | The API keeps Apple's refresh token from a sign-in with its link, and only Apple's; a newer one replaces it. |
-| R37.2 | When an Apple link ends (account erased, Apple removed, link replaced), its token is revoked with Apple within the hour, and tried again for 7 days. |
+| R37.2 | When an Apple link ends (account erased, Apple removed, link replaced), its token is revoked with Apple within minutes, and tried again for 7 days. |
 | R37.3 | The token never appears in a log, a response or "Download my data". |
 | R37.4 | Without Apple's keys, nothing is sent to Apple. |
 
@@ -130,8 +151,9 @@ card on 2026-11-28:
 - Integration: the callback keeps the token on the waiting sign-in; a
   sign-in to an existing link replaces it; a new link takes it; removing,
   replacing and erasing queue it and leave no token on the account; the
-  clean-up deletes a row on Apple's 200, keeps it on a failure, drops it
-  after 7 days; the personal data register test passes.
+  job deletes a row on Apple's 200 and sends a refused one again 10 minutes
+  later; the clean-up drops a row after 7 days; no log line holds a token;
+  the personal data register test passes.
 
 ## 9. Out of scope
 

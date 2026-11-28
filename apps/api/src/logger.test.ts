@@ -41,6 +41,17 @@ describe("createLogger", () => {
     expect(line).toContain("[redacted]");
   });
 
+  it("redacts Apple's refresh token kept on a link (spec 37, R37.3)", () => {
+    const { lines, destination } = capture();
+    createLogger({ level: "info", destination }).info(
+      { appleRefreshToken: "apple-one", pending: { appleRefreshToken: "apple-two" } },
+      "linked",
+    );
+    const line = JSON.stringify(lines[0]);
+    expect(line).not.toContain("apple-one");
+    expect(line).not.toContain("apple-two");
+  });
+
   it("keeps error codes when logged as errorCode", () => {
     const { lines, destination } = capture();
     createLogger({ level: "info", destination }).warn({ errorCode: "code_invalid" }, "failed");

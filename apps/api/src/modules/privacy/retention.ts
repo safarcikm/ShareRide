@@ -133,6 +133,13 @@ export function retentionSteps({
       ],
       async run(now) {
         const counts = await cleanUpSignInRecords(db, now);
+        if (counts.appleTokens > 0) {
+          // Apple never took them: those Apple accounts still list PuffinRide (spec 37, 3.2).
+          logger.warn(
+            { dropped: counts.appleTokens },
+            "Apple tokens dropped unrevoked after 7 days",
+          );
+        }
         return {
           counts: {
             sign_in_codes: counts.codes,

@@ -322,18 +322,29 @@ detailed in [spec 13](../specs/2026-11-13-payments.md#6-data-and-api):
 
 - `Identity` (table `identities`): a Google or Apple account linked to a
   user (provider, the provider's subject identifier, the email when the
-  provider said it is verified, linked and last used at). At most one of
-  each provider per user, and each provider account on one user (R19.1);
-  the phone number stays on every account
+  provider said it is verified, linked and last used at, and for Apple the
+  refresh token Apple gave at the latest sign-in). At most one of each
+  provider per user, and each provider account on one user (R19.1); the
+  phone number stays on every account
   ([spec 19](../specs/2026-11-22-google-and-apple-sign-in.md#6-data-and-api),
   [ADR 0034](../decisions/0034-google-and-apple-sign-in-through-our-api.md)).
+  When an Apple link ends, its token goes to `AppleTokenToRevoke`
+  ([spec 37](../specs/2026-11-28-sign-in-with-apple-in-the-stores.md),
+  [ADR 0056](../decisions/0056-keep-apples-token-to-end-sign-in-with-apple.md)).
 - `ProviderSignIn` (table `provider_sign_ins`): one Google or Apple sign-in
   from the tap to its end: the state, the app's challenge and return
   address, then the provider's answer, the one-time ticket and the waiting
   sign-in for the phone step or Settings. Only hashes of the state, ticket
-  and waiting sign-in are kept; the row is deleted when used, cancelled or
+  and waiting sign-in are kept, beside Apple's refresh token until the
+  sign-in finishes or links; the row is deleted when used, cancelled or
   failed, and the hourly clean-up deletes the rest an hour after they end
   ([plan 4.1](../plans/2026-11-22-google-and-apple-sign-in.md#4-design)).
+- `AppleTokenToRevoke` (table `apple_tokens_to_revoke`): the refresh token
+  of an Apple link that ended, alone, with no account ID, and when to send
+  it. The API sends it to Apple's revoke endpoint every minute and deletes
+  it once Apple takes it; a refused one waits 10 minutes, and the hourly
+  clean-up drops one queued more than 7 days ago
+  ([spec 37](../specs/2026-11-28-sign-in-with-apple-in-the-stores.md#32-ending-the-link)).
 - `Co2Carried` (table `co2_carried`): a member's CO2 totals from their
   trips made anonymous 3 years after: grams and rides as a passenger, and
   grams, trips and passengers as a driver. What a trip's completed bookings

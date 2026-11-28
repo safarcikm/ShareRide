@@ -321,6 +321,8 @@ export function createAppleProvider(options: {
         token: refreshToken,
         token_type_hint: "refresh_token",
       });
+      // Apple's answer has no body worth reading; free the connection.
+      await response?.body?.cancel().catch(() => undefined);
       return response?.ok === true;
     },
   };

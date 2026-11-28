@@ -1,8 +1,11 @@
 import { randomBytes } from "node:crypto";
 import { Writable } from "node:stream";
 import {
+  addSignInMethodRoute,
   finishProviderSignInRoute,
+  prepareSignInMethodRoute,
   removeSignInMethodRoute,
+  sendConfirmCodeRoute,
   startPhoneSignInRoute,
   verifyPhoneCodeRoute,
 } from "@shareride/contracts";
@@ -14,6 +17,7 @@ import { createLogger } from "../../logger.ts";
 import { pkceChallenge } from "../../platform/identity-providers.ts";
 import { startTestApi, testWebAppUrl, type TestApi } from "../../testing.ts";
 import { createErasure } from "../privacy/erasure.ts";
+import { retentionSteps } from "../privacy/retention.ts";
 import { appleRevocationRules, revokeDueAppleTokens } from "./apple-revocations.ts";
 import { cleanUpSignInRecords } from "./clean-up.ts";
 
@@ -57,7 +61,8 @@ const silent = createLogger({
 let addresses = 0;
 function newAddress(): void {
   addresses += 1;
-  api.ip = `203.0.114.${String(addresses % 250)}`;
+  // A documentation network of its own, apart from other tests' limits.
+  api.ip = `2001:db8:37:${String(addresses)}::1`;
 }
 
 const pathOf = (url: string) => {
@@ -189,6 +194,52 @@ describe("Apple's refresh token is kept with the link (R37.1)", () => {
     expect(await tokenOnLink(userId)).toBe("dev-apple-refresh-1");
   });
 
+  it("replaced by a waiting sign-in that finds the link already made", async () => {
+    await api.connection.db
+      .update(users)
+      .set({ email: null, emailVerifiedAt: null })
+      .where(eq(users.email, "dev-person-1@example.com"));
+    const first = await signInWith("apple", 0);
+    const second = await signInWith("apple", 0);
+    if (first.status !== "phoneNeeded" || second.status !== "phoneNeeded") {
+      throw new Error("Expected the phone step.");
+    }
+    const phone = api.newPhoneNumber();
+    const made = await phoneStep(phone, second.pendingSignIn);
+    await api.connection.db
+      .update(identities)
+      .set({ appleRefreshToken: "an older token" })
+      .where(eq(identities.userId, made.user.id));
+    await phoneStep(phone, first.pendingSignIn);
+    expect(await tokenOnLink(made.user.id)).toBe("dev-apple-refresh-1");
+    expect(await queued()).toEqual([]);
+  });
+
+  it("on a link added on Sign-in methods", async () => {
+    await api.connection.db
+      .update(users)
+      .set({ email: null, emailVerifiedAt: null })
+      .where(eq(users.email, "dev-person-1@example.com"));
+    const phone = api.newPhoneNumber();
+    const { accessToken, userId } = await api.signIn(phone);
+    const verifier = randomBytes(32).toString("base64url");
+    const prepared = await api.client.call(prepareSignInMethodRoute, {
+      accessToken,
+      body: { ticket: await ticketFor("apple", 0, verifier), verifier },
+    });
+    if (!prepared.ok) throw new Error(prepared.error.code);
+    api.advance(31);
+    newAddress();
+    const sent = await api.client.call(sendConfirmCodeRoute, { accessToken, body: {} });
+    if (!sent.ok) throw new Error(sent.error.code);
+    const added = await api.client.call(addSignInMethodRoute, {
+      accessToken,
+      body: { pendingSignIn: prepared.data.pendingSignIn, code: api.lastCode(phone) },
+    });
+    expect(added).toMatchObject({ ok: true, status: 201 });
+    expect(await tokenOnLink(userId)).toBe("dev-apple-refresh-1");
+  });
+
   it("and no token of Google's", async () => {
     await api.connection.db.delete(identities).where(eq(identities.subject, "dev-google-3"));
     await api.connection.db
@@ -307,12 +358,49 @@ describe("the job that revokes them (spec 37, 3.2)", () => {
     });
   });
 
+  it("leaves a token another run holds to that run", async () => {
+    await queue("token-a");
+    const run = (revoke: (token: string) => Promise<boolean>) =>
+      revokeDueAppleTokens({ db: api.connection.db, revoke, now: api.now(), logger: silent });
+    let meanwhile: { revoked: number; refused: number } | undefined;
+    const first = await run(async () => {
+      meanwhile = await run(() => Promise.resolve(true));
+      return true;
+    });
+    expect(meanwhile).toEqual({ revoked: 0, refused: 0 });
+    expect(first).toEqual({ revoked: 1, refused: 0 });
+  });
+
   it("is dropped by the hourly clean-up 7 days after it was queued", async () => {
     await queue("too old", 7 * 24 * 60 + 1);
     await queue("still tried", 7 * 24 * 60 - 1);
     const counts = await cleanUpSignInRecords(api.connection.db, api.now());
     expect(counts.appleTokens).toBe(1);
     expect((await queued()).map((row) => row.token)).toEqual(["still tried"]);
+  });
+
+  it("and the clean-up warns of it, with the count only", async () => {
+    await queue("too old", 7 * 24 * 60 + 1);
+    const lines: string[] = [];
+    const logger = createLogger({
+      level: "info",
+      destination: new Writable({
+        write: (chunk: Buffer, _encoding, callback) => {
+          lines.push(chunk.toString());
+          callback();
+        },
+      }),
+    });
+    const step = retentionSteps({
+      db: api.connection.db,
+      erasure: { eraseDue: () => Promise.resolve({ erased: 0, failed: 0 }) },
+      logger,
+    }).find((candidate) => candidate.rules.includes("apple_tokens"));
+    const ran = await step?.run(api.now());
+    expect(ran?.counts["apple_tokens"]).toBe(1);
+    const warned = lines.map((line) => JSON.parse(line) as Record<string, unknown>);
+    expect(warned).toEqual([expect.objectContaining({ level: "warn", dropped: 1 }) as unknown]);
+    expect(lines.join("\n")).not.toContain("too old");
   });
 
   it("never logs a token (R37.3)", async () => {
