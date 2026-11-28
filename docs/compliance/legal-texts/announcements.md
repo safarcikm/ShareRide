@@ -15,9 +15,13 @@ The Icelandic is a non-native's.
 
 One announcement for two changes that were not announced yet: the pages in
 Profile and the phone apps (versions 3 and 4, on puffinride.is since
-2026-11-28 01:57 UTC), and how people sign in (versions 4 and 5). Send it
-after the release that brings the Terms' version 4 and the Privacy Policy's
-version 5.
+2026-11-28 01:57 UTC), and how people sign in (versions 4 and 5, on
+puffinride.is since 2026-11-28 03:32 UTC).
+
+**Not sent.** Martin made these changes quietly on 2026-11-28: PuffinRide
+had no real users yet, so there was no member to tell. The texts stay here
+as they were written. From the first member on, a changed text gets its
+announcement.
 
 ### Title, English
 
