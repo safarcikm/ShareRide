@@ -107,6 +107,7 @@ export const carpoolPage: {
       heading: "carpool.questionsTitle",
       paragraphs: [],
       questions: [
+        { question: "carpool.whatQuestion", answer: "carpool.whatAnswer" },
         { question: "carpool.taxiQuestion", answer: "carpool.taxiAnswer" },
         { question: "carpool.wordQuestion", answer: "carpool.wordAnswer" },
         { question: "carpool.languageQuestion", answer: "carpool.languageAnswer" },
@@ -114,6 +115,17 @@ export const carpoolPage: {
       ],
     },
   ],
+};
+
+/**
+ * PuffinRide elsewhere: our Facebook Page (spec 28, 3.6) and Instagram
+ * profile, @puffinride.is (spec 30, 3.1). The app links to them, and the
+ * server names them to Google as ours (spec 23, 3.6, item 8). One place to
+ * change when the Page gets its short name.
+ */
+export const socialProfiles: { readonly facebook: string; readonly instagram: string } = {
+  facebook: "https://www.facebook.com/profile.php?id=61597055066444",
+  instagram: "https://www.instagram.com/puffinride.is/",
 };
 
 /** A link on the About page, or in the website's footer: its text and the app's address. */

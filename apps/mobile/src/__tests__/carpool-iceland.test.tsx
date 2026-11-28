@@ -37,6 +37,7 @@ describe("Carpool in Iceland", () => {
     ]) {
       expect(screen.getByRole("header", { name: heading })).toBeVisible();
     }
+    expect(screen.getByRole("header", { name: "What is PuffinRide?" })).toBeVisible();
     expect(screen.getByRole("header", { name: "Is PuffinRide a taxi?" })).toBeVisible();
     expect(screen.getByRole("header", { name: "What does samferða mean?" })).toBeVisible();
     expect(screen.getByText(/^No\. Drivers offer seats on a trip/)).toBeVisible();

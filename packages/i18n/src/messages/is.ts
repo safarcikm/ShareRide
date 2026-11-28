@@ -60,6 +60,9 @@ export const is = {
     "Allir notendur eru með staðfest símanúmer. Bílstjórar sýna prófílmynd og eftir hverja ferð gefa bílstjórar og farþegar hvert öðru umsögn. Allir samþykkja samfélagsreglurnar okkar.",
   "carpool.rules": "Lesa samfélagsreglurnar",
   "carpool.questionsTitle": "Spurningar",
+  "carpool.whatQuestion": "Hvað er PuffinRide?",
+  "carpool.whatAnswer":
+    "PuffinRide (puffinride.is) er íslenskur vefur fyrir samakstur sem opnaði í nóvember 2026. Bílstjórar sem eru hvort sem er á leiðinni bjóða laus sæti í bílnum sínum og farþegar bóka sæti alla leiðina eða hluta hennar, á milli opinberra mótsstaða um allt land. Hann er í opinni prófun, á íslensku og ensku.",
   "carpool.taxiQuestion": "Er PuffinRide leigubíll?",
   "carpool.taxiAnswer":
     "Nei. Bílstjórar bjóða sæti í ferð sem þeir fara hvort sem er og PuffinRide kemur þeim í samband við fólk sem er að fara sömu leið.",

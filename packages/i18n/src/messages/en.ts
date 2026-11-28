@@ -59,6 +59,9 @@ export const en = {
     "Every member has a checked phone number. Drivers show a profile photo, and after each ride drivers and passengers review each other. Everyone agrees to our community rules.",
   "carpool.rules": "Read the community rules",
   "carpool.questionsTitle": "Questions",
+  "carpool.whatQuestion": "What is PuffinRide?",
+  "carpool.whatAnswer":
+    "PuffinRide (puffinride.is, sometimes written Puffin Ride) is a carpooling website for Iceland, started in November 2026. People who are driving somewhere anyway offer the empty seats in their car, and passengers book a seat for the whole way or part of it, between public meeting points around the country. It is in an open beta, in English and Icelandic.",
   "carpool.taxiQuestion": "Is PuffinRide a taxi?",
   "carpool.taxiAnswer":
     "No. Drivers offer seats on a trip they are making anyway, and PuffinRide puts them in touch with people going the same way.",
