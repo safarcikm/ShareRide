@@ -11,6 +11,7 @@ import {
 } from "@/testing/bookings";
 import { completedBooking, reviewsCloseAt } from "@/testing/reviews";
 import { onTheDay } from "@/testing/trip-day";
+import { cardFace } from "@/testing/lift";
 import { colors, peopleColours } from "@/theme/tokens";
 import { MyRideTicket } from "./my-ride-ticket";
 import { mergeRides } from "./rides";
@@ -49,7 +50,8 @@ const quiet: MyTrip = {
 };
 
 const foot = () => within(screen.getByTestId("ticket-foot"));
-const edge = () => screen.getByTestId("card");
+/** The face of the ride's card, which draws its outline. */
+const face = () => screen.getByTestId("card-face");
 /** The day after the north trip, with most of its 14 days to review left. */
 const dayAfter = new Date("2026-11-16T12:00:00Z");
 
@@ -76,14 +78,14 @@ describe("a seat of mine", () => {
     expect(foot().getByText("Waiting for Anna's answer")).toHaveStyle({
       color: colors.light.info,
     });
-    // Not mine yet: no moss edge.
-    expect(edge()).toHaveStyle({ borderBottomColor: colors.light.edge });
+    // Not mine yet: no moss outline.
+    expect(face()).toHaveStyle(cardFace());
   });
 
-  it("has a moss edge once the seat is mine, and says so", async () => {
+  it("has a moss outline once the seat is mine, and says so", async () => {
     await inApp(seat(paidBooking));
     expect(foot().getByText("Seat confirmed")).toHaveStyle({ color: colors.light.primary });
-    expect(edge()).toHaveStyle({ borderBottomColor: colors.light.primary });
+    expect(face()).toHaveStyle(cardFace(colors.light.primary));
   });
 
   it("says in yellow what it needs: to pay, and by when", async () => {
@@ -106,7 +108,7 @@ describe("a seat of mine", () => {
       seat(northBooking({ status: "declined", requestExpiresAt: null })),
     );
     expect(foot().getByText("Declined")).toHaveStyle({ color: colors.light.textMuted });
-    expect(edge()).toHaveStyle({ borderBottomColor: colors.light.edge });
+    expect(face()).toHaveStyle(cardFace());
     await rerender(
       <LanguageProvider>
         {seat(northBooking({ ...paidBooking, status: "no_show" }))}
@@ -119,7 +121,7 @@ describe("a seat of mine", () => {
       </LanguageProvider>,
     );
     expect(foot().getByText("Completed")).toHaveStyle({ color: colors.light.primary });
-    expect(edge()).toHaveStyle({ borderBottomColor: colors.light.primary });
+    expect(face()).toHaveStyle(cardFace(colors.light.primary));
   });
 
   it("says in yellow that the driver can still be rated, where its state stood (spec 31, 3.10)", async () => {
@@ -170,7 +172,7 @@ describe("a ride I drive", () => {
     // The seats of the fullest stretch; each stretch is on the ride's own page.
     expect(foot().getByText("1 of 3 seats taken")).toHaveStyle({ color: colors.light.text });
     expect(screen.queryByText(/free/i)).toBeNull();
-    expect(edge()).toHaveStyle({ borderBottomColor: colors.light.primary });
+    expect(face()).toHaveStyle(cardFace(colors.light.primary));
   });
 
   it("says in yellow who waits for an answer, at the foot's end as on a seat of mine", async () => {
@@ -239,7 +241,7 @@ describe("a ride I drive", () => {
     expect(screen.getByText("5 h")).toBeVisible();
   });
 
-  it("says a ride I cancelled is cancelled, and why, with no seats and no moss edge", async () => {
+  it("says a ride I cancelled is cancelled, and why, with no seats and no moss outline", async () => {
     await inApp(
       drive({
         ...quiet,
@@ -250,7 +252,7 @@ describe("a ride I drive", () => {
     expect(foot().getByText("Cancelled")).toHaveStyle({ color: colors.light.textMuted });
     expect(screen.getByTestId("ticket-note")).toHaveTextContent("You cancelled this ride: Weather");
     expect(screen.queryByText(/seats? taken/)).toBeNull();
-    expect(edge()).toHaveStyle({ borderBottomColor: colors.light.edge });
+    expect(face()).toHaveStyle(cardFace());
   });
 
   it("is one button named by all it says", async () => {

@@ -1,6 +1,6 @@
-import { colors, edges, mapDrawing, typeScale } from "@shareride/ui";
+import { colors, depth, edges, mapDrawing, typeScale } from "@shareride/ui";
 import { describe, expect, it } from "vitest";
-import { faceParts, tokenStylesheet } from "./token-stylesheet.ts";
+import { cardLift, faceParts, tokenStylesheet } from "./token-stylesheet.ts";
 
 describe("tokenStylesheet", () => {
   const css = tokenStylesheet();
@@ -17,6 +17,15 @@ describe("tokenStylesheet", () => {
     expect(css).toContain(`--map-ring-road: ${mapDrawing.dark.ringRoad};`);
     const count = (css.match(/--map-/g) ?? []).length;
     expect(count).toBe(Object.keys(mapDrawing.light).length * 2);
+  });
+
+  it("rings a card with a hairline and a soft shadow, light and dark (spec 15, 4.4)", () => {
+    expect(cardLift(depth.light)).toBe(`0 0 0 1px ${depth.light.ring}, ${depth.light.shadow}`);
+    expect(cardLift(depth.dark)).toBe(
+      `${depth.dark.highlight}, 0 0 0 1px ${depth.dark.ring}, ${depth.dark.shadow}`,
+    );
+    expect(css).toContain(`--card-lift: ${cardLift(depth.light)};`);
+    expect(css).toContain(`--card-lift: ${cardLift(depth.dark)};`);
   });
 
   it("has a class for each type style, weighted by its face", () => {

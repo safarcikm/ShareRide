@@ -4,7 +4,8 @@ import type { ReactElement } from "react";
 import { Text } from "react-native";
 import { LanguageProvider } from "@/i18n/language";
 import { filledButtons } from "@/testing/buttons";
-import { colors, icelandScene, people } from "@/theme/tokens";
+import { cardFace } from "@/testing/lift";
+import { colors, depth, icelandScene, people } from "@/theme/tokens";
 import { Button } from "./button";
 import { IconButton } from "./icon-button";
 import { NeedsYouCard } from "./needs-you-card";
@@ -71,17 +72,14 @@ describe("RideTicket", () => {
     expect(screen.getByText("per seat")).toHaveStyle({ color: colors.light.textMuted });
   });
 
-  it("is a surface with the card's corners and edge, and no padding of its own", async () => {
+  it("is a surface with the card's corners and shadow, and no padding of its own", async () => {
     await render(<RideTicket day="Sat 28 Nov" from={selfoss} to={vik} between="1 h 35 min" />);
     expect(screen.getByTestId("card-face")).toHaveStyle({
       backgroundColor: colors.light.surface,
       borderRadius: 22,
       padding: 0,
     });
-    expect(screen.getByTestId("card")).toHaveStyle({
-      borderBottomWidth: 3,
-      borderBottomColor: colors.light.edge,
-    });
+    expect(screen.getByTestId("card-face")).toHaveStyle(cardFace());
   });
 
   it("shows no price without one, and Free where that is the amount", async () => {
@@ -386,21 +384,35 @@ describe("RideTicket", () => {
     );
     expect(hidden("ticket-tear")).toBeOnTheScreen();
     expect(screen.queryByTestId("ticket-tear")).toBeNull();
-    // A notch in each edge, in the page's colour, half of it outside the card.
+    // A notch in each edge, in the page's colour: half a circle in the card,
+    // which reaches out over the card's hairline and carries it round.
     const notches = allHidden("ticket-notch");
     expect(notches).toHaveLength(2);
     for (const notch of notches) {
       expect(notch).toHaveStyle({
         position: "absolute",
-        width: 16,
+        width: 8 + 1,
         height: 16,
-        borderRadius: 999,
+        borderTopWidth: 1,
+        borderBottomWidth: 1,
         backgroundColor: colors.light.background,
+        borderColor: depth.light.ring,
       });
     }
-    expect(notches[0]).toHaveStyle({ left: -8 });
-    expect(notches[1]).toHaveStyle({ right: -8 });
-    expect(screen.getByTestId("card-face")).toHaveStyle({ overflow: "hidden" });
+    expect(notches[0]).toHaveStyle({
+      left: -1,
+      borderRightWidth: 1,
+      borderTopRightRadius: 8,
+      borderBottomRightRadius: 8,
+    });
+    expect(notches[1]).toHaveStyle({
+      right: -1,
+      borderLeftWidth: 1,
+      borderTopLeftRadius: 8,
+      borderBottomLeftRadius: 8,
+    });
+    // Nothing cuts the notches off at the card's edge.
+    expect(screen.getByTestId("card-face")).not.toHaveStyle({ overflow: "hidden" });
     const foot = screen.getByTestId("ticket-foot");
     // Its end goes under its start when they do not fit beside each other;
     // with words only it is as tall as with a small picture.
@@ -424,13 +436,38 @@ describe("RideTicket", () => {
     expect(screen.queryByTestId("ticket-foot")).toBeNull();
   });
 
-  it.each(["light", "dark"] as const)("has a moss edge when it is mine, in %s", async (scheme) => {
-    mockScheme = scheme;
-    await render(<RideTicket mine day="Sat 28 Nov" from={selfoss} to={vik} between="1 h 35 min" />);
-    expect(screen.getByTestId("card")).toHaveStyle({
-      borderBottomWidth: 3,
-      borderBottomColor: colors[scheme].primary,
-    });
+  it.each(["light", "dark"] as const)(
+    "has a moss outline when it is mine, in %s",
+    async (scheme) => {
+      mockScheme = scheme;
+      await render(
+        <RideTicket mine day="Sat 28 Nov" from={selfoss} to={vik} between="1 h 35 min" />,
+      );
+      expect(screen.getByTestId("card-face")).toHaveStyle(cardFace(colors[scheme].primary, scheme));
+    },
+  );
+
+  it("carries its moss outline round the notches of its tear line", async () => {
+    const ticket = (mine: boolean) => (
+      <RideTicket
+        mine={mine}
+        day="Sat 28 Nov"
+        from={selfoss}
+        to={vik}
+        between="1 h 35 min"
+        onPress={jest.fn()}
+        accessibilityLabel="Selfoss to Vík"
+        foot={<TicketFoot start={<Text>Jón</Text>} end={<Text>2 seats left</Text>} />}
+      />
+    );
+    await render(ticket(true));
+    const [start, end] = allHidden("ticket-notch");
+    expect(start).toHaveStyle({ borderColor: colors.light.primary, width: 8 + 2, left: -2 });
+    expect(end).toHaveStyle({ borderColor: colors.light.primary, borderLeftWidth: 2, right: -2 });
+    await fireEvent(screen.getByRole("button"), "hoverIn");
+    expect(allHidden("ticket-notch")[0]).toHaveStyle({ borderColor: colors.light.primaryEdge });
+    await screen.rerender(ticket(false));
+    expect(allHidden("ticket-notch")[0]).toHaveStyle({ borderColor: colors.light.primary });
   });
 
   it("is one link, named in one line", async () => {
@@ -508,11 +545,9 @@ describe("RideTicket", () => {
     );
     await render(ticket(false));
     await fireEvent(screen.getByRole("button"), "hoverIn");
-    expect(screen.getByTestId("card")).toHaveStyle({ borderBottomColor: colors.light.primary });
+    expect(screen.getByTestId("card-face")).toHaveStyle(cardFace(colors.light.primary));
     await screen.rerender(ticket(true));
-    expect(screen.getByTestId("card")).toHaveStyle({
-      borderBottomColor: colors.light.primaryEdge,
-    });
+    expect(screen.getByTestId("card-face")).toHaveStyle(cardFace(colors.light.primaryEdge));
   });
 
   it("holds a button of its own in its corner, which does not press it", async () => {
@@ -569,7 +604,7 @@ describe("RideTicket", () => {
         onShow={onShow}
       />,
     );
-    expect(screen.getByTestId("card")).toHaveStyle({ borderBottomColor: colors.light.primary });
+    expect(screen.getByTestId("card-face")).toHaveStyle(cardFace(colors.light.primary));
     await fireEvent(screen.getByRole("button"), "hoverIn");
     await fireEvent(screen.getByRole("button"), "focus");
     expect(onShow).toHaveBeenCalledTimes(2);
@@ -775,14 +810,11 @@ describe("NeedsYouCard", () => {
           action={{ label: "See the request", onPress: jest.fn() }}
         />,
       );
-      expect(screen.getByTestId("needs-you-card")).toHaveStyle({
-        borderRadius: 22,
-        borderBottomWidth: 3,
-        borderBottomColor: people.sun,
-      });
+      expect(screen.getByTestId("needs-you-card")).toHaveStyle({ borderRadius: 22 });
       expect(screen.getByTestId("needs-you-face")).toHaveStyle({
         backgroundColor: colors[scheme].warningSoft,
         borderRadius: 22,
+        ...cardFace(people.sun, scheme),
       });
       expect(hidden("needs-you-icon")).toHaveStyle({
         width: 36,
