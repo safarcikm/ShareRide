@@ -172,6 +172,9 @@ takes effect within the five minutes the answer may be kept.
 
 On the website, `?day=2027-06-17` (any date) shows that day's banner, for
 checking a day before it comes; it changes nothing else and is not linked.
+As built (`useBanner`, `apps/mobile/src/banner/use-banner.ts`): only a real
+date written `YYYY-MM-DD` from 2000 to 2099 counts; anything else, such as
+`2027-02-30`, shows today's banner. A phone ignores it.
 
 ### 3.10 Phones, and when
 

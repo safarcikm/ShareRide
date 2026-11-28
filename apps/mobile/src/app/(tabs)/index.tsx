@@ -1,5 +1,4 @@
 import { soonestTripsRoute, type TripSearchResult } from "@shareride/contracts";
-import { bannerFor, inIceland } from "@shareride/domain";
 import { pageText } from "@shareride/i18n";
 import { router } from "expo-router";
 import { useCallback, useState, type ReactNode } from "react";
@@ -16,6 +15,7 @@ import { useMe, useSession } from "@/auth/session";
 import { Button } from "@/components/button";
 import { BetaLabel } from "@/beta/config";
 import { sceneTop } from "@/banner/season-looks";
+import { useBanner } from "@/banner/use-banner";
 import { Card } from "@/components/card";
 import { Columns } from "@/components/columns";
 import { Grid } from "@/components/grid";
@@ -156,7 +156,8 @@ function FrontPage() {
   // Each grows with what it is measured to hold.
   const { width: windowWidth } = useWindowDimensions();
   const scheme = useColorScheme() === "dark" ? "dark" : "light";
-  const { season } = bannerFor(inIceland(at), { festiveDays: false });
+  // The scene in the season of the day in Iceland (spec 36, 3.1).
+  const { season } = useBanner(at);
   const [band, setBand] = useState(sceneBand);
   const [line, setLine] = useState<number>(sizes.sceneLine);
   // The car arrives the first time Find shows on the website (spec 33, 3.2).
