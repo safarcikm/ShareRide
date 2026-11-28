@@ -1581,6 +1581,17 @@ releases follow [Semantic Versioning](https://semver.org/).
   visit, and nothing moves with the system's reduce motion on. CSS
   keyframes in one style sheet (`motionCss`), so nothing waits for it and
   the phone apps are unchanged; the motion tokens are in `packages/ui`.
+- The phone apps on the website (spec 35; ADR 0055), ready and switched
+  off: two console switches, **App Store page is public** and **Google Play
+  page is public** (group Phone apps, both off). With one on, the footer and
+  About show that store's official badge (About also a QR code on a laptop
+  and the stores' trademark lines), Safari on an iPhone gets Apple's Smart
+  App Banner (`apple-itunes-app`, written by the server), Android phones'
+  browsers a small strip with Install and × that stays away once used, and
+  `/app` sends each phone to its store (About otherwise). `/v1/config` says
+  which stores are on (`appStores`). Nothing in the phone apps. The badges
+  and the QR code are in `apps/mobile/public/stores/`, made by
+  `scripts/app-promotion-images.ts` (development dependency `toqr`).
 - About PuffinRide (spec 30), a public page at `/about`: what PuffinRide is,
   the Terms of Service, Community Rules, Privacy Policy and Cookies, who
   runs PuffinRide (as the Terms say it) and how to reach us

@@ -14,6 +14,8 @@ import {
 import { useMe, useSession } from "@/auth/session";
 import { Button } from "@/components/button";
 import { BetaLabel } from "@/beta/config";
+import { sceneTop } from "@/banner/season-looks";
+import { useBanner } from "@/banner/use-banner";
 import { Card } from "@/components/card";
 import { Columns } from "@/components/columns";
 import { Grid } from "@/components/grid";
@@ -40,14 +42,7 @@ import { FindMap } from "@/search/find-map";
 import { ResultTicket } from "@/search/result-ticket";
 import { openSearch, useRouteSearch } from "@/search/route-search";
 import { roomProps, useArrival } from "@/theme/motion";
-import {
-  controlOutline,
-  icelandScene,
-  minTouchTarget,
-  sizes,
-  spacing,
-  typography,
-} from "@/theme/tokens";
+import { controlOutline, minTouchTarget, sizes, spacing, typography } from "@/theme/tokens";
 import { usePalette } from "@/theme/use-palette";
 
 /**
@@ -161,6 +156,8 @@ function FrontPage() {
   // Each grows with what it is measured to hold.
   const { width: windowWidth } = useWindowDimensions();
   const scheme = useColorScheme() === "dark" ? "dark" : "light";
+  // The scene in the season of the day in Iceland (spec 36, 3.1).
+  const { season } = useBanner(at);
   const [band, setBand] = useState(sceneBand);
   const [line, setLine] = useState<number>(sizes.sceneLine);
   // The car arrives the first time Find shows on the website (spec 33, 3.2).
@@ -242,7 +239,12 @@ function FrontPage() {
         refreshAsked={refreshAsked}
         backdrop={
           <View style={styles.panelRoom}>
-            <IcelandPanel height={line + spacing.md + searchRowTop} ground={line + spacing.sm} />
+            <IcelandPanel
+              season={season}
+              height={line + spacing.md + searchRowTop}
+              ground={line + spacing.sm}
+              room={carFromEdge + sizes.sceneCarWide + spacing.lg}
+            />
           </View>
         }
       >
@@ -300,8 +302,10 @@ function FrontPage() {
       siteFooter
       refresh={refresh}
       refreshAsked={refreshAsked}
-      backdrop={<IcelandScene width={windowWidth} height={spacing.md + band + spacing.sm} />}
-      topColour={icelandScene[scheme].sky}
+      backdrop={
+        <IcelandScene season={season} width={windowWidth} height={spacing.md + band + spacing.sm} />
+      }
+      topColour={sceneTop(season, scheme)}
     >
       <View
         testID="scene-top"

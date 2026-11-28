@@ -4,6 +4,7 @@ import {
   asideMaxWidth,
   colors,
   icelandScene,
+  icelandSeasons,
   maxContentWidth,
   carDrawing,
   motion,
@@ -96,13 +97,20 @@ describe("the puffin (spec 15, sections 4.2 and 4.9)", () => {
   });
 });
 
+/**
+ * Where words stand on the Iceland scene (spec 36, R36.1): on a phone the
+ * name, the Beta label and the language link on the sky's top; on a laptop
+ * the title and its line on any of the land's colours.
+ */
+const underWords = ["skyTop", "sky", "far", "mountain", "glacier", "hillBack", "hill"] as const;
+
 describe.each(["light", "dark"] as const)(
   "the Iceland scene, %s (spec 15, section 5.3)",
   (scheme) => {
     const scene = icelandScene[scheme];
     const page = colors[scheme];
 
-    // The front page's name and its language switch stand on the sky.
+    // A road's scene elsewhere: words stand on its sky.
     it.each(["text", "primary"] as const)("keeps %s readable on its sky", (ink) => {
       expect(contrastRatio(page[ink], scene.sky)).toBeGreaterThanOrEqual(4.5);
     });
@@ -112,6 +120,33 @@ describe.each(["light", "dark"] as const)(
     });
   },
 );
+
+describe.each(
+  (["winter", "spring", "summer", "autumn"] as const).flatMap((season) =>
+    (["light", "dark"] as const).map((scheme) => [season, scheme] as const),
+  ),
+)("the Iceland scene in %s, %s (spec 36, R36.1)", (season, scheme) => {
+  const scene = icelandSeasons[season][scheme];
+  const page = colors[scheme];
+
+  it.each(["text", "primary"] as const)("keeps %s readable on the sky's top", (ink) => {
+    expect(contrastRatio(page[ink], scene.skyTop)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it.each(underWords)("keeps the text readable on %s", (part) => {
+    expect(contrastRatio(page.text, scene[part])).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("has every part, and snow only in winter", () => {
+    expect(Object.keys(scene).filter((part) => part !== "snow")).toEqual([
+      ...underWords,
+      "road",
+      "roadLine",
+      "roof",
+    ]);
+    expect("snow" in scene).toBe(season === "winter");
+  });
+});
 
 describe.each(["light", "dark"] as const)("%s sign-in buttons", (scheme) => {
   const brand = signInBrands[scheme];

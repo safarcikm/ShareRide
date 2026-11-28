@@ -200,6 +200,15 @@ glaciers `#3A4C55`, hills `#203A2D`, road `#3E525C` with a `#6E7D85` line.
 The name and the language switch stand on the sky, so `text` and `primary`
 keep 4.5:1 on it in both modes (the tokens' tests check it).
 
+On the front page the scene follows the year
+([spec 36](2026-11-28-seasonal-banner.md)) in richer colours, Clear day,
+as tokens `icelandSeasons`: one set per season, light and dark, with a sky
+that pales from `skyTop` towards the land, a far range, a back hill and a
+farmhouse's red roof. Words keep 4.5:1 on every colour they can stand on
+(R36.1). Other screens' roads and the share pictures keep `icelandScene`.
+The drawing's own colours for the days (flags, a tree, a tent and the
+like) are `bannerDrawing`.
+
 Our map of Iceland ([ADR 0024](../decisions/0024-own-simple-map-of-iceland.md)):
 sea `#D7E9F0`, land `#F4F1EA` with its coast `#B9CBD3`, glaciers `#FFFFFF`,
 main roads `#C6CED2` and the Ring Road `#9AA9B0` in light mode; `#142630`,

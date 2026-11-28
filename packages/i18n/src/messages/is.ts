@@ -132,6 +132,20 @@ export const is = {
   "footer.contact": "Samband",
   "footer.facebook": "Facebook",
   "footer.instagram": "Instagram",
+  "appPromotion.banner.label": "PuffinRide-appið",
+  "appPromotion.banner.line": "Fáðu tilkynningar um ferðirnar þínar.",
+  "appPromotion.banner.install": "Sækja",
+  "appPromotion.banner.close": "Loka",
+  "appPromotion.about.title": "PuffinRide-appið",
+  "appPromotion.about.line":
+    "PuffinRide er líka til sem app í símann. Það lætur þig vita strax þegar eitthvað gerist í ferðunum þínum.",
+  "appPromotion.about.scan": "Eða beindu myndavél símans að kóðanum.",
+  "appPromotion.about.qr": "QR-kóði fyrir PuffinRide-appið",
+  "appPromotion.badge.appStore": "Sækja í App Store",
+  "appPromotion.badge.googlePlay": "Sækja frá Google Play",
+  "appPromotion.trademark.appStore": "App Store er þjónustumerki Apple Inc.",
+  "appPromotion.trademark.googlePlay":
+    "Google Play og Google Play-merkið eru vörumerki Google LLC.",
   "consent.title": "Vafrakökur",
   "consent.text":
     "Megum við telja heimsókn þína með Google Analytics? Það notar vafrakökur og segir Google hvaða síður þú opnar, aldrei nafnið þitt.",
@@ -2671,6 +2685,7 @@ export const is = {
   "admin.settings.group.changes": "Breytingar og afbókanir",
   "admin.settings.group.trip_day": "Ferðadagur og áreiðanleiki",
   "admin.settings.group.co2": "CO2",
+  "admin.settings.group.apps": "Símaöpp",
   "admin.settings.groupNote.terms":
     "Þessi gildi standa í notkunarskilmálunum. Birtu nýja skilmála með breytingu, annars ber skilmálunum og appinu ekki saman.",
   "admin.settings.group.switches": "Neyðarrofar",
@@ -2754,6 +2769,12 @@ export const is = {
   "admin.settings.name.co2_grams_per_car_km": "CO2 á ekinn km",
   "admin.settings.help.co2_grams_per_car_km":
     "Losun CO2 meðalbíls á Íslandi á kílómetra, fyrir tölur um minni losun. Farðu yfir hana á hverju hausti. 0 felur allar tölurnar.",
+  "admin.settings.name.app_store_listed": "App Store-síðan er opin",
+  "admin.settings.help.app_store_listed":
+    "Kveikt: vefurinn sýnir App Store-merkið neðst á síðum og á Um okkur, Safari á iPhone sýnir borða Apple um appið og QR-kóðinn sendir iPhone-síma í App Store. Kveiktu aðeins þegar App Store-síða PuffinRide er opin, annars lendir fólk á síðu sem er ekki til.",
+  "admin.settings.name.google_play_listed": "Google Play-síðan er opin",
+  "admin.settings.help.google_play_listed":
+    "Kveikt: vefurinn sýnir Google Play-merkið neðst á síðum og á Um okkur, Android-símar sjá lítinn borða um appið efst á vefnum og QR-kóðinn sendir þá á Google Play. Kveiktu aðeins þegar Google Play-síða PuffinRide er opin, annars lendir fólk á síðu sem er ekki til.",
   "admin.settings.on": "Kveikt",
   "admin.settings.off": "Slökkt",
   "admin.settings.unit.people": "{count, plural, one {{value} manneskja} other {{value} manns}}",

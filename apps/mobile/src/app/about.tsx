@@ -1,6 +1,7 @@
 import { aboutCo2Values, aboutPage, pageText } from "@shareride/i18n";
 import { useEffect, useRef } from "react";
 import { Platform, StyleSheet, Text, View } from "react-native";
+import { AboutApp } from "@/app-promotion/about-app";
 import { useConfig } from "@/beta/config";
 import { BackButton } from "@/components/back-button";
 import { Card } from "@/components/card";
@@ -59,6 +60,8 @@ export default function AboutScreen() {
           ))}
         </View>
       )}
+      {/* The phone apps, on the website while a store's page is public (spec 35, 3.6). */}
+      <AboutApp />
       <View style={styles.section}>
         <Heading>{t(aboutPage.documentsTitle)}</Heading>
         <Card>

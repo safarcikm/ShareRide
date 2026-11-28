@@ -30,7 +30,7 @@ export function ConsentBar({ wide }: { readonly wide: boolean }) {
   const inMenu = segments[0] === "(tabs)";
   const menuBar = useTabBarHeight(insets.bottom);
   const pattern = screenPattern(segments);
-  if (!available || choice !== null || pattern === "/cookies" || signingIn(pattern)) return null;
+  if (!available || choice !== null || !consentAsksOn(pattern)) return null;
   const bottom = wide ? spacing.md : (inMenu ? menuBar : insets.bottom) + spacing.sm;
   return (
     <View testID="consent-layer" style={[styles.layer, { bottom }]}>
@@ -77,10 +77,18 @@ export function ConsentBar({ wide }: { readonly wide: boolean }) {
 }
 
 /** Step 1, the codes, the phone number, About you and the Face ID offers. */
-function signingIn(pattern: string): boolean {
+export function signingIn(pattern: string): boolean {
   return ["/sign-in", "/onboarding"].some(
     (start) => pattern === start || pattern.startsWith(`${start}/`),
   );
+}
+
+/**
+ * Whether the question can show on this screen, while it is not answered:
+ * not on the Cookies page, which asks with its switch, nor while signing in.
+ */
+export function consentAsksOn(pattern: string): boolean {
+  return pattern !== "/cookies" && !signingIn(pattern);
 }
 
 const styles = StyleSheet.create({

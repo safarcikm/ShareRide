@@ -1,5 +1,6 @@
 import { aboutPage, carpoolPage, type MessageKey } from "@shareride/i18n";
 import { Platform, Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { StoreBadges } from "@/app-promotion/store-badges";
 import { useLanguage } from "@/i18n/language";
 import { externalLinkProps, linkProps } from "@/navigation/link-props";
 import { puffinRideFacebookPage, puffinRideInstagram } from "@/sharing/links";
@@ -67,6 +68,7 @@ export function SiteFooter() {
         {...landmark}
         style={[styles.quiet, { borderTopColor: palette.border }]}
       >
+        <StoreBadges place="footer" centred style={styles.quietBadges} />
         <View style={styles.quietLinks}>
           {[...links.pages, ...links.documents].map((link) => (
             <FooterLinkText key={link.href} link={link} quiet />
@@ -94,6 +96,7 @@ export function SiteFooter() {
           <Text style={[typography.small, { color: palette.textMuted }]}>
             {t("footer.tagline")}
           </Text>
+          <StoreBadges place="footer" style={styles.badges} />
         </View>
         <Group heading={t("app.name")} links={links.pages} />
         <Group heading={t("footer.terms")} links={links.documents} />
@@ -185,5 +188,8 @@ const styles = StyleSheet.create({
     paddingTop: spacing.md,
   },
   quietLinks: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center" },
+  // The stores' badges, while a store's page is public (spec 35, 3.5).
+  badges: { marginTop: spacing.sm },
+  quietBadges: { marginBottom: spacing.sm },
   quietLink: { alignSelf: "auto", paddingHorizontal: spacing.sm },
 });

@@ -3,6 +3,7 @@ import { OpenAPIHono } from "@hono/zod-openapi";
 import { appleCallbackRoute, healthReadyRoute, healthRoute } from "@shareride/contracts";
 import type { Database } from "@shareride/db";
 import {
+  appStoresListed,
   bookingSettingsFrom,
   co2SettingsFrom,
   defaultChatSettings,
@@ -187,6 +188,7 @@ import {
 } from "./platform/photo-storage.ts";
 import { createAdminApp } from "./admin-app.ts";
 import { createWebApp, openerPolicyFor, type Analytics } from "./web-app.ts";
+import type { ListedAppStores } from "./app-promotion.ts";
 import {
   mayIndex,
   noIndex,
@@ -303,6 +305,12 @@ export interface AppDependencies {
   readonly analytics?: Analytics | null;
   /** The oldest phone app version served (spec 32, R32.4); every one when left out. */
   readonly oldestAppVersion?: string | null;
+  /**
+   * The stores whose page is public, for the website's banners and `/app`
+   * (spec 35); by default from the operator's switches (ADR 0055), none
+   * without a database.
+   */
+  readonly appStoresListed?: ListedAppStores;
 }
 
 export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
@@ -445,6 +453,7 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
   let rideFinderOfApp: FindRide | undefined;
   /** The CO2 figures' value as it is now (spec 34, 3.3), for About's page too. */
   let co2SettingsOfApp: Co2SettingsSource | undefined;
+  let appStoresOfSettings: ListedAppStores | undefined;
   if (dependencies.features !== undefined) {
     const { features } = dependencies;
     // First: the guard covers only routes registered after it, and closes
@@ -467,6 +476,7 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
         });
       },
     });
+    appStoresOfSettings = async () => appStoresListed((await operatorSettings.current()).values);
     const paused = createPausedCheck(operatorSettings);
     // The trip day's and reliability's values as they are now, for every
     // module that takes them as plain settings.
@@ -871,6 +881,19 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
             });
             return { gramsPerCarKm: 0 };
           });
+  // The website does not wait on the database for the switches: while they
+  // cannot be read, it shows no store, as if both were off (R35.1).
+  const storesOfSwitches = dependencies.appStoresListed ?? appStoresOfSettings;
+  const listedStores: ListedAppStores | undefined =
+    storesOfSwitches &&
+    (async () => {
+      try {
+        return await storesOfSwitches();
+      } catch (error) {
+        logger.warn({ err: error }, "the app store switches could not be read");
+        return [];
+      }
+    });
   const webApp =
     dependencies.webAppDir === undefined
       ? undefined
@@ -885,6 +908,7 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
               : subjectFinder(dependencies.features.db)),
           dependencies.findRide ?? rideFinderOfApp,
           aboutCo2Settings,
+          listedStores,
         );
   const adminApp =
     dependencies.adminAppDir === undefined

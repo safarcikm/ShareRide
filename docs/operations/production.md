@@ -245,6 +245,27 @@ The first email comes a minute or so after someone finishes signing up;
 anyone who joins in the hour after that comes in the next one. Untick it to
 stop.
 
+## Show the apps on the website
+
+The website shows each phone app only once its store page is public
+([spec 35](../specs/2026-11-28-app-promotion-on-the-website.md),
+[ADR 0055](../decisions/0055-show-the-phone-apps-on-the-website-per-store.md)).
+Both switches start off. The day a store page is public:
+
+1. Open PuffinRide's page in that store from a phone, to be sure it is
+   public: <https://apps.apple.com/app/id6840158626> or
+   <https://play.google.com/store/apps/details?id=is.puffinride.app>.
+2. In the console, **Settings**, **Phone apps**, turn on **App Store page
+   is public** or **Google Play page is public**, with a reason such as
+   "The App Store page is public". No release is needed.
+3. Check within 5 minutes: the badge shows at the end of the front page
+   and on About; on a laptop, About's QR code opens that store from a
+   phone; on an iPhone, Safari shows Apple's banner on a fresh page (Apple
+   decides when), and on an Android phone the strip shows at the top.
+
+If an app is taken out of its store, turn its switch off again.
+Staging has its own switches, to look at it first.
+
 ## Turn on photos
 
 Done on 2026-11-22. Production keeps its photos apart from staging's.

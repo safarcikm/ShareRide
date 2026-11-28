@@ -1,4 +1,5 @@
 import {
+  appStores,
   isAppVersion,
   isGoogleMeasurementId,
   pausedParts,
@@ -74,6 +75,12 @@ export const configSchema = z.object({
    * every version, as from an API that does not say.
    */
   oldestAppVersion: z.string().refine(isAppVersion).nullable().default(null),
+  /**
+   * The stores whose PuffinRide page is public (spec 35, 3.2; ADR 0055), for
+   * the website's badges and Android strip; none from an API that does not
+   * say.
+   */
+  appStores: z.array(z.enum(appStores)).default([]),
   /**
    * The grams of CO2 per car kilometre the CO2 figures count with (spec 34,
    * 3.3), for About's method; 0 hides every figure, as from an API that

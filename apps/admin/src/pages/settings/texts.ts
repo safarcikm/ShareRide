@@ -17,6 +17,7 @@ export const groupKeys = {
   changes: "admin.settings.group.changes",
   trip_day: "admin.settings.group.trip_day",
   co2: "admin.settings.group.co2",
+  apps: "admin.settings.group.apps",
 } as const satisfies Record<SettingGroup, MessageKey>;
 
 /** What to know before changing anything in a group. */
@@ -136,6 +137,14 @@ const settingTexts = {
   reliability_watch_level: {
     name: "admin.settings.name.reliability_watch_level",
     help: "admin.settings.help.reliability_watch_level",
+  },
+  app_store_listed: {
+    name: "admin.settings.name.app_store_listed",
+    help: "admin.settings.help.app_store_listed",
+  },
+  google_play_listed: {
+    name: "admin.settings.name.google_play_listed",
+    help: "admin.settings.help.google_play_listed",
   },
   co2_grams_per_car_km: {
     name: "admin.settings.name.co2_grams_per_car_km",
