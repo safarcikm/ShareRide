@@ -2,6 +2,7 @@
 // the passenger's part, compared with driving alone, from the part's road
 // distance and the operator's grams per car kilometre. Whatever its seats,
 // a booking is one car (R34.1).
+import type { BookingStatus } from "../bookings/lifecycle.ts";
 
 /** The road metres of the stretches from `board` up to `alight`, which is not counted. */
 export function partDistanceM(
@@ -15,6 +16,54 @@ export function partDistanceM(
 /** Whole grams of CO2 one car not driven saves over the distance (R34.2). */
 export function co2GramsFor(distanceM: number, gramsPerCarKm: number): number {
   return Math.round((distanceM * gramsPerCarKm) / 1000);
+}
+
+/** A part's figure before the ride (3.5); null with the setting at 0, which hides every figure. */
+export function estimatedCo2Grams(distanceM: number, gramsPerCarKm: number): number | null {
+  return gramsPerCarKm === 0 ? null : co2GramsFor(distanceM, gramsPerCarKm);
+}
+
+/** What a booking's figure is made from. */
+export interface Co2Booking {
+  readonly status: BookingStatus;
+  /** The road metres of its part. */
+  readonly distanceM: number;
+  /** The grams it kept when it completed; null before. */
+  readonly storedGrams: number | null;
+}
+
+export interface Co2Figure {
+  readonly distanceM: number;
+  readonly grams: number;
+}
+
+/**
+ * A booked seat's figure (3.6): estimated at the setting now while it is
+ * confirmed, the grams it kept once completed (R34.2); null for a booking
+ * that does not count (R34.3) and with the setting at 0.
+ */
+export function bookingCo2(booking: Co2Booking, gramsPerCarKm: number): Co2Figure | null {
+  if (gramsPerCarKm === 0) return null;
+  if (booking.status === "confirmed") {
+    return {
+      distanceM: booking.distanceM,
+      grams: co2GramsFor(booking.distanceM, gramsPerCarKm),
+    };
+  }
+  if (booking.status === "completed" && booking.storedGrams !== null) {
+    return { distanceM: booking.distanceM, grams: booking.storedGrams };
+  }
+  return null;
+}
+
+/** The driver's figure for a ride (3.7): its bookings' figures added; null when none counts. */
+export function tripCo2(bookings: readonly Co2Booking[], gramsPerCarKm: number): Co2Figure | null {
+  const figures = bookings.flatMap((booking) => bookingCo2(booking, gramsPerCarKm) ?? []);
+  if (figures.length === 0) return null;
+  return {
+    distanceM: figures.reduce((total, figure) => total + figure.distanceM, 0),
+    grams: figures.reduce((total, figure) => total + figure.grams, 0),
+  };
 }
 
 /** Whole kilograms to show, rounded down; null under 1 kg or without a figure (R34.7). */

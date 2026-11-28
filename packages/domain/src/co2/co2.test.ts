@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
   addCo2Totals,
+  bookingCo2,
   co2GramsFor,
   co2TotalGrams,
+  estimatedCo2Grams,
   noCo2,
   partDistanceM,
   shownKilograms,
+  tripCo2,
   type Co2Totals,
 } from "./co2.ts";
 
@@ -81,5 +84,62 @@ describe("totals", () => {
 
   it("gives the grams of both roles together", () => {
     expect(co2TotalGrams(addCo2Totals([rode(66_000), drove(95_100, 2)]))).toBe(161_100);
+  });
+});
+
+describe("estimatedCo2Grams", () => {
+  it("estimates a part before the ride, and nothing at 0 (3.5)", () => {
+    expect(estimatedCo2Grams(389_000, 150)).toBe(58_350);
+    expect(estimatedCo2Grams(389_000, 0)).toBeNull();
+  });
+});
+
+describe("bookingCo2", () => {
+  const part = { distanceM: 389_000, storedGrams: null };
+
+  it("estimates a confirmed booking at the setting now", () => {
+    expect(bookingCo2({ ...part, status: "confirmed" }, 120)).toEqual({
+      distanceM: 389_000,
+      grams: 46_680,
+    });
+  });
+
+  it("gives a completed booking the grams it kept, whatever the setting now (R34.2)", () => {
+    expect(bookingCo2({ ...part, status: "completed", storedGrams: 58_350 }, 120)).toEqual({
+      distanceM: 389_000,
+      grams: 58_350,
+    });
+  });
+
+  it("gives nothing for a booking that does not count, or at 0 (R34.3, R34.7)", () => {
+    for (const status of ["requested", "accepted", "cancelled", "expired", "no_show"] as const) {
+      expect(bookingCo2({ ...part, status }, 150)).toBeNull();
+    }
+    expect(bookingCo2({ ...part, status: "completed", storedGrams: 58_350 }, 0)).toBeNull();
+    expect(bookingCo2({ ...part, status: "confirmed" }, 0)).toBeNull();
+    expect(bookingCo2({ ...part, status: "completed" }, 150)).toBeNull();
+  });
+});
+
+describe("tripCo2", () => {
+  it("adds the bookings that count on a driver's ride (3.7)", () => {
+    expect(
+      tripCo2(
+        [
+          { status: "completed", distanceM: 389_000, storedGrams: 58_350 },
+          { status: "confirmed", distanceM: 245_000, storedGrams: null },
+          { status: "cancelled", distanceM: 100_000, storedGrams: null },
+        ],
+        150,
+      ),
+    ).toEqual({ distanceM: 634_000, grams: 95_100 });
+  });
+
+  it("is nothing with no booking that counts, or at 0", () => {
+    expect(tripCo2([{ status: "cancelled", distanceM: 1, storedGrams: null }], 150)).toBeNull();
+    expect(tripCo2([], 150)).toBeNull();
+    expect(
+      tripCo2([{ status: "completed", distanceM: 389_000, storedGrams: 58_350 }], 0),
+    ).toBeNull();
   });
 });
