@@ -430,7 +430,9 @@ because they name drivers.
    the three documents and Cookies, our address, Facebook and Instagram.
 3. **Expo's sentence goes.** In its place, at the end, one line in the
    page's language: "Finding, offering and booking rides needs JavaScript
-   turned on." / "Til að finna, bjóða og bóka far þarf JavaScript að vera virkt."
+   turned on." / "Til að finna, bjóða og bóka far þarf JavaScript að vera
+   virkt." The text scrolls, which the export's own style stops for the
+   app's scroll views.
 4. **The same words people see.** The text is the screen's own, never
    words written only for search engines, which Google counts as cloaking.
 5. **Nothing about a person,** as before (R23.7): no ride, driver or

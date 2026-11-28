@@ -629,17 +629,7 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
     });
     const meetingPoints = createMeetingPointService(features);
     registerMeetingPointRoutes(app, meetingPoints, photos, issues, requireAuth);
-    // A page whose content cannot be read keeps its title, without its text, and says why.
-    const findContent = contentFinder({ meetingPoints, legal });
-    contentFinderOfApp = async (path) => {
-      try {
-        return await findContent(path);
-      } catch (error) {
-        logger.warn({ err: error }, "a public page's text could not be read");
-        dependencies.reportError?.(error, { method: "GET", route: path, requestId: undefined });
-        return undefined;
-      }
-    };
+    contentFinderOfApp = contentFinder({ meetingPoints, legal });
     const legs = createLegService({
       ...features,
       router: features.router ?? createRoadFileRouter(),
@@ -910,6 +900,19 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
         return [];
       }
     });
+  // A page whose content cannot be read keeps its title, without its text, and says why.
+  const findContent = dependencies.findContent ?? contentFinderOfApp;
+  const pageContent: FindContent | undefined =
+    findContent &&
+    (async (path) => {
+      try {
+        return await findContent(path);
+      } catch (error) {
+        logger.warn({ err: error }, "a public page's text could not be read");
+        dependencies.reportError?.(error, { method: "GET", route: path, requestId: undefined });
+        return undefined;
+      }
+    });
   const webApp =
     dependencies.webAppDir === undefined
       ? undefined
@@ -925,7 +928,7 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
           dependencies.findRide ?? rideFinderOfApp,
           aboutCo2Settings,
           listedStores,
-          dependencies.findContent ?? contentFinderOfApp,
+          pageContent,
         );
   const adminApp =
     dependencies.adminAppDir === undefined

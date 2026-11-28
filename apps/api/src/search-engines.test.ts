@@ -605,7 +605,14 @@ describe("every public page's text before the app runs (spec 23, 3.11)", () => {
       ] as const) {
         expect(footer, `${path} ${href}`).toContain(`<a href="${href}">${label}</a>`);
       }
-      expect(text.endsWith(`</footer><p>${en("seo.needsJavaScript")}</p>`), path).toBe(true);
+      // The export's style keeps the body from scrolling, for the app's own scroll views:
+      // without the app, the text scrolls.
+      expect(
+        text.endsWith(
+          `</footer><p>${en("seo.needsJavaScript")}</p><style>body{overflow:auto}</style>`,
+        ),
+        path,
+      ).toBe(true);
     }
     expect(createTranslator("is")("seo.needsJavaScript")).toBe(
       "Til að finna, bjóða og bóka far þarf JavaScript að vera virkt.",
@@ -644,6 +651,44 @@ describe("every public page's text before the app runs (spec 23, 3.11)", () => {
     // As the sitemap: no paused point or sample (3.11, item 6).
     expect(text).not.toContain("Lokað");
     expect(text).not.toContain("Sýnishorn");
+  });
+
+  it("writes no text for the meeting points when they cannot be read", () => {
+    const head = pageHead(
+      { path: "/meeting-points", lang: "en", acceptLanguage: null },
+      production,
+    );
+    expect(head.noscript).toBeNull();
+  });
+
+  it("writes the text into the body's noscript, never one in the head", () => {
+    const head = pageHead({ path: "/cookies", lang: "en", acceptLanguage: null }, production);
+    const page = fillPage(
+      exportedPage
+        .replace("</head>", "<noscript><style>.x{}</style></noscript></head>")
+        .replace('<div id="root">', '<noscript>JS</noscript><div id="root">'),
+      head,
+    );
+    expect(page).toContain("<noscript><style>.x{}</style></noscript>");
+    expect(page).not.toContain("<noscript>JS</noscript>");
+    expect(page.indexOf("<main>")).toBeGreaterThan(page.indexOf("<body>"));
+  });
+
+  it("writes a meeting point's and a place's text whatever the case of the address's ID", () => {
+    const point = {
+      ...summaryOf("3f2504e0-4f89-41d3-9a0c-0305e82c3301", "N1"),
+      aliases: [],
+      whereToStand: null,
+      pausedUntil: null,
+      lastCheckedOn: null,
+    };
+    const text = textOf(
+      "/meeting-points/3F2504E0-4F89-41D3-9A0C-0305E82C3301",
+      "en",
+      { content: { kind: "meetingPoint", point } },
+      { kind: "meetingPoint", name: point.name },
+    );
+    expect(text.startsWith("<main><h1>N1</h1>")).toBe(true);
   });
 
   it("writes a meeting point's details, without its photos", () => {
@@ -886,6 +931,28 @@ describe("the web app for search engines", () => {
       "<title>Hlemmur: carpool meeting point · PuffinRide</title>",
     );
     expect(response.headers.get("x-robots-tag")).toBeNull();
+  });
+
+  it("still serves a page whose text cannot be read, without the text (3.11)", async () => {
+    const app = createApp({
+      logger: createLogger({
+        level: "silent",
+        destination: new Writable({
+          write: (_c, _e, done) => {
+            done();
+          },
+        }),
+      }),
+      checkDatabase: () => Promise.resolve(),
+      webAppDir: webApp(),
+      searchEngines: production,
+      findContent: () => Promise.reject(new Error("the database is away")),
+    });
+    const response = await app.request("/legal/terms?lang=en");
+    expect(response.status).toBe(200);
+    const page = await response.text();
+    expect(page).toContain("<title>");
+    expect(page).not.toContain("<main>");
   });
 
   it("keeps a meeting point or place that is not listed out of the index", async () => {

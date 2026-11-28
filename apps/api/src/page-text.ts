@@ -137,7 +137,9 @@ export function pageBody(page: {
   };
   const main = page.listed ? mainText(page.path, writer, facts) : null;
   if (main === null) return null;
-  return `<main>${main.join("")}</main>${footerText(writer)}${text(t("seo.needsJavaScript"))}`;
+  // The export's style keeps the body still for the app's own scroll views;
+  // without the app, the text scrolls.
+  return `<main>${main.join("")}</main>${footerText(writer)}${text(t("seo.needsJavaScript"))}<style>body{overflow:auto}</style>`;
 }
 
 function mainText(path: string, writer: Writer, facts: PageFacts): string[] | null {
@@ -147,13 +149,14 @@ function mainText(path: string, writer: Writer, facts: PageFacts): string[] | nu
   if (path === aboutPage.path) return aboutText(writer, facts.gramsPerCarKm ?? 0);
   if (path === deleteAccountPage.path) return deleteAccountText(writer);
   if (path === "/cookies") return cookiesText(writer, facts.countsVisits ?? false);
-  if (path === "/meeting-points") {
-    return meetingPointsText(writer, content?.kind === "meetingPoints" ? content.points : []);
+  // The content was read for this address; its ID may be written in either case.
+  if (content?.kind === "meetingPoints" && path === "/meeting-points") {
+    return meetingPointsText(writer, content.points);
   }
-  if (content?.kind === "meetingPoint" && path === `/meeting-points/${content.point.id}`) {
+  if (content?.kind === "meetingPoint" && path.startsWith("/meeting-points/")) {
     return meetingPointText(writer, content.point);
   }
-  if (content?.kind === "place" && path === `/places/${content.nearest.place.id}`) {
+  if (content?.kind === "place" && path.startsWith("/places/")) {
     return placeText(writer, content.nearest);
   }
   if (content?.kind === "legal" && path.startsWith("/legal/")) {

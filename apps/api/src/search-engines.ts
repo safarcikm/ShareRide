@@ -397,16 +397,23 @@ function siteData(t: Translate, origin: string): string {
   return `<script type="application/ld+json">${data}</script>`;
 }
 
+/** The body's `<noscript>` replaced with the text, or the text first in a body without one; never one in the head. */
+function withBodyText(html: string, text: string): string {
+  const body = /<body[^>]*>/.exec(html);
+  if (body === null) return html;
+  const start = body.index + body[0].length;
+  const rest = html.slice(start);
+  const noscript = /<noscript>[\s\S]*?<\/noscript>/;
+  return (
+    html.slice(0, start) + (noscript.test(rest) ? rest.replace(noscript, () => text) : text + rest)
+  );
+}
+
 /** The exported page with the head's language, title, icons, site name and tags, and its text where it has one. */
 export function fillPage(html: string, head: PageHead): string {
   // The page's own text takes the place of Expo's sentence (3.11, item 3).
   const text = head.noscript === null ? null : `<noscript>${head.noscript}</noscript>`;
-  const withText =
-    text === null
-      ? html
-      : /<noscript>[\s\S]*?<\/noscript>/.test(html)
-        ? html.replace(/<noscript>[\s\S]*?<\/noscript>/, () => text)
-        : html.replace(/<body[^>]*>/, (body) => `${body}${text}`);
+  const withText = text === null ? html : withBodyText(html, text);
   const withLanguage = /<html[^>]*>/.test(withText)
     ? withText.replace(/<html[^>]*>/, () => `<html lang="${head.locale}">`)
     : withText;
