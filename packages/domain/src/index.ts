@@ -2,6 +2,7 @@ export * from "./admin/index.ts";
 export * from "./analytics/index.ts";
 export * from "./app-version.ts";
 export * from "./auth/index.ts";
+export * from "./banner/index.ts";
 export * from "./beta/index.ts";
 export * from "./bookings/index.ts";
 export * from "./chat/index.ts";

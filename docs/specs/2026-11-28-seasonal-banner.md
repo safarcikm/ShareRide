@@ -130,7 +130,7 @@ unless said:
 | Konudagur | The Sunday between 18 and 24 February (the first day of Góa) | The same, the heart over the passenger | The same | Til hamingju með konudaginn / Happy Konudagur |
 | Bolludagur | The Monday before Ash Wednesday (48 days before Easter Sunday) | A cream bun on the roof | The bun wobbles as the car stops | Gleðilegan bolludag / Happy Bun Day |
 | Öskudagur | Ash Wednesday (46 days before Easter Sunday) | The puffins dressed up: a mask and a crown | The crown sparkles | Gleðilegan öskudag / Happy Ash Wednesday |
-| Sjómannadagurinn (summer scene) | The first Sunday in June | Sailor caps | Only the hop | Til hamingju með sjómannadaginn / Happy Seafarers' Day |
+| Sjómannadagurinn (summer scene) | The first Sunday in June, or the second when the first is Whitsunday (Act 20/1987) | Sailor caps | Only the hop | Til hamingju með sjómannadaginn / Happy Seafarers' Day |
 
 Left out for now: Valentine's Day, Halloween, Culture
 Night, Pride, 1 May, and the religious days besides Christmas and Easter.
