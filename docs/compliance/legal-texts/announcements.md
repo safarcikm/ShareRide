@@ -25,7 +25,7 @@ version 5.
 
 ### Message, English
 
-> We updated our Terms of Service and our Privacy Policy. Nothing changes for your account, and you don't need to accept anything. The texts now name the pages in Profile where they said "Settings". They say how you sign in today: with a code by email, with Google, with a password, or with Face ID or fingerprint. A text message only checks your phone number. The Privacy Policy also says what we keep of a password and of Face ID or fingerprint, and what the phone apps add. You can read both under About PuffinRide.
+> We updated our Terms of Service and our Privacy Policy. Nothing changes for your account, and you don't need to accept anything. The texts now name the pages in Profile where they said "Settings". They say how you sign in today: with a code by email, with Google or Apple, with a password, or with Face ID or fingerprint. A text message only checks your phone number. The Privacy Policy also says what we keep of a password and of Face ID or fingerprint, and what the phone apps add. You can read both under About PuffinRide.
 
 ### Title, Icelandic
 
@@ -33,4 +33,4 @@ version 5.
 
 ### Message, Icelandic
 
-> Við uppfærðum notendaskilmálana og persónuverndarstefnuna. Ekkert breytist fyrir aðganginn þinn og þú þarft ekki að samþykkja neitt. Textarnir nefna nú síðurnar í Prófílnum þar sem áður stóð „Stillingar“. Þeir segja hvernig þú skráir þig inn núna: með kóða í tölvupósti, með Google, með lykilorði eða með Face ID eða fingrafari. SMS staðfestir aðeins símanúmerið þitt. Persónuverndarstefnan segir einnig hvað við geymum um lykilorð og Face ID eða fingrafar, og hvað símaöppin bæta við. Þú getur lesið hvort tveggja undir Um PuffinRide.
+> Við uppfærðum notendaskilmálana og persónuverndarstefnuna. Ekkert breytist fyrir aðganginn þinn og þú þarft ekki að samþykkja neitt. Textarnir nefna nú síðurnar í Prófílnum þar sem áður stóð „Stillingar“. Þeir segja hvernig þú skráir þig inn núna: með kóða í tölvupósti, með Google eða Apple, með lykilorði eða með Face ID eða fingrafari. SMS staðfestir aðeins símanúmerið þitt. Persónuverndarstefnan segir einnig hvað við geymum um lykilorð og Face ID eða fingrafar, og hvað símaöppin bæta við. Þú getur lesið hvort tveggja undir Um PuffinRide.
