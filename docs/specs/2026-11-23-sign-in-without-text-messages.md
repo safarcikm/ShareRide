@@ -295,6 +295,10 @@ on all sign-in texts reached" as an error.
   (R26.5).
 - **Abuse:** sending texts needs a proven inbox first, and R26.2 and R26.3
   cap what a flood of inboxes can cost.
+- **The legal texts** said "You sign in with a code sent to your phone"
+  until the Terms' version 4 and the Privacy Policy's version 5
+  (2026-11-28, on Martin's word, not material): a code by email signs in,
+  and a text message only checks a phone number.
 
 ## 8. Texts
 

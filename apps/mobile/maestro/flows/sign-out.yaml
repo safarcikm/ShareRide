@@ -2,6 +2,8 @@
 # and Profile offers Sign in again.
 appId: ${APP_ID}
 name: Sign out
+onFlowStart:
+  - runFlow: ../helpers/close-stuck-box.yaml
 ---
 - launchApp
 - tapOn:
