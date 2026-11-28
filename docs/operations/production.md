@@ -122,6 +122,12 @@ the repository.
    - In Render, `puffinride-api`, **Environment**: `GOOGLE_SIGN_IN` =
      `google`, and the new client's `GOOGLE_CLIENT_ID` and
      `GOOGLE_CLIENT_SECRET`. Save; Render deploys again.
+   - **Apple**, once staging has it
+     ([Turn on Sign in with Apple](staging.md#turn-on-sign-in-with-apple)):
+     one Services ID and one key serve both sites, so in Render,
+     `puffinride-api`, **Environment**, add the same five `APPLE_` values as
+     staging's. Save; `https://puffinride.is/v1/config` then lists `apple`
+     under `signInProviders`, and the iPhone app shows Apple and Google.
 8. **Uptime.** In Sentry, `shareride-api`, **Alerts**, **Uptime Monitors**:
    a monitor for `https://puffinride.is/v1/health/ready`, every minute,
    environment `production`, alerting you by email and in the Sentry app.
