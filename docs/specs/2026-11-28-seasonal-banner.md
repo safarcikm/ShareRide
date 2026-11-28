@@ -9,7 +9,7 @@ Builds on: [spec 33, 3.2](2026-11-27-small-animations.md#32-the-front-pages-bann
 [spec 15, 5.3](2026-11-13-visual-design-system.md) (the Iceland scene's
 colours: Clear day, 3.1). No new dependency, service
 or data; the console switch (3.8) is a new setting, so it has
-[ADR 0056](../decisions/0056-a-switch-for-the-festive-days-on-the-front-page.md)
+[ADR 0057](../decisions/0057-a-switch-for-the-festive-days-on-the-front-page.md)
 (R10.4). Build plan: [docs/plans/2026-11-28-seasonal-banner.md](../plans/2026-11-28-seasonal-banner.md).
 
 ## 1. Problem and goal
@@ -164,7 +164,7 @@ in, it stands above the greeting by name.
 ### 3.8 Turning the days off
 
 One switch in the console, under Settings, Front page: **"Festive days
-on the front page"** (`festive_days`, ADR 0056), on by default. Off, the banner shows only the seasons, for a sad
+on the front page"** (`festive_days`, ADR 0057), on by default. Off, the banner shows only the seasons, for a sad
 day when a party would be wrong. The apps read it from `/v1/config`, so it
 takes effect within the five minutes the answer may be kept.
 

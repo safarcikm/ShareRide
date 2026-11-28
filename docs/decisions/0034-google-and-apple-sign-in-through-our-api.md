@@ -2,7 +2,9 @@
 
 - **Status:** Accepted (2026-11-22, by Martin on a decision card); the app's
   IDs and its `shareride://` scheme renamed to `puffinride` by
-  [ADR 0039](0039-rename-to-puffinride.md)
+  [ADR 0039](0039-rename-to-puffinride.md); Apple's refresh token kept to
+  revoke it with the account by
+  [ADR 0056](0056-keep-apples-token-to-end-sign-in-with-apple.md) (Proposed)
 - **Date:** 2026-11-22
 - **Deciders:** Martin
 - **Related:** [spec 19](../specs/2026-11-22-google-and-apple-sign-in.md),

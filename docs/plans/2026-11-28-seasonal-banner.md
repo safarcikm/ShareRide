@@ -21,7 +21,7 @@ react-native-svg, Hono (API), React (console), Playwright (website journeys).
 
 **Spec:** [spec 36](../specs/2026-11-28-seasonal-banner.md), Accepted
 2026-11-28 with Clear day, every season and day, and greetings on.
-[ADR 0056](../decisions/0056-a-switch-for-the-festive-days-on-the-front-page.md)
+[ADR 0057](../decisions/0057-a-switch-for-the-festive-days-on-the-front-page.md)
 for the switch.
 
 ## Global constraints
@@ -360,7 +360,7 @@ for the switch.
   `useFestiveDays(): boolean`), `apps/mobile/src/banner/use-banner.ts`
 - Modify: `docs/engineering/operator-console.md`,
   `docs/specs/2026-11-13-operator-settings-and-metrics.md` (the list),
-  `docs/decisions/0056-…` only if Martin asks for changes
+  `docs/decisions/0057-…` only if Martin asks for changes
 
 **Interfaces:**
 
@@ -375,7 +375,7 @@ for the switch.
   scene's height as the season's.
 - [ ] **Step 2 to 4:** fail, implement, pass (`pnpm test:integration` for
   the API test, one package).
-- [ ] **Step 5: Commit** `feat(banner): a console switch for the festive days (ADR 0056)`.
+- [ ] **Step 5: Commit** `feat(banner): a console switch for the festive days (ADR 0057)`.
 
 ### Task 8: the greeting, and Find on a day
 

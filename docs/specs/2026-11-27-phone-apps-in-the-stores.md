@@ -3,7 +3,9 @@
 **Owner:** Martin · **Date:** 2026-11-27 · **Status:** Proposed
 (2026-11-27): Martin asked for it and chose whose name the store accounts
 are in (section 12, "Both personal now, move later"); the other choices are
-working choices he can change
+working choices he can change. Amended by
+[spec 37](2026-11-28-sign-in-with-apple-in-the-stores.md) (3.3 and section
+10: Sign in with Apple on the phones, 2026-11-28)
 
 Amends: [spec 19](2026-11-22-google-and-apple-sign-in.md) (Google on the
 iPhone, 3.3), the [roadmap](../strategy/roadmap.md) (the store release moves
@@ -111,18 +113,20 @@ Different by design:
 - Email code and password on both. The password fields use the phone's
   keychain (spec 27, 3.8).
 - **Android:** Google too, as on the website.
-- **iPhone:** no Google, until Sign in with Apple comes with the company's
-  Apple account (my call). Apple's guideline 4.8 asks an app that offers
-  Google sign-in to offer an equal choice that keeps the email private, such
-  as Sign in with Apple; an app with only its own sign-in is exempt.
-  Members who joined with Google sign in on the iPhone with an email code to
-  their Google address, which Google vouched for. Sign-in methods on the
-  iPhone still lists a linked Google and can remove it, but does not offer to
-  add one.
-  A member whose only way in is Google, with no email Google vouched for,
-  cannot sign in on the iPhone: the iPhone's sign-in screen says, under the
-  email field, that a member who joined with Google signs in with the email
-  code, and on the website once to add an email if that fails.
+- **iPhone:** Google only together with Sign in with Apple (R32.5).
+  Apple's guideline 4.8 asks an app that offers Google sign-in to offer an
+  equal choice that keeps the email private, such as Sign in with Apple; an
+  app with only its own sign-in is exempt. Martin turned Sign in with Apple
+  on, on his own Apple team, on 2026-11-28, so the iPhone offers Apple and
+  Google, and Android Apple too ([spec 37](2026-11-28-sign-in-with-apple-in-the-stores.md)).
+  Until then the plan was no Google on the iPhone until the company's Apple
+  account (my call), and the app still behaves so whenever the API has
+  Google without Apple: members who joined with Google sign in on the
+  iPhone with an email code to their Google address, which Google vouched
+  for; Sign-in methods lists a linked Google and can remove it, but does not
+  offer to add one; and the sign-in screen says, under the email field, that
+  a member who joined with Google signs in with the email code, and on the
+  website once to add an email if that fails.
 
 ### 3.4 Push
 
@@ -295,8 +299,9 @@ languages.
 
 ## 10. Out of scope, later
 
-- Sign in with Apple, and revoking Apple's tokens at account deletion
-  (spec 19, section 10).
+- ~~Sign in with Apple, and revoking Apple's tokens at account deletion
+  (spec 19, section 10).~~ Both came before the store release:
+  [spec 37](2026-11-28-sign-in-with-apple-in-the-stores.md).
 - Face ID or fingerprint in the apps (spec 27, 3.8, with its own ADR).
 - iPad layouts.
 - Error reports from the apps (Sentry on phones), after a privacy check.
@@ -343,7 +348,8 @@ The options were:
 Sign in with Apple waits for the company's account either way (3.3): an
 app's Sign in with Apple users get new identifiers when the app moves to
 another account, so starting it on a personal account means moving them
-later.
+later. (Martin turned it on on his own team on 2026-11-28 all the same:
+[spec 37](2026-11-28-sign-in-with-apple-in-the-stores.md).)
 
 ## 13. Decisions
 
@@ -351,7 +357,7 @@ later.
 | - | -------- | ------ |
 | 1 | Whose name are the accounts in? | Martin's own now, moved to the company's later (Martin, 2026-11-27, ADR 0051) |
 | 2 | Which devices? | Android phones and tablets; iPhone only (my call) |
-| 3 | Google sign-in on the iPhone? | Not until Sign in with Apple (my call) |
+| 3 | Google sign-in on the iPhone? | Not until Sign in with Apple (my call); both since 2026-11-28, when Martin turned Apple on (spec 37) |
 | 4 | Which server do store builds use? | Production only (R32.1) |
 | 5 | Where are builds started? | A button in GitHub Actions; the PC still works (my call) |
 | 6 | How are the apps checked before the stores? | Emulator and simulator journeys in GitHub Actions (my call) |

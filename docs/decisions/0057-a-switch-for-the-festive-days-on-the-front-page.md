@@ -1,4 +1,4 @@
-# 0056. A switch for the festive days on the front page
+# 0057. A switch for the festive days on the front page
 
 - **Status:** Proposed
 - **Date:** 2026-11-28
