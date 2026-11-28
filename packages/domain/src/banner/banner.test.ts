@@ -259,14 +259,11 @@ describe("the Yule Lads and Jólakötturinn (spec 36, 3.11; R36.8)", () => {
     ]);
   });
 
-  it.each([2026, 2027, 2030, 2036])(
-    "brings one Lad a night from 12 to 24 December %i",
-    (year) => {
-      yuleLads.forEach((lad, n) => {
-        expect(bannerFor({ year, month: 12, day: 12 + n }, withDays).yule?.lad).toBe(lad);
-      });
-    },
-  );
+  it.each([2026, 2027, 2030, 2036])("brings one Lad a night from 12 to 24 December %i", (year) => {
+    yuleLads.forEach((lad, n) => {
+      expect(bannerFor({ year, month: 12, day: 12 + n }, withDays).yule?.lad).toBe(lad);
+    });
+  });
 
   it("shows the cat from Christmas Eve, not before", () => {
     expect(yuleOn("2027-12-23")).toEqual({ lad: "ketkrokur", cat: false });

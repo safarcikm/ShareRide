@@ -208,6 +208,20 @@ test.describe("the day's or season's moment plays with the car (spec 36, 3.6)", 
     await expect(page.getByTestId("firework")).toHaveCount(3);
   });
 
+  test("on Christmas Eve Kertasníkir pops up, and the giant cat swishes his tail and blinks, within 3.5 s (3.11)", async ({
+    page,
+  }) => {
+    await page.goto("/?day=2027-12-24");
+    await expect(page.locator(moment)).toHaveCount(1);
+    await expect(page.getByTestId("lad-item-kertasnikir")).toHaveCount(1);
+    await expect(page.getByTestId("yule-cat")).toHaveCount(1);
+    const seen = await playing(page);
+    expect(seen.names).toEqual(expect.arrayContaining(["pr-lad", "pr-cat-tail", "pr-cat-eyes"]));
+    expect(seen.end).toBeLessThanOrEqual(3500);
+    await expect(page.locator(moment)).toHaveCount(0, { timeout: 6000 });
+    await expect(page.getByTestId("yule-lad")).toHaveCount(1);
+  });
+
   test("snow falls in winter, and is gone once it has fallen", async ({ page }) => {
     await page.goto("/?day=2027-01-15");
     await expect(page.locator(moment)).toHaveCount(1);
@@ -242,6 +256,16 @@ test.describe("with reduce motion on (spec 33, 3.9)", () => {
     for (const bulb of await bulbs.all()) await expect(bulb).toHaveCSS("opacity", "1");
     await expect(page.locator(moment)).toHaveCount(0);
     await expect(page.locator('[data-motion="flake"]')).toHaveCount(0);
+    expect(await stillMoving(page)).toBe(0);
+  });
+
+  test("after Christmas Eve the cat stands alone over the farmhouse, the Lads gone (3.11)", async ({
+    page,
+  }) => {
+    await page.goto("/?day=2027-12-27");
+    await expect(page.getByTestId("yule-cat").filter(visible)).toBeVisible();
+    await expect(page.getByTestId("yule-lad")).toHaveCount(0);
+    await expect(page.getByTestId("lad-in-town")).toHaveCount(0);
     expect(await stillMoving(page)).toBe(0);
   });
 });

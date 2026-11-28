@@ -1699,6 +1699,14 @@ releases follow [Semantic Versioning](https://semver.org/).
   front page" (`festive_days`, on), shows only the seasons when off, and
   `?day=YYYY-MM-DD` on the website shows any date's banner. The phone apps
   show the seasons and days standing still.
+- The Yule Lads and Jólakötturinn on the Christmas banner (spec 36, 3.11),
+  as Martin asked: from 12 to 24 December a Yule Lad a night, in the order
+  of Jóhannes úr Kötlum's poem, stands behind the hill with what he is
+  after (a lamb, a pan, a door, a candle, …), the ones who came before
+  peeking over the back hill; from Christmas Eve to 6 January the giant
+  Yule Cat stands over the farmhouse, alone after the 24th and beside New
+  Year's fireworks. On the website the Lad pops up as the car stops and
+  the cat swishes his tail and blinks.
 
 ### Fixed
 

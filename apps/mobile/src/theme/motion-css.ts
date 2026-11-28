@@ -180,6 +180,21 @@ const moments = {
     turn: "50% 100%",
   },
   cover: { frames: "0%,18%{opacity:0}100%{opacity:1}", curve: "ease-out" },
+  // The Yule Lad rises from behind the front hill (spec 36, 3.11).
+  lad: { frames: "0%{transform:translateY(30px)}100%{transform:none}" },
+  // Jólakötturinn's tail swishes about its root, and his eyes blink.
+  "cat-tail": {
+    frames:
+      "0%{transform:none}35%{transform:rotate(-12deg)}70%{transform:rotate(6deg)}" +
+      "100%{transform:none}",
+    curve: "ease-in-out",
+    turn: "0% 100%",
+  },
+  "cat-eyes": {
+    frames: "0%{transform:none}50%{transform:scaleY(0.1)}100%{transform:none}",
+    curve: "ease-in-out",
+    turn: "50% 50%",
+  },
 } as const satisfies Record<
   string,
   { frames: string; curve?: string; turn?: string; alternate?: boolean }

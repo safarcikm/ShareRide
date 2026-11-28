@@ -19,6 +19,7 @@ import {
   people,
   puffin,
   puffinCar,
+  spacing,
   type ColorScheme,
 } from "@/theme/tokens";
 import { seeded } from "./random";
@@ -47,6 +48,60 @@ export function footZones(width: number, room: Room, wide: boolean): readonly Ro
         [4, width * 0.27],
         [width * 0.73, width - 4],
       ];
+}
+
+/** How far a laptop's car stands from its panel's right edge. */
+export const panelCarFromEdge = spacing.xxl * 2;
+
+type Point = readonly [number, number];
+
+/**
+ * The front hills' line: two curves, from the left edge to the dip under
+ * the car and on to the right edge, the second turning on as smoothly as
+ * the first ends.
+ */
+function frontHillCurves(width: number, ground: number) {
+  const first: readonly [Point, Point, Point, Point] = [
+    [0, ground - 16],
+    [width * 0.22, ground - 40],
+    [width * 0.4, ground - 2],
+    [width * 0.58, ground - 18],
+  ];
+  const second: readonly [Point, Point, Point, Point] = [
+    first[3],
+    [2 * first[3][0] - first[2][0], 2 * first[3][1] - first[2][1]],
+    [width * 0.86, ground - 36],
+    [width, ground - 12],
+  ];
+  return [first, second] as const;
+}
+
+/** The front hills, down to the ground: the shape `IcelandScene` fills. */
+export function frontHills(width: number, ground: number): string {
+  const [first, second] = frontHillCurves(width, ground);
+  return [
+    `M0 ${String(ground)} L${at(...first[0])}`,
+    `C${at(...first[1])} ${at(...first[2])} ${at(...first[3])}`,
+    `S${at(...second[2])} ${at(...second[3])}`,
+    `L${String(width)} ${String(ground)} Z`,
+  ].join(" ");
+}
+
+/** The front hills' line at `x`, where something stands behind them. */
+export function frontHillAt(x: number, width: number, ground: number): number {
+  const [first, second] = frontHillCurves(width, ground);
+  const [p0, p1, p2, p3] = x <= first[3][0] ? first : second;
+  const along = (t: number, a: number, b: number, c: number, d: number) =>
+    (1 - t) ** 3 * a + 3 * (1 - t) ** 2 * t * b + 3 * (1 - t) * t ** 2 * c + t ** 3 * d;
+  // Each curve only goes right, so halving finds where it is at x.
+  let low = 0;
+  let high = 1;
+  for (let step = 0; step < 32; step += 1) {
+    const middle = (low + high) / 2;
+    if (along(middle, p0[0], p1[0], p2[0], p3[0]) < x) low = middle;
+    else high = middle;
+  }
+  return along((low + high) / 2, p0[1], p1[1], p2[1], p3[1]);
 }
 
 /** The back hill's line at `x`: a long low wave, higher on a laptop's width. */
@@ -439,9 +494,43 @@ export function Sunrise({
 }
 
 /**
+ * Where New Year's three fireworks burst, and how big: on a phone across
+ * the sky, on a laptop in the car's room; with Jólakötturinn over the
+ * farmhouse (spec 36, 3.11), clear of him.
+ */
+function burstsOf(width: number, room: Room, ground: number, wide: boolean, cat: boolean) {
+  const span = room[1] - room[0];
+  if (wide) {
+    return cat
+      ? ([
+          [room[0] + 40, 40, 20, people.crowberry],
+          [room[0] + span * 0.6, 36, 22, people.sun],
+          [room[0] + span * 0.32, 22, 14, bannerDrawing.aurora2],
+        ] as const)
+      : ([
+          [room[0] + 50, 40, 20, people.crowberry],
+          [room[1] - 60, 34, 24, people.sun],
+          [room[0] + span * 0.52, 26, 14, bannerDrawing.aurora2],
+        ] as const);
+  }
+  return cat
+    ? ([
+        [width * 0.64, Math.max(62, ground * 0.4), 12, people.crowberry],
+        [width * 0.86, Math.max(64, ground * 0.48), 17, people.sun],
+        [width * 0.44, 58, 9, bannerDrawing.aurora2],
+      ] as const)
+    : ([
+        [width * 0.15, Math.max(62, ground * 0.47), 15, people.crowberry],
+        [width * 0.86, Math.max(64, ground * 0.48), 17, people.sun],
+        [width * 0.31, 58, 9, bannerDrawing.aurora2],
+      ] as const);
+}
+
+/**
  * New Year's three fireworks, burst in the sky: on a phone across it, on a
- * laptop in the car's room. While `rising`, in the moment, each goes up on
- * a trail first and bursts in its turn.
+ * laptop in the car's room, clear of the cat when he shows. While
+ * `rising`, in the moment, each goes up on a trail first and bursts in its
+ * turn.
  */
 export function Fireworks({
   width,
@@ -449,26 +538,17 @@ export function Fireworks({
   ground,
   wide,
   rising = false,
+  cat = false,
 }: {
   readonly width: number;
   readonly room: Room;
   readonly ground: number;
   readonly wide: boolean;
   readonly rising?: boolean;
+  readonly cat?: boolean;
 }) {
   const turns = motion.moments.burst.at;
-  const span = room[1] - room[0];
-  const bursts = wide
-    ? ([
-        [room[0] + 50, 40, 20, people.crowberry],
-        [room[1] - 60, 34, 24, people.sun],
-        [room[0] + span * 0.52, 26, 14, bannerDrawing.aurora2],
-      ] as const)
-    : ([
-        [width * 0.15, Math.max(62, ground * 0.47), 15, people.crowberry],
-        [width * 0.86, Math.max(64, ground * 0.48), 17, people.sun],
-        [width * 0.31, 58, 9, bannerDrawing.aurora2],
-      ] as const);
+  const bursts = burstsOf(width, room, ground, wide, cat);
   return (
     <>
       {bursts.map(([x, y, r, colour], turn) => {

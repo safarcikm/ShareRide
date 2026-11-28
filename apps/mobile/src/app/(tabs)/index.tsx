@@ -14,8 +14,10 @@ import {
 import { useMe, useSession } from "@/auth/session";
 import { Button } from "@/components/button";
 import { BetaLabel } from "@/beta/config";
+import { panelCarFromEdge } from "@/banner/scene-layers";
 import { sceneTop } from "@/banner/season-looks";
 import { useBanner } from "@/banner/use-banner";
+import { ladRoom } from "@/banner/yule";
 import { Card } from "@/components/card";
 import { Columns } from "@/components/columns";
 import { Grid } from "@/components/grid";
@@ -61,7 +63,10 @@ const shownRidesWide = 6;
 const sceneBand = minTouchTarget + spacing.lg + carHeight(sizes.sceneCar);
 
 /** How far the car on a wide page's scene stands from the panel's right edge. */
-const carFromEdge = spacing.xxl * 2;
+const carFromEdge = panelCarFromEdge;
+
+/** The car's room on a wide page: the car, its gap from the edge and before it. */
+const carRoomWidth = carFromEdge + sizes.sceneCarWide + spacing.lg;
 
 /** The search row's card down to the middle of its fields: the panel ends there. */
 const searchRowTop =
@@ -159,7 +164,10 @@ function FrontPage() {
   const scheme = useColorScheme() === "dark" ? "dark" : "light";
   // The scene in the season of the day in Iceland, and dressed for a
   // festive day unless the console has turned them off (spec 36, 3.1 to 3.8).
-  const { season, day } = useBanner(at);
+  const { season, day, yule } = useBanner(at);
+  // On a night a Yule Lad comes, a wide page's room for the car grows to
+  // the left, for him to stand beside it, clear of the words (spec 36, 3.11).
+  const sceneRoom = carRoomWidth + (yule === null || yule.lad === null ? 0 : ladRoom);
   const [band, setBand] = useState(sceneBand);
   const [line, setLine] = useState<number>(sizes.sceneLine);
   // The car arrives the first time Find shows on the website (spec 33, 3.2).
@@ -214,7 +222,7 @@ function FrontPage() {
       onLayout={(event) => {
         setLine(event.nativeEvent.layout.height);
       }}
-      style={styles.introScene}
+      style={[styles.introScene, { paddingRight: sceneRoom }]}
     >
       <View style={styles.intro}>{titles}</View>
       {/* The car's room, which the title keeps free: on the website the car
@@ -274,7 +282,8 @@ function FrontPage() {
               day={day}
               height={line + spacing.md + searchRowTop}
               ground={line + spacing.sm}
-              room={carFromEdge + sizes.sceneCarWide + spacing.lg}
+              yule={yule}
+              room={sceneRoom}
               playing={playing}
             />
           </View>
@@ -338,6 +347,7 @@ function FrontPage() {
         <IcelandScene
           season={season}
           day={day}
+          yule={yule}
           width={windowWidth}
           height={spacing.md + band + spacing.sm}
           playing={playing}
@@ -669,14 +679,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     minHeight: sizes.sceneLine,
     paddingLeft: spacing.xl,
-    paddingRight: carFromEdge + sizes.sceneCarWide + spacing.lg,
   },
   carRoom: {
     position: "absolute",
     top: 0,
     right: 0,
     bottom: -(spacing.sm + spacing.xs),
-    width: carFromEdge + sizes.sceneCarWide + spacing.lg,
+    width: carRoomWidth,
     pointerEvents: "none",
   },
   carOnHills: { position: "absolute", right: carFromEdge, bottom: 0 },

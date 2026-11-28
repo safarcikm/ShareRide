@@ -82,6 +82,28 @@ describe("motionCss (spec 33, 3.2)", () => {
     );
   });
 
+  it("pops the Yule Lad up over the hill, and the cat blinks and swishes his tail (spec 36, 3.11)", () => {
+    const { lad, "cat-eyes": eyes, "cat-tail": tail } = motion.moments;
+    expect(css).toContain(`animation:pr-lad ${String(lad.duration)}ms ${String(lad.delay)}ms `);
+    expect(css).toContain(
+      `animation:pr-cat-eyes ${String(eyes.duration)}ms ${String(eyes.delay)}ms `,
+    );
+    expect(css).toContain(
+      `animation:pr-cat-tail ${String(tail.duration)}ms ${String(tail.delay)}ms `,
+    );
+    // The Lad rises from behind the hill; the eyes close about their middle,
+    // the tail turns about its root.
+    expect(css).toMatch(
+      /@keyframes pr-lad\{0%\{transform:translateY\(\d+px\)\}100%\{transform:none\}\}/,
+    );
+    expect(css).toContain(
+      '[data-motion="cat-eyes"]{transform-box:fill-box;transform-origin:50% 50%;',
+    );
+    expect(css).toContain(
+      '[data-motion="cat-tail"]{transform-box:fill-box;transform-origin:0% 100%;',
+    );
+  });
+
   it("plays each moment once: nothing goes on for ever (R33.3)", () => {
     expect(css).not.toContain("infinite");
   });

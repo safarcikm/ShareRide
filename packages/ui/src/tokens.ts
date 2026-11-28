@@ -313,6 +313,40 @@ export const bannerHouse = {
   dark: { wall: "#A7B4BA", window: "#F4C04E" },
 } as const;
 
+/**
+ * The Yule Lads and Jólakötturinn in the Iceland scene at Christmas (spec
+ * 36, 3.11): the Lads' faces, beards, coats and mittens (their caps are
+ * `bannerDrawing.red`), the wood, tin and food they come for, and the
+ * giant cat's fur, lines and ears, lifted at night so he still reads on
+ * the dark sky. Only for drawings.
+ */
+export const bannerYule = {
+  skin: "#F1C7A4",
+  nose: "#E39A80",
+  beard: "#F7F5F0",
+  coat: "#7C6A58",
+  mitten: "#5C7C9E",
+  wood: "#9A6A3C",
+  woodLight: "#C9945A",
+  lamb: "#FFFFFF",
+  lambEdge: "#9FB0BA",
+  pail: "#9AA9B1",
+  tin: "#7F8C93",
+  pan: "#3C4448",
+  panLight: "#56626A",
+  sausage: "#A0523D",
+  laufabraud: "#D9A35E",
+  laufabraudCut: "#B07A3A",
+  hangikjot: "#8E3B2E",
+  candle: "#FFF8EC",
+  eye: "#F4C04E",
+  catEar: "#5A3E48",
+  cat: {
+    light: { fur: "#232A2F", edge: "#232A2F", line: "#8E9CA3", toe: "#4A555C" },
+    dark: { fur: "#0B1115", edge: "#3B4952", line: "#5F6E77", toe: "#3B4952" },
+  },
+} as const;
+
 /** The five people colours a driver's shape person and initial can have, in a fixed order. */
 export const peopleColours = [
   people.glacier,
@@ -683,6 +717,11 @@ export const motion = {
     flower: { duration: 450, delay: [300, 1500] },
     lupine: { duration: 1900, delay: [100, 1500] },
     cover: { duration: 3200 },
+    // The Yule Lad pops up over the hill as the car stops (spec 36, 3.11).
+    lad: { duration: 650, delay: 1250 },
+    // Jólakötturinn swishes his tail, then blinks.
+    "cat-tail": { duration: 1100, delay: 1300 },
+    "cat-eyes": { duration: 280, delay: 1800 },
   },
   curves: {
     out: "cubic-bezier(0.23, 1, 0.32, 1)",
