@@ -14,6 +14,7 @@ import {
 } from "@shareride/domain";
 import { and, eq, isNull } from "drizzle-orm";
 import { changeOccupancy, methodOf, partOf, stopsOf, type Transaction } from "../bookings/seats.ts";
+import { co2GramsOf, gramsPerCarKmIn } from "../co2/store.ts";
 import { recordEvents } from "../notifications/outbox.ts";
 import { oweRefund } from "../payments/refunds.ts";
 import { refitToTripLimit } from "../trips/limit.ts";
@@ -92,8 +93,15 @@ export async function applyOutcome(
             countsOnReliability: effect.cancellation.countsOnReliability,
           }),
       // A ride found to have happened completes as of its trip, or now if
-      // the trip is still under way.
-      ...(next.value === "completed" ? { completedAt: found.tripCompletedAt ?? now } : {}),
+      // the trip is still under way, and keeps the CO2 its part saves at
+      // the value in force now; one that stops being completed stops
+      // counting (spec 34, R34.2 and R34.3).
+      ...(next.value === "completed"
+        ? {
+            completedAt: found.tripCompletedAt ?? now,
+            co2Grams: await co2GramsOf(tx, booking, await gramsPerCarKmIn(tx)),
+          }
+        : { co2Grams: null }),
       updatedAt: now,
     })
     .where(eq(bookings.id, booking.id));

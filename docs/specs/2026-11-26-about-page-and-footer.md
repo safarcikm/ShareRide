@@ -60,7 +60,9 @@ column (spec 18, 3.2), as the legal documents are:
    points. That it is an open beta. A link, "How carpooling works", to
    Carpool in Iceland (spec 23, 3.9).
 2. **Terms and policies:** a card of four rows, as the old page had: Terms
-   of Service, Community Rules, Privacy Policy and Cookies.
+   of Service, Community Rules, Privacy Policy and Cookies. Under it, a
+   link, "Delete your account", to the page that says how (spec 32,
+   section 5), which the stores ask for.
 3. **Who runs PuffinRide:** "PuffinRide is run by Martin Safarcik, Skinnar,
    851 Hella, Iceland.", the words of the published Terms (section 1.1).
    When the company is registered, a new version of the Terms names it, and
@@ -78,6 +80,14 @@ design (ADR 0039, spec 24).
 
 Back goes to the previous screen, or to Profile when the page was opened
 on its own.
+
+Since [spec 34](2026-11-28-co2-saved.md) (3.9), a section **"What a shared
+ride saves"** follows the first part, before Terms and policies: four short
+paragraphs on how the CO₂ a shared ride saves is estimated, with the
+operator's grams per car km and the Reykjavík to Akureyri example worked
+out from it. Its heading is the target of `/about#co2`, where the cards'
+"How we estimate it" lead; on the web the page scrolls to it. At the
+setting 0 the section is not there.
 
 ### 3.2 It takes the place of "Terms, rules and privacy"
 
@@ -136,7 +146,8 @@ on its own.
    PuffinRide", and description, from `pageText`, in the server's first
    answer and on the screen.
 2. Its words are in the first answer's `<noscript>`, as Carpool in
-   Iceland's are, for search engines that do not run the app.
+   Iceland's are, for search engines that do not run the app, with the CO₂
+   section at the value in force (spec 34).
 3. No money words on the page or in its description (Martin's rule for
    marketing texts, 2026-11-22; the test of spec 23, 3.9).
 

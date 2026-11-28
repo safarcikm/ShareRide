@@ -41,6 +41,8 @@ const figures: WeekMetrics = {
   reports_per_trip: { numerator: 2, denominator: 400 },
   report_answer_minutes: { numerator: 630, denominator: 3 },
   money_paid: { numerator: 125_000, denominator: null },
+  car_km_saved: { numerator: 634, denominator: null },
+  co2_saved_grams: { numerator: 95_900, denominator: null },
 };
 
 /** What the API would answer: the weeks asked for, the last one counted. */
@@ -154,6 +156,13 @@ describe("the Metrics page", () => {
     expect(screen.getAllByRole("columnheader")).toHaveLength(9);
     const week = isoWeekOf(new Date()).week;
     expect(screen.getByRole("columnheader", { name: `W${String(week)}` })).toBeTruthy();
+  });
+
+  it("shows the car km and the CO2 saved, the CO2 in whole kilograms (spec 34, 3.10)", async () => {
+    start();
+    const dashes = Array.from({ length: 6 }, () => "–");
+    expect(await row("Car km saved")).toEqual([...dashes, "0", "634"]);
+    expect(await row("CO2 saved (kg)")).toEqual([...dashes, "0", "95"]);
   });
 
   it("draws the chosen figure as a bar per counted week", async () => {

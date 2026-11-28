@@ -6,16 +6,9 @@ import { Body, Heading } from "@/components/text";
 import { TextLink } from "@/components/text-link";
 import { useLanguage } from "@/i18n/language";
 import { useTabBarHeight } from "@/navigation/tab-bar";
-import {
-  controlOutline,
-  edges,
-  maxContentWidth,
-  pageMaxWidth,
-  radii,
-  sideColumnWidth,
-  spacing,
-} from "@/theme/tokens";
-import { usePalette } from "@/theme/use-palette";
+import { maxContentWidth, pageMaxWidth, radii, sideColumnWidth, spacing } from "@/theme/tokens";
+import { cardLift } from "@/theme/pressable";
+import { usePalette, useScheme } from "@/theme/use-palette";
 import { useAnalytics } from "./analytics";
 import { screenPattern } from "./screen-pattern";
 
@@ -30,6 +23,7 @@ import { screenPattern } from "./screen-pattern";
 export function ConsentBar({ wide }: { readonly wide: boolean }) {
   const { t } = useLanguage();
   const palette = usePalette();
+  const scheme = useScheme();
   const insets = useSafeAreaInsets();
   const { available, choice, choose } = useAnalytics();
   const segments = useSegments();
@@ -47,10 +41,8 @@ export function ConsentBar({ wide }: { readonly wide: boolean }) {
           style={[
             styles.card,
             wide && styles.wideCard,
-            {
-              backgroundColor: palette.surface,
-              borderColor: palette.edge,
-            },
+            { backgroundColor: palette.surface },
+            cardLift(scheme).face,
           ]}
         >
           <Heading>{t("consent.title")}</Heading>
@@ -108,9 +100,6 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     padding: spacing.md,
     borderRadius: radii.card,
-    borderWidth: controlOutline,
-    // A card's chunky edge (spec 15, section 5.2).
-    borderBottomWidth: edges.card,
   },
   wideCard: { maxWidth: sideColumnWidth },
   buttons: { flexDirection: "row", gap: spacing.sm },

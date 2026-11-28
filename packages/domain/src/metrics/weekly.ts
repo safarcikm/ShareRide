@@ -46,6 +46,10 @@ export const metricKeys = [
   "active_drivers",
   /** Passengers with a booking on a trip that left in the week. */
   "active_passengers",
+  /** Whole road kilometres of the bookings completed in the week: one car not driven each (spec 34). */
+  "car_km_saved",
+  /** Grams of CO2 the bookings completed in the week kept (spec 34, R34.2). */
+  "co2_saved_grams",
 ] as const;
 export type MetricKey = (typeof metricKeys)[number];
 
@@ -100,6 +104,11 @@ export interface MetricBooking {
   readonly status: BookingStatus;
   readonly cancelledBy: "passenger" | "driver" | "operator" | null;
   readonly countsOnReliability: boolean;
+  readonly completedAt: Date | null;
+  /** The road metres of its part. */
+  readonly distanceM: number;
+  /** The grams of CO2 it kept when it completed (spec 34). */
+  readonly co2Grams: number | null;
 }
 
 /**
@@ -192,6 +201,11 @@ export function weekMetrics(records: MetricRecords, week: IsoWeek, now: Date): W
         booking.status === "no_show"),
   );
 
+  // Bookings still completed count; one found a no-show since does not (spec 34, R34.3).
+  const completedBookings = records.bookings.filter(
+    (booking) => booking.status === "completed" && inWeek(booking.completedAt),
+  );
+
   return {
     searches: count(searches.length),
     searches_with_result: { numerator: withResult, denominator: searches.length },
@@ -225,6 +239,8 @@ export function weekMetrics(records: MetricRecords, week: IsoWeek, now: Date): W
     ),
     active_drivers: count(new Set(left.map((trip) => trip.driverId)).size),
     active_passengers: count(new Set(rode.map((booking) => booking.passengerId)).size),
+    car_km_saved: count(Math.floor(sum(completedBookings.map((b) => b.distanceM)) / 1000)),
+    co2_saved_grams: count(sum(completedBookings.map((booking) => booking.co2Grams ?? 0))),
   };
 }
 

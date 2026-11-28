@@ -23,6 +23,8 @@ export const en = {
     "How carpooling in Iceland works with PuffinRide: find a seat in a car going your way, or offer the empty seats in yours, and meet at public meeting points around the country.",
   "seo.aboutDescription":
     "Who runs PuffinRide, how to reach us, and PuffinRide's Terms of Service, Community Rules and Privacy Policy.",
+  "seo.deleteAccountDescription":
+    "How to delete your PuffinRide account in the app or on the website, what we erase and what we keep, and for how long.",
   "seo.legalDescription": "PuffinRide's Terms of Service, Community Rules and Privacy Policy.",
   "seo.shareImage": "Two PuffinRide puffins driving in a little car",
   "seo.tripTitle": "{route} · {when}",
@@ -57,6 +59,9 @@ export const en = {
     "Every member has a checked phone number. Drivers show a profile photo, and after each ride drivers and passengers review each other. Everyone agrees to our community rules.",
   "carpool.rules": "Read the community rules",
   "carpool.questionsTitle": "Questions",
+  "carpool.whatQuestion": "What is PuffinRide?",
+  "carpool.whatAnswer":
+    "PuffinRide (puffinride.is, sometimes written Puffin Ride) is a carpooling website for Iceland, started in November 2026. People who are driving somewhere anyway offer the empty seats in their car, and passengers book a seat for the whole way or part of it, between public meeting points around the country. It is in an open beta, in English and Icelandic.",
   "carpool.taxiQuestion": "Is PuffinRide a taxi?",
   "carpool.taxiAnswer":
     "No. Drivers offer seats on a trip they are making anyway, and PuffinRide puts them in touch with people going the same way.",
@@ -80,6 +85,45 @@ export const en = {
   "about.contact": "Questions or ideas? Write to us, in English or Icelandic.",
   "about.facebook": "PuffinRide on Facebook",
   "about.instagram": "PuffinRide on Instagram",
+  // The account deletion page (spec 32, section 5), for Google Play and everyone.
+  "deleteAccount.link": "Delete your account",
+  "deleteAccount.title": "Delete your PuffinRide account",
+  "deleteAccount.intro":
+    "You can delete your PuffinRide account yourself at any time, in the PuffinRide app or on puffinride.is, and nobody has to approve it. This page says how, and what happens to your data.",
+  "deleteAccount.howTitle": "How to delete it",
+  "deleteAccount.step1": "Sign in to PuffinRide, in the app or at puffinride.is.",
+  "deleteAccount.step2": "Open {profile}, then {privacy}.",
+  "deleteAccount.step3":
+    "Choose {delete}. If you have rides, bookings or requests coming up, the screen lists them, and you cancel them there first.",
+  "deleteAccount.step4": "Confirm it's you with the code we send you.",
+  "deleteAccount.afterTitle": "What happens next",
+  "deleteAccount.after":
+    "You are signed out on every device at once, and nobody can see your profile or your rides any more. We erase your data 7 days later. Until then, you can sign in and keep your account as it was.",
+  "deleteAccount.erasedTitle": "What we erase",
+  "deleteAccount.erasedProfile":
+    "Your profile: your first name, photo, bio and languages, and the reviews about you.",
+  "deleteAccount.erasedSignIn":
+    "Your email address, phone number, password, Face ID or fingerprint sign-in, and the devices you signed in on.",
+  "deleteAccount.erasedRest":
+    "Your settings, the notifications we sent you, cars no ride used, and any file of your data you asked for.",
+  "deleteAccount.erasedMessages":
+    "The messages you sent. The people you wrote to see “Message deleted” instead.",
+  "deleteAccount.keptTitle": "What we keep, and for how long",
+  "deleteAccount.keptTrips":
+    "Your past rides and bookings, and the make, model and colour of the cars they used, without your name, notes or number plates, so the people you travelled with keep their history.",
+  "deleteAccount.keptReviews": "Reviews you wrote, shown as written by “a former member”.",
+  "deleteAccount.keptReports":
+    "Reports you made or that are about you, and what we did about them, for 3 years after the report is closed, for everyone's safety. In a conversation a report covers, we can read your messages until then.",
+  "deleteAccount.keptRequests":
+    "What you asked us about your data, and our answers, for 3 years after the answer.",
+  "deleteAccount.keptSuspended":
+    "If your account was suspended: a one-way hash of your phone number, until the suspension would have ended and for 3 years at most, so the number can't sign up again.",
+  "deleteAccount.keptLaw": "Anything the law requires us to keep, for as long as it requires.",
+  "deleteAccount.keptBackups":
+    "Copies in our backups and technical logs, which are gone within 30 days. If we ever restore a backup, we erase your account again.",
+  "deleteAccount.helpTitle": "Can't sign in?",
+  "deleteAccount.help":
+    "Try “Forgot your password?” or a code by email on the sign-in screen. If that doesn't work, write to us from the email address on your account, and we'll answer within a month.",
   "footer.label": "About PuffinRide and our terms",
   "footer.tagline": "Carpooling across Iceland",
   "footer.terms": "Terms",
@@ -1413,6 +1457,10 @@ export const en = {
   "myRides.seatConfirmed": "Seat confirmed",
   "ride.fromTo": "{from} to {to}",
   "ride.withStops": "{duration}, {count, plural, one {# stop} other {# stops}}",
+  "ride.route": "The route",
+  "ride.routeMap": "Your ride on a map of Iceland: {route}.",
+  "ride.routeMapPart": "The ride on a map of Iceland. Your part: {part}.",
+  "ride.routeMapTheirPart": "The ride on a map of Iceland. The passenger's part: {part}.",
   "needs.answerOne": "Answer {name}'s request",
   "needs.answerMany": "{count, plural, one {# request to answer} other {# requests to answer}}",
   "needs.asksFor": "{name} asks for {seats}",
@@ -1956,6 +2004,7 @@ export const en = {
   "export.section.trips_posted": "Rides you offered",
   "export.section.bookings": "Bookings and requests",
   "export.section.earlier_reviews": "Reviews of you from rides over 3 years ago",
+  "export.section.co2_saved": "CO2 saved",
   "export.section.payments": "Payments",
   "export.section.conversations": "Conversations",
   "export.section.reports": "Reports you sent",
@@ -2040,6 +2089,12 @@ export const en = {
   "export.field.screenshot": "Screenshot (a file in this folder)",
   "export.field.outcome": "Outcome",
   "export.field.overruledAt": "PuffinRide made it count",
+  "export.field.asDriver": "As a driver",
+  "export.field.asPassenger": "As a passenger",
+  "export.field.carried": "Of these, from rides over 3 years ago",
+  "export.field.co2Grams": "CO2 saved, in grams (estimated)",
+  "export.field.grams": "CO2 saved, in grams (estimated)",
+  "export.field.rides": "Rides",
   "export.field.passengers": "Passengers",
   "export.field.paymentDueAt": "Pay by",
   "export.field.paidHow": "Paid",
@@ -2489,6 +2544,8 @@ export const en = {
   "admin.metrics.metric.money_refunded": "Refunded to passengers",
   "admin.metrics.metric.active_drivers": "Drivers with a trip",
   "admin.metrics.metric.active_passengers": "Passengers with a booking",
+  "admin.metrics.metric.car_km_saved": "Car km saved",
+  "admin.metrics.metric.co2_saved_grams": "CO2 saved (kg)",
   "admin.announcements.title": "Announcements",
   "admin.announcements.intro":
     "News about the beta and the service, in Icelandic and in English, for testers who have Beta news on. Never advertising.",
@@ -2592,6 +2649,7 @@ export const en = {
   "admin.settings.group.booking": "Booking and paying",
   "admin.settings.group.changes": "Changes and cancellations",
   "admin.settings.group.trip_day": "Trip day and reliability",
+  "admin.settings.group.co2": "CO2",
   "admin.settings.groupNote.terms":
     "The terms of service state these values. Publish new terms with a change, or the terms and the app will disagree.",
   "admin.settings.group.switches": "Switches for emergencies",
@@ -2672,6 +2730,9 @@ export const en = {
   "admin.settings.name.reliability_watch_level": "Watch level",
   "admin.settings.help.reliability_watch_level":
     "People whose figure is below this are listed for you on the Reliability page. Nothing suspends anyone on its own.",
+  "admin.settings.name.co2_grams_per_car_km": "CO2 per car km",
+  "admin.settings.help.co2_grams_per_car_km":
+    "The CO2 an average car in Iceland emits per kilometre, for the CO2 saved figures. Check it each autumn. 0 hides every figure.",
   "admin.settings.on": "On",
   "admin.settings.off": "Off",
   "admin.settings.unit.people": "{count, plural, one {{value} person} other {{value} people}}",
@@ -2687,6 +2748,8 @@ export const en = {
   "admin.settings.unit.records":
     "{count, plural, one {{value} trip or booking} other {{value} trips and bookings}}",
   "admin.settings.newValue.records": "New value, in trips and bookings",
+  "admin.settings.unit.g_per_km": "{value} g per km",
+  "admin.settings.newValue.g_per_km": "New value, in g per km",
   "admin.settings.unit.seats": "{count, plural, one {{value} seat} other {{value} seats}}",
   "admin.settings.newValue.seats": "New value, in seats",
   "admin.settings.unit.minutes": "{count, plural, one {{value} minute} other {{value} minutes}}",
@@ -3657,6 +3720,33 @@ export const en = {
     "The photo still carries data besides the picture. Try another browser.",
   "admin.meetingPoint.photoIssue.tooLarge":
     "The photo is too large, even made smaller. Choose a smaller one.",
+  // The CO2 a shared ride saves (spec 34, section 8).
+  "about.co2Title": "What a shared ride saves",
+  "about.co2Method":
+    "When you share a ride, one car fewer drives your part of the way. We estimate the CO₂ this saves from the road distance of your part and the CO₂ of an average car in Iceland: {grams}\u00a0g per kilometre.",
+  "about.co2Example":
+    "Reykjavík to Akureyri is about 390\u00a0km, so a passenger saves about {kg}\u00a0kg of CO₂ compared with driving alone.",
+  "about.co2Source":
+    "The {grams}\u00a0g comes from the Environment and Energy Agency of Iceland's factors for cars (208\u00a0g per km for petrol, 191 for diesel, 136 for a hybrid and next to nothing for an electric car), weighted by how far cars here drive on each. We check it once a year.",
+  "about.co2Limits":
+    "These are estimates. Two people booking together count as one car. Someone who would have taken the bus, or stayed at home, saves less. Your own figures are on My profile, where only you see them.",
+  "co2.title": "CO₂ saved",
+  "co2.value": "About {kg}\u00a0kg, estimated",
+  "co2.spoken":
+    "CO2 saved, about {kg} {count, plural, one {kilogram} other {kilograms}}, estimated",
+  "co2.part":
+    "One car fewer on the road for {km}\u00a0km: about {kg}\u00a0kg less CO₂ than driving alone.",
+  "co2.driver":
+    "{passengers, plural, one {Your passenger rides} other {Your passengers ride}} {km}\u00a0km with you instead of driving: about {kg}\u00a0kg less CO₂ than driving alone.",
+  "co2.how": "Estimated from the road distance and an average car in Iceland.",
+  "co2.link": "How we estimate it",
+  "co2.group": "Your shared rides",
+  "co2.asPassenger":
+    "As a passenger: {kg}\u00a0kg on {rides, plural, one {# ride} other {# rides}}.",
+  "co2.asDriver":
+    "As a driver: {kg}\u00a0kg with {passengers, plural, one {# passenger} other {# passengers}} on {rides, plural, one {# ride} other {# rides}}.",
+  "co2.compared": "Each compared with driving alone.",
+  "co2.onlyYou": "Only you can see this.",
 } as const satisfies Record<string, string>;
 
 export type MessageKey = keyof typeof en;

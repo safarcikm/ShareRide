@@ -1,6 +1,8 @@
 # A ride leaving soon, from Find: its page, then back to Find.
 appId: ${APP_ID}
 name: Find a ride
+onFlowStart:
+  - runFlow: ../helpers/close-stuck-box.yaml
 ---
 - launchApp
 - extendedWaitUntil:

@@ -1614,6 +1614,15 @@ releases follow [Semantic Versioning](https://semver.org/).
   stretch. Each ride in `GET /v1/me/trips` says who asks in the request
   that closes first (`firstRequest`: the first name, the seats and the two
   stops' names), for "Dóra asks for 1 seat".
+- Google is told who we are (spec 23, 3.6, item 8): the front page's
+  structured data names the site and PuffinRide as an organization, also
+  written "Puffin Ride", with its logo, what it is, the email address that
+  receives mail and our Facebook and Instagram pages (`sameAs`). Carpool in
+  Iceland's questions start with "What is PuffinRide?", one paragraph an
+  answer can quote. The Facebook and Instagram addresses are now
+  `socialProfiles` in `@shareride/i18n`, for the app and the server.
+- `marketing/search/`: Martin's Search Console steps for our name, and
+  honest places to be mentioned and linked from.
 - The iPhone app offers no Google sign-in until Sign in with Apple comes
   (spec 32, 3.3; R32.5), as Apple's guideline 4.8 asks: the domain's
   `providersOffered` leaves Google out on iOS unless Apple is on too. Step 1
@@ -1621,9 +1630,54 @@ releases follow [Semantic Versioning](https://semver.org/).
   their Google email for a code, and sign in once on puffinride.is to add an
   email if that does not work; Sign-in methods on the iPhone can remove a
   linked Google but not add one. Android and the website are unchanged.
+- Delete your PuffinRide account (spec 32, section 5), a public page at
+  `/delete-account` in Icelandic and English, as Google Play asks of apps
+  with accounts: how to delete an account in the app or on the website
+  (Profile, then Privacy and your data, then Delete my account, named as
+  the app names them), what happens next, what is erased, what is kept and
+  for how long, and where to write. Signed out it offers Sign in, signed in
+  Delete my account itself. It is in the sitemap, the server writes its
+  text for crawlers that do not run the app, and About links to it.
+- The store kit (spec 32, 3.9) in `marketing/stores/`: the App Store page
+  in English and the Google Play page in Icelandic and English, checked
+  for each store's limits and for any word about money; six screenshots
+  per store under captions at each store's size, the Play feature graphic
+  and icon, drawn by `src/build.sh`; Apple's privacy label and Google's
+  data safety answers from the privacy register; the age rating, the
+  reviewers' notes and the review account's steps. Phone apps, run by hand
+  with "Which journeys" set to `store`, takes the screenshots
+  (`apps/mobile/maestro/store`) on an iPhone of the App Store's largest
+  size and on the emulator, signed out, with a tidy status bar. The
+  privacy register lists the App Store, Google Play and Google Play
+  testing.
+- The ride on a map on a booked seat and on the ride I drive (spec 31,
+  3.8 and 3.12): a card headed "The route" with our map of Iceland, the
+  passenger's part solid and the rest of the ride dashed, or the whole way
+  for the driver, before the rows; on a laptop a band in the main column.
+  A booking in the API gains `route`: where its ride's stops are, with the
+  part as places among them; null where a stop of the part was taken off
+  the ride, and on a booking that ended before its ride.
 
 ### Fixed
 
+- The price level's handle slides: it follows a finger or the mouse
+  along the track, a step at a time, in the phone apps and on the
+  website. It took only taps and minus and plus, which Martin found on
+  the first iPhone build. A finger that moves up or down on the track
+  still scrolls the page; one that slides the handle holds it still. The
+  track is 44 tall to touch, and on an iPhone the two price screens go
+  back only for a swipe from the left edge, so a slide to the right does
+  not go back a step (iOS 26).
+- The Android phone journeys failed on every run from about 01:30 on
+  2026-11-28. The workflow's key press reached the Pixel Launcher before it
+  had a window, the launcher stalled, and its "isn't responding" box hid
+  the whole app, because the setting that stops such boxes came after the
+  key press. It comes first now, and each journey also first closes such
+  a box of one of the phone's own apps. A box about PuffinRide stays, so a
+  stall of ours still fails the journey.
+- The phone Sign up journey types each 6-digit code again, into an emptied
+  field, when the next step does not show. A busy iPhone simulator dropped
+  one digit, and the journey failed with five digits in the field.
 - A tap on a notification about beta news, about a reply to feedback, or
   about an answer to a question on one's data, opens its page in the
   phone apps. The server named the three pages and the app ignored them.
@@ -1721,6 +1775,12 @@ releases follow [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Render builds the server only for changes that reach its image, which
+  saves its paid build minutes: marketing, `.github/`, `infra/`, tests, the
+  web and phone journeys and `apps/mobile/eas.json` no longer start a build,
+  and the hourly clean-up job no longer builds for the website or the
+  console. A change to a legal text alone now deploys: the filter left out
+  every Markdown file, the texts the server reads too.
 - A booking's status tag follows what the colours say (spec 31, 3.2, rule
   6): declined, expired, cancelled and withdrawn are a quiet grey tag, as
   nothing is asked of anyone, and "No-show" is red. They were amber, or
@@ -2003,6 +2063,18 @@ releases follow [Semantic Versioning](https://semver.org/).
   downloads and tests (spec 32, section 7). Neither is material, so
   nobody accepts anything again. A test holds the newest legal texts to
   the names the app gives its pages.
+- The Terms of Service (version 4) and the Privacy Policy (version 5)
+  say how people sign in since specs 26 and 27, on Martin's word of
+  2026-11-28: with a code by email, with Google or Apple, with a
+  password or with Face ID or fingerprint, and that a text message only
+  checks a phone number. They said "a code sent to your phone". The
+  Privacy Policy says what is kept of a password (never the password)
+  and of Face ID or fingerprint (a passkey's public key, never the face
+  or the fingerprint), that we ask the browser to save a passkey after a
+  password, where to remove them, and that what keeps a person signed
+  in is sent with each request, which the policy had said stays on the
+  device. Neither is material. The same test holds the texts to the
+  ways the sign-in screen offers.
 - An account that waits to be deleted no longer opens Report, the two
   pages that block a person or "What's wrong here?" for a meeting point
   by their address: it lands on the page that says when the account
@@ -2011,6 +2083,14 @@ releases follow [Semantic Versioning](https://semver.org/).
   or appeal a notice before the account goes (A59, Martin's answer to
   Q31). A test asks of every page of the app which list it is in, so a
   new page is not open to such an account by being forgotten.
+- Cards stand off the page with a hairline and a soft shadow, and
+  buttons keep a solid edge that is as thick at the corners as in the
+  middle (spec 15, decision 16: Martin chose "Soft cards, solid
+  buttons" on 2026-11-28, after the first iPhone build). The solid strip
+  under each card thinned out at its rounded corners and looked cheap.
+  At night a card has a faint light line along its top. Android 7 and 8
+  keep the strip under buttons and get the system's shadow under cards.
+  The console looks the same.
 - The web journeys never give two test accounts the same phone number: a
   run in ten did, and a sign-in journey then failed.
 - CI skips its code jobs (bundles, unit, integration and web tests, the API

@@ -74,9 +74,11 @@ Priorities:
 
 ## A. Accounts and profiles
 
-**A1. Sign up and sign in (Must).** Enter a phone number and a six-digit
-code. Sign in with Apple or Google as alternatives, but every account confirms
-a phone number before booking or posting. Stay signed in; see signed-in
+**A1. Sign up and sign in (Must).** Enter an email and the six-digit code
+it gets, or sign in with Google or Apple; a password and Face ID or
+fingerprint are optional ways in (specs 26, 27 and 29). Every account
+confirms a phone number once, by a code in a text message, before booking
+or posting. Stay signed in; see signed-in
 devices; sign out everywhere.
 
 **A2. Profile (Must).** First name, photo, short bio, languages spoken,
@@ -217,8 +219,9 @@ passenger. Text only. Phone numbers are never shared by the app; people may
 share contact details themselves once the booking is confirmed.
 
 **F2. Notifications (Must).** Push for every booking and trip event. Email for
-confirmations, changes and cancellations. SMS only for sign-in codes and,
-within 24 hours of boarding, for passengers whose trip is cancelled, moved by
+confirmations, changes and cancellations. SMS only for codes that check a
+phone number, or confirm a sensitive step for an account without an email
+(sign-in codes go by email since spec 26), and, within 24 hours of boarding, for passengers whose trip is cancelled, moved by
 more than 30 minutes, or whose meeting point changes, to control cost.
 
 ## G. Trust and safety
@@ -345,7 +348,10 @@ connections (Herjólfur, Baldur, Norræna), corporate accounts with invoicing,
 parcel delivery along trips, connecting two trips into one journey.
 
 CO2 saved per ride (an estimate, with a total on the member's own profile) is
-planned in [spec 34](../specs/2026-11-28-co2-saved.md).
+built ([spec 34](../specs/2026-11-28-co2-saved.md),
+[plan](../plans/2026-11-28-co2-saved.md)): a card on a ride, a booked seat,
+the driver's ride and My profile, About's method, the console's setting and
+two weekly figures, and totals kept past the 3-year anonymisation.
 
 ## Spec order
 

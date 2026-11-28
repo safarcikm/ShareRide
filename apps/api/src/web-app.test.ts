@@ -13,14 +13,14 @@ const secret = "a file next to the export that must never be served";
  * A small stand-in for `expo export --platform web` output, with a file next
  * to it that a path traversal would reach.
  */
-function exportedWebApp(): string {
+function exportedWebApp(body = '<div id="root"></div>'): string {
   const parent = mkdtempSync(join(tmpdir(), "shareride-web-"));
   writeFileSync(join(parent, "secret.txt"), secret);
   const dir = join(parent, "web");
   mkdirSync(dir);
   writeFileSync(
     join(dir, "index.html"),
-    '<!doctype html><html lang="en"><head><title>PuffinRide</title></head><body><div id="root"></div></body></html>',
+    `<!doctype html><html lang="en"><head><title>PuffinRide</title></head><body>${body}</body></html>`,
   );
   writeFileSync(join(dir, "favicon.ico"), "icon");
   mkdirSync(join(dir, "_expo", "static", "js", "web"), { recursive: true });
@@ -28,7 +28,11 @@ function exportedWebApp(): string {
   return dir;
 }
 
-function setup(webAppDir?: string, lines: string[] = []) {
+function setup(
+  webAppDir?: string,
+  lines: string[] = [],
+  more: Partial<Parameters<typeof createApp>[0]> = {},
+) {
   const destination = new Writable({
     write: (chunk: Buffer, _encoding, callback) => {
       lines.push(chunk.toString());
@@ -39,6 +43,7 @@ function setup(webAppDir?: string, lines: string[] = []) {
     logger: createLogger({ level: "info", destination }),
     checkDatabase: () => Promise.resolve(),
     ...(webAppDir === undefined ? {} : { webAppDir }),
+    ...more,
   });
 }
 
@@ -115,6 +120,38 @@ describe("the web app on the API's origin", () => {
     expect(english.headers.get("location")).toBe("/about?lang=en");
     // The documents stay where they are.
     expect((await app.request("/legal/privacy")).status).toBe(200);
+  });
+
+  it("writes About's CO2 section with the value in force, and none without one (spec 34, 3.9)", async () => {
+    const asked: string[] = [];
+    // As the export has it: the text goes in the page's noscript.
+    const withValue = setup(exportedWebApp('<noscript></noscript><div id="root"></div>'), [], {
+      co2Settings: () => {
+        asked.push("asked");
+        return Promise.resolve({ gramsPerCarKm: 208 });
+      },
+    });
+    const about = await (await withValue.request("/about?lang=en")).text();
+    expect(about).toContain('<h2 id="co2">What a shared ride saves</h2>');
+    expect(about).toContain("Iceland: 208\u00a0g per kilometre.</p>");
+    // Only About reads the setting.
+    await withValue.request("/sign-in");
+    expect(asked).toHaveLength(1);
+    const without = setup(exportedWebApp('<noscript></noscript><div id="root"></div>'));
+    const plain = await (await without.request("/about?lang=en")).text();
+    expect(plain).toContain("<h2>Terms and policies</h2>");
+    expect(plain).not.toContain('id="co2"');
+  });
+
+  it("still serves About, without the CO2 section, when the setting cannot be read", async () => {
+    const failing = setup(exportedWebApp('<noscript></noscript><div id="root"></div>'), [], {
+      co2Settings: () => Promise.reject(new Error("the database is away")),
+    });
+    const response = await failing.request("/about?lang=en");
+    expect(response.status).toBe(200);
+    const page = await response.text();
+    expect(page).toContain("<h2>Terms and policies</h2>");
+    expect(page).not.toContain('id="co2"');
   });
 
   it("keeps trip pages out of search engines (R4.6; spec 23 has the rest)", async () => {

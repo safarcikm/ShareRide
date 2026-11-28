@@ -3,8 +3,10 @@ import type { ReactElement } from "react";
 import {
   AccessibilityInfo,
   Dimensions,
+  StyleSheet,
   type RefreshControlProps,
   type ScrollViewProps,
+  type ViewStyle,
 } from "react-native";
 import type { Booking } from "@shareride/contracts";
 import { completeMe, renderApp } from "@/testing/app";
@@ -211,6 +213,33 @@ describe("a booked seat on a phone (spec 31, 3.8)", () => {
       "Share the ride's details",
     );
     expect(screen.queryByTestId("columns-side")).toBeNull();
+  });
+
+  it("shows the whole ride on a map with my part solid, before the rows", async () => {
+    await open(paidBooking);
+    await screen.findByRole("header", { name: "Your seat is confirmed" });
+    const route = within(screen.getByTestId("route-card"));
+    expect(route.getByRole("header", { name: "The route" })).toBeVisible();
+    expect(
+      route.getByRole("image", {
+        name: "The ride on a map of Iceland. Your part: Borgarnes → Blönduós.",
+      }),
+    ).toBeVisible();
+    // My two stops stand out; the ride's first and last are muted.
+    const drawn = (testID: string) =>
+      route.queryAllByTestId(testID, { includeHiddenElements: true });
+    expect(drawn("map-dot-chosen")).toHaveLength(2);
+    expect(drawn("map-dot-muted")).toHaveLength(2);
+    expect(drawn("map-line-part")).toHaveLength(1);
+    expect(drawn("map-line-route")).toHaveLength(1);
+    inOrder("Where to stand", "The route", "Share the ride's details");
+  });
+
+  it("shows no map when a stop of my part is no longer on the ride", async () => {
+    await open(northBooking({ ...paidBooking, route: null }));
+    await screen.findByRole("header", { name: "Your seat is confirmed" });
+    expect(screen.queryByTestId("route-card")).toBeNull();
+    expect(screen.getByTestId("where-to-stand")).toBeVisible();
   });
 
   it("ends with rows, Cancel booking red and last, and has no main button", async () => {
@@ -514,6 +543,16 @@ describe("a booked seat on a phone (spec 31, 3.8)", () => {
     expect(filledButtons()).toBe(0);
   });
 
+  it("names the passenger's part on the map for a driver who opens the booking", async () => {
+    await open({ ...paidBooking, viewer: "driver" });
+    const route = within(await screen.findByTestId("route-card"));
+    expect(
+      route.getByRole("image", {
+        name: "The ride on a map of Iceland. The passenger's part: Borgarnes → Blönduós.",
+      }),
+    ).toBeVisible();
+  });
+
   it("tells a driver that the passenger pays them in person (rule M6)", async () => {
     await open({ ...paidBooking, viewer: "driver", payment: "in_person" });
     await screen.findByRole("header", { name: "Borgarnes to Blönduós" });
@@ -596,6 +635,7 @@ describe("the trip day on a phone (spec 31, 3.9)", () => {
       "Message",
       "AB 123",
       "Passenger",
+      "The route",
       "Share the ride's details",
       "I'm here",
     );
@@ -686,6 +726,20 @@ describe("a booked seat on a laptop (spec 31, 3.16, item 2)", () => {
     expect(screen.getAllByTestId("booking-ticket")).toHaveLength(1);
     expect(screen.getAllByTestId("action-rows")).toHaveLength(1);
     expect(screen.queryByTestId("bottom-bar")).toBeNull();
+  });
+
+  it("ends the main column with the ride on a map, as a band", async () => {
+    await open(paidBooking);
+    expect(await screen.findByRole("header", { name: "Your seat is confirmed" })).toBeVisible();
+    const route = within(main().getByTestId("route-card"));
+    expect(route.getByRole("header", { name: "The route" })).toBeVisible();
+    inOrder("Message", "Where to stand", "The route", "Passenger");
+    // Across Iceland, as the ride crosses it, and not as tall as the window.
+    const area = StyleSheet.flatten(route.getByTestId("map-area").props.style as ViewStyle);
+    const shape = Number(area?.aspectRatio);
+    expect(shape).toBeGreaterThanOrEqual(1.8);
+    expect(shape).toBeLessThanOrEqual(2.4);
+    expect(screen.getAllByTestId("route-card")).toHaveLength(1);
   });
 
   it("has Pay at the top of the side column, over the ticket", async () => {

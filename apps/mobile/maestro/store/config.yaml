@@ -1,0 +1,14 @@
+# The store's screenshots (spec 32, 3.9; R32.6): the release build against
+# the test API's sample rides and meeting points, signed out, so no
+# person's details show. Each screen starts from a fresh launch, and a
+# screen that fails leaves the others. Run by hand from "Phone apps" with
+# "store", or from apps/mobile:
+#   maestro/run.sh <device> <app ID> <android|ios> maestro/store
+# marketing/stores/src frames them for each store.
+flows:
+  - flows/*
+executionOrder:
+  continueOnFailure: true
+  flowsOrder:
+    - Store screens in English
+    - Store screens in Icelandic

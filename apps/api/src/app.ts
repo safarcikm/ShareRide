@@ -4,6 +4,7 @@ import { appleCallbackRoute, healthReadyRoute, healthRoute } from "@shareride/co
 import type { Database } from "@shareride/db";
 import {
   bookingSettingsFrom,
+  co2SettingsFrom,
   defaultChatSettings,
   clientPlatformHeader,
   defaultMeetingPointIssueSettings,
@@ -94,6 +95,7 @@ import {
   registerInviteAdminRoutes,
   registerInviteRoutes,
 } from "./modules/beta/index.ts";
+import { registerCo2Routes, type Co2SettingsSource } from "./modules/co2/index.ts";
 import { createDrivingService, registerDrivingRoutes } from "./modules/driving/index.ts";
 import { createLegalService, registerLegalRoutes } from "./modules/legal/index.ts";
 import {
@@ -292,6 +294,11 @@ export interface AppDependencies {
    * (spec 23, 3.10); by default through the trip details.
    */
   readonly findRide?: FindRide;
+  /**
+   * The CO2 figures' value, for About's section on the page search engines
+   * read (spec 34, 3.9); by default the operator's setting.
+   */
+  readonly co2Settings?: Co2SettingsSource;
   /** Google Analytics on the website (spec 23); none when left out. */
   readonly analytics?: Analytics | null;
   /** The oldest phone app version served (spec 32, R32.4); every one when left out. */
@@ -436,6 +443,8 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
 
   /** Finds a shared ride's address for its own link preview (spec 23, 3.10), from the trip details. */
   let rideFinderOfApp: FindRide | undefined;
+  /** The CO2 figures' value as it is now (spec 34, 3.3), for About's page too. */
+  let co2SettingsOfApp: Co2SettingsSource | undefined;
   if (dependencies.features !== undefined) {
     const { features } = dependencies;
     // First: the guard covers only routes registered after it, and closes
@@ -633,10 +642,14 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       });
     }
     const ruleSettings = ruleSettingsSource(operatorSettings);
+    // The CO2 figures' value as it is now (spec 34, 3.3).
+    const co2Settings = async () => co2SettingsFrom((await operatorSettings.current()).values);
+    co2SettingsOfApp = co2Settings;
     const tripDetails = createTripDetailsService({
       ...features,
       settings: () => ruleSettings.search(),
       reliabilitySettings,
+      co2Settings,
     });
     // A trip page whose ride cannot be read keeps the general card, and says why.
     rideFinderOfApp = rideFinder(tripDetails, (error) => {
@@ -673,6 +686,7 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       tripDaySettings,
       reviewSettings: defaultReviewSettings,
       driving,
+      co2Settings,
     });
     registerDraftRoutes(app, trips, requireAuth, paused);
     registerTripChangeRoutes(
@@ -693,8 +707,10 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       tripDaySettings,
       reliabilitySettings,
       bookingsPausedIn: (tx) => pausedHeldIn(tx, "bookings"),
+      co2Settings,
     });
     registerBookingRoutes(app, bookings, requireAuth, trips, paused);
+    registerCo2Routes(app, { ...features, co2Settings }, requireAuth);
     registerChatRoutes(
       app,
       createChatService({ ...features, bookings, settings: defaultChatSettings }),
@@ -839,6 +855,22 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
   });
 
   const photoOrigin = dependencies.features?.photos?.origin ?? null;
+  // About leaves its CO2 section out, never the page with the legal
+  // documents, when the setting cannot be read; and says why.
+  const co2SettingsForAbout = dependencies.co2Settings ?? co2SettingsOfApp;
+  const aboutCo2Settings: Co2SettingsSource | undefined =
+    co2SettingsForAbout === undefined
+      ? undefined
+      : () =>
+          co2SettingsForAbout().catch((error: unknown) => {
+            logger.warn({ err: error }, "About's CO2 section could not read its setting");
+            dependencies.reportError?.(error, {
+              method: "GET",
+              route: "/about",
+              requestId: undefined,
+            });
+            return { gramsPerCarKm: 0 };
+          });
   const webApp =
     dependencies.webAppDir === undefined
       ? undefined
@@ -852,6 +884,7 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
               ? undefined
               : subjectFinder(dependencies.features.db)),
           dependencies.findRide ?? rideFinderOfApp,
+          aboutCo2Settings,
         );
   const adminApp =
     dependencies.adminAppDir === undefined

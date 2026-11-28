@@ -25,6 +25,8 @@ export const is = {
     "Svona virkar samakstur um Ísland með PuffinRide: finndu sæti í bíl sem fer þína leið eða bjóddu laus sæti í þínum, og hittist á opinberum mótsstöðum um allt land.",
   "seo.aboutDescription":
     "Hver rekur PuffinRide, hvernig þú nærð í okkur, og notendaskilmálar, samfélagsreglur og persónuverndarstefna PuffinRide.",
+  "seo.deleteAccountDescription":
+    "Hvernig þú eyðir PuffinRide-aðganginum þínum í appinu eða á vefnum, hverju við eyðum og hvað við geymum, og hve lengi.",
   "seo.legalDescription": "Notendaskilmálar, samfélagsreglur og persónuverndarstefna PuffinRide.",
   "seo.shareImage": "Tveir lundar PuffinRide á ferð í litlum bíl",
   "seo.tripTitle": "{route} · {when}",
@@ -58,6 +60,9 @@ export const is = {
     "Allir notendur eru með staðfest símanúmer. Bílstjórar sýna prófílmynd og eftir hverja ferð gefa bílstjórar og farþegar hvert öðru umsögn. Allir samþykkja samfélagsreglurnar okkar.",
   "carpool.rules": "Lesa samfélagsreglurnar",
   "carpool.questionsTitle": "Spurningar",
+  "carpool.whatQuestion": "Hvað er PuffinRide?",
+  "carpool.whatAnswer":
+    "PuffinRide (puffinride.is) er íslenskur vefur fyrir samakstur sem opnaði í nóvember 2026. Bílstjórar sem eru hvort sem er á leiðinni bjóða laus sæti í bílnum sínum og farþegar bóka sæti alla leiðina eða hluta hennar, á milli opinberra mótsstaða um allt land. Hann er í opinni prófun, á íslensku og ensku.",
   "carpool.taxiQuestion": "Er PuffinRide leigubíll?",
   "carpool.taxiAnswer":
     "Nei. Bílstjórar bjóða sæti í ferð sem þeir fara hvort sem er og PuffinRide kemur þeim í samband við fólk sem er að fara sömu leið.",
@@ -81,6 +86,46 @@ export const is = {
   "about.contact": "Spurningar eða hugmyndir? Skrifaðu okkur, á íslensku eða ensku.",
   "about.facebook": "PuffinRide á Facebook",
   "about.instagram": "PuffinRide á Instagram",
+  // The account deletion page (spec 32, section 5), for Google Play and everyone.
+  "deleteAccount.link": "Eyða aðganginum",
+  "deleteAccount.title": "Eyða PuffinRide-aðgangi",
+  "deleteAccount.intro":
+    "Þú getur eytt PuffinRide-aðganginum þínum hvenær sem er, í PuffinRide-appinu eða á puffinride.is, og enginn þarf að samþykkja það. Hér sérðu hvernig, og hvað verður um gögnin þín.",
+  "deleteAccount.howTitle": "Svona eyðir þú aðganginum",
+  "deleteAccount.step1": "Skráðu þig inn í PuffinRide, í appinu eða á puffinride.is.",
+  "deleteAccount.step2": "Opnaðu „{profile}“ og svo „{privacy}“.",
+  "deleteAccount.step3":
+    "Veldu „{delete}“. Ef þú átt ferðir, bókanir eða beiðnir fram undan sérðu þær þar og hættir fyrst við þær.",
+  "deleteAccount.step4": "Staðfestu að þetta sért þú með kóðanum sem við sendum þér.",
+  "deleteAccount.afterTitle": "Hvað gerist svo",
+  "deleteAccount.after":
+    "Innskráningu á öllum tækjum lýkur strax og enginn sér prófílinn þinn eða ferðirnar þínar lengur. Við eyðum gögnunum þínum 7 dögum síðar. Þangað til getur þú skráð þig inn og haldið aðganginum eins og hann var.",
+  "deleteAccount.erasedTitle": "Það sem við eyðum",
+  "deleteAccount.erasedProfile":
+    "Prófílnum þínum: fornafni, mynd, lýsingu og tungumálum, og umsögnum um þig.",
+  "deleteAccount.erasedSignIn":
+    "Netfanginu, símanúmerinu, lykilorðinu, innskráningu með Face ID eða fingrafari og tækjunum sem þú skráðir þig inn á.",
+  "deleteAccount.erasedRest":
+    "Stillingunum þínum, tilkynningum til þín, bílum sem engin ferð notaði, og skrá með gögnunum þínum ef þú baðst um hana.",
+  "deleteAccount.erasedMessages":
+    "Skilaboðunum sem þú sendir. Viðtakendur sjá „Skilaboðum eytt“ í staðinn.",
+  "deleteAccount.keptTitle": "Það sem við geymum, og hve lengi",
+  "deleteAccount.keptTrips":
+    "Fyrri ferðir þínar og bókanir, og tegund, gerð og litur bílanna sem þær notuðu, án nafnsins þíns, athugasemda eða bílnúmera, svo þau sem ferðuðust með þér haldi sinni sögu.",
+  "deleteAccount.keptReviews":
+    "Umsagnir sem þú skrifaðir, merktar sem skrifaðar af „fyrrverandi notanda“.",
+  "deleteAccount.keptReports":
+    "Tilkynningar til okkar sem þú sendir eða sem varða þig, og hvað við gerðum vegna þeirra, í 3 ár eftir að tilkynningu er lokið, öryggis allra vegna. Í samtali sem tilkynning nær til getum við lesið skilaboðin þín þangað til.",
+  "deleteAccount.keptRequests":
+    "Það sem þú spurðir okkur um gögnin þín, og svör okkar, í 3 ár eftir svarið.",
+  "deleteAccount.keptSuspended":
+    "Ef aðganginum þínum var lokað: tætigildi (hash) af símanúmerinu þínu, sem ekki er hægt að snúa til baka, þar til lokunin hefði runnið út og í mesta lagi í 3 ár, svo ekki sé hægt að skrá sig aftur með númerinu.",
+  "deleteAccount.keptLaw": "Það sem okkur ber að geyma samkvæmt lögum, eins lengi og lög krefjast.",
+  "deleteAccount.keptBackups":
+    "Eintök í öryggisafritum og tæknilegum skrám, sem hverfa innan 30 daga. Ef við endurheimtum einhvern tímann öryggisafrit eyðum við aðganginum þínum aftur.",
+  "deleteAccount.helpTitle": "Kemstu ekki inn?",
+  "deleteAccount.help":
+    "Prófaðu „Gleymdirðu lykilorðinu?“ eða kóða í tölvupósti á innskráningarsíðunni. Ef það gengur ekki, skrifaðu okkur frá netfanginu á aðganginum þínum og við svörum innan mánaðar.",
   "footer.label": "Um PuffinRide og skilmálana okkar",
   "footer.tagline": "Samakstur um allt Ísland",
   "footer.terms": "Skilmálar",
@@ -1430,6 +1475,10 @@ export const is = {
   "myRides.seatConfirmed": "Sæti staðfest",
   "ride.fromTo": "{from} → {to}",
   "ride.withStops": "{duration}, {count, plural, one {# stopp} other {# stopp}}",
+  "ride.route": "Leiðin",
+  "ride.routeMap": "Ferðin þín á korti af Íslandi: {route}.",
+  "ride.routeMapPart": "Ferðin á korti af Íslandi. Þinn hluti: {part}.",
+  "ride.routeMapTheirPart": "Ferðin á korti af Íslandi. Hluti farþegans: {part}.",
   "needs.answerOne": "{name} bíður svars",
   "needs.answerMany": "{count, plural, one {# beiðni bíður svars} other {# beiðnir bíða svars}}",
   "needs.asksFor": "{name} biður um {seats}",
@@ -1969,6 +2018,7 @@ export const is = {
   "export.section.trips_posted": "Ferðir sem þú birtir",
   "export.section.bookings": "Bókanir og beiðnir",
   "export.section.earlier_reviews": "Umsagnir um þig úr ferðum fyrir meira en 3 árum",
+  "export.section.co2_saved": "Minni losun CO2",
   "export.section.payments": "Greiðslur",
   "export.section.conversations": "Samtöl",
   "export.section.reports": "Tilkynningar sem þú sendir",
@@ -2053,6 +2103,12 @@ export const is = {
   "export.field.screenshot": "Skjámynd (skrá í þessari möppu)",
   "export.field.outcome": "Niðurstaða",
   "export.field.overruledAt": "PuffinRide lét hana telja",
+  "export.field.asDriver": "Sem bílstjóri",
+  "export.field.asPassenger": "Sem farþegi",
+  "export.field.carried": "Þar af úr ferðum fyrir meira en 3 árum",
+  "export.field.co2Grams": "Minni losun CO2, í grömmum (áætlað)",
+  "export.field.grams": "Minni losun CO2, í grömmum (áætlað)",
+  "export.field.rides": "Ferðir",
   "export.field.passengers": "Farþegar",
   "export.field.paymentDueAt": "Greiða fyrir",
   "export.field.paidHow": "Greitt",
@@ -2507,6 +2563,8 @@ export const is = {
   "admin.metrics.metric.money_refunded": "Endurgreitt til farþega",
   "admin.metrics.metric.active_drivers": "Bílstjórar með ferð",
   "admin.metrics.metric.active_passengers": "Farþegar með bókun",
+  "admin.metrics.metric.car_km_saved": "Eknir km sparaðir",
+  "admin.metrics.metric.co2_saved_grams": "Minni losun CO2 (kg)",
   "admin.announcements.title": "Tilkynningar",
   "admin.announcements.intro":
     "Fréttir af beta-prófuninni og þjónustunni, á íslensku og ensku, til þátttakenda sem hafa kveikt á fréttum af beta-prófuninni. Aldrei auglýsingar.",
@@ -2612,6 +2670,7 @@ export const is = {
   "admin.settings.group.booking": "Bókun og greiðsla",
   "admin.settings.group.changes": "Breytingar og afbókanir",
   "admin.settings.group.trip_day": "Ferðadagur og áreiðanleiki",
+  "admin.settings.group.co2": "CO2",
   "admin.settings.groupNote.terms":
     "Þessi gildi standa í notkunarskilmálunum. Birtu nýja skilmála með breytingu, annars ber skilmálunum og appinu ekki saman.",
   "admin.settings.group.switches": "Neyðarrofar",
@@ -2692,6 +2751,9 @@ export const is = {
   "admin.settings.name.reliability_watch_level": "Eftirlitsmörk",
   "admin.settings.help.reliability_watch_level":
     "Fólk með áreiðanleika undir þessu er talið upp fyrir þig á síðunni Áreiðanleiki. Enginn er settur í bann sjálfkrafa.",
+  "admin.settings.name.co2_grams_per_car_km": "CO2 á ekinn km",
+  "admin.settings.help.co2_grams_per_car_km":
+    "Losun CO2 meðalbíls á Íslandi á kílómetra, fyrir tölur um minni losun. Farðu yfir hana á hverju hausti. 0 felur allar tölurnar.",
   "admin.settings.on": "Kveikt",
   "admin.settings.off": "Slökkt",
   "admin.settings.unit.people": "{count, plural, one {{value} manneskja} other {{value} manns}}",
@@ -2709,6 +2771,8 @@ export const is = {
   "admin.settings.newValue.records": "Nýtt gildi, fjöldi ferða og bókana",
   "admin.settings.unit.seats": "{count, plural, one {{value} sæti} other {{value} sæti}}",
   "admin.settings.newValue.seats": "Nýtt gildi, fjöldi sæta",
+  "admin.settings.unit.g_per_km": "{value} g á km",
+  "admin.settings.newValue.g_per_km": "Nýtt gildi, í g á km",
   "admin.settings.unit.minutes": "{count, plural, one {{value} mínúta} other {{value} mínútur}}",
   "admin.settings.newValue.minutes": "Nýtt gildi, í mínútum",
   "admin.settings.unit.hours":
@@ -3690,4 +3754,29 @@ export const is = {
   "admin.meetingPoint.photoIssue.metadata":
     "Myndin ber enn önnur gögn en myndina sjálfa. Prófaðu annan vafra.",
   "admin.meetingPoint.photoIssue.tooLarge": "Myndin er of stór, jafnvel minnkuð. Veldu minni mynd.",
+  // The CO2 a shared ride saves (spec 34, section 8).
+  "about.co2Title": "Hvað sparast með samferð",
+  "about.co2Method":
+    "Þegar þú ferð með öðrum er einum bíl færra á veginum þinn hluta leiðarinnar. Við áætlum hve mikil losun CO₂ sparast út frá vegalengd þíns hluta og losun meðalbíls á Íslandi: {grams}\u00a0g á hvern kílómetra.",
+  "about.co2Example":
+    "Frá Reykjavík til Akureyrar eru um 390\u00a0km, svo farþegi sparar um {kg}\u00a0kg af CO₂ miðað við að aka einn.",
+  "about.co2Source":
+    "Talan {grams}\u00a0g byggir á losunarstuðlum Umhverfis- og orkustofnunar fyrir fólksbíla (208\u00a0g á km fyrir bensín, 191 fyrir dísil, 136 fyrir tvinnbíl og nánast ekkert fyrir rafbíl), vegnum eftir því hve langt bílar hér aka á hverju. Við förum yfir hana einu sinni á ári.",
+  "about.co2Limits":
+    "Þetta eru áætlanir. Tveir sem bóka saman teljast einn bíll. Sá sem hefði annars tekið strætó, eða setið heima, sparar minna. Þínar eigin tölur eru á prófílnum þínum og aðeins þú sérð þær.",
+  "co2.title": "Minni losun CO₂",
+  "co2.value": "Um {kg}\u00a0kg, áætlað",
+  "co2.spoken": "Minni losun CO2, um {kg} {count, plural, other {kíló}}, áætlað",
+  "co2.part":
+    "Einum bíl færra á veginum í {km}\u00a0km: um {kg}\u00a0kg minni losun CO₂ en að aka einn.",
+  "co2.driver":
+    "{passengers, plural, one {Farþeginn þinn fer} other {Farþegarnir þínir fara}} {km}\u00a0km með þér í stað þess að aka {passengers, plural, one {sjálfur} other {sjálfir}}: um {kg}\u00a0kg minni losun CO₂ en að aka einn.",
+  "co2.how": "Áætlað út frá vegalengdinni og meðalbíl á Íslandi.",
+  "co2.link": "Svona áætlum við",
+  "co2.group": "Ferðirnar þínar",
+  "co2.asPassenger": "Sem farþegi: {kg}\u00a0kg í {rides, plural, one {# ferð} other {# ferðum}}.",
+  "co2.asDriver":
+    "Sem bílstjóri: {kg}\u00a0kg með {passengers} farþega í {rides, plural, one {# ferð} other {# ferðum}}.",
+  "co2.compared": "Alltaf miðað við að aka einn.",
+  "co2.onlyYou": "Aðeins þú sérð þetta.",
 } as const satisfies Record<MessageKey, string>;

@@ -97,3 +97,15 @@ export const notWhileDeleting = [
   // Signed out, it asks to sign in first.
   "meeting-points/[id]/problem",
 ] as const;
+
+/**
+ * Screens that go back only for a swipe from the left edge on an iPhone,
+ * not from anywhere on the screen as iOS 26 does by itself: a finger
+ * sliding the price level's handle to the right would go back a step. The
+ * pages that show the price level (`PriceCard`) are here, and a test fails
+ * for one that is not.
+ */
+export const swipeBackFromEdgeOnly = [
+  "drive/trips/[id]/price",
+  "drive/trips/[id]/edit/price",
+] as const;

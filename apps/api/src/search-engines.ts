@@ -4,13 +4,17 @@
 import { schema, type Database } from "@shareride/db";
 import { legalDocumentTypes } from "@shareride/domain";
 import {
+  aboutCo2Values,
   aboutPage,
   carpoolPage,
   createTranslator,
+  deleteAccountPage,
+  deleteAccountSteps,
   isLocale,
   locales,
   pageText,
   pickLocale,
+  socialProfiles,
   type Locale,
   type MessageKey,
   type PublicPage,
@@ -36,6 +40,7 @@ const indexablePaths: readonly RegExp[] = [
   /^\/$/,
   /^\/carpool-iceland$/,
   /^\/about$/,
+  /^\/delete-account$/,
   /^\/meeting-points$/,
   /^\/meeting-points\/[^/]+$/,
   /^\/places\/[^/]+$/,
@@ -142,6 +147,7 @@ export async function publicPages(db: Database): Promise<string[]> {
     "/",
     carpoolPage.path,
     aboutPage.path,
+    deleteAccountPage.path,
     "/meeting-points",
     ...points.map(({ id }) => `/meeting-points/${id}`),
     ...placeRows.map(({ id }) => `/places/${id}`),
@@ -212,6 +218,7 @@ function publicPageOf(path: string, subject: PageSubject | undefined, locale: Lo
   }
   if (path === carpoolPage.path) return { kind: "carpool" };
   if (path === aboutPage.path) return { kind: "about" };
+  if (path === deleteAccountPage.path) return { kind: "deleteAccount" };
   return path === "/meeting-points" ? { kind: "meetingPoints" } : { kind: "find" };
 }
 
@@ -245,8 +252,9 @@ export interface PageHead {
   /** The page's text for search engines that do not run the app, where it has one (3.9). */
   readonly noscript: string | null;
   /**
-   * On the front page, the site's name for Google, which shows it above a
-   * result (3.6, item 7): WebSite structured data, unmarked, so the app keeps it.
+   * On the front page, who we are for Google (3.6, items 7 and 8): the
+   * site's name, which it shows above a result, and PuffinRide with its
+   * pages elsewhere, as structured data, unmarked, so the app keeps it.
    */
   readonly website: string | null;
 }
@@ -289,6 +297,8 @@ export function pageHead(
   engines: SearchEngines,
   subject?: PageSubject,
   ride?: Ride,
+  /** The operator's grams of CO2 per car km, for About's section; 0 leaves it out (spec 34, 3.9). */
+  gramsPerCarKm = 0,
 ): PageHead {
   const named = request.lang !== null && isLocale(request.lang) ? request.lang : null;
   const locale =
@@ -345,24 +355,52 @@ export function pageHead(
     request.path === carpoolPage.path
       ? carpoolText(t, address)
       : request.path === aboutPage.path
-        ? aboutText(t, address)
-        : null;
-  const website =
-    origin !== null && request.path === "/" ? websiteData(t("app.name"), `${origin}/`) : null;
+        ? aboutText(t, address, gramsPerCarKm, locale)
+        : request.path === deleteAccountPage.path
+          ? deleteAccountText(t, address)
+          : null;
+  const website = origin !== null && request.path === "/" ? siteData(t, origin) : null;
   return { locale, fromBrowser: named === null, title, tags: tags.join(""), noscript, website };
 }
 
+/** How people also write our name, with a space (3.6, item 8). */
+const alternateName = "Puffin Ride";
+
 /**
- * The site's name as Google reads it from the home page (3.6, item 7), so a
- * result shows "PuffinRide" rather than the address. `<` is written as
- * `\u003c`, so nothing in it can close the script.
+ * Who we are, as Google reads it from the home page (3.6, items 7 and 8):
+ * the site, with its name and the other way people write it, which Google
+ * shows above a result; and PuffinRide itself, with its logo, what it is in
+ * the About page's words, the address that receives mail, and our Facebook
+ * and Instagram pages, which tie those to us. `<` is written as `\u003c`,
+ * so nothing in it can close the script.
  */
-function websiteData(name: string, url: string): string {
+function siteData(t: Translate, origin: string): string {
+  const home = `${origin}/`;
+  const organization = `${home}#organization`;
   const data = JSON.stringify({
     "@context": "https://schema.org",
-    "@type": "WebSite",
-    name,
-    url,
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": `${home}#website`,
+        name: t("app.name"),
+        alternateName,
+        url: home,
+        inLanguage: locales,
+        publisher: { "@id": organization },
+      },
+      {
+        "@type": "Organization",
+        "@id": organization,
+        name: t("app.name"),
+        alternateName,
+        url: home,
+        logo: `${origin}/icon-192.png`,
+        description: t("about.intro"),
+        email: aboutPage.email,
+        sameAs: [socialProfiles.facebook, socialProfiles.instagram],
+      },
+    ],
   }).replaceAll("<", "\\u003c");
   return `<script type="application/ld+json">${data}</script>`;
 }
@@ -397,9 +435,16 @@ function carpoolText(t: Translate, address: (path: string) => string): string {
 
 /**
  * About's text as HTML (spec 30, 3.4), from the texts the screen shows; its
- * links keep the language the address named.
+ * links keep the language the address named. What a shared ride saves
+ * (spec 34, 3.9) follows How it works, with the operator's value, unless the
+ * setting is 0.
  */
-function aboutText(t: Translate, address: (path: string) => string): string {
+function aboutText(
+  t: Translate,
+  address: (path: string) => string,
+  gramsPerCarKm: number,
+  locale: Locale,
+): string {
   const link = (href: string, label: string) =>
     `<a href="${escapeHtml(href)}">${escapeHtml(label)}</a>`;
   const paragraph = (text: string) => `<p>${text}</p>`;
@@ -409,15 +454,66 @@ function aboutText(t: Translate, address: (path: string) => string): string {
     `<h1>${escapeHtml(t(aboutPage.title))}</h1>`,
     ...aboutPage.intro.map((key) => paragraph(escapeHtml(t(key)))),
     paragraph(link(address(aboutPage.howItWorks.href), t(aboutPage.howItWorks.label))),
+    ...(gramsPerCarKm > 0 ? co2Text(t, gramsPerCarKm, locale) : []),
     heading(aboutPage.documentsTitle),
     `<ul>${aboutPage.documents
       .map((document) => `<li>${link(address(document.href), t(document.label))}</li>`)
       .join("")}</ul>`,
+    paragraph(link(address(aboutPage.deleteAccount.href), t(aboutPage.deleteAccount.label))),
     heading(aboutPage.operatorTitle),
     paragraph(escapeHtml(t(aboutPage.operator))),
     heading(aboutPage.contactTitle),
     paragraph(escapeHtml(t(aboutPage.contact))),
     paragraph(link(`mailto:${aboutPage.email}`, aboutPage.email)),
+    "</main>",
+  ].join("");
+}
+
+/** About's section on the CO2 a shared ride saves, anchored for "How we estimate it". */
+function co2Text(t: Translate, gramsPerCarKm: number, locale: Locale): string[] {
+  const values = aboutCo2Values(gramsPerCarKm, locale);
+  return [
+    `<h2 id="co2">${escapeHtml(t(aboutPage.co2.title))}</h2>`,
+    ...aboutPage.co2.paragraphs.map((key) => `<p>${escapeHtml(t(key, values))}</p>`),
+  ];
+}
+
+/**
+ * The account deletion page's text as HTML (spec 32, section 5), from the
+ * texts the screen shows: Google Play's check reads it without running the
+ * app. Its links keep the language the address named.
+ */
+function deleteAccountText(t: Translate, address: (path: string) => string): string {
+  const link = (href: string, label: string) =>
+    `<a href="${escapeHtml(href)}">${escapeHtml(label)}</a>`;
+  const paragraph = (text: string) => `<p>${text}</p>`;
+  const heading = (key: MessageKey) => `<h2>${escapeHtml(t(key))}</h2>`;
+  const list = (tag: "ol" | "ul", items: readonly string[]) =>
+    `<${tag}>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</${tag}>`;
+  const page = deleteAccountPage;
+  return [
+    "<main>",
+    `<h1>${escapeHtml(t(page.title))}</h1>`,
+    paragraph(escapeHtml(t(page.intro))),
+    heading(page.howTitle),
+    list("ol", deleteAccountSteps(t)),
+    paragraph(link(address("/sign-in"), t("auth.signIn"))),
+    heading(page.afterTitle),
+    paragraph(escapeHtml(t(page.after))),
+    heading(page.erasedTitle),
+    list(
+      "ul",
+      page.erased.map((key) => t(key)),
+    ),
+    heading(page.keptTitle),
+    list(
+      "ul",
+      page.kept.map((key) => t(key)),
+    ),
+    heading(page.helpTitle),
+    paragraph(escapeHtml(t(page.help))),
+    paragraph(link(`mailto:${page.email}`, page.email)),
+    paragraph(link(address(page.privacyPolicy.href), t(page.privacyPolicy.label))),
     "</main>",
   ].join("");
 }

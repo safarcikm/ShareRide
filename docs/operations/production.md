@@ -186,7 +186,14 @@ after the release that brings one, open the console, **Announcements**,
 and send one that says what changed, in both languages. For the Terms'
 version 3 and the Privacy Policy's version 4 (2026-11-27): the texts name
 the pages in Profile where they said "in Settings", and the Privacy
-Policy says what the phone apps add.
+Policy says what the phone apps add. For the Terms' version 4 and the
+Privacy Policy's version 5 (2026-11-28): the texts say how people sign in
+now (a code by email, Google or Apple, a password, Face ID or
+fingerprint; a text message only checks a phone number), and the Privacy
+Policy says what is kept of a password and of Face ID or fingerprint. One announcement can
+say both changes if neither was announced yet. The texts to paste, in
+both languages, are kept in
+[announcements of changed legal texts](../compliance/legal-texts/announcements.md).
 
 ## Roll back
 

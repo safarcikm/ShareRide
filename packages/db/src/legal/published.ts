@@ -131,6 +131,45 @@ export const publishedVersions: readonly PublishedVersion[] = [
       is: "4aafc96a7dc40388e20ef67746347aa5eea74b21f80247a6883da66c004e2d77",
     },
   },
+  {
+    // How people sign in since specs 26 and 27: a code by email, Google or
+    // Apple, a password, Face ID or fingerprint, and a text message only
+    // to check a phone number. The terms said "a code sent to your phone".
+    // Not material: no rule changes and no new duty (3.2 still asks people
+    // to keep the phone and the sign-in methods secure, as version 3 did);
+    // the text catches up with the app.
+    type: "terms",
+    version: 4,
+    material: false,
+    title: { en: "Terms of Service", is: "Notendaskilmálar" },
+    summary: {
+      en: "The terms say how you sign in now: with a code by email, with Google or Apple, with a password or with Face ID or fingerprint. A text message checks your phone number and never signs you in by itself. Nothing else changed.",
+      is: "Skilmálarnir segja nú hvernig þú skráir þig inn: með kóða í tölvupósti, með Google eða Apple, með lykilorði eða með Face ID eða fingrafari. SMS staðfestir símanúmerið þitt og skráir þig aldrei inn eitt og sér. Annað breyttist ekki.",
+    },
+    sha256: {
+      en: "7bc2e0413ad8f434c5b0ea78b0ecac14e1e44c7a05b0b4211ff61106b61689ba",
+      is: "f81a4853b850895f6ee2a0b38c90f8ce06173098b618361acbfe8cde52c77f24",
+    },
+  },
+  {
+    // The same for the Privacy Policy, with what is kept of a password
+    // (a hash, never the password) and of Face ID or fingerprint (a
+    // passkey's public key, never anything biometric), specs 26, 27 and
+    // 29. Not material: the register already lists it, and nobody has to
+    // accept anything new.
+    type: "privacy",
+    version: 5,
+    material: false,
+    title: { en: "Privacy Policy", is: "Persónuverndarstefna" },
+    summary: {
+      en: "It says what we keep if you set a password (never the password itself) or set up Face ID or fingerprint (a passkey's public key, never your face or fingerprint), that we may ask your browser to save such a passkey after you sign in with a password, and where you remove them. It also says which codes come by email and which by text message, and that the record of an ended sign-in is kept 30 days.",
+      is: "Hún segir hvað við geymum ef þú velur þér lykilorð (aldrei lykilorðið sjálft) eða setur upp Face ID eða fingrafar (opinberan lykil aðgangslykils, aldrei andlit þitt eða fingrafar), að við getum beðið vafrann þinn að vista slíkan aðgangslykil eftir að þú skráir þig inn með lykilorði, og hvar þú fjarlægir þau. Hún segir einnig hvaða kóðar koma í tölvupósti og hvaða með SMS, og að skrá um innskráningu sem er lokið er geymd í 30 daga.",
+    },
+    sha256: {
+      en: "ca51eec2a3234d0abeb408da37313f754e6847ced007a94831f2cf8850f7d959",
+      is: "8d280e26fd747e61fbc6083f2d9ebbeba22ab03f2d05b057ac05c39410f8136b",
+    },
+  },
 ];
 
 /** A version ready to store, its texts read and checked. */

@@ -11,6 +11,7 @@ import {
   tripStatuses,
 } from "@shareride/domain";
 import { z } from "zod";
+import { co2RideFigureSchema } from "./co2.ts";
 import { moneySchema, timestampSchema } from "./common.ts";
 import { accountSuspendedResponse, errorResponseSchema } from "./errors.ts";
 import { dateSchema, localisedTextSchema, meetingPointSummarySchema } from "./meeting-points.ts";
@@ -323,6 +324,12 @@ export const myTripSchema = z.object({
       countsOnReliability: z.boolean(),
     })
     .nullable(),
+  /**
+   * The CO2 the ride's confirmed and completed bookings save, one car each
+   * (spec 34, 3.7); null with none, while the operator's value is 0, and
+   * from an API that does not say.
+   */
+  co2: co2RideFigureSchema.nullable().default(null),
 });
 
 export type MyTrip = z.infer<typeof myTripSchema>;

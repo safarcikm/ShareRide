@@ -7,6 +7,7 @@ import { LanguageProvider } from "@/i18n/language";
 import { renderApp } from "@/testing/app";
 import type * as TestApp from "@/testing/app";
 import { filledButtons } from "@/testing/buttons";
+import { edgeUnder } from "@/testing/lift";
 import { colors } from "@/theme/tokens";
 import { BackButton } from "./back-button";
 import { IconButton } from "./icon-button";
@@ -37,21 +38,19 @@ describe("BackButton", () => {
   it("is a round icon button with a chunky edge and the name Back", async () => {
     await renderApp("/coming-soon");
     const back = await screen.findByRole("button", { name: "Back" });
-    expect(back).toHaveStyle({
-      width: 44,
-      height: 44,
-      borderRadius: 999,
-      borderBottomWidth: 3,
-      borderBottomColor: colors.light.edge,
+    expect(back).toHaveStyle({ width: 44, height: 44, borderRadius: 999, paddingBottom: 3 });
+    expect(screen.getByTestId("back-face")).toHaveStyle({
+      backgroundColor: colors.light.surface,
+      ...edgeUnder(3, colors.light.edge),
     });
-    expect(screen.getByTestId("back-face")).toHaveStyle({ backgroundColor: colors.light.surface });
     expect(screen.queryByText("Back")).toBeNull();
   });
 
   it("is quiet in a bar that stays: no face and no edge, in its 44 button (spec 31, 3.13)", async () => {
     await render(<BackButton quiet />, { wrapper: LanguageProvider });
     const back = await screen.findByRole("button", { name: "Back" });
-    expect(back).toHaveStyle({ width: 44, height: 44, borderBottomWidth: 0 });
+    expect(back).toHaveStyle({ width: 44, height: 44 });
+    expect(back).not.toHaveStyle({ paddingBottom: 3 });
     expect(screen.getByTestId("back-face")).toHaveStyle({ width: 36, height: 36 });
     expect(screen.getByTestId("back-face")).not.toHaveStyle({
       backgroundColor: colors.light.surface,
@@ -70,14 +69,11 @@ describe("IconButton", () => {
       <IconButton filled icon={Send} label="Send" faceTestID="face" onPress={onPress} />,
     );
     const send = screen.getByRole("button", { name: "Send" });
-    expect(send).toHaveStyle({
-      width: 52,
-      height: 52,
-      borderRadius: 999,
-      borderBottomWidth: 4,
-      borderBottomColor: colors.light.primaryEdge,
+    expect(send).toHaveStyle({ width: 52, height: 52, borderRadius: 999, paddingBottom: 4 });
+    expect(screen.getByTestId("face")).toHaveStyle({
+      backgroundColor: colors.light.primary,
+      ...edgeUnder(4, colors.light.primaryEdge),
     });
-    expect(screen.getByTestId("face")).toHaveStyle({ backgroundColor: colors.light.primary });
     // Counted as the screen's one filled button (R31.1).
     expect(filledButtons()).toBe(1);
     await fireEvent.press(send);

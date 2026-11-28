@@ -1,11 +1,10 @@
-/**
- * PuffinRide's own Facebook Page (spec 28, 3.6): one place to change when
- * the Page gets its short name.
- */
-export const puffinRideFacebookPage = "https://www.facebook.com/profile.php?id=61597055066444";
+import { socialProfiles } from "@shareride/i18n";
+
+/** PuffinRide's own Facebook Page (spec 28, 3.6), as the server names it to Google too. */
+export const puffinRideFacebookPage = socialProfiles.facebook;
 
 /** PuffinRide on Instagram, @puffinride.is (spec 30, 3.1). */
-export const puffinRideInstagram = "https://www.instagram.com/puffinride.is/";
+export const puffinRideInstagram = socialProfiles.instagram;
 
 /**
  * Facebook's share window for a link (spec 28, 3.3): the person picks their

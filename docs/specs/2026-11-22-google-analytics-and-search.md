@@ -134,6 +134,7 @@ Only production's public pages that hold no person's data (R23.6):
 | A meeting point                | `/meeting-points/<id>`, each active one                              |
 | A place and its nearest points | `/places/<id>`, each place                                           |
 | About (spec 30)                | `/about`                                                             |
+| Delete your account (spec 32)  | `/delete-account`                                                    |
 | The legal documents            | `/legal/terms`, `/legal/community-rules`, `/legal/privacy`           |
 | Cookies                        | `/cookies`                                                           |
 
@@ -220,7 +221,35 @@ lists both (decision 7).
    a site's home page to name it, beside the title and `og:site_name` that
    already say PuffinRide. It is not marked for the app's head, so the app
    keeps it. Google changes the name and the icon at its next crawl of the
-   front page, which can take days to weeks.
+   front page, which can take days to weeks. Since 2026-11-28 it is one
+   part of the data of item 8.
+8. **Who we are** (added 2026-11-28, Martin: "if I google puffin ride, why
+   isn't it first", and he would like Google's AI Overview to describe
+   us). The front page's structured data is a `@graph` of two:
+   - the **WebSite** of item 7, with `alternateName` "Puffin Ride", how
+     people also write our name, `inLanguage` Icelandic and English, and
+     PuffinRide as its publisher;
+   - PuffinRide as an **Organization**: its name and "Puffin Ride", the
+     home address, `/icon-192.png` as its logo, what it is in the About
+     page's first sentence (in the page's language), `admin@puffinride.is`,
+     and `sameAs` our Facebook Page and Instagram profile, which tell
+     Google those pages are ours. The two addresses live in one place,
+     `socialProfiles` in `@shareride/i18n`, which the app's links use too.
+
+   No founder, street address or kennitala: the About page and the Terms
+   say who runs PuffinRide, and the company is not registered yet.
+
+   What this can and cannot do, as told to Martin: "puffin ride", two
+   words, is what people type for puffin-watching tours, which sites with
+   years of links and reviews hold, so Google reads the two words as
+   that. The data tells Google that PuffinRide, also written Puffin Ride,
+   is a site and an organization with these pages; it does not move a
+   ranking by itself. "puffinride", one word, is ours alone. An AI Overview
+   is Google's choice, made from pages that already rank for the question;
+   nobody can ask for one. What helps is plain sentences that say what we
+   are (3.9, "What is PuffinRide?") and other sites that mention us.
+   We add no `llms.txt`: Google has said its search and AI Overviews do not
+   read one.
 
 ### 3.7 robots.txt and the sitemap
 
@@ -266,8 +295,10 @@ is and how carpooling with it works, for people who search for it:
    words (Reykjavík to Akureyri, Selfoss, Borgarnes, Vík, Egilsstaðir, and
    from Keflavík Airport), trust (a checked phone number, drivers' photos,
    reviews after each trip, a link to the community rules) and a few
-   questions: is it a taxi (no: drivers share a trip they are making
-   anyway), what samferða means, and is it in English.
+   questions: what PuffinRide is (added 2026-11-28, 3.6, item 8: one
+   paragraph that says it whole, so an answer can quote it, with our name
+   also written Puffin Ride in English), is it a taxi (no: drivers share a
+   trip they are making anyway), what samferða means, and is it in English.
 3. Nothing about money: no prices, payments or fees (Martin's rule for
    marketing texts).
 4. Find links to it ("How carpooling works") beside "See the meeting

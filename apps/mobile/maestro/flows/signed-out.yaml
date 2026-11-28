@@ -1,6 +1,8 @@
 # Find, the front page, for someone who has not signed in, then Profile.
 appId: ${APP_ID}
 name: Signed out
+onFlowStart:
+  - runFlow: ../helpers/close-stuck-box.yaml
 ---
 - launchApp:
     clearState: true

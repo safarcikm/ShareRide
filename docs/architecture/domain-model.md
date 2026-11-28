@@ -207,6 +207,7 @@ car or stop.
 | `requested_at`, `decided_at`, `expires_at`, `payment_due_at` | A request's deadline (R5.5) and an accepted booking's payment deadline (rule M1) |
 | `confirmed_at`, `expired_at` | When it was paid (or, when free, accepted) and when a deadline passed |
 | `completed_at` | When its trip completed with it ([spec 8, R8.2](../specs/2026-11-13-trip-day-reviews-and-reliability.md#36-trip-completion-e4)): reviews count from this moment |
+| `co2_grams` | The CO2 its part saved, one car not driven whatever its seats, at the operator's `co2_grams_per_car_km` in force when it completed; set with `completed`, null in every other status ([spec 34](../specs/2026-11-28-co2-saved.md), R34.1 to R34.3, [ADR 0054](../decisions/0054-estimate-co2-saved-as-one-car-not-driven.md)) |
 | `party_confirmed_at` | The passenger confirmed that everyone in a booking of more than one seat on a women-only trip can join |
 | `message`, `decline_reason`, `attempt_key` | Request note, reason seen only by the operator, idempotency key ([spec 5](../specs/2026-11-13-booking-and-requests.md#6-data-and-api)) |
 | `cancelled_by`, `cancel_reason`, `cancel_note`, `cancelled_at` | Reasons from a fixed list, including `weather`, `road_closed` and `plans_changed`; the note, up to 500 characters without contact details, only from a driver. A request declined because the driver cancelled the trip keeps `driver`, the trip's reason and its note |
@@ -333,6 +334,15 @@ detailed in [spec 13](../specs/2026-11-13-payments.md#6-data-and-api):
   and waiting sign-in are kept; the row is deleted when used, cancelled or
   failed, and the hourly clean-up deletes the rest an hour after they end
   ([plan 4.1](../plans/2026-11-22-google-and-apple-sign-in.md#4-design)).
+- `Co2Carried` (table `co2_carried`): a member's CO2 totals from their
+  trips made anonymous 3 years after: grams and rides as a passenger, and
+  grams, trips and passengers as a driver. What a trip's completed bookings
+  saved is added here, to the nearest whole kilogram, in the same
+  transaction that moves its records to the former member, so the member's
+  totals stay; it keeps only the month it last changed; one row per member, never
+  for the former member, erased with the account
+  ([spec 34, 3.11](../specs/2026-11-28-co2-saved.md),
+  [ADR 0054](../decisions/0054-estimate-co2-saved-as-one-car-not-driven.md)).
 - `MemberPassword` (table `member_passwords`): a member's optional
   password, as a scrypt hash with its settings and salt, and when it was
   set; one per account, which needs a verified email

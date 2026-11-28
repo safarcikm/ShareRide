@@ -1,6 +1,7 @@
 import type { Booking, CancellationPreview, TripBookings } from "@shareride/contracts";
 import { schema, type Database } from "@shareride/db";
 import {
+  bookingCo2,
   arrivalOf,
   bookingClosedTo,
   bookingProblemReportable,
@@ -48,7 +49,7 @@ import {
   type TripDaySettings,
   type TripStatus,
 } from "@shareride/domain";
-import { and, asc, eq, inArray, ne, type SQL } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, ne, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import type { AccountService } from "../account/index.ts";
 import { checkStanding, lockActive } from "../account/standing.ts";
@@ -62,6 +63,7 @@ import {
 } from "./cancel-trip.ts";
 import { bookingConfirmed } from "./confirmed.ts";
 import { toSummary } from "../meeting-points/service.ts";
+import { defaultCo2Settings, partDistanceSql, type Co2SettingsSource } from "../co2/figures.ts";
 import { recordEvents } from "../notifications/outbox.ts";
 import type { PhotoStorage } from "../../platform/photo-storage.ts";
 import { photoLinkOf } from "../people/photos.ts";
@@ -269,12 +271,43 @@ const passengerOf = (row: Row) => ({
   ...row.passengerPhoto,
 });
 
+/** The stops of these trips that are on them now, each trip's in order (spec 6, 3.2). */
+async function liveStopsOf(q: Queryable, tripIds: readonly string[]) {
+  if (tripIds.length === 0) return [];
+  return q
+    .select({
+      id: tripStops.id,
+      tripId: tripStops.tripId,
+      at: meetingPoints.location,
+    })
+    .from(tripStops)
+    .innerJoin(meetingPoints, eq(meetingPoints.id, tripStops.meetingPointId))
+    .where(and(inArray(tripStops.tripId, [...tripIds]), isNull(tripStops.removedAt)))
+    .orderBy(asc(tripStops.tripId), asc(tripStops.position));
+}
+
+/**
+ * The trip on a map (spec 31, 3.8): its stops in order, with the part from
+ * `boardId` to `alightId` as places among them; null when either is no
+ * longer on the trip.
+ */
+function routeOf(
+  stops: Awaited<ReturnType<typeof liveStopsOf>>,
+  boardId: string,
+  alightId: string,
+): Booking["route"] {
+  const board = stops.findIndex((stop) => stop.id === boardId);
+  const alight = stops.findIndex((stop) => stop.id === alightId);
+  if (board < 0 || alight <= board) return null;
+  return { stops: stops.map((stop) => stop.at), board, alight };
+}
+
 /**
  * Bookings with everything their passenger or driver sees, oldest first,
  * each with its trip's moves, new cars and stops added or removed since it
- * was made (spec 6, 3.2), "I'm here" at its boarding stop (spec 8, 3.2),
- * its report, if any (3.3 to 3.5), and both people's profile, standing
- * (spec 5, 3.3.2) and photo (spec 1, 3.5).
+ * was made (spec 6, 3.2), its trip on a map (spec 31, 3.8), "I'm here" at
+ * its boarding stop (spec 8, 3.2), its report, if any (3.3 to 3.5), and
+ * both people's profile, standing (spec 5, 3.3.2) and photo (spec 1, 3.5).
  */
 async function readBookings(
   q: Queryable,
@@ -287,7 +320,7 @@ async function readBookings(
   const tripIds = [...new Set(rows.map((row) => row.trip.id))];
   const people = rows.flatMap((row) => [driverOf(row), passengerOf(row)]);
   const linkOf = photoLinkOf(photos, now);
-  const [changes, checkIns, reports, written, standingOf, photoLinks] = await Promise.all([
+  const [changes, stops, checkIns, reports, written, standingOf, photoLinks] = await Promise.all([
     tripIds.length === 0
       ? []
       : q
@@ -295,6 +328,7 @@ async function readBookings(
           .from(tripChanges)
           .where(and(inArray(tripChanges.tripId, tripIds), inArray(tripChanges.kind, toldKinds)))
           .orderBy(asc(tripChanges.changedAt), asc(tripChanges.id)),
+    liveStopsOf(q, tripIds),
     checkInsAt(
       q,
       rows.map((row) => row.boardStop.id),
@@ -336,6 +370,11 @@ async function readBookings(
       passengerStanding: standing(passengerOf(row), photoLinks[2 * index + 1]),
       passengerCheckedInAt: passengerCheckedInAt(checkIns, row.booking.id),
       driverCheckedInAt: driverCheckedInAt(checkIns, row.boardStop.id),
+      route: routeOf(
+        stops.filter((stop) => stop.tripId === row.trip.id),
+        row.boardStop.id,
+        row.alightStop.id,
+      ),
       dispute: reports.find((report) => report.bookingId === row.booking.id) ?? null,
       reviews: written.filter((review) => review.bookingId === row.booking.id),
       // Made under the trip's lock, so one at the same moment came before the booking.
@@ -383,6 +422,7 @@ async function bookingRows(q: Queryable, where: SQL | undefined) {
       boardPoint: boardPoints,
       alightStop: alightStops,
       alightPoint: alightPoints,
+      partDistanceM: partDistanceSql(bookings.tripId, boardStops.position, alightStops.position),
     })
     .from(bookings)
     .innerJoin(trips, eq(trips.id, bookings.tripId))
@@ -500,6 +540,8 @@ function present(
   reviewSettings: ReviewSettings,
   /** The booking's own cancellation values (R10.3). */
   cancellation: CancellationSettings,
+  /** The CO2 value now (spec 34, 3.6). */
+  gramsPerCarKm: number,
 ): Booking {
   const { booking, trip, car } = row;
   const status = shownStatus(booking, now);
@@ -526,6 +568,9 @@ function present(
     trip: { id: trip.id, bookingMode: trip.bookingMode as BookingMode },
     board: stopOf(row.boardPoint, row.boardStop),
     alight: stopOf(row.alightPoint, row.alightStop),
+    // Only while the passenger rides with it, or rode: a booking that ended
+    // before its ride does not follow how the ride changes after (R9.4).
+    route: holdsSeats(status) || hasTripDay(status) ? row.route : null,
     seats: booking.seats,
     total: isk(booking.totalPrice),
     payment: methodOf(booking),
@@ -635,6 +680,14 @@ function present(
     tripDay: tripDayOf(row, status, now, settings),
     dispute: row.dispute === null ? null : shownDispute(row.dispute, lastStopOf(row), settings),
     review: shownReview(row.reviews, booking, status, viewerId, reviewSettings),
+    // The passenger's own figure; the driver's is on their ride (spec 34, 3.6).
+    co2:
+      viewer === "passenger"
+        ? bookingCo2(
+            { status, distanceM: row.partDistanceM, storedGrams: booking.co2Grams },
+            gramsPerCarKm,
+          )
+        : null,
   };
 }
 
@@ -656,6 +709,8 @@ export function createBookingService(dependencies: {
   readonly reliabilitySettings?: ReliabilitySettings;
   /** Where people's photos are kept; no photos when left out (spec 1, 3.5). */
   readonly photos?: PhotoStorage;
+  /** The CO2 value now (spec 34, 3.6); the starting value when left out. */
+  readonly co2Settings?: Co2SettingsSource;
 }): BookingService {
   const { db, clock, account, tripDaySettings } = dependencies;
   const ruleSettings = dependencies.settings;
@@ -663,6 +718,7 @@ export function createBookingService(dependencies: {
   const reviewSettings = dependencies.reviewSettings ?? defaultReviewSettings;
   const reliability = dependencies.reliabilitySettings ?? defaultReliabilitySettings;
   const { photos } = dependencies;
+  const co2Settings = dependencies.co2Settings ?? defaultCo2Settings;
 
   /** Bookings as their viewer sees them, each by its own cancellation values. */
   async function presentAll(rows: readonly BookingRow[], viewerId: string, now: Date) {
@@ -670,6 +726,7 @@ export function createBookingService(dependencies: {
       ruleSettings,
       rows.map((row) => row.booking.settingsVersion),
     );
+    const { gramsPerCarKm } = await co2Settings();
     return rows.map((row) =>
       present(
         row,
@@ -678,6 +735,7 @@ export function createBookingService(dependencies: {
         tripDaySettings,
         reviewSettings,
         cancellationOf(row.booking.settingsVersion),
+        gramsPerCarKm,
       ),
     );
   }
@@ -693,6 +751,7 @@ export function createBookingService(dependencies: {
       tripDaySettings,
       reviewSettings,
       await ruleSettings.cancellationAt(row.booking.settingsVersion),
+      (await co2Settings()).gramsPerCarKm,
     );
   }
 
