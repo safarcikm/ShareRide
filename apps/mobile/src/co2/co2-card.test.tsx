@@ -27,13 +27,13 @@ afterEach(() => {
 });
 
 const inApp = (ui: ReactElement) => render(<LanguageProvider>{ui}</LanguageProvider>);
-const line = "One car fewer on the road for 389 km.";
+const line = "One car fewer on the road for 389\u00a0km.";
 
 describe("Co2Card", () => {
   it("shows the kilograms, folded, and unfolds the lines and the link to the method", async () => {
     await inApp(<Co2Card grams={58_350} lines={[line]} />);
     expect(screen.getByText("CO₂ saved")).toBeTruthy();
-    expect(screen.getByText("About 58 kg, estimated")).toBeTruthy();
+    expect(screen.getByText("About 58\u00a0kg, estimated")).toBeTruthy();
     const row = screen.getByRole("button", { name: "CO2 saved, about 58 kilograms, estimated" });
     expect(row).not.toBeExpanded();
     expect(screen.queryByText(line)).toBeNull();
@@ -60,7 +60,7 @@ describe("Co2Card", () => {
     mockLanguage = "is-IS";
     await inApp(<Co2Card grams={58_350} lines={[]} />);
     expect(screen.getByText("Minni losun CO₂")).toBeTruthy();
-    expect(screen.getByText("Um 58 kg, áætlað")).toBeTruthy();
+    expect(screen.getByText("Um 58\u00a0kg, áætlað")).toBeTruthy();
     expect(
       screen.getByRole("button", { name: "Minni losun CO2, um 58 kíló, áætlað" }),
     ).toBeTruthy();

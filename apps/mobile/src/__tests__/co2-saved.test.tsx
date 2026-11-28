@@ -70,7 +70,7 @@ describe("a ride's details (spec 34, 3.5)", () => {
         tripDetailsApi(client, withCo2);
       },
     });
-    expect(await screen.findByText("About 58 kg, estimated")).toBeVisible();
+    expect(await screen.findByText("About 58\u00a0kg, estimated")).toBeVisible();
     expect(screen.getByText("CO₂ saved")).toBeVisible();
     expect(parts()).toEqual([
       "part-ticket",
@@ -83,7 +83,7 @@ describe("a ride's details (spec 34, 3.5)", () => {
     await fireEvent.press(row(58));
     expect(
       screen.getByText(
-        "One car fewer on the road for 389 km: about 58 kg less CO₂ than driving alone.",
+        "One car fewer on the road for 389\u00a0km: about 58\u00a0kg less CO₂ than driving alone.",
       ),
     ).toBeVisible();
     expect(screen.getByText(how)).toBeVisible();
@@ -97,15 +97,15 @@ describe("a ride's details (spec 34, 3.5)", () => {
       },
     });
     // Borgarnes to Blönduós, 170 km: 25.5 kg.
-    expect(await screen.findByText("About 25 kg, estimated")).toBeVisible();
+    expect(await screen.findByText("About 25\u00a0kg, estimated")).toBeVisible();
     await fireEvent.press(screen.getByRole("button", { name: "One seat more" }));
     expect(screen).toHaveSearchParams({ id, from: "1", to: "2", seats: "2" });
-    expect(await screen.findByText("About 25 kg, estimated")).toBeVisible();
+    expect(await screen.findByText("About 25\u00a0kg, estimated")).toBeVisible();
 
     await fireEvent.press(screen.getByRole("button", { name: "Change where you get out" }));
     await fireEvent.press(screen.getByRole("radio", { name: "14:00, Hof, Akureyri" }));
     // Borgarnes to Hof, 315 km: 47.25 kg.
-    expect(await screen.findByText("About 47 kg, estimated")).toBeVisible();
+    expect(await screen.findByText("About 47\u00a0kg, estimated")).toBeVisible();
   });
 
   it("show nothing for a cancelled ride, or without a figure", async () => {
@@ -154,7 +154,7 @@ describe("a booked seat (3.6)", () => {
 
   it("shows the estimate while confirmed, right before the rows", async () => {
     await open({ ...paidBooking, co2: figure });
-    expect(await screen.findByText("About 25 kg, estimated")).toBeVisible();
+    expect(await screen.findByText("About 25\u00a0kg, estimated")).toBeVisible();
     const order = screen
       .getAllByTestId(/^(co2-card|action-rows)$/)
       .map((part) => String(part.props.testID));
@@ -162,14 +162,14 @@ describe("a booked seat (3.6)", () => {
     await fireEvent.press(row(25));
     expect(
       within(screen.getByTestId("co2-card")).getByText(
-        "One car fewer on the road for 170 km: about 25 kg less CO₂ than driving alone.",
+        "One car fewer on the road for 170\u00a0km: about 25\u00a0kg less CO₂ than driving alone.",
       ),
     ).toBeVisible();
   });
 
   it("shows the grams the booking kept once completed", async () => {
     await open({ ...completedBooking(), co2: { distanceM: 170_000, grams: 31_000 } });
-    expect(await screen.findByText("About 31 kg, estimated")).toBeVisible();
+    expect(await screen.findByText("About 31\u00a0kg, estimated")).toBeVisible();
   });
 
   it("shows nothing for a booking that ended another way", async () => {
@@ -209,7 +209,7 @@ describe("the driver's ride (3.7)", () => {
 
   it("shows its passengers' figure right after Passengers", async () => {
     await drive({ distanceM: 634_000, grams: 95_100 });
-    expect(await screen.findByText("About 95 kg, estimated")).toBeVisible();
+    expect(await screen.findByText("About 95\u00a0kg, estimated")).toBeVisible();
     expect(
       screen
         .getAllByTestId(/^(passengers|co2-card|ride-rows)$/)
@@ -218,7 +218,7 @@ describe("the driver's ride (3.7)", () => {
     await fireEvent.press(row(95));
     expect(
       screen.getByText(
-        "Your passengers ride 634 km with you instead of driving: about 95 kg less CO₂ than driving alone.",
+        "Your passengers ride 634\u00a0km with you instead of driving: about 95\u00a0kg less CO₂ than driving alone.",
       ),
     ).toBeVisible();
     expect(screen.getByText(how)).toBeVisible();
@@ -261,14 +261,14 @@ describe("my profile (3.8)", () => {
   it("shows my total in a group of its own, each role unfolded, for me alone", async () => {
     await profile(() => bothRoles);
     expect(await screen.findByRole("header", { name: "Your shared rides" })).toBeVisible();
-    expect(screen.getByText("About 161 kg, estimated")).toBeVisible();
+    expect(screen.getByText("About 161\u00a0kg, estimated")).toBeVisible();
     expect(screen.getByText("Only you can see this.")).toBeVisible();
     // Not on the card of me that others see.
     expect(within(screen.getByTestId("person-card")).queryByTestId("co2-card")).toBeNull();
     await fireEvent.press(row(161));
     for (const line of [
-      "As a passenger: 66 kg on 2 rides.",
-      "As a driver: 95 kg with 2 passengers on 1 ride.",
+      "As a passenger: 66\u00a0kg on 2 rides.",
+      "As a driver: 95\u00a0kg with 2 passengers on 1 ride.",
       "Each compared with driving alone.",
       how,
     ]) {
@@ -294,7 +294,7 @@ describe("my profile (3.8)", () => {
       asDriver: { grams: 95_100, rides: 1, passengers: 2 },
     }));
     await fireEvent.press(await screen.findByRole("button", { name: /^CO2 saved, about 95 / }));
-    expect(screen.getByText("As a driver: 95 kg with 2 passengers on 1 ride.")).toBeVisible();
+    expect(screen.getByText("As a driver: 95\u00a0kg with 2 passengers on 1 ride.")).toBeVisible();
     expect(screen.queryByText(/^As a passenger/)).toBeNull();
   });
 
@@ -314,7 +314,7 @@ describe("my profile (3.8)", () => {
     totals = bothRoles;
     await fireEvent.press(screen.getByRole("link", { name: "Meeting points" }));
     await fireEvent.press(await screen.findByRole("button", { name: "Back" }));
-    expect(await screen.findByText("About 161 kg, estimated")).toBeVisible();
+    expect(await screen.findByText("About 161\u00a0kg, estimated")).toBeVisible();
   });
 });
 
