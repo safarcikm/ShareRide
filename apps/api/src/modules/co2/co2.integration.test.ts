@@ -171,6 +171,7 @@ describe("the driver's ride (3.7)", () => {
     const sum = {
       distanceM: first.distanceM + second.distanceM,
       grams: first.grams + second.grams,
+      passengers: 2,
     };
     expect((await myTrip(jon, airport)).co2).toEqual(sum);
 

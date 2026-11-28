@@ -26,11 +26,17 @@ const nothing = (): Carried => ({
   driverPassengers: 0,
 });
 
+/** Grams to the nearest whole kilogram. */
+function toWholeKilograms(grams: number): number {
+  return Math.round(grams / 1000) * 1000;
+}
+
 /**
  * Adds the trip's completed bookings with grams to their passengers' and
  * their driver's carried totals: grams and one ride per booking for a
  * passenger; the grams, one ride and one passenger per booking for the
- * driver. Someone already the former member is left out. Runs in the
+ * driver; the grams each to the nearest kilogram. Someone already the
+ * former member is left out. Runs in the
  * transaction that makes the trip anonymous, before its people move.
  */
 export async function carryCo2(tx: Transaction, tripId: string, now: Date): Promise<void> {
@@ -69,6 +75,12 @@ export async function carryCo2(tx: Transaction, tripId: string, now: Date): Prom
   }
   people.delete(formerMemberId);
   if (people.size === 0) return;
+  // Whole kilograms only, to the nearest: exact sums would give a single
+  // ride's grams and so hint at the trip made anonymous.
+  for (const carried of people.values()) {
+    carried.passengerGrams = toWholeKilograms(carried.passengerGrams);
+    carried.driverGrams = toWholeKilograms(carried.driverGrams);
+  }
   // Only the month: the moment would match the trip's, made anonymous at
   // the same instant, and point back at it (A51).
   const month = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));

@@ -337,8 +337,9 @@ detailed in [spec 13](../specs/2026-11-13-payments.md#6-data-and-api):
 - `Co2Carried` (table `co2_carried`): a member's CO2 totals from their
   trips made anonymous 3 years after: grams and rides as a passenger, and
   grams, trips and passengers as a driver. What a trip's completed bookings
-  saved is added here in the same transaction that moves its records to
-  the former member, so the member's totals stay; one row per member, never
+  saved is added here, to the nearest whole kilogram, in the same
+  transaction that moves its records to the former member, so the member's
+  totals stay; it keeps only the month it last changed; one row per member, never
   for the former member, erased with the account
   ([spec 34, 3.11](../specs/2026-11-28-co2-saved.md),
   [ADR 0054](../decisions/0054-estimate-co2-saved-as-one-car-not-driven.md)).
