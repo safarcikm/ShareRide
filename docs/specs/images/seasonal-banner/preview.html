@@ -1,0 +1,1410 @@
+<title>Seasonal banner</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Nunito:wght@400;600;700&display=swap">
+<style>
+/* A moving preview for spec 36: the front page's banner through the year.
+   The page's own colours are the app's tokens (spec 15); the scene's colours
+   are drawn by the script, so every frame can show light or dark. */
+:root {
+  --bg: #EEF3F4; --surface: #FFFFFF; --text: #1F2A30; --muted: #56636B;
+  --primary: #2F6B4F; --on-primary: #FFFFFF; --primary-edge: #1F4A36; --primary-soft: #E2EFE7;
+  --border: #DCE5E8; --control: #7F8C93; --edge: #D2DDE1; --info: #1F5F8B; --info-soft: #E1EDF6;
+  --focus: #1F5F8B; --bezel: #1F2A30;
+  --display: "Fredoka", "Trebuchet MS", system-ui, sans-serif;
+  --body: "Nunito", "Segoe UI", system-ui, sans-serif;
+  --out: cubic-bezier(0.23, 1, 0.32, 1);
+  --brake: cubic-bezier(0.33, 1, 0.68, 1);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121A1E; --surface: #1B252B; --text: #ECF2F4; --muted: #A6B4BB;
+    --primary: #7CC49E; --on-primary: #0C2117; --primary-edge: #4E8E6C; --primary-soft: #203A2D;
+    --border: #2C3940; --control: #6E7D85; --edge: #0B1013; --info: #8FCBE6; --info-soft: #16303F;
+    --focus: #8FCBE6; --bezel: #2C3940;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121A1E; --surface: #1B252B; --text: #ECF2F4; --muted: #A6B4BB;
+  --primary: #7CC49E; --on-primary: #0C2117; --primary-edge: #4E8E6C; --primary-soft: #203A2D;
+  --border: #2C3940; --control: #6E7D85; --edge: #0B1013; --info: #8FCBE6; --info-soft: #16303F;
+  --focus: #8FCBE6; --bezel: #2C3940;
+  color-scheme: dark;
+}
+/* Frames that always show one of the two, side by side. */
+.force-light {
+  --bg: #EEF3F4; --surface: #FFFFFF; --text: #1F2A30; --muted: #56636B;
+  --primary: #2F6B4F; --on-primary: #FFFFFF; --primary-edge: #1F4A36; --primary-soft: #E2EFE7;
+  --border: #DCE5E8; --control: #7F8C93; --edge: #D2DDE1; --info: #1F5F8B; --info-soft: #E1EDF6;
+}
+.force-dark {
+  --bg: #121A1E; --surface: #1B252B; --text: #ECF2F4; --muted: #A6B4BB;
+  --primary: #7CC49E; --on-primary: #0C2117; --primary-edge: #4E8E6C; --primary-soft: #203A2D;
+  --border: #2C3940; --control: #6E7D85; --edge: #0B1013; --info: #8FCBE6; --info-soft: #16303F;
+}
+.force-light .phone, .force-dark .phone { border-color: #2C3940; }
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--body); font-size: 16px; line-height: 1.5; }
+.page {
+  max-width: 1160px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 32px 64px;
+  display: grid; gap: 56px;
+}
+h1, h2, h3 { font-family: var(--display); font-weight: 600; text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(30px, 5vw, 44px); line-height: 1.1; }
+h2 { font-size: 26px; line-height: 1.2; }
+h3 { font-size: 19px; line-height: 1.25; }
+p { margin: 0; max-width: 68ch; }
+.muted { color: var(--muted); }
+.small { font-size: 14px; }
+
+header.top { display: grid; gap: 16px; }
+.controls { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; }
+.btn {
+  font: 600 16px/1 var(--display); border: 0; cursor: pointer;
+  background: var(--primary); color: var(--on-primary);
+  border-radius: 14px; padding: 12px 18px 11px; box-shadow: 0 4px 0 var(--primary-edge);
+}
+.btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--primary-edge); }
+.btn.quiet { background: var(--surface); color: var(--primary); box-shadow: 0 3px 0 var(--edge); border: 1px solid var(--border); }
+.btn.quiet:active { box-shadow: 0 0 0 var(--edge); }
+.btn.small { font-size: 14px; padding: 9px 14px 8px; border-radius: 12px; }
+button:focus-visible, select:focus-visible, input:focus-visible, input:focus-visible + .switch { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+.toggle { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 600; position: relative; }
+.toggle input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.switch { width: 46px; height: 28px; border-radius: 14px; background: var(--control); position: relative; flex: none; }
+.switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: var(--surface); }
+.toggle input:checked + .switch { background: var(--primary); }
+.toggle input:checked + .switch::after { left: 21px; }
+.seg { display: inline-flex; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 3px; gap: 2px; }
+.seg button { font: 700 14px/1 var(--body); border: 0; background: none; color: var(--text); border-radius: 9px; padding: 9px 12px; cursor: pointer; min-height: 36px; }
+.seg button[aria-pressed="true"] { background: var(--primary); color: var(--on-primary); }
+.note { background: var(--info-soft); color: var(--text); border-radius: 12px; padding: 10px 14px; font-size: 14px; }
+
+section { display: grid; gap: 20px; }
+.section-head { display: grid; gap: 8px; }
+
+/* Cards of banners. */
+.grid { display: grid; gap: 28px 24px; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+.item { display: grid; gap: 10px; align-content: start; min-width: 0; }
+.item-head { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.is-name { color: var(--muted); font-size: 14px; font-weight: 600; }
+.tag { font: 700 13px/1 var(--body); color: var(--primary); background: var(--primary-soft); border-radius: 999px; padding: 5px 9px; }
+.tag.plain { color: var(--muted); background: var(--border); }
+.facts { display: grid; gap: 4px; font-size: 14px; }
+.facts b { font-weight: 700; }
+.item-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* A phone, and its banner. */
+.phone { border: 8px solid var(--bezel); border-radius: 30px; overflow: hidden; background: var(--bg); color: var(--text); width: 100%; max-width: 330px; }
+.pal-list { display: grid; gap: 32px; }
+.pal-row { display: grid; gap: 16px 28px; grid-template-columns: minmax(200px, 1fr) minmax(0, 680px); align-items: start; }
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.fit { overflow: hidden; }
+.fit .phone { width: 330px; max-width: none; transform-origin: 0 0; }
+@media (max-width: 760px) { .pal-row { grid-template-columns: minmax(0, 1fr); } }
+.screen { position: relative; overflow: hidden; }
+.scene { position: relative; overflow: hidden; }
+.scene > svg, .panel > svg { position: absolute; inset: 0; display: block; }
+.scene > svg.fx, .panel > svg.fx { pointer-events: none; overflow: visible; }
+.fx.back { z-index: 1; }
+.fx.front { z-index: 2; }
+.brand { position: absolute; top: 10px; left: 12px; right: 12px; height: 44px; display: flex; align-items: center; gap: 7px; z-index: 3; }
+.logo { width: 30px; height: 30px; border-radius: 8px; background: #2F6B4F; display: grid; place-items: center; overflow: hidden; flex: none; }
+.logo svg { width: 28px; height: 28px; }
+.name { font: 600 16px/1 var(--display); }
+.beta { font: 700 11px/1 var(--body); color: var(--info); background: var(--info-soft); border-radius: 999px; padding: 4px 7px; }
+.lang { margin-left: auto; font: 700 13px/1 var(--body); color: var(--primary); }
+.car-slot { position: absolute; z-index: 2; }
+.car svg { display: block; width: 100%; height: auto; overflow: visible; }
+.below { padding: 12px 14px 16px; display: grid; gap: 8px; justify-items: center; }
+.greeting { font: 700 13px/1.2 var(--body); color: var(--primary); background: var(--primary-soft); border-radius: 999px; padding: 6px 11px; text-align: center; }
+.app-title { font: 600 22px/1.15 var(--display); text-align: center; }
+.app-intro { font-size: 13.5px; text-align: center; }
+.search { width: 100%; background: var(--surface); border-radius: 16px; padding: 10px 12px; display: grid; gap: 6px; box-shadow: 0 3px 0 var(--edge); }
+.field { display: grid; grid-template-columns: 12px 1fr; column-gap: 8px; align-items: center; }
+.dot { width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--primary); grid-row: 1; grid-column: 1; }
+.dot.full { background: var(--primary); }
+.field b { font-size: 11px; color: var(--muted); grid-row: 1; grid-column: 2; }
+.field span:not(.dot) { font-size: 12.5px; color: var(--muted); grid-row: 2; grid-column: 2; }
+.find { font: 600 15px/1 var(--display); background: var(--primary); color: var(--on-primary); border-radius: 12px; padding: 11px; text-align: center; box-shadow: 0 3px 0 var(--primary-edge); margin-top: 4px; }
+
+/* Any day. */
+.pick { display: grid; gap: 18px; grid-template-columns: minmax(0, 330px) minmax(0, 1fr); align-items: start; }
+.pick-controls { display: grid; gap: 14px; align-content: start; }
+.pick-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.pick-row label { font-weight: 700; }
+input[type="date"], select { font: 600 16px/1.2 var(--body); color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; min-height: 44px; }
+.says { font-size: 18px; }
+.says b { font-family: var(--display); font-weight: 600; }
+@media (max-width: 700px) { .pick { grid-template-columns: minmax(0, 1fr); } }
+
+/* The laptop. */
+.laptop-wrap { width: 100%; overflow: hidden; }
+.laptop { width: 1000px; transform-origin: 0 0; border: 8px solid var(--bezel); border-radius: 14px; background: var(--bg); color: var(--text); overflow: hidden; }
+.nav { height: 56px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 22px; padding: 0 36px; font: 600 15px/1 var(--body); }
+.nav .brand-l { display: flex; gap: 8px; align-items: center; margin-right: auto; }
+.nav .cur { text-decoration: underline; text-underline-offset: 4px; color: var(--primary); }
+.panel { position: relative; margin: 18px 36px 0; height: 196px; border-radius: 20px; overflow: hidden; }
+.panel .titles { position: absolute; left: 32px; top: 30px; z-index: 3; display: grid; gap: 8px; max-width: 520px; justify-items: start; }
+.panel .titles h3 { font-size: 38px; line-height: 1.05; }
+.panel .titles p { font-size: 15px; }
+.search-row { position: relative; z-index: 3; margin: -46px 36px 26px; background: var(--surface); border-radius: 18px; padding: 14px 16px; display: grid; grid-template-columns: 1fr 1fr 120px 150px; gap: 12px; align-items: end; box-shadow: 0 3px 0 var(--edge); }
+.search-row .in { background: var(--bg); border-radius: 12px; padding: 12px 14px; font-size: 14px; color: var(--muted); }
+.search-row .lab { font-size: 12px; font-weight: 700; color: var(--muted); margin-bottom: 4px; }
+
+/* The year. */
+.year { background: var(--surface); border-radius: 20px; padding: 16px; box-shadow: 0 3px 0 var(--edge); display: grid; gap: 12px; }
+.year svg { width: 100%; height: auto; display: block; overflow: visible; }
+.year .day-mark { cursor: pointer; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 14px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 14px; height: 14px; border-radius: 4px; display: inline-block; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { font-family: var(--display); font-weight: 600; }
+.table-wrap { overflow-x: auto; background: var(--surface); border-radius: 16px; box-shadow: 0 3px 0 var(--edge); }
+td button { font: 700 14px/1.3 var(--body); color: var(--primary); background: none; border: 0; padding: 0; cursor: pointer; text-align: left; text-decoration: underline; text-underline-offset: 3px; }
+.rules { display: grid; gap: 8px; padding-left: 20px; margin: 0; max-width: 74ch; }
+footer { font-size: 14px; color: var(--muted); }
+
+/* The arrival (spec 33): the car drives in, bobs and dips, the puffins hop. */
+.play .car.drive { animation: drive 1100ms var(--brake) both; }
+.play .car.drive-fade { animation: drive-fade 1100ms var(--brake) both; }
+.play .car .car-body { animation: body-dip 1500ms linear both; }
+.car-body { transform-box: fill-box; transform-origin: 50% 92%; }
+.play .pf-you { animation: hop 300ms 1400ms both; }
+.play .pf-driver { animation: hop 300ms 1540ms both; }
+@keyframes drive { from { transform: translateX(var(--from)); } to { transform: translateX(0); } }
+@keyframes drive-fade { 0% { transform: translateX(var(--from)); opacity: 0; } 30% { opacity: 1; } 100% { transform: translateX(0); opacity: 1; } }
+@keyframes body-dip {
+  0% { transform: translateY(0) rotate(0deg); }
+  12% { transform: translateY(-1.6px) rotate(0deg); }
+  24% { transform: translateY(0) rotate(0deg); }
+  38% { transform: translateY(-1.3px) rotate(0deg); }
+  50%, 73% { transform: translateY(0) rotate(0deg); }
+  83% { transform: translateY(0) rotate(2.6deg); }
+  93% { transform: translateY(0) rotate(-0.8deg); }
+  100% { transform: translateY(0) rotate(0deg); }
+}
+@keyframes hop {
+  0% { transform: translateY(0); animation-timing-function: cubic-bezier(0.25, 0.6, 0.4, 1); }
+  45% { transform: translateY(-5px); animation-timing-function: cubic-bezier(0.5, 0, 0.75, 0); }
+  100% { transform: translateY(0); }
+}
+
+/* Each season's and day's own moment. It starts with the arrival, plays once
+   and is over within 3.5 s; only transform and opacity move. What is left
+   at the end is what stands there with Reduce motion on. */
+.pivot, .sparkle { transform-box: fill-box; transform-origin: 50% 50%; }
+.base { transform-box: fill-box; transform-origin: 50% 100%; }
+.flake, .leaf, .trail { opacity: 0; }
+.play .flake { animation: flake var(--t) var(--d) linear both; }
+.play .leaf { animation: leaf var(--t) var(--d) cubic-bezier(0.3, 0.5, 0.6, 1) both; }
+.flyer { opacity: 0; }
+.play .flyer { animation: fly var(--t) var(--d) linear both; }
+.play .flyer .bob { animation: fly-bob 400ms ease-in-out 6 alternate both; animation-delay: var(--d); }
+.flyer .wing { transform-box: fill-box; transform-origin: 50% 100%; }
+.play .flyer .wing { animation: flap 120ms linear 22 alternate; animation-delay: var(--d); }
+.aurora { transform-box: fill-box; transform-origin: 50% 100%; }
+.play .aurora { animation: aurora 3000ms var(--out) both; }
+.sun-up { transform-box: fill-box; transform-origin: 50% 50%; }
+.play .sun-up { animation: sunrise 1900ms 150ms var(--out) both; }
+.play .rays { animation: rays 2600ms var(--out) both; }
+.play .glow { animation: glow 2000ms var(--out) both; }
+.burst { transform-box: fill-box; transform-origin: 50% 50%; }
+.play .burst { animation: burst 1300ms var(--d) var(--out) both; }
+.play .trail { animation: trail 420ms calc(var(--d) - 420ms) ease-out both; }
+.play .bulb { animation: bulb 520ms var(--d) ease-out both; }
+.play .chick { animation: chick 2400ms both; }
+.cloth { transform-box: fill-box; transform-origin: 100% 50%; }
+.play .cloth { animation: wave 1700ms 500ms ease-in-out both; }
+.play .balloons { animation: sway 2300ms ease-in-out both; }
+.play .wobble { animation: wobble 1500ms linear both; }
+.play .grow { animation: grow 450ms var(--d) var(--out) both; }
+.play .lupine { animation: lupine 1900ms var(--d) ease-in-out both; }
+.play .heart { animation: heart 2300ms var(--out) both; }
+.play .sparkle { animation: sparkle 2200ms var(--out) both; }
+.play .cover { animation: cover 3200ms ease-out both; }
+
+@keyframes flake { 0% { opacity: 0; transform: translate(0, -16px); } 15% { opacity: 0.95; } 80% { opacity: 0.95; } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)); } }
+@keyframes leaf { 0% { opacity: 0; transform: translate(0, 0) rotate(0deg); } 12% { opacity: 1; } 78% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(var(--r)); } }
+@keyframes fly { 0% { opacity: 1; transform: translateX(var(--from)); } 100% { opacity: 1; transform: translateX(var(--to)); } }
+@keyframes fly-bob { from { transform: translateY(-3px); } to { transform: translateY(3px); } }
+@keyframes flap { from { transform: scaleY(1); } to { transform: scaleY(-0.6); } }
+@keyframes aurora { 0% { opacity: 0; transform: translateX(-14px) scaleY(0.6); } 55% { opacity: 1; } 100% { opacity: 1; transform: none; } }
+@keyframes sunrise { from { transform: translateY(46px); } to { transform: none; } }
+@keyframes rays { 0%, 45% { opacity: 0; transform: rotate(-30deg) scale(0.8); } 100% { opacity: 1; transform: none; } }
+@keyframes glow { from { opacity: 0; transform: scale(0.7); } to { opacity: 1; transform: none; } }
+@keyframes burst { 0% { opacity: 0; transform: scale(0.2); } 14% { opacity: 1; } 100% { opacity: 1; transform: none; } }
+@keyframes trail { 0% { opacity: 0; transform: translateY(26px); } 30% { opacity: 1; } 100% { opacity: 0; transform: none; } }
+@keyframes bulb { 0% { opacity: 0.15; } 60% { opacity: 1; } 80% { opacity: 0.5; } 100% { opacity: 1; } }
+@keyframes chick { 0%, 55% { transform: translateY(11px); } 78% { transform: translateY(-3px); } 100% { transform: none; } }
+@keyframes wave { 0% { transform: none; } 18% { transform: skewY(10deg) scaleX(0.9); } 38% { transform: skewY(-7deg) scaleX(0.95); } 58% { transform: skewY(5deg); } 78% { transform: skewY(-2deg); } 100% { transform: none; } }
+@keyframes sway { 0%, 46% { transform: rotate(-20deg); } 68% { transform: rotate(9deg); } 85% { transform: rotate(-4deg); } 100% { transform: none; } }
+@keyframes wobble { 0%, 70% { transform: none; } 80% { transform: rotate(5deg); } 90% { transform: rotate(-2.5deg); } 100% { transform: none; } }
+@keyframes grow { from { opacity: 0; transform: scale(0.4); } to { opacity: 1; transform: none; } }
+@keyframes lupine { 0% { transform: none; } 25% { transform: rotate(7deg); } 50% { transform: rotate(-4deg); } 75% { transform: rotate(2deg); } 100% { transform: none; } }
+@keyframes heart { 0%, 62% { opacity: 0; transform: translateY(8px) scale(0.6); } 82% { opacity: 1; transform: translateY(-2px) scale(1.08); } 100% { opacity: 1; transform: none; } }
+@keyframes sparkle { 0%, 62% { opacity: 0; transform: scale(0.4) rotate(-40deg); } 82% { opacity: 1; transform: scale(1.15); } 100% { opacity: 1; transform: none; } }
+@keyframes cover { 0%, 18% { opacity: 0; } 100% { opacity: 1; } }
+
+/* Reduce motion: nothing moves, and what each moment leaves stands still. */
+.calm .demo, .calm .demo * { animation: none !important; }
+</style>
+
+<div class="page" id="page">
+  <header class="top">
+    <h1>A banner for every season</h1>
+    <p>A moving preview for spec 36. The front page's scene follows the year in Iceland: four seasons, and the big days with something of their own on the car. Each day's moment plays once, with the car's arrival, and then it all stands still. Nothing here is built yet.</p>
+    <div class="controls">
+      <button class="btn" id="play-all" type="button">Play everything again</button>
+      <label class="toggle" for="calm"><input type="checkbox" id="calm"><span class="switch" aria-hidden="true"></span>Reduce motion</label>
+      <label class="toggle" for="greet"><input type="checkbox" id="greet" checked><span class="switch" aria-hidden="true"></span>Greetings</label>
+      <div class="seg" role="group" aria-label="Language" id="lang-set">
+        <button type="button" data-lang="en" aria-pressed="true">English</button>
+        <button type="button" data-lang="is" aria-pressed="false">Íslenska</button>
+      </div>
+      <div class="seg" role="group" aria-label="Light or dark" id="theme-set">
+        <button type="button" data-theme-set="" aria-pressed="true">My device</button>
+        <button type="button" data-theme-set="light" aria-pressed="false">Light</button>
+        <button type="button" data-theme-set="dark" aria-pressed="false">Dark</button>
+      </div>
+    </div>
+    <p class="note" id="calm-note" hidden>Your device asks for less motion, so this page starts with Reduce motion on: everything stands still, as it would for you on PuffinRide. Turn the switch off to see the motion.</p>
+  </header>
+
+  <section aria-labelledby="pick-h">
+    <div class="section-head">
+      <h2 id="pick-h">1. Any day of the year</h2>
+      <p class="muted">Pick a day and see what the front page would show on it, by the date in Iceland.</p>
+    </div>
+    <div class="pick">
+      <div class="phone"><div class="screen demo" id="pick"></div></div>
+      <div class="pick-controls">
+        <div class="pick-row">
+          <label for="day">Day</label>
+          <input type="date" id="day">
+          <button class="btn quiet small" type="button" id="today">Today</button>
+        </div>
+        <label class="toggle" for="small"><input type="checkbox" id="small"><span class="switch" aria-hidden="true"></span>The smaller days too</label>
+        <p class="says" id="says" aria-live="polite"></p>
+        <p class="small muted" id="says-more"></p>
+        <div class="item-actions"><button class="btn quiet small" type="button" id="pick-play">Play again</button></div>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="colour-h">
+    <div class="section-head">
+      <h2 id="colour-h">2. Richer colours</h2>
+      <p class="muted">Today's scene is pale and grey-blue all year. Two richer ones, each in light and dark: a sky that deepens upwards, a far range of mountains, two greens of hills, and a farmhouse with a red roof. Every word on the scene keeps its contrast.</p>
+    </div>
+    <div class="pal-list" id="palettes"></div>
+  </section>
+
+  <section aria-labelledby="season-h">
+    <div class="section-head">
+      <h2 id="season-h">3. The four seasons</h2>
+      <p class="muted">The rest of the year, the season sets the colours, with a small moment as the car arrives. Built on the “Clear day” colours.</p>
+    </div>
+    <div class="grid" id="seasons"></div>
+  </section>
+
+  <section aria-labelledby="big-h">
+    <div class="section-head">
+      <h2 id="big-h">4. The big days</h2>
+      <p class="muted">Holidays and the national days, each with something on the car and its own moment.</p>
+    </div>
+    <div class="grid" id="big"></div>
+  </section>
+
+  <section aria-labelledby="small-h">
+    <div class="section-head">
+      <h2 id="small-h">5. Smaller days, if you want them</h2>
+      <p class="muted">Well-loved Icelandic days that are not holidays. One day each.</p>
+    </div>
+    <div class="grid" id="smaller"></div>
+  </section>
+
+  <section aria-labelledby="laptop-h">
+    <div class="section-head">
+      <h2 id="laptop-h">6. On a laptop</h2>
+      <p class="muted">The scene stretches behind the title, so everything a day adds, and everything that moves, stays in the car's own corner, never under the words.</p>
+    </div>
+    <div class="pick-row">
+      <label for="laptop-theme">Show</label>
+      <select id="laptop-theme"></select>
+      <button class="btn quiet small" type="button" id="laptop-play">Play again</button>
+    </div>
+    <div class="laptop-wrap" id="laptop-wrap"></div>
+  </section>
+
+  <section aria-labelledby="year-h">
+    <div class="section-head">
+      <h2 id="year-h">7. The year</h2>
+      <p class="muted" id="year-intro"></p>
+    </div>
+    <div class="year">
+      <div id="year-strip"></div>
+      <div class="legend" id="legend"></div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Shows</th><th>When</th><th id="next-h">Next</th></tr></thead>
+        <tbody id="year-table"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section aria-labelledby="rules-h">
+    <div class="section-head">
+      <h2 id="rules-h">8. How it behaves</h2>
+    </div>
+    <ul class="rules">
+      <li>The car's arrival stays as it is: it drives in, dips, and the puffins hop, once a visit (spec 33).</li>
+      <li>A day's moment starts with the arrival and is over within 3.5 seconds. Nothing loops, and only the drawing moves: the search works from the first frame.</li>
+      <li>With Reduce motion on, the scene shows the day's look standing still: the tree lit, the flags out, the egg's chick on top.</li>
+      <li>Coming back to Find in the same visit, the scene shows the day's look, still.</li>
+      <li>The day is Iceland's date. It changes at midnight in Reykjavík, worked out on the device; nothing is sent anywhere.</li>
+      <li>The greeting is real text in Icelandic or English, so screen readers read it; the drawing stays hidden from them, as today.</li>
+      <li>One switch in the console turns the days off, for a sad day when a party would be wrong. The seasons stay.</li>
+      <li>Left out unless you want them: Valentine's Day, Halloween, Culture Night, Pride, 1 May, and the religious days besides Christmas and Easter.</li>
+    </ul>
+  </section>
+
+  <footer>Spec 36, docs/specs/2026-11-28-seasonal-banner.md. Drawings from apps/mobile/src/components/puffin-scenes.tsx and puffin.tsx, with new parts for the days. Dates worked out in the page itself.</footer>
+</div>
+
+<script>
+(() => {
+  // ---- Colours -------------------------------------------------------------
+  // The drawing's own colours (packages/ui/src/tokens.ts, and new ones for
+  // the days), the same in both modes.
+  const C = {
+    face: "#1F2A30", white: "#F7F5F0", beak: "#F26B2E", groove: "#D9512A", plate: "#7C93A0",
+    eyeMark: "#8E9CA3", crow: "#F08C9C", sun: "#F4C04E", wool: "#EADFCB", moss: "#9ED0A0",
+    body: "#F4C04E", wing: "#E0A93A", glass: "#CFE6EF", trim: "#C9D5DA", hub: "#DCE5E8",
+    light: "#FFF6D8", strap: "#D9707F",
+    red: "#D8423A", flagBlue: "#02529C", flagRed: "#DC1E35", navy: "#23395B", sky: "#4F95D0",
+    choc: "#7A4A2E", chocDark: "#55311C", tree: "#2F7A4E", treeLight: "#3F9862",
+    tent: "#3E8E5A", tentDark: "#2E6B43", bag: "#4F86B8", bagDark: "#3B6C96", guitar: "#C8763A",
+    bun: "#DDA65E", cream: "#FFF8EC", jam: "#C8463D", stem: "#4E9A5A",
+    lupine: "#8E6CCB", lupineLight: "#B9A0E6", heather: "#B4553F", birch: "#E8B34E",
+    aurora: "#6FE3B4", aurora2: "#7FD0F0",
+  };
+  const ON_SCENE = { light: { text: "#1F2A30", primary: "#2F6B4F" }, dark: { text: "#ECF2F4", primary: "#7CC49E" } };
+  const MODE = {
+    light: { tyre: "#1F2A30", control: "#7F8C93", wall: "#F7F5F0", window: "#5B6B73" },
+    dark: { tyre: "#2E3D45", control: "#6E7D85", wall: "#A7B4BA", window: "#F4C04E" },
+  };
+
+  // The scene's colours: today's, two richer ones, and the seasons (built on
+  // "Clear day"). Words stand on skyTop and sky on a phone, and on every one
+  // of these on a laptop, so each keeps 4.5:1 with the text on it.
+  /*PAL*/
+  const PAL = {
+    today: {
+      light: { skyTop: "#D7E9F0", sky: "#D7E9F0", mountain: "#B9CBD3", glacier: "#FFFFFF", hill: "#B7DDB9", road: "#C6CED2", roadLine: "#FFFFFF" },
+      dark: { skyTop: "#142630", sky: "#142630", mountain: "#24323A", glacier: "#3A4C55", hill: "#203A2D", road: "#3E525C", roadLine: "#6E7D85" },
+    },
+    clear: {
+      light: { skyTop: "#C4E3F1", sky: "#EAF6F9", far: "#CBDCEA", mountain: "#94AFC7", glacier: "#FFFFFF", hillBack: "#B9E2A6", hill: "#8DCB84", road: "#C3CBD0", roadLine: "#FFFFFF", roof: "#C8463D", house: true },
+      dark: { skyTop: "#0C1D2D", sky: "#193246", far: "#1D3245", mountain: "#2A4254", glacier: "#46606F", hillBack: "#1D3D2D", hill: "#245034", road: "#3E525C", roadLine: "#6E7D85", roof: "#A03C34", house: true, stars: true },
+    },
+    warm: {
+      light: { skyTop: "#F7E3C9", sky: "#FDF2E6", far: "#E3D6E6", mountain: "#B8A7C9", glacier: "#FFF9F2", hillBack: "#D3E3A3", hill: "#A9D08A", road: "#D3CAC2", roadLine: "#FFFFFF", lowSun: "#F29A5E" },
+      dark: { skyTop: "#1C1932", sky: "#3B2B46", far: "#2C2843", mountain: "#383252", glacier: "#514B6A", hillBack: "#25392C", hill: "#2B4631", road: "#40465A", roadLine: "#767A90", stars: true },
+    },
+    winter: {
+      light: { skyTop: "#CDE4F0", sky: "#F1F8FB", far: "#D5E2EC", mountain: "#A6BBCD", glacier: "#FFFFFF", caps: 9, depth: 0.5, hillBack: "#F2F7FA", hill: "#DFEAF0", road: "#C1CAD0", roadLine: "#FFFFFF", snow: "#FFFFFF", roof: "#C8463D", house: true },
+      dark: { skyTop: "#091828", sky: "#15304A", far: "#1C3247", mountain: "#2A4358", glacier: "#4F6676", caps: 9, depth: 0.5, hillBack: "#34495A", hill: "#3F5767", road: "#34454E", roadLine: "#6E7D85", snow: "#587080", roof: "#A03C34", house: true, stars: true, aurora: true },
+    },
+    spring: {
+      light: { skyTop: "#BFE3F3", sky: "#EBF7FA", far: "#C9DAE8", mountain: "#90ADC5", glacier: "#FFFFFF", caps: 3, depth: 0.42, hillBack: "#CDEBAA", hill: "#9CD585", road: "#C3CBD0", roadLine: "#FFFFFF", roof: "#C8463D", house: true, flowers: true },
+      dark: { skyTop: "#0D2032", sky: "#1C3A4D", far: "#1E3448", mountain: "#2B4457", glacier: "#47616F", caps: 3, depth: 0.42, hillBack: "#21442F", hill: "#2A5838", road: "#3E525C", roadLine: "#6E7D85", roof: "#A03C34", house: true, stars: true, flowers: true },
+    },
+    summer: {
+      light: { skyTop: "#BDE1F3", sky: "#E8F6FB", far: "#C2D6E6", mountain: "#8AA8C1", glacier: "#FFFFFF", caps: 2, depth: 0.28, hillBack: "#A9D88F", hill: "#74BC6C", road: "#C3CBD0", roadLine: "#FFFFFF", roof: "#C8463D", house: true, lupines: true, sun: "#F4C04E" },
+      dark: { skyTop: "#241F42", sky: "#5A3C57", far: "#36304F", mountain: "#3A3757", glacier: "#4E4A6A", caps: 2, depth: 0.28, hillBack: "#26462F", hill: "#2C5536", road: "#3D4558", roadLine: "#767A90", roof: "#A03C34", house: true, lupines: true, midnightSun: "#F6A15A" },
+    },
+    autumn: {
+      light: { skyTop: "#C9DFEA", sky: "#F5EEE3", far: "#CFD5DE", mountain: "#9DABBA", glacier: "#FFFFFF", caps: 4, depth: 0.36, hillBack: "#E6C07D", hill: "#DA9B63", road: "#C6C9CB", roadLine: "#FFFFFF", roof: "#C8463D", house: true, heather: true },
+      dark: { skyTop: "#0B1A28", sky: "#1D2F3F", far: "#20303F", mountain: "#2C3D4D", glacier: "#4A5E6C", caps: 4, depth: 0.36, hillBack: "#4A3E28", hill: "#523629", road: "#3E4A52", roadLine: "#6E7D85", roof: "#A03C34", house: true, stars: true, aurora: true, heather: true },
+    },
+  };
+  /*END PAL*/
+
+  // ---- Small helpers ---------------------------------------------------------
+  let uid = 0;
+  const id = (name) => `${name}-${++uid}`;
+  const f1 = (n) => (Math.round(n * 10) / 10).toString();
+  function random(seed) {
+    let s = seed >>> 0;
+    return () => {
+      s = (s + 0x6d2b79f5) >>> 0;
+      let t = s;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  const star = (cx, cy, r) => {
+    const pts = [];
+    for (let i = 0; i < 10; i++) {
+      const a = -Math.PI / 2 + (i * Math.PI) / 5;
+      const rr = i % 2 === 0 ? r : r * 0.45;
+      pts.push(`${f1(cx + rr * Math.cos(a))} ${f1(cy + rr * Math.sin(a))}`);
+    }
+    return `M${pts.join(" L")} Z`;
+  };
+  const heart = (x, y, s, fill) =>
+    `<path transform="translate(${x} ${y}) scale(${s})" d="M0 4 C-7 -1 -7 -8.4 -2.4 -8.4 C-0.8 -8.4 0 -7 0 -6 C0 -7 0.8 -8.4 2.4 -8.4 C7 -8.4 7 -1 0 4 Z" fill="${fill}"/>`;
+  // A box around a point, so a group's own box is centred on it (for turning
+  // things around where they are tied on).
+  const pivotBox = (x, y, r = 80) => `<rect x="${x - r}" y="${y - r}" width="${2 * r}" height="${2 * r}" fill="none"/>`;
+
+  // ---- The puffin (puffin.tsx), three-quarters, facing right ---------------
+  const headPath = "M-21 2 C-21.5 -13 -10 -22 2 -21.6 C12 -21.2 18.6 -15 19.6 -7 L19.6 11 C18 19 9 22.6 -1 22.4 C-12.6 22 -21 14.6 -21 2 Z";
+  const facePath = "M-13 3 C-13.4 -4.6 -7.6 -8.4 1 -8.2 C9 -8 15.4 -8.6 18.4 -9 L18.4 11.4 C15 17.6 8 19.4 0.5 19 C-7.6 18.4 -12.8 11.6 -13 3 Z";
+  const beakPath = "M18.2 -11.9 C26.2 -11.9 34.7 -6.9 38.7 2.2 C32.7 6.6 25.7 9.6 18.2 10.2 Z";
+  function hat(h) {
+    if (!h) return "";
+    if (h.kind === "wool") {
+      return `<g transform="translate(-2 1) rotate(-6)">
+        <path d="M-17.5 -9 C-17 -23 17 -23 17.5 -9 Z" fill="${h.colour || C.crow}"/>
+        <path d="M-7 -19.6 L-7 -11 M0 -21 L0 -11 M7 -19.6 L7 -11" stroke="${C.face}" stroke-opacity="0.15" stroke-width="1.6"/>
+        <rect x="-19" y="-12.2" width="38" height="6.6" rx="3.3" fill="${C.wool}"/>
+        <circle cx="0" cy="-23.2" r="4" fill="${C.wool}"/></g>`;
+    }
+    if (h.kind === "yule") {
+      return `<g transform="translate(-2 1) rotate(-6)">
+        <path d="M-17.5 -9 C-17 -22 -6 -27 4 -26 C10 -25.5 15 -20 17.5 -9 Z" fill="${C.red}"/>
+        <path d="M3 -26 C-8 -29.5 -18 -26 -24 -15 L-18.5 -12.5 C-15 -20 -9 -23 -1 -22 Z" fill="${C.red}"/>
+        <rect x="-19" y="-12.2" width="38" height="6.6" rx="3.3" fill="${C.white}"/>
+        <circle cx="-23" cy="-13.5" r="4.4" fill="${C.white}"/></g>`;
+    }
+    if (h.kind === "party") {
+      return `<g transform="translate(1 -15) rotate(10)">
+        <path d="M-10 0 L0 -21 L10 0 Z" fill="${h.colour || C.crow}"/>
+        <path d="M-6.2 -8 L6.2 -8 M-3 -14.5 L3 -14.5" stroke="${C.white}" stroke-width="2.2"/>
+        <circle cx="0" cy="-22" r="3.4" fill="${C.sun}"/></g>`;
+    }
+    if (h.kind === "crown") {
+      return `<g transform="translate(-1 -13) rotate(-4)">
+        <path d="M-14 4 L-15.5 -10 L-7.5 -3 L0 -13 L7.5 -3 L15.5 -10 L14 4 Z" fill="${C.sun}" stroke="${C.wing}" stroke-width="1.4" stroke-linejoin="round"/>
+        <circle cx="0" cy="-0.5" r="2.2" fill="${C.crow}"/><circle cx="-8" cy="0.5" r="1.6" fill="${C.sky}"/><circle cx="8" cy="0.5" r="1.6" fill="${C.sky}"/>
+        <path class="sparkle" d="${star(13, -16, 4.6)}" fill="${C.white}"/></g>`;
+    }
+    if (h.kind === "sailor") {
+      return `<g transform="translate(0 -8) rotate(-5)">
+        <path d="M-17 -1 C-18 -10 -10 -13.5 0 -13.5 C10 -13.5 18 -10 17 -1 Z" fill="${C.white}"/>
+        <rect x="-17.5" y="-4" width="35" height="6.4" rx="2.2" fill="${C.navy}"/>
+        <path d="M11 2 Q21 2 26 6.5 Q18 7 11 5.5 Z" fill="${C.face}"/>
+        <circle cx="0" cy="-1" r="1.6" fill="${C.sun}"/></g>`;
+    }
+    return "";
+  }
+  function puffin(x, y, size, look = {}) {
+    const scarf = look.scarf ? `<path d="M-19.4 14.4 Q-1 22.6 18.6 14 L18 20.4 Q-1 29 -18.6 20.6 Z" fill="${look.scarf}"/>` : "";
+    const glasses = look.glasses ? `<path d="M-8 -4.6 L3 -4.4" stroke="${C.face}" stroke-width="1.8"/>
+      <rect x="2.4" y="-7.4" width="12.4" height="8.6" rx="3.8" fill="${C.face}"/>
+      <path d="M5.2 -5.2 L8.6 -5.2" stroke="${C.white}" stroke-width="1.3" stroke-linecap="round" opacity="0.75"/>` : "";
+    const mask = look.mask ? `<path fill-rule="evenodd" d="M-3 -7 C2 -11 14 -11 17.6 -7.2 C18.6 -3.6 17.4 1.4 14 2.2 C11.4 2.6 10.4 0 8.4 0 C6.4 0 5.4 2.6 2.4 2.2 C-1 1.6 -3.6 -3 -3 -7 Z M11.9 -2 A3.5 3.5 0 1 0 4.9 -2 A3.5 3.5 0 1 0 11.9 -2 Z" fill="${C.sky}"/>` : "";
+    return `<g transform="translate(${x} ${y}) scale(${size})">
+      <path d="${headPath}" fill="${C.face}"/>
+      <path d="${facePath}" fill="${C.white}"/>
+      <path d="M5.4 -6.4 L11.4 -6.4 L8.6 -10.4 Z" fill="${C.eyeMark}"/>
+      <path d="M6.4 2.6 L10.6 2.6 L8.4 5.2 Z" fill="${C.eyeMark}"/>
+      <circle cx="8.4" cy="-2" r="3.9" fill="${C.groove}"/>
+      <circle cx="8.4" cy="-2" r="2.9" fill="${C.face}"/>
+      <circle cx="9.4" cy="-3" r="1" fill="${C.white}"/>
+      <ellipse cx="3" cy="9.6" rx="3.8" ry="2.5" fill="${C.crow}" opacity="0.8"/>
+      <path d="${beakPath}" fill="${C.beak}"/>
+      <path d="M18.2 -11.9 L22.8 -11.36 L22.8 9.52 L18.2 10.2 Z" fill="${C.plate}"/>
+      <path d="M22.8 -11.36 L24.9 -10.75 L24.9 9.01 L22.8 9.52 Z" fill="${C.sun}"/>
+      <path d="M29.8 -8.8 Q31.8 -2.4 29.8 8 M34.2 -5 Q35.6 -0.4 34.2 5.2" stroke="${C.groove}" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+      <path d="M18.2 2.2 Q29.2 3.2 38.7 2.2" stroke="${C.groove}" stroke-width="1.1" fill="none"/>
+      <circle cx="18.6" cy="7.6" r="2.2" fill="${C.sun}"/>
+      ${mask}${glasses}${hat(look.hat)}${scarf}</g>`;
+  }
+  const logo = () => `<span class="logo"><svg viewBox="-24 -28 66 56" aria-hidden="true">${puffin(0, 0, 1)}</svg></span>`;
+
+  // ---- What rides on the car -------------------------------------------------
+  // The roof rack is at y 29, from x 52 to 106; the drawing is 4..194 by 9..117.
+  const loads = {
+    luggage: (m, snow) => `<g class="load base">
+      <rect x="58" y="16" width="42" height="12" rx="3" fill="${C.crow}"/>
+      <rect x="75" y="13" width="9" height="4" rx="2" fill="none" stroke="${m.tyre}" stroke-width="1.6"/>
+      <path d="M64 16 V28 M94 16 V28" stroke="${C.strap}" stroke-width="2"/>
+      ${snow ? `<path d="M57 18.5 Q56.4 14 60.6 14.2 Q66 12.6 70.6 14 Q74.4 12.8 76.8 14 L82.4 14 Q86.4 12.6 90.6 14 Q95.6 12.8 98.2 14.2 Q102 14.4 101 18.5 Z" fill="${snow}"/>` : ""}</g>`,
+    tree: () => {
+      const bulbs = [[73, 6.5], [84, 7.5], [69, 15.5], [79, 16.5], [90, 15.5], [65, 25], [74, 25.5], [84, 25.5], [93.5, 24.5]];
+      const colours = [C.sun, C.crow, C.aurora2, C.white, C.sun, C.crow, C.white, C.aurora2, C.sun];
+      return `<g class="load base">
+        <path d="M79 -5 L91.5 10 L66.5 10 Z" fill="${C.tree}"/>
+        <path d="M79 2 L95.5 19.5 L62.5 19.5 Z" fill="${C.tree}"/>
+        <path d="M79 10 L98.5 28.6 L59.5 28.6 Z" fill="${C.tree}"/>
+        <path d="M79 -5 L84 1 L79 0 Z M79 2 L86 9.6 L79 8.6 Z M79 10 L88 18.6 L79 17.8 Z" fill="${C.treeLight}"/>
+        <path d="M68 9 Q79 13 90 8 M64 18.6 Q79 23 94 18 M61 27.6 Q79 31 97 27" stroke="${C.wool}" stroke-width="0.9" fill="none" opacity="0.8"/>
+        ${bulbs.map(([x, y], i) => `<circle class="bulb" style="--d:${1450 + i * 95}ms" cx="${x}" cy="${y}" r="2.1" fill="${colours[i]}"/>`).join("")}
+        <path class="bulb" style="--d:${1450 + 9 * 95}ms" d="${star(79, -6.5, 5.4)}" fill="${C.sun}" stroke="${C.wing}" stroke-width="0.8"/></g>`;
+    },
+    egg: () => `<g class="load base">
+      <g class="chick">
+        <circle cx="79" cy="-9" r="6.2" fill="${C.sun}"/>
+        <circle cx="81.4" cy="-10.6" r="1.1" fill="${C.face}"/>
+        <path d="M84.6 -9.6 L88.4 -8.4 L84.6 -7.2 Z" fill="${C.beak}"/>
+        <path d="M74.4 -7.6 Q76.6 -11 78.6 -7.4" stroke="${C.wing}" stroke-width="1.3" fill="none" stroke-linecap="round"/></g>
+      <ellipse cx="79" cy="11" rx="14.5" ry="18.5" fill="${C.choc}"/>
+      <ellipse cx="73.2" cy="2.6" rx="2.6" ry="6" fill="${C.white}" opacity="0.18" transform="rotate(18 73.2 2.6)"/>
+      <path d="M65.2 8 L69.6 4 L74.4 8 L79 4 L83.6 8 L88.4 4 L92.8 8" stroke="${C.crow}" stroke-width="2.4" fill="none" stroke-linejoin="round"/>
+      <circle cx="72" cy="17" r="2.3" fill="${C.sun}"/><circle cx="86" cy="17" r="2.3" fill="${C.sun}"/><circle cx="79" cy="21.5" r="2.3" fill="${C.white}"/></g>`,
+    tent: () => `<g class="load base wobble">
+      <rect x="55" y="18" width="46" height="11" rx="5.5" fill="${C.tent}"/>
+      <path d="M63 18 V29 M93 18 V29" stroke="${C.tentDark}" stroke-width="1.8"/>
+      <rect x="60" y="8.6" width="32" height="10.4" rx="5.2" fill="${C.bag}"/>
+      <path d="M68 8.6 V19 M84 8.6 V19" stroke="${C.bagDark}" stroke-width="1.5"/>
+      <g transform="rotate(-8 82 4)">
+        <rect x="80" y="2.2" width="22" height="3.2" rx="1.2" fill="${C.chocDark}"/>
+        <circle cx="72" cy="4" r="5.6" fill="${C.guitar}"/><circle cx="79" cy="3.8" r="4.3" fill="${C.guitar}"/>
+        <circle cx="75.6" cy="3.9" r="1.6" fill="${C.chocDark}"/>
+        <rect x="101" y="1.4" width="4" height="4.8" rx="1" fill="${C.chocDark}"/></g></g>`,
+    bun: () => `<g class="load base wobble">
+      <path d="M60 22 C60 18 66 17 79 17 C92 17 98 18 98 22 L97 26 C96 29.4 62 29.4 61 26 Z" fill="${C.bun}"/>
+      <path d="M59.5 21.6 Q59.6 17 63.2 17.8 Q66.8 15.2 70.4 17.6 Q74 15.2 77.6 17.6 Q81.2 15.2 84.8 17.6 Q88.4 15.2 92 17.6 Q95.6 15.6 98.4 17.8 Q99 20 98.5 21.6 Z" fill="${C.cream}"/>
+      <path d="M61 21.2 H97" stroke="${C.jam}" stroke-width="1.8"/>
+      <path d="M60 17 C60 4 70 0 79 0 C88 0 98 4 98 17 Z" fill="${C.bun}"/>
+      <path d="M61.5 12 C62 4.2 70 1.4 79 1.4 C88 1.4 96 4.2 96.5 12 C93 9.4 89 13.6 85 10.4 C81 13.8 77 9.6 73 12.6 C69 9.6 65.4 13.6 61.5 12 Z" fill="${C.chocDark}"/>
+      <circle cx="70" cy="5" r="0.9" fill="${C.white}"/><circle cx="83" cy="4" r="0.9" fill="${C.white}"/><circle cx="90" cy="7" r="0.9" fill="${C.white}"/></g>`,
+    flowers: () => {
+      const tulip = (x, top, fill) => `<path d="M${x - 3.6} ${top + 1} Q${x - 3.8} ${top - 5} ${x - 1.7} ${top - 6} L${x} ${top - 3.4} L${x + 1.7} ${top - 6} Q${x + 3.8} ${top - 5} ${x + 3.6} ${top + 1} Q${x} ${top + 4.4} ${x - 3.6} ${top + 1} Z" fill="${fill}"/>`;
+      const heads = [[65, 7, C.crow], [72, 3, C.red], [79, 1, C.sun], [86, 3, C.crow], [93, 7, C.white]];
+      return `<g class="load base wobble">
+        <path d="M65 18 V7 M72 18 V3 M79 18 V1 M86 18 V3 M93 18 V7" stroke="${C.stem}" stroke-width="1.8"/>
+        <path d="M68 16 Q66 11 69.6 9 Q70.6 13 68 16 Z M90 16 Q92 11 88.4 9 Q87.4 13 90 16 Z" fill="${C.stem}"/>
+        ${heads.map(([x, t, c]) => tulip(x, t, c)).join("")}
+        <rect x="58" y="16" width="42" height="12" rx="3" fill="${C.wool}"/>
+        <path d="M58 21.2 H100" stroke="${C.crow}" stroke-width="2.4"/></g>`;
+    },
+  };
+  // An Icelandic flag on a pole, the cloth streaming back (to the left).
+  function flag(x, top, pole, size) {
+    return `<g>
+      <path d="M${x} ${top + pole} V${top - 1}" stroke="${C.trim}" stroke-width="1.6" stroke-linecap="round"/>
+      <circle cx="${x}" cy="${top - 1.4}" r="1.3" fill="${C.sun}"/>
+      <g class="cloth"><g transform="translate(${x} ${top}) scale(${-size} ${size})">
+        <rect width="25" height="18" fill="${C.flagBlue}"/>
+        <rect x="7" width="4" height="18" fill="${C.white}"/><rect y="7" width="25" height="4" fill="${C.white}"/>
+        <rect x="8" width="2" height="18" fill="${C.flagRed}"/><rect y="8" width="25" height="2" fill="${C.flagRed}"/></g></g></g>`;
+  }
+  // Balloons tied at the car's back, trailing behind it.
+  function balloons() {
+    const tie = [13, 79];
+    const list = [[-4, 36, C.flagBlue], [9, 27, C.white], [-17, 47, C.flagRed]];
+    return `<g class="balloons pivot">${pivotBox(...tie, 60)}
+      ${list.map(([x, y]) => `<path d="M${tie[0]} ${tie[1]} Q${(x + tie[0]) / 2 + 4} ${(y + tie[1]) / 2 + 6} ${x} ${y + 9.4}" stroke="${C.trim}" stroke-width="1" fill="none"/>`).join("")}
+      ${list.map(([x, y, c]) => `<ellipse cx="${x}" cy="${y}" rx="7.6" ry="9.2" fill="${c}"/><path d="M${x - 1.6} ${y + 9.6} L${x + 1.6} ${y + 9.6} L${x} ${y + 7.6} Z" fill="${c}"/><ellipse cx="${x - 2.6}" cy="${y - 3.4}" rx="1.6" ry="2.8" fill="#FFFFFF" opacity="0.45"/>`).join("")}</g>`;
+  }
+
+  // ---- The car (PuffinsInCar), from the side, driving right -----------------
+  const windows = "M42 66 C44 50 56 39 77 37 L77 66 Z M83 37 C103 37 116 47 124 66 L83 66 Z";
+  function car(mode, theme) {
+    const m = MODE[mode];
+    const clip = id("windows");
+    const t = theme || {};
+    const looks = { you: { scarf: C.moss, ...(t.looks?.you || {}) }, driver: { hat: { kind: "wool", colour: C.crow }, ...(t.looks?.driver || {}) } };
+    const load = t.load ? loads[t.load](m) : loads.luggage(m, t.snowRoof ? (mode === "dark" ? "#9FB3BF" : "#FFFFFF") : null);
+    const wheel = (cx) => `<circle cx="${cx}" cy="100" r="15" fill="${m.tyre}"/><circle cx="${cx}" cy="100" r="7" fill="${C.hub}"/><circle cx="${cx}" cy="100" r="2.4" fill="${m.tyre}"/>`;
+    const flags = t.flags === "wings" ? flag(172, 44, 27, 0.72) + flag(25, 48, 24, 0.64) : t.flags === "roof" ? flag(100, -4, 33, 0.95) : "";
+    return `<svg viewBox="4 9 190 108" aria-hidden="true" focusable="false">
+      <defs><clipPath id="${clip}"><path d="${windows}"/></clipPath></defs>
+      ${t.balloons ? balloons() : ""}
+      <g class="car-body">
+        ${load}
+        <path d="M52 29 H106 M60 29 V33 M98 29 V33" stroke="${m.tyre}" stroke-width="2.4" stroke-linecap="round"/>
+        ${t.heart ? `<g class="heart pivot">${heart(t.heart === "you" ? 62 : 104, t.load ? -6 : 8, 1.25, C.red)}</g>` : ""}
+        <path d="M14 98 C10 86 16 74 30 69 C34 46 54 31 80 31 C106 31 122 44 130 64 C152 65 172 70 182 81 C186 86 186 92 185 98 Z" fill="${C.body}"/>
+        <path d="${windows}" fill="${C.glass}"/>
+        <g clip-path="url(#${clip})">
+          <g class="pf-you">${puffin(58, 57, 0.54, looks.you)}</g>
+          <g class="pf-driver">${puffin(96, 58, 0.58, looks.driver)}</g>
+        </g>
+        <path d="M114 48 L107 62" stroke="${C.white}" stroke-width="2" stroke-linecap="round" opacity="0.7"/>
+        <path d="M80 68 V91" stroke="${C.wing}" stroke-width="1.6" stroke-linecap="round"/>
+        <rect x="85" y="72" width="8" height="2.6" rx="1.3" fill="${C.wing}"/>
+        <path d="M26 98 C26 80 38 72 52 72 C66 72 77 80 78 98 Z" fill="${C.wing}"/>
+        <path d="M124 98 C125 80 137 72 151 72 C165 72 176 80 178 98 Z" fill="${C.wing}"/>
+        <rect x="74" y="93" width="54" height="6" rx="3" fill="${C.trim}"/>
+        <circle cx="170" cy="80" r="6.2" fill="${C.light}" stroke="${C.trim}" stroke-width="2"/>
+        <rect x="11" y="78" width="6" height="9" rx="3" fill="${C.crow}"/>
+        <rect x="178" y="93" width="14" height="5.5" rx="2.75" fill="${C.trim}"/>
+        <rect x="6" y="93" width="14" height="5.5" rx="2.75" fill="${C.trim}"/>
+        ${flags}
+      </g>
+      <g>${wheel(52)}${wheel(151)}</g>
+    </svg>`;
+  }
+  const carHeight = (w) => (w * 108) / 190;
+  const wheelBottom = (115 - 9) / 108;
+
+  // A puffin flying, wing beating (spring).
+  function flyer() {
+    return `<g class="bob"><g transform="scale(0.62)">
+      <path d="M-30 4 L-38 -2 L-37 9 Z" fill="${C.face}"/>
+      <path d="M-24 10 L-31 16 L-22 14 Z M-19 11 L-24 18 L-15 14 Z" fill="${C.beak}"/>
+      <ellipse cx="-6" cy="4" rx="26" ry="12" fill="${C.face}"/>
+      <path d="M-26 8 C-18 16 6 18 16 10 C6 12 -14 12 -26 8 Z" fill="${C.white}"/>
+      ${puffin(16, -2, 0.5)}
+      <path class="wing" d="M-14 2 C-14 -16 -2 -26 8 -24 C2 -16 -2 -6 2 2 Z" fill="${C.face}"/></g></g>`;
+  }
+
+  // ---- The Iceland scene (IcelandScene), richer ------------------------------
+  const ridges = {
+    narrow: [[0, 0.8], [0.12, 0.55], [0.24, 0.72], [0.38, 0.45], [0.52, 0.7], [0.68, 0.5], [0.84, 0.74], [0.94, 0.6], [1, 0.72]],
+    wide: [[0, 0.62], [0.05, 0.42], [0.1, 0.56], [0.17, 0.3], [0.25, 0.6], [0.31, 0.5], [0.37, 0.72], [0.5, 0.82], [0.63, 0.7], [0.7, 0.45], [0.77, 0.62], [0.84, 0.28], [0.91, 0.55], [0.96, 0.4], [1, 0.55]],
+  };
+  const farRidges = {
+    narrow: [[0, 0.6], [0.1, 0.42], [0.22, 0.6], [0.31, 0.38], [0.46, 0.58], [0.6, 0.4], [0.76, 0.62], [0.9, 0.46], [1, 0.58]],
+    wide: [[0, 0.5], [0.08, 0.36], [0.14, 0.48], [0.22, 0.27], [0.3, 0.46], [0.42, 0.38], [0.56, 0.55], [0.66, 0.34], [0.74, 0.5], [0.8, 0.27], [0.88, 0.42], [0.95, 0.3], [1, 0.45]],
+  };
+  const at = ([x, y]) => `${f1(x)} ${f1(y)}`;
+
+  /**
+   * The scene, w by h with the land's line at `ground`. `room` is where a
+   * day's things may go: on a phone all of it, on a laptop the car's corner.
+   */
+  function scene(w, h, ground, P, opts) {
+    const { road = true, room = [0, w], mode, wide = w > 4 * ground, cover = null, seed = 7 } = opts;
+    const rnd = random(seed);
+    const sky = id("sky");
+    const inRoom = (x) => x >= room[0] && x <= room[1];
+    const shape = (list) => list.map(([x, y]) => [x * w, y * ground]);
+    const pts = shape(wide ? ridges.wide : ridges.narrow);
+    const farPts = shape(wide ? farRidges.wide : farRidges.narrow);
+    const mountains = `M0 ${ground} ${pts.map((p) => `L${at(p)}`).join(" ")} L${w} ${ground} Z`;
+    const far = `M0 ${ground} ${farPts.map((p) => `L${at(p)}`).join(" ")} L${w} ${ground} Z`;
+    const capsOf = (pal) => {
+      const count = pal.caps ?? 2, f = pal.depth ?? 1 / 3;
+      const capped = pts.map(([, y], index) => ({ y, index })).slice(1, -1).sort((a, b) => a.y - b.y).slice(0, count).map((p) => p.index);
+      return capped.map((i) => {
+        const [px, py] = pts[i], [lx, ly] = pts[i - 1], [rx, ry] = pts[i + 1];
+        const l = [px + (lx - px) * f, py + (ly - py) * f], r = [px + (rx - px) * f, py + (ry - py) * f];
+        const dip = (l[1] + r[1]) / 2 - py;
+        return `M${at(l)} L${at([px, py])} L${at(r)} L${at([px + (r[0] - px) / 2, py + dip * 0.7])} L${at([px, py + dip])} L${at([px + (l[0] - px) / 2, py + dip * 0.7])} Z`;
+      });
+    };
+    const hills = `M0 ${ground} L0 ${ground - 16} C${at([w * 0.22, ground - 40])} ${at([w * 0.4, ground - 2])} ${at([w * 0.58, ground - 18])} S${at([w * 0.86, ground - 36])} ${at([w, ground - 12])} L${w} ${ground} Z`;
+    const backY = (x) => ground - (28 + 12 * Math.sin(2 * Math.PI * ((x / w) * (wide ? 2.4 : 1.15) + 0.15)));
+    const back = () => {
+      const list = [];
+      for (let x = 0; x <= w + 6; x += 6) list.push(`L${f1(Math.min(x, w))} ${f1(backY(Math.min(x, w)))}`);
+      return `M0 ${ground} ${list.join(" ")} L${w} ${ground} Z`;
+    };
+    const below = h - ground;
+    const m = MODE[mode];
+
+    // The sky's own things, behind the mountains.
+    let skyThings = "";
+    if (P.stars) {
+      for (let i = 0; i < (wide ? 18 : 12); i++) {
+        const x = room[0] + rnd() * (room[1] - room[0]);
+        const y = (wide ? 10 : 52) + rnd() * (ground * 0.45 - (wide ? 10 : 52));
+        skyThings += `<circle cx="${f1(x)}" cy="${f1(y)}" r="${f1(0.6 + rnd() * 0.8)}" fill="#FFFFFF" opacity="${f1(0.35 + rnd() * 0.5)}"/>`;
+      }
+    }
+    if (P.aurora) {
+      const x0 = room[0], x1 = room[1], y0 = wide ? ground * 0.3 : Math.max(58, ground * 0.44);
+      const g = id("aurora");
+      const ribbon = (dy, amp, thick, phase) => {
+        const top = [], bottom = [];
+        for (let x = x0; x <= x1 + 8; x += 8) {
+          const xx = Math.min(x, x1), k = (xx - x0) / Math.max(1, x1 - x0);
+          const yy = y0 + dy + amp * Math.sin(k * Math.PI * 2.2 + phase) - k * 6;
+          // Thin at both ends, so it fades into the sky rather than stopping.
+          const taper = Math.pow(Math.sin(Math.PI * Math.min(1, Math.max(0, k))), 0.6);
+          top.push(`${f1(xx)} ${f1(yy - thick * taper)}`);
+          bottom.unshift(`${f1(xx)} ${f1(yy)}`);
+        }
+        return `M${top.join(" L")} L${bottom.join(" L")} Z`;
+      };
+      skyThings += `<defs><linearGradient id="${g}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="${C.aurora}" stop-opacity="0"/><stop offset="0.65" stop-color="${C.aurora}" stop-opacity="0.75"/><stop offset="1" stop-color="${C.aurora2}" stop-opacity="0.25"/></linearGradient></defs>
+        <g class="aurora" opacity="${mode === "dark" ? 0.9 : 0}">
+          <path d="${ribbon(0, 5, 16, 0)}" fill="url(#${g})"/>
+          <path d="${ribbon(8, 4, 11, 1.7)}" fill="url(#${g})" opacity="0.6"/></g>`;
+    }
+    if (P.sun) {
+      const x = wide ? room[1] - 62 : w * 0.84, y = wide ? 40 : Math.max(64, ground * 0.44);
+      skyThings += `<g class="glow pivot" style="transform-origin:50% 50%"><circle cx="${f1(x)}" cy="${f1(y)}" r="17" fill="${P.sun}" opacity="0.22"/></g><circle cx="${f1(x)}" cy="${f1(y)}" r="10" fill="${P.sun}"/>`;
+    }
+    if (P.lowSun || P.midnightSun) {
+      const c = P.lowSun || P.midnightSun;
+      const x = wide ? room[1] - 70 : w * 0.8, y = wide ? ground * 0.5 : ground * 0.66;
+      skyThings += `<circle cx="${f1(x)}" cy="${f1(y)}" r="22" fill="${c}" opacity="0.2"/><circle cx="${f1(x)}" cy="${f1(y)}" r="12" fill="${c}"/>`;
+    }
+    if (opts.sunrise) {
+      const x = wide ? room[1] - 46 : w * 0.2, y = wide ? 42 : Math.max(66, ground * 0.46);
+      const rays = Array.from({ length: 12 }, (_, i) => {
+        const a = (i * Math.PI) / 6;
+        return `M${f1(x + 15 * Math.cos(a))} ${f1(y + 15 * Math.sin(a))} L${f1(x + 22 * Math.cos(a))} ${f1(y + 22 * Math.sin(a))}`;
+      }).join(" ");
+      skyThings += `<g class="sun-up"><g class="rays pivot">${pivotBox(x, y, 24)}<path d="${rays}" stroke="${C.sun}" stroke-width="3" stroke-linecap="round"/></g>
+        <circle cx="${f1(x)}" cy="${f1(y)}" r="12" fill="${C.sun}"/>
+        <path d="M${f1(x - 5)} ${f1(y + 2)} Q${f1(x)} ${f1(y + 6.5)} ${f1(x + 5)} ${f1(y + 2)}" stroke="${C.wing}" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+        <circle cx="${f1(x - 4)}" cy="${f1(y - 3)}" r="1.3" fill="${C.wing}"/><circle cx="${f1(x + 4)}" cy="${f1(y - 3)}" r="1.3" fill="${C.wing}"/></g>`;
+    }
+
+    // Things on the hills, where they may go.
+    const housesAt = wide ? [room[1] - 44] : [w * 0.1];
+    let onBack = "";
+    if (P.house && P.hillBack) {
+      for (const x of housesAt) {
+        const y = backY(x) + 1.5;
+        onBack += `<g>
+          <rect x="${f1(x - 7)}" y="${f1(y - 8)}" width="14" height="8.4" fill="${m.wall}"/>
+          <path d="M${f1(x - 8.6)} ${f1(y - 7.4)} L${f1(x - 3.4)} ${f1(y - 13.4)} L${f1(x + 3.4)} ${f1(y - 13.4)} L${f1(x + 8.6)} ${f1(y - 7.4)} Z" fill="${P.roof}"/>
+          ${P.snow ? `<path d="M${f1(x - 3.4)} ${f1(y - 13.4)} L${f1(x + 3.4)} ${f1(y - 13.4)} L${f1(x + 5.6)} ${f1(y - 10.8)} L${f1(x - 5.6)} ${f1(y - 10.8)} Z" fill="${P.snow}"/>` : ""}
+          <rect x="${f1(x - 4.6)}" y="${f1(y - 5.6)}" width="3" height="3" fill="${m.window}"/><rect x="${f1(x + 1.4)}" y="${f1(y - 5.6)}" width="3" height="5.6" fill="${m.window}"/></g>`;
+      }
+    }
+    // Where the drawing has room for small things along the hills' foot.
+    const zones = wide ? [[room[0] + 6, room[1] - 6]] : [[4, w * 0.27], [w * 0.73, w - 4]];
+    const along = (n, fn) => {
+      let out = "";
+      zones.forEach(([a, b], z) => {
+        for (let i = 0; i < n; i++) out += fn(a + ((i + 0.5) / n) * (b - a) + (rnd() - 0.5) * 6, z, i);
+      });
+      return out;
+    };
+    let foot = "";
+    if (P.lupines) {
+      foot += along(wide ? 9 : 4, (x, z, i) => {
+        const spikes = [-4, 0, 4].map((dx, k) => {
+          const hgt = 7 + ((i + k) % 3) * 1.6;
+          return `<path d="M${f1(x + dx)} ${ground - 2} V${f1(ground - 3 - hgt)}" stroke="${C.stem}" stroke-width="1"/>
+            <ellipse cx="${f1(x + dx)}" cy="${f1(ground - 4 - hgt)}" rx="1.8" ry="${f1(hgt * 0.55)}" fill="${k === 1 ? C.lupineLight : C.lupine}"/>`;
+        }).join("");
+        return `<g class="lupine base" style="--d:${120 + i * 90 + z * 60}ms">${spikes}</g>`;
+      });
+    }
+    if (P.flowers) {
+      foot += along(wide ? 12 : 5, (x, z, i) => {
+        const y = ground - 4 - (i % 3) * 3;
+        const c = i % 2 === 0 ? C.sun : C.white;
+        return `<g class="grow base" style="--d:${300 + i * 110 + z * 70}ms"><path d="M${f1(x)} ${ground - 1} V${f1(y)}" stroke="${C.stem}" stroke-width="0.9"/><circle cx="${f1(x)}" cy="${f1(y - 1.4)}" r="2.1" fill="${c}"/><circle cx="${f1(x)}" cy="${f1(y - 1.4)}" r="0.8" fill="${C.wing}"/></g>`;
+      });
+    }
+    // Heather and birch on the hills, inside the hills' outline.
+    let patches = "";
+    if (P.heather) {
+      const clip = id("hills");
+      let blobs = "";
+      zones.forEach(([a, b]) => {
+        const n = Math.round((b - a) / 5);
+        for (let i = 0; i < n; i++) {
+          const x = a + rnd() * (b - a), y = ground - 2 - rnd() * 34;
+          const r = 1.6 + rnd() * 2.6;
+          blobs += `<circle cx="${f1(x)}" cy="${f1(y)}" r="${f1(r)}" fill="${rnd() < 0.55 ? C.heather : C.birch}" opacity="${mode === "dark" ? 0.6 : 0.85}"/>`;
+        }
+      });
+      patches = `<defs><clipPath id="${clip}"><path d="${hills}"/></clipPath></defs><g clip-path="url(#${clip})">${blobs}</g>`;
+    }
+    // The first snow: the winter's white over the autumn's colours, fading in.
+    let snowCover = "";
+    if (cover) {
+      snowCover = `<g class="cover">
+        ${cover.far ? `<path d="${far}" fill="${cover.far}"/>` : ""}
+        <path d="${mountains}" fill="${cover.mountain}" stroke="${cover.mountain}" stroke-width="4" stroke-linejoin="round"/>
+        ${capsOf(cover).map((d) => `<path d="${d}" fill="${cover.glacier}" stroke="${cover.glacier}" stroke-width="3" stroke-linejoin="round"/>`).join("")}
+        ${cover.hillBack ? `<path d="${back()}" fill="${cover.hillBack}"/>` : ""}
+        <path d="${hills}" fill="${cover.hill}"/></g>`;
+    }
+    const banksOf = (colour) => `<path d="M0 ${ground + 2} ${Array.from({ length: Math.ceil(w / 18) + 1 }, (_, i) => `Q${f1(i * 18 + 9)} ${ground - 3} ${f1(i * 18 + 18)} ${ground + 2}`).join(" ")} L${w} ${ground + 3.5} L0 ${ground + 3.5} Z" fill="${colour}"/>`;
+    const banks = road ? (P.snow ? banksOf(P.snow) : "") + (cover && cover.snow ? `<g class="cover">${banksOf(cover.snow)}</g>` : "") : "";
+    return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true" focusable="false">
+      <defs><linearGradient id="${sky}" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="${f1(ground * 0.85)}"><stop offset="0" stop-color="${P.skyTop}"/><stop offset="1" stop-color="${P.sky}"/></linearGradient></defs>
+      <rect width="${w}" height="${h}" fill="url(#${sky})"/>
+      ${skyThings}
+      ${P.far ? `<path d="${far}" fill="${P.far}" stroke="${P.far}" stroke-width="3" stroke-linejoin="round"/>` : ""}
+      <path d="${mountains}" fill="${P.mountain}" stroke="${P.mountain}" stroke-width="4" stroke-linejoin="round"/>
+      ${capsOf(P).map((d) => `<path d="${d}" fill="${P.glacier}" stroke="${P.glacier}" stroke-width="3" stroke-linejoin="round"/>`).join("")}
+      ${P.hillBack ? `<path d="${back()}" fill="${P.hillBack}"/>` : ""}
+      ${onBack}
+      <path d="${hills}" fill="${P.hill}"/>
+      ${patches}
+      ${snowCover}
+      ${foot}
+      ${road
+        ? `<rect y="${ground}" width="${w}" height="${below}" fill="${P.road}"/>${banks}<path d="M8 ${ground + below / 2 + 1} H${w}" stroke="${P.roadLine}" stroke-width="2.5" stroke-dasharray="14 12" stroke-linecap="round"/>`
+        : `<rect y="${ground}" width="${w}" height="${below}" fill="${cover ? cover.hill : P.hill}"/>`}
+    </svg>`;
+  }
+
+  // The moments that move over the scene, in front of it (snow, leaves) or
+  // behind the car (puffins flying, fireworks).
+  function overlay(kind, w, h, ground, room, mode, seed) {
+    const rnd = random(seed * 31 + 5);
+    const span = room[1] - room[0];
+    let out = "";
+    if (kind === "snow" || kind === "snowHeavy") {
+      const n = Math.round((kind === "snow" ? 16 : 30) * Math.min(1.6, span / 320));
+      const colour = mode === "dark" ? "#DCE7EC" : "#FFFFFF";
+      for (let i = 0; i < n; i++) {
+        const x = room[0] + rnd() * span, y = 48 + rnd() * 26;
+        const fall = ground - y + 4 - rnd() * 22;
+        out += `<circle class="flake" style="--t:${Math.round(1700 + rnd() * 900)}ms;--d:${Math.round(rnd() * 900)}ms;--dx:${f1((rnd() - 0.3) * 26)}px;--dy:${f1(fall)}px" cx="${f1(x)}" cy="${f1(y)}" r="${f1(1.3 + rnd() * 1.4)}" fill="${colour}" stroke="#9FB3BF" stroke-opacity="${mode === "dark" ? 0 : 0.6}" stroke-width="0.6"/>`;
+      }
+    }
+    if (kind === "leaves") {
+      for (let i = 0; i < 8; i++) {
+        const x = room[0] + rnd() * span * 0.45, y = ground - 30 + rnd() * 34;
+        const c = [C.birch, C.heather, C.wing][i % 3];
+        out += `<path class="leaf" style="--t:${Math.round(1500 + rnd() * 700)}ms;--d:${Math.round(150 + rnd() * 1000)}ms;--dx:${f1(span * (0.35 + rnd() * 0.3))}px;--dy:${f1(-6 + rnd() * 22)}px;--r:${Math.round(200 + rnd() * 300)}deg;transform-box:fill-box;transform-origin:50% 50%"
+          d="M${f1(x)} ${f1(y - 4)} C${f1(x + 3.4)} ${f1(y - 3)} ${f1(x + 4)} ${f1(y)} ${f1(x)} ${f1(y + 4)} C${f1(x - 4)} ${f1(y)} ${f1(x - 3.4)} ${f1(y - 3)} ${f1(x)} ${f1(y - 4)} Z" fill="${c}"/>`;
+      }
+    }
+    if (kind === "flyers") {
+      const list = [[0.4, 200, 2500, 1], [0.52, 520, 2700, 0.82]];
+      for (const [k, d, t, s] of list) {
+        const y = room[0] === 0 && span === w ? Math.max(56, ground * k) : 26 + 40 * (k - 0.4);
+        out += `<g class="flyer" style="--from:${f1(room[0] - 40)}px;--to:${f1(room[1] + 40)}px;--d:${d}ms;--t:${t}ms"><g transform="translate(0 ${f1(y)}) scale(${s})">${flyer()}</g></g>`;
+      }
+    }
+    if (kind === "fireworks") {
+      const spots = room[0] === 0 && span === w
+        ? [[w * 0.15, Math.max(62, ground * 0.47), 15, C.crow, 300], [w * 0.86, Math.max(64, ground * 0.48), 17, C.sun, 850], [w * 0.31, 58, 9, C.aurora2, 1400]]
+        : [[room[0] + 50, 40, 20, C.crow, 300], [room[1] - 60, 34, 24, C.sun, 850], [room[0] + span * 0.52, 26, 14, C.aurora2, 1400]];
+      for (const [x, y, r, c, d] of spots) {
+        const rays = Array.from({ length: 12 }, (_, i) => {
+          const a = (i * Math.PI) / 6 + 0.2;
+          return `M${f1(x + r * 0.35 * Math.cos(a))} ${f1(y + r * 0.35 * Math.sin(a))} L${f1(x + r * Math.cos(a))} ${f1(y + r * Math.sin(a))}`;
+        }).join(" ");
+        const dots = Array.from({ length: 12 }, (_, i) => {
+          const a = (i * Math.PI) / 6 + 0.2 + Math.PI / 12;
+          return `<circle cx="${f1(x + r * 0.78 * Math.cos(a))}" cy="${f1(y + r * 0.78 * Math.sin(a))}" r="1.3" fill="${C.white}"/>`;
+        }).join("");
+        out += `<path class="trail" style="--d:${d}ms" d="M${f1(x)} ${f1(y + 26)} L${f1(x)} ${f1(y + 4)}" stroke="${c}" stroke-width="1.6" stroke-linecap="round"/>
+          <g class="burst" style="--d:${d}ms">${pivotBox(x, y, r + 2)}<path d="${rays}" stroke="${c}" stroke-width="2.2" stroke-linecap="round"/>${dots}<circle cx="${f1(x)}" cy="${f1(y)}" r="2" fill="${c}"/></g>`;
+      }
+    }
+    return out;
+  }
+
+  // ---- Seasons and days ------------------------------------------------------
+  const THEMES = {
+    winter: { group: "season", en: "Winter", is: "Vetur", scene: "winter", snowRoof: true, fx: ["snow"],
+      when: "From the first day of winter (a Saturday, 21 to 27 October) to 31 March.",
+      look: "Snow on the hills, the road's edge and the roof box, and more on the peaks. On a dark screen, the northern lights.",
+      moves: "A little snow falls as the car comes in; on a dark screen the northern lights brighten." },
+    spring: { group: "season", en: "Spring", is: "Vor", scene: "spring", fx: ["flyers"],
+      when: "1 April to 31 May.", look: "Fresh green, flowers in the grass, the last snow on the peaks.",
+      moves: "Two puffins fly past, back for the summer, and the flowers open." },
+    summer: { group: "season", en: "Summer", is: "Sumar", scene: "summer", fx: [],
+      when: "1 June to 31 August.", look: "Deep green hills and purple lupines. The sun high on a light screen; on a dark one, the midnight sun low on the mountains.",
+      moves: "The lupines sway in the car's wind, and the sun glows." },
+    autumn: { group: "season", en: "Autumn", is: "Haust", scene: "autumn", fx: ["leaves"],
+      when: "1 September to the day before the first day of winter.", look: "Heather red and birch gold on the hills, the first snow on the peaks. On a dark screen, the northern lights.",
+      moves: "A few leaves blow along behind the car." },
+
+    christmas: { group: "big", en: "Christmas", is: "Jólin", scene: "winter", load: "tree", fx: ["snow"],
+      looks: { you: { hat: { kind: "yule" } }, driver: { hat: { kind: "yule" } } },
+      greet: { is: "Gleðileg jól", en: "Merry Christmas" },
+      when: "12 December, when the first Yule Lad comes to town, to 6 January (Þrettándinn). New Year's Eve and Day have their own.",
+      look: "A little tree on the roof, and Yule hats.", moves: "The tree's lights come on one by one as the car stops, under a little snow." },
+    newyear: { group: "big", en: "New Year", is: "Áramót", scene: "winter", snowRoof: true, fx: ["fireworks"],
+      looks: { you: { hat: { kind: "party", colour: C.sky } }, driver: { hat: { kind: "party", colour: C.crow } } },
+      greet: { is: "Gleðilegt nýtt ár", en: "Happy New Year" },
+      when: "31 December and 1 January.", look: "Fireworks in the sky, and party hats.", moves: "Three fireworks go up and burst, one after another." },
+    easter: { group: "big", en: "Easter", is: "Páskar", scene: "spring", load: "egg", fx: [],
+      greet: { is: "Gleðilega páska", en: "Happy Easter" },
+      when: "Maundy Thursday (Skírdagur) to Easter Monday (Annar í páskum).", look: "A big Easter egg on the roof, its chick on top.",
+      moves: "The chick pops up out of the egg as the car stops." },
+    summerday: { group: "big", en: "First day of summer", is: "Sumardagurinn fyrsti", scene: "spring", sunrise: true, fx: [],
+      looks: { driver: { hat: { kind: "wool", colour: C.crow }, glasses: true } },
+      greet: { is: "Gleðilegt sumar", en: "Happy first day of summer" },
+      when: "The first Thursday after 18 April (19 to 25 April).", look: "The sun over the mountains, and the driver in sunglasses, still in the woolly hat.",
+      moves: "The sun rises over the mountains and its rays come out." },
+    june17: { group: "big", en: "National Day", is: "Þjóðhátíðardagurinn", scene: "summer", flags: "wings", balloons: true, fx: [],
+      greet: { is: "Gleðilega þjóðhátíð", en: "Happy National Day" },
+      when: "17 June.", look: "Flags on the car, and balloons in blue, white and red.", moves: "The flags flutter and the balloons swing as the car stops." },
+    longweekend: { group: "big", en: "The August long weekend", is: "Verslunarmannahelgin", scene: "summer", load: "tent", fx: [],
+      greet: { is: "Góða ferð um helgina", en: "Have a good trip this weekend" },
+      when: "The Wednesday before the first Monday in August, to that Monday: the year's biggest weekend for travel.",
+      look: "A tent, a sleeping bag and a guitar on the roof.", moves: "The load rocks forward as the car stops, and settles." },
+    winterday: { group: "big", en: "First day of winter", is: "Fyrsti vetrardagur", scene: "autumn", cover: "winter", snowRoof: true, fx: ["snowHeavy"],
+      looks: { you: { hat: { kind: "wool", colour: C.sky } } },
+      greet: { is: "Gleðilegan vetur", en: "Happy first day of winter" },
+      when: "The Saturday between 21 and 27 October.", look: "The first snow, and both puffins in woolly hats.",
+      moves: "Snow falls and the autumn hills turn white." },
+    dec1: { group: "big", en: "Sovereignty Day", is: "Fullveldisdagurinn", scene: "winter", flags: "roof", snowRoof: true, fx: [],
+      greet: { is: "Til hamingju með fullveldisdaginn", en: "Happy Sovereignty Day" },
+      when: "1 December.", look: "A flag on the roof.", moves: "The flag flutters as the car stops." },
+
+    bondadagur: { group: "small", en: "Bóndadagur and Konudagur", is: "Bóndadagur og konudagur", scene: "winter", load: "flowers", heart: "driver", fx: [],
+      greet: { is: "Til hamingju með bóndadaginn", en: "Happy Bóndadagur" },
+      when: "Bóndadagur: the Friday between 19 and 25 January, the first day of Þorri. Konudagur: the Sunday between 18 and 24 February, the first day of Góa.",
+      look: "Flowers on the roof, and a heart over the driver (over the passenger on Konudagur).", moves: "The flowers rock as the car stops, and the heart rises." },
+    konudagur: { group: "hidden", en: "Konudagur", is: "Konudagur", scene: "winter", load: "flowers", heart: "you", fx: [],
+      greet: { is: "Til hamingju með konudaginn", en: "Happy Konudagur" },
+      when: "The Sunday between 18 and 24 February, the first day of Góa.", look: "Flowers on the roof, and a heart over the passenger.", moves: "The flowers rock as the car stops, and the heart rises." },
+    bolludagur: { group: "small", en: "Bun Day", is: "Bolludagur", scene: "winter", load: "bun", fx: [],
+      greet: { is: "Gleðilegan bolludag", en: "Happy Bun Day" },
+      when: "The Monday before Ash Wednesday, 48 days before Easter Sunday.", look: "A cream bun on the roof.", moves: "The bun wobbles as the car stops." },
+    oskudagur: { group: "small", en: "Ash Wednesday", is: "Öskudagur", scene: "winter", snowRoof: true, fx: [],
+      looks: { you: { mask: true }, driver: { hat: { kind: "crown" } } },
+      greet: { is: "Gleðilegan öskudag", en: "Happy Ash Wednesday" },
+      when: "46 days before Easter Sunday, when children dress up and sing for sweets.", look: "The puffins dressed up: a mask and a crown.", moves: "The crown sparkles." },
+    seafarers: { group: "small", en: "Seafarers' Day", is: "Sjómannadagurinn", scene: "summer", fx: [],
+      looks: { you: { hat: { kind: "sailor" } }, driver: { hat: { kind: "sailor" } } },
+      greet: { is: "Til hamingju með sjómannadaginn", en: "Happy Seafarers' Day" },
+      when: "The first Sunday in June.", look: "Sailor caps.", moves: "Only the hop, with the lupines swaying." },
+  };
+
+  // ---- The calendar (Iceland's date) -----------------------------------------
+  const DAY = 86400000;
+  const ymd = (y, m, d) => Date.UTC(y, m - 1, d);
+  const weekday = (t) => new Date(t).getUTCDay();
+  function between(y, m, from, to, wd) {
+    for (let d = from; d <= to; d++) if (weekday(ymd(y, m, d)) === wd) return ymd(y, m, d);
+    return null;
+  }
+  function easterSunday(y) {
+    // The anonymous Gregorian algorithm.
+    const a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4;
+    const f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30;
+    const i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451);
+    const month = Math.floor((h + l - 7 * m + 114) / 31), day = ((h + l - 7 * m + 114) % 31) + 1;
+    return ymd(y, month, day);
+  }
+  // The days of a year, in the order that wins when two fall together: a
+  // one-day day before a longer one.
+  function daysOf(y) {
+    const e = easterSunday(y);
+    const winterDay = between(y, 10, 21, 27, 6);
+    const commerceMonday = between(y, 8, 1, 7, 1);
+    const one = (t) => [t, t];
+    return [
+      ["newyear", ...one(ymd(y, 1, 1))], ["newyear", ...one(ymd(y, 12, 31))],
+      ["dec1", ...one(ymd(y, 12, 1))],
+      ["june17", ...one(ymd(y, 6, 17))],
+      ["summerday", ...one(between(y, 4, 19, 25, 4))],
+      ["winterday", ...one(winterDay)],
+      ["bondadagur", ...one(between(y, 1, 19, 25, 5)), true],
+      ["konudagur", ...one(between(y, 2, 18, 24, 0)), true],
+      ["bolludagur", ...one(e - 48 * DAY), true],
+      ["oskudagur", ...one(e - 46 * DAY), true],
+      ["seafarers", ...one(between(y, 6, 1, 7, 0)), true],
+      ["easter", e - 3 * DAY, e + DAY],
+      ["longweekend", commerceMonday - 5 * DAY, commerceMonday],
+      ["christmas", ymd(y, 1, 2), ymd(y, 1, 6)], ["christmas", ymd(y, 12, 12), ymd(y, 12, 30)],
+    ];
+  }
+  function seasonOf(t) {
+    const d = new Date(t), y = d.getUTCFullYear(), m = d.getUTCMonth() + 1;
+    if (m <= 3 || t >= between(y, 10, 21, 27, 6)) return "winter";
+    if (m <= 5) return "spring";
+    if (m <= 8) return "summer";
+    return "autumn";
+  }
+  function themeFor(t, withSmall) {
+    const y = new Date(t).getUTCFullYear();
+    for (const [key, from, to, small] of daysOf(y)) {
+      if (small && !withSmall) continue;
+      if (t >= from && t <= to) return key;
+    }
+    return seasonOf(t);
+  }
+  function icelandToday() {
+    try {
+      const s = new Intl.DateTimeFormat("en-CA", { timeZone: "Atlantic/Reykjavik", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+      const [y, m, d] = s.split("-").map(Number);
+      return ymd(y, m, d);
+    } catch (e) {
+      const n = new Date();
+      return ymd(n.getUTCFullYear(), n.getUTCMonth() + 1, n.getUTCDate());
+    }
+  }
+  const fmt = (t, opts) => new Date(t).toLocaleDateString("en-GB", { timeZone: "UTC", ...opts });
+  const dayName = (t) => fmt(t, { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+  const span = (from, to) => (from === to ? dayName(from) : `${fmt(from, { weekday: "short", day: "numeric", month: "short" })} to ${dayName(to)}`);
+
+  // ---- Settings --------------------------------------------------------------
+  const state = { lang: "en", greet: true, small: false, day: icelandToday(), laptop: "christmas" };
+  const T = {
+    en: { title: "Share your ride", intro: "Carpool across Iceland: find a seat in someone else's car, or offer the empty seats in yours.", lang: "Íslenska", from: "From", to: "To", choose: "Choose a town or meeting point", find: "Find a ride", date: "Date", any: "Any day", nav: ["Find", "My rides", "Offer", "Messages", "Profile"] },
+    is: { title: "Verum samferða", intro: "Samakstur um allt Ísland: finndu far með öðrum eða bjóddu laus sæti í bílnum þínum.", lang: "English", from: "Frá", to: "Til", choose: "Veldu bæ eða mótsstað", find: "Finna far", date: "Dagsetning", any: "Allir dagar", nav: ["Leita", "Ferðirnar mínar", "Bjóða far", "Skilaboð", "Prófíll"] },
+  };
+  function pageMode() {
+    const set = document.documentElement.dataset.theme;
+    if (set === "light" || set === "dark") return set;
+    try { return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"; } catch (e) { return "light"; }
+  }
+  function colours(theme, palette, mode) {
+    const base = PAL[palette || (theme ? THEMES[theme].scene : "clear")][mode];
+    return base;
+  }
+
+  // ---- A phone's banner --------------------------------------------------------
+  function phone(frame, opts) {
+    const w = frame.clientWidth;
+    if (w === 0) return;
+    const { theme = null, palette = null, mode = pageMode(), full = false, seed = 7 } = opts;
+    const t = theme ? THEMES[theme] : {};
+    const P = colours(theme, palette, mode);
+    const cover = t.cover ? PAL[t.cover][mode] : null;
+    const words = T[state.lang];
+    frame.classList.remove("play");
+    const carW = Math.round(Math.min(170, w * 0.44));
+    const carH = carHeight(carW);
+    const carTop = 74;
+    const sceneH = Math.round(carTop + wheelBottom * carH + 11);
+    const ground = sceneH - 22;
+    const room = [0, w];
+    const fx = [...(t.fx || [])];
+    if (!theme && palette === "today") fx.length = 0;
+    const back = fx.filter((k) => k === "flyers" || k === "fireworks").map((k) => overlay(k, w, sceneH, ground, room, mode, seed)).join("");
+    const front = fx.filter((k) => k === "snow" || k === "snowHeavy" || k === "leaves").map((k) => overlay(k, w, sceneH, ground, room, mode, seed)).join("");
+    const greeting = state.greet && t.greet ? `<div class="greeting">${t.greet[state.lang]}</div>` : "";
+    frame.innerHTML = `
+      <div class="scene" style="height:${sceneH}px">
+        ${scene(w, sceneH, ground, P, { mode, room, cover, sunrise: t.sunrise, seed })}
+        <svg class="fx back" width="${w}" height="${sceneH}" viewBox="0 0 ${w} ${sceneH}" aria-hidden="true">${back}</svg>
+        <div class="brand">${logo()}<span class="name">PuffinRide</span><span class="beta">Beta</span><span class="lang">${words.lang}</span></div>
+        <div class="car-slot" style="left:${(w - carW) / 2}px;top:${carTop}px;width:${carW}px">
+          <div class="car drive" style="--from:${-(w / 2 + carW / 2 + 40)}px">${car(mode, t)}</div>
+        </div>
+        <svg class="fx front" width="${w}" height="${sceneH}" viewBox="0 0 ${w} ${sceneH}" aria-hidden="true">${front}</svg>
+      </div>
+      <div class="below">
+        ${greeting}
+        <div class="app-title">${words.title}</div>
+        ${full ? `<p class="app-intro">${words.intro}</p>
+        <div class="search">
+          <div class="field"><span class="dot"></span><b>${words.from}</b><span>${words.choose}</span></div>
+          <div class="field"><span class="dot full"></span><b>${words.to}</b><span>${words.choose}</span></div>
+          <div class="find">${words.find}</div>
+        </div>` : ""}
+      </div>`;
+  }
+
+  // ---- The laptop --------------------------------------------------------------
+  const laptopWrap = document.getElementById("laptop-wrap");
+  function buildLaptop() {
+    const key = state.laptop;
+    const isPalette = key.startsWith("pal:");
+    const theme = isPalette ? null : key;
+    const palette = isPalette ? key.slice(4) : null;
+    const mode = pageMode();
+    const t = theme ? THEMES[theme] : {};
+    const P = colours(theme, palette, mode);
+    const cover = t.cover ? PAL[t.cover][mode] : null;
+    const words = T[state.lang];
+    // The panel grows with what the title's line holds, as in the app.
+    const W = 1000 - 16 - 72, H = state.greet && t.greet ? 230 : 196, ground = H - 56;
+    const carW = 150, carH = carHeight(carW);
+    const room = [W - 300, W];
+    const fx = [...(t.fx || [])];
+    const back = fx.filter((k) => k === "flyers" || k === "fireworks").map((k) => overlay(k, W, H, ground, room, mode, 11)).join("");
+    const front = fx.filter((k) => k === "snow" || k === "snowHeavy" || k === "leaves").map((k) => overlay(k, W, H, ground, room, mode, 11)).join("");
+    const greeting = state.greet && t.greet ? `<div class="greeting">${t.greet[state.lang]}</div>` : "";
+    laptopWrap.innerHTML = `
+      <div class="laptop demo" id="laptop">
+        <div class="nav"><span class="brand-l">${logo()}<span class="name">PuffinRide</span><span class="beta">Beta</span></span>
+          ${words.nav.map((n, i) => `<span class="${i === 0 ? "cur" : ""}">${n}</span>`).join("")}<span style="color:var(--primary)">${words.lang}</span></div>
+        <div class="panel" style="height:${H}px">
+          ${scene(W, H, ground, P, { road: false, room, mode, cover, sunrise: t.sunrise, seed: 11 })}
+          <svg class="fx back" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" aria-hidden="true">${back}</svg>
+          <div class="titles">${greeting}<h3>${words.title}</h3><p>${words.intro}</p></div>
+          <div class="car-slot" style="left:${W - 96 - carW}px;top:${ground - wheelBottom * carH + 6}px;width:${carW}px">
+            <div class="car drive-fade" style="--from:-194px">${car(mode, t)}</div>
+          </div>
+          <svg class="fx front" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" aria-hidden="true">${front}</svg>
+        </div>
+        <div class="search-row">
+          <div><div class="lab">${words.from}</div><div class="in">${words.choose}</div></div>
+          <div><div class="lab">${words.to}</div><div class="in">${words.choose}</div></div>
+          <div><div class="lab">${words.date}</div><div class="in">${words.any}</div></div>
+          <div class="find">${words.find}</div>
+        </div>
+      </div>`;
+    fitLaptop();
+  }
+  function fitPhones() {
+    document.querySelectorAll(".fit").forEach((box) => {
+      const phoneEl = box.querySelector(".phone");
+      const scale = Math.min(1, box.clientWidth / 330);
+      phoneEl.style.transform = `scale(${scale})`;
+      box.style.height = `${phoneEl.offsetHeight * scale}px`;
+    });
+  }
+  function fitLaptop() {
+    const laptop = document.getElementById("laptop");
+    if (!laptop) return;
+    const scale = Math.min(1, laptopWrap.clientWidth / 1000);
+    laptop.style.transform = `scale(${scale})`;
+    laptopWrap.style.height = `${laptop.offsetHeight * scale}px`;
+  }
+  const laptopSelect = document.getElementById("laptop-theme");
+  laptopSelect.innerHTML = `
+    <optgroup label="Colours">
+      <option value="pal:today">Today's colours</option><option value="pal:clear">Clear day</option><option value="pal:warm">Golden hour</option></optgroup>
+    <optgroup label="Seasons">${["winter", "spring", "summer", "autumn"].map((k) => `<option value="${k}">${THEMES[k].en}</option>`).join("")}</optgroup>
+    <optgroup label="Days">${Object.keys(THEMES).filter((k) => THEMES[k].group === "big" || THEMES[k].group === "small" || THEMES[k].group === "hidden").map((k) => `<option value="${k}">${THEMES[k].en === "Bóndadagur and Konudagur" ? "Bóndadagur" : THEMES[k].en}</option>`).join("")}</optgroup>`;
+  laptopSelect.value = state.laptop;
+  laptopSelect.addEventListener("change", () => { state.laptop = laptopSelect.value; buildLaptop(); play(document.getElementById("laptop")); });
+  document.getElementById("laptop-play").addEventListener("click", () => play(document.getElementById("laptop")));
+
+  // ---- The galleries -------------------------------------------------------------
+  const frames = [];
+  function addFrame(frame, opts) {
+    const entry = { frame, opts, build: () => phone(frame, typeof opts === "function" ? opts() : opts) };
+    frames.push(entry);
+    return entry;
+  }
+  const palettes = [
+    { key: "today", name: "Today's colours", tag: "As now", text: "Calm, but pale and grey-blue all year: the car is the only colour." },
+    { key: "clear", name: "Clear day", tag: "Recommended", text: "A clearer blue sky, a far range of mountains, two greens of hills and a red-roofed farmhouse; at night, stars. The seasons build on it, and the yellow car still stands out." },
+    { key: "warm", name: "Golden hour", text: "A peach sky, lilac mountains and a low sun; at night, dusk purple. Warmer and more unusual, but the yellow car stands out less against it." },
+  ];
+  const palBox = document.getElementById("palettes");
+  for (const p of palettes) {
+    const box = document.createElement("div");
+    box.className = "pal-row";
+    box.innerHTML = `
+      <div class="item">
+        <div class="item-head"><h3>${p.name}</h3>${p.tag ? `<span class="tag ${p.key === "today" ? "plain" : ""}">${p.tag}</span>` : ""}</div>
+        <p class="small">${p.text}</p>
+        <div class="item-actions"><button class="btn quiet small" type="button">Play again</button></div>
+      </div>
+      <div class="pair">
+        <div class="force-light fit"><div class="phone"><div class="screen demo"></div></div></div>
+        <div class="force-dark fit"><div class="phone"><div class="screen demo"></div></div></div>
+      </div>`;
+    palBox.append(box);
+    const [light, dark] = box.querySelectorAll(".screen");
+    addFrame(light, { palette: p.key, mode: "light", full: true });
+    addFrame(dark, { palette: p.key, mode: "dark", full: true });
+    box.querySelector("button").addEventListener("click", () => { play(light); play(dark); });
+  }
+  function gallery(boxId, group) {
+    const box = document.getElementById(boxId);
+    Object.entries(THEMES).filter(([, t]) => t.group === group).forEach(([key, t], i) => {
+      const item = document.createElement("div");
+      item.className = "item";
+      item.innerHTML = `
+        <div class="item-head"><h3>${t.en}</h3><span class="is-name">${t.is}</span></div>
+        <div class="phone"><div class="screen demo"></div></div>
+        <div class="facts">
+          <span><b>When:</b> ${t.when}</span>
+          <span><b>Looks:</b> ${t.look}</span>
+          <span><b>Moves:</b> ${t.moves}</span>
+        </div>
+        <div class="item-actions"><button class="btn quiet small" type="button">Play again</button></div>`;
+      box.append(item);
+      const frame = item.querySelector(".screen");
+      addFrame(frame, { theme: key, seed: 3 + i });
+      item.querySelector("button").addEventListener("click", () => play(frame));
+    });
+  }
+  gallery("seasons", "season");
+  gallery("big", "big");
+  gallery("smaller", "small");
+
+  // ---- Any day -------------------------------------------------------------------
+  const dayInput = document.getElementById("day");
+  const pickFrame = document.getElementById("pick");
+  const toInput = (t) => new Date(t).toISOString().slice(0, 10);
+  const pickEntry = addFrame(pickFrame, () => ({ theme: themeFor(state.day, state.small), full: true, seed: 5 }));
+  function showPick(replay) {
+    dayInput.value = toInput(state.day);
+    const key = themeFor(state.day, state.small);
+    const t = THEMES[key];
+    const kind = t.group === "season" ? "the season" : "the day";
+    document.getElementById("says").innerHTML = `On ${dayName(state.day)}, the banner shows <b>${t.en === "Bóndadagur and Konudagur" ? "Bóndadagur" : t.en}</b> (${kind}).`;
+    const season = seasonOf(state.day);
+    document.getElementById("says-more").textContent = t.group === "season" ? t.when : `${t.when} Around it: ${THEMES[season].en.toLowerCase()}.`;
+    pickEntry.build();
+    if (replay) play(pickFrame);
+  }
+  dayInput.addEventListener("change", () => {
+    const [y, m, d] = (dayInput.value || "").split("-").map(Number);
+    if (!y) return;
+    state.day = ymd(y, m, d);
+    showPick(true);
+  });
+  document.getElementById("today").addEventListener("click", () => { state.day = icelandToday(); showPick(true); });
+  document.getElementById("pick-play").addEventListener("click", () => play(pickFrame));
+  document.getElementById("small").addEventListener("change", (e) => { state.small = e.target.checked; showPick(true); buildYear(); });
+
+  // ---- The year --------------------------------------------------------------------
+  const SEASON_COLOUR = { winter: "#9FC3DB", spring: "#A8DC8E", summer: "#5DAE62", autumn: "#D59A5A" };
+  function buildYear() {
+    const today = icelandToday();
+    const y = new Date(today).getUTCFullYear() + (new Date(today).getUTCMonth() >= 10 ? 1 : 0);
+    document.getElementById("year-intro").textContent = `${y}, day by day: the colour is the season, a dot a day of its own. Choose a dot, or a day in the table, to see it above.`;
+    const start = ymd(y, 1, 1), end = ymd(y, 12, 31);
+    const n = Math.round((end - start) / DAY) + 1;
+    const W = 730, unit = W / n;
+    let bars = "", marks = "", months = "";
+    for (let i = 0; i < n; i++) {
+      const t = start + i * DAY;
+      bars += `<rect x="${f1(i * unit)}" y="22" width="${f1(unit + 0.3)}" height="22" fill="${SEASON_COLOUR[seasonOf(t)]}"/>`;
+      const key = themeFor(t, true);
+      const th = THEMES[key];
+      if (th.group !== "season") {
+        const small = th.group === "small" || th.group === "hidden";
+        if (small && !state.small) continue;
+        const prev = i > 0 ? themeFor(t - DAY, true) : null;
+        if (prev === key) continue;
+        const name = th.en === "Bóndadagur and Konudagur" ? "Bóndadagur" : th.en;
+        marks += `<g class="day-mark" data-day="${t}" role="button" tabindex="0" aria-label="${name}, ${dayName(t)}"><title>${name}, ${dayName(t)}</title>
+          <circle cx="${f1(i * unit + unit / 2)}" cy="11" r="5.4" fill="${small ? "var(--surface)" : "var(--text)"}" stroke="var(--text)" stroke-width="1.6"/></g>`;
+      }
+    }
+    for (let m = 1; m <= 12; m++) {
+      const i = Math.round((ymd(y, m, 1) - start) / DAY);
+      months += `<text x="${f1(i * unit + 2)}" y="60" font-size="11" font-family="Nunito, sans-serif" font-weight="700" fill="var(--muted)">${fmt(ymd(y, m, 1), { month: "short" })}</text><path d="M${f1(i * unit)} 20 V46" stroke="var(--surface)" stroke-width="1"/>`;
+    }
+    document.getElementById("year-strip").innerHTML = `<svg viewBox="-6 0 ${W + 12} 66" role="img" aria-label="The seasons and days of ${y}">${bars}${months}${marks}</svg>`;
+    document.getElementById("legend").innerHTML = Object.entries(SEASON_COLOUR).map(([k, c]) => `<span><i style="background:${c}"></i>${THEMES[k].en}</span>`).join("") +
+      `<span><i style="background:var(--text);border-radius:50%"></i>A big day</span>` + (state.small ? `<span><i style="background:var(--surface);border:2px solid var(--text);border-radius:50%"></i>A smaller day</span>` : "");
+    document.querySelectorAll(".day-mark").forEach((el) => {
+      const go = () => { state.day = Number(el.dataset.day); showPick(true); document.getElementById("pick-h").scrollIntoView({ behavior: "smooth", block: "start" }); };
+      el.addEventListener("click", go);
+      el.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } });
+    });
+
+    // The table: each one's rule and when it next shows.
+    const rows = [];
+    for (const key of Object.keys(THEMES)) {
+      const t = THEMES[key];
+      if (t.group === "hidden") continue;
+      const small = t.group === "small";
+      let next = null;
+      for (const yy of [new Date(today).getUTCFullYear(), new Date(today).getUTCFullYear() + 1]) {
+        if (next) break;
+        if (t.group === "season") {
+          for (let d = Math.max(today, ymd(yy, 1, 1)); d <= ymd(yy, 12, 31); d += DAY) {
+            if (themeFor(d, false) === key || (seasonOf(d) === key && d >= today)) { next = [d, d]; break; }
+          }
+          continue;
+        }
+        const list = daysOf(yy).filter(([k]) => k === key || (key === "bondadagur" && k === "konudagur"));
+        for (const [, from, to] of list.sort((a, b) => a[1] - b[1])) {
+          if (to >= today) { next = [from, to]; break; }
+        }
+      }
+      let nextText = "";
+      if (next && t.group === "season") {
+        const s = seasonOf(today) === key ? "Now" : `From ${dayName(next[0])}`;
+        nextText = s;
+      } else if (next) {
+        // Christmas runs over the new year: show it as one stretch.
+        let [from, to] = next;
+        if (key === "christmas" && new Date(to).getUTCMonth() === 11) to = ymd(new Date(to).getUTCFullYear() + 1, 1, 6);
+        nextText = `<button type="button" data-day="${Math.max(from, today)}">${span(from, to)}</button>`;
+      }
+      const name = `${t.en}${small ? ' <span class="tag plain">smaller</span>' : ""}<br><span class="is-name">${t.is}</span>`;
+      rows.push(`<tr><td>${name}</td><td>${t.when}</td><td>${nextText}</td></tr>`);
+    }
+    document.getElementById("year-table").innerHTML = rows.join("");
+    document.querySelectorAll("#year-table button[data-day]").forEach((b) => b.addEventListener("click", () => {
+      state.day = Number(b.dataset.day);
+      if (THEMES[themeFor(state.day, true)].group === "small") { state.small = true; document.getElementById("small").checked = true; buildYear(); }
+      showPick(true);
+      document.getElementById("pick-h").scrollIntoView({ behavior: "smooth", block: "start" });
+    }));
+  }
+
+  // ---- Playing -----------------------------------------------------------------
+  function play(el) {
+    if (!el) return;
+    el.classList.remove("play");
+    void el.offsetWidth;
+    el.classList.add("play");
+  }
+  function buildAll() {
+    frames.forEach((f) => f.build());
+    fitPhones();
+    buildLaptop();
+    showPick(false);
+  }
+  function playAll() {
+    frames.forEach((f) => play(f.frame));
+    play(document.getElementById("laptop"));
+  }
+
+  // Reduce motion: the device's own setting first, then the switch.
+  const calm = document.getElementById("calm");
+  const page = document.getElementById("page");
+  let prefersCalm = false;
+  try { prefersCalm = window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) { prefersCalm = false; }
+  calm.checked = prefersCalm;
+  document.getElementById("calm-note").hidden = !prefersCalm;
+  page.classList.toggle("calm", prefersCalm);
+  calm.addEventListener("change", () => {
+    page.classList.toggle("calm", calm.checked);
+    if (!calm.checked) playAll();
+  });
+  document.getElementById("play-all").addEventListener("click", playAll);
+  document.getElementById("greet").addEventListener("change", (e) => { state.greet = e.target.checked; buildAll(); });
+  document.querySelectorAll("#lang-set button").forEach((b) => b.addEventListener("click", () => {
+    state.lang = b.dataset.lang;
+    document.querySelectorAll("#lang-set button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+    buildAll();
+  }));
+  document.querySelectorAll("#theme-set button").forEach((b) => b.addEventListener("click", () => {
+    const v = b.dataset.themeSet;
+    if (v) document.documentElement.dataset.theme = v; else delete document.documentElement.dataset.theme;
+    document.querySelectorAll("#theme-set button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+    buildAll();
+    playAll();
+  }));
+  try {
+    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { if (!document.documentElement.dataset.theme) { buildAll(); } });
+  } catch (e) { /* older browsers */ }
+
+  buildAll();
+  buildYear();
+
+  // The first banner plays at once; the others as they come into view.
+  play(pickFrame);
+  if ("IntersectionObserver" in window) {
+    const seen = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          play(entry.target);
+          seen.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.6 });
+    frames.forEach((f) => { if (f.frame !== pickFrame) seen.observe(f.frame); });
+  } else {
+    playAll();
+  }
+  // The laptop is rebuilt inside its wrapper; play it when the wrapper shows.
+  const wrapObserver = "IntersectionObserver" in window ? new IntersectionObserver((entries) => {
+    entries.forEach((e) => { if (e.isIntersecting) { play(document.getElementById("laptop")); wrapObserver.disconnect(); } });
+  }, { threshold: 0.5 }) : null;
+  if (wrapObserver) wrapObserver.observe(laptopWrap);
+
+  // Redraw when the width changes, standing still at the end.
+  let lastWidth = window.innerWidth;
+  window.addEventListener("resize", () => {
+    fitLaptop();
+    fitPhones();
+    if (Math.abs(window.innerWidth - lastWidth) < 4) return;
+    lastWidth = window.innerWidth;
+    frames.forEach((f) => f.build());
+    fitPhones();
+  });
+})();
+</script>
