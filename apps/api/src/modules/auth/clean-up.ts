@@ -4,6 +4,7 @@ import { and, eq, inArray, isNotNull, isNull, lt, lte, or } from "drizzle-orm";
 import { notHeld } from "../privacy/holds.ts";
 
 const {
+  appleTokensToRevoke,
   emailSignIns,
   emailVerifications,
   memberPasskeyChallenges,
@@ -29,6 +30,8 @@ export interface CleanUpCounts {
   readonly emailSignIns: number;
   /** Members' passkey challenges, an hour after they expired (spec 27). */
   readonly passkeyChallenges: number;
+  /** Apple tokens of ended links Apple did not take, 7 days after they were queued (spec 37). */
+  readonly appleTokens: number;
 }
 
 /**
@@ -110,7 +113,13 @@ export async function cleanUpSignInRecords(db: Database, now: Date): Promise<Cle
       .where(lt(memberPasskeyChallenges.expiresAt, cutoff.passkeyChallengesExpiredBefore))
       .returning({ id: memberPasskeyChallenges.id });
 
+    const appleRows = await tx
+      .delete(appleTokensToRevoke)
+      .where(lte(appleTokensToRevoke.queuedAt, cutoff.appleTokensQueuedBefore))
+      .returning({ id: appleTokensToRevoke.id });
+
     return {
+      appleTokens: appleRows.length,
       emailLinks: links.length,
       providerSignIns: providerRows.length,
       emailSignIns: emailRows.length,

@@ -1668,6 +1668,15 @@ releases follow [Semantic Versioning](https://semver.org/).
   A booking in the API gains `route`: where its ride's stops are, with the
   part as places among them; null where a stop of the part was taken off
   the ride, and on a booking that ended before its ride.
+- Ending Sign in with Apple with the account (spec 37, ADR 0056), as the
+  App Store asks: the API keeps the refresh token Apple gives at each
+  Apple sign-in on the link, and when the link ends (the account is
+  erased, or Apple is removed or replaced on Sign-in methods) queues it,
+  with no account ID, for Apple's revoke endpoint. The API sends due
+  tokens every minute while Apple is on, tries a refused one again 10
+  minutes later, and the hourly clean-up drops one still queued after 7
+  days. No token is logged, returned or exported. Links made before this
+  have no token until their next Apple sign-in.
 
 ### Fixed
 

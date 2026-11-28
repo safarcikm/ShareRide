@@ -1,6 +1,7 @@
 import { createHash, createPrivateKey, type KeyObject } from "node:crypto";
 import {
   err,
+  ok,
   readProviderClaims,
   type ProviderClaims,
   type Result,
@@ -38,12 +39,25 @@ export interface ProviderFailure {
   readonly reason: "token_request" | "id_token" | "nonce" | "claims";
 }
 
+/**
+ * What a provider's answer gives: the claims ShareRide keeps and, from
+ * Apple only, the refresh token that ends the link later (spec 37, R37.1).
+ * The token never goes in a log, a response or the export (R37.3).
+ */
+export type RedeemedClaims = ProviderClaims & { readonly refreshToken?: string };
+
 export interface IdentityProvider {
   readonly name: SignInProvider;
   /** The development stand-in, whose page the API serves itself. */
   readonly development?: boolean;
   authorizationUrl(input: AuthorizationInput): string;
-  redeem(input: RedeemInput): Promise<Result<ProviderClaims, ProviderFailure>>;
+  redeem(input: RedeemInput): Promise<Result<RedeemedClaims, ProviderFailure>>;
+  /**
+   * Apple only: asks Apple to end our access with a refresh token it gave
+   * (spec 37, 3.2). True once Apple has taken it; false when it refused or
+   * could not be reached, to be tried again.
+   */
+  readonly revoke?: (refreshToken: string) => Promise<boolean>;
 }
 
 /** The PKCE challenge of a verifier: SHA-256 in base64url without padding (RFC 7636, S256). */
@@ -66,27 +80,50 @@ export const googleEndpoints = {
   issuers: ["https://accounts.google.com", "accounts.google.com"],
 } as const;
 
-/** Posts the form to a token endpoint and returns its `id_token`, or null. */
-async function requestIdToken(
+/** A token endpoint's answer: its `id_token` and, when it gave one, its `refresh_token`. */
+interface TokenAnswer {
+  readonly idToken: string;
+  readonly refreshToken?: string;
+}
+
+/** Posts a form to a provider, within the time allowed; null when it could not be reached. */
+async function postForm(
   fetchToken: typeof fetch,
   url: string,
   form: Record<string, string>,
-): Promise<string | null> {
+): Promise<Response | null> {
   try {
-    const response = await fetchToken(url, {
+    return await fetchToken(url, {
       method: "POST",
       headers: { "content-type": "application/x-www-form-urlencoded", accept: "application/json" },
       body: new URLSearchParams(form).toString(),
       signal: AbortSignal.timeout(tokenRequestMs),
     });
-    if (!response.ok) return null;
-    const body: unknown = await response.json();
-    const idToken =
-      typeof body === "object" && body !== null && "id_token" in body ? body.id_token : undefined;
-    return typeof idToken === "string" ? idToken : null;
   } catch {
     return null;
   }
+}
+
+/** Posts the form to a token endpoint and returns its tokens, or null. */
+async function requestTokens(
+  fetchToken: typeof fetch,
+  url: string,
+  form: Record<string, string>,
+): Promise<TokenAnswer | null> {
+  const response = await postForm(fetchToken, url, form);
+  if (response === null || !response.ok) return null;
+  let body: unknown;
+  try {
+    body = await response.json();
+  } catch {
+    return null;
+  }
+  if (typeof body !== "object" || body === null) return null;
+  const { id_token: idToken, refresh_token: refreshToken } = body as Record<string, unknown>;
+  if (typeof idToken !== "string") return null;
+  return typeof refreshToken === "string" && refreshToken !== ""
+    ? { idToken, refreshToken }
+    : { idToken };
 }
 
 /**
@@ -167,7 +204,7 @@ export function createGoogleProvider(options: {
       return url.toString();
     },
     async redeem(input) {
-      const idToken = await requestIdToken(fetchToken, googleEndpoints.token, {
+      const answer = await requestTokens(fetchToken, googleEndpoints.token, {
         grant_type: "authorization_code",
         code: input.code,
         client_id: options.clientId,
@@ -175,8 +212,9 @@ export function createGoogleProvider(options: {
         redirect_uri: input.redirectUri,
         code_verifier: input.codeVerifier,
       });
-      if (idToken === null) return failed("token_request");
-      return checkIdToken(idToken, {
+      if (answer === null) return failed("token_request");
+      // Google's tokens are never kept (R37.1).
+      return checkIdToken(answer.idToken, {
         keys,
         issuer: googleEndpoints.issuers,
         audience: options.clientId,
@@ -190,6 +228,7 @@ export function createGoogleProvider(options: {
 export const appleEndpoints = {
   authorization: "https://appleid.apple.com/auth/authorize",
   token: "https://appleid.apple.com/auth/token",
+  revoke: "https://appleid.apple.com/auth/revoke",
   keys: "https://appleid.apple.com/auth/keys",
   issuer: "https://appleid.apple.com",
 } as const;
@@ -256,15 +295,15 @@ export function createAppleProvider(options: {
     },
     async redeem(input) {
       const now = clock();
-      const idToken = await requestIdToken(fetchToken, appleEndpoints.token, {
+      const answer = await requestTokens(fetchToken, appleEndpoints.token, {
         grant_type: "authorization_code",
         code: input.code,
         client_id: options.servicesId,
         client_secret: await clientSecret(now),
         redirect_uri: input.redirectUri,
       });
-      if (idToken === null) return failed("token_request");
-      return checkIdToken(idToken, {
+      if (answer === null) return failed("token_request");
+      const checked = await checkIdToken(answer.idToken, {
         keys,
         issuer: appleEndpoints.issuer,
         audience: options.servicesId,
@@ -272,6 +311,19 @@ export function createAppleProvider(options: {
         now,
         appleUser: input.appleUser,
       });
+      if (!checked.ok || answer.refreshToken === undefined) return checked;
+      return ok({ ...checked.value, refreshToken: answer.refreshToken });
+    },
+    async revoke(refreshToken) {
+      const response = await postForm(fetchToken, appleEndpoints.revoke, {
+        client_id: options.servicesId,
+        client_secret: await clientSecret(clock()),
+        token: refreshToken,
+        token_type_hint: "refresh_token",
+      });
+      // Apple's answer has no body worth reading; free the connection.
+      await response?.body?.cancel().catch(() => undefined);
+      return response?.ok === true;
     },
   };
 }
@@ -352,8 +404,16 @@ export function createDevProvider(options: {
         },
         appleUser: input.appleUser,
       });
-      return Promise.resolve(read.ok ? read : failed("claims"));
+      if (!read.ok) return Promise.resolve(failed("claims"));
+      // A made-up refresh token, as Apple gives one, so tests see it kept (spec 37, 3.4).
+      return Promise.resolve(
+        name === "apple"
+          ? ok({ ...read.value, refreshToken: `dev-apple-refresh-${String(decoded.person + 1)}` })
+          : read,
+      );
     },
+    // Nothing is sent anywhere without Apple's keys (R37.4).
+    ...(name === "apple" ? { revoke: () => Promise.resolve(true) } : {}),
   };
 }
 

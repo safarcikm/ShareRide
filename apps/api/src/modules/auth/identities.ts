@@ -3,6 +3,7 @@ import { emailToStore, type LinkDecision, type SignInProvider } from "@shareride
 import { and, eq, gt, isNotNull, isNull, ne } from "drizzle-orm";
 import { hashToken } from "../../platform/crypto.ts";
 import { uniqueViolation } from "../../platform/database-errors.ts";
+import { queueAppleToken } from "./apple-revocations.ts";
 import type { Transaction } from "./service.ts";
 
 // Google and Apple accounts linked to ShareRide accounts (spec 19, R19.1 to
@@ -11,6 +12,10 @@ import type { Transaction } from "./service.ts";
 
 const { identities, providerSignIns, users } = schema;
 
+/** The link's newer Apple token, to set; nothing when the sign-in brought none (spec 37, 3.1). */
+export const newerAppleToken = (token: string | null) =>
+  token === null ? {} : { appleRefreshToken: token };
+
 /** A Google or Apple sign-in the provider answered, waiting for the phone step or Settings. */
 export interface PendingSignIn {
   readonly id: string;
@@ -18,6 +23,8 @@ export interface PendingSignIn {
   readonly subject: string;
   readonly email: string | null;
   readonly firstName: string | null;
+  /** Apple's refresh token, which the link takes (spec 37, 3.1); null for Google. */
+  readonly appleRefreshToken: string | null;
   readonly expiresAt: Date;
 }
 
@@ -39,6 +46,7 @@ export async function lockPendingSignIn(
       subject: providerSignIns.subject,
       email: providerSignIns.email,
       firstName: providerSignIns.firstName,
+      appleRefreshToken: providerSignIns.appleRefreshToken,
       expiresAt: providerSignIns.expiresAt,
     })
     .from(providerSignIns)
@@ -167,6 +175,7 @@ export async function applyLink(
       provider: pending.provider,
       subject: pending.subject,
       email: pending.email,
+      appleRefreshToken: pending.appleRefreshToken,
       linkedAt: now,
       lastUsedAt: now,
       createdAt: now,
@@ -186,14 +195,16 @@ export async function applyLink(
       const [replaced] = await tx
         .delete(identities)
         .where(and(eq(identities.id, decision.replacedIdentityId), eq(identities.userId, userId)))
-        .returning({ email: identities.email });
+        .returning({ email: identities.email, appleRefreshToken: identities.appleRefreshToken });
+      // Apple ends our access to the Apple account that was replaced (spec 37, 3.2).
+      await queueAppleToken(tx, replaced?.appleRefreshToken, now);
       await link(replaced?.email ?? null);
       return done("replaced");
     }
     case "already_linked":
       await tx
         .update(identities)
-        .set({ lastUsedAt: now, updatedAt: now })
+        .set({ lastUsedAt: now, updatedAt: now, ...newerAppleToken(pending.appleRefreshToken) })
         .where(
           and(eq(identities.provider, pending.provider), eq(identities.subject, pending.subject)),
         );

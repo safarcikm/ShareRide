@@ -52,6 +52,8 @@ describe("retentionCutoffs", () => {
       providerSignInsExpiredBefore: new Date("2026-11-13T11:00:00Z"),
       emailSignInsExpiredBefore: new Date("2026-11-13T11:00:00Z"),
       passkeyChallengesExpiredBefore: new Date("2026-11-13T11:00:00Z"),
+      // An ended Apple link's token Apple did not take, 7 days on (spec 37, 3.2).
+      appleTokensQueuedBefore: new Date("2026-11-06T12:00:00Z"),
     });
   });
 });
