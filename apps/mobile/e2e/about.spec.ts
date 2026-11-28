@@ -58,6 +58,24 @@ test.describe("About and the footer", () => {
     await expect(page.getByRole("heading", { level: 1, name: "Um PuffinRide" })).toBeVisible();
   });
 
+  test("its address #co2 opens What a shared ride saves, in view (spec 34, 3.9)", async ({
+    page,
+  }) => {
+    // A phone's window, short enough that the section starts below it.
+    await page.setViewportSize({ width: 375, height: 360 });
+    await page.goto("/about");
+    const section = page.getByRole("heading", { name: "What a shared ride saves" });
+    await expect(section).toBeAttached();
+    await expect(section).not.toBeInViewport();
+    // A fresh load, as from a shared link: the section comes after the page has loaded.
+    await page.goto("about:blank");
+    await page.goto("/about#co2");
+    await expect(section).toHaveAttribute("id", "co2");
+    await expect(section).toBeInViewport();
+    // The test API's value: 150 g, so the 390 km example is about 58 kg.
+    await expect(page.getByText(/about 58\skg of CO₂/)).toBeVisible();
+  });
+
   test("signing in has no footer", async ({ page }) => {
     await page.goto("/sign-in");
     await expect(page.getByRole("heading", { level: 1 }).filter(shown).first()).toBeVisible();

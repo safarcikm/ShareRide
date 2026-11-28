@@ -86,7 +86,7 @@ export async function renderApp(
   // Your next ride, a new driver with no car for the Driving rows on
   // Profile and nothing linked for its Sign-in methods row, no chats for
   // the Messages badge, trip reminders and beta news on in Notifications,
-  // and no beta news yet. A change answers with the settings changed.
+  // no beta news yet, and no CO2 saved yet. A change answers with the settings changed.
   currentClient.answer("/v1/me/notification-settings", (input) =>
     ok(200, { reminders: true, betaNews: true, ...(input["body"] as object | undefined) }),
   );
@@ -99,6 +99,10 @@ export async function renderApp(
     ok(200, { methods: [], password: null, passkeys: [] }),
   );
   currentClient.answer("/v1/me/conversations", () => ok(200, { conversations: [], unread: 0 }));
+  // No ride that counts yet, so Profile has no CO2 group (spec 34, 3.8).
+  currentClient.answer("/v1/me/co2", () =>
+    ok(200, { grams: 0, asPassenger: null, asDriver: null }),
+  );
   options.setUp?.(currentClient);
   const result = await renderRouter("./src/app", {
     initialUrl,

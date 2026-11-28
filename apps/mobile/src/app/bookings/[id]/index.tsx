@@ -22,6 +22,7 @@ import { TripChanges, useMoveChoice } from "@/booking/trip-changes";
 import { showsWhereToStand, WhereToStand } from "@/booking/where-to-stand";
 import { useWithdraw, WithdrawQuestion } from "@/booking/withdraw";
 import { otherPerson } from "@/chat/texts";
+import { Co2Card, partCo2Lines } from "@/co2/co2-card";
 import { ActionRows } from "@/components/action-rows";
 import { Announcer } from "@/components/announcer";
 import { BackButton } from "@/components/back-button";
@@ -577,6 +578,12 @@ function BookingDetails({
         {!wide && tripDay ? ticket : null}
 
         {route}
+
+        {/* What the part saves, for the passenger alone, while confirmed and
+            once completed: the API gives no figure otherwise (spec 34, 3.6). */}
+        {booking.co2 === null ? null : (
+          <Co2Card grams={booking.co2.grams} lines={partCo2Lines(t, locale, booking.co2)} />
+        )}
 
         {wide ? null : rows}
 

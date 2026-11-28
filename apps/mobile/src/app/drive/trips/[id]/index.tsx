@@ -12,6 +12,7 @@ import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { errorText } from "@/auth/errors";
 import { useSession } from "@/auth/session";
 import { acceptedText } from "@/booking/texts";
+import { Co2Card, driverCo2Lines } from "@/co2/co2-card";
 import { ActionRows } from "@/components/action-rows";
 import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
@@ -463,6 +464,11 @@ export default function DriverTripScreen() {
               </ActionRows>
             </View>
           </>
+        )}
+        {/* What its passengers' parts save, added; none without a booking
+            that counts (spec 34, 3.7). */}
+        {trip.data.co2 === null ? null : (
+          <Co2Card grams={trip.data.co2.grams} lines={driverCo2Lines(t, locale, trip.data.co2)} />
         )}
         {bookings.length === 0 ? <Body align="start">{t("driverTrip.none")}</Body> : null}
         {!wide && tripDay ? ticket : null}

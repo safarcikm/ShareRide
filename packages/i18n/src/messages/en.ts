@@ -3710,6 +3710,32 @@ export const en = {
     "The photo still carries data besides the picture. Try another browser.",
   "admin.meetingPoint.photoIssue.tooLarge":
     "The photo is too large, even made smaller. Choose a smaller one.",
+  // The CO2 a shared ride saves (spec 34, section 8).
+  "about.co2Title": "What a shared ride saves",
+  "about.co2Method":
+    "When you share a ride, one car fewer drives your part of the way. We estimate the CO₂ this saves from the road distance of your part and the CO₂ of an average car in Iceland: {grams}\u00a0g per kilometre.",
+  "about.co2Example":
+    "Reykjavík to Akureyri is about 390\u00a0km, so a passenger saves about {kg}\u00a0kg of CO₂ compared with driving alone.",
+  "about.co2Source":
+    "The {grams}\u00a0g comes from the Environment and Energy Agency of Iceland's factors for cars (208\u00a0g per km for petrol, 191 for diesel, 136 for a hybrid and next to nothing for an electric car), weighted by how far cars here drive on each. We check it once a year.",
+  "about.co2Limits":
+    "These are estimates. Two people booking together count as one car. Someone who would have taken the bus, or stayed at home, saves less. Your own figures are on My profile, where only you see them.",
+  "co2.title": "CO₂ saved",
+  "co2.value": "About {kg}\u00a0kg, estimated",
+  "co2.spoken": "CO2 saved, about {kg} kilograms, estimated",
+  "co2.part":
+    "One car fewer on the road for {km}\u00a0km: about {kg}\u00a0kg less CO₂ than driving alone.",
+  "co2.driver":
+    "Your passengers ride {km}\u00a0km with you instead of driving: about {kg}\u00a0kg less CO₂ than driving alone.",
+  "co2.how": "Estimated from the road distance and an average car in Iceland.",
+  "co2.link": "How we estimate it",
+  "co2.group": "Your shared rides",
+  "co2.asPassenger":
+    "As a passenger: {kg}\u00a0kg on {rides, plural, one {# ride} other {# rides}}.",
+  "co2.asDriver":
+    "As a driver: {kg}\u00a0kg with {passengers, plural, one {# passenger} other {# passengers}} on {rides, plural, one {# ride} other {# rides}}.",
+  "co2.compared": "Each compared with driving alone.",
+  "co2.onlyYou": "Only you can see this.",
 } as const satisfies Record<string, string>;
 
 export type MessageKey = keyof typeof en;

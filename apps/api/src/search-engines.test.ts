@@ -365,6 +365,25 @@ describe("the page's head (spec 23, 3.6)", () => {
     expect(noscript).toContain('<a href="mailto:admin@puffinride.is">admin@puffinride.is</a>');
   });
 
+  it("writes About's CO2 section with the operator's value, and none at 0 (spec 34, 3.9)", () => {
+    const textOf = (gramsPerCarKm: number) => {
+      const head = pageHead(
+        { path: "/about", lang: "en", acceptLanguage: null },
+        production,
+        undefined,
+        undefined,
+        gramsPerCarKm,
+      );
+      return head.noscript ?? "";
+    };
+    const page = textOf(150);
+    expect(page).toContain('<h2 id="co2">What a shared ride saves</h2>');
+    expect(page).toContain("Iceland: 150\u00a0g per kilometre.</p>");
+    expect(page).toContain("so a passenger saves about 58\u00a0kg of CO₂");
+    expect(page.indexOf('id="co2"')).toBeLessThan(page.indexOf("<h2>Terms and policies</h2>"));
+    expect(textOf(0)).not.toContain('id="co2"');
+  });
+
   it("links About to the page on deleting an account (spec 32, section 5)", () => {
     const head = pageHead({ path: "/about", lang: "en", acceptLanguage: null }, production);
     expect(head.noscript).toContain('<a href="/delete-account?lang=en">Delete your account</a>');
