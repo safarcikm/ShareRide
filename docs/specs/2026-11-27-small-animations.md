@@ -1,9 +1,10 @@
 # Spec 33: A few small animations on the website and in the apps
 
-**Owner:** Martin · **Date:** 2026-11-27 · **Status:** Proposed
-(2026-11-27): Martin asked for animations and about the front page's
-banner, and chose how the banner moves (section 12, "Drive in, then hop");
-the rest are working choices he can change
+**Owner:** Martin · **Date:** 2026-11-27 · **Status:** Accepted
+(2026-11-28): Martin asked for animations and about the front page's
+banner, chose how the banner moves (section 12, "Drive in, then hop") and
+accepted the spec and ADR 0052 with the banner's release; the moments
+after the App Store release are working choices he can still change
 
 Amends: [spec 15, 4.6](2026-11-13-visual-design-system.md#46-motion)
 (motion: two drawings may move on their own, once and briefly, and touch

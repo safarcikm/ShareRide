@@ -1,6 +1,6 @@
 # 0052. Animations: CSS on the website, Reanimated and expo-haptics in the phone apps
 
-- **Status:** Proposed
+- **Status:** Accepted (Martin, 2026-11-28)
 - **Date:** 2026-11-27
 - **Deciders:** Martin
 - **Related:** [spec 33](../specs/2026-11-27-small-animations.md),
