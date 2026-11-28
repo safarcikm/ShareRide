@@ -4,6 +4,13 @@ import { maxContentWidth, sideColumnWidth, spacing } from "@/theme/tokens";
 import { stickyOnWeb, useScreenViewHeight, useWideScreen } from "./screen";
 
 /**
+ * How far the side column's box reaches round it on the web: past a card's
+ * outline and a ticket's notches, and most of a card's soft shadow, within
+ * the gap between the columns and the page's own room (`Screen`).
+ */
+const sideRoom = spacing.md;
+
+/**
  * A main column with a side column on wide screens (spec 18, 3.2), inside
  * a `Screen` with `width="page"`. The main column takes the room that is
  * left; the side column has a set width and, on the web, stays in view
@@ -51,13 +58,13 @@ export function Columns({
       {children}
     </View>
   );
+  // The column scrolls in a box of its own, with room round it for what
+  // stands out of its cards, such as a ticket's notches (`stickyOnWeb`).
   const beside = (
-    <View
-      key="side"
-      testID="columns-side"
-      style={[styles.part, { width: sideWidth }, stickyOnWeb(viewHeight)]}
-    >
-      {side}
+    <View key="side" testID="columns-side-scroll" style={stickyOnWeb(viewHeight, sideRoom)}>
+      <View testID="columns-side" style={[styles.part, { width: sideWidth }]}>
+        {side}
+      </View>
     </View>
   );
   return (

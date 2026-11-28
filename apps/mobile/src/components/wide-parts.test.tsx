@@ -1,6 +1,6 @@
-import { act, fireEvent, render, screen } from "@testing-library/react-native";
+import { act, fireEvent, render, screen, within } from "@testing-library/react-native";
 import { useState } from "react";
-import { Dimensions, Text } from "react-native";
+import { Dimensions, Platform, StyleSheet, Text } from "react-native";
 import { Columns } from "./columns";
 import { Grid, widthOf } from "./grid";
 import { Screen } from "./screen";
@@ -17,6 +17,7 @@ function setWindow(window: typeof phone) {
 
 afterEach(() => {
   setWindow(phone);
+  jest.restoreAllMocks();
 });
 
 /** The order of two parts in what is rendered: negative when `first` comes first. */
@@ -113,6 +114,33 @@ describe("Columns", () => {
       </Columns>,
     );
     expect(screen.getByTestId("columns-side")).toHaveStyle({ width: 360 });
+  });
+
+  it("gives a ticket's notches and a card's outline and shadow room in the side column on the web", async () => {
+    // A box that scrolls up and down scrolls sideways too, to reach what
+    // stands out of it, and cuts it off: the box reaches round the column
+    // into the gap beside it, and the column stays where it was.
+    jest.replaceProperty(Platform, "OS", "web");
+    setWindow(laptop);
+    await render(columns());
+    const scroll = screen.getByTestId("columns-side-scroll");
+    // React Native's types know no `sticky`, which only the web has.
+    expect(StyleSheet.flatten(scroll.props.style)).toMatchObject({
+      position: "sticky",
+      overflowY: "auto",
+      top: 0,
+      padding: 16,
+      margin: -16,
+    });
+    expect(within(scroll).getByTestId("columns-side")).toHaveStyle({ width: 400 });
+  });
+
+  it("has no box of its own round the side column on a phone's wide screen", async () => {
+    jest.replaceProperty(Platform, "OS", "ios");
+    setWindow(laptop);
+    await render(columns());
+    expect(screen.getByTestId("columns-side-scroll")).not.toHaveStyle({ padding: 16 });
+    expect(screen.getByTestId("columns-side")).toHaveStyle({ width: 400 });
   });
 
   it("stacks the two on a phone, main first", async () => {

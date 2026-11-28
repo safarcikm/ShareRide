@@ -1014,7 +1014,9 @@ test.describe("My rides, a booking and Profile", () => {
     // as it stands at their left (spec 31, 3.20).
     expect(
       await who.evaluate((card) => {
-        const rowsOf = card.parentElement?.querySelector('[data-testid="columns-main"]');
+        const rowsOf = card
+          .closest('[data-testid="columns"]')
+          ?.querySelector('[data-testid="columns-main"]');
         if (rowsOf === null || rowsOf === undefined) return "no rows";
         const after = card.compareDocumentPosition(rowsOf) & Node.DOCUMENT_POSITION_FOLLOWING;
         return after !== 0 ? "card first" : "rows first";
