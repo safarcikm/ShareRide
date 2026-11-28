@@ -988,6 +988,12 @@ describe("download my data (spec 11, 3.2)", () => {
     expect(unlabelledFields(passenger.data)).toEqual([]);
 
     const driver = await exportOf(jon);
+    // The driver can trace their total to each passenger's booking (3.11).
+    expect(driver.data.sections.trips_posted).toEqual([
+      expect.objectContaining({
+        passengers: [expect.objectContaining({ status: "completed", co2Grams: grams })],
+      }),
+    ]);
     expect(driver.data.sections.co2_saved).toEqual({
       asPassenger: { grams: 0, rides: 0 },
       asDriver: { grams, rides: 1, passengers: 1 },

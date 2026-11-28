@@ -794,6 +794,19 @@ describe("the CO2 totals carried over when a trip is made anonymous (spec 34, 3.
     expect(await carried()).toHaveLength(3);
   });
 
+  it("keeps only the month of a carry, so its time does not point at the trip (A51)", async () => {
+    const { gunna } = await ridesThatSaved();
+    const now = await threeYearsAfter(airport);
+    await anonymise();
+
+    const [row] = await api.connection.db
+      .select({ createdAt: schema.co2Carried.createdAt, updatedAt: schema.co2Carried.updatedAt })
+      .from(schema.co2Carried)
+      .where(eq(schema.co2Carried.userId, gunna.userId));
+    const month = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+    expect(row).toEqual({ createdAt: month, updatedAt: month });
+  });
+
   it("adds to what earlier trips carried over", async () => {
     const { jon, gunna } = await ridesThatSaved();
     await api.connection.db.insert(schema.co2Carried).values([

@@ -4,17 +4,12 @@
 // anonymous 3 years after. Only the member reads it (R34.6).
 import type { Co2Totals as Co2TotalsView } from "@shareride/contracts";
 import { schema } from "@shareride/db";
-import { co2TotalGrams, type Co2Totals } from "@shareride/domain";
+import { addCo2Totals, co2TotalGrams, noCo2, type Co2Totals } from "@shareride/domain";
 import { and, count, countDistinct, eq, isNotNull, sum } from "drizzle-orm";
 import type { Queryable } from "../bookings/seats.ts";
 import { co2CarriedOf } from "./carried.ts";
 
 const { bookings, trips } = schema;
-
-const noCarried: Co2Totals = {
-  asPassenger: { grams: 0, rides: 0 },
-  asDriver: { grams: 0, rides: 0, passengers: 0 },
-};
 
 const countedBooking = and(eq(bookings.status, "completed"), isNotNull(bookings.co2Grams));
 
@@ -36,19 +31,16 @@ export async function co2TotalsOf(q: Queryable, userId: string): Promise<Co2Tota
       .where(and(eq(trips.driverId, userId), countedBooking)),
     co2CarriedOf(q, userId),
   ]);
-  // With what was carried over from their trips made anonymous (3.11).
-  const before = carried ?? noCarried;
-  return {
-    asPassenger: {
-      grams: (rode?.grams ?? 0) + before.asPassenger.grams,
-      rides: (rode?.rides ?? 0) + before.asPassenger.rides,
-    },
+  const live: Co2Totals = {
+    asPassenger: { grams: rode?.grams ?? 0, rides: rode?.rides ?? 0 },
     asDriver: {
-      grams: (drove?.grams ?? 0) + before.asDriver.grams,
-      rides: (drove?.rides ?? 0) + before.asDriver.rides,
-      passengers: (drove?.passengers ?? 0) + before.asDriver.passengers,
+      grams: drove?.grams ?? 0,
+      rides: drove?.rides ?? 0,
+      passengers: drove?.passengers ?? 0,
     },
   };
+  // With what was carried over from their trips made anonymous (3.11).
+  return addCo2Totals([live, carried ?? noCo2]);
 }
 
 /** The totals as the member sees them: a role with no rides is null; at 0 nothing shows. */

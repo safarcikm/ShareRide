@@ -69,6 +69,9 @@ export async function carryCo2(tx: Transaction, tripId: string, now: Date): Prom
   }
   people.delete(formerMemberId);
   if (people.size === 0) return;
+  // Only the month: the moment would match the trip's, made anonymous at
+  // the same instant, and point back at it (A51).
+  const month = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
 
   // The schema names its columns in snake case (`casing`), so `excluded`
   // takes the SQL names.
@@ -80,8 +83,8 @@ export async function carryCo2(tx: Transaction, tripId: string, now: Date): Prom
       [...people].map(([userId, carried]) => ({
         userId,
         ...carried,
-        createdAt: now,
-        updatedAt: now,
+        createdAt: month,
+        updatedAt: month,
       })),
     )
     .onConflictDoUpdate({
@@ -92,7 +95,7 @@ export async function carryCo2(tx: Transaction, tripId: string, now: Date): Prom
         driverGrams: added("driverGrams", "driver_grams"),
         driverRides: added("driverRides", "driver_rides"),
         driverPassengers: added("driverPassengers", "driver_passengers"),
-        updatedAt: now,
+        updatedAt: month,
       },
     });
 }

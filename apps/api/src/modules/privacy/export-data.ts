@@ -478,6 +478,7 @@ export async function collectExport(
           total: booking.totalPrice,
           currency: booking.currency,
           status: booking.status,
+          co2Grams: booking.co2Grams,
           message: booking.message,
           declineReason: booking.declineReason,
           cancelledBy: booking.cancelledBy,
