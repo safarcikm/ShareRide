@@ -143,6 +143,17 @@ describe("the web app on the API's origin", () => {
     expect(plain).not.toContain('id="co2"');
   });
 
+  it("still serves About, without the CO2 section, when the setting cannot be read", async () => {
+    const failing = setup(exportedWebApp('<noscript></noscript><div id="root"></div>'), [], {
+      co2Settings: () => Promise.reject(new Error("the database is away")),
+    });
+    const response = await failing.request("/about?lang=en");
+    expect(response.status).toBe(200);
+    const page = await response.text();
+    expect(page).toContain("<h2>Terms and policies</h2>");
+    expect(page).not.toContain('id="co2"');
+  });
+
   it("keeps trip pages out of search engines (R4.6; spec 23 has the rest)", async () => {
     const trip = await app.request("/trips/0190a1d6-0000-7000-8000-0000000000d1?fromStop=1");
     expect(trip.status).toBe(200);

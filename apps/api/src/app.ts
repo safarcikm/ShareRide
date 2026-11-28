@@ -855,6 +855,22 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
   });
 
   const photoOrigin = dependencies.features?.photos?.origin ?? null;
+  // About leaves its CO2 section out, never the page with the legal
+  // documents, when the setting cannot be read; and says why.
+  const co2SettingsForAbout = dependencies.co2Settings ?? co2SettingsOfApp;
+  const aboutCo2Settings: Co2SettingsSource | undefined =
+    co2SettingsForAbout === undefined
+      ? undefined
+      : () =>
+          co2SettingsForAbout().catch((error: unknown) => {
+            logger.warn({ err: error }, "About's CO2 section could not read its setting");
+            dependencies.reportError?.(error, {
+              method: "GET",
+              route: "/about",
+              requestId: undefined,
+            });
+            return { gramsPerCarKm: 0 };
+          });
   const webApp =
     dependencies.webAppDir === undefined
       ? undefined
@@ -868,7 +884,7 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
               ? undefined
               : subjectFinder(dependencies.features.db)),
           dependencies.findRide ?? rideFinderOfApp,
-          dependencies.co2Settings ?? co2SettingsOfApp,
+          aboutCo2Settings,
         );
   const adminApp =
     dependencies.adminAppDir === undefined
