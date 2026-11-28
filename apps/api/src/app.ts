@@ -197,6 +197,8 @@ import {
   robotsTxt,
   sitemapXml,
   subjectFinder,
+  contentFinder,
+  type FindContent,
   type FindSubject,
   type SearchEngines,
 } from "./search-engines.ts";
@@ -296,6 +298,12 @@ export interface AppDependencies {
    * (spec 23, 3.10); by default through the trip details.
    */
   readonly findRide?: FindRide;
+  /**
+   * Looks up what a public page shows from the database, for its text for
+   * readers that do not run the app (spec 23, 3.11); by default through the
+   * meeting point and legal services.
+   */
+  readonly findContent?: FindContent;
   /**
    * The CO2 figures' value, for About's section on the page search engines
    * read (spec 34, 3.9); by default the operator's setting.
@@ -453,6 +461,8 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
   let rideFinderOfApp: FindRide | undefined;
   /** The CO2 figures' value as it is now (spec 34, 3.3), for About's page too. */
   let co2SettingsOfApp: Co2SettingsSource | undefined;
+  /** What a public page shows from the database, for its text (spec 23, 3.11). */
+  let contentFinderOfApp: FindContent | undefined;
   let appStoresOfSettings: ListedAppStores | undefined;
   if (dependencies.features !== undefined) {
     const { features } = dependencies;
@@ -617,13 +627,19 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
       ...features,
       settings: defaultMeetingPointIssueSettings,
     });
-    registerMeetingPointRoutes(
-      app,
-      createMeetingPointService(features),
-      photos,
-      issues,
-      requireAuth,
-    );
+    const meetingPoints = createMeetingPointService(features);
+    registerMeetingPointRoutes(app, meetingPoints, photos, issues, requireAuth);
+    // A page whose content cannot be read keeps its title, without its text, and says why.
+    const findContent = contentFinder({ meetingPoints, legal });
+    contentFinderOfApp = async (path) => {
+      try {
+        return await findContent(path);
+      } catch (error) {
+        logger.warn({ err: error }, "a public page's text could not be read");
+        dependencies.reportError?.(error, { method: "GET", route: path, requestId: undefined });
+        return undefined;
+      }
+    };
     const legs = createLegService({
       ...features,
       router: features.router ?? createRoadFileRouter(),
@@ -909,6 +925,7 @@ export function createApp(dependencies: AppDependencies): OpenAPIHono<AppEnv> {
           dependencies.findRide ?? rideFinderOfApp,
           aboutCo2Settings,
           listedStores,
+          dependencies.findContent ?? contentFinderOfApp,
         );
   const adminApp =
     dependencies.adminAppDir === undefined

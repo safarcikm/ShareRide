@@ -20,6 +20,7 @@ import {
   noIndex,
   notIndexed,
   pageHead,
+  type FindContent,
   type FindSubject,
   type SearchEngines,
 } from "./search-engines.ts";
@@ -131,7 +132,8 @@ async function readPage(root: string): Promise<string | undefined> {
  * Which answers search engines may index is the app's middleware's to say
  * (spec 23, R23.6; trip pages, R4.6, add a robots tag of their own too);
  * this adds one for a meeting point or place that is not listed (3.6).
- * A shared ride's page gets its own link preview (3.10). While the App
+ * A shared ride's page gets its own link preview (3.10), and each public
+ * page its text for readers that do not run the app (3.11). While the App
  * Store's page is public, every page carries Apple's banner, and `/app`
  * sends each phone to its store (spec 35, 3.3 and 3.7).
  */
@@ -144,6 +146,7 @@ export function createWebApp(
   findRide?: FindRide,
   co2Settings?: Co2SettingsSource,
   listedStores: ListedAppStores = () => Promise.resolve([]),
+  findContent?: FindContent,
 ): WebApp {
   const contentSecurityPolicy = webContentSecurityPolicy(photoOrigin, analytics !== null);
   const files = serveStatic<AppEnv>({ root });
@@ -197,6 +200,8 @@ export function createWebApp(
     // About's section on the CO2 a shared ride saves says the value in force (spec 34, 3.9).
     const gramsPerCarKm =
       c.req.path === aboutPage.path ? ((await co2Settings?.())?.gramsPerCarKm ?? 0) : 0;
+    // What the page shows from the database, for its text (spec 23, 3.11).
+    const content = subject?.kind === "missing" ? undefined : await findContent?.(c.req.path);
     const head = pageHead(
       {
         path: c.req.path,
@@ -207,7 +212,7 @@ export function createWebApp(
       searchEngines,
       subject,
       ride,
-      gramsPerCarKm,
+      { gramsPerCarKm, content, countsVisits: analytics !== null },
     );
     if (head.fromBrowser) c.header("Vary", "Accept-Language, X-Facebook-Locale");
     const page = fillPage(html, head);

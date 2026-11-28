@@ -10,6 +10,7 @@ export const en = {
     "Carpool and ride share between towns in Iceland: find a lift, or offer the empty seats in your car, and share the cost of the trip.",
   "seo.keywords":
     "carpool, carpooling, ride share, rideshare, shared rides, lift, rides in Iceland, share a car, Reykjavík, Akureyri",
+  "seo.needsJavaScript": "Finding, offering and booking rides needs JavaScript turned on.",
   "seo.meetingPointsDescription":
     "The meeting points where PuffinRide drivers and passengers meet to carpool, all around Iceland, on the map and by region.",
   "seo.meetingPointDescription":

@@ -35,6 +35,12 @@ and the front page tells Google our name (also written Puffin Ride), our
 logo, what we are, our email address, and that the Facebook and Instagram
 pages are ours.
 
+Since 2026-11-28 every public page also has its text in plain HTML, for
+the tools that read a page without running the app: the front page, the
+meeting points, each meeting point and place, About, the terms and
+Cookies. The rides stay out on purpose, because they name their drivers,
+so an AI answer will still say it cannot see the rides on offer.
+
 ChatGPT search, Microsoft Copilot and DuckDuckGo lean on Bing's index, so
 be in Bing too (below).
 

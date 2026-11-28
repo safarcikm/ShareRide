@@ -1634,6 +1634,14 @@ releases follow [Semantic Versioning](https://semver.org/).
   `socialProfiles` in `@shareride/i18n`, for the app and the server.
 - `marketing/search/`: Martin's Search Console steps for our name, and
   honest places to be mentioned and linked from.
+- Every public page can be read without the app (spec 23, 3.11; R23.9):
+  Find, the meeting points, each meeting point and place, the legal
+  documents and Cookies now have their screen's own text in the first
+  answer, as Carpool in Iceland, About and Delete your account did, each
+  ending with the footer's links and a line that finding, offering and
+  booking rides needs JavaScript, in place of Expo's "You need to enable
+  JavaScript to run this app." No ride is in it: rides name their drivers
+  (decision 13, Martin). The texts are in `apps/api/src/page-text.ts`.
 - The iPhone app offers no Google sign-in until Sign in with Apple comes
   (spec 32, 3.3; R32.5), as Apple's guideline 4.8 asks: the domain's
   `providersOffered` leaves Google out on iOS unless Apple is on too. Step 1

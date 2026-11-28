@@ -305,7 +305,8 @@ is and how carpooling with it works, for people who search for it:
    points", so Google finds it from the front page.
 5. Search engines that do not run the app read its text too: the server
    writes the page's sections into the first answer's `<noscript>`, from
-   the same texts the screen shows.
+   the same texts the screen shows. Since 2026-11-28 every page of 3.4
+   does (3.11).
 6. It is in the sitemap and in the list of 3.4.
 
 **Outside the code** (Martin): links from other sites are what lift a
@@ -388,6 +389,58 @@ title only (the same picture) and no change.
    kept pictures and limits
    ([spec 28](2026-11-25-share-a-ride.md), 3.5).
 
+### 3.11 Every public page readable without the app
+
+Added 2026-11-28. Martin pasted what Google's AI said about puffinride.is:
+"Because the site runs as a JavaScript-based web app, its live listings and
+full details aren't visible to search engines, so I can only confirm its
+core purpose from the page snippet."
+
+What we found: Google itself runs the app before it indexes a page, but
+many readers do not, among them the tools AI answers use to read a page
+and Bing at times. Before the app runs, every page but Carpool in Iceland,
+About and Delete your account (3.9, item 5) held only its head and Expo's
+"You need to enable JavaScript to run this app.", which is all such a
+reader saw. The rides are kept out on purpose: Find's list is marked
+`data-nosnippet` (decision 6) and trip pages are never indexed (R4.6),
+because they name drivers.
+
+1. **Each page of 3.4 has its text** in the first answer's `<noscript>`,
+   from the texts and data its screen shows, in the page's language, its
+   links keeping the language the address named:
+   - **Find:** its title and line, "Find a ride" and "Offer a ride", How it
+     works with its three steps and "Driving somewhere?", and its links to
+     Carpool in Iceland and the meeting points. Not the rides.
+   - **Meeting points:** the title and line, then each region's active
+     meeting points, as links, with their type and municipality, in the
+     order the list shows them.
+   - **A meeting point:** its name and line, its other name and other names,
+     where to stand, its amenities, its season and when it was last
+     checked, and the way back to the meeting points. Not its photos, whose
+     addresses last an hour.
+   - **A place:** its name and line, and its nearest meeting points as
+     links with their distance, as the screen shows them.
+   - **A legal document:** its title, version and whole text, the same few
+     Markdown features the screen shows (headings, paragraphs, lists and
+     bold).
+   - **Cookies:** what the site keeps to work, whether it counts visits,
+     and the link to the Privacy Policy.
+2. **Every one ends with the footer's links,** as the screen's footer
+   gives them (spec 30, 3.3): About, Carpool in Iceland, the meeting points,
+   the three documents and Cookies, our address, Facebook and Instagram.
+3. **Expo's sentence goes.** In its place, at the end, one line in the
+   page's language: "Finding, offering and booking rides needs JavaScript
+   turned on." / "Til að finna, bjóða og bóka far þarf JavaScript að vera virkt."
+4. **The same words people see.** The text is the screen's own, never
+   words written only for search engines, which Google counts as cloaking.
+5. **Nothing about a person,** as before (R23.7): no ride, driver or
+   passenger, and no photo.
+6. A meeting point or place the sitemap does not list (3.4) gets no text,
+   as it gets no title.
+
+This is text for readers that do not run the app, not the app's screens
+drawn on the server (section 10).
+
 ## 4. Rules
 
 | ID    | Rule                                                                                                                                                                                     |
@@ -400,6 +453,7 @@ title only (the same picture) and no change.
 | R23.6 | Only production's pages of 3.4 may be indexed; every other address of the web app answers with noindex.                                                                                  |
 | R23.7 | Link previews show no person's name or photo.                                                                                                                                            |
 | R23.8 | A ride's link preview shows its route, meeting points, day and time only: no name, photo, car, number plate, price or seat count.                                                         |
+| R23.9 | Each page of 3.4 has its screen's own text before the app runs, and no ride or person (3.11).                                                                                            |
 
 ## 5. Screens
 
@@ -533,3 +587,5 @@ Manager; Bing's own tools (Bing reads the sitemap from robots.txt).
 | 9   | Staging and other copies?                                            | Noindex on every answer, crawling allowed so Google sees it (R23.6; my call)                                                                                                                     |
 | 10  | How is Search Console verified?                                      | A domain property, by a TXT record at ISNIC (my call)                                                                                                                                            |
 | 11  | How does a shared ride look on Facebook?                             | Its own card: the route, day, time and stops drawn in our look, no person (3.10; Martin, 2026-11-25, on a decision card; not chosen: the route in the title only, or no change)                   |
+| 12  | How do readers that do not run the app read our pages?               | Each public page's own text in its first answer (3.11), not the app drawn on the server, which would change how the whole site is built (my call)                                                |
+| 13  | Do rides go into that text?                                          | No: they name drivers, as decision 6 and R4.6 keep (Martin, 2026-11-28, on a decision card; not chosen: the rides leaving soon by route and time without names)                                          |
