@@ -37,7 +37,9 @@ ready to paste and upload, with the scripts that make it.
 ## Putting them in the stores (Martin)
 
 Nothing here is sent to a store by a script: Martin pastes and uploads, and
-presses Submit himself (R32.2).
+nothing is submitted without his go (R32.2). For the first iPhone version he
+asked Claude to fill the forms and press Submit for him in his own browser;
+see "What was sent" in [review-and-rating.md](review-and-rating.md).
 
 **App Store Connect**, PuffinRide (Apple ID 6840158626):
 
@@ -52,6 +54,11 @@ presses Submit himself (R32.2).
    since 2026 and makes the other iPhones' pictures from. The 6.9-inch ones
    in `app-store/en-GB/` may go under "large display"; they are not needed.
 4. App Review Information: the review account and the notes.
+5. Pricing and Availability: the price and the countries in
+   [review-and-rating.md](review-and-rating.md). App Store Connect will not
+   add a version for review before both are set.
+6. On the version: Add for Review, then Submit for Review, with manual
+   release.
 
 **Play Console**, PuffinRide:
 

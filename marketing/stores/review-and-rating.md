@@ -69,9 +69,14 @@ still applies.
 
 ### Pricing and availability
 
-- Price: the free tier (the app costs nothing to download).
-- Availability: every country and region the App Store offers (spec 32,
-  3.9: visitors download from their own country's store).
+- Price: the free tier, $0.00 with the United States as the base country
+  (the app costs nothing to download, so the base does not matter).
+- Availability: every country and region the App Store offers except China
+  mainland (spec 32, 3.9: visitors download from their own country's store,
+  but not where the store needs a local licence). China mainland needs an
+  ICP filing number, a security assessment and an AI-generated content
+  declaration, so it stays out: 174 of 175.
+- Apple silicon Macs and Apple Vision Pro: as App Store Connect sets them.
 
 ### App Review Information
 
@@ -164,6 +169,14 @@ users interact. Target audience (18 and over) is what keeps it for adults.
 
 Every country Google Play offers (production track, Countries and regions),
 as on the App Store.
+
+## What was sent
+
+- **App Store, 1.0 (build 1.0.0 (4)):** submitted for review on
+  2026-11-28 at 14:54 UTC, on Martin's go, with manual release. The token
+  revocation Apple asks for (spec 37) was live on puffinride.is from
+  14:47 UTC. Free, 174 countries, as above. When Apple approves it, Martin
+  presses Release.
 
 ## What changes when
 
