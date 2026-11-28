@@ -44,8 +44,8 @@ export type PuffinLook =
     } & PuffinDress)
   | { readonly kind: "grey"; readonly black: string; readonly face: string };
 
-/** A five-pointed star around `cx`, `cy`, as SVG path numbers. */
-function star(cx: number, cy: number, r: number): string {
+/** A five-pointed star around `cx`, `cy`, as an SVG path. */
+export function star(cx: number, cy: number, r: number): string {
   const points = Array.from({ length: 10 }, (_, index) => {
     const angle = -Math.PI / 2 + (index * Math.PI) / 5;
     const reach = index % 2 === 0 ? r : r * 0.45;

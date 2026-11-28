@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react-native";
+import { render, screen, within } from "@testing-library/react-native";
 import { StyleSheet } from "react-native";
 import { onWebsite } from "@/lib/on-website";
 import { drawn, fillsIn, valuesIn } from "@/testing/drawing";
@@ -300,5 +300,128 @@ describe("IcelandScene in its season (spec 15, 5.3; spec 36, 3.1 and 3.3)", () =
     const first = JSON.stringify(valuesIn(part("heather"), "cx"));
     await render(<IcelandScene season="autumn" width={390} height={200} />);
     expect(JSON.stringify(valuesIn(part("heather"), "cx"))).toBe(first);
+  });
+});
+
+describe("the car and the scene on a day (spec 36, 3.4 and 3.5)", () => {
+  /** What one of the puffins in the car wears: the test IDs drawn on it. */
+  const on = (who: "you" | "driver", testID: string) =>
+    within(part(`puffin-${who}`)).queryAllByTestId(testID, { includeHiddenElements: true });
+
+  it("carries a little tree at Christmas, both puffins in Yule hats", async () => {
+    await render(<PuffinsInCar width={170} day="christmas" season="winter" />);
+    expect(parts("tree")).toHaveLength(1);
+    expect(parts("roof-case")).toHaveLength(0);
+    expect(on("you", "hat-yule")).toHaveLength(1);
+    expect(on("driver", "hat-yule")).toHaveLength(1);
+  });
+
+  it("wears party hats at New Year, under three fireworks", async () => {
+    await render(<PuffinsInCar width={170} day="newyear" season="winter" />);
+    expect(on("you", "hat-party")).toHaveLength(1);
+    expect(on("driver", "hat-party")).toHaveLength(1);
+    expect(parts("roof-snow")).toHaveLength(1);
+    await render(<IcelandScene season="winter" day="newyear" width={390} height={200} />);
+    expect(parts("firework")).toHaveLength(3);
+  });
+
+  it("carries an Easter egg with its chick", async () => {
+    await render(<PuffinsInCar width={170} day="easter" season="spring" />);
+    expect(parts("egg")).toHaveLength(1);
+    expect(parts("chick")).toHaveLength(1);
+  });
+
+  it("has the sun rise on the first day of summer, the driver in sunglasses and the woolly hat", async () => {
+    await render(<PuffinsInCar width={170} day="summerday" season="spring" />);
+    expect(on("driver", "glasses")).toHaveLength(1);
+    expect(on("driver", "hat-wool")).toHaveLength(1);
+    await render(<IcelandScene season="spring" day="summerday" width={390} height={200} />);
+    expect(parts("sunrise")).toHaveLength(1);
+  });
+
+  it("flies two flags on National Day, with balloons", async () => {
+    await render(<PuffinsInCar width={170} day="june17" season="summer" />);
+    expect(parts("flag")).toHaveLength(2);
+    expect(fillsIn(part("balloons"))).toContainEqual(drawn(bannerDrawing.flagBlue));
+  });
+
+  it("carries a tent at the long weekend", async () => {
+    await render(<PuffinsInCar width={170} day="longweekend" season="summer" />);
+    expect(parts("tent")).toHaveLength(1);
+  });
+
+  it("turns the autumn white on the first day of winter, the passenger in a woolly hat too", async () => {
+    await render(<PuffinsInCar width={170} day="winterday" season="autumn" />);
+    expect(on("you", "hat-wool")).toHaveLength(1);
+    await render(<IcelandScene season="autumn" day="winterday" width={390} height={200} />);
+    expect(fillsIn(part("cover"))).toContainEqual(drawn(icelandSeasons.winter.light.hill));
+  });
+
+  it("flies one flag on the roof on Sovereignty Day", async () => {
+    await render(<PuffinsInCar width={170} day="dec1" season="winter" />);
+    expect(parts("flag")).toHaveLength(1);
+  });
+
+  it("brings flowers and a heart over the driver on Bóndadagur, over the passenger on Konudagur", async () => {
+    await render(<PuffinsInCar width={170} day="bondadagur" season="winter" />);
+    expect(parts("bouquet")).toHaveLength(1);
+    expect(parts("heart-driver")).toHaveLength(1);
+    expect(parts("heart-you")).toHaveLength(0);
+    await render(<PuffinsInCar width={170} day="konudagur" season="winter" />);
+    expect(parts("heart-you")).toHaveLength(1);
+    expect(parts("heart-driver")).toHaveLength(0);
+  });
+
+  it("carries a cream bun on Bun Day", async () => {
+    await render(<PuffinsInCar width={170} day="bolludagur" season="winter" />);
+    expect(parts("bun")).toHaveLength(1);
+  });
+
+  it("dresses up on Ash Wednesday: a mask and a crown", async () => {
+    await render(<PuffinsInCar width={170} day="oskudagur" season="winter" />);
+    expect(on("you", "mask")).toHaveLength(1);
+    expect(on("driver", "hat-crown")).toHaveLength(1);
+  });
+
+  it("wears sailor caps on Seafarers' Day", async () => {
+    await render(<PuffinsInCar width={170} day="seafarers" season="summer" />);
+    expect(on("you", "hat-sailor")).toHaveLength(1);
+    expect(on("driver", "hat-sailor")).toHaveLength(1);
+  });
+
+  it("carries the case in a season, with snow on it in winter only", async () => {
+    await render(<PuffinsInCar width={170} season="winter" />);
+    expect(parts("roof-case")).toHaveLength(1);
+    expect(parts("roof-snow")).toHaveLength(1);
+    await render(<PuffinsInCar width={170} season="summer" />);
+    expect(parts("roof-snow")).toHaveLength(0);
+    expect(on("driver", "hat-wool")).toHaveLength(1);
+    expect(on("you", "hat-wool")).toHaveLength(0);
+  });
+
+  it("draws no day's things in the scene on a plain day", async () => {
+    await render(<IcelandScene season="winter" width={390} height={200} />);
+    expect(parts("firework")).toHaveLength(0);
+    expect(parts("sunrise")).toHaveLength(0);
+    expect(parts("cover")).toHaveLength(0);
+  });
+
+  it("keeps the fireworks and the sunrise in the car's room on a laptop", async () => {
+    await render(
+      <IcelandScene
+        season="winter"
+        day="newyear"
+        width={900}
+        height={180}
+        road={false}
+        room={[600, 900]}
+        layout="panel"
+      />,
+    );
+    expect(parts("firework")).toHaveLength(3);
+    for (const x of valuesIn(parts("firework"), "cx")) {
+      expect(x).toBeGreaterThanOrEqual(600);
+      expect(x).toBeLessThanOrEqual(900);
+    }
   });
 });
