@@ -102,6 +102,7 @@ function Navigation() {
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="coming-soon" />
       <Stack.Screen name="about" />
+      <Stack.Screen name="delete-account" />
       <Stack.Screen name="legal/index" />
       <Stack.Screen name="legal/[type]" />
       <Stack.Screen name="cookies" />

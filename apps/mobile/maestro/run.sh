@@ -2,13 +2,16 @@
 # Runs the phone journeys (config.yaml) on one device against the test API
 # on this machine, which must already be starting (spec 32, 3.7). From
 # apps/mobile:
-#   maestro/run.sh <device> <app ID> <android|ios>
+#   maestro/run.sh <device> <app ID> <android|ios> [journeys]
+# The journeys are maestro, the checks, unless another folder is given,
+# such as maestro/store for the store's screenshots (spec 32, 3.9).
 # The flows' screenshots end up in screenshots/<platform>/, Maestro's
 # report and logs in maestro-results/<platform>/, also when a flow fails.
 set -euo pipefail
 device="$1"
 app_id="$2"
 platform="$3"
+journeys="${4:-maestro}"
 results="maestro-results/$platform"
 mkdir -p "$results" "screenshots/$platform"
 
@@ -24,7 +27,7 @@ for _ in $(seq 1 90); do
 done
 curl --silent --fail --show-error http://localhost:3001/v1/health >/dev/null
 
-maestro --device "$device" test maestro \
+maestro --device "$device" test "$journeys" \
   --env APP_ID="$app_id" \
   --env API_URL=http://localhost:3001 \
   --format junit --output "$results/report.xml" \

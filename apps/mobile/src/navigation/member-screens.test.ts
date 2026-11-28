@@ -59,6 +59,9 @@ const decidedElsewhere: readonly string[] = [
   "carpool-iceland",
   "coming-soon",
   "cookies",
+  // How to delete an account (spec 32, section 5): signed in, its button
+  // leads to Profile, which closes for an account already waiting.
+  "delete-account",
   "legal/index",
   "legal/[type]",
   "meeting-points/index",

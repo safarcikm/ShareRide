@@ -1621,6 +1621,26 @@ releases follow [Semantic Versioning](https://semver.org/).
   their Google email for a code, and sign in once on puffinride.is to add an
   email if that does not work; Sign-in methods on the iPhone can remove a
   linked Google but not add one. Android and the website are unchanged.
+- Delete your PuffinRide account (spec 32, section 5), a public page at
+  `/delete-account` in Icelandic and English, as Google Play asks of apps
+  with accounts: how to delete an account in the app or on the website
+  (Profile, then Privacy and your data, then Delete my account, named as
+  the app names them), what happens next, what is erased, what is kept and
+  for how long, and where to write. Signed out it offers Sign in, signed in
+  Delete my account itself. It is in the sitemap, the server writes its
+  text for crawlers that do not run the app, and About links to it.
+- The store kit (spec 32, 3.9) in `marketing/stores/`: the App Store page
+  in English and the Google Play page in Icelandic and English, checked
+  for each store's limits and for any word about money; six screenshots
+  per store under captions at each store's size, the Play feature graphic
+  and icon, drawn by `src/build.sh`; Apple's privacy label and Google's
+  data safety answers from the privacy register; the age rating, the
+  reviewers' notes and the review account's steps. Phone apps, run by hand
+  with "Which journeys" set to `store`, takes the screenshots
+  (`apps/mobile/maestro/store`) on an iPhone of the App Store's largest
+  size and on the emulator, signed out, with a tidy status bar. The
+  privacy register lists the App Store, Google Play and Google Play
+  testing.
 
 ### Fixed
 

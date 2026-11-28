@@ -7,6 +7,8 @@ import {
   aboutPage,
   carpoolPage,
   createTranslator,
+  deleteAccountPage,
+  deleteAccountSteps,
   isLocale,
   locales,
   pageText,
@@ -36,6 +38,7 @@ const indexablePaths: readonly RegExp[] = [
   /^\/$/,
   /^\/carpool-iceland$/,
   /^\/about$/,
+  /^\/delete-account$/,
   /^\/meeting-points$/,
   /^\/meeting-points\/[^/]+$/,
   /^\/places\/[^/]+$/,
@@ -142,6 +145,7 @@ export async function publicPages(db: Database): Promise<string[]> {
     "/",
     carpoolPage.path,
     aboutPage.path,
+    deleteAccountPage.path,
     "/meeting-points",
     ...points.map(({ id }) => `/meeting-points/${id}`),
     ...placeRows.map(({ id }) => `/places/${id}`),
@@ -212,6 +216,7 @@ function publicPageOf(path: string, subject: PageSubject | undefined, locale: Lo
   }
   if (path === carpoolPage.path) return { kind: "carpool" };
   if (path === aboutPage.path) return { kind: "about" };
+  if (path === deleteAccountPage.path) return { kind: "deleteAccount" };
   return path === "/meeting-points" ? { kind: "meetingPoints" } : { kind: "find" };
 }
 
@@ -346,7 +351,9 @@ export function pageHead(
       ? carpoolText(t, address)
       : request.path === aboutPage.path
         ? aboutText(t, address)
-        : null;
+        : request.path === deleteAccountPage.path
+          ? deleteAccountText(t, address)
+          : null;
   const website =
     origin !== null && request.path === "/" ? websiteData(t("app.name"), `${origin}/`) : null;
   return { locale, fromBrowser: named === null, title, tags: tags.join(""), noscript, website };
@@ -413,11 +420,52 @@ function aboutText(t: Translate, address: (path: string) => string): string {
     `<ul>${aboutPage.documents
       .map((document) => `<li>${link(address(document.href), t(document.label))}</li>`)
       .join("")}</ul>`,
+    paragraph(link(address(aboutPage.deleteAccount.href), t(aboutPage.deleteAccount.label))),
     heading(aboutPage.operatorTitle),
     paragraph(escapeHtml(t(aboutPage.operator))),
     heading(aboutPage.contactTitle),
     paragraph(escapeHtml(t(aboutPage.contact))),
     paragraph(link(`mailto:${aboutPage.email}`, aboutPage.email)),
+    "</main>",
+  ].join("");
+}
+
+/**
+ * The account deletion page's text as HTML (spec 32, section 5), from the
+ * texts the screen shows: Google Play's check reads it without running the
+ * app. Its links keep the language the address named.
+ */
+function deleteAccountText(t: Translate, address: (path: string) => string): string {
+  const link = (href: string, label: string) =>
+    `<a href="${escapeHtml(href)}">${escapeHtml(label)}</a>`;
+  const paragraph = (text: string) => `<p>${text}</p>`;
+  const heading = (key: MessageKey) => `<h2>${escapeHtml(t(key))}</h2>`;
+  const list = (tag: "ol" | "ul", items: readonly string[]) =>
+    `<${tag}>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</${tag}>`;
+  const page = deleteAccountPage;
+  return [
+    "<main>",
+    `<h1>${escapeHtml(t(page.title))}</h1>`,
+    paragraph(escapeHtml(t(page.intro))),
+    heading(page.howTitle),
+    list("ol", deleteAccountSteps(t)),
+    paragraph(link(address("/sign-in"), t("auth.signIn"))),
+    heading(page.afterTitle),
+    paragraph(escapeHtml(t(page.after))),
+    heading(page.erasedTitle),
+    list(
+      "ul",
+      page.erased.map((key) => t(key)),
+    ),
+    heading(page.keptTitle),
+    list(
+      "ul",
+      page.kept.map((key) => t(key)),
+    ),
+    heading(page.helpTitle),
+    paragraph(escapeHtml(t(page.help))),
+    paragraph(link(`mailto:${page.email}`, page.email)),
+    paragraph(link(address(page.privacyPolicy.href), t(page.privacyPolicy.label))),
     "</main>",
   ].join("");
 }
