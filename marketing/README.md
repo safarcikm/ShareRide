@@ -11,6 +11,7 @@ puffinride.is today.
 | `launch-ads/` | Facebook and Instagram ads (square, feed, story) in Icelandic and English, the Facebook cover and an A5 flyer with a QR code. Texts and tagged links in [ad-texts.md](launch-ads/ad-texts.md) | 2026-11-22 |
 | `social-pages/` | The Facebook Page and Instagram profile kit: profile picture, highlight covers, the first seven posts, a welcome story, a 15-second reel (MP4), and the texts (names, bios, captions, hashtags, alt text, a four-week plan, Messenger replies and the setup checklist) in [texts.md](social-pages/texts.md) | 2026-11-25 |
 | `stores/` | The App Store and Google Play pages: texts in Icelandic and English, framed screenshots at each store's size, the Play feature graphic and icon, the privacy and data safety answers, the age rating and the notes for the reviewers ([README](stores/README.md)) | 2026-11-27 |
+| `door-drop/` | What it costs to put the A5 flyer through every letterbox in Iceland, the capital area or the towns on Route 1: households, Póstdreifing and Pósturinn delivery, printing, with sources, in [README.md](door-drop/README.md) | 2026-11-28 |
 | `search/` | Being found on Google for our name and in AI answers: Martin's Search Console and Bing steps, and honest places to be mentioned and linked from, in [README.md](search/README.md) | 2026-11-28 |
 
 ## Drawing them again
