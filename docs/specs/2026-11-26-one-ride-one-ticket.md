@@ -6,7 +6,9 @@ card, to be built flow by flow as drawn
 ([plan](../plans/2026-11-26-one-ride-one-ticket.md)). Built (2026-11-27),
 and on puffinride.is since that day, on Martin's go; where the build
 differs from a drawing, and what is left, is in 3.22. The other choices in
-the Decisions section stay his to change
+the Decisions section stay his to change. Added on his ask (2026-11-28):
+the ride on a map on a booked seat and on the ride I drive (3.8, 3.12,
+section 6)
 
 Amends, once approved: [spec 15](2026-11-13-visual-design-system.md) (new
 parts, title alignment, the title font's spacing),
@@ -506,6 +508,26 @@ and on a laptop
   driver in person is a notice under the driver and where to stand. A
   driver who opens a passenger's booking paid in person reads "Gunna pays
   you 2,900 ISK in cash or by bank transfer when they get in." there.
+- **The route** (added 2026-11-28, Martin: "when you open my ride with
+  the details it could show the map there as well with the route"): a
+  card headed "The route" with the whole ride on our map of Iceland (ADR
+  0024), drawn as on a ride's details (3.7): my part solid along the
+  roads with its two stops standing out, the rest of the ride dashed with
+  its stops muted. It comes after the ticket, the driver, where to stand
+  and the line about paying in person, before the rows, on the trip day
+  too. On a laptop it ends the main column as a band, about twice as wide
+  as tall, so it is not taller than the window; a ride that crosses most
+  of Iceland shows all of it. A screen reader hears "The ride on a map of
+  Iceland. Your part: Borgarnes → Blönduós."; a driver who opens the
+  booking hears "The passenger's part". It shows while the seat is asked
+  for or held and once the ride is over, and not on a booking that ended
+  before its ride (cancelled, declined, expired or withdrawn): the ride
+  can change after, and is no longer the passenger's to follow, nor
+  anyone's who blocked the driver (R9.4). Nor on one whose stop was taken
+  off the ride since (spec 6, 3.2): there is no part of the ride to draw
+  it on. In the pictures of this section the seat is the
+  whole ride; a seat on part of one is
+  [drawn so](images/one-ride-one-ticket/built/booking-route-part-phone-light.webp).
 - The rows, each only when it has something to do: "The driver didn't
   come" (after the ride, while it can still be said, R8.5), "Share the
   ride's details", "Weather and roads" (as on a ride's details), "Report
@@ -860,6 +882,14 @@ in 3.10.
   Norðlingaholt" under that; the words go under the squares where a car
   of many seats leaves them no room. "Each stretch" opens the bar of each
   stretch, and a ride of one stretch has only the line.
+- **The route** (added 2026-11-28, as on a booked seat, 3.8): the whole
+  way on our map, its two ends standing out and the stops between as
+  dots, after the seats and before the rows. On a laptop it is a band in
+  the main column, after the passengers and before "Drive it again", so
+  the side column stays whole in a small laptop's window. A screen reader
+  hears "Your ride on a map of Iceland: Mjódd bus terminal → N1
+  Selfoss." A cancelled ride has none: it keeps its ticket and the two
+  rows that post it again.
 - **Rows:** Edit the ride, Share this ride, "Share the ride's details",
   "Weather and roads", Post it again, Post the way back, and Cancel the
   ride, red and last. The two in the middle are what the Safety card held
@@ -2111,6 +2141,19 @@ My rides load, named below.
 - The plan checks each of these against the API before the first pull
   request; a field that turns out to be missing is added there, and named
   in the plan.
+- Added for the route on a booked seat (3.8, 2026-11-28): a booking
+  gains `route`, where each stop of its ride is (in order, the stops on
+  the ride now) and my part as places in that list, `board` and `alight`.
+  It is null where a stop of the part was taken off the ride since (spec
+  6, 3.2), and on a booking that ended before its ride, which follows the
+  ride no further, as its `changes` do not. The contract gives null when
+  the field is missing, so an app newer than its server shows no map
+  instead of failing. It says nothing new: the stops are meeting points,
+  which everyone can see, and the ride's details list them to the
+  passenger while the booking holds a seat. The ride I drive already has
+  its stops. On a wide
+  page the map is a band (`wideShape` in `packages/ui`), where a phone's
+  column keeps the shapes of before (`columnShape`).
 - Found while building the result ticket: a ride found carried its
   driver's name, photo and rating, but not the `colour` of the circle
   that stands in for a photo (spec 15, 4.2), which a booking and a

@@ -1601,6 +1601,53 @@ describe("reading bookings (spec 5, 3.6 and 3.7)", () => {
     expect(await read(stranger.accessToken)).toMatchObject({ status: 404 });
   });
 
+  it("puts the trip on a map: where its stops are, in order, with the passenger's part (spec 31, 3.8)", async () => {
+    const anna = await driverOf(north);
+    const jon = await newMember("Jón");
+    const shown = await details(north, 1, 2);
+    const request = await booked(jon.accessToken, north, { fromStop: 1, toStop: 2 });
+    const route = {
+      stops: shown.stops.map((stop) => stop.meetingPoint.position),
+      board: 1,
+      alight: 2,
+    };
+    expect(route.stops).toHaveLength(4);
+    expect(request.route).toEqual(route);
+    // The driver reads the same, on the booking and in the trip's list.
+    const read = (accessToken: string) =>
+      api.client.call(bookingRoute, { accessToken, params: { id: request.id } });
+    expect(await read(anna.accessToken)).toMatchObject({ data: { route } });
+    const listed = await api.client.call(tripBookingsRoute, {
+      accessToken: anna.accessToken,
+      params: { id: north },
+    });
+    expect(listed.ok && listed.data.bookings.map((booking) => booking.route)).toEqual([route]);
+
+    // A stop of the part that is no longer on the trip leaves nothing to draw it by.
+    await api.connection.db
+      .update(schema.tripStops)
+      .set({ removedAt: new Date() })
+      .where(
+        and(
+          eq(schema.tripStops.tripId, north),
+          eq(schema.tripStops.meetingPointId, sampleId("point:borgarnes")),
+        ),
+      );
+    expect(await read(jon.accessToken)).toMatchObject({ data: { route: null } });
+  });
+
+  it("draws no map for a booking that ended before its ride: the ride may change after (R9.4)", async () => {
+    const jon = await newMember("Jón");
+    const request = await booked(jon.accessToken, north, { fromStop: 1, toStop: 2 });
+    expect(request.route).not.toBeNull();
+    const withdrawn = await api.client.call(withdrawRequestRoute, {
+      accessToken: jon.accessToken,
+      params: { id: request.id },
+      body: {},
+    });
+    expect(withdrawn).toMatchObject({ data: { status: "cancelled", route: null } });
+  });
+
   it("shows the number plate and where to stand only once the booking is confirmed (R5.12)", async () => {
     await api.connection.db
       .update(schema.vehicles)

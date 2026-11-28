@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { mapSize, project } from "./projection.ts";
-import { dotsNear, viewFor, wholeMap } from "./view.ts";
+import { dotsNear, viewFor, wholeMap, wideShape } from "./view.ts";
 
 const reykjavik = project({ longitude: -21.86, latitude: 64.13 });
 const keflavik = project({ longitude: -22.6, latitude: 63.99 });
@@ -32,6 +32,36 @@ describe("The part of the map shown", () => {
     expect(ratio(short)).toBeLessThanOrEqual(1.6);
     const southCoast = viewFor([keflavik, vik]);
     expect(ratio(southCoast)).toBeLessThanOrEqual(1.6);
+  });
+
+  it("is a band for a wide page's column, from 1.8 to 2.4 times as wide as tall (spec 31, 3.8)", () => {
+    const ratio = (view: { width: number; height: number }) => view.width / view.height;
+    const short = viewFor([reykjavik, keflavik], wideShape);
+    expect(short.width).toBeGreaterThanOrEqual(160);
+    expect(ratio(short)).toBeGreaterThanOrEqual(1.8);
+    expect(ratio(short)).toBeLessThanOrEqual(2.4);
+    const southCoast = viewFor([keflavik, vik], wideShape);
+    expect(ratio(southCoast)).toBeGreaterThanOrEqual(1.8);
+    expect(ratio(southCoast)).toBeLessThanOrEqual(2.4);
+    for (const point of [keflavik, vik]) {
+      expect(point.x).toBeGreaterThan(southCoast.x);
+      expect(point.x).toBeLessThan(southCoast.x + southCoast.width);
+      expect(point.y).toBeGreaterThan(southCoast.y);
+      expect(point.y).toBeLessThan(southCoast.y + southCoast.height);
+    }
+    // Nearly as wide as Iceland, it is a band across the whole of it.
+    const north = viewFor([reykjavik, akureyri], wideShape);
+    expect(north).toMatchObject({ x: 0, width: mapSize.width });
+    expect(ratio(north)).toBeGreaterThanOrEqual(1.8);
+    expect(ratio(north)).toBeLessThanOrEqual(2.4);
+    for (const point of [reykjavik, akureyri]) {
+      expect(point.y).toBeGreaterThan(north.y);
+      expect(point.y).toBeLessThan(north.y + north.height);
+    }
+    // One as tall as the country is the whole of it, in either shape.
+    const top = project({ longitude: -16.0, latitude: 66.5 });
+    expect(viewFor([vik, top], wideShape)).toEqual(wholeMap);
+    expect(viewFor([vik, top])).toEqual(wholeMap);
   });
 
   it("stays on the map", () => {

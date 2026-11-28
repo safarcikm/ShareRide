@@ -558,6 +558,12 @@ test.describe("pictures", () => {
     await expect(
       einar.page.getByText("Your seat is confirmed", { exact: true }).filter(visible),
     ).toBeVisible();
+    // Einar's seat is on the first stretch: the map draws his part solid
+    // and the rest of the ride dashed (spec 31, 3.8).
+    const route = einar.page.getByTestId("route-card").filter(visible);
+    await route.scrollIntoViewIfNeeded();
+    await einar.page.waitForTimeout(500);
+    await route.screenshot({ path: join(folder, "booking-route-part-phone-light.png") });
 
     // The ride now leaves in 20 minutes: the trip day, with "I'm here" in the bar.
     const moved = await page.request.post(`${apiUrl}/e2e/trips/${tripId}/move`, {

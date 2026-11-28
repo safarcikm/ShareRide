@@ -618,6 +618,25 @@ describe("The driver's ride (spec 31, 3.12; spec 5, 3.3 and 3.7)", () => {
     expect(screen).toHavePathname(`${tripPage}/edit`);
   });
 
+  it("shows the whole way on a map, its ends standing out", async () => {
+    await openAsDriver(tripPage, [requestToDrive, jon]);
+    expect(await screen.findByRole("header", { name: "Needs you" })).toBeVisible();
+    const route = within(screen.getByTestId("route-card"));
+    expect(route.getByRole("header", { name: "The route" })).toBeVisible();
+    expect(
+      route.getByRole("image", {
+        name: "Your ride on a map of Iceland: BSÍ bus terminal → Hof, Akureyri.",
+      }),
+    ).toBeVisible();
+    const drawn = (testID: string) =>
+      route.queryAllByTestId(testID, { includeHiddenElements: true });
+    expect(drawn("map-dot-chosen")).toHaveLength(2);
+    expect(drawn("map-dot")).toHaveLength(2);
+    expect(drawn("map-dot-muted")).toHaveLength(0);
+    expect(drawn("map-line-part")).toHaveLength(1);
+    expect(drawn("map-line-route")).toHaveLength(0);
+  });
+
   it("stands in one column on a phone: the ticket, what needs the driver, the passengers, the seats, the rows", async () => {
     await openAsDriver(tripPage, [requestToDrive, jon]);
     expect(await screen.findByRole("header", { name: "Needs you" })).toBeVisible();
@@ -630,6 +649,7 @@ describe("The driver's ride (spec 31, 3.12; spec 5, 3.3 and 3.7)", () => {
       "Passengers",
       "Message all passengers",
       "Seats",
+      "The route",
       "Edit the ride",
       "Post it again",
       "Cancel the ride",
@@ -696,6 +716,8 @@ describe("The driver's ride on a laptop (spec 31, 3.16 item 3; spec 18, 3.14)", 
     expect(main().getByRole("header", { name: "Drive it again" })).toBeVisible();
     expect(main().getByRole("button", { name: "Post it again" })).toBeVisible();
     expect(main().getByRole("button", { name: "Post the way back" })).toBeVisible();
+    // The map is a band in the main column: the side column stays whole.
+    expect(main().getByTestId("route-card")).toBeVisible();
 
     expect(side().getByTestId("driver-ride-ticket")).toBeVisible();
     expect(side().getByTestId("seats-card")).toBeVisible();
@@ -719,10 +741,12 @@ describe("The driver's ride on a laptop (spec 31, 3.16 item 3; spec 18, 3.14)", 
     expect(screen.getAllByRole("button", { name: "Post it again" })).toHaveLength(1);
     expect(screen.getAllByTestId("seats-card")).toHaveLength(1);
     expect(screen.getAllByTestId("driver-ride-ticket")).toHaveLength(1);
+    expect(screen.getAllByTestId("route-card")).toHaveLength(1);
     const places = placesOf([
       "Needs you",
       "Passengers",
       "Message all passengers",
+      "The route",
       "Drive it again",
       "Post it again",
       "You drive",
