@@ -8,8 +8,8 @@
 > the driver in person, no invite code, no women-only trips) and in Icelandic
 > too, is what the app shows: it is published from
 > `packages/db/src/legal/texts` ([ADR 0043](../../decisions/0043-legal-documents-published-from-the-repository.md)).
-> The lawyer's changes become the next version of each. Three versions
-> since, in two changes, were not material, so nobody accepts anything
+> The lawyer's changes become the next version of each. Five versions
+> since, in three changes, were not material, so nobody accepts anything
 > again. The Privacy Policy's
 > version 3: Google Analytics on the website, after consent
 > ([spec 23](../../specs/2026-11-22-google-analytics-and-search.md)). The
@@ -19,7 +19,15 @@
 > and in the Privacy Policy what the phone apps add: Expo's check for an
 > update, the two stores and their testing
 > ([spec 32, section 7](../../specs/2026-11-27-phone-apps-in-the-stores.md#7-privacy-and-safety)).
+> The Terms' version 4 and the Privacy Policy's version 5 (2026-11-28),
+> not material either: how people sign in since
+> [spec 26](../../specs/2026-11-23-sign-in-without-text-messages.md) and
+> [spec 27](../../specs/2026-11-23-passwords-and-passkeys.md) (a code by
+> email, Google or Apple, a password, Face ID or fingerprint; a text
+> message only checks a phone number), where the texts said "a code sent
+> to your phone", and what is kept of a password and of a passkey.
 > A test holds the newest texts to the names the app gives its pages
+> and to the ways its sign-in screen offers
 > (`apps/api/src/legal-places.test.ts`). The published Privacy Policy
 > says the standard contractual clauses are "in our agreement with the
 > provider", as not every provider it names has a data processing

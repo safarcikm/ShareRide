@@ -2,7 +2,9 @@
 
 > **Draft for the lawyer, not in force.** Version 1, written 2026-11-16;
 > paying the driver in person (section 6.9) added 2026-11-22; the pages in
-> Profile in place of "Settings" on 2026-11-27 (as in published version 3).
+> Profile in place of "Settings" on 2026-11-27 (as in published version 3);
+> how people sign in (3.2) and which codes come by SMS (10.3) on 2026-11-28
+> (as in published version 4).
 > Placeholders are in square brackets. See the [README](README.md) for the
 > questions this draft raises.
 
@@ -49,9 +51,16 @@
 
 1. You must be 18 or older to create an account.
 2. Your account is for you alone, and each phone number can have only one
-   account. You sign in with a code sent to your phone, or with Apple or
-   Google if you linked them. Keep your phone and your sign-in methods
-   secure; you are responsible for what is done with your account.
+   account. You sign in with a code we send to your email address. Where
+   the app or website offers them, you can also sign in with Google or
+   Apple once you have linked them, with a password if you set one, or
+   with Face ID or fingerprint if you set it up. We send a code by SMS
+   only to check that a phone number is yours, for example when you
+   create your account, or when you sign in with an email address that is
+   new to your account, which is also how you get back in if you lose
+   your email. A code by SMS never signs you in by itself. Keep your
+   phone and your sign-in methods secure; you are responsible for what is
+   done with your account.
 3. The information you give must be true and kept up to date, including
    your first name, your photo, your car and your declarations.
 4. You may only create an account during the beta with a valid invitation
@@ -210,9 +219,12 @@ When you book, you confirm and promise that:
 2. Only the two of you can read your conversation. We read it only when a
    report or a trip-day disagreement covers it.
 3. We send you the messages the service needs, such as booking updates,
-   changes, cancellations and reminders, by push notification, email and,
-   for last-minute changes and sign-in codes, by SMS. You can turn off trip
-   reminders and beta news in Profile, under Notifications.
+   changes, cancellations and reminders, by push notification and email,
+   and by SMS for last-minute changes and for codes that check your phone
+   number. Sign-in codes come by email. A code that confirms a step such
+   as deleting your account comes by email too, or by SMS if your account
+   has no email address. You can turn off trip reminders and beta news in
+   Profile, under Notifications.
 
 ## 11. Safety, reports and blocking
 
