@@ -222,6 +222,11 @@ export const is = {
   "auth.email.send": "Senda kóða",
   "auth.email.before":
     "Skráðir þú þig með símanúmeri? Notaðu netfangið þitt eða Google og svo sama númer. Því er bætt við aðganginn þinn.",
+  /** On the iPhone, which offers no Google until Sign in with Apple comes (spec 32, 3.3). */
+  "auth.email.beforeNoGoogle":
+    "Skráðir þú þig með símanúmeri? Notaðu netfangið þitt og svo sama númer. Því er bætt við aðganginn þinn.",
+  "auth.email.googleOnIphone":
+    "Skráðir þú þig með Google? Sláðu inn Google-netfangið þitt og við sendum þér kóða. Ef það virkar ekki, skráðu þig einu sinni inn á puffinride.is með Google og bættu við netfangi.",
   "auth.email.unavailable": "Innskráning með netfangi er ekki í boði á þessum netþjóni.",
   "auth.emailCode.help": "Við sendum {length} stafa kóða á {email}.",
   "auth.emailCode.change": "Breyta netfanginu",
@@ -542,6 +547,10 @@ export const is = {
     "Þessi síða bætir netfangi við þegar hún er opnuð úr hlekknum sem við sendum. Ef þú opnaðir hann nú þegar er netfangið þitt í Prófílnum.",
   "notFound.title": "Við finnum ekki þessa síðu",
   "notFound.line": "Hlekkurinn gæti verið gamall eða villa í slóðinni.",
+  "appUpdate.title": "Uppfærðu PuffinRide",
+  "appUpdate.line": "Þessi útgáfa virkar ekki lengur. Sú nýja bíður þín í versluninni.",
+  "appUpdate.openAppStore": "Opna App Store",
+  "appUpdate.openGooglePlay": "Opna Google Play",
   "comingSoon.title": "Kemur fljótlega",
   "comingSoon.body": "Leit og bókun ferða opnar með prufuútgáfunni. Takk fyrir þolinmæðina.",
   "meetingPoints.open": "Skoða mótsstaði",

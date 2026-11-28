@@ -21,6 +21,8 @@ export function registerConfigRoutes(
   emailSignIn = false,
   /** Whether the website signs in with Face ID or fingerprint (spec 27, 3.3). */
   passkeySignIn = false,
+  /** The oldest phone app version served, or null for every one (spec 32, R32.4). */
+  oldestAppVersion: string | null = null,
 ): void {
   app.openapi(toOpenApiRoute(configRoute), async (c) => {
     const { values } = await settings.current();
@@ -41,6 +43,7 @@ export function registerConfigRoutes(
         payInPerson: values.pay_in_person === 1,
         analytics:
           analytics === null ? null : { googleMeasurementId: analytics.googleMeasurementId },
+        oldestAppVersion,
       },
       200,
     );

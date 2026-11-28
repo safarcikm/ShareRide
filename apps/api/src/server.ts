@@ -77,6 +77,7 @@ const app = createApp({
   ...(reportError === undefined ? {} : { reportError }),
   searchEngines: config.searchEngines,
   analytics: config.analytics,
+  oldestAppVersion: config.oldestAppVersion,
   features: {
     db: database.db,
     sms,

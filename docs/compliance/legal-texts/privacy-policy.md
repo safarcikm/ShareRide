@@ -3,7 +3,9 @@
 > **Draft for the lawyer, not in force.** Version 1, written 2026-11-16 from
 > the [privacy register](../privacy-gdpr.md); Google Analytics on the
 > website added 2026-11-22 ([spec 23](../../specs/2026-11-22-google-analytics-and-search.md),
-> as in published version 3). Periods marked "to confirm" are
+> as in published version 3); the pages in Profile in place of
+> "Settings", and the phone apps' update check, stores and testing, added
+> 2026-11-27 (as in published version 4). Periods marked "to confirm" are
 > still to be set with the lawyer. See the [README](README.md).
 
 **Last updated:** [date of publication]
@@ -13,7 +15,7 @@
 [Company name] ehf., kennitala [number], [address], Iceland ("PuffinRide",
 "we") is responsible for your personal data in the PuffinRide app and website
 (the controller). Questions about your data: [privacy contact email], or
-"Ask about my data" on the Privacy page in Settings.
+"Ask about my data" in Profile, under Privacy and your data.
 
 ## 2. The short version
 
@@ -24,7 +26,7 @@
 - Your data is stored in the European Economic Area (EEA).
 - We do not sell your data or show ads. On the website, we count visits
   with Google Analytics only if you accept, and you can turn it off at any
-  time. The phone apps count nothing, and there is no tracking in our
+  time. The phone apps count no visits, and there is no tracking in our
   emails.
 - You can download your data and delete your account in the app, at any
   time.
@@ -87,6 +89,7 @@ processing agreement, only as we instruct.
 | Vonage | Sending SMS: sign-in codes and last-minute trip changes | Stored in Ireland and Germany; may be processed elsewhere for support and fraud checks |
 | Mailjet | Sending email | Germany and Belgium |
 | Expo, with Apple and Google | Sending push notifications to your phone | United States |
+| Expo (app updates) | When the app opens on your phone, it asks Expo for a newer version of its own code, sending a random ID the app makes when it is installed (not linked to your account), the app's version and which update it runs, the phone's system and, after a start that failed, the error's message | United States |
 | Sentry | Error reports, with personal details removed | Frankfurt, Germany |
 | Hetzner | Storing profile photos | Nuremberg, Germany |
 | Google (Google Analytics), only if you accept on the website | Counting visits to the website | Google Ireland, with Google in the United States |
@@ -98,9 +101,18 @@ They share with us their ID for you, your email address and whether they
 have verified it, and your first name. We keep the ID and a verified email
 address while the Google or Apple account is linked to yours; your first
 name only fills in the form when you create your account. You can remove
-Google or Apple in Settings at any time. Beta testers who install
-the iPhone app through Apple's TestFlight also share data with Apple under
-Apple's terms.
+Google or Apple at any time in Profile, under Sign-in methods.
+
+If you get the PuffinRide app from Google Play or the App Store, Google or
+Apple handle the download, any rating or review you leave in their store,
+and the crash reports they collect if you allow it, under their own terms
+and privacy policies, and they show us those ratings, reviews and crash
+reports. If you test the app before it is released, through Apple's
+TestFlight or Google Play testing, which Apple and Google run under their
+own terms, we give Apple or Google your email address to invite you, and
+they show us how the test version works for you: installs, crashes, your
+phone's model and system, and the feedback you send, with any screenshot
+you add.
 
 We share data with the police or other authorities only when the law
 requires it, or to protect someone's life or safety.
@@ -108,9 +120,10 @@ requires it, or to protect someone's life or safety.
 ## 6. Data outside the EEA
 
 We store your data in the EEA. A few providers may process some of it outside
-the EEA: Expo, Apple and Google for push notifications, Google for counting
-visits to the website if you accept, and Vonage for support and fraud
-checks. When that happens, we rely on [the EU-US Data
+the EEA: Expo, Apple and Google for push notifications, Expo for app
+updates, Apple and Google for testing the app before release, Google for
+counting visits to the website if you accept, and Vonage for support and
+fraud checks. When that happens, we rely on [the EU-US Data
 Privacy Framework or the European Commission's standard contractual clauses;
 to confirm for each provider].
 
@@ -118,12 +131,13 @@ to confirm for each provider].
 
 You can:
 
-- **Download your data:** "Download my data" on the Privacy page in
-  Settings gives you a file with the data we hold about you, usually within
-  minutes, kept for 7 days. It never reveals who reported you or another
+- **Download your data:** "Download my data" in Profile, under Privacy and
+  your data, gives you a file with the data we hold about you, usually
+  within minutes, kept for 7 days. It never reveals who reported you or another
   person's details beyond their first name.
 - **Correct it:** edit your profile in the app, or ask us for anything else.
-- **Delete your account:** "Delete my account" on the Privacy page. Upcoming trips
+- **Delete your account:** "Delete my account" in Profile, under Privacy
+  and your data. Upcoming trips
   and bookings are cancelled under the normal rules first. After 7 days, in
   which you can change your mind, we erase your personal data or make it
   anonymous. Reviews you wrote stay, shown as written by "a former member".
@@ -132,22 +146,24 @@ You can:
   you that right.
 - **Withdraw consent** where we rely on it, such as for women-only trips, by
   turning the setting off, or for Google Analytics on the Cookies page,
-  which stops it at once and removes Google's cookies from your browser.
+  under About PuffinRide, which stops it at once and removes Google's
+  cookies from your browser.
 - **Complain** to Persónuvernd, the Icelandic Data Protection Authority
   ([www.personuvernd.is](https://www.personuvernd.is)).
 
 We answer requests within one month. Write to [privacy contact email] or use
-"Ask about my data" on the Privacy page in Settings.
+"Ask about my data" in Profile, under Privacy and your data.
 
 ## 8. Storage on your device
 
 The app and website store only what they need to work, such as keeping you
 signed in, your last searches and a booking you started before signing up.
-These stay on your device and are not sent to us, and need no consent. On
-the website, Google Analytics sets its cookies only if you accept (section
-3). Your answer is kept on your device for 12 months, then we ask again; you
-can change it at any time on the Cookies page. We use no advertising
-cookies.
+These stay on your device and are not sent to us, and need no consent. The
+phone app also keeps the random ID it sends Expo when it checks for an
+update (section 5). On the website, Google Analytics sets its cookies only
+if you accept (section 3). Your answer is kept on your device for 12
+months, then we ask again; you can change it at any time on the Cookies
+page. We use no advertising cookies.
 
 ## 9. Age
 

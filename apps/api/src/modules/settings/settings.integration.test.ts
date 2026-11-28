@@ -320,6 +320,8 @@ describe("GET /v1/config", () => {
       emailSignIn: true,
       // It knows the website's address, so Face ID or fingerprint signs in (spec 27).
       passkeySignIn: true,
+      // Without OLDEST_APP_VERSION every app version is served (spec 32, R32.4).
+      oldestAppVersion: null,
     });
 
     await change("invite_code_required", {
@@ -341,7 +343,22 @@ describe("GET /v1/config", () => {
       emailSignIn: true,
       // It knows the website's address, so Face ID or fingerprint signs in (spec 27).
       passkeySignIn: true,
+      // Without OLDEST_APP_VERSION every app version is served (spec 32, R32.4).
+      oldestAppVersion: null,
     });
+  });
+});
+
+describe("GET /v1/config with an oldest app version (spec 32, section 6)", () => {
+  it("names it, for the apps' Update PuffinRide screen", async () => {
+    const app = createApp({
+      logger: createLogger({ level: "silent" }),
+      checkDatabase: () => Promise.resolve(),
+      features: api.features,
+      oldestAppVersion: "1.2.0",
+    });
+    const config = (await (await app.request("/v1/config")).json()) as Config;
+    expect(config.oldestAppVersion).toBe("1.2.0");
   });
 });
 

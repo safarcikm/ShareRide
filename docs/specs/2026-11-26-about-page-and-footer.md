@@ -1,6 +1,6 @@
 # Spec 30: An About page, and a footer on the website
 
-**Owner:** Martin · **Date:** 2026-11-26 · **Status:** Proposed
+**Owner:** Martin · **Date:** 2026-11-26 · **Status:** Accepted (Martin, 2026-11-27)
 (2026-11-26): Martin asked for it; the choices in the Decisions section are
 working choices he can change
 

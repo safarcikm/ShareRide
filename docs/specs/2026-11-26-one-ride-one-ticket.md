@@ -1096,9 +1096,9 @@ on a laptop,
   person's card is the side column, at the left, and the groups and Sign
   out are the main one.
 - **Texts that named Settings** now say where the thing is on Profile
-  (section 8). The legal texts still say "Settings", in the Terms twice
-  and in the Privacy Notice four times: a new version of either is
-  Martin's to decide, and they are left as they are.
+  (section 8). The legal texts said "Settings", in the Terms twice and in
+  the Privacy Policy four times, until the Terms' version 3 and the
+  Privacy Policy's version 4 (2026-11-27, 3.22).
 
 The second part (plan, PR 11b) gave this card to a person's profile, its
 preview and Edit profile, made Report and Block rows, and put the heads at
@@ -1946,10 +1946,18 @@ members with no ratings yet.
 has every item with where it was found; these are the ones with someone
 to take them, and the ones that change what a screen does.
 
-- **For Martin:** the legal texts name "Settings", a place the app no
-  longer has (the Terms twice, the Privacy Notice four times, in each
-  language); a new version of either is his to decide. Listening to the
-  screens with VoiceOver, TalkBack and NVDA: the build names and orders
+- **For Martin:** the legal texts named "Settings", a place the app no
+  longer has (the Terms twice, the Privacy Policy four times, in each
+  language), and the Privacy Policy "Terms, rules and privacy", which
+  About replaced (spec 30). Done on his word of 2026-11-27: the Terms'
+  version 3 and the Privacy Policy's version 4 say "in Profile, under
+  Notifications" and the like, as the app's own texts do, and a test
+  holds the newest texts to the names the app gives its pages
+  (`apps/api/src/legal-places.test.ts`). Neither is material, so nobody
+  accepts anything again; they are on puffinride.is with the release
+  after, and then Martin announces them in the console, as the Terms
+  promise for a smaller change (16.1). Listening to the screens with
+  VoiceOver, TalkBack and NVDA: the build names and orders
   what a screen reader meets (3.20), and no one has heard it on a phone.
   In the phone apps, which a cloud session cannot open: the keyboard in a
   conversation on Android and on an iPhone, the strip under a

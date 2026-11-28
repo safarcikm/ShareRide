@@ -12,7 +12,7 @@ type SplashOptions = {
   readonly image: string;
   readonly imageWidth: number;
   readonly backgroundColor: string;
-  readonly dark: { readonly image: string; readonly backgroundColor: string };
+  readonly dark: { readonly image?: string; readonly backgroundColor: string };
 };
 
 type AppConfig = {
@@ -204,7 +204,9 @@ describe("app icon and opening screen (spec 15, section 4.9)", () => {
     expect(config.userInterfaceStyle).toBe("automatic");
     expect(splash.backgroundColor).toBe(colors.light.background);
     expect(splash.dark.backgroundColor).toBe(colors.dark.background);
-    expect(splash.dark.image).toBe(splash.image);
+    // The same picture in the dark: dark mode has no picture of its own, so
+    // Android draws its one set (two at once raced in the build).
+    expect(splash.dark.image).toBeUndefined();
     expect(splash.imageWidth).toBe(288);
     expectSeeThrough(splash.image, 1152);
   });

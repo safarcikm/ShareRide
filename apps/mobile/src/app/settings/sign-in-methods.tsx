@@ -21,7 +21,6 @@ import { useCallback, useRef, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { errorText } from "@/auth/errors";
 import { useMe, useSession } from "@/auth/session";
-import { useConfig } from "@/beta/config";
 import { Button } from "@/components/button";
 import { Card } from "@/components/card";
 import { Loading } from "@/components/loading";
@@ -34,6 +33,7 @@ import { useLanguage } from "@/i18n/language";
 import { useLoaded } from "@/lib/use-loaded";
 import { BackToMenu } from "@/navigation/back-to-menu";
 import { ConfirmWithCode } from "@/privacy/confirm-with-code";
+import { useOfferedProviders } from "@/sign-in/offered-providers";
 import { PasskeyDevices } from "@/sign-in/passkey-devices";
 import { providerNames, useProviderWindow } from "@/sign-in/provider-window";
 import { SignOutEverywhere } from "@/sign-in/sign-out-everywhere";
@@ -96,7 +96,7 @@ function SignInMethods({
   const { t } = useLanguage();
   const palette = usePalette();
   const session = useSession();
-  const config = useConfig();
+  const { offered } = useOfferedProviders();
   const providerWindow = useProviderWindow();
   const load = useCallback(() => session.call(listSignInMethodsRoute, {}), [session]);
   const { value: answer, reload } = useLoaded(load);
@@ -284,7 +284,7 @@ function SignInMethods({
   const confirming = adding !== null && !linked.has(adding.provider) ? adding : null;
   // A provider shows when it is set up, or still linked from before.
   const shown = signInProviders.filter(
-    (provider) => config.signInProviders.includes(provider) || linked.has(provider),
+    (provider) => offered.includes(provider) || linked.has(provider),
   );
   const label = (text: string) => (
     <Text style={[typography.bodyStrong, { color: palette.text }]}>{text}</Text>
@@ -328,7 +328,8 @@ function SignInMethods({
           {shown.map((provider) => {
             const name = providerNames[provider];
             const method = linked.get(provider);
-            const canAdd = config.signInProviders.includes(provider);
+            // Not Google on the iPhone until Sign in with Apple comes (spec 32, 3.3).
+            const canAdd = offered.includes(provider);
             return (
               <View key={provider} style={styles.method}>
                 {label(name)}

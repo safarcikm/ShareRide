@@ -54,6 +54,6 @@ Specs follow the order in [features](../product/features.md#spec-order).
 | 27 | [Passwords, and Face ID or fingerprint (passkeys)](2026-11-23-passwords-and-passkeys.md) | A1, A4 | Approved (2026-11-23); built (2026-11-23) |
 | 28 | [Share a ride on Facebook, Instagram and anywhere else](2026-11-25-share-a-ride.md) | C1, C5, D1, D2 | Proposed (2026-11-25) |
 | 29 | [Easier sign-in, with Face ID first](2026-11-25-easier-sign-in.md) | A1, A4 | Approved (2026-11-25) |
-| 30 | [An About page, and a footer on the website](2026-11-26-about-page-and-footer.md) | A6, the website | Proposed (2026-11-26) |
+| 30 | [An About page, and a footer on the website](2026-11-26-about-page-and-footer.md) | A6, the website | Accepted (2026-11-27) |
 | 31 | [One ride, one ticket: the same rules for every screen](2026-11-26-one-ride-one-ticket.md) | All screens | Approved (2026-11-26); built (2026-11-27) |
 | 32 | [The Android and iPhone apps in the stores](2026-11-27-phone-apps-in-the-stores.md) | All screens, the phone apps | Proposed (2026-11-27) |

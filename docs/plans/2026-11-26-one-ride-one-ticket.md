@@ -1624,10 +1624,12 @@ and item 16, where spec 31 becomes Built and says what is left.
     try. Icelandic, for a native reader: "Bílstjóri · Hvítur Toyota
     Yaris", "Meira" and "Lau. 28. nóv. kl. 17:30".
 15. **Left from Profile (PR 11a):** the legal texts say "Settings", the
-    Terms twice and the Privacy Notice four times, in each language: a
+    Terms twice and the Privacy Policy four times, in each language: a
     new version of either is Martin's to decide, and until then they
-    name a place the app no longer has. On a phone "Member since
-    November 2026" takes two lines beside Edit. Sign-in methods, spec
+    name a place the app no longer has (done after the plan, on Martin's
+    word of 2026-11-27: the Terms' version 3 and the Privacy Policy's
+    version 4). On a phone "Member since November 2026" takes two lines
+    beside Edit. Sign-in methods, spec
     29's page, has "Change email" in the middle and its other buttons at
     the left. Icelandic, for a native reader: "í Prófílnum, undir …" in
     the eleven texts that named Settings, "Breyta" on the card, and the
@@ -2179,5 +2181,9 @@ migration and no new setting went with it. The closing pull request
 Martin's steps: walk a booking as a passenger and a ride as a driver on
 his phone, read the Icelandic texts of section 8, which are a
 non-native's, and listen to the screens with a screen reader. Still his
-to decide: a new version of the legal texts, which name "Settings", and
-Q31.
+to decide: Q31. The legal texts, which named "Settings", have a new
+version each, written on his word of 2026-11-27: the Terms' version 3 and
+the Privacy Policy's version 4 name the pages in Profile. They are on
+puffinride.is with the release after; then Martin sends an announcement
+in the console that says so, as the Terms promise for a smaller change
+(16.1; [runbook](../operations/production.md#change-a-legal-text)).

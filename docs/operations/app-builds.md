@@ -289,6 +289,29 @@ The check sends Expo the phone's network address and a random ID the app
 makes on install, never anything about the account (the
 [privacy register's providers](../compliance/privacy-gdpr.md#providers)).
 
+## Ask older apps to update
+
+An app older than the oldest version the API still serves shows only
+"Update PuffinRide", with one button to its page in the App Store or on
+Google Play, and nothing else (spec 32, 3.6 and R32.4). The website never
+shows it: it is always the newest.
+
+- The oldest version is the API's setting `OLDEST_APP_VERSION`, such as
+  `1.1.0` (three whole numbers). Unset, every version is served, which is
+  how it starts. An app reads it from `GET /v1/config` when it opens and
+  every 5 minutes after, so an open app shows the screen within about 10
+  minutes (the answer may be kept 5 minutes).
+- To raise it: in Render, `puffinride-api`, **Environment**, set
+  `OLDEST_APP_VERSION` to the version people must have, then **Save and
+  deploy**. Do it only once that version is live in both stores, or people
+  are sent to a store that does not have it yet. To undo, remove it or set
+  an older version.
+- Raise it when a change would break older apps (the
+  [conventions](../engineering/conventions.md#api)), not for every
+  release: an older app that still works should keep working.
+- To see the screen, set it on staging higher than a preview build's
+  version (in `app.json`), and open that build.
+
 ## What the apps ask the phone for
 
 The store pages' privacy answers and the reviewers read these from the

@@ -174,6 +174,14 @@ everyone before they book, post or chat. Staging shows it after the merge,
 production after the next release. A published file never changes: the
 tests fail if it does.
 
+A version that is not material asks nobody to accept anything, and the
+Terms promise that smaller changes are announced in the app (16.1). So
+after the release that brings one, open the console, **Announcements**,
+and send one that says what changed, in both languages. For the Terms'
+version 3 and the Privacy Policy's version 4 (2026-11-27): the texts name
+the pages in Profile where they said "in Settings", and the Privacy
+Policy says what the phone apps add.
+
 ## Roll back
 
 1. Open `puffinride-api`, **Deploys**, find the last good deploy and choose

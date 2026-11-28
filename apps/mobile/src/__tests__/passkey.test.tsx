@@ -13,6 +13,9 @@ jest.mock("@/auth/token-store", () => {
   return jest.requireActual<typeof TestApp>("@/testing/app").mockTokenStoreModule;
 });
 jest.mock("expo-localization", () => ({ getLocales: () => [{ languageTag: "en-GB" }] }));
+// Face ID or fingerprint is the website's (spec 27), where Google is offered
+// as on Android; the iPhone app offers none without Apple (spec 32, 3.3).
+jest.mock("@/sign-in/platform", () => ({ signInPlatform: () => "web" }));
 // This browser's own storage (spec 29, section 5).
 const mockPreferences = new Map<string, string>();
 jest.mock("@/lib/preferences", () => ({

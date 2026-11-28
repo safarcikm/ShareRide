@@ -1605,6 +1605,13 @@ releases follow [Semantic Versioning](https://semver.org/).
   stretch. Each ride in `GET /v1/me/trips` says who asks in the request
   that closes first (`firstRequest`: the first name, the seats and the two
   stops' names), for "Dóra asks for 1 seat".
+- The iPhone app offers no Google sign-in until Sign in with Apple comes
+  (spec 32, 3.3; R32.5), as Apple's guideline 4.8 asks: the domain's
+  `providersOffered` leaves Google out on iOS unless Apple is on too. Step 1
+  says, under the email field, that members who joined with Google type
+  their Google email for a code, and sign in once on puffinride.is to add an
+  email if that does not work; Sign-in methods on the iPhone can remove a
+  linked Google but not add one. Android and the website are unchanged.
 - Delete your PuffinRide account (spec 32, section 5), a public page at
   `/delete-account` in Icelandic and English, as Google Play asks of apps
   with accounts: how to delete an account in the app or on the website
@@ -1714,6 +1721,14 @@ releases follow [Semantic Versioning](https://semver.org/).
   `accessibilityState`, so they use `aria-*` props instead. On the web,
   Space ticks a tick box or picks a chip, and a text field's help or error
   is its description (the web build also ignored `accessibilityHint`).
+- Phone builds and journeys fail less often by chance. The Android splash
+  pictures are made once and used in the dark too: two sets from the same
+  picture were made at the same time through one cache file, and a build
+  now and then read it half written ("Could not find MIME for Buffer
+  <null>"). The iPhone Sign up journey types the code one digit at a time,
+  because the whole code at once now and then outran the field. The
+  Android emulator closes another app that stalls instead of showing an
+  "isn't responding" box over ours.
 
 ### Changed
 
@@ -1991,6 +2006,14 @@ releases follow [Semantic Versioning](https://semver.org/).
   2026-11-27 (#257 to #278). Its section 3.22 says where the screens
   differ from the drawings and what is left, and the pictures of the
   build were taken again from the finished screens.
+- The Terms of Service (version 3) and the Privacy Policy (version 4)
+  name the pages in Profile where they said "in Settings", a place the
+  app no longer has, and the Cookies page under About. The Privacy
+  Policy also says what the phone apps add: the app asks Expo for
+  updates, and Google Play, the App Store and their testing handle
+  downloads and tests (spec 32, section 7). Neither is material, so
+  nobody accepts anything again. A test holds the newest legal texts to
+  the names the app gives its pages.
 - The web journeys never give two test accounts the same phone number: a
   run in ten did, and a sign-in journey then failed.
 - CI skips its code jobs (bundles, unit, integration and web tests, the API

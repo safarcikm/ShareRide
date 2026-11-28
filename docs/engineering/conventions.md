@@ -98,6 +98,15 @@ imports end in `.ts`.
 - The apps send `X-Client-Platform` (`ios`, `android` or `web`) with every
   request. Only the search log reads it, to count searches per platform;
   it never identifies a device.
+- Phones keep an app version for weeks, while the website is always the
+  newest. So a change that removes or renames a field or route an app
+  reads, or changes what a value means, waits until no supported app
+  version reads it: first an app release that stops reading it, then
+  `OLDEST_APP_VERSION` raised to that release (the
+  [app builds runbook](../operations/app-builds.md#ask-older-apps-to-update)),
+  then the change. Below the oldest version, an app shows only "Update
+  PuffinRide" (spec 32, R32.4). Adding a field is always safe: older apps
+  skip what they do not know. This is the two-deploy rule for the phones.
 
 ## Database
 
