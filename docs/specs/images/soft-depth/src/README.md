@@ -11,6 +11,8 @@ to draw cards and buttons. Nothing here ships in the app or runs in CI.
 | `3-find-phone.webp`, `4-ride-phone.webp`, `5-driver-phone-night.webp` | Find, a ride and a driver's ride on an iPhone's screen, in each look |
 | `6-laptop.webp` | Find on a laptop, before and in look 2 |
 | `7-ticket-notches.webp` | The notches of a ticket's tear line as built, three times as large: under the pointer (moss) and at rest (hairline), by day and at night (`shoot.cjs`) |
+| `8-android-after.webp` | Find, a ride and booking it on the Android emulator, as built (phone check of #306) |
+| `9-iphone-before-after.webp` | Find and booking a ride on the iPhone simulator, before and as built (phone checks of `main` and of #306) |
 
 | File | What it is |
 | ---- | ---------- |
