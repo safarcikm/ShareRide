@@ -6,15 +6,18 @@ import type { Position } from "@shareride/ui/map";
  * 0024). The line follows the drawn roads. With a passenger's `part`, the
  * rest of the trip is muted and the part is solid, with its ends standing
  * out; without one, the whole route is the part, as a driver sees it.
+ * `wide` draws it as a band, for the main column of a wide page.
  */
 export function RouteMap({
   label,
   stops,
   part = { board: 0, alight: stops.length - 1 },
+  wide = false,
 }: {
   readonly label: string;
   readonly stops: readonly Position[];
   readonly part?: { readonly board: number; readonly alight: number };
+  readonly wide?: boolean;
 }) {
   const dots: MapDot[] = stops.map((position, index) => ({
     id: String(index),
@@ -31,5 +34,5 @@ export function RouteMap({
     ...(whole ? [] : [{ id: "route", positions: stops, look: "route" as const }]),
     { id: "part", positions: stops.slice(part.board, part.alight + 1), look: "part" },
   ];
-  return <IcelandMap label={label} dots={dots} lines={lines} fit />;
+  return <IcelandMap label={label} dots={dots} lines={lines} fit={wide ? "wide" : true} />;
 }

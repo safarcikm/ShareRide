@@ -975,6 +975,11 @@ test.describe("My rides, a booking and Profile", () => {
       await expectNoSidewaysScroll(dora);
     }
 
+    // The CO2 her seat saves is a card in the main column, never in the
+    // side column, which it would make longer (spec 34, 3.6).
+    await expect(main.getByTestId("co2-card")).toBeVisible();
+    await expect(side.getByTestId("co2-card")).toHaveCount(0);
+
     // In a small laptop's window the side column is whole: nothing in it
     // is reached only by scrolling the column itself.
     await dora.setViewportSize({ width: 1280, height: 720 });
@@ -1344,6 +1349,10 @@ test.describe("Offer a ride and the driver's ride", () => {
     await driver.reload();
     const here = side.getByTestId("driver-im-here").getByRole("button");
     await expect(here).toBeVisible();
+    // Dóra's paid seat counts: the CO2 card is in the main column, never in
+    // the side column (spec 34, 3.7).
+    await expect(main.getByTestId("co2-card")).toBeVisible();
+    await expect(side.getByTestId("co2-card")).toHaveCount(0);
     await expect(driver.getByTestId("bottom-bar").filter(shown)).toHaveCount(0);
     const hereBox = await box(here);
     expect(hereBox.y).toBeGreaterThanOrEqual((await box(side)).y);

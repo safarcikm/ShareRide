@@ -22,6 +22,7 @@ import { TripChanges, useMoveChoice } from "@/booking/trip-changes";
 import { showsWhereToStand, WhereToStand } from "@/booking/where-to-stand";
 import { useWithdraw, WithdrawQuestion } from "@/booking/withdraw";
 import { otherPerson } from "@/chat/texts";
+import { Co2Card, partCo2Lines } from "@/co2/co2-card";
 import { ActionRows } from "@/components/action-rows";
 import { Announcer } from "@/components/announcer";
 import { BackButton } from "@/components/back-button";
@@ -54,6 +55,7 @@ import { ReportStatus } from "@/trip-day/report-status";
 import { offersDriverAbsent, reportState } from "@/trip-day/reports";
 import { useTripDayRefresh } from "@/trip-day/use-refresh";
 import { DriverCard } from "@/trip-details/driver-card";
+import { RouteCard } from "@/trip-details/route-card";
 
 /**
  * A booked seat (spec 31, 3.8 and 3.9; spec 5, screens 3, 4, 6 and 8). Its
@@ -61,9 +63,10 @@ import { DriverCard } from "@/trip-details/driver-card";
  * a seat to pay for, a seat confirmed, the trip day counting down, a ride
  * to review, or how it ended; one line under it says what happens next,
  * and a road shows how far it has come. Then the ride as a ticket, the
- * driver with Message and the car, where to stand, and rows for the rest,
- * with what cannot be undone red and last: "Cancel booking", which opens
- * its own screen (spec 6, 3.5), or "Withdraw request", which asks first.
+ * driver with Message and the car, where to stand, the whole ride on a map
+ * with the passenger's part solid, and rows for the rest, with what cannot
+ * be undone red and last: "Cancel booking", which opens its own screen
+ * (spec 6, 3.5), or "Withdraw request", which asks first.
  *
  * It has one main button at most (R31.1), in the bar at the bottom: Pay
  * (until the real provider comes, spec 13, it opens the test sheet, where
@@ -71,8 +74,8 @@ import { DriverCard } from "@/trip-details/driver-card";
  * come" once that is offered (spec 8, 3.2 to 3.4), "Rate the driver" once
  * the ride is over, or "Find another ride" after a booking that ended. On
  * a wide screen it is a page of two columns (3.16, item 2): the road, the
- * driver and where to stand in the main one, and in the side one what the
- * bar holds, the ticket and the rows.
+ * driver, where to stand and the map in the main one, and in the side one
+ * what the bar holds, the ticket and the rows.
  *
  * Reports about the booking and changes to the ride come directly under
  * the title. Once a request is accepted, or a booking paid here, someone
@@ -280,6 +283,20 @@ function BookingDetails({
   const stand = showsWhereToStand(booking) ? (
     <WhereToStand key="stand" booking={booking} fill={wide} />
   ) : null;
+  // The whole ride on a map, the part solid (spec 31, 3.8), unless a stop
+  // of the part is no longer on it.
+  const part = t("search.route", {
+    from: board.meetingPoint.name[locale],
+    to: alight.meetingPoint.name[locale],
+  });
+  const route =
+    booking.route === null ? null : (
+      <RouteCard
+        label={t(passenger ? "ride.routeMapPart" : "ride.routeMapTheirPart", { part })}
+        stops={booking.route.stops}
+        part={booking.route}
+      />
+    );
 
   // Until the passenger gets out: no trip to be safe on after that.
   const onTheWay = holdsSeats(booking.status) && new Date(alight.plannedAt) > now();
@@ -559,6 +576,14 @@ function BookingDetails({
         ) : null}
 
         {!wide && tripDay ? ticket : null}
+
+        {route}
+
+        {/* What the part saves, for the passenger alone, while confirmed and
+            once completed: the API gives no figure otherwise (spec 34, 3.6). */}
+        {booking.co2 === null ? null : (
+          <Co2Card grams={booking.co2.grams} lines={partCo2Lines(t, locale, booking.co2)} />
+        )}
 
         {wide ? null : rows}
 

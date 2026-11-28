@@ -12,6 +12,7 @@ import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { errorText } from "@/auth/errors";
 import { useSession } from "@/auth/session";
 import { acceptedText } from "@/booking/texts";
+import { Co2Card, driverCo2Lines } from "@/co2/co2-card";
 import { ActionRows } from "@/components/action-rows";
 import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/button";
@@ -49,6 +50,7 @@ import {
 import { ReportStatus } from "@/trip-day/report-status";
 import { reportState } from "@/trip-day/reports";
 import { useTripDayRefresh } from "@/trip-day/use-refresh";
+import { RouteCard } from "@/trip-details/route-card";
 
 /** Where Back leads when the ride was opened by its address: My rides lists it. */
 const back = "/my-rides";
@@ -60,11 +62,12 @@ const back = "/my-rides";
  * way and the car, and sharing it in its corner (spec 28, 3.1); each
  * request as what needs me, to accept or decline (spec 5, 3.3); the
  * passengers as rows that unfold, each booking to cancel (spec 6, 3.4);
- * the seats in one line, with each stretch behind it; and rows for the
- * rest: "Edit the ride" (3.2), sharing, "Post it again" and "Post the way
- * back" (3.6), and "Cancel the ride" (3.3), red and last (R31.3), until it
- * leaves. Nothing here is the screen's main button but "I'm here" on the
- * trip day (R31.1), in the bar at the bottom (spec 31, 3.9, item 4).
+ * the seats in one line, with each stretch behind it; the whole way on a
+ * map; and rows for the rest: "Edit the ride" (3.2), sharing, "Post it
+ * again" and "Post the way back" (3.6), and "Cancel the ride" (3.3), red
+ * and last (R31.3), until it leaves. Nothing here is the screen's main
+ * button but "I'm here" on the trip day (R31.1), in the bar at the bottom
+ * (spec 31, 3.9, item 4).
  *
  * It loads again each time it comes into view, and when pulled down (spec
  * 16, 3.9). `cancelled`, the booking just cancelled, says so with focus;
@@ -74,8 +77,9 @@ const back = "/my-rides";
  * ticket and the two rows that post it again.
  *
  * On a wide screen (3.16, item 3) the title is the page's head; under it
- * what needs me, the passengers and "Drive it again" stand in the main
- * column, and "I'm here", the ticket, the seats and the rows beside them.
+ * what needs me, the passengers, the map and "Drive it again" stand in the
+ * main column, and "I'm here", the ticket, the seats and the rows beside
+ * them.
  * The main column is one tree for a phone and a wide screen: every part
  * keeps its place among the others, so a question that is open stays when
  * the window crosses the breakpoint. What a wide screen shows in the side
@@ -267,6 +271,22 @@ export default function DriverTripScreen() {
     />
   );
 
+  // The whole way on a map (spec 31, 3.12).
+  const first = trip.data.stops[0];
+  const last = trip.data.stops.at(-1);
+  const route =
+    first === undefined || last === undefined ? null : (
+      <RouteCard
+        label={t("ride.routeMap", {
+          route: t("search.route", {
+            from: first.meetingPoint.name[locale],
+            to: last.meetingPoint.name[locale],
+          }),
+        })}
+        stops={trip.data.stops.map((stop) => stop.meetingPoint.position)}
+      />
+    );
+
   // The weather and the roads stay until the last stop's time, the trip day
   // included; the ride's details can be shared until it leaves, as
   // `tripShareText` has none for a ride that has (spec 9, 3.3).
@@ -445,9 +465,15 @@ export default function DriverTripScreen() {
             </View>
           </>
         )}
+        {/* What its passengers' parts save, added; none without a booking
+            that counts (spec 34, 3.7). */}
+        {trip.data.co2 === null ? null : (
+          <Co2Card grams={trip.data.co2.grams} lines={driverCo2Lines(t, locale, trip.data.co2)} />
+        )}
         {bookings.length === 0 ? <Body align="start">{t("driverTrip.none")}</Body> : null}
         {!wide && tripDay ? ticket : null}
         {wide ? null : seats}
+        {route}
         {wide ? (
           <>
             <Heading>{t("driverTrip.driveAgain")}</Heading>
