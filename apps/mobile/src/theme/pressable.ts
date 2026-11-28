@@ -1,21 +1,100 @@
-import type { ViewStyle } from "react-native";
-import { focusRing, type Palette } from "./tokens";
+import { Platform, type ViewStyle } from "react-native";
+import {
+  controlOutline,
+  depth,
+  focusRing,
+  hairline,
+  type ColorScheme,
+  type Palette,
+} from "./tokens";
+
+/** The styles of a part's two views: the outer one takes the room, the face draws it. */
+export interface Lift {
+  readonly outer: ViewStyle;
+  readonly face: ViewStyle;
+}
 
 /**
- * The solid bottom edge that makes a part look chunky (spec 15, section
- * 4.4). The outer view carries the edge; the face sits on it. When pressed,
- * the face moves down over the edge, so the part sinks without changing its
- * height and nothing around it moves.
+ * Android before 9, where React Native draws no box shadows: there a part
+ * keeps a solid bottom border for its edge, and a card the system's own
+ * shadow.
+ */
+export function drawsBoxShadows(os: string = Platform.OS, version: unknown = Platform.Version) {
+  return !(os === "android" && typeof version === "number" && version < 28);
+}
+
+/**
+ * The solid edge that makes a part you press look chunky (spec 15, section
+ * 4.4): a second face in `edgeColor`, `edge` lower than the face and as
+ * wide, drawn as a hard shadow, so the edge is as thick at the corners as
+ * in the middle. The outer view keeps the room for it; when pressed, the
+ * face moves down over it, so the part sinks without changing its height
+ * and nothing around it moves.
  */
 export function chunky(
   edge: number,
   edgeColor: string,
   pressed: boolean,
-): { readonly outer: ViewStyle; readonly face: ViewStyle } {
+  boxShadows: boolean = drawsBoxShadows(),
+): Lift {
+  if (edge === 0) return { outer: {}, face: {} };
+  const sunk = { transform: [{ translateY: edge }] };
+  if (!boxShadows) {
+    return {
+      outer: { borderBottomWidth: edge, borderBottomColor: edgeColor },
+      face: pressed ? sunk : {},
+    };
+  }
   return {
-    outer: { borderBottomWidth: edge, borderBottomColor: edgeColor },
-    face: pressed ? { transform: [{ translateY: edge }] } : {},
+    outer: { paddingBottom: edge },
+    face: pressed ? sunk : { boxShadow: `0px ${String(edge)}px 0px ${edgeColor}` },
   };
+}
+
+/** How far a card sinks when pressed. */
+export const cardSink = 1;
+
+/**
+ * How a card stands off the page (spec 15, section 4.4): a hairline round
+ * its face and a soft shadow under it (`depth`), and at night a faint light
+ * line along its top. A `ring` in a colour of its own, such as `primary`
+ * under the pointer, is twice as thick. When pressed, the face sinks a
+ * little and keeps only the near shadow.
+ */
+export function cardLift(
+  scheme: ColorScheme,
+  { pressed = false, ring }: { readonly pressed?: boolean; readonly ring?: string } = {},
+  boxShadows: boolean = drawsBoxShadows(),
+): Lift {
+  const sunk = pressed ? { transform: [{ translateY: cardSink }] } : {};
+  if (!boxShadows) {
+    const outline = ring === undefined ? {} : { borderWidth: controlOutline, borderColor: ring };
+    return { outer: {}, face: { elevation: pressed ? 1 : 2, ...outline, ...sunk } };
+  }
+  const tokens = depth[scheme];
+  const { color, width } = cardRing(scheme, ring, boxShadows);
+  const outline = `0px 0px 0px ${String(width)}px ${color}`;
+  const layers = [tokens.highlight, outline, pressed ? tokens.pressed : tokens.shadow];
+  return {
+    outer: {},
+    face: { boxShadow: layers.filter((layer) => layer !== null).join(", "), ...sunk },
+  };
+}
+
+/**
+ * The line round a card, which `cardLift` draws: a `hairline` in `depth`'s
+ * ring, or a `ring` of its own colour twice as thick. Where React Native
+ * draws box shadows it lies just outside the card's face; on Android before
+ * 9 it is a border just inside it, and a card has one only for a `ring` of
+ * its own (`width` 0 otherwise). A ticket's notches follow it (`RideTicket`).
+ */
+export function cardRing(
+  scheme: ColorScheme,
+  ring?: string,
+  boxShadows: boolean = drawsBoxShadows(),
+): { readonly color: string; readonly width: number } {
+  if (ring !== undefined) return { color: ring, width: controlOutline };
+  return { color: depth[scheme].ring, width: boxShadows ? hairline : 0 };
 }
 
 /**

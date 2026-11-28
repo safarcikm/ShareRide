@@ -1,7 +1,7 @@
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
-import { chunky } from "@/theme/pressable";
-import { controlOutline, edges, radii, sizes, spacing, typography } from "@/theme/tokens";
-import { usePalette } from "@/theme/use-palette";
+import { cardLift } from "@/theme/pressable";
+import { controlOutline, radii, sizes, spacing, typography } from "@/theme/tokens";
+import { usePalette, useScheme } from "@/theme/use-palette";
 import { spaceKeyPresses } from "./space-key";
 
 /**
@@ -25,6 +25,7 @@ export function RadioCard({
   readonly lang?: string;
 }) {
   const palette = usePalette();
+  const scheme = useScheme();
   return (
     <Pressable
       accessibilityRole="radio"
@@ -35,7 +36,7 @@ export function RadioCard({
       {...(Platform.OS === "web" && lang !== undefined ? { lang } : {})}
       onPress={onSelect}
       {...spaceKeyPresses(onSelect)}
-      style={({ pressed }) => [styles.outer, chunky(edges.card, palette.edge, pressed).outer]}
+      style={({ pressed }) => [styles.outer, cardLift(scheme, { pressed }).outer]}
     >
       {({ pressed }) => (
         <View
@@ -46,7 +47,7 @@ export function RadioCard({
               backgroundColor: palette.surface,
               borderColor: selected ? palette.primary : palette.surface,
             },
-            chunky(edges.card, palette.edge, pressed).face,
+            cardLift(scheme, { pressed }).face,
           ]}
         >
           <View

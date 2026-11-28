@@ -134,6 +134,7 @@ Only production's public pages that hold no person's data (R23.6):
 | A meeting point                | `/meeting-points/<id>`, each active one                              |
 | A place and its nearest points | `/places/<id>`, each place                                           |
 | About (spec 30)                | `/about`                                                             |
+| Delete your account (spec 32)  | `/delete-account`                                                    |
 | The legal documents            | `/legal/terms`, `/legal/community-rules`, `/legal/privacy`           |
 | Cookies                        | `/cookies`                                                           |
 

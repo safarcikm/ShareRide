@@ -362,19 +362,21 @@ test.describe("Find's search row", () => {
     const names = await Promise.all((await cards.all()).map((_, place) => onMap(place)));
     const other = names.findIndex((name) => name !== names[0]);
     expect(other).toBeGreaterThan(0);
-    const primary = "rgb(47, 107, 79)";
-    await expect(cards.nth(0)).toHaveCSS("border-bottom-color", primary);
+    // A card's outline turns moss (spec 15, 4.4): the first ring of its face's shadow.
+    const outlined = /^rgb\(47, 107, 79\) 0px 0px 0px 2px/;
+    const face = (place: number) => cards.nth(place).getByTestId("card-face");
+    await expect(face(0)).toHaveCSS("box-shadow", outlined);
     await cards.nth(other).hover();
     await expect(map).toHaveAccessibleName(names[other] ?? "");
     await page.getByRole("heading", { name: "Leaving soon" }).hover();
     await expect(map).toHaveAccessibleName(names[other] ?? "");
-    // Its card keeps the edge it had under the pointer, and the first lost it.
-    await expect(cards.nth(other)).toHaveCSS("border-bottom-color", primary);
-    await expect(cards.nth(0)).not.toHaveCSS("border-bottom-color", primary);
+    // Its card keeps the outline it had under the pointer, and the first lost it.
+    await expect(face(other)).toHaveCSS("box-shadow", outlined);
+    await expect(face(0)).not.toHaveCSS("box-shadow", outlined);
     // The keyboard does the same as the pointer.
     await cards.nth(0).focus();
     await expect(map).toHaveAccessibleName(names[0] ?? "");
-    await expect(cards.nth(0)).toHaveCSS("border-bottom-color", primary);
+    await expect(face(0)).toHaveCSS("box-shadow", outlined);
     // "How it works" is whole in a window 720 high, the offer in it; the map
     // follows under it (spec 31, 3.16).
     await page.setViewportSize({ width: 1280, height: 720 });

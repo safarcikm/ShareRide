@@ -25,6 +25,8 @@ export const is = {
     "Svona virkar samakstur um Ísland með PuffinRide: finndu sæti í bíl sem fer þína leið eða bjóddu laus sæti í þínum, og hittist á opinberum mótsstöðum um allt land.",
   "seo.aboutDescription":
     "Hver rekur PuffinRide, hvernig þú nærð í okkur, og notendaskilmálar, samfélagsreglur og persónuverndarstefna PuffinRide.",
+  "seo.deleteAccountDescription":
+    "Hvernig þú eyðir PuffinRide-aðganginum þínum í appinu eða á vefnum, hverju við eyðum og hvað við geymum, og hve lengi.",
   "seo.legalDescription": "Notendaskilmálar, samfélagsreglur og persónuverndarstefna PuffinRide.",
   "seo.shareImage": "Tveir lundar PuffinRide á ferð í litlum bíl",
   "seo.tripTitle": "{route} · {when}",
@@ -84,6 +86,46 @@ export const is = {
   "about.contact": "Spurningar eða hugmyndir? Skrifaðu okkur, á íslensku eða ensku.",
   "about.facebook": "PuffinRide á Facebook",
   "about.instagram": "PuffinRide á Instagram",
+  // The account deletion page (spec 32, section 5), for Google Play and everyone.
+  "deleteAccount.link": "Eyða aðganginum",
+  "deleteAccount.title": "Eyða PuffinRide-aðgangi",
+  "deleteAccount.intro":
+    "Þú getur eytt PuffinRide-aðganginum þínum hvenær sem er, í PuffinRide-appinu eða á puffinride.is, og enginn þarf að samþykkja það. Hér sérðu hvernig, og hvað verður um gögnin þín.",
+  "deleteAccount.howTitle": "Svona eyðir þú aðganginum",
+  "deleteAccount.step1": "Skráðu þig inn í PuffinRide, í appinu eða á puffinride.is.",
+  "deleteAccount.step2": "Opnaðu „{profile}“ og svo „{privacy}“.",
+  "deleteAccount.step3":
+    "Veldu „{delete}“. Ef þú átt ferðir, bókanir eða beiðnir fram undan sérðu þær þar og hættir fyrst við þær.",
+  "deleteAccount.step4": "Staðfestu að þetta sért þú með kóðanum sem við sendum þér.",
+  "deleteAccount.afterTitle": "Hvað gerist svo",
+  "deleteAccount.after":
+    "Innskráningu á öllum tækjum lýkur strax og enginn sér prófílinn þinn eða ferðirnar þínar lengur. Við eyðum gögnunum þínum 7 dögum síðar. Þangað til getur þú skráð þig inn og haldið aðganginum eins og hann var.",
+  "deleteAccount.erasedTitle": "Það sem við eyðum",
+  "deleteAccount.erasedProfile":
+    "Prófílnum þínum: fornafni, mynd, lýsingu og tungumálum, og umsögnum um þig.",
+  "deleteAccount.erasedSignIn":
+    "Netfanginu, símanúmerinu, lykilorðinu, innskráningu með Face ID eða fingrafari og tækjunum sem þú skráðir þig inn á.",
+  "deleteAccount.erasedRest":
+    "Stillingunum þínum, tilkynningum til þín, bílum sem engin ferð notaði, og skrá með gögnunum þínum ef þú baðst um hana.",
+  "deleteAccount.erasedMessages":
+    "Skilaboðunum sem þú sendir. Viðtakendur sjá „Skilaboðum eytt“ í staðinn.",
+  "deleteAccount.keptTitle": "Það sem við geymum, og hve lengi",
+  "deleteAccount.keptTrips":
+    "Fyrri ferðir þínar og bókanir, og tegund, gerð og litur bílanna sem þær notuðu, án nafnsins þíns, athugasemda eða bílnúmera, svo þau sem ferðuðust með þér haldi sinni sögu.",
+  "deleteAccount.keptReviews":
+    "Umsagnir sem þú skrifaðir, merktar sem skrifaðar af „fyrrverandi notanda“.",
+  "deleteAccount.keptReports":
+    "Tilkynningar til okkar sem þú sendir eða sem varða þig, og hvað við gerðum vegna þeirra, í 3 ár eftir að tilkynningu er lokið, öryggis allra vegna. Í samtali sem tilkynning nær til getum við lesið skilaboðin þín þangað til.",
+  "deleteAccount.keptRequests":
+    "Það sem þú spurðir okkur um gögnin þín, og svör okkar, í 3 ár eftir svarið.",
+  "deleteAccount.keptSuspended":
+    "Ef aðganginum þínum var lokað: tætigildi (hash) af símanúmerinu þínu, sem ekki er hægt að snúa til baka, þar til lokunin hefði runnið út og í mesta lagi í 3 ár, svo ekki sé hægt að skrá sig aftur með númerinu.",
+  "deleteAccount.keptLaw": "Það sem okkur ber að geyma samkvæmt lögum, eins lengi og lög krefjast.",
+  "deleteAccount.keptBackups":
+    "Eintök í öryggisafritum og tæknilegum skrám, sem hverfa innan 30 daga. Ef við endurheimtum einhvern tímann öryggisafrit eyðum við aðganginum þínum aftur.",
+  "deleteAccount.helpTitle": "Kemstu ekki inn?",
+  "deleteAccount.help":
+    "Prófaðu „Gleymdirðu lykilorðinu?“ eða kóða í tölvupósti á innskráningarsíðunni. Ef það gengur ekki, skrifaðu okkur frá netfanginu á aðganginum þínum og við svörum innan mánaðar.",
   "footer.label": "Um PuffinRide og skilmálana okkar",
   "footer.tagline": "Samakstur um allt Ísland",
   "footer.terms": "Skilmálar",
@@ -2510,6 +2552,8 @@ export const is = {
   "admin.metrics.metric.money_refunded": "Endurgreitt til farþega",
   "admin.metrics.metric.active_drivers": "Bílstjórar með ferð",
   "admin.metrics.metric.active_passengers": "Farþegar með bókun",
+  "admin.metrics.metric.car_km_saved": "Eknir km sparaðir",
+  "admin.metrics.metric.co2_saved_grams": "Minni losun CO2 (kg)",
   "admin.announcements.title": "Tilkynningar",
   "admin.announcements.intro":
     "Fréttir af beta-prófuninni og þjónustunni, á íslensku og ensku, til þátttakenda sem hafa kveikt á fréttum af beta-prófuninni. Aldrei auglýsingar.",
@@ -2615,6 +2659,7 @@ export const is = {
   "admin.settings.group.booking": "Bókun og greiðsla",
   "admin.settings.group.changes": "Breytingar og afbókanir",
   "admin.settings.group.trip_day": "Ferðadagur og áreiðanleiki",
+  "admin.settings.group.co2": "CO2",
   "admin.settings.groupNote.terms":
     "Þessi gildi standa í notkunarskilmálunum. Birtu nýja skilmála með breytingu, annars ber skilmálunum og appinu ekki saman.",
   "admin.settings.group.switches": "Neyðarrofar",
@@ -2695,6 +2740,9 @@ export const is = {
   "admin.settings.name.reliability_watch_level": "Eftirlitsmörk",
   "admin.settings.help.reliability_watch_level":
     "Fólk með áreiðanleika undir þessu er talið upp fyrir þig á síðunni Áreiðanleiki. Enginn er settur í bann sjálfkrafa.",
+  "admin.settings.name.co2_grams_per_car_km": "CO2 á ekinn km",
+  "admin.settings.help.co2_grams_per_car_km":
+    "Losun CO2 meðalbíls á Íslandi á kílómetra, fyrir tölur um minni losun. Farðu yfir hana á hverju hausti. 0 felur allar tölurnar.",
   "admin.settings.on": "Kveikt",
   "admin.settings.off": "Slökkt",
   "admin.settings.unit.people": "{count, plural, one {{value} manneskja} other {{value} manns}}",
@@ -2712,6 +2760,8 @@ export const is = {
   "admin.settings.newValue.records": "Nýtt gildi, fjöldi ferða og bókana",
   "admin.settings.unit.seats": "{count, plural, one {{value} sæti} other {{value} sæti}}",
   "admin.settings.newValue.seats": "Nýtt gildi, fjöldi sæta",
+  "admin.settings.unit.g_per_km": "{value} g á km",
+  "admin.settings.newValue.g_per_km": "Nýtt gildi, í g á km",
   "admin.settings.unit.minutes": "{count, plural, one {{value} mínúta} other {{value} mínútur}}",
   "admin.settings.newValue.minutes": "Nýtt gildi, í mínútum",
   "admin.settings.unit.hours":

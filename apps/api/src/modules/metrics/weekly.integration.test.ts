@@ -8,7 +8,7 @@ import {
   seedSampleTrips,
 } from "@shareride/db/seed";
 import { metricKeys } from "@shareride/domain";
-import { and, asc, eq, isNull } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { startTestApi, type TestApi } from "../../testing.ts";
 import { runMetricsCommand } from "./command.ts";
@@ -324,6 +324,28 @@ describe("the console's metrics routes", () => {
   });
 });
 
+describe("a week counted before a metric was added", () => {
+  it("reads the new metric as nothing until the week is counted again", async () => {
+    const { db } = api.connection;
+    await metrics.compute([week46]);
+    await db
+      .delete(weeklyMetrics)
+      .where(inArray(weeklyMetrics.metric, ["car_km_saved", "co2_saved_grams"]));
+    const { cookie: operator } = await api.signInOperator();
+    const response = await api.request(adminMetricsRoute.path, { headers: { cookie: operator } });
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as AdminMetrics;
+    const last46 = body.weeks.find((week) => week.week === "2026-W46");
+    expect(last46?.metrics?.trips_posted).toEqual({ numerator: 5, denominator: null });
+    expect(last46?.metrics?.car_km_saved).toEqual({ numerator: 0, denominator: null });
+    expect(last46?.metrics?.co2_saved_grams).toEqual({ numerator: 0, denominator: null });
+    const csv = await api.request(`${adminMetricsCsvPath}?from=2026-W46&to=2026-W46`, {
+      headers: { cookie: operator },
+    });
+    expect(csv.status).toBe(200);
+  });
+});
+
 describe("the metrics command", () => {
   it("counts the weeks asked for again", async () => {
     await api.connection.db.delete(weeklyMetrics);
@@ -356,5 +378,48 @@ describe("the metrics command", () => {
       expect(code).toBe(1);
       expect(lines.join("\n")).toContain("Usage:");
     }
+  });
+});
+
+describe("the CO2 figures (spec 34, 3.10)", () => {
+  it("add the road km and the stored grams of the bookings completed in the week", async () => {
+    const { db } = api.connection;
+    const passenger = await api.signIn(api.newPhoneNumber());
+    const tripId = sampleId("trip:anna-akureyri");
+    const stops = await db
+      .select()
+      .from(tripStops)
+      .where(eq(tripStops.tripId, tripId))
+      .orderBy(asc(tripStops.position));
+    const [first, last] = [stops[0], stops.at(-1)];
+    if (first === undefined || last === undefined) throw new Error("No stops.");
+    const stretches = await db
+      .select({ distanceM: schema.segments.distanceM })
+      .from(schema.segments)
+      .where(eq(schema.segments.tripId, tripId));
+    const metres = stretches.reduce((total, stretch) => total + stretch.distanceM, 0);
+    // Saturday of week 46, whatever the clock says by now.
+    const now = new Date("2026-11-14T15:00:00Z");
+    await db.insert(bookings).values({
+      tripId,
+      passengerId: passenger.userId,
+      fromStopId: first.id,
+      toStopId: last.id,
+      seats: 2,
+      status: "completed",
+      totalPrice: 9000,
+      attemptKey: randomUUID(),
+      confirmedAt: now,
+      completedAt: now,
+      co2Grams: 58_350,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    await metrics.compute([week46]);
+    expect(await stored(week46, null)).toMatchObject({
+      car_km_saved: [Math.floor(metres / 1000), null],
+      co2_saved_grams: [58_350, null],
+    });
   });
 });

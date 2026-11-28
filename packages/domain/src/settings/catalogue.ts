@@ -10,11 +10,21 @@ export const settingGroups = [
   "booking",
   "changes",
   "trip_day",
+  "co2",
 ] as const;
 export type SettingGroup = (typeof settingGroups)[number];
 
 export type SettingUnit =
-  "people" | "kr_per_km" | "kr" | "percent" | "seats" | "minutes" | "hours" | "months" | "records";
+  | "people"
+  | "kr_per_km"
+  | "kr"
+  | "percent"
+  | "seats"
+  | "minutes"
+  | "hours"
+  | "months"
+  | "records"
+  | "g_per_km";
 
 export interface SettingDefinition {
   readonly group: SettingGroup;
@@ -247,6 +257,20 @@ export const settingDefinitions = {
     default: 80,
     min: 50,
     max: 95,
+    step: 1,
+  },
+  /**
+   * The CO2 an average car in Iceland emits per kilometre, in grams, for
+   * the CO2 a shared ride saves (spec 34, 3.3; ADR 0054). Checked each
+   * autumn. 0 hides every figure, in the app and on About.
+   */
+  co2_grams_per_car_km: {
+    group: "co2",
+    kind: "number",
+    unit: "g_per_km",
+    default: 150,
+    min: 0,
+    max: 300,
     step: 1,
   },
 } as const satisfies Record<string, SettingDefinition>;

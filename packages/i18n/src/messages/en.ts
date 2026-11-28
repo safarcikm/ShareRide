@@ -23,6 +23,8 @@ export const en = {
     "How carpooling in Iceland works with PuffinRide: find a seat in a car going your way, or offer the empty seats in yours, and meet at public meeting points around the country.",
   "seo.aboutDescription":
     "Who runs PuffinRide, how to reach us, and PuffinRide's Terms of Service, Community Rules and Privacy Policy.",
+  "seo.deleteAccountDescription":
+    "How to delete your PuffinRide account in the app or on the website, what we erase and what we keep, and for how long.",
   "seo.legalDescription": "PuffinRide's Terms of Service, Community Rules and Privacy Policy.",
   "seo.shareImage": "Two PuffinRide puffins driving in a little car",
   "seo.tripTitle": "{route} · {when}",
@@ -83,6 +85,45 @@ export const en = {
   "about.contact": "Questions or ideas? Write to us, in English or Icelandic.",
   "about.facebook": "PuffinRide on Facebook",
   "about.instagram": "PuffinRide on Instagram",
+  // The account deletion page (spec 32, section 5), for Google Play and everyone.
+  "deleteAccount.link": "Delete your account",
+  "deleteAccount.title": "Delete your PuffinRide account",
+  "deleteAccount.intro":
+    "You can delete your PuffinRide account yourself at any time, in the PuffinRide app or on puffinride.is, and nobody has to approve it. This page says how, and what happens to your data.",
+  "deleteAccount.howTitle": "How to delete it",
+  "deleteAccount.step1": "Sign in to PuffinRide, in the app or at puffinride.is.",
+  "deleteAccount.step2": "Open {profile}, then {privacy}.",
+  "deleteAccount.step3":
+    "Choose {delete}. If you have rides, bookings or requests coming up, the screen lists them, and you cancel them there first.",
+  "deleteAccount.step4": "Confirm it's you with the code we send you.",
+  "deleteAccount.afterTitle": "What happens next",
+  "deleteAccount.after":
+    "You are signed out on every device at once, and nobody can see your profile or your rides any more. We erase your data 7 days later. Until then, you can sign in and keep your account as it was.",
+  "deleteAccount.erasedTitle": "What we erase",
+  "deleteAccount.erasedProfile":
+    "Your profile: your first name, photo, bio and languages, and the reviews about you.",
+  "deleteAccount.erasedSignIn":
+    "Your email address, phone number, password, Face ID or fingerprint sign-in, and the devices you signed in on.",
+  "deleteAccount.erasedRest":
+    "Your settings, the notifications we sent you, cars no ride used, and any file of your data you asked for.",
+  "deleteAccount.erasedMessages":
+    "The messages you sent. The people you wrote to see “Message deleted” instead.",
+  "deleteAccount.keptTitle": "What we keep, and for how long",
+  "deleteAccount.keptTrips":
+    "Your past rides and bookings, and the make, model and colour of the cars they used, without your name, notes or number plates, so the people you travelled with keep their history.",
+  "deleteAccount.keptReviews": "Reviews you wrote, shown as written by “a former member”.",
+  "deleteAccount.keptReports":
+    "Reports you made or that are about you, and what we did about them, for 3 years after the report is closed, for everyone's safety. In a conversation a report covers, we can read your messages until then.",
+  "deleteAccount.keptRequests":
+    "What you asked us about your data, and our answers, for 3 years after the answer.",
+  "deleteAccount.keptSuspended":
+    "If your account was suspended: a one-way hash of your phone number, until the suspension would have ended and for 3 years at most, so the number can't sign up again.",
+  "deleteAccount.keptLaw": "Anything the law requires us to keep, for as long as it requires.",
+  "deleteAccount.keptBackups":
+    "Copies in our backups and technical logs, which are gone within 30 days. If we ever restore a backup, we erase your account again.",
+  "deleteAccount.helpTitle": "Can't sign in?",
+  "deleteAccount.help":
+    "Try “Forgot your password?” or a code by email on the sign-in screen. If that doesn't work, write to us from the email address on your account, and we'll answer within a month.",
   "footer.label": "About PuffinRide and our terms",
   "footer.tagline": "Carpooling across Iceland",
   "footer.terms": "Terms",
@@ -2492,6 +2533,8 @@ export const en = {
   "admin.metrics.metric.money_refunded": "Refunded to passengers",
   "admin.metrics.metric.active_drivers": "Drivers with a trip",
   "admin.metrics.metric.active_passengers": "Passengers with a booking",
+  "admin.metrics.metric.car_km_saved": "Car km saved",
+  "admin.metrics.metric.co2_saved_grams": "CO2 saved (kg)",
   "admin.announcements.title": "Announcements",
   "admin.announcements.intro":
     "News about the beta and the service, in Icelandic and in English, for testers who have Beta news on. Never advertising.",
@@ -2595,6 +2638,7 @@ export const en = {
   "admin.settings.group.booking": "Booking and paying",
   "admin.settings.group.changes": "Changes and cancellations",
   "admin.settings.group.trip_day": "Trip day and reliability",
+  "admin.settings.group.co2": "CO2",
   "admin.settings.groupNote.terms":
     "The terms of service state these values. Publish new terms with a change, or the terms and the app will disagree.",
   "admin.settings.group.switches": "Switches for emergencies",
@@ -2675,6 +2719,9 @@ export const en = {
   "admin.settings.name.reliability_watch_level": "Watch level",
   "admin.settings.help.reliability_watch_level":
     "People whose figure is below this are listed for you on the Reliability page. Nothing suspends anyone on its own.",
+  "admin.settings.name.co2_grams_per_car_km": "CO2 per car km",
+  "admin.settings.help.co2_grams_per_car_km":
+    "The CO2 an average car in Iceland emits per kilometre, for the CO2 saved figures. Check it each autumn. 0 hides every figure.",
   "admin.settings.on": "On",
   "admin.settings.off": "Off",
   "admin.settings.unit.people": "{count, plural, one {{value} person} other {{value} people}}",
@@ -2690,6 +2737,8 @@ export const en = {
   "admin.settings.unit.records":
     "{count, plural, one {{value} trip or booking} other {{value} trips and bookings}}",
   "admin.settings.newValue.records": "New value, in trips and bookings",
+  "admin.settings.unit.g_per_km": "{value} g per km",
+  "admin.settings.newValue.g_per_km": "New value, in g per km",
   "admin.settings.unit.seats": "{count, plural, one {{value} seat} other {{value} seats}}",
   "admin.settings.newValue.seats": "New value, in seats",
   "admin.settings.unit.minutes": "{count, plural, one {{value} minute} other {{value} minutes}}",

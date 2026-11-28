@@ -2,7 +2,15 @@ import { expect, test, type Page } from "@playwright/test";
 import type { Locale } from "@shareride/i18n";
 import { english, icelandic, signUp, type Texts } from "./support/account";
 import { addPhotoBeforePublishing, englishPhoto, type PhotoTexts } from "./support/photo";
-import { chooseTime, englishWheel, timeField, tomorrow, type WheelTexts } from "./support/trips";
+import {
+  chooseTime,
+  dragPriceTo,
+  englishWheel,
+  swipeUpFromPriceTrack,
+  timeField,
+  tomorrow,
+  type WheelTexts,
+} from "./support/trips";
 
 /**
  * Text in sight. Find stays in the page under the screens opened on top,
@@ -270,12 +278,19 @@ async function postTrip(page: Page, journey: Journey) {
   await expect(page.getByRole("heading", { name: journey.priceTitle })).toBeVisible();
   await expect(shownText(page, journey.fullPrice)).toBeVisible();
   await expect(page.getByText(journey.suggested)).toBeVisible();
-  // One step down with minus, then a tap on the track at 80%.
+  // One step down with minus, then the handle dragged along the track to
+  // 70% and back to 80%, by a finger on a phone and the mouse on a laptop.
   await page.getByRole("button", { name: journey.lower }).click();
   await expect(page.getByText("90%", { exact: true })).toBeVisible();
-  await page.getByTestId("price-step-80").click();
+  await dragPriceTo(page, 70);
+  await expect(page.getByText("70%", { exact: true })).toBeVisible();
+  await dragPriceTo(page, 80);
   await expect(shownText(page, journey.lowerPrice)).toBeVisible();
   await expect(page.getByText("80%", { exact: true })).toBeVisible();
+  // On a phone, a finger that moves up from the track scrolls the page instead.
+  if (await swipeUpFromPriceTrack(page)) {
+    await expect(page.getByText("80%", { exact: true })).toBeVisible();
+  }
   await page.getByRole("button", { name: journey.toReview }).click();
 
   // 5. Check: the ride as others will see it, each part as a row with

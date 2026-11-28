@@ -76,11 +76,12 @@ function sampleRide(): Ride {
 }
 
 describe("which pages search engines may index (spec 23, 3.4)", () => {
-  it("lists Find, Carpool in Iceland, About, the meeting points, the places, the legal texts and Cookies", () => {
+  it("lists Find, Carpool in Iceland, About, deleting an account, the meeting points, the places, the legal texts and Cookies", () => {
     for (const path of [
       "/",
       "/carpool-iceland",
       "/about",
+      "/delete-account",
       "/meeting-points",
       "/meeting-points/0190a1d6-0000-7000-8000-0000000000d1",
       "/places/0190a1d6-0000-7000-8000-0000000000e1",
@@ -362,6 +363,47 @@ describe("the page's head (spec 23, 3.6)", () => {
     expect(noscript).toContain('<a href="/cookies?lang=is">Vafrakökur</a>');
     expect(noscript).toContain('<a href="/carpool-iceland?lang=is">');
     expect(noscript).toContain(`<p>${createTranslator("is")(aboutPage.operator)}</p>`);
+    expect(noscript).toContain('<a href="mailto:admin@puffinride.is">admin@puffinride.is</a>');
+  });
+
+  it("links About to the page on deleting an account (spec 32, section 5)", () => {
+    const head = pageHead({ path: "/about", lang: "en", acceptLanguage: null }, production);
+    expect(head.noscript).toContain('<a href="/delete-account?lang=en">Delete your account</a>');
+  });
+
+  it("gives the account deletion page its own title and canonical address (spec 32, section 5)", () => {
+    const head = pageHead(
+      { path: "/delete-account", lang: "en", acceptLanguage: null },
+      production,
+    );
+    expect(head.title).toBe("Delete your PuffinRide account · PuffinRide");
+    expect(head.tags).toContain(
+      `<meta data-rh="true" name="description" content="How to delete your PuffinRide account in the app or on the website, what we erase and what we keep, and for how long.">`,
+    );
+    expect(head.tags).toContain(
+      `<link data-rh="true" rel="canonical" href="${site}/delete-account?lang=en">`,
+    );
+  });
+
+  it("writes the account deletion page for search engines and for Google Play's check, which run no app", () => {
+    const head = pageHead(
+      { path: "/delete-account", lang: "is", acceptLanguage: null },
+      production,
+    );
+    const page = fillPage(
+      exportedPage.replace('<div id="root">', '<noscript>JS</noscript><div id="root">'),
+      head,
+    );
+    const noscript = /<noscript>([\s\S]*)<\/noscript>/.exec(page)?.[1] ?? "";
+    expect(noscript).toContain("<h1>Eyða PuffinRide-aðgangi</h1>");
+    expect(noscript).toContain(
+      "<ol><li>Skráðu þig inn í PuffinRide, í appinu eða á puffinride.is.</li>",
+    );
+    expect(noscript).toContain("<li>Opnaðu „Prófíll“ og svo „Persónuvernd og gögnin þín“.</li>");
+    expect(noscript).toContain("<h2>Það sem við eyðum</h2>");
+    expect(noscript).toContain("<h2>Það sem við geymum, og hve lengi</h2>");
+    expect(noscript).toContain('<a href="/sign-in?lang=is">Skrá inn</a>');
+    expect(noscript).toContain('<a href="/legal/privacy?lang=is">');
     expect(noscript).toContain('<a href="mailto:admin@puffinride.is">admin@puffinride.is</a>');
   });
 
