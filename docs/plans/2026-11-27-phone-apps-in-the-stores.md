@@ -237,3 +237,8 @@ not secret), `docs/operations/production.md`.
 Spec 32, section 11. Then, on his go each time: a build to TestFlight and
 internal testing; the closed test with 12 testers for 14 days; Google's
 production access; the App Store review; the staged release.
+
+- [x] The first iPhone build, 1.0.0 (1), from main at #286: handed to
+  Expo 2026-11-27 at 23:14 UTC on Martin's go, and installed from
+  TestFlight on Martin's iPhone 2026-11-28 at 00:57 UTC. It is from before
+  PR 6, so it still offers Google; the next build is the first without.

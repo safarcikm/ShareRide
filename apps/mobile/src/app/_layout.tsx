@@ -25,9 +25,11 @@ import { ProviderLinkNotice } from "@/sign-in/provider-link-notice";
 import { useAppFonts } from "@/theme/fonts";
 import { TopBar } from "@/navigation/top-bar";
 import { installFocusRing } from "@/theme/focus-ring";
+import { installMotion } from "@/theme/motion-sheet";
 
 startErrorReporting();
 installFocusRing();
+installMotion();
 
 export default function RootLayout() {
   return (

@@ -1572,6 +1572,15 @@ releases follow [Semantic Versioning](https://semver.org/).
   says "Leave it empty and we'll email you a code." in place of the line
   about a 6-digit code, and the cookie question waits until signing in or
   up is done.
+- The front page's car arrives on the website (spec 33, 3.2; ADR 0052):
+  the first time Find shows after the page loads, the puffins'
+  car drives in from the left and slows to a stop, bobbing on the road and
+  dipping its nose as it brakes; then the passenger hops, then the driver,
+  and all is still, in under 2 seconds. On a laptop it comes out of its own
+  room beside the title, never under the words. Not again in the same
+  visit, and nothing moves with the system's reduce motion on. CSS
+  keyframes in one style sheet (`motionCss`), so nothing waits for it and
+  the phone apps are unchanged; the motion tokens are in `packages/ui`.
 - About PuffinRide (spec 30), a public page at `/about`: what PuffinRide is,
   the Terms of Service, Community Rules, Privacy Policy and Cookies, who
   runs PuffinRide (as the Terms say it) and how to reach us
@@ -1701,6 +1710,14 @@ releases follow [Semantic Versioning](https://semver.org/).
   `accessibilityState`, so they use `aria-*` props instead. On the web,
   Space ticks a tick box or picks a chip, and a text field's help or error
   is its description (the web build also ignored `accessibilityHint`).
+- Phone builds and journeys fail less often by chance. The Android splash
+  pictures are made once and used in the dark too: two sets from the same
+  picture were made at the same time through one cache file, and a build
+  now and then read it half written ("Could not find MIME for Buffer
+  <null>"). The iPhone Sign up journey types the code one digit at a time,
+  because the whole code at once now and then outran the field. The
+  Android emulator closes another app that stalls instead of showing an
+  "isn't responding" box over ours.
 
 ### Changed
 
@@ -1978,6 +1995,14 @@ releases follow [Semantic Versioning](https://semver.org/).
   2026-11-27 (#257 to #278). Its section 3.22 says where the screens
   differ from the drawings and what is left, and the pictures of the
   build were taken again from the finished screens.
+- The Terms of Service (version 3) and the Privacy Policy (version 4)
+  name the pages in Profile where they said "in Settings", a place the
+  app no longer has, and the Cookies page under About. The Privacy
+  Policy also says what the phone apps add: the app asks Expo for
+  updates, and Google Play, the App Store and their testing handle
+  downloads and tests (spec 32, section 7). Neither is material, so
+  nobody accepts anything again. A test holds the newest legal texts to
+  the names the app gives its pages.
 - The web journeys never give two test accounts the same phone number: a
   run in ten did, and a sign-in journey then failed.
 - CI skips its code jobs (bundles, unit, integration and web tests, the API

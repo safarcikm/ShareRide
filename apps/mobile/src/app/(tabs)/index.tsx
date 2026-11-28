@@ -39,6 +39,7 @@ import { useRides } from "@/my-rides/use-rides";
 import { FindMap } from "@/search/find-map";
 import { ResultTicket } from "@/search/result-ticket";
 import { openSearch, useRouteSearch } from "@/search/route-search";
+import { roomProps, useArrival } from "@/theme/motion";
 import {
   controlOutline,
   icelandScene,
@@ -162,6 +163,8 @@ function FrontPage() {
   const scheme = useColorScheme() === "dark" ? "dark" : "light";
   const [band, setBand] = useState(sceneBand);
   const [line, setLine] = useState<number>(sizes.sceneLine);
+  // The car arrives the first time Find shows on the website (spec 33, 3.2).
+  const arriving = useArrival();
   // Someone signed in is greeted by name (spec 31, 3.5); what PuffinRide
   // is, is said to someone new, and until the account has a first name.
   const firstName = me?.firstName ?? null;
@@ -189,8 +192,15 @@ function FrontPage() {
       style={styles.introScene}
     >
       <View style={styles.intro}>{titles}</View>
-      <View testID="car-on-hills" style={styles.carOnHills}>
-        <PuffinsInCar width={sizes.sceneCarWide} />
+      {/* The car's room, which the title keeps free: on the website the car
+          arrives out of its left edge, never under the words (spec 33, 3.2). */}
+      <View testID="car-room" {...roomProps(arriving)} style={styles.carRoom}>
+        <View testID="car-on-hills" style={styles.carOnHills}>
+          <PuffinsInCar
+            width={sizes.sceneCarWide}
+            arriveFrom={arriving ? -(sizes.sceneCarWide + spacing.lg) : null}
+          />
+        </View>
       </View>
     </View>
   ) : (
@@ -318,7 +328,11 @@ function FrontPage() {
             <LanguageSwitch onSwitch={saveLanguage} />
           </View>
         </View>
-        <PuffinsInCar width={sizes.sceneCar} />
+        {/* On the website it drives in from beyond the left edge (spec 33, 3.2). */}
+        <PuffinsInCar
+          width={sizes.sceneCar}
+          arriveFrom={arriving ? -(windowWidth + sizes.sceneCar) / 2 - spacing.sm : null}
+        />
       </View>
       {title}
       {me === null ? null : <MineFirst rides={mine} at={at} />}
@@ -613,7 +627,15 @@ const styles = StyleSheet.create({
     paddingLeft: spacing.xl,
     paddingRight: carFromEdge + sizes.sceneCarWide + spacing.lg,
   },
-  carOnHills: { position: "absolute", right: carFromEdge, bottom: -(spacing.sm + spacing.xs) },
+  carRoom: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: -(spacing.sm + spacing.xs),
+    width: carFromEdge + sizes.sceneCarWide + spacing.lg,
+    pointerEvents: "none",
+  },
+  carOnHills: { position: "absolute", right: carFromEdge, bottom: 0 },
   // The title, and under it what PuffinRide is, for someone new. In the
   // text's own colour: on a wide page it stands on the mountains, where the
   // muted one is too faint.

@@ -1,0 +1,769 @@
+<title>PuffinRide Animations</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Nunito:wght@400;600;700&display=swap">
+<style>
+/* Layout: one column of demos, each a phone or laptop frame drawn with the
+   app's own tokens (spec 15), with its notes beside or under it. */
+:root {
+  --bg: #EEF3F4; --surface: #FFFFFF; --text: #1F2A30; --muted: #56636B;
+  --primary: #2F6B4F; --on-primary: #FFFFFF; --primary-edge: #1F4A36; --primary-soft: #E2EFE7;
+  --border: #DCE5E8; --control: #7F8C93; --edge: #D2DDE1; --info: #1F5F8B; --info-soft: #E1EDF6;
+  --focus: #1F5F8B; --bezel: #1F2A30;
+  --sky: #D7E9F0; --mountain: #B9CBD3; --glacier: #FFFFFF; --hill: #B7DDB9; --road: #C6CED2; --road-line: #FFFFFF;
+  --tyre: #1F2A30; --cd-body: #D5E1E5; --cd-cabin: #F5F8F9; --cd-seat: #C9D5DA; --cd-steer: #5B6B73;
+  --display: "Fredoka", "Trebuchet MS", system-ui, sans-serif;
+  --body: "Nunito", "Segoe UI", system-ui, sans-serif;
+  --out: cubic-bezier(0.23, 1, 0.32, 1);
+  --in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --brake: cubic-bezier(0.33, 1, 0.68, 1);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121A1E; --surface: #1B252B; --text: #ECF2F4; --muted: #A6B4BB;
+    --primary: #7CC49E; --on-primary: #0C2117; --primary-edge: #4E8E6C; --primary-soft: #203A2D;
+    --border: #2C3940; --control: #6E7D85; --edge: #0B1013; --info: #8FCBE6; --info-soft: #16303F;
+    --focus: #8FCBE6; --bezel: #2C3940;
+    --sky: #142630; --mountain: #24323A; --glacier: #3A4C55; --hill: #203A2D; --road: #3E525C; --road-line: #6E7D85;
+    --tyre: #2E3D45; --cd-body: #34454E; --cd-cabin: #24323A; --cd-seat: #3E525C; --cd-steer: #9AA8AE;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121A1E; --surface: #1B252B; --text: #ECF2F4; --muted: #A6B4BB;
+  --primary: #7CC49E; --on-primary: #0C2117; --primary-edge: #4E8E6C; --primary-soft: #203A2D;
+  --border: #2C3940; --control: #6E7D85; --edge: #0B1013; --info: #8FCBE6; --info-soft: #16303F;
+  --focus: #8FCBE6; --bezel: #2C3940;
+  --sky: #142630; --mountain: #24323A; --glacier: #3A4C55; --hill: #203A2D; --road: #3E525C; --road-line: #6E7D85;
+  --tyre: #2E3D45; --cd-body: #34454E; --cd-cabin: #24323A; --cd-seat: #3E525C; --cd-steer: #9AA8AE;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font-family: var(--body); font-size: 16px; line-height: 1.5; }
+.page {
+  max-width: 1120px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 32px 64px;
+  display: grid; gap: 56px;
+}
+h1, h2, h3 { font-family: var(--display); font-weight: 600; text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(30px, 5vw, 44px); line-height: 1.1; }
+h2 { font-size: 26px; line-height: 1.2; }
+h3 { font-size: 19px; line-height: 1.25; }
+p { margin: 0; max-width: 65ch; }
+.muted { color: var(--muted); }
+.small { font-size: 14px; }
+
+header.top { display: grid; gap: 16px; }
+.controls { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; }
+.btn {
+  font: 600 16px/1 var(--display); border: 0; cursor: pointer;
+  background: var(--primary); color: var(--on-primary);
+  border-radius: 14px; padding: 12px 18px 11px; box-shadow: 0 4px 0 var(--primary-edge);
+  transform: translateY(0);
+}
+.btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--primary-edge); }
+.btn.quiet { background: var(--surface); color: var(--primary); box-shadow: 0 3px 0 var(--edge); border: 1px solid var(--border); }
+.btn.quiet:active { box-shadow: 0 0 0 var(--edge); }
+.btn.small { font-size: 14px; padding: 9px 14px 8px; border-radius: 12px; }
+button:focus-visible, input:focus-visible + .switch { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+.toggle { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 600; }
+.toggle input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.switch { width: 46px; height: 28px; border-radius: 14px; background: var(--control); position: relative; flex: none; }
+.switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: var(--surface); }
+.toggle input:checked + .switch { background: var(--primary); }
+.toggle input:checked + .switch::after { left: 21px; }
+.note { background: var(--info-soft); color: var(--text); border-radius: 12px; padding: 10px 14px; font-size: 14px; }
+
+section { display: grid; gap: 20px; }
+.section-head { display: grid; gap: 8px; }
+
+/* The four banner options. */
+.options { display: grid; gap: 24px; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); }
+.option { display: grid; gap: 10px; align-content: start; min-width: 0; }
+.option-head { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.letter { font: 600 15px/1 var(--display); background: var(--text); color: var(--bg); border-radius: 8px; padding: 5px 8px 4px; }
+.tag { font: 700 13px/1 var(--body); color: var(--primary); background: var(--primary-soft); border-radius: 999px; padding: 5px 9px; }
+.tag.warn { color: var(--muted); background: var(--border); }
+.option-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* A phone. */
+.phone { border: 8px solid var(--bezel); border-radius: 30px; overflow: hidden; background: var(--bg); width: 100%; max-width: 340px; }
+.screen { position: relative; overflow: hidden; }
+.scene { position: relative; overflow: hidden; }
+.scene > svg.land { position: absolute; inset: 0; display: block; }
+.brand { position: absolute; top: 12px; left: 12px; right: 12px; display: flex; align-items: center; gap: 7px; z-index: 3; }
+.logo { width: 30px; height: 30px; border-radius: 8px; background: #2F6B4F; display: grid; place-items: center; overflow: hidden; flex: none; }
+.logo svg { width: 28px; height: 28px; }
+.name { font: 600 16px/1 var(--display); }
+.beta { font: 700 11px/1 var(--body); color: var(--info); background: var(--info-soft); border-radius: 999px; padding: 4px 7px; }
+.lang { margin-left: auto; font: 700 13px/1 var(--body); color: var(--primary); }
+.car-slot { position: absolute; z-index: 2; }
+.car svg { display: block; width: 100%; height: auto; overflow: visible; }
+.below { padding: 14px 14px 16px; display: grid; gap: 10px; }
+.app-title { font: 600 22px/1.15 var(--display); text-align: center; }
+.app-intro { font-size: 13.5px; text-align: center; color: var(--text); }
+.search { background: var(--surface); border-radius: 16px; padding: 10px 12px; display: grid; gap: 6px; box-shadow: 0 3px 0 var(--edge); }
+.field { display: grid; grid-template-columns: 12px 1fr; column-gap: 8px; align-items: center; }
+.dot { width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--primary); grid-row: 1; grid-column: 1; }
+.dot.full { background: var(--primary); }
+.field b { font-size: 11px; color: var(--muted); grid-row: 1; grid-column: 2; }
+.field span:not(.dot) { font-size: 12.5px; color: var(--muted); grid-row: 2; grid-column: 2; }
+.find { font: 600 15px/1 var(--display); background: var(--primary); color: var(--on-primary); border-radius: 12px; padding: 11px; text-align: center; box-shadow: 0 3px 0 var(--primary-edge); margin-top: 4px; }
+.pause { position: absolute; z-index: 4; right: 10px; bottom: 30px; font: 700 12px/1 var(--body); background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 999px; padding: 6px 10px; cursor: pointer; }
+
+/* The laptop. */
+.laptop-wrap { width: 100%; overflow: hidden; }
+.laptop { width: 1000px; transform-origin: 0 0; border: 8px solid var(--bezel); border-radius: 14px; background: var(--bg); overflow: hidden; }
+.nav { height: 56px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 22px; padding: 0 36px; font: 600 15px/1 var(--body); }
+.nav .brand-l { display: flex; gap: 8px; align-items: center; margin-right: auto; }
+.nav .cur { text-decoration: underline; text-underline-offset: 4px; color: var(--primary); }
+.panel { position: relative; margin: 18px 36px 0; height: 196px; border-radius: 20px; overflow: hidden; background: var(--sky); }
+.panel svg.land { position: absolute; inset: 0; }
+.panel .titles { position: absolute; left: 32px; top: 34px; z-index: 2; display: grid; gap: 8px; max-width: 470px; }
+.panel .titles h3 { font-size: 38px; line-height: 1.05; }
+.panel .titles p { font-size: 15px; }
+.search-row { position: relative; z-index: 3; margin: -46px 36px 0; background: var(--surface); border-radius: 18px; padding: 14px 16px; display: grid; grid-template-columns: 1fr 1fr 120px 150px; gap: 12px; align-items: end; box-shadow: 0 3px 0 var(--edge); }
+.search-row .in { background: var(--bg); border-radius: 12px; padding: 12px 14px; font-size: 14px; color: var(--muted); }
+.search-row .lab { font-size: 12px; font-weight: 700; color: var(--muted); margin-bottom: 4px; }
+.soon { margin: 22px 36px 26px; display: grid; gap: 12px; }
+.soon .cards { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+.ride { background: var(--surface); border-radius: 16px; padding: 12px 14px; display: grid; gap: 4px; font-size: 14px; box-shadow: 0 3px 0 var(--edge); }
+.ride b { font-family: var(--display); font-weight: 600; font-size: 15px; }
+
+/* Booked and request sent. */
+.pair { display: grid; gap: 24px; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); }
+.booked .top-area { position: relative; height: 140px; }
+.back { position: absolute; top: 12px; left: 12px; width: 34px; height: 34px; border-radius: 50%; background: var(--surface); box-shadow: 0 2px 0 var(--edge); display: grid; place-items: center; font: 700 16px/1 var(--body); color: var(--text); }
+.booked .car-slot { top: 40px; }
+.ticket { background: var(--surface); border-radius: 16px; padding: 12px 14px; display: grid; gap: 4px; font-size: 13.5px; box-shadow: 0 3px 0 var(--edge); }
+.ticket .row { display: flex; justify-content: space-between; gap: 8px; }
+.steps { display: grid; gap: 8px; font-size: 13.5px; padding: 0; margin: 0; list-style: none; counter-reset: s; }
+.steps li { display: grid; grid-template-columns: 22px 1fr; gap: 8px; counter-increment: s; }
+.steps li::before { content: counter(s); width: 22px; height: 22px; border-radius: 50%; background: var(--primary-soft); color: var(--primary); font: 700 12px/22px var(--body); text-align: center; }
+.your-seat { width: 104px; height: 104px; margin: 34px auto 4px; border-radius: 26px; border: 6px solid var(--primary); background: var(--primary-soft); display: grid; place-items: center; overflow: hidden; }
+.your-seat svg { width: 92px; height: 92px; }
+
+/* The road. */
+.road-demo { background: var(--surface); border-radius: 20px; padding: 20px; display: grid; gap: 16px; max-width: 620px; box-shadow: 0 3px 0 var(--edge); }
+.road { position: relative; height: 54px; margin: 0 26px; }
+.lane { position: absolute; left: -26px; right: -26px; bottom: 6px; height: 12px; border-radius: 6px; background: var(--road); overflow: hidden; }
+.lane::after { content: ""; position: absolute; left: 6px; right: 6px; top: 5px; height: 2px; background: repeating-linear-gradient(90deg, var(--road-line) 0 8px, transparent 8px 14px); }
+.gone { position: absolute; left: -26px; bottom: 6px; height: 12px; border-radius: 6px; background: var(--primary); width: calc(100% + 26px); transform-origin: 0 50%; transition: transform 400ms var(--in-out); }
+.mark { position: absolute; bottom: 4px; width: 16px; height: 16px; margin-left: -8px; border-radius: 50%; background: var(--surface); border: 3px solid var(--control); }
+.mark.past { border-color: var(--surface); }
+.road .car { position: absolute; left: -30px; bottom: 9px; width: 60px; transition: transform 400ms var(--in-out); }
+.names { position: relative; height: 20px; margin: 0 26px; font-size: 13px; color: var(--muted); }
+.names span { position: absolute; top: 0; transform: translateX(-50%); white-space: nowrap; }
+.names .now { color: var(--text); font-weight: 700; }
+.road-actions { display: flex; gap: 10px; }
+
+/* Small touches. */
+.touches { display: grid; gap: 24px; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+.card { background: var(--surface); border-radius: 20px; padding: 20px; display: grid; gap: 14px; align-content: start; box-shadow: 0 3px 0 var(--edge); min-width: 0; }
+.stepper { display: flex; align-items: center; gap: 14px; }
+.round { width: 44px; height: 44px; border-radius: 50%; border: 0; background: var(--border); color: var(--text); font: 600 22px/1 var(--display); cursor: pointer; }
+.round:disabled { opacity: 0.4; cursor: default; }
+.count { font: 600 22px/1 var(--display); min-width: 2ch; text-align: center; font-variant-numeric: tabular-nums; }
+.seatview svg { width: 100%; max-width: 280px; height: auto; display: block; }
+.seat-puffin { transform-box: fill-box; transform-origin: 50% 50%; }
+.seat-puffin.pop { animation: pop 150ms var(--out) both; }
+.menu-host { position: relative; display: flex; justify-content: flex-end; min-height: 190px; align-items: flex-start; }
+.menu { position: absolute; top: 54px; right: 0; width: 220px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 8px 24px rgba(15, 25, 30, 0.16); padding: 6px; display: grid;
+  opacity: 0; transform: translateY(-8px); pointer-events: none; transition: opacity 120ms ease-out, transform 120ms ease-out; }
+.menu.open { opacity: 1; transform: none; pointer-events: auto; transition: opacity 180ms var(--out), transform 180ms var(--out); }
+.menu button { text-align: left; background: none; border: 0; border-radius: 10px; padding: 10px 12px; font: 600 15px/1.2 var(--body); color: var(--text); cursor: pointer; }
+.menu button:hover { background: var(--bg); }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { font-family: var(--display); font-weight: 600; }
+.table-wrap { overflow-x: auto; }
+.still { display: grid; gap: 8px; padding-left: 20px; margin: 0; max-width: 70ch; }
+footer { font-size: 14px; color: var(--muted); }
+
+/* The animations themselves. Times and curves are the spec's motion tokens. */
+.play .car.drive { animation: drive 1100ms var(--brake) both; }
+.play .car.drive-fade { animation: drive-fade 1100ms var(--brake) both; }
+.play .car.drive .car-body, .play .car.drive-fade .car-body { animation: body-dip 1500ms linear both; }
+.car-body { transform-box: fill-box; transform-origin: 50% 92%; }
+.play.hops .pf-you { animation: hop 300ms 1400ms both; }
+.play.hops .pf-driver { animation: hop 300ms 1540ms both; }
+.flyer { position: absolute; left: 0; z-index: 1; width: 58px; transform: translateX(-90px); }
+.play .flyer { animation: fly 3000ms 800ms linear both; }
+.play .flyer .bob { animation: fly-bob 400ms ease-in-out 8 alternate both; animation-delay: 800ms; }
+.flyer .wing { transform-box: fill-box; transform-origin: 50% 100%; }
+.play .flyer .wing { animation: flap 120ms linear 24 alternate; animation-delay: 800ms; }
+.loop .dash { animation: dash 380ms linear infinite; }
+.loop .car-body { animation: bob 260ms ease-in-out infinite alternate; }
+.loop.paused .dash, .loop.paused .car-body { animation-play-state: paused; }
+.play .rise { animation: rise 300ms var(--out) both; }
+
+@keyframes drive { from { transform: translateX(var(--from)); } to { transform: translateX(0); } }
+@keyframes drive-fade { 0% { transform: translateX(var(--from)); opacity: 0; } 30% { opacity: 1; } 100% { transform: translateX(0); opacity: 1; } }
+@keyframes body-dip {
+  0% { transform: translateY(0) rotate(0deg); }
+  12% { transform: translateY(-1.6px) rotate(0deg); }
+  24% { transform: translateY(0) rotate(0deg); }
+  38% { transform: translateY(-1.3px) rotate(0deg); }
+  50%, 73% { transform: translateY(0) rotate(0deg); }
+  83% { transform: translateY(0) rotate(2.6deg); }
+  93% { transform: translateY(0) rotate(-0.8deg); }
+  100% { transform: translateY(0) rotate(0deg); }
+}
+@keyframes hop {
+  0% { transform: translateY(0); animation-timing-function: cubic-bezier(0.25, 0.6, 0.4, 1); }
+  45% { transform: translateY(-5px); animation-timing-function: cubic-bezier(0.5, 0, 0.75, 0); }
+  100% { transform: translateY(0); }
+}
+@keyframes fly { from { transform: translateX(-90px); } to { transform: translateX(var(--across)); } }
+@keyframes fly-bob { from { transform: translateY(-3px); } to { transform: translateY(4px); } }
+@keyframes flap { from { transform: scaleY(1); } to { transform: scaleY(-0.6); } }
+@keyframes dash { from { stroke-dashoffset: 0; } to { stroke-dashoffset: 26; } }
+@keyframes bob { from { transform: translateY(0); } to { transform: translateY(-1.2px); } }
+@keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes pop { from { transform: scale(0.9); } to { transform: scale(1); } }
+
+/* Reduce motion: nothing moves; things that open only fade. */
+.calm .demo *, .calm .demo { animation: none !important; }
+.calm .road .car, .calm .gone { transition: none !important; }
+.calm .menu, .calm .menu.open { transform: none !important; transition: opacity 120ms ease-out !important; }
+.calm .pause { display: none; }
+</style>
+
+<div class="page" id="page">
+  <header class="top">
+    <h1>Small animations</h1>
+    <p>A moving preview for spec 33. The same car, puffins and Iceland scene as the app, drawn from its shapes and colours, in your light or dark mode. Pick how the front page's banner moves; the rest are my proposals.</p>
+    <div class="controls">
+      <button class="btn" id="play-all" type="button">Play everything again</button>
+      <label class="toggle" for="calm"><input type="checkbox" id="calm"><span class="switch" aria-hidden="true"></span>Show it as with Reduce motion on</label>
+    </div>
+    <p class="note" id="calm-note" hidden>Your device asks for less motion, so this page starts with Reduce motion on: everything stands still, as it would for you on PuffinRide. Turn the switch off to see the motion.</p>
+  </header>
+
+  <section aria-labelledby="banner-h">
+    <div class="section-head">
+      <h2 id="banner-h">1. The front page's banner</h2>
+      <p class="muted">Once a visit, the first time Find shows. The words and the search work from the first frame; only the drawing moves.</p>
+    </div>
+    <div class="options" id="options"></div>
+    <div class="section-head">
+      <h3>A on a laptop</h3>
+      <p class="muted">The car stands on the hills beside the title, so it rolls in over the last stretch and fades in as it comes, never passing under the words.</p>
+    </div>
+    <div class="laptop-wrap" id="laptop-wrap"></div>
+    <div class="option-actions"><button class="btn quiet small" type="button" id="laptop-play">Play again</button></div>
+  </section>
+
+  <section aria-labelledby="booked-h">
+    <div class="section-head">
+      <h2 id="booked-h">2. A booked seat, and a request sent</h2>
+      <p class="muted">The title and the steps are there at once; the drawing never holds them back.</p>
+    </div>
+    <div class="pair" id="pair"></div>
+  </section>
+
+  <section aria-labelledby="road-h">
+    <div class="section-head">
+      <h2 id="road-h">3. The road while offering a ride</h2>
+      <p class="muted">Press Next or Back: the car rolls to the new step in 400 ms and the moss line grows with it. On the booking page the road stands still.</p>
+    </div>
+    <div class="road-demo demo" id="road-demo">
+      <div class="road" id="road"></div>
+      <div class="names" id="names"></div>
+      <div class="road-actions">
+        <button class="btn quiet small" type="button" id="road-back">Back</button>
+        <button class="btn small" type="button" id="road-next">Next</button>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="touch-h">
+    <div class="section-head">
+      <h2 id="touch-h">4. Small touches</h2>
+    </div>
+    <div class="touches">
+      <div class="card demo">
+        <h3>Choosing seats</h3>
+        <p class="small muted">The seat just added pops, in 150 ms. On a phone, a tick with each step.</p>
+        <div class="stepper">
+          <button class="round" type="button" id="minus" aria-label="One seat fewer">−</button>
+          <span class="count" id="count" aria-live="polite">1</span>
+          <button class="round" type="button" id="plus" aria-label="One seat more">+</button>
+          <span class="small muted">seats</span>
+        </div>
+        <div class="seatview" id="seatview"></div>
+      </div>
+      <div class="card demo">
+        <h3>A menu opening</h3>
+        <p class="small muted">Opens with a fade and an 8-point move out of its button, in 180 ms; closes with a fade in 120 ms. With Reduce motion on, it only fades.</p>
+        <div class="menu-host">
+          <button class="btn quiet small" type="button" id="menu-btn" aria-expanded="false" aria-controls="menu">More</button>
+          <div class="menu" id="menu" role="menu">
+            <button type="button" role="menuitem">Share this ride</button>
+            <button type="button" role="menuitem">Message Bára</button>
+            <button type="button" role="menuitem">Cancel my seat</button>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Taps on a phone</h3>
+        <p class="small muted">Felt, not seen, so this page cannot play them. Only in the apps, always with something on screen, one per press, and off when the phone's own setting is off.</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>When</th><th>Tap</th></tr></thead>
+            <tbody>
+              <tr><td>Seat booked or paid, request accepted, ride published</td><td>Success</td></tr>
+              <tr><td>Request sent; pull to refresh past its point</td><td>Light</td></tr>
+              <tr><td>Seats or price stepping; a switch</td><td>Tick</td></tr>
+              <tr><td>A press that fails with a message</td><td>Error</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="still-h">
+    <div class="section-head">
+      <h2 id="still-h">5. What stays still</h2>
+    </div>
+    <ul class="still">
+      <li>Switching tabs, and ride cards coming into a list: seen many times a day.</li>
+      <li>Prices, times, seat counts and names: never on money or facts.</li>
+      <li>Anything that loops: no shimmering placeholders, no car that keeps driving (option D shows why).</li>
+      <li>Scrolling effects, confetti, sounds, a moving logo, animated emails, the map.</li>
+      <li>On the website, pages change at once. On phones, screens change the way the phone does it, as today.</li>
+    </ul>
+  </section>
+
+  <footer>Spec 33, docs/specs/2026-11-27-small-animations.md. Drawings from apps/mobile/src/components/puffin-scenes.tsx and puffin.tsx; sample names are made up.</footer>
+</div>
+
+<script>
+(() => {
+  // Drawing colours from packages/ui/src/tokens.ts; the same in both modes.
+  const C = {
+    face: "#1F2A30", white: "#F7F5F0", beak: "#F26B2E", groove: "#D9512A", plate: "#7C93A0",
+    eyeMark: "#8E9CA3", crow: "#F08C9C", sun: "#F4C04E", wool: "#EADFCB", moss: "#9ED0A0",
+    body: "#F4C04E", wing: "#E0A93A", glass: "#CFE6EF", trim: "#C9D5DA", hub: "#DCE5E8",
+    light: "#FFF6D8", strap: "#D9707F",
+  };
+  const head = "M-21 2 C-21.5 -13 -10 -22 2 -21.6 C12 -21.2 18.6 -15 19.6 -7 L19.6 11 C18 19 9 22.6 -1 22.4 C-12.6 22 -21 14.6 -21 2 Z";
+  const face = "M-13 3 C-13.4 -4.6 -7.6 -8.4 1 -8.2 C9 -8 15.4 -8.6 18.4 -9 L18.4 11.4 C15 17.6 8 19.4 0.5 19 C-7.6 18.4 -12.8 11.6 -13 3 Z";
+  const beak = "M18.2 -11.9 C26.2 -11.9 34.7 -6.9 38.7 2.2 C32.7 6.6 25.7 9.6 18.2 10.2 Z";
+
+  // Our puffin's head (puffin.tsx), three-quarters, facing right.
+  function puffin(x, y, size, look = {}) {
+    const black = look.black ? `style="fill:var(${look.black})"` : `fill="${C.face}"`;
+    const hat = look.hat ? `<g transform="translate(-2 1) rotate(-6)">
+        <path d="M-17.5 -9 C-17 -23 17 -23 17.5 -9 Z" fill="${look.hat}"/>
+        <path d="M-7 -19.6 L-7 -11 M0 -21 L0 -11 M7 -19.6 L7 -11" stroke="${C.face}" stroke-opacity="0.15" stroke-width="1.6"/>
+        <rect x="-19" y="-12.2" width="38" height="6.6" rx="3.3" fill="${C.wool}"/>
+        <circle cx="0" cy="-23.2" r="4" fill="${C.wool}"/></g>` : "";
+    const scarf = look.scarf ? `<path d="M-19.4 14.4 Q-1 22.6 18.6 14 L18 20.4 Q-1 29 -18.6 20.6 Z" fill="${look.scarf}"/>` : "";
+    return `<g transform="translate(${x} ${y}) scale(${size})">
+      <path d="${head}" ${black}/>
+      <path d="${face}" fill="${C.white}"/>
+      <path d="M5.4 -6.4 L11.4 -6.4 L8.6 -10.4 Z" fill="${C.eyeMark}"/>
+      <path d="M6.4 2.6 L10.6 2.6 L8.4 5.2 Z" fill="${C.eyeMark}"/>
+      <circle cx="8.4" cy="-2" r="3.9" fill="${C.groove}"/>
+      <circle cx="8.4" cy="-2" r="2.9" fill="${C.face}"/>
+      <circle cx="9.4" cy="-3" r="1" fill="${C.white}"/>
+      <ellipse cx="3" cy="9.6" rx="3.8" ry="2.5" fill="${C.crow}" opacity="0.8"/>
+      <path d="${beak}" fill="${C.beak}"/>
+      <path d="M18.2 -11.9 L22.8 -11.36 L22.8 9.52 L18.2 10.2 Z" fill="${C.plate}"/>
+      <path d="M22.8 -11.36 L24.9 -10.75 L24.9 9.01 L22.8 9.52 Z" fill="${C.sun}"/>
+      <path d="M29.8 -8.8 Q31.8 -2.4 29.8 8 M34.2 -5 Q35.6 -0.4 34.2 5.2" stroke="${C.groove}" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+      <path d="M18.2 2.2 Q29.2 3.2 38.7 2.2" stroke="${C.groove}" stroke-width="1.1" fill="none"/>
+      <circle cx="18.6" cy="7.6" r="2.2" fill="${C.sun}"/>
+      ${hat}${scarf}</g>`;
+  }
+
+  // The puffins' car (PuffinsInCar), from the side, driving right. The body
+  // and the puffins are their own groups, so they can move.
+  const windows = "M42 66 C44 50 56 39 77 37 L77 66 Z M83 37 C103 37 116 47 124 66 L83 66 Z";
+  let uid = 0;
+  function car(moving = false) {
+    const id = `windows-${++uid}`;
+    const left = moving ? 4 - 32 : 4;
+    const across = moving ? 190 + 32 : 190;
+    const wheel = (cx) => `<circle cx="${cx}" cy="100" r="15" style="fill:var(--tyre)"/><circle cx="${cx}" cy="100" r="7" fill="${C.hub}"/><circle cx="${cx}" cy="100" r="2.4" style="fill:var(--tyre)"/>`;
+    return `<svg viewBox="${left} 9 ${across} 108" aria-hidden="true" focusable="false">
+      <defs><clipPath id="${id}"><path d="${windows}"/></clipPath></defs>
+      ${moving ? `<path d="M-4 78 H-24 M0 88 H-28 M-6 98 H-20" style="stroke:var(--control)" stroke-width="3" stroke-linecap="round"/>` : ""}
+      <g class="car-body">
+        <rect x="58" y="16" width="42" height="12" rx="3" fill="${C.crow}"/>
+        <rect x="75" y="13" width="9" height="4" rx="2" fill="none" style="stroke:var(--tyre)" stroke-width="1.6"/>
+        <path d="M64 16 V28 M94 16 V28" stroke="${C.strap}" stroke-width="2"/>
+        <path d="M52 29 H106 M60 29 V33 M98 29 V33" style="stroke:var(--tyre)" stroke-width="2.4" stroke-linecap="round"/>
+        <path d="M14 98 C10 86 16 74 30 69 C34 46 54 31 80 31 C106 31 122 44 130 64 C152 65 172 70 182 81 C186 86 186 92 185 98 Z" fill="${C.body}"/>
+        <path d="${windows}" fill="${C.glass}"/>
+        <g clip-path="url(#${id})">
+          <g class="pf-you">${puffin(58, 57, 0.54, { scarf: C.moss })}</g>
+          <g class="pf-driver">${puffin(96, 58, 0.58, { hat: C.crow })}</g>
+        </g>
+        <path d="M114 48 L107 62" stroke="${C.white}" stroke-width="2" stroke-linecap="round" opacity="0.7"/>
+        <path d="M80 68 V91" stroke="${C.wing}" stroke-width="1.6" stroke-linecap="round"/>
+        <rect x="85" y="72" width="8" height="2.6" rx="1.3" fill="${C.wing}"/>
+        <path d="M26 98 C26 80 38 72 52 72 C66 72 77 80 78 98 Z" fill="${C.wing}"/>
+        <path d="M124 98 C125 80 137 72 151 72 C165 72 176 80 178 98 Z" fill="${C.wing}"/>
+        <rect x="74" y="93" width="54" height="6" rx="3" fill="${C.trim}"/>
+        <circle cx="170" cy="80" r="6.2" fill="${C.light}" stroke="${C.trim}" stroke-width="2"/>
+        <rect x="11" y="78" width="6" height="9" rx="3" fill="${C.crow}"/>
+        <rect x="178" y="93" width="14" height="5.5" rx="2.75" fill="${C.trim}"/>
+        <rect x="6" y="93" width="14" height="5.5" rx="2.75" fill="${C.trim}"/>
+      </g>
+      <g class="car-wheels">${wheel(52)}${wheel(151)}</g>
+    </svg>`;
+  }
+  const carHeight = (w, moving = false) => (w * 108) / (moving ? 222 : 190);
+  // Where the wheels' bottoms are, as a part of the drawing's height.
+  const wheelBottom = (115 - 9) / 108;
+
+  // A puffin flying (option C): a new drawing, round body, wing beating.
+  function flyer() {
+    return `<svg viewBox="-40 -30 82 50" aria-hidden="true" focusable="false">
+      <path d="M-30 4 L-38 -2 L-37 9 Z" fill="${C.face}"/>
+      <path d="M-24 10 L-31 16 L-22 14 Z M-19 11 L-24 18 L-15 14 Z" fill="${C.beak}"/>
+      <ellipse cx="-6" cy="4" rx="26" ry="12" fill="${C.face}"/>
+      <path d="M-26 8 C-18 16 6 18 16 10 C6 12 -14 12 -26 8 Z" fill="${C.white}"/>
+      ${puffin(16, -2, 0.5)}
+      <path class="wing" d="M-14 2 C-14 -16 -2 -26 8 -24 C2 -16 -2 -6 2 2 Z" fill="${C.face}"/>
+    </svg>`;
+  }
+
+  // The Iceland scene (IcelandScene): sky, mountains with two glaciers, hills,
+  // and a road with a dashed line, or hills all the way down.
+  const ridges = {
+    narrow: [[0, 0.8], [0.12, 0.55], [0.24, 0.72], [0.38, 0.45], [0.52, 0.7], [0.68, 0.5], [0.84, 0.74], [0.94, 0.6], [1, 0.72]],
+    wide: [[0, 0.62], [0.05, 0.42], [0.1, 0.56], [0.17, 0.3], [0.25, 0.6], [0.31, 0.5], [0.37, 0.72], [0.5, 0.82], [0.63, 0.7], [0.7, 0.45], [0.77, 0.62], [0.84, 0.28], [0.91, 0.55], [0.96, 0.4], [1, 0.55]],
+  };
+  function scene(width, height, ground, road = true) {
+    const ridge = width > 4 * ground ? ridges.wide : ridges.narrow;
+    const pts = ridge.map(([x, y]) => [x * width, y * ground]);
+    const at = ([x, y]) => `${x.toFixed(1)} ${y.toFixed(1)}`;
+    const capped = pts.map(([, y], index) => ({ y, index })).slice(1, -1).sort((a, b) => a.y - b.y).slice(0, 2).map((p) => p.index);
+    const mountains = `M0 ${ground} ${pts.map((p) => `L${at(p)}`).join(" ")} L${width} ${ground} Z`;
+    const glaciers = capped.map((i) => {
+      const [px, py] = pts[i], [lx, ly] = pts[i - 1], [rx, ry] = pts[i + 1];
+      const l = [px + (lx - px) / 3, py + (ly - py) / 3], r = [px + (rx - px) / 3, py + (ry - py) / 3];
+      const dip = (l[1] + r[1]) / 2 - py;
+      return `M${at(l)} L${at([px, py])} L${at(r)} L${at([px + (r[0] - px) / 2, py + dip * 0.7])} L${at([px, py + dip])} L${at([px + (l[0] - px) / 2, py + dip * 0.7])} Z`;
+    });
+    const hills = `M0 ${ground} L0 ${ground - 16} C${at([width * 0.22, ground - 40])} ${at([width * 0.4, ground - 2])} ${at([width * 0.58, ground - 18])} S${at([width * 0.86, ground - 36])} ${at([width, ground - 12])} L${width} ${ground} Z`;
+    const below = height - ground;
+    return `<svg class="land" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" aria-hidden="true" focusable="false">
+      <rect width="${width}" height="${height}" style="fill:var(--sky)"/>
+      <path d="${mountains}" style="fill:var(--mountain);stroke:var(--mountain)" stroke-width="4" stroke-linejoin="round"/>
+      ${glaciers.map((d) => `<path d="${d}" style="fill:var(--glacier);stroke:var(--glacier)" stroke-width="3" stroke-linejoin="round"/>`).join("")}
+      <path d="${hills}" style="fill:var(--hill)"/>
+      ${road
+        ? `<rect y="${ground}" width="${width}" height="${below}" style="fill:var(--road)"/><path class="dash" d="M8 ${ground + below / 2} H${width}" style="stroke:var(--road-line)" stroke-width="2.5" stroke-dasharray="14 12" stroke-linecap="round"/>`
+        : `<rect y="${ground}" width="${width}" height="${below}" style="fill:var(--hill)"/>`}
+    </svg>`;
+  }
+  const logo = () => `<span class="logo"><svg viewBox="-24 -28 66 56" aria-hidden="true">${puffin(0, 0, 1)}</svg></span>`;
+
+  // The four ways the banner can move.
+  const options = [
+    { key: "a", name: "Drive in, then hop", time: "About 1.9 s, once", tag: "Recommended", hops: true,
+      text: "The car drives in and stops with a little dip, then the puffin in the scarf hops, then the driver." },
+    { key: "b", name: "Drive in only", time: "About 1.5 s, once", hops: false,
+      text: "The car drives in and stops with the dip. The puffins stay still. The quietest." },
+    { key: "c", name: "Drive in, and a fly-by", time: "About 4 s, once", hops: true, fly: true,
+      text: "As A, and a third puffin flies past behind the car, wings beating. A new drawing, and a longer moment." },
+    { key: "d", name: "Keep driving", time: "All the time", tag: "Not recommended", warn: true, loop: true,
+      text: "The car bobs while the road's line slides past, with a pause button. Breaks “nothing loops”, pulls the eye from the search, uses battery." },
+  ];
+
+  const optionsBox = document.getElementById("options");
+  const frames = [];
+
+  function buildFront(frame, opt) {
+    const w = frame.clientWidth;
+    if (w === 0) return;
+    if (!opt.loop) frame.classList.remove("play");
+    const carW = Math.round(Math.min(170, w * 0.44));
+    const carH = carHeight(carW);
+    const sceneH = Math.round(12 + 30 + 10 + carH + 11);
+    const ground = sceneH - 22;
+    const top = sceneH - 11 - wheelBottom * carH;
+    const from = -(w / 2 + carW / 2 + 12);
+    frame.innerHTML = `
+      <div class="scene" style="height:${sceneH}px">
+        ${scene(w, sceneH, ground)}
+        <div class="brand">${logo()}<span class="name">PuffinRide</span><span class="beta">Beta</span><span class="lang">Íslenska</span></div>
+        ${opt.fly ? `<div class="flyer" style="top:${Math.round(ground - 64)}px;--across:${w + 20}px"><div class="bob">${flyer()}</div></div>` : ""}
+        <div class="car-slot" style="left:${(w - carW) / 2}px;top:${top}px;width:${carW}px">
+          <div class="car ${opt.loop ? "" : "drive"}" style="--from:${from}px">${car()}</div>
+        </div>
+        ${opt.loop ? `<button class="pause" type="button">Pause</button>` : ""}
+      </div>
+      <div class="below">
+        <div class="app-title">Share your ride</div>
+        <p class="app-intro">Carpool across Iceland: find a seat in someone else's car, or offer the empty seats in yours.</p>
+        <div class="search">
+          <div class="field"><span class="dot"></span><b>From</b><span>Choose a town or meeting point</span></div>
+          <div class="field"><span class="dot full"></span><b>To</b><span>Choose a town or meeting point</span></div>
+          <div class="find">Find a ride</div>
+        </div>
+      </div>`;
+    const pause = frame.querySelector(".pause");
+    if (pause) {
+      pause.addEventListener("click", () => {
+        const paused = frame.classList.toggle("paused");
+        pause.textContent = paused ? "Play" : "Pause";
+      });
+    }
+  }
+
+  for (const opt of options) {
+    const box = document.createElement("div");
+    box.className = "option";
+    box.innerHTML = `
+      <div class="option-head"><span class="letter">${opt.key.toUpperCase()}</span><h3>${opt.name}</h3></div>
+      <div class="option-head"><span class="small muted">${opt.time}</span>${opt.tag ? `<span class="tag ${opt.warn ? "warn" : ""}">${opt.tag}</span>` : ""}</div>
+      <div class="phone"><div class="screen demo ${opt.hops ? "hops" : ""} ${opt.loop ? "loop" : ""}"></div></div>
+      <p class="small">${opt.text}</p>
+      ${opt.loop ? "" : `<div class="option-actions"><button class="btn quiet small" type="button">Play again</button></div>`}`;
+    optionsBox.append(box);
+    const frame = box.querySelector(".screen");
+    const entry = { frame, build: () => buildFront(frame, opt), loop: !!opt.loop };
+    frames.push(entry);
+    const again = box.querySelector(".option-actions button");
+    if (again) again.addEventListener("click", () => play(frame));
+  }
+
+  // The laptop, drawn at 1000 wide and scaled to fit.
+  const laptopWrap = document.getElementById("laptop-wrap");
+  function buildLaptop() {
+    const panelW = 1000 - 16 - 72, panelH = 196, ground = 140;
+    const carW = 150, carH = carHeight(carW);
+    laptopWrap.innerHTML = `
+      <div class="laptop demo hops" id="laptop">
+        <div class="nav"><span class="brand-l">${logo()}<span class="name">PuffinRide</span><span class="beta">Beta</span></span>
+          <span class="cur">Find</span><span>My rides</span><span>Offer</span><span>Messages</span><span>Profile</span><span style="color:var(--primary)">Íslenska</span></div>
+        <div class="panel">
+          ${scene(panelW, panelH, ground, false)}
+          <div class="titles"><h3>Share your ride</h3><p>Carpool across Iceland: find a seat in someone else's car, or offer the empty seats in yours.</p></div>
+          <div class="car-slot" style="left:${panelW - 40 - carW}px;top:${ground - wheelBottom * carH + 2}px;width:${carW}px">
+            <div class="car drive-fade" style="--from:-200px">${car()}</div>
+          </div>
+        </div>
+        <div class="search-row">
+          <div><div class="lab">From</div><div class="in">Choose a town or meeting point</div></div>
+          <div><div class="lab">To</div><div class="in">Choose a town or meeting point</div></div>
+          <div><div class="lab">Date</div><div class="in">Any day</div></div>
+          <div class="find">Find a ride</div>
+        </div>
+        <div class="soon"><h3>Leaving soon</h3>
+          <div class="cards">
+            <div class="ride"><span class="muted small">Sat 28 Nov</span><b>05:30 Hlemmur</b><b>06:30 Keflavík Airport</b></div>
+            <div class="ride"><span class="muted small">Sat 28 Nov</span><b>09:00 Mjódd bus terminal</b><b>09:50 N1 Selfoss</b></div>
+            <div class="ride"><span class="muted small">Sun 29 Nov</span><b>14:00 Borgarnes</b><b>16:10 Blönduós</b></div>
+          </div></div>
+      </div>`;
+    fitLaptop();
+  }
+  function fitLaptop() {
+    const laptop = document.getElementById("laptop");
+    if (!laptop) return;
+    const scale = Math.min(1, laptopWrap.clientWidth / 1000);
+    laptop.style.transform = `scale(${scale})`;
+    laptopWrap.style.height = `${laptop.offsetHeight * scale}px`;
+  }
+  document.getElementById("laptop-play").addEventListener("click", () => play(document.getElementById("laptop")));
+
+  // Seat booked, and request sent.
+  const pair = document.getElementById("pair");
+  pair.innerHTML = `
+    <div class="option">
+      <h3>You're booked!</h3>
+      <div class="phone"><div class="screen booked demo hops" id="booked"></div></div>
+      <p class="small">The car drives in with its speed lines, dips, and the puffins hop. On a phone, a success tap as the screen opens.</p>
+      <div class="option-actions"><button class="btn quiet small" type="button" data-play="booked">Play again</button></div>
+    </div>
+    <div class="option">
+      <h3>Request sent</h3>
+      <div class="phone"><div class="screen demo" id="sent"></div></div>
+      <p class="small">The puffin rises into its frame in 300 ms. On a phone, one light tap.</p>
+      <div class="option-actions"><button class="btn quiet small" type="button" data-play="sent">Play again</button></div>
+    </div>`;
+  function buildBooked() {
+    const frame = document.getElementById("booked");
+    const w = frame.clientWidth;
+    if (w === 0) return;
+    frame.classList.remove("play");
+    const carW = Math.round(Math.min(200, w * 0.62));
+    frame.innerHTML = `
+      <div class="top-area" style="height:${Math.round(52 + carHeight(carW, true) + 8)}px">
+        <span class="back" aria-hidden="true">‹</span>
+        <div class="car-slot" style="left:${(w - carW) / 2}px;width:${carW}px">
+          <div class="car drive" style="--from:${-(w / 2 + carW / 2 + 10)}px">${car(true)}</div>
+        </div>
+      </div>
+      <div class="below">
+        <div class="app-title">You're booked!</div>
+        <div class="ticket">
+          <div class="row"><span class="muted">Sat 28 Nov</span><span class="muted">Passenger</span></div>
+          <b>09:10 Olís Norðlingaholt</b>
+          <b>09:50 N1 Selfoss</b>
+          <div class="row"><b>800 ISK</b><span class="muted">1 seat</span></div>
+        </div>
+        <ul class="steps">
+          <li>The number plate shows in My rides before you leave.</li>
+          <li>Be at the meeting point a few minutes before 09:10.</li>
+          <li>Plans change? Cancelling is free up to 24 hours before you get in.</li>
+        </ul>
+      </div>`;
+  }
+  function buildSent() {
+    const frame = document.getElementById("sent");
+    frame.innerHTML = `
+      <div style="position:relative"><span class="back" aria-hidden="true">‹</span></div>
+      <div class="your-seat rise"><svg viewBox="-24 -26 64 52" aria-hidden="true">${puffin(0, 0, 1, { scarf: C.moss })}</svg></div>
+      <div class="below">
+        <div class="app-title">Request sent</div>
+        <p class="app-intro muted">Bára has until 00:22 tomorrow to answer.</p>
+        <ul class="steps">
+          <li>The answer shows in My rides.</li>
+          <li>When Bára says yes, pay in My rides, under Needs you, to confirm your seat.</li>
+          <li>No answer in time? The request ends, and you pay nothing.</li>
+        </ul>
+      </div>`;
+  }
+  pair.querySelectorAll("[data-play]").forEach((b) => b.addEventListener("click", () => play(document.getElementById(b.dataset.play))));
+
+  // The road while offering a ride.
+  const stepsNames = ["Route", "Time", "Seats", "Price", "Check"];
+  let step = 2;
+  const road = document.getElementById("road");
+  road.innerHTML = `<div class="lane"></div><div class="gone" id="gone"></div>
+    ${stepsNames.map((_, i) => `<span class="mark" style="left:${(i / 4) * 100}%"></span>`).join("")}
+    <div class="car" id="road-car">${car()}</div>`;
+  const names = document.getElementById("names");
+  function placeRoad() {
+    const span = road.clientWidth;
+    document.getElementById("road-car").style.transform = `translateX(${(step / 4) * span}px)`;
+    // The moss line reaches from the start, past the left edge, to the car.
+    document.getElementById("gone").style.transform = `scaleX(${(26 + (step / 4) * span) / (span + 26)})`;
+    road.querySelectorAll(".mark").forEach((m, i) => {
+      m.classList.toggle("past", i < step);
+      m.style.visibility = i === step ? "hidden" : "visible";
+    });
+    names.innerHTML = stepsNames.map((n, i) => `<span class="${i === step ? "now" : ""}" style="left:${(i / 4) * 100}%">${n}</span>`).join("");
+    document.getElementById("road-back").disabled = step === 0;
+    document.getElementById("road-next").disabled = step === 4;
+  }
+  document.getElementById("road-next").addEventListener("click", () => { step = Math.min(4, step + 1); placeRoad(); });
+  document.getElementById("road-back").addEventListener("click", () => { step = Math.max(0, step - 1); placeRoad(); });
+
+  // Choosing seats: a seat view from above, the front to the right.
+  let seats = 1;
+  const seatSpots = [[64, 30], [64, 76], [64, 122], [138, 122]];
+  function drawSeats(popIndex) {
+    const box = document.getElementById("seatview");
+    const seat = ([x, y], i) => {
+      const taken = i < seats;
+      return `<rect x="${x - 20}" y="${y - 20}" width="40" height="40" rx="10" style="fill:var(--cd-seat)"/>
+        ${taken ? `<g class="seat-puffin ${i === popIndex ? "pop" : ""}">${puffin(x - 4, y, 0.62, { scarf: C.moss })}</g>` : ""}`;
+    };
+    box.innerHTML = `<svg viewBox="0 0 230 152" aria-hidden="true">
+      <rect x="4" y="4" width="222" height="144" rx="44" style="fill:var(--cd-body)"/>
+      <rect x="26" y="8" width="150" height="136" rx="20" style="fill:var(--cd-cabin)"/>
+      <rect x="118" y="10" width="40" height="40" rx="10" style="fill:var(--cd-seat)"/>
+      ${puffin(134, 30, 0.62, { hat: C.crow })}
+      <path d="M170 22 V44" style="stroke:var(--cd-steer)" stroke-width="5" stroke-linecap="round"/>
+      ${seatSpots.map(seat).join("")}
+    </svg>`;
+    document.getElementById("count").textContent = String(seats);
+    document.getElementById("minus").disabled = seats === 1;
+    document.getElementById("plus").disabled = seats === 4;
+  }
+  document.getElementById("plus").addEventListener("click", () => { seats = Math.min(4, seats + 1); drawSeats(seats - 1); });
+  document.getElementById("minus").addEventListener("click", () => { seats = Math.max(1, seats - 1); drawSeats(-1); });
+
+  // A menu opening.
+  const menuBtn = document.getElementById("menu-btn"), menu = document.getElementById("menu");
+  function setMenu(open) {
+    menu.classList.toggle("open", open);
+    menuBtn.setAttribute("aria-expanded", String(open));
+  }
+  menuBtn.addEventListener("click", () => setMenu(!menu.classList.contains("open")));
+  menu.querySelectorAll("button").forEach((b) => b.addEventListener("click", () => { setMenu(false); menuBtn.focus(); }));
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && menu.classList.contains("open")) { setMenu(false); menuBtn.focus(); } });
+  document.addEventListener("click", (e) => { if (!menu.contains(e.target) && e.target !== menuBtn) setMenu(false); });
+
+  // Playing: take the class off, let the browser see it, put it back.
+  function play(el) {
+    if (!el) return;
+    el.classList.remove("play");
+    void el.offsetWidth;
+    el.classList.add("play");
+  }
+  function buildAll() {
+    frames.forEach((f) => f.build());
+    buildLaptop();
+    buildBooked();
+    buildSent();
+    placeRoad();
+  }
+  function playAll() {
+    frames.forEach((f) => (f.loop ? null : play(f.frame)));
+    play(document.getElementById("laptop"));
+    play(document.getElementById("booked"));
+    play(document.getElementById("sent"));
+  }
+
+  // Reduce motion: the device's own setting first, then the switch.
+  const calm = document.getElementById("calm");
+  const page = document.getElementById("page");
+  let prefersCalm = false;
+  try { prefersCalm = window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) { prefersCalm = false; }
+  calm.checked = prefersCalm;
+  document.getElementById("calm-note").hidden = !prefersCalm;
+  page.classList.toggle("calm", prefersCalm);
+  calm.addEventListener("change", () => {
+    page.classList.toggle("calm", calm.checked);
+    if (!calm.checked) playAll();
+  });
+  document.getElementById("play-all").addEventListener("click", playAll);
+
+  buildAll();
+  drawSeats(-1);
+  frames.forEach((f) => { if (f.loop) f.frame.classList.add("play"); });
+
+  // The banner plays at once; the lower demos when they first come into view.
+  frames.forEach((f) => (f.loop ? null : play(f.frame)));
+  const later = ["laptop", "booked", "sent"];
+  if ("IntersectionObserver" in window) {
+    const seen = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          play(entry.target);
+          seen.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.55 });
+    later.forEach((id) => { const el = document.getElementById(id); if (el) seen.observe(el); });
+  } else {
+    later.forEach((id) => play(document.getElementById(id)));
+  }
+
+  // Redraw when the width changes, standing still at the end.
+  let lastWidth = window.innerWidth;
+  window.addEventListener("resize", () => {
+    fitLaptop();
+    if (Math.abs(window.innerWidth - lastWidth) < 4) return;
+    lastWidth = window.innerWidth;
+    frames.forEach((f) => f.build());
+    buildBooked();
+    placeRoad();
+  });
+})();
+</script>

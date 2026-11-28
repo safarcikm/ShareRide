@@ -416,3 +416,42 @@ export const iconSizes = { button: 22, inline: 18, tick: 16 } as const;
 
 /** The keyboard focus ring: 3 wide, 2 away from the part. */
 export const focusRing = { width: 3, offset: 2 } as const;
+
+/**
+ * Motion (spec 33, section 6): how long things take, in milliseconds, and
+ * their curves. `out` for what arrives, `inOut` for what moves from one
+ * place on the screen to another, `brake` for the car slowing to a stop,
+ * `rise` and `fall` for a hop: up quickly, then down as things fall. None
+ * starts slowly on its own (no ease-in): that delays the moment people
+ * look at; `fall` comes only after `rise`.
+ *
+ * The car's arrival on the front page: it drives in, its body bobs twice
+ * on the road (`bumps`, points up) and dips its nose as it stops (`dip`,
+ * degrees down, then back past level), within `settle`; then the passenger
+ * and the driver hop `hopHeight` points, each for `hop`, all within
+ * `celebrate`.
+ */
+export const motion = {
+  quick: 120,
+  pop: 150,
+  open: 180,
+  appear: 300,
+  step: 400,
+  celebrate: 1900,
+  arrival: {
+    drive: 1100,
+    settle: 1500,
+    hop: 300,
+    hops: [1400, 1540],
+    bumps: [1.6, 1.3],
+    dip: [2.6, -0.8],
+    hopHeight: 5,
+  },
+  curves: {
+    out: "cubic-bezier(0.23, 1, 0.32, 1)",
+    inOut: "cubic-bezier(0.77, 0, 0.175, 1)",
+    brake: "cubic-bezier(0.33, 1, 0.68, 1)",
+    rise: "cubic-bezier(0.25, 0.6, 0.4, 1)",
+    fall: "cubic-bezier(0.5, 0, 0.75, 0)",
+  },
+} as const;

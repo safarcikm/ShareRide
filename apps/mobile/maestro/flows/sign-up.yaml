@@ -33,7 +33,15 @@ name: Sign up
 - tapOn:
     text: "6-digit code"
     index: 1
-- inputText: ${output.code}
+# One digit at a time, as a person types: the whole code at once on the
+# iPhone now and then outran the field, which showed six digits but did not
+# send them (a Build the apps run, 2026-11-27).
+- evalScript: ${output.digit = 0}
+- repeat:
+    times: ${output.code.length}
+    commands:
+      - inputText: ${output.code.charAt(output.digit)}
+      - evalScript: ${output.digit = output.digit + 1}
 - extendedWaitUntil:
     visible: "Add your phone number"
     timeout: 20000
@@ -59,7 +67,13 @@ name: Sign up
 - tapOn:
     text: "6-digit code"
     index: 1
-- inputText: ${output.code}
+# One digit at a time, as above.
+- evalScript: ${output.digit = 0}
+- repeat:
+    times: ${output.code.length}
+    commands:
+      - inputText: ${output.code.charAt(output.digit)}
+      - evalScript: ${output.digit = output.digit + 1}
 # The step's title can be scrolled out of sight on Android; its fields are not.
 - extendedWaitUntil:
     visible: "Languages you speak"

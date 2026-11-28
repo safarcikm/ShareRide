@@ -49,6 +49,15 @@ describe("The phone apps' settings", () => {
     expect(app.android.blockedPermissions).toContain("android.permission.SYSTEM_ALERT_WINDOW");
   });
 
+  it("draw one set of splash pictures, used in the dark too, so the build makes it once", () => {
+    // With a dark picture of its own, the same file, Android's two sets were
+    // made at the same time through one cache file, and a build now and then
+    // read it half written ("Could not find MIME for Buffer <null>").
+    const splash = optionsOf("expo-splash-screen");
+    expect(splash?.["image"]).toBe("./assets/splash-icon.png");
+    expect(splash?.["dark"]).toEqual({ backgroundColor: "#121A1E" });
+  });
+
   it("are an iPhone app, not an iPad one, for now", () => {
     expect(app.ios["supportsTablet"]).toBe(false);
   });
