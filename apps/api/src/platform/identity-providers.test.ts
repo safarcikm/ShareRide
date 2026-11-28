@@ -151,6 +151,17 @@ describe("Google (plan 4.3)", () => {
     });
   });
 
+  it("keeps no token of Google's (R37.1)", async () => {
+    const token = await idToken();
+    const endpoint = fakeTokenEndpoint(() =>
+      Promise.resolve(Response.json({ id_token: token, refresh_token: "google-refresh" })),
+    );
+    const provider = google(endpoint.fetch);
+    const redeemed = await provider.redeem(redeemInput);
+    expect(redeemed.ok && redeemed.value).not.toHaveProperty("refreshToken");
+    expect(provider.revoke).toBeUndefined();
+  });
+
   it("takes Google's issuer without https too", async () => {
     const token = await idToken({ issuer: "accounts.google.com" });
     const endpoint = fakeTokenEndpoint(() => Promise.resolve(Response.json({ id_token: token })));
@@ -335,10 +346,23 @@ describe("the development provider (plan 4.3)", () => {
     const redeem = { ...redeemInput, code: first.code ?? "", redirectUri: appleCallback };
     expect(await appleDev.redeem({ ...redeem, appleUser: user })).toEqual({
       ok: true,
-      value: { subject: "dev-apple-1", email: "dev-person-1@example.com", firstName: "Anna" },
+      value: {
+        subject: "dev-apple-1",
+        email: "dev-person-1@example.com",
+        firstName: "Anna",
+        // Made up, as Apple's would be, so tests see it kept (spec 37, 3.4).
+        refreshToken: "dev-apple-refresh-1",
+      },
     });
     // Apple sends the name only the first time.
     expect(await appleDev.redeem(redeem)).toMatchObject({ ok: true, value: { firstName: null } });
+  });
+
+  it("revokes a stand-in Apple token without asking anyone (R37.4)", async () => {
+    const appleDev = createDevProvider({ name: "apple", apiOrigin });
+    expect(await appleDev.revoke?.("dev-apple-refresh-1")).toBe(true);
+    // Google's tokens are never kept, so the stand-in Google revokes nothing.
+    expect(dev.revoke).toBeUndefined();
   });
 
   it("fails on a code it did not make", async () => {
@@ -480,6 +504,56 @@ describe("Apple (plan 4.3)", () => {
       ok: false,
       error: { code: "provider_failed", reason: "id_token" },
     });
+  });
+
+  it("keeps the refresh token Apple answers with, to end the link later (R37.1)", async () => {
+    const token = await appleToken();
+    const endpoint = fakeTokenEndpoint(() =>
+      Promise.resolve(
+        Response.json({ id_token: token, refresh_token: "r.apple-refresh", access_token: "a.x" }),
+      ),
+    );
+    expect(await apple(endpoint.fetch).redeem(appleRedeem)).toMatchObject({
+      ok: true,
+      value: { subject: "000123.apple-subject.0456", refreshToken: "r.apple-refresh" },
+    });
+  });
+
+  it("gives no refresh token when Apple's answer has none", async () => {
+    const token = await appleToken();
+    const endpoint = fakeTokenEndpoint(() =>
+      Promise.resolve(Response.json({ id_token: token, refresh_token: 42 })),
+    );
+    const redeemed = await apple(endpoint.fetch).redeem(appleRedeem);
+    expect(redeemed.ok && redeemed.value).not.toHaveProperty("refreshToken");
+  });
+
+  it("revokes a refresh token with Apple, with its client secret (spec 37, 3.2)", async () => {
+    const endpoint = fakeTokenEndpoint(() => Promise.resolve(new Response(null, { status: 200 })));
+    expect(await apple(endpoint.fetch).revoke?.("r.apple-refresh")).toBe(true);
+    expect(endpoint.requests[0]?.url).toBe(appleEndpoints.revoke);
+    const form = Object.fromEntries(endpoint.requests[0]?.body ?? []);
+    expect(form).toMatchObject({
+      client_id: servicesId,
+      token: "r.apple-refresh",
+      token_type_hint: "refresh_token",
+    });
+    const { payload } = await jwtVerify(form.client_secret ?? "", teamKey.publicKey, {
+      issuer: "TEAM123456",
+      audience: appleEndpoints.issuer,
+      subject: servicesId,
+      currentDate: now,
+    });
+    expect(payload.iat).toBe(nowSeconds - 30);
+  });
+
+  it("says a revocation failed when Apple refuses it or cannot be reached", async () => {
+    const refused = fakeTokenEndpoint(() =>
+      Promise.resolve(Response.json({ error: "invalid_client" }, { status: 400 })),
+    );
+    expect(await apple(refused.fetch).revoke?.("r.apple-refresh")).toBe(false);
+    const unreachable = (() => Promise.reject(new TypeError("fetch failed"))) as typeof fetch;
+    expect(await apple(unreachable).revoke?.("r.apple-refresh")).toBe(false);
   });
 
   it("fails when Apple's token endpoint refuses the code", async () => {

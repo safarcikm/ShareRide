@@ -24,6 +24,8 @@ export const retentionRules = [
   "email_sign_ins",
   /** Members' passkey challenges, an hour after they expired (spec 27, 5). */
   "passkey_challenges",
+  /** Apple tokens of ended links Apple did not take, 7 days after they were queued (spec 37, 3.2). */
+  "apple_tokens",
   "trip_drafts",
   "conversations",
   "trips_and_bookings",

@@ -155,7 +155,8 @@ export const emailSignIns = pgTable(
  * A Google or Apple account linked to a ShareRide account (spec 19, R19.1):
  * one of each provider per account, and each provider account on one
  * ShareRide account only. Only the provider's identifier and a verified
- * email are kept (R19.5).
+ * email are kept (R19.5), and for Apple the refresh token that ends the
+ * link with Apple when it goes (spec 37, ADR 0056).
  */
 export const identities = pgTable(
   "identities",
@@ -169,6 +170,12 @@ export const identities = pgTable(
     subject: text().notNull(),
     /** The email the provider vouched for when it was linked; empty without one. */
     email: text(),
+    /**
+     * Apple's refresh token from the latest sign-in, to revoke when the link
+     * ends (spec 37, R37.1); null for Google and for Apple links made before.
+     * Never logged, returned or exported (R37.3).
+     */
+    appleRefreshToken: text(),
     linkedAt: at().notNull(),
     lastUsedAt: at().notNull(),
     ...timestamps,
@@ -206,6 +213,8 @@ export const providerSignIns = pgTable(
     subject: text(),
     email: text(),
     firstName: text(),
+    /** Apple's refresh token, until the link takes it (spec 37, 3.1). */
+    appleRefreshToken: text(),
     ticketHash: text().unique("provider_sign_ins_ticket_hash_unique"),
     ticketExpiresAt: at(),
     ticketUsedAt: at(),
@@ -222,6 +231,24 @@ export const providerSignIns = pgTable(
     index().on(table.expiresAt),
     check("provider_sign_ins_provider_check", oneOf(table.provider, signInProviders)),
   ],
+);
+
+/**
+ * Apple refresh tokens of links that ended (spec 37, 3.2): an erased
+ * account, Apple removed or replaced on Sign-in methods. Kept alone, with
+ * no account ID, until Apple takes the revocation. The API sends each from
+ * `revoke_after` (job `apple-revocations`, every minute, 10 minutes apart
+ * after a refusal); the hourly clean-up drops one queued 7 days ago.
+ */
+export const appleTokensToRevoke = pgTable(
+  "apple_tokens_to_revoke",
+  {
+    id: id(),
+    token: text().notNull(),
+    revokeAfter: at().notNull(),
+    queuedAt: at().notNull(),
+  },
+  (table) => [index().on(table.revokeAfter), index().on(table.queuedAt)],
 );
 
 /**
