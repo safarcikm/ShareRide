@@ -5,7 +5,10 @@
 > website added 2026-11-22 ([spec 23](../../specs/2026-11-22-google-analytics-and-search.md),
 > as in published version 3); the pages in Profile in place of
 > "Settings", and the phone apps' update check, stores and testing, added
-> 2026-11-27 (as in published version 4). Periods marked "to confirm" are
+> 2026-11-27 (as in published version 4); what is kept of a password and
+> of Face ID or fingerprint, which codes come by email and by SMS, and
+> what of a sign-in stays on the device, on 2026-11-28 (as in published
+> version 5). Periods marked "to confirm" are
 > still to be set with the lawyer. See the [README](README.md).
 
 **Last updated:** [date of publication]
@@ -36,7 +39,7 @@
 | What | Why | Legal basis | How long |
 | ---- | --- | ----------- | -------- |
 | **Account:** phone number, first name, language, your confirmation that you are 18 or older (yes and the date), and your email address once you verify it | To create your account, sign you in and contact you | Contract | While you have an account, then 7 days after you ask to delete it |
-| **Sign-in records:** sign-in codes and limits, stored only in a form that cannot be read back; your signed-in devices (name, platform, app version, times) | To check it is you, keep you signed in, and stop fraud | Contract; legitimate interest (fraud) | Codes until used or expired; limits 24 hours; devices until you sign out or after 60 days unused |
+| **Sign-in records:** sign-in codes and limits, stored only in a form that cannot be read back; your signed-in devices (name, platform, app version, times); if you set a password, only a form of it that cannot be read back, never the password itself, and when you set it; if you set up Face ID or fingerprint, your device makes a passkey for PuffinRide, and we keep for each device the passkey's ID and public key, a few technical details, such as whether the passkey is backed up, the browser and system it was set up in, and when it was set up and last used. Your face or fingerprint never leaves your device and never reaches us. After you sign in with a password, we ask your browser to save such a passkey if it can do so by itself; when one is saved, we email you | To check it is you, keep you signed in, and stop fraud | Contract; legitimate interest (fraud) | Codes until used or expired; limits 24 hours; devices until you sign out or after 60 days unused, and the record of a sign-in that ended for 30 days more; a password and Face ID or fingerprint until you remove them in Profile, under Sign-in methods, or until your account is erased |
 | **Legal acceptances:** which version of the terms and rules you accepted, when, and in which language | To show what you agreed to | Contract; legal obligation | While you have an account (how long after, to confirm) |
 | **Profile:** photo, bio, languages, badges | So people know who they travel with | Contract | While you have an account |
 | **Car:** make, model, colour, number plate | So passengers recognise the car | Contract | Until you remove the car; kept with the trips it was used for |
@@ -86,8 +89,8 @@ processing agreement, only as we instruct.
 | Provider | What for | Where |
 | -------- | -------- | ----- |
 | Render (with Cloudflare for the connection) | Hosting the app, the database and logs | Frankfurt, Germany |
-| Vonage | Sending SMS: sign-in codes and last-minute trip changes | Stored in Ireland and Germany; may be processed elsewhere for support and fraud checks |
-| Mailjet | Sending email | Germany and Belgium |
+| Vonage | Sending SMS, such as codes that check your phone number and last-minute trip changes | Stored in Ireland and Germany; may be processed elsewhere for support and fraud checks |
+| Mailjet | Sending email, such as sign-in codes and booking updates | Germany and Belgium |
 | Expo, with Apple and Google | Sending push notifications to your phone | United States |
 | Expo (app updates) | When the app opens on your phone, it asks Expo for a newer version of its own code, sending a random ID the app makes when it is installed (not linked to your account), the app's version and which update it runs, the phone's system and, after a start that failed, the error's message | United States |
 | Sentry | Error reports, with personal details removed | Frankfurt, Germany |
@@ -156,9 +159,15 @@ We answer requests within one month. Write to [privacy contact email] or use
 
 ## 8. Storage on your device
 
-The app and website store only what they need to work, such as keeping you
-signed in, your last searches and a booking you started before signing up.
-These stay on your device and are not sent to us, and need no consent. The
+The app and website store only what they need to work: what keeps you
+signed in, which is sent to us with each request, and what only helps the
+app on your device, such as the way you signed in last time, your last
+searches and a booking you started before signing up, which stays on your
+device and is not sent to us. None of this needs consent. If you set up
+Face ID or fingerprint, your device or your password manager keeps the
+passkey, and may copy it to your other devices under its own terms; we hold
+only what section 3 lists. Removing it in Profile removes what we hold; your
+device may keep its own copy, which then no longer signs you in. The
 phone app also keeps the random ID it sends Expo when it checks for an
 update (section 5). On the website, Google Analytics sets its cookies only
 if you accept (section 3). Your answer is kept on your device for 12

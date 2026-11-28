@@ -306,6 +306,12 @@ email, a password, a hash, or a passkey's key.
   cannot be phished: the browser gives them only to puffinride.is.
 - **Lost phone or forgotten password:** the email code and Google still
   sign in; Settings removes the lost device.
+- **The legal texts** name a password and Face ID or fingerprint since the
+  Terms' version 4 and the Privacy Policy's version 5 (2026-11-28, on
+  Martin's word, not material). The Privacy Policy says what is kept of
+  each, that we ask the browser to save a passkey by itself after a
+  password and tell the person by email (spec 29, R29.3), and that both
+  are removed in Profile, under Sign-in methods.
 
 ## 7. Texts
 
