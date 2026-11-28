@@ -26,3 +26,11 @@ first lines); the API is answered in the page, signed out with no rides:
 ```sh
 node docs/specs/images/seasonal-banner/src/built.cjs http://localhost:8082
 ```
+
+`yule.cjs` takes the `5-yule-*.webp` pictures of section 3.11 (the Yule
+Lads and Jólakötturinn) from their sketch, [`../yule-preview.html`](../yule-preview.html),
+a copy of the preview with the Lads and the cat added:
+
+```sh
+node docs/specs/images/seasonal-banner/src/yule.cjs
+```
