@@ -11,6 +11,7 @@ export * from "./auth.ts";
 export * from "./beta.ts";
 export * from "./bookings.ts";
 export * from "./chat.ts";
+export * from "./co2.ts";
 export * from "./common.ts";
 export * from "./driving.ts";
 export * from "./errors.ts";

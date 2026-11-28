@@ -1,6 +1,7 @@
 import type { MeetingPointSummary, MyTrip, TripCopy, TripDraftBody } from "@shareride/contracts";
 import { schema, type Database } from "@shareride/db";
 import {
+  tripCo2,
   checkTripForPublishing,
   dayPhase,
   err,
@@ -32,6 +33,7 @@ import { alias } from "drizzle-orm/pg-core";
 import { lockActive } from "../account/standing.ts";
 import type { DrivingService } from "../driving/index.ts";
 import { seatsTakenNow, takingsBookings } from "../bookings/seats.ts";
+import { countedBookingsOn, defaultCo2Settings, type Co2SettingsSource } from "../co2/figures.ts";
 import { nameOf, toSummary } from "../meeting-points/service.ts";
 import { shown } from "../privacy/hidden.ts";
 import { checkInsAt, driverCheckedInAt, shownWindow } from "../trip-day/check-ins.ts";
@@ -161,8 +163,11 @@ export function createTripService(dependencies: {
   /** For how long a ride that is done can still be rated (R8.8). */
   readonly reviewSettings: ReviewSettings;
   readonly driving: DrivingService;
+  /** The CO2 value now (spec 34, 3.7); the starting value when left out. */
+  readonly co2Settings?: Co2SettingsSource;
 }): TripService {
   const { db, clock, tripDaySettings, reviewSettings, driving } = dependencies;
+  const co2Settings = dependencies.co2Settings ?? defaultCo2Settings;
 
   /** The legs for these ordered pairs, as a lookup. */
   async function legsFor(q: Queryable, pairs: readonly (readonly [string, string])[]) {
@@ -286,6 +291,11 @@ export function createTripService(dependencies: {
       seatsTakenNow(q, ids, now),
       takingsBookings(q, ids, now),
     ]);
+    // One car not driven per booking that counts (spec 34, 3.7).
+    const [counted, { gramsPerCarKm }] = await Promise.all([
+      countedBookingsOn(q, ids),
+      co2Settings(),
+    ]);
     const checkIns = await checkInsAt(
       q,
       stopRows.map(({ stop }) => stop.id),
@@ -388,6 +398,10 @@ export function createTripService(dependencies: {
                 countsOnReliability: row.countsOnReliability,
               }
             : null,
+        co2: tripCo2(
+          counted.filter((booking) => booking.tripId === row.id),
+          gramsPerCarKm,
+        ),
       };
     });
   }

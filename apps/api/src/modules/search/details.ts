@@ -3,8 +3,10 @@ import { schema, type Database } from "@shareride/db";
 import {
   defaultReliabilitySettings,
   err,
+  estimatedCo2Grams,
   holdsSeats,
   ok,
+  partDistanceM,
   peopleColourOf,
   statusAt,
   tripPageOpen,
@@ -20,6 +22,7 @@ import {
 } from "@shareride/domain";
 import { and, asc, eq, inArray, isNull, ne } from "drizzle-orm";
 import { occupancyNow } from "../bookings/seats.ts";
+import { defaultCo2Settings, type Co2SettingsSource } from "../co2/figures.ts";
 import { toSummary } from "../meeting-points/service.ts";
 import type { PhotoStorage } from "../../platform/photo-storage.ts";
 import { photoLinkOf } from "../people/photos.ts";
@@ -56,9 +59,12 @@ export function createTripDetailsService(dependencies: {
   readonly reliabilitySettings?: ReliabilitySettings;
   /** Where the driver's photo is kept; no photo when left out (spec 1, 3.5). */
   readonly photos?: PhotoStorage;
+  /** The CO2 value now (spec 34, 3.5); the starting value when left out. */
+  readonly co2Settings?: Co2SettingsSource;
 }): TripDetailsService {
   const { db, clock } = dependencies;
   const reliability = dependencies.reliabilitySettings ?? defaultReliabilitySettings;
+  const co2Settings = dependencies.co2Settings ?? defaultCo2Settings;
 
   return {
     async details(id, choice, viewerId) {
@@ -160,6 +166,13 @@ export function createTripDetailsService(dependencies: {
         settings,
       );
       if (!part.ok) return part;
+      // One car not driven over the part, whatever its seats (spec 34, R34.1).
+      const { gramsPerCarKm } = await co2Settings();
+      const distanceM = partDistanceM(
+        segmentRows.map((row) => row.distanceM),
+        part.value.board,
+        part.value.alight,
+      );
 
       const { car } = found;
       const choices = choicesOf(trip);
@@ -173,7 +186,7 @@ export function createTripDetailsService(dependencies: {
           },
           plannedAt: (stops[position]?.plannedAt ?? new Date(0)).toISOString(),
         })),
-        part: part.value,
+        part: { ...part.value, distanceM, co2Grams: estimatedCo2Grams(distanceM, gramsPerCarKm) },
         seatsOffered: trip.capacity,
         driver: {
           firstName: found.firstName ?? "",

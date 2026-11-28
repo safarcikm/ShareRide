@@ -111,6 +111,8 @@ export function northTrip(
       pricePerSeat: { amount: price, currency: "ISK" },
       total: { amount: price * seats, currency: "ISK" },
       state: seats > 2 ? "full" : "open",
+      distanceM: 0,
+      co2Grams: null,
       ...partChanges,
     },
     seatsOffered: 3,
