@@ -2003,6 +2003,14 @@ releases follow [Semantic Versioning](https://semver.org/).
   downloads and tests (spec 32, section 7). Neither is material, so
   nobody accepts anything again. A test holds the newest legal texts to
   the names the app gives its pages.
+- An account that waits to be deleted no longer opens Report, the two
+  pages that block a person or "What's wrong here?" for a meeting point
+  by their address: it lands on the page that says when the account
+  goes, as with the other pages that need an account, and "Keep my
+  account" opens them again. Notices from PuffinRide stays open, to read
+  or appeal a notice before the account goes (A59, Martin's answer to
+  Q31). A test asks of every page of the app which list it is in, so a
+  new page is not open to such an account by being forgotten.
 - The web journeys never give two test accounts the same phone number: a
   run in ten did, and a sign-in journey then failed.
 - CI skips its code jobs (bundles, unit, integration and web tests, the API
