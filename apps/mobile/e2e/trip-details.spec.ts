@@ -175,4 +175,32 @@ test.describe("ride details without an account", () => {
       await other.close();
     }
   });
+
+  test("says the CO2 the part saves, and opens About at how it is estimated (spec 34, 3.4, 3.9)", async ({
+    page,
+  }) => {
+    // A phone's window, short enough that About's section starts below it.
+    await page.setViewportSize({ width: 375, height: 360 });
+    await page.goto("/search");
+    await choose(page, "From", "borgarn", /^N1 Borgarnes,/);
+    await choose(page, "To", "blondu", /^Olís Blönduós,/);
+    await page.getByRole("button", { name: "Find a ride", exact: true }).click();
+    await page
+      .getByRole("button", { name: /^Leaves N1 Borgarnes at \d\d:\d\d, .*Anna, New driver/ })
+      .first()
+      .click();
+    await expect(page).toHaveURL(/\/trips\/[0-9a-f-]+\?from=1&to=2$/);
+    const card = page.getByTestId("co2-card").filter({ visible: true });
+    const row = card.getByRole("button", { name: /^CO2 saved, about \d+ kilograms, estimated$/ });
+    await expect(row).toHaveAttribute("aria-expanded", "false");
+    await row.click();
+    await expect(card.getByText(/^One car fewer on the road for \d+\skm/)).toBeVisible();
+    await card.getByRole("link", { name: "How we estimate it" }).click();
+
+    await expect(page).toHaveURL(/\/about#co2$/);
+    const section = page
+      .getByRole("heading", { name: "What a shared ride saves" })
+      .filter({ visible: true });
+    await expect(section).toBeInViewport();
+  });
 });

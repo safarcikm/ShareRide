@@ -1,5 +1,6 @@
 import { aboutCo2Values, aboutPage, pageText } from "@shareride/i18n";
-import { StyleSheet, Text, View } from "react-native";
+import { useEffect, useRef } from "react";
+import { Platform, StyleSheet, Text, View } from "react-native";
 import { useConfig } from "@/beta/config";
 import { BackButton } from "@/components/back-button";
 import { Card } from "@/components/card";
@@ -27,6 +28,7 @@ export default function AboutScreen() {
   const palette = usePalette();
   const gramsPerCarKm = useConfig().co2GramsPerCarKm;
   const co2Values = aboutCo2Values(gramsPerCarKm, locale);
+  useScrollToAnchor("co2", gramsPerCarKm > 0);
   const paragraph = (text: string) => (
     <Text style={[typography.body, { color: palette.text }]}>{text}</Text>
   );
@@ -77,6 +79,26 @@ export default function AboutScreen() {
       </View>
     </Screen>
   );
+}
+
+/**
+ * On the web, an address ending in `#co2` (a card's "How we estimate it",
+ * or a shared link) brings that section into view once it is shown: the
+ * section waits for the settings, and the screen scrolls inside its own
+ * view, so the browser does not do it by itself. Screens opened earlier
+ * stay in the page, hidden, so it takes the one on show.
+ */
+function useScrollToAnchor(anchor: string, shown: boolean) {
+  const done = useRef(false);
+  useEffect(() => {
+    if (Platform.OS !== "web" || !shown || done.current) return;
+    if (window.location.hash !== `#${anchor}`) return;
+    done.current = true;
+    const target = [...document.querySelectorAll(`[id="${anchor}"]`)]
+      .reverse()
+      .find((element) => element.getClientRects().length > 0);
+    target?.scrollIntoView({ block: "start" });
+  }, [anchor, shown]);
 }
 
 const styles = StyleSheet.create({ section: { gap: spacing.sm } });
