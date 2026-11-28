@@ -389,6 +389,9 @@ export const sizes = {
 /** Width of the outline on inputs, tick boxes and chips. */
 export const controlOutline = 2;
 
+/** Width of the hairline round a card (`depth`). */
+export const hairline = 1;
+
 /** Smallest touch target, in points (WCAG 2.2 AA, conventions). */
 export const minTouchTarget = 44;
 

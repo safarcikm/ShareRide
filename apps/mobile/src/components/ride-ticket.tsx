@@ -3,9 +3,10 @@ import type { ReactNode } from "react";
 import { Platform, StyleSheet, Text, View, type TextStyle, type ViewStyle } from "react-native";
 import Svg, { Line } from "react-native-svg";
 import type { AppPath } from "@/navigation/link-props";
-import { controlOutline, depth, edges, radii, sizes, spacing, typography } from "@/theme/tokens";
+import { cardRing } from "@/theme/pressable";
+import { controlOutline, edges, radii, sizes, spacing, typography } from "@/theme/tokens";
 import { usePalette, useScheme } from "@/theme/use-palette";
-import { Card, cardCornerRoom } from "./card";
+import { Card, cardCornerRoom, useCardRing, type CardRingLine } from "./card";
 import { Heard, spokenAs } from "./spoken";
 import { Tag, type TagKind } from "./tag";
 import { sectionLevel } from "./text";
@@ -188,7 +189,7 @@ export function RideTicket({
   );
   return (
     <Card
-      flush
+      notched
       mine={mine}
       fill={fill}
       marked={marked}
@@ -408,19 +409,18 @@ function PlaceOfEnd({ end, testID }: { readonly end: TicketEnd; readonly testID:
 
 /**
  * A dashed line with a notch in each edge, in the page's colour, where a
- * ticket would be torn (spec 31, 3.3). Half of each notch is outside the
- * card, which cuts it off; the card's hairline runs round the half inside.
+ * ticket would be torn (spec 31, 3.3). Each notch is half a circle inside
+ * the card, which reaches out over the card's outline where it bites, and
+ * the outline runs round it, in its colour of the moment.
  */
 function TearLine() {
   const palette = usePalette();
   const scheme = useScheme();
-  const notch = {
-    backgroundColor: palette.background,
-    boxShadow: `inset 0px 0px 0px 1px ${depth[scheme].ring}`,
-  };
+  const line = useCardRing() ?? cardRing(scheme);
+  const colours = { backgroundColor: palette.background, borderColor: line.color };
   return (
     <Unspoken testID="ticket-tear" style={styles.tear}>
-      <View testID="ticket-notch" style={[styles.notch, styles.notchStart, notch]} />
+      <View testID="ticket-notch" style={[styles.notch, notchShape("start", line), colours]} />
       <View style={styles.dashes}>
         <Svg width="100%" height={controlOutline}>
           <Line
@@ -434,9 +434,34 @@ function TearLine() {
           />
         </Svg>
       </View>
-      <View testID="ticket-notch" style={[styles.notch, styles.notchEnd, notch]} />
+      <View testID="ticket-notch" style={[styles.notch, notchShape("end", line), colours]} />
     </Unspoken>
   );
+}
+
+/**
+ * A notch: half a circle, `ticketNotch` across, with its round side in the
+ * card, and as far out as the outline is wide, so it covers the outline
+ * where it bites and its own border carries the outline round the bite.
+ */
+function notchShape(side: "start" | "end", { width }: CardRingLine): ViewStyle {
+  const round = sizes.ticketNotch / 2;
+  const shape = { width: round + width, borderTopWidth: width, borderBottomWidth: width };
+  return side === "start"
+    ? {
+        ...shape,
+        left: -width,
+        borderRightWidth: width,
+        borderTopRightRadius: round,
+        borderBottomRightRadius: round,
+      }
+    : {
+        ...shape,
+        right: -width,
+        borderLeftWidth: width,
+        borderTopLeftRadius: round,
+        borderBottomLeftRadius: round,
+      };
 }
 
 /**
@@ -534,12 +559,8 @@ const styles = StyleSheet.create({
   notch: {
     position: "absolute",
     top: (controlOutline - sizes.ticketNotch) / 2,
-    width: sizes.ticketNotch,
     height: sizes.ticketNotch,
-    borderRadius: radii.pill,
   },
-  notchStart: { left: -sizes.ticketNotch / 2 },
-  notchEnd: { right: -sizes.ticketNotch / 2 },
   // As tall with words only as with a small picture, so the tear lines of a row line up.
   foot: {
     flexDirection: "row",

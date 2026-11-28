@@ -4,6 +4,7 @@ import {
   depth,
   edges,
   focusRing,
+  hairline,
   mapDrawing,
   maxContentWidth,
   asideMaxWidth,
@@ -31,7 +32,7 @@ export function faceParts(face: string): { family: string; weight: number } {
  * them, with the light line along its top at night.
  */
 export function cardLift(lift: (typeof depth)["light" | "dark"]): string {
-  return [lift.highlight, `0 0 0 1px ${lift.ring}`, lift.shadow]
+  return [lift.highlight, `0 0 0 ${String(hairline)}px ${lift.ring}`, lift.shadow]
     .filter((layer) => layer !== null)
     .join(", ");
 }

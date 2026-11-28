@@ -1,5 +1,12 @@
 import { Platform, type ViewStyle } from "react-native";
-import { controlOutline, depth, focusRing, type ColorScheme, type Palette } from "./tokens";
+import {
+  controlOutline,
+  depth,
+  focusRing,
+  hairline,
+  type ColorScheme,
+  type Palette,
+} from "./tokens";
 
 /** The styles of a part's two views: the outer one takes the room, the face draws it. */
 export interface Lift {
@@ -65,7 +72,8 @@ export function cardLift(
     return { outer: {}, face: { elevation: pressed ? 1 : 2, ...outline, ...sunk } };
   }
   const tokens = depth[scheme];
-  const outline = `0px 0px 0px ${String(ring === undefined ? 1 : controlOutline)}px ${ring ?? tokens.ring}`;
+  const { color, width } = cardRing(scheme, ring, boxShadows);
+  const outline = `0px 0px 0px ${String(width)}px ${color}`;
   const layers = [tokens.highlight, outline, pressed ? tokens.pressed : tokens.shadow];
   return {
     outer: {},
@@ -74,10 +82,27 @@ export function cardLift(
 }
 
 /**
+ * The line round a card, which `cardLift` draws: a `hairline` in `depth`'s
+ * ring, or a `ring` of its own colour twice as thick. Where React Native
+ * draws box shadows it lies just outside the card's face; on Android before
+ * 9 it is a border just inside it, and a card has one only for a `ring` of
+ * its own (`width` 0 otherwise). A ticket's notches follow it (`RideTicket`).
+ */
+export function cardRing(
+  scheme: ColorScheme,
+  ring?: string,
+  boxShadows: boolean = drawsBoxShadows(),
+): { readonly color: string; readonly width: number } {
+  if (ring !== undefined) return { color: ring, width: controlOutline };
+  return { color: depth[scheme].ring, width: boxShadows ? hairline : 0 };
+}
+
+/**
  * The keyboard focus ring on the web, as a style sheet: `:focus-visible`
  * shows it for the keyboard and not for taps or clicks. Text fields show
  * focus with their own moss outline instead (TextField). Phones keep their
- * own focus highlight (spec 15, section 6).
+ * own focus highlight (spec 15, section 6). A part marked `ringInside`
+ * has its ring drawn inside it, as what holds it would cut the ring off.
  */
 export function focusRingCss(light: Palette, dark: Palette): string {
   const parts = ":focus-visible:not(input):not(textarea)";

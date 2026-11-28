@@ -1,4 +1,4 @@
-import { cardLift, chunky, drawsBoxShadows, focusRingCss } from "./pressable";
+import { cardLift, cardRing, chunky, drawsBoxShadows, focusRingCss } from "./pressable";
 import { colors, depth } from "./tokens";
 
 describe("chunky", () => {
@@ -26,6 +26,22 @@ describe("chunky", () => {
       face: {},
     });
     expect(chunky(3, "#D2DDE1", true, false).face).toEqual({ transform: [{ translateY: 3 }] });
+  });
+});
+
+describe("cardRing", () => {
+  it("is a hairline in the ring's colour, or twice as thick in a colour of its own", () => {
+    expect(cardRing("light", undefined, true)).toEqual({ color: depth.light.ring, width: 1 });
+    expect(cardRing("dark", undefined, true)).toEqual({ color: depth.dark.ring, width: 1 });
+    expect(cardRing("light", colors.light.primary, true)).toEqual({
+      color: colors.light.primary,
+      width: 2,
+    });
+  });
+
+  it("is not there on Android before 9 unless it has a colour of its own", () => {
+    expect(cardRing("light", undefined, false).width).toBe(0);
+    expect(cardRing("light", colors.light.primary, false).width).toBe(2);
   });
 });
 
