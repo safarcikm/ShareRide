@@ -1,6 +1,6 @@
 # 0057. A switch for the festive days on the front page
 
-- **Status:** Proposed
+- **Status:** Accepted (Martin, 2026-11-28)
 - **Date:** 2026-11-28
 - **Deciders:** Martin
 - **Related:** [spec 36](../specs/2026-11-28-seasonal-banner.md) (3.8, R36.7);
