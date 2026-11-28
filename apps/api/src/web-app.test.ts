@@ -226,7 +226,7 @@ describe("the phone apps on the website (spec 35)", () => {
     );
   });
 
-  it("opens the same screen in the app, from its path only, never the query", async () => {
+  it("opens the screen the visitor came in on in the app, from its path only, never the query", async () => {
     const page = await (
       await both.request("/trips/0190a1d6-0000-7000-8000-0000000000d1?fromStop=1&lang=is")
     ).text();

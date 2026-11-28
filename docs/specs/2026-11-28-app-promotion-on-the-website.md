@@ -84,9 +84,11 @@ the iPhone (Martin's marketing rule, spec 32, 3.3).
   name and rating, and **View** (or **Get**) to the App Store page, or
   **Open** when the app is installed. Safari decides when to show it and
   remembers when it is closed; other browsers on the iPhone ignore it.
-- `app-argument` is the page's path in the app's own address
-  (`puffinride://rides/…`), so **Open** lands on the same screen. Only the
-  path: never the address's query or fragment.
+- `app-argument` is the path of the page the visitor came in on, in the
+  app's own address (`puffinride://rides/…`), so **Open** lands on that
+  screen. Only the path: never the address's query or fragment. The
+  website moves between screens without loading a page, so after the
+  visitor moves on, **Open** still lands on the screen they came in on.
 - Not on the page Google's or Apple's sign-in comes back to
   (`/sign-in/return`), which is a pop-up.
 - Safari reads the tag only when a page first loads, so the server writes

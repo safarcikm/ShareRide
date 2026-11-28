@@ -732,6 +732,15 @@ version }` with the version the page loaded: it takes a lock on the
   booking carries its own `cancellationRules`. The terms of service do
   state them, so the page says, on both groups, to publish new terms with
   a change.
+- Phone apps (spec 35, [ADR 0055](../decisions/0055-show-the-phone-apps-on-the-website-per-store.md)):
+  `app_store_listed` and `google_play_listed`, switches, off. Each is
+  turned on the day its store's page is public. `GET /v1/config` gives
+  `appStores` (`appStoresListed`, the App Store first), from which the
+  website shows the store badges and the Android strip; the phone apps
+  show none of it. The API reads the switches itself for every page, to
+  add Apple's banner tag while the App Store's is on, and for `/app`,
+  which sends a phone to its store (`apps/api/src/app-promotion.ts`).
+  While the switches cannot be read, the website counts both as off.
 
 ## Invite codes
 

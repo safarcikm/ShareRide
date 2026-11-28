@@ -26,8 +26,9 @@ const escapeAttribute = (text: string) =>
 /**
  * Apple's Smart App Banner for a page (spec 35, 3.3): Safari on an iPhone
  * shows it at the top, with Open where the app is installed, which opens
- * the same screen there through `app-argument`, the page's path in the
- * app's own address. Only the path, as the address's encoded form, with
+ * the screen the visitor came in on through `app-argument`, the page's
+ * path in the app's own address (the website then moves between screens
+ * without loading a page). Only the path, as the address's encoded form, with
  * commas encoded too, as they part the tag's values. Null on the page
  * Google's or Apple's sign-in comes back to, a pop-up.
  */
