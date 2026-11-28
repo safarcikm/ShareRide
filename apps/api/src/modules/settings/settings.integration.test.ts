@@ -151,6 +151,9 @@ describe("the console's settings", () => {
       { key: "reliability_watch_level", unit: "percent", value: 80, min: 50, max: 95, step: 1 },
       // The CO2 a shared ride saves (spec 34, ADR 0054).
       { key: "co2_grams_per_car_km", unit: "g_per_km", value: 150, min: 0, max: 300, step: 1 },
+      // Both stores off until their page is public (spec 35, ADR 0055).
+      { key: "app_store_listed", unit: null, value: 0, min: 0, max: 1, step: 1 },
+      { key: "google_play_listed", unit: null, value: 0, min: 0, max: 1, step: 1 },
     ]);
   });
 
@@ -326,6 +329,8 @@ describe("GET /v1/config", () => {
       oldestAppVersion: null,
       // For About's method (spec 34, 3.9).
       co2GramsPerCarKm: 150,
+      // Both store switches start off (spec 35, R35.1).
+      appStores: [],
     });
 
     await change("invite_code_required", {
@@ -351,7 +356,35 @@ describe("GET /v1/config", () => {
       oldestAppVersion: null,
       // For About's method (spec 34, 3.9).
       co2GramsPerCarKm: 150,
+      // Both store switches start off (spec 35, R35.1).
+      appStores: [],
     });
+  });
+});
+
+describe("GET /v1/config with the stores' switches (spec 35, 3.2)", () => {
+  it("names the stores whose page is public, the App Store first", async () => {
+    await change("google_play_listed", {
+      value: 1,
+      reason: "Google Play page is public",
+      version: (await settings()).version,
+    });
+    expect(((await (await api.request("/v1/config")).json()) as Config).appStores).toEqual([
+      "google_play",
+    ]);
+    await change("app_store_listed", {
+      value: 1,
+      reason: "App Store page is public",
+      version: (await settings()).version,
+    });
+    expect(((await (await api.request("/v1/config")).json()) as Config).appStores).toEqual([
+      "app_store",
+      "google_play",
+    ]);
+    for (const key of ["app_store_listed", "google_play_listed"] as const) {
+      await change(key, { value: 0, reason: "Off again", version: (await settings()).version });
+    }
+    expect(((await (await api.request("/v1/config")).json()) as Config).appStores).toEqual([]);
   });
 });
 

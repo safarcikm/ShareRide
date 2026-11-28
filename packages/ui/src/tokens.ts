@@ -360,6 +360,13 @@ export const sizes = {
   logoSmall: 36,
   /** The height, and narrowest width, of the unread count on Messages in the menu. */
   badge: 20,
+  /**
+   * The App Store's and Google Play's badges on the website (spec 35, 3.8):
+   * Apple's least height on a screen. A quarter of it is their clear space.
+   */
+  storeBadge: 40,
+  /** The QR code to get the app, on About on a laptop (spec 35, 3.6). */
+  qrCode: 120,
   /** The picture of the screen on Send feedback: small, in a phone's shape. */
   screenshotWidth: 144,
   screenshotHeight: 312,

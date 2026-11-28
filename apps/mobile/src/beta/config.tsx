@@ -33,6 +33,7 @@ const quiet: Config = {
   analytics: null,
   oldestAppVersion: null,
   co2GramsPerCarKm: 0,
+  appStores: [],
 };
 
 const ConfigContext = createContext<Config>(quiet);
